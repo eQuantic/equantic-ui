@@ -72,7 +72,7 @@ internal static class OverloadedMethods
         if (errors.Count == 0 && model is not null) CheckInherited(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckSequences(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckHidingImplementations(type, sourcePath, model, errors);
-        if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, model, errors);
+        if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckInterfaceIndexers(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInheritedFields(type, sourcePath, model, errors);
         return errors;
@@ -389,9 +389,11 @@ internal static class OverloadedMethods
     /// <see cref="CheckInherited"/>, the runtime's own being EQ2011's. What the language itself picks
     /// is not a clash: a derived class's default for the SAME interface member, more specific than its
     /// base's, and a member that implements the default's interface member because the derived class
-    /// lists the interface again.
+    /// lists the interface again. A default, or a private helper copied with one, on a name the twin
+    /// holds itself is refused as a member of the class would be (<see cref="MembersOnOneName.ADefaultOn"/>,
+    /// #1146): a default <c>Constructor()</c> was a second constructor, and the module did not parse.
     /// </summary>
-    private static void CheckDefaults(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
+    private static void CheckDefaults(TypeDeclarationSyntax type, string sourcePath, bool isComponent, SemanticModel model,
         List<CompilationError> errors)
     {
         if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared)
@@ -462,6 +464,12 @@ internal static class OverloadedMethods
         {
             var name = Lowered(implementation);
             var owner = Owner(implementation);
+            // A default, or a private helper copied with one, on a name the twin holds itself (#1146).
+            if (MembersOnOneName.ADefaultOn(type, isComponent, name, model) is { } held)
+            {
+                Refuse($"'{declared.Name}' takes the default {owner}, which lowers to `{name}`, {held}");
+                continue;
+            }
             if (taken.TryGetValue(name, out var earlier))
             {
                 Refuse($"'{declared.Name}' takes the default {owner}, which lowers to `{name}`, and so does {earlier}. "

@@ -779,6 +779,8 @@ public class OverloadedMethodTests
     [InlineData("Consent", "using eQuantic.UI.Primitives; public sealed class Consent(string? policyHref = null) : StatefulComponent { public string? PolicyHref { get; init; } = policyHref; public override VisualNode Build(ComponentContext context) => new Text(PolicyHref ?? \"\", TypeRole.BodyM); }")]
     [InlineData("Exact", "using eQuantic.UI.Primitives; public sealed class Exact(string? PolicyHref = null) : StatefulComponent { public string? PolicyHref { get; init; } = PolicyHref; public override VisualNode Build(ComponentContext context) => new Text(PolicyHref ?? \"\", TypeRole.BodyM); }")]
     [InlineData("Wide", "using eQuantic.UI.Primitives; public sealed class Wide(long count) : StatelessComponent { public long Count { get; init; } = count; public override VisualNode Build(ComponentContext context) => new Text(\"\" + Count, TypeRole.BodyM); }")]
+    [InlineData("Paren", "using eQuantic.UI.Primitives; public sealed class Paren(string? policyHref = null) : StatefulComponent { public string? PolicyHref { get; init; } = (policyHref); public override VisualNode Build(ComponentContext context) => new Text(PolicyHref ?? \"\", TypeRole.BodyM); }")]
+    [InlineData("Greeter", "public interface IGreet { string Greet() => \"hi\"; } public sealed class Greeter : IGreet { public int N; }")]
     [InlineData("Typed", "public record Root(int X) { public virtual bool Equals(int x) => X == x; } public sealed record Typed(int X, int Y) : Root(X) { public override bool Equals(int x) => Y == x; }")]
     public void OneMemberOnItsName_IsNotRefused(string name, string source) =>
         Compile(source, name).Errors.Where(error => error.Code == "EQ1007").Should().BeEmpty();
@@ -912,6 +914,7 @@ public class OverloadedMethodTests
     [InlineData("Tile(string? PolicyHref = null) : StatefulComponent", "public string? PolicyHref { get; init; } = PolicyHref?.Trim();", "'Tile.PolicyHref' lowers to `policyHref`", "'Tile(PolicyHref)' (line 4)")]
     [InlineData("Tile(string Caption) : StatelessComponent", "public string Caption() => \"x\";", "'Tile.Caption()' lowers to `caption`", "'Tile(Caption)' (line 4)")]
     [InlineData("Tile(int count) : StatelessComponent", "public long Count { get; init; } = count;", "'Tile.Count' lowers to `count`", "'Tile(count)' (line 4)")]
+    [InlineData("Tile(int count) : StatelessComponent", "public int Count { get; init => field = value * 2; } = count;", "'Tile.Count' lowers to `count`", "'Tile(count)' (line 4)")]
     [InlineData("Tile(string item) : StatelessComponent", "public int this[int i] => i * 2;", "'Tile.this[int]' lowers to `item()`", "'Tile(item)' (line 4)")]
     [InlineData("Tile(string setItem) : StatefulComponent", "public int this[int i] { get => i; set { } }", "'Tile.this[int]'s setter' lowers to `setItem()`", "'Tile(setItem)' (line 4)")]
     public void AComponentsParameter_HoldsItsKey_ReadOrNot(string declaration, string member, string later, string earlier)
@@ -995,6 +998,25 @@ public class OverloadedMethodTests
     /// keeping the later, and a record's static <c>ToString(int)</c> took the place of its synthesized
     /// text, which the twin then wrote nowhere.
     /// </summary>
+    /// <summary>
+    /// A default the type takes from an interface, or a private helper copied with one, is a member of
+    /// its twin, and meets the names the twin holds itself as a declared member does: a default
+    /// <c>Constructor()</c> was a second constructor, which no module parses, and over a component's own
+    /// one, which EQ2011 never reads, the component never called its base's.
+    /// </summary>
+    [Theory]
+    [InlineData("Builder", "public interface IBuilder { string Constructor() => \"c\"; } public sealed class Builder : IBuilder { public int N; }", "'Builder' takes the default 'IBuilder.Constructor', which lowers to `constructor`")]
+    [InlineData("Temp", "public interface IShow { string ToString(string unit) => unit; } public sealed class Temp : IShow { public double C = 1; }", "'Temp' takes the default 'IShow.ToString', which lowers to `toString`")]
+    [InlineData("Fmt", "public interface IFmt { string Text() => ToJSON(); private string ToJSON() => \"j\"; } public sealed class Fmt : IFmt { public int N; }", "'Fmt' takes the default 'IFmt.ToJSON', which lowers to `toJSON`")]
+    [InlineData("Page", "using eQuantic.UI.Primitives; public interface IBuilt { string Constructor() => \"c\"; } public sealed class Page : StatelessComponent, IBuilt { public override VisualNode Build(ComponentContext context) => new Text(\"\", TypeRole.BodyM); }", "'Page' takes the default 'IBuilt.Constructor', which lowers to `constructor`")]
+    public void ADefaultOnANameTheTwinHolds_IsRefused(string name, string source, string named)
+    {
+        var error = Compile(source, name).Errors.Should().ContainSingle().Subject;
+
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().StartWith(named).And.Contain("a name of its own");
+    }
+
     [Fact]
     public void AStructsEqualsOverride_IsItsTwinsOneEquals()
     {

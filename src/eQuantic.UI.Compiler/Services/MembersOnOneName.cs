@@ -75,7 +75,7 @@ internal static class MembersOnOneName
         var first = new Dictionary<(bool Static, string Lowered), Member>();
         foreach (var member in Members(type, allStatic, isComponent, model).OrderBy(member => member.At.SpanStart))
         {
-            if (TwinHolds(type, allStatic, isComponent, member, model) is { } held)
+            if (TwinHolds(type, allStatic, isComponent, member.Lowered, member.Static, member.Method, model) is { } held)
             {
                 errors.Add(Refusal(sourcePath, member.At,
                     $"'{member.Shown}' lowers to `{(member.Static ? "static " : "")}{member.Lowered}`, {held}"));
@@ -114,31 +114,44 @@ internal static class MembersOnOneName
     }
 
     /// <summary>
-    /// Why <paramref name="member"/> cannot hold a name the twin holds itself, or null where it may: a
-    /// class's own <c>constructor</c> and static <c>prototype</c>, a value's <c>with</c>, and the names the
-    /// runtime asks a value for its equality, its hash, its text and its JSON. A component's
+    /// Why a default <paramref name="type"/> takes from an interface, which its twin holds as a member of
+    /// its own (<see cref="DefaultInterfaceMembers"/>), cannot hold <paramref name="lowered"/>, or null where
+    /// it may: a default <c>Constructor()</c> was a second constructor, and the module did not parse.
+    /// </summary>
+    internal static string? ADefaultOn(TypeDeclarationSyntax type, bool isComponent, string lowered, SemanticModel? model) =>
+        lowered == "constructor"
+            // EQ2011 reads what a component declares, never a default it takes: a component's twin wrote a
+            // default `Constructor()` over its own constructor, which then never called its base's.
+            ? TwinHolds(type, allStatic: false, isComponent: false, lowered, isStatic: false, method: null, model)
+            : TwinHolds(type, type.Modifiers.Any(SyntaxKind.StaticKeyword), isComponent, lowered, isStatic: false, method: null, model);
+
+    /// <summary>
+    /// Why a member lowered to <paramref name="lowered"/> cannot hold that name, since the twin holds it
+    /// itself, or null where it may: a class's own <c>constructor</c> and static <c>prototype</c>, a value's
+    /// <c>with</c>, and the names the runtime asks a value for its equality, its hash, its text and its
+    /// JSON, where only <paramref name="method"/>'s override of object's member stands. A component's
     /// <c>constructor</c> is its runtime base's, which EQ2011 holds with the base's other names, and a
     /// component's twin writes none of the four itself.
     /// </summary>
-    private static string? TwinHolds(TypeDeclarationSyntax type, bool allStatic, bool isComponent, Member member,
-        SemanticModel? model)
+    private static string? TwinHolds(TypeDeclarationSyntax type, bool allStatic, bool isComponent, string lowered,
+        bool isStatic, MethodDeclarationSyntax? method, SemanticModel? model)
     {
-        if (member.Static)
-            return member.Lowered == "prototype"
+        if (isStatic)
+            return lowered == "prototype"
                 ? "which JavaScript gives every class itself and refuses to a static member, so the module would not load. "
                     + "Give it a name of its own."
                 : null;
-        if (member.Lowered == "constructor")
+        if (lowered == "constructor")
             return isComponent ? null : "the name of the class's own constructor, which the twin writes: a method of that name would be a second "
                 + "constructor and a field or an accessor of it is refused, so the module would not load, and a record's "
                 + "property of it would replace what each value says its class is. Give it a name of its own.";
         if (allStatic) return null;
         string Unless(string overridden, string what) =>
-            member.Method is { } method && TwinOwnMembers.Overrides(method, overridden, model)
+            method is not null && TwinOwnMembers.Overrides(method, overridden, model)
                 ? ""
                 : what + $" Only an override of `{overridden}({(overridden == nameof(Equals) ? "object" : "")})` takes "
                     + "that place. Give this one a name of its own.";
-        var held = member.Lowered switch
+        var held = lowered switch
         {
             "with" when type is RecordDeclarationSyntax or StructDeclarationSyntax =>
                 $"the member the twin of a record or a struct writes for C#'s `with` expression, so every `with` on "
@@ -281,8 +294,9 @@ internal static class MembersOnOneName
 
     /// <summary>
     /// Whether a component's parameter is read nowhere but as the whole initializer of the property or the
-    /// field of its name, whatever its case (<c>PolicyHref { get; init; } = policyHref</c>, the C# 12 idiom),
-    /// with no conversion between the two: the twin's constructor writes the parameter into that member's
+    /// field of its name, whatever its case and in any parentheses (<c>PolicyHref { get; init; } = policyHref</c>,
+    /// the C# 12 idiom), an auto-property's or a field's, with no conversion between the two: the twin's
+    /// constructor writes the parameter into that member's
     /// slot, and the initializer, which runs only where the slot is still empty, would have written the same
     /// value, so the two are one member. Any other initializer is skipped there (<c>= policyHref?.Trim()</c>
     /// held the untrimmed value, and <c>long Count = count</c> an int where every read takes a long), and
@@ -298,11 +312,15 @@ internal static class MembersOnOneName
                 && (symbol is null || SymbolEqualityComparer.Default.Equals(model!.GetSymbolInfo(identifier).Symbol, symbol)))
             .Take(2)
             .ToList();
-        if (reads is not [{ Parent: EqualsValueClauseSyntax initializer }]) return false;
+        if (reads is not [ExpressionSyntax whole]) return false;
+        while (whole.Parent is ParenthesizedExpressionSyntax parenthesized) whole = parenthesized;
+        if (whole.Parent is not EqualsValueClauseSyntax initializer) return false;
         var key = name.ToCamelCase();
         var (member, memberType) = initializer.Parent switch
         {
-            PropertyDeclarationSyntax property => (property.Identifier.ValueText, property.Type),
+            // A property with an accessor of its own is written through it: the constructor's write ran its
+            // setter (`init => field = value * 2` held 6 for 3), where C# initializes the store.
+            PropertyDeclarationSyntax property when PropertyStore.IsAuto(property) => (property.Identifier.ValueText, property.Type),
             VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax { Parent: FieldDeclarationSyntax } declaration } variable =>
                 (variable.Identifier.ValueText, declaration.Type),
             _ => (null, null),

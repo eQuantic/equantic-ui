@@ -12,8 +12,8 @@ which on a component is every one, read or not. A member's key SHALL be the name
 under: a field's slot, a hiding method's own name, an operator's and a conversion's static. What the twin
 holds as one member SHALL NOT be refused: the two accessors of a property, a plain class's field that
 moved to a slot of its own, a positional parameter its record redeclares, a component's parameter that is
-read nowhere but as the whole initializer of the member of its name, in either case and with nothing
-to convert between the two, and a static beside an instance
+read nowhere but as the whole initializer of the auto-property or the field of its name, in either case
+and with nothing to convert between the two, and a static beside an instance
 member of its name. A static class nested in a type SHALL be checked once, as the module it is, and a
 `[ServerOnly]` one, which is no module, SHALL NOT be checked.
 
@@ -70,7 +70,9 @@ class, `with` on a record or a struct, and `equals`, `getHashCode`, `toString` a
 record, a struct or a component. An override whose chain of overridden methods ends at object's
 `Equals(object)`, `GetHashCode()` or `ToString()` SHALL stand, and the twin SHALL write it in place of its
 own member of that name and write nothing else there. An override of a typed `Equals` a base declares
-SHALL leave the twin's `equals` in place.
+SHALL leave the twin's `equals` in place. A default the type takes from an interface, or a private
+helper copied with one, SHALL meet those names as a member the type declares does, a component's
+`constructor` included.
 
 #### Scenario: A record's With method
 
@@ -91,6 +93,11 @@ SHALL leave the twin's `equals` in place.
 
 - **WHEN** a record declares `public static string ToString(int v)`
 - **THEN** the build succeeds, and the record's text is still the one C# synthesizes
+
+#### Scenario: A default Constructor
+
+- **WHEN** `interface IBuilder { string Constructor() => "c"; }` is implemented by `class Builder`
+- **THEN** the build fails with EQ1007, naming `IBuilder.Constructor` and `constructor`
 
 #### Scenario: A component's overload of ToString
 
