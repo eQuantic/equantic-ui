@@ -50,7 +50,7 @@ public class ContainsStrategy : IConversionStrategy
         if (symbol is IMethodSymbol ms)
         {
             // Accept if it's a LINQ extension OR a collection method (List<T>.Contains, etc.)
-            if (context.SemanticHelper.IsLinqExtension(ms.ContainingType))
+            if (IsLinqContains(ms, context))
                 return true;
 
             // Also handle List<T>.Contains, ICollection<T>.Contains, etc.
@@ -102,8 +102,7 @@ public class ContainsStrategy : IConversionStrategy
         var equality = ElementEquality.Of(receiverType.GetEnumerableElementType());
         // LINQ's Contains reads its source as every operator does (LinqSource): a dictionary as its
         // pairs, which the runtime's class enumerates and has no `includes` for. An array is itself.
-        var linq = context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol bound
-            && context.SemanticHelper.IsLinqExtension(bound.ContainingType);
+        var linq = context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol bound && IsLinqContains(bound, context);
         if (equality is null && IsArray(receiverType))
         {
             var source = linq
@@ -124,6 +123,13 @@ public class ContainsStrategy : IConversionStrategy
             ? $"{Eq.Contains}({receiver}, {value})"
             : $"{Eq.Contains}({receiver}, {value}, {equality})";
     }
+
+    /// <summary>Whether a call binds to LINQ's <c>Contains</c>, an extension <c>System.Linq</c> declares. A
+    /// type there with a <c>Contains</c> of its own is another member that shares the name: a lookup's asks
+    /// for a group of a key (<see cref="LookupStrategy"/>), and an element search among its groups answered
+    /// false for every key (#1168).</summary>
+    private static bool IsLinqContains(IMethodSymbol method, ConversionContext context) =>
+        method.IsExtensionMethod && context.SemanticHelper.IsLinqExtension(method.ContainingType);
 
     /// <summary>Whether a receiver is held as an array on this side whatever it holds: an array, or a
     /// list or one of the faces only a list answers to. A face a set answers to as well is not.</summary>
