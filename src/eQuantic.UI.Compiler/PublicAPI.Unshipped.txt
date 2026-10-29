@@ -8,3 +8,5 @@ static eQuantic.UI.Compiler.Services.SourceMapComposer.ComposeFile(string! mapFi
 *REMOVED*static eQuantic.UI.Compiler.CodeGen.PatternConverter.CollectBindings(Microsoft.CodeAnalysis.CSharp.Syntax.PatternSyntax! pattern, string! access, eQuantic.UI.Compiler.CodeGen.ConversionContext! context, System.Collections.Generic.List<(string! Name, string! Access)>! bindings, Microsoft.CodeAnalysis.ITypeSymbol? accessType = null) -> void
 static eQuantic.UI.Compiler.CodeGen.PatternConverter.CollectBindings(Microsoft.CodeAnalysis.CSharp.Syntax.PatternSyntax! pattern, string! access, eQuantic.UI.Compiler.CodeGen.ConversionContext! context, System.Collections.Generic.List<(string! Name, string! Access)>! bindings) -> void
 static eQuantic.UI.Compiler.CodeGen.PatternConverter.BuildCondition(Microsoft.CodeAnalysis.CSharp.Syntax.PatternSyntax! pattern, string! access, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListAddRange = "$eq.collections.addRange" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListInsertRange = "$eq.collections.insertRange" -> string!

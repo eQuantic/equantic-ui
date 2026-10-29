@@ -112,7 +112,7 @@ export class SheetController {
 
     get ranges(): SheetRange[] {
         let ranges: SheetRange[] = ($eq.collections.listCapacity(this._others.length + 1), []);
-        ranges.push(...this._others);
+        $eq.collections.addRange(ranges, this._others);
         ranges.push(this._selection);
         return ranges;
     }
@@ -161,7 +161,7 @@ export class SheetController {
         this._summaryAt = this.document.version;
         this._summaryCulture = culture;
         this._summaryRanges.splice(0);
-        this._summaryRanges.push(...ranges);
+        $eq.collections.addRange(this._summaryRanges, ranges);
         return this._summary;
     }
 

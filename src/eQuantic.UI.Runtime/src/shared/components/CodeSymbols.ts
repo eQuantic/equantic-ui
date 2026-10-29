@@ -17,7 +17,7 @@ export class CodeSymbols {
         let asked = [];
         for (const provider of this.providers) asked.push(this.askOne(provider, document, cancellation));
         let answer: CodeSymbol[] = [];
-        for (const one of asked) answer.push(...await one);
+        for (const one of asked) $eq.collections.addRange(answer, await one);
         cancellation.throwIfCancellationRequested();
         return answer;
     }
