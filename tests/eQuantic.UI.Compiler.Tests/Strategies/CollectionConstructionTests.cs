@@ -117,8 +117,10 @@ public class CollectionConstructionTests
 
     /// <summary>
     /// <c>with(…)</c> hands its capacity to the constructor of a class that keeps one, as
-    /// <c>new(capacity)</c> does, and a sorted one drops it as its construction does (#1144). Compiled
-    /// as eqc compiles, at the preview language version the feature needs.
+    /// <c>new(capacity)</c> does (#1144). Compiled as eqc compiles, at the preview language version the
+    /// feature needs. A sorted one, which drops it, is proved executed on both sides
+    /// (<c>InheritedNameKeyConformanceTests</c>): this compilation references no <c>System.Collections</c>,
+    /// where <c>SortedList</c> lives.
     /// </summary>
     [Fact]
     public void ACapacityHandedByWith_IsTheConstructors()
@@ -129,14 +131,12 @@ public class CollectionConstructionTests
             {
                 public int Ids() { Dictionary<string, int> sized = [with(10)]; return sized.Count; }
                 public int Named() { Dictionary<string, int> named = [with(capacity: 3)]; return named.Count; }
-                public int Sorted() { SortedList<int, int> list = [with(8)]; return list.Count; }
                 public int Pending() { Queue<int> pending = [with(4)]; return pending.Count; }
             }
             """, "Sized");
 
         ts.Should().Contain("$eq.collections.dictionary(10)").And.Contain("$eq.collections.dictionary(3)")
-            .And.Contain("$eq.collections.queue(4)").And.Contain("$eq.collections.sortedList(");
-        ts.Should().NotContain("sortedList(8", "a sorted one's capacity decides nothing, and its construction drops it");
+            .And.Contain("$eq.collections.queue(4)");
     }
 
     /// <summary>
