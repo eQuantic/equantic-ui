@@ -50,9 +50,16 @@ public sealed class Calendar : StatefulComponent
     public DateOnly? Min { get; private set; }
     public DateOnly? Max { get; private set; }
 
-    /// <summary>The grid's accessible name. Defaults to the month on screen, which is what a
-    /// screen reader needs to hear when focus enters it.</summary>
-    public string? Label { get; init; }
+    /// <summary>
+    /// The grid's accessible name. Defaults to the month on screen, which is what a screen reader
+    /// needs to hear when focus enters it.
+    /// <para>
+    /// Backed by a field, so <see cref="AdoptConfig"/> can carry it: this instance is kept across
+    /// the parent's rebuilds, and an <c>init</c> accessor cannot be written from there.
+    /// </para>
+    /// </summary>
+    public string? Label { get => _label; init => _label = value; }
+    private string? _label;
 
     public override void AdoptConfig(UiComponent next)
     {
@@ -62,6 +69,7 @@ public sealed class Calendar : StatefulComponent
         OnChanged = fresh.OnChanged;
         Min = fresh.Min;
         Max = fresh.Max;
+        _label = fresh.Label;
 
         // A CONTROLLED calendar: the app moved the selection, so the view follows it. Without this
         // the instance adopted the new date and kept showing the old month — the selection was

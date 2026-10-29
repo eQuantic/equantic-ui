@@ -4,11 +4,19 @@ export class Select extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Select';
     _open: boolean = false;
     _highlight: number = 0;
+    _disabled: boolean = false;
     declare options: string[];
     declare selectedIndex: number;
     declare onChanged: ((int: number) => void) | null;
     declare placeholder: any;
-    declare disabled: boolean;
+
+    get disabled() {
+        return this._disabled;
+    }
+
+    set disabled(value) {
+        this._disabled = value;
+    }
 
     constructor(options?: any, selectedIndex: any = -1, onChanged: any = null, placeholder: any = null, props?: any) {
         super();
@@ -17,7 +25,6 @@ export class Select extends StatefulComponent {
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (placeholder !== undefined) this.placeholder = placeholder;
         if (this.selectedIndex === undefined) this.selectedIndex = 0;
-        if (this.disabled === undefined) this.disabled = false;
         this.options = options;
         this.selectedIndex = selectedIndex;
         this.onChanged = onChanged;
@@ -63,6 +70,7 @@ export class Select extends StatefulComponent {
         this.selectedIndex = fresh.selectedIndex;
         this.onChanged = fresh.onChanged;
         this.placeholder = fresh.placeholder;
+        this._disabled = fresh.disabled;
     }
 
     toggle() {

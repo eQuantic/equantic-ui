@@ -42,7 +42,10 @@ public sealed class Menu : StatefulComponent
     public VisualNode Trigger { get; private set; }
     public IReadOnlyList<MenuItem> Items { get; private set; }
     public Action<int>? OnSelect { get; private set; }
-    public AnchorPlacement Placement { get; init; } = AnchorPlacement.BottomStart;
+    /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it: this instance is kept
+    /// across the parent's rebuilds, and an <c>init</c> accessor cannot be written from there.</summary>
+    public AnchorPlacement Placement { get => _placement; init => _placement = value; }
+    private AnchorPlacement _placement = AnchorPlacement.BottomStart;
 
     public override void AdoptConfig(UiComponent next)
     {
@@ -50,6 +53,7 @@ public sealed class Menu : StatefulComponent
         Trigger = fresh.Trigger;
         Items = fresh.Items;
         OnSelect = fresh.OnSelect;
+        _placement = fresh.Placement;
     }
 
     public override VisualNode Build(ComponentContext context)

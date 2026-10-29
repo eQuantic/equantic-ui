@@ -72,6 +72,15 @@ public class LiteralConformanceTests
     [InlineData("return \"A\" + '\\x041' + '\\U00000041';")]                                              // "AAA"
     [InlineData("var c = \"\\e\"[0]; switch (c) { case '\\e': return \"escape\"; case 'e': return \"letter\"; default: return \"other\"; }")] // "escape"
     [InlineData("var c = (char)7; return c is '\\a';")]                                                   // true
+    // ---- each spelling alone, read back as its length and its code: the first five are what JavaScript reads otherwise ----
+    [InlineData("var s = \"\" + '\\a'; return s.Length + \":\" + (int)s[0];")]                          // "1:7"
+    [InlineData("var s = \"\" + '\\e'; return s.Length + \":\" + (int)s[0];")]                          // "1:27"
+    [InlineData("var s = \"\" + '\\x7'; return s.Length + \":\" + (int)s[0];")]                         // "1:7"
+    [InlineData("var s = \"\" + '\\x007'; return s.Length + \":\" + (int)s[0];")]                       // "1:7"
+    [InlineData("var s = \"\" + '\\x0041'; return s.Length + \":\" + (int)s[0];")]                      // "1:65"
+    [InlineData("var s = \"\" + '\\0'; return s.Length + \":\" + (int)s[0];")]                          // "1:0"
+    [InlineData("var s = \"\" + ' '; return s.Length + \":\" + (int)s[0];")]                            // "1:32"
+    [InlineData("var s = \"\" + 'A'; return s.Length + \":\" + (int)s[0];")]                            // "1:65"
     public void ACharLiteral_IsItsValueAndNotItsSpelling(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

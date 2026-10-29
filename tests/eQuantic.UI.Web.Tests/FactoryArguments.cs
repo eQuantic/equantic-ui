@@ -168,6 +168,24 @@ internal static class FactoryArguments
         }
         if (!type.IsValueType && from is null) return TryMake(type, depth + 1, out value);
 
+        // A list's two states are empty and not: an empty one gains an element, one with elements
+        // empties. The element is built when it can be and left at its default when it cannot (an
+        // interface the engine implements), because a list of one null is still not an empty list.
+        if (type.IsArray || type.IsGenericType && CollectionInterfaces.Contains(type.GetGenericTypeDefinition()))
+        {
+            var element = type.IsArray ? type.GetElementType()! : type.GetGenericArguments()[0];
+            var items = Array.CreateInstance(element,
+                from is System.Collections.IEnumerable sequence && sequence.Cast<object?>().Any() ? 0 : 1);
+            if (items.Length == 1 && TryMake(element, depth + 1, out var item)) items.SetValue(item, 0);
+            value = items;
+            return true;
+        }
+
+        // An abstract slot already holding a value takes another instance of the leaf it is built
+        // with: a node, a model, an axis. A class without value equality is told apart by being new.
+        if (type.IsAbstract || type.IsInterface)
+            return TryMake(type, depth + 1, out value) && !Equals(value, from);
+
         // Anything else — a struct like CornerRadii, or a class already holding a value — is varied
         // through its own widest constructor, with every argument varied in turn.
         foreach (var ctor in type.GetConstructors().OrderByDescending(c => c.GetParameters().Length))

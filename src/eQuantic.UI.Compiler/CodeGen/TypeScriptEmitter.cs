@@ -406,6 +406,17 @@ public class TypeScriptEmitter
                         tsDefault ??= ValueTypeDefault(field.Type, field.TypeNode);
                         if (tsDefault is not null && tsDefault.Contains("$eq."))
                             component.UsedHelpers.Add(Eq.Import);
+                        // A struct whose twin cannot build its zero answers `undefined`, which is the
+                        // slot left alone, as a property of one is (ImplicitDefault). Written out,
+                        // `_width: SizeValue = undefined` is a value tsc refuses for the type it names
+                        // (#1142): an instance field is declared definitely assigned instead, and a
+                        // static one, which TypeScript does not ask that of, with no initializer.
+                        if (tsDefault == "undefined")
+                        {
+                            if (field.IsStatic) c.Field(field.Name.ToCamelCase(), tsType, null, field.DefaultValueNode, isStatic: true);
+                            else c.State(field.Name.ToCamelCase(), tsType, field.DefaultValueNode);
+                            continue;
+                        }
                         c.Field(field.Name.ToCamelCase(), tsType, tsDefault, field.DefaultValueNode, field.IsStatic);
                     }
 

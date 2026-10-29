@@ -4,17 +4,24 @@ export class Menu extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Menu';
     _open: boolean = false;
     _highlight: number = 0;
+    _placement: AnchorPlacementValue = 'bottomStart';
     declare trigger: VisualNode;
     declare items: MenuItem[];
     declare onSelect: ((int: number) => void) | null;
-    declare placement: AnchorPlacementValue;
+
+    get placement() {
+        return this._placement;
+    }
+
+    set placement(value) {
+        this._placement = value;
+    }
 
     constructor(trigger?: any, items?: any, onSelect: any = null, props?: any) {
         super();
         if (trigger !== undefined) this.trigger = trigger;
         if (items !== undefined) this.items = items;
         if (onSelect !== undefined) this.onSelect = onSelect;
-        if (this.placement === undefined) this.placement = 'bottomStart';
         this.trigger = trigger;
         this.items = items;
         this.onSelect = onSelect;
@@ -49,6 +56,7 @@ export class Menu extends StatefulComponent {
         this.trigger = fresh.trigger;
         this.items = fresh.items;
         this.onSelect = fresh.onSelect;
+        this._placement = fresh.placement;
     }
 
     toggle() {
