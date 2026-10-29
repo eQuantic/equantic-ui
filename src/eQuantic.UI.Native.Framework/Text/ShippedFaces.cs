@@ -19,6 +19,9 @@ public sealed class ShippedFaces(Func<FontFile, byte[], bool> register)
     private readonly Dictionary<FontFile, bool> _registered = new();
     private readonly Lock _gate = new();
 
+    /// <summary>The weight from which a face is bold, which a browser lays no synthetic bold over.</summary>
+    private const int BoldWeight = 600;
+
     /// <summary>
     /// Registers each file of <paramref name="family"/> not registered yet. Answers whether every one
     /// of them is: a file that cannot be read, or that the engine refuses, leaves the family to fall
@@ -75,6 +78,23 @@ public sealed class ShippedFaces(Func<FontFile, byte[], bool> register)
         };
         return order.FirstOrDefault();
     }
+
+    /// <summary>
+    /// Whether <paramref name="file"/>, the one <see cref="FileFor"/> chose for <paramref name="weight"/>, is
+    /// drawn as the file draws, with no bold the text engine lays over it: a static file asked for its own
+    /// weight or a lighter one, and one the catalog weighs bold, 600 or more, asked for a heavier one, as a
+    /// browser lays no synthetic bold over a face its rule declares bold. A heavier weight than a lighter
+    /// static file sets is left to the engine, which emboldens what the family lacks, as a browser does, and
+    /// so is a variable file, whose weight is a point on its axis.
+    /// <para>
+    /// A shell whose engine is asked for a weight over the file chosen asks for the weight the engine reads
+    /// in the file when this holds, since the engine compares the weight asked with THAT one: DirectWrite
+    /// laid a simulated bold over a file the catalog weighs at 700 that declares 400 (#1099), and Android's
+    /// minikin a fake one (#1109).
+    /// </para>
+    /// </summary>
+    public static bool IsDrawnAsItIs(FontFile file, FontWeight weight) =>
+        file.MinWeight == file.MaxWeight && ((int)weight <= file.MaxWeight || file.MaxWeight >= BoldWeight);
 
     /// <summary>Whether <paramref name="file"/> is registered with the engine.</summary>
     public bool IsRegistered(FontFile file)
