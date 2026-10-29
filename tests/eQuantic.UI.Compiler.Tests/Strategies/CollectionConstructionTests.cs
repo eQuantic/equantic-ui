@@ -107,16 +107,36 @@ public class CollectionConstructionTests
     public void AnEmptyCollectionExpression_BuildsTheRuntimesClass()
     {
         Convert("Dictionary<string, int> ids = [];").Should().Contain("let ids: any = $eq.collections.dictionary();");
-        Convert("Dictionary<string, int> sized = [with(10)];").Should().Contain("let sized: any = $eq.collections.dictionary(10);");
-        Convert("Dictionary<string, int> named = [with(capacity: 3)];").Should().Contain("let named: any = $eq.collections.dictionary(3);");
         Convert("SortedDictionary<int, int> sorted = [];").Should().Contain("let sorted: any = $eq.collections.sortedDictionary(");
-        Convert("SortedList<int, int> list = [with(8)];").Should().Contain("let list: any = $eq.collections.sortedList(")
-            .And.NotContain("sortedList(8", "a sorted one's capacity decides nothing, and its construction drops it");
-        Convert("Queue<int> pending = [with(4)];").Should().Contain("let pending = $eq.collections.queue(4);");
+        Convert("Queue<int> pending = [];").Should().Contain("let pending = $eq.collections.queue();");
         Convert("Stack<int> undo = [];").Should().Contain("let undo = $eq.collections.stack();");
         Convert("LinkedList<int> chain = [];").Should().Contain("let chain = $eq.collections.linkedList();");
         Convert("var ids = new Dictionary<string, int>();").Should().Contain("let ids: any = $eq.collections.dictionary();",
             "the construction it is the newer spelling of");
+    }
+
+    /// <summary>
+    /// <c>with(…)</c> hands its capacity to the constructor of a class that keeps one, as
+    /// <c>new(capacity)</c> does, and a sorted one drops it as its construction does (#1144). Compiled
+    /// as eqc compiles, at the preview language version the feature needs.
+    /// </summary>
+    [Fact]
+    public void ACapacityHandedByWith_IsTheConstructors()
+    {
+        var ts = TypeScriptOf("""
+            using System.Collections.Generic;
+            public class Sized
+            {
+                public int Ids() { Dictionary<string, int> sized = [with(10)]; return sized.Count; }
+                public int Named() { Dictionary<string, int> named = [with(capacity: 3)]; return named.Count; }
+                public int Sorted() { SortedList<int, int> list = [with(8)]; return list.Count; }
+                public int Pending() { Queue<int> pending = [with(4)]; return pending.Count; }
+            }
+            """, "Sized");
+
+        ts.Should().Contain("$eq.collections.dictionary(10)").And.Contain("$eq.collections.dictionary(3)")
+            .And.Contain("$eq.collections.queue(4)").And.Contain("$eq.collections.sortedList(");
+        ts.Should().NotContain("sortedList(8", "a sorted one's capacity decides nothing, and its construction drops it");
     }
 
     /// <summary>
