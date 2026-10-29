@@ -10,3 +10,4 @@ static eQuantic.UI.Compiler.CodeGen.PatternConverter.CollectBindings(Microsoft.C
 static eQuantic.UI.Compiler.CodeGen.PatternConverter.BuildCondition(Microsoft.CodeAnalysis.CSharp.Syntax.PatternSyntax! pattern, string! access, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListAddRange = "$eq.collections.addRange" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListInsertRange = "$eq.collections.insertRange" -> string!
+eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.UiComponent = 5 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
