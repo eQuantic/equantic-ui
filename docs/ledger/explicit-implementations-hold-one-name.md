@@ -11,6 +11,6 @@
   naming the interfaces. A component's parser dropped a method beside an explicit implementation of its name,
   taking it for an overload, and keeps it now. Routing a call through one interface to a name of its own would
   need every type implementing that interface to answer it, so it was not done. Proved against main both ways:
-  20 of the 23 compiler tests and the conformance test fail there, the conformance test by a refusal and, with
-  that case set aside, by a module that never finished. Proposed and archived through OpenSpec
+  20 of the first 23 compiler tests and the conformance test fail there, the conformance test by a refusal and,
+  with that case set aside, by a module that never finished. Proposed and archived through OpenSpec
   (`transpiler-interfaces`).
