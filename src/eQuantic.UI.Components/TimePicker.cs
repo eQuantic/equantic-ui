@@ -34,7 +34,10 @@ public sealed class TimePicker : StatefulComponent
     public TimeOnly? Min { get; private set; }
     public TimeOnly? Max { get; private set; }
     public string Label { get; private set; }
-    public bool Disabled { get; init; }
+    /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it: this instance is kept
+    /// across the parent's rebuilds, and an <c>init</c> accessor cannot be written from there.</summary>
+    public bool Disabled { get => _disabled; init => _disabled = value; }
+    private bool _disabled;
 
     public override void AdoptConfig(UiComponent next)
     {
@@ -45,6 +48,7 @@ public sealed class TimePicker : StatefulComponent
         Min = fresh.Min;
         Max = fresh.Max;
         Label = fresh.Label;
+        _disabled = fresh.Disabled;
     }
 
     /// <summary>The step both doors agree on — the constructor's and the adopt's. A step under a

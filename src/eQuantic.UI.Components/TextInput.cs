@@ -60,19 +60,27 @@ public sealed class TextInput : StatefulComponent
     public VisualNode? Trailing { get; private set; }
 
     public SizeVariant Size { get; private set; }
-    public bool Disabled { get; init; }
+    /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it, as are the three settings
+    /// after it: this instance is kept across the parent's rebuilds, and an <c>init</c> accessor
+    /// cannot be written from there.</summary>
+    public bool Disabled { get => _disabled; init => _disabled = value; }
 
     /// <summary>Claims the caret when it first appears — a search overlay's field wants typing
     /// to start immediately. Honoured once, exactly as the underlying <see cref="TextEntry"/> does.</summary>
-    public bool Autofocus { get; init; }
-    public bool Obscure { get; init; }
+    public bool Autofocus { get => _autofocus; init => _autofocus = value; }
+    public bool Obscure { get => _obscure; init => _obscure = value; }
 
     /// <summary>
     /// Focus arrived or left. The input already tracks focus for its own border, and swallowed the
     /// fact — but LEAVING a field is the moment a form is allowed to say what is wrong with it, so
     /// the news has to reach whoever is holding the rules.
     /// </summary>
-    public Action<bool>? OnFocusChanged { get; init; }
+    public Action<bool>? OnFocusChanged { get => _onFocusChanged; init => _onFocusChanged = value; }
+
+    private bool _disabled;
+    private bool _autofocus;
+    private bool _obscure;
+    private Action<bool>? _onFocusChanged;
 
     public override void AdoptConfig(UiComponent next)
     {
@@ -86,6 +94,10 @@ public sealed class TextInput : StatefulComponent
         Leading = fresh.Leading;
         Trailing = fresh.Trailing;
         Size = fresh.Size;
+        _disabled = fresh.Disabled;
+        _autofocus = fresh.Autofocus;
+        _obscure = fresh.Obscure;
+        _onFocusChanged = fresh.OnFocusChanged;
     }
 
     public override VisualNode Build(ComponentContext context)

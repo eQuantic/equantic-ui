@@ -4,6 +4,7 @@ export class DateTimePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.DateTimePicker';
     _date: any = null;
     _time: any = null;
+    _disabled: boolean = false;
     declare selected: any;
     declare onChanged: ((dateTime: DateTime) => void) | null;
     declare min: any;
@@ -11,7 +12,14 @@ export class DateTimePicker extends StatefulComponent {
     declare stepMinutes: number;
     declare dateLabel: string;
     declare timeLabel: string;
-    declare disabled: boolean;
+
+    get disabled() {
+        return this._disabled;
+    }
+
+    set disabled(value) {
+        this._disabled = value;
+    }
 
     constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, stepMinutes: any = 30, dateLabel: any = '', timeLabel: any = '', props?: any) {
         super();
@@ -23,7 +31,6 @@ export class DateTimePicker extends StatefulComponent {
         if (dateLabel !== undefined) this.dateLabel = dateLabel;
         if (timeLabel !== undefined) this.timeLabel = timeLabel;
         if (this.stepMinutes === undefined) this.stepMinutes = 0;
-        if (this.disabled === undefined) this.disabled = false;
         this.selected = selected;
         this.onChanged = onChanged;
         this.min = min;
@@ -57,6 +64,7 @@ export class DateTimePicker extends StatefulComponent {
         this.stepMinutes = fresh.stepMinutes;
         this.dateLabel = fresh.dateLabel;
         this.timeLabel = fresh.timeLabel;
+        this._disabled = fresh.disabled;
         if (moved) {
             let value: any; 
             this._date = (value = this.selected) != null ? $eq.time.dateOnly.fromDateTime(value) : null;

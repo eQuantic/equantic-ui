@@ -21,16 +21,32 @@ namespace eQuantic.UI.Components;
 /// consent card without a policy behind it is a promise the site cannot keep.
 /// </para>
 /// </summary>
-public sealed class CookieConsent(string? policyHref = null) : StatefulComponent
+public sealed class CookieConsent : StatefulComponent
 {
+    /// <summary>The configuration of the latest build. This instance is kept across the parent's
+    /// rebuilds and every setting is <c>init</c>, so the copy is read from the fresh instance a parent
+    /// hands rather than copied onto this one setting by setting.</summary>
+    private CookieConsent _config;
+
+    public CookieConsent(string? policyHref = null)
+    {
+        PolicyHref = policyHref;
+        _config = this;
+    }
+
     /// <summary>Where the privacy policy lives (an absolute or root-relative URL). Null = no link.</summary>
-    public string? PolicyHref { get; init; } = policyHref;
+    public string? PolicyHref { get; init; }
 
     public string? Title { get; init; }
     public string? Body { get; init; }
     public string? AcceptLabel { get; init; }
     public string? RejectLabel { get; init; }
     public string? PolicyLabel { get; init; }
+
+    public override void AdoptConfig(UiComponent next)
+    {
+        if (next is CookieConsent fresh) _config = fresh;
+    }
 
     public override VisualNode Build(ComponentContext context)
     {
@@ -39,21 +55,22 @@ public sealed class CookieConsent(string? policyHref = null) : StatefulComponent
             return Spacer.Fixed(0);
 
         var theme = context.Theme;
+        var config = _config;
         var actions = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Wrap = true, RunGap = Space.S2 };
-        actions.Add(new Button(AcceptLabel ?? SdkStrings.AcceptCookies, Variant.Primary, SizeVariant.Small,
+        actions.Add(new Button(config.AcceptLabel ?? SdkStrings.AcceptCookies, Variant.Primary, SizeVariant.Small,
             () => Answer(consent.Grant)));
-        actions.Add(new Button(RejectLabel ?? SdkStrings.RejectCookies, Variant.Secondary, SizeVariant.Small,
+        actions.Add(new Button(config.RejectLabel ?? SdkStrings.RejectCookies, Variant.Secondary, SizeVariant.Small,
             () => Answer(consent.Deny)));
-        if (PolicyHref is { Length: > 0 } href)
+        if (config.PolicyHref is { Length: > 0 } href)
         {
             actions.Add(new Link(href,
-                new Text(PolicyLabel ?? SdkStrings.PrivacyPolicy, TypeRole.LabelSmall,
+                new Text(config.PolicyLabel ?? SdkStrings.PrivacyPolicy, TypeRole.LabelSmall,
                     theme.Colors(Variant.Primary).Base, maxLines: 1)));
         }
 
         var column = new Column(gap: Space.S2) { Width = SizeValue.Fill };
-        column.Add(new Text(Title ?? SdkStrings.CookieConsentTitle, TypeRole.Label, theme.TextPrimary, maxLines: 2));
-        column.Add(new Text(Body ?? SdkStrings.CookieConsentBody, TypeRole.BodyM, theme.TextSecondary, maxLines: 6));
+        column.Add(new Text(config.Title ?? SdkStrings.CookieConsentTitle, TypeRole.Label, theme.TextPrimary, maxLines: 2));
+        column.Add(new Text(config.Body ?? SdkStrings.CookieConsentBody, TypeRole.BodyM, theme.TextSecondary, maxLines: 6));
         column.Add(actions);
 
         return new Box(new BoxStyle

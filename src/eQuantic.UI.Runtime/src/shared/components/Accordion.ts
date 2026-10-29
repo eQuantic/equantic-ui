@@ -4,13 +4,20 @@ export class Accordion extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Accordion';
     _openSingle: number = -1;
     _openMulti: any = $eq.collections.hashSet();
+    _multiple: boolean = false;
     declare items: AccordionItem[];
-    declare multiple: boolean;
+
+    get multiple() {
+        return this._multiple;
+    }
+
+    set multiple(value) {
+        this._multiple = value;
+    }
 
     constructor(items?: any, openIndex: any = -1, props?: any) {
         super();
         if (items !== undefined) this.items = items;
-        if (this.multiple === undefined) this.multiple = false;
         this.items = items;
         this._openSingle = openIndex;
         if (props && typeof props === 'object') Object.assign(this, props);
@@ -39,7 +46,9 @@ export class Accordion extends StatefulComponent {
 
     adoptConfig(next: UiComponent) {
         let fresh: any; 
-        if ((next instanceof Accordion && (fresh = next, true))) this.items = fresh.items;
+        if (!((next instanceof Accordion && (fresh = next, true)))) return;
+        this.items = fresh.items;
+        this._multiple = fresh.multiple;
     }
 
     isOpen(index: number) {

@@ -3,6 +3,10 @@ import { $eq, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flex
 export class TextInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TextInput';
     _focused: boolean = false;
+    _disabled: boolean = false;
+    _autofocus: boolean = false;
+    _obscure: boolean = false;
+    _onFocusChanged: ((bool: boolean) => void) | null = null;
     declare value: string;
     declare onChanged: ((string: string) => void) | null;
     declare label: string;
@@ -12,10 +16,38 @@ export class TextInput extends StatefulComponent {
     declare leading: any;
     declare trailing: any;
     declare size: SizeVariantValue;
-    declare disabled: boolean;
-    declare autofocus: boolean;
-    declare obscure: boolean;
-    declare onFocusChanged: ((bool: boolean) => void) | null;
+
+    get disabled() {
+        return this._disabled;
+    }
+
+    set disabled(value) {
+        this._disabled = value;
+    }
+
+    get autofocus() {
+        return this._autofocus;
+    }
+
+    set autofocus(value) {
+        this._autofocus = value;
+    }
+
+    get obscure() {
+        return this._obscure;
+    }
+
+    set obscure(value) {
+        this._obscure = value;
+    }
+
+    get onFocusChanged() {
+        return this._onFocusChanged;
+    }
+
+    set onFocusChanged(value) {
+        this._onFocusChanged = value;
+    }
 
     constructor(value?: any, onChanged: any = null, label: any = '', placeholder: any = null, helper: any = null, error: any = null, leading: any = null, size: any = 'large', trailing: any = null, props?: any) {
         super();
@@ -29,9 +61,6 @@ export class TextInput extends StatefulComponent {
         if (size !== undefined) this.size = size;
         if (trailing !== undefined) this.trailing = trailing;
         if (this.size === undefined) this.size = 'small';
-        if (this.disabled === undefined) this.disabled = false;
-        if (this.autofocus === undefined) this.autofocus = false;
-        if (this.obscure === undefined) this.obscure = false;
         if (size === 'small') throw $eq.exceptions.create(['System.ArgumentOutOfRangeException', 'System.ArgumentException', 'System.SystemException', 'System.Exception'], 'TextInput has no Small size — text + padding can\'t fit 32dp (spec B9).', { paramName: 'size' });
         this.value = value;
         this.onChanged = onChanged;
@@ -89,6 +118,10 @@ export class TextInput extends StatefulComponent {
         this.leading = fresh.leading;
         this.trailing = fresh.trailing;
         this.size = fresh.size;
+        this._disabled = fresh.disabled;
+        this._autofocus = fresh.autofocus;
+        this._obscure = fresh.obscure;
+        this._onFocusChanged = fresh.onFocusChanged;
     }
 }
 
