@@ -202,7 +202,7 @@ public class ComponentDependencyResolver
             // A component is a module of its own, as the parser writes one for every component it
             // finds, a nested one included. A static class never is one, whatever its methods are
             // called: a nested `static class Copy` with a `Build` helper is its owner's scope.
-            else if (!classDecl.Modifiers.Any(SyntaxKind.StaticKeyword) && IsComponentLike(classDecl))
+            else if (!classDecl.Modifiers.Any(SyntaxKind.StaticKeyword) && IsComponentLike(classDecl, SymbolOf(classDecl)))
             {
                 // A nested one crosses where its owner does, by the rule a nested class follows: a
                 // component inside a [ServerOnly] class has no module, as its owner has none.
@@ -365,11 +365,19 @@ public class ComponentDependencyResolver
             : declaration.AncestorsAndSelf().OfType<TypeDeclarationSyntax>().Any(PlainClassModule.IsServerOnlyDeclaration);
 
     /// <summary>
-    /// Whether the class is (or extends) something the COMPONENT path emits. Syntactic on purpose:
-    /// the resolver runs before semantics, and a component's own module is registered elsewhere.
+    /// Whether the class is (or extends) something the COMPONENT path emits, answered as the parser answers it:
+    /// by the chain of bases wherever the project's compilation binds it, so a builder whose last step is
+    /// <c>Build</c> is the plain class it is (#1164), and by what the declaration writes, its methods' names
+    /// and its first base's, only where a base on the chain does not bind or the host has no compilation.
     /// </summary>
-    private static bool IsComponentLike(ClassDeclarationSyntax classDecl)
+    private static bool IsComponentLike(ClassDeclarationSyntax classDecl, INamedTypeSymbol? symbol)
     {
+        if (symbol is not null)
+        {
+            if (symbol.IsUiComponent()) return true;
+            if (symbol.BasesBind()) return false;
+        }
+
         if (classDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax>()
             .Any(m => m.Identifier.ValueText is "Build" or "Render" or "CreateState"))
         {

@@ -180,9 +180,10 @@ public class ComponentParser
         var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
 
         // Pre-pass: which classes are components. A class is one if its base resolves to a known component
-        // base (semantic walk) / matches a base-name heuristic / it declares Build|Render — AND, transitively,
-        // any class extending another in-file component (so a subclass of a user component is recognized even
-        // without its own Build and without relying on the semantic model resolving the full base chain).
+        // base (semantic walk) / matches a base-name heuristic / it declares Build|Render where nothing can
+        // bind its chain — AND, transitively, any class extending another in-file component (so a subclass of a
+        // user component is recognized even without its own Build and without relying on the semantic model
+        // resolving the full base chain).
         string? BaseName(ClassDeclarationSyntax c) => c.BaseList?.Types.FirstOrDefault()?.Type.TwinTypeName(model);
         bool OwnersAdmit(ClassDeclarationSyntax c) =>
             c.Parent is not TypeDeclarationSyntax
@@ -198,8 +199,11 @@ public class ComponentParser
 
             var bn = BaseName(c);
             var hasBR = c.Members.OfType<MethodDeclarationSyntax>().Any(m => IsBuildEntryPoint(m, "Render", "Build"));
+            // With the model, the chain decides wherever it binds: a builder whose last step is `Build` derives
+            // from nothing a component does, and was written as one (#1164). The name of a method is the answer
+            // only where a base on the chain does not bind, or there is no model at all.
             bool direct = model?.GetDeclaredSymbol(c) is INamedTypeSymbol s
-                ? (s.IsUiComponent() || hasBR)
+                ? (s.IsUiComponent() || hasBR && !s.BasesBind())
                 : (bn is "StatefulComponent" or "StatelessComponent" or "HtmlElement" or "Flex" or "Container" or "Stack" || hasBR);
             // A component is known by its twin's name, a nested one by its owner's too, so a top-level
             // component and a nested plain class of the same simple name are never taken for each

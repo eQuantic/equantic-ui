@@ -80,6 +80,7 @@ export { CodeLineAdvances } from './CodeLineAdvances';
 export { CodeLineCells } from './CodeLineCells';
 export { CodeLineChange } from './CodeLineChange';
 export { CodeLocation } from './CodeLocation';
+export { CodeNoteBuilder } from './CodeNoteBuilder';
 export { CodePatch } from './CodePatch';
 export { CodePatchFile } from './CodePatchFile';
 export { CodePatchHunk } from './CodePatchHunk';

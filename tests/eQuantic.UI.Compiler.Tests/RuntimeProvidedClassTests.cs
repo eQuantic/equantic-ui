@@ -6,7 +6,9 @@ namespace eQuantic.UI.Compiler.Tests;
 
 /// <summary>
 /// <c>[RuntimeProvided]</c> static helpers are excluded from generated local modules, including
-/// when eqc has no project semantic model and must fall back to the dependency scan.
+/// when eqc has no project semantic model and must fall back to the dependency scan. The probe is a
+/// component by its base: a class over nothing is a plain class whatever its methods are called (#1164),
+/// and the fallback pinned here is the component path's.
 /// </summary>
 public class RuntimeProvidedClassTests
 {
@@ -26,7 +28,7 @@ public class RuntimeProvidedClassTests
                 """);
             var probePath = Path.Combine(dir, "Probe.cs");
             File.WriteAllText(probePath, """
-                public class Probe
+                public class Probe : StatelessComponent
                 {
                     public int Build() => PretendHelper.MinWidth;
                 }
@@ -87,7 +89,7 @@ public class RuntimeProvidedClassTests
                 """);
             var probePath = Path.Combine(dir, "Probe.cs");
             File.WriteAllText(probePath, """
-                public class Probe
+                public class Probe : StatelessComponent
                 {
                     public int Build() => PretendHelper.MinWidth();
                 }
