@@ -1717,7 +1717,7 @@ export class CodeEditorController {
             let primary: any; 
             let carets = ($o => (primary = $o.primary, $o.$))(this.caretsInOrder());
             if (carets.length !== copies.length) return false;
-            stops.push(...CodeEditorController.stopsOf(copies, carets, primary));
+            $eq.collections.addRange(stops, CodeEditorController.stopsOf(copies, carets, primary));
             this.placeSelections(stops[0].ranges);
             return true;
         });

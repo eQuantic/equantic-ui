@@ -98,6 +98,97 @@ public class CollectionConstructionTests
     }
 
     /// <summary>
+    /// An empty collection expression whose target is a class of the runtime's is that class, built as
+    /// <c>new()</c> builds it, with the capacity <c>with(…)</c> hands the constructor where the class keeps
+    /// one (#1144). <c>Dictionary&lt;string, int&gt; ids = []</c> went out as <c>let ids = [];</c>, whose
+    /// first write threw. A dictionary's local degrades to <c>any</c>, as <c>new()</c>'s does.
+    /// </summary>
+    [Fact]
+    public void AnEmptyCollectionExpression_BuildsTheRuntimesClass()
+    {
+        Convert("Dictionary<string, int> ids = [];").Should().Contain("let ids: any = $eq.collections.dictionary();");
+        Convert("SortedDictionary<int, int> sorted = [];").Should().Contain("let sorted: any = $eq.collections.sortedDictionary(");
+        Convert("Queue<int> pending = [];").Should().Contain("let pending = $eq.collections.queue();");
+        Convert("Stack<int> undo = [];").Should().Contain("let undo = $eq.collections.stack();");
+        Convert("LinkedList<int> chain = [];").Should().Contain("let chain = $eq.collections.linkedList();");
+        Convert("var ids = new Dictionary<string, int>();").Should().Contain("let ids: any = $eq.collections.dictionary();",
+            "the construction it is the newer spelling of");
+    }
+
+    /// <summary>
+    /// <c>with(…)</c> hands its capacity to the constructor of a class that keeps one, as
+    /// <c>new(capacity)</c> does (#1144). Compiled as eqc compiles, at the preview language version the
+    /// feature needs. A sorted one, which drops it, is proved executed on both sides
+    /// (<c>InheritedNameKeyConformanceTests</c>): this compilation references no <c>System.Collections</c>,
+    /// where <c>SortedList</c> lives.
+    /// </summary>
+    [Fact]
+    public void ACapacityHandedByWith_IsTheConstructors()
+    {
+        var ts = TypeScriptOf("""
+            using System.Collections.Generic;
+            public class Sized
+            {
+                public int Ids() { Dictionary<string, int> sized = [with(10)]; return sized.Count; }
+                public int Named() { Dictionary<string, int> named = [with(capacity: 3)]; return named.Count; }
+                public int Pending() { Queue<int> pending = [with(4)]; return pending.Count; }
+            }
+            """, "Sized");
+
+        ts.Should().Contain("$eq.collections.dictionary(10)").And.Contain("$eq.collections.dictionary(3)")
+            .And.Contain("$eq.collections.queue(4)");
+    }
+
+    /// <summary>
+    /// A field, a property and an argument take the same class (#1144): the target is what the expression
+    /// is converted to wherever it is written.
+    /// </summary>
+    [Fact]
+    public void AnEmptyCollectionExpression_BuildsTheRuntimesClass_WhereverItIsWritten()
+    {
+        var ts = TypeScriptOf("""
+            using System.Collections.Generic;
+            public class Interner
+            {
+                private readonly Dictionary<string, int> _ids = [];
+                public Queue<string> Pending { get; } = [];
+                public int Count(Dictionary<string, int> seen) => seen.Count;
+                public int Fresh() => Count([]);
+            }
+            """, "Interner");
+
+        ts.Should().NotContain("= [];").And.NotContain("count([])");
+        ts.Should().Contain("$eq.collections.dictionary()").And.Contain("$eq.collections.queue()");
+    }
+
+    /// <summary>
+    /// None of these classes has the <c>Add</c> a collection expression's element is added by, so an
+    /// element reaches one only through an <c>Add</c> of the app's own, which nothing here writes: the
+    /// build refuses it (EQ1004), where an array was written (#1144).
+    /// </summary>
+    [Theory]
+    [InlineData("public static void Add(this Queue<int> queue, int value) => queue.Enqueue(value);",
+        "public Queue<int> Make() => [1, 2];")]
+    [InlineData("public static void Add(this Dictionary<string, int> d, KeyValuePair<string, int> pair) => d.Add(pair.Key, pair.Value);",
+        "public Dictionary<string, int> Make() => [new(\"a\", 1)];")]
+    public void AnElementAddedByAnExtension_IsRefused(string extension, string member)
+    {
+        var errors = new ComponentCompiler().CompileSource($$"""
+            using System.Collections.Generic;
+            public static class Adds
+            {
+                {{extension}}
+            }
+            public class Producer
+            {
+                {{member}}
+            }
+            """, "Probe.cs").SelectMany(result => result.Errors).Select(error => error.Code);
+
+        errors.Should().Contain("EQ1004");
+    }
+
+    /// <summary>
     /// A type the app does not declare is named as the mapper spells it, in a tuple's slot and as a list's
     /// item (Copilot on #1068): a Guid crosses as a string, and a list named `Guid` named nothing. A type the
     /// app declares keeps its name, a `Guid` of its own included.

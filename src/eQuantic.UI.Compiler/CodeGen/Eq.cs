@@ -471,6 +471,11 @@ public static class Eq
     public const string ArrayFindIndex = "$eq.collections.arrayFindIndex";
     /// <summary><c>Array.FindLastIndex</c> and its ranges.</summary>
     public const string ArrayFindLastIndex = "$eq.collections.arrayFindLastIndex";
+    /// <summary><c>List&lt;T&gt;.AddRange</c>: one element at a time, where a spread passed an engine's cap on a
+    /// call's arguments, a null collection refused (#1060).</summary>
+    public const string ListAddRange = "$eq.collections.addRange";
+    /// <summary><c>List&lt;T&gt;.InsertRange</c>: as <see cref="ListAddRange"/>, the index checked as .NET checks it.</summary>
+    public const string ListInsertRange = "$eq.collections.insertRange";
     /// <summary><c>List&lt;T&gt;.RemoveAll</c>: .NET's single pass, answering how many it removed.</summary>
     public const string ListRemoveAll = "$eq.collections.removeAll";
     /// <summary><c>List&lt;T&gt;.CopyTo(array)</c> and <c>CopyTo(array, arrayIndex)</c>, into the array handed.</summary>
