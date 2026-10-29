@@ -163,7 +163,9 @@ public class SharedComponentTranspilationTests
     /// parameters from its arguments; the <c>any</c> once written there threw that type away
     /// (Copilot's third review of #661). A grouping's accumulator is typed the same way, and so is what
     /// a lookup's indexer searches (#727); the LINQ twins' answers keep their types through the call
-    /// (#719 to #722). Never executed: what it proves is the type-check.
+    /// (#719 to #722). An input a pattern names nothing of is evaluated and discarded through `void`,
+    /// never left of a comma as it is, where TypeScript refuses a value it judges free of effects (TS2695,
+    /// Copilot's second review of #1157). Never executed: what it proves is the type-check.
     /// </summary>
     private const string BoundReceiversSource = """
         using eQuantic.UI.Components;
@@ -179,6 +181,7 @@ public class SharedComponentTranspilationTests
             private readonly List<long> _ticks = [4L, 6L];
             private readonly List<decimal> _prices = [1.5m, 2.25m];
             private bool _seen;
+            private int _level = 1;
 
             private List<int> Items() => _items;
 
@@ -213,8 +216,10 @@ public class SharedComponentTranspilationTests
                 var price = _prices.Average(each => each);
                 var fallback = Items().FirstOrDefault(9) + Items().LastOrDefault(item => item > 1, 9)
                     + Items().SingleOrDefault(item => item > 2, 9);
+                var discarded = (-1 is var _) && (!_seen is var _) && (_level + 1 is var _)
+                    && (Items().Count is var _ or 2);
                 return new Text($"{average} {doubled} {sum} {total} {first} {distinct} {_seen} {count} "
-                    + $"{groups} {found} {zipped} {triples} {same} {fallback} {ticks} {price}",
+                    + $"{groups} {found} {zipped} {triples} {same} {fallback} {ticks} {price} {discarded}",
                     TypeRole.Caption);
             }
         }

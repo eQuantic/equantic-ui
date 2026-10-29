@@ -10,7 +10,7 @@ export class CodeHoverCard {
         for (const problem of hover.problems) note.want(Math.fround(marked + note.widest(CodeHoverCard.said(problem), note.prose)));
         for (const answer of hover.answers) {
             let signature: any; 
-            if (((answer.signature != null && answer.signature.length > 0) && (signature = answer.signature, true))) note.want(note.widest(signature, note.code));
+            if ((($0) => (($0 != null && $0.length > 0) && (signature = $0, true)))(answer.signature)) note.want(note.widest(signature, note.code));
             note.want(note.widest(answer.text, note.prose));
         }
         let room = note.fit();
@@ -21,7 +21,7 @@ export class CodeHoverCard {
         if ($eq.collections.count(hover.problems) > 0 && $eq.collections.count(hover.answers) > 0) note.add(new Box(new BoxStyle({ width: SizeValue.fill, height: 1, background: theme.border })), 1);
         for (const answer of hover.answers) {
             let signature: any; 
-            if (((answer.signature != null && answer.signature.length > 0) && (signature = answer.signature, true))) {
+            if ((($0) => (($0 != null && $0.length > 0) && (signature = $0, true)))(answer.signature)) {
                 let lines = note.linesOf(signature, note.code, room);
                 note.add(new Text(signature, 'labelSmall', theme.textPrimary, lines, 'start', false, false, null, 0, { mono: true, styleOverride: note.code }), Math.fround(Math.fround(lines) * note.codeLine));
             }
@@ -47,9 +47,9 @@ export class CodeHoverCard {
 
     static origin(problem: CodeDiagnostic) {
         let rule: any; 
-        let code = ((problem.code != null && problem.code.length > 0) && (rule = problem.code, true)) ? rule : null;
+        let code = (($0) => (($0 != null && $0.length > 0) && (rule = $0, true)))(problem.code) ? rule : null;
         let by: any; 
-        let source = ((problem.source != null && problem.source.length > 0) && (by = problem.source, true)) ? by : null;
+        let source = (($0) => (($0 != null && $0.length > 0) && (by = $0, true)))(problem.source) ? by : null;
         if (!(code == null) && !(source == null)) return `${source} ${code}`;
         return code ?? source;
     }

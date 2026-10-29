@@ -65,13 +65,29 @@ public static class PatternConverter
                 return BuildList(list, access, context);
 
             case UnaryPatternSyntax unary when unary.OperatorToken.IsKind(SyntaxKind.NotKeyword):
-                return $"!({BuildCondition(unary.Pattern, access, context)})";
+                return BuildCondition(unary.Pattern, access, context) switch
+                {
+                    "true" => "false",
+                    "false" => "true",
+                    var negated => $"!({negated})",
+                };
 
             case BinaryPatternSyntax binary:
                 var l = BuildCondition(binary.Left, access, context);
                 var r = BuildCondition(binary.Right, access, context);
-                var op = binary.OperatorToken.IsKind(SyntaxKind.OrKeyword) ? "||" : "&&";
-                return $"({l} {op} {r})";
+                var or = binary.OperatorToken.IsKind(SyntaxKind.OrKeyword);
+                // A left side that matches everything or nothing (`var _`, `not var _`) decides the
+                // combination, or hands it to the right, before the right is read: written as it was,
+                // `f() is var _ or 1` was `(true || f() === 1)`, and the input's one read sat where it
+                // never runs, where C# reads it first (#1149). The right is built all the same, for
+                // what it reports.
+                return (l, or) switch
+                {
+                    ("true", true) => "true",
+                    ("false", false) => "false",
+                    ("false", true) or ("true", false) => r,
+                    _ => $"({l} {(or ? "||" : "&&")} {r})",
+                };
 
             case ParenthesizedPatternSyntax paren:
                 return BuildCondition(paren.Pattern, access, context);
