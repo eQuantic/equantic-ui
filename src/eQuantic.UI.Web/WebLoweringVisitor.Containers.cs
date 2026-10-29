@@ -563,9 +563,47 @@ internal sealed partial class WebLoweringVisitor
                 OverflowAnchor = "none",
             },
         };
-        var child = Lower(scroll.Child, horizontalAxis: null);
+        var horizontal = scroll.Axis == ScrollAxis.Horizontal;
+        // Content that FILLS the viewport is the item of the scroller's flex line, and so is each ARM of
+        // an adaptive child, whose gates are display:contents (TS twin: lowerScrollView).
+        var child = scroll.FillViewport
+            ? Place(scroll.Child, arm => FillsViewport(Lower(arm, horizontalAxis: null), horizontal))
+            : Lower(scroll.Child, horizontalAxis: null);
         if (child != null) element.Children.Add(child);
+        if (scroll.FillViewport)
+        {
+            // A flex line on the axis: the content grows to the content box, which a scrollbar that
+            // takes space is outside of, so it never makes a scroller around it scroll, and needs no
+            // percentage to resolve. Across, the line's stretch gives it the breadth.
+            element.Style!.Display = Display.Flex;
+            element.Style.FlexDirection = horizontal ? FlexDirection.Row : FlexDirection.Column;
+        }
         return element;
+    }
+
+    /// <summary>
+    /// An item of a scroller's line that fills its viewport (TS twin: <c>fillsViewport</c>): it never shrinks
+    /// under its content, and it grows to the viewport on the scroll axis unless it states a length there, a
+    /// fixed size or the window's (<c>px</c>, <c>100vh</c> or <c>calc</c>), which stands, as it does on Photon and across
+    /// under the line's stretch. Its own flex-shrink is replaced, never joined. Through a wrapper that draws no
+    /// box, the items are the first descendants that draw one (#1158).
+    /// </summary>
+    private static HtmlElement? FillsViewport(HtmlElement? lowered, bool horizontal)
+    {
+        if (lowered is null) return null;
+        // A wrapper that draws no box (an InView, an arm's gate) is not the line's item: its children are.
+        if (DrawsNoBox(lowered))
+        {
+            foreach (var inner in lowered.Children.OfType<HtmlElement>()) FillsViewport(inner, horizontal);
+            return lowered;
+        }
+        lowered.Style ??= new HtmlStyle();
+        var own = (horizontal ? lowered.Style.Width : lowered.Style.Height)?.Trim();
+        if (own is null || !(own.EndsWith("px", StringComparison.Ordinal) || own.EndsWith("vh", StringComparison.Ordinal)
+                || own.EndsWith("vw", StringComparison.Ordinal) || own.StartsWith("calc(", StringComparison.Ordinal)))
+            lowered.Style.FlexGrow = "1";
+        lowered.Style.FlexShrink = "0";
+        return lowered;
     }
 
     // The two halves of CSS `place-items` = "<align> <justify>" (vertical then horizontal).

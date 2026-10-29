@@ -65,12 +65,18 @@ internal sealed partial class MeasureVisitor
         var stackIndetH = stack.Height.Kind != SizeKind.Fixed && outerIndeterminateH;
         var contentW = 0f;
         var contentH = 0f;
+        // A hugging axis a FLEX line stretches is the line's, as the web's grid is when its flex item
+        // stretches (#1158): it was the content's, and the line moved the bounds after the children had
+        // been aligned in the smaller box, so a centred child stood at the corner. A block stretch stays
+        // the content's, as a box's stretch reaches no grid on the web.
+        var stretchedW = stack.Width.Kind == SizeKind.Hug && FlexStretched(constraints.Width);
+        var stretchedH = stack.Height.Kind == SizeKind.Hug && FlexStretched(constraints.Height);
         // The stack's own extent where it is known before its children are: the box a positioned
         // child's fractions are of, and the room a filling one is measured against.
         float? knownW = stack.Width.Kind == SizeKind.Fixed ? stack.Width.Value
-            : stack.Width.Kind == SizeKind.Fill && !float.IsPositiveInfinity(maxW) ? maxW : null;
+            : (stack.Width.Kind == SizeKind.Fill || stretchedW) && !float.IsPositiveInfinity(maxW) ? maxW : null;
         float? knownH = stack.Height.Kind == SizeKind.Fixed ? stack.Height.Value
-            : stack.Height.Kind == SizeKind.Fill && !float.IsPositiveInfinity(maxH) ? maxH : null;
+            : (stack.Height.Kind == SizeKind.Fill || stretchedH) && !float.IsPositiveInfinity(maxH) ? maxH : null;
 
         for (var stackIndex = 0; stackIndex < stack.Children.Count; stackIndex++)
         {
@@ -100,8 +106,8 @@ internal sealed partial class MeasureVisitor
             contentH = MathF.Max(contentH, measured.Bounds.Height);
         }
 
-        var width = ResolveSelf(stack.Width, maxW, contentW);
-        var height = ResolveSelf(stack.Height, maxH, contentH);
+        var width = ResolveSelf(stack.Width, maxW, contentW, stretched: stretchedW);
+        var height = ResolveSelf(stack.Height, maxH, contentH, stretched: stretchedH);
         result.Bounds = new Rect(0, 0, width, height);
 
         for (var i = 0; i < stack.Children.Count; i++)
@@ -159,6 +165,11 @@ internal sealed partial class MeasureVisitor
         return result;
     }
 
+    /// <summary>Whether a flex line decided this axis for the node: a stack and a grid take that size, as the
+    /// web's grid does in its flex item, where a box's block stretch reaches no grid there.</summary>
+    private static bool FlexStretched(AxisConstraint axis) =>
+        axis.Stretch == StretchKind.Flex && !axis.Indeterminate && !axis.IsUnbounded;
+
     /// <summary>Whether any child asked for a layer — the cheap question, asked before the sort that
     /// answering it would otherwise pay for on every Stack in the tree.</summary>
     private bool AnyLayered(LayoutNode result, Stack stack)
@@ -193,14 +204,20 @@ internal sealed partial class MeasureVisitor
                 ? forChild with { Width = forChild.Width with { Visible = shown } }
                 : forChild with { Height = forChild.Height with { Visible = shown } };
         var child = Measure(scroll.Child, forChild, ctx, at?.ChildAt(0));
-        result.Adopt(child);
 
-        var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW));
+        // A hugging axis the parent STRETCHES is the stretched size, as a box's and a row's are, and as
+        // the web's `height: 100%` is (#1143). The row used to move the bounds after the scroller had
+        // measured its content against its own height, so nothing inside could fill the row.
+        var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW),
+            stretched: constraints.Width.IsStretched);
         // A Flexible's slot caps a scroller's declared width at the slot, the web's `max-width:
         // 100%` (LayoutConstraints.WidthIsACeiling): capped HERE, before the scroll range below is
         // taken from it, so a horizontal scroller scrolls as far as its capped viewport needs.
         if (constraints.WidthIsACeiling) width = MathF.Min(width, maxW);
-        var height = ResolveSelf(scroll.Height, maxH, MathF.Min(child.Bounds.Height, maxH));
+        var height = ResolveSelf(scroll.Height, maxH, MathF.Min(child.Bounds.Height, maxH),
+            stretched: constraints.Height.IsStretched);
+        if (scroll.FillViewport) child = FillViewport(scroll, child, forChild, width, height, ctx, at);
+        result.Adopt(child);
         result.Bounds = new Rect(0, 0, width, height);
 
         var maxOffset = MathF.Max(0, horizontal ? child.Bounds.Width - width : child.Bounds.Height - height);
@@ -237,6 +254,65 @@ internal sealed partial class MeasureVisitor
             PinSticky(child, accumulatedY: child.Bounds.Y);
 
         return result;
+    }
+
+    /// <summary>
+    /// Content that fills its viewport (<see cref="ScrollView.FillViewport"/>, #1143): measured again at the
+    /// viewport's size, stretched, on each axis it came out smaller on, so a hugging row takes the viewport's
+    /// height and hands it to what it stretches. A size the content states stands, on either axis, as under
+    /// any stretch and as the web's flex line keeps it, and so does a cap. Decided here, in the measure that sizes the viewport: a
+    /// size reported after the frame and built back lagged one, so a pane that shrank ran its content past
+    /// it until the next.
+    /// </summary>
+    private LayoutNode FillViewport(ScrollView scroll, LayoutNode child, LayoutConstraints forChild,
+        float width, float height, LayoutContext ctx, Element? at)
+    {
+        var shortW = child.Bounds.Width < width - 0.01f;
+        var shortH = child.Bounds.Height < height - 0.01f;
+        if (!shortW && !shortH) return child;
+        var filled = forChild with
+        {
+            Width = shortW ? Filled(forChild.Width, width) : forChild.Width,
+            Height = shortH ? Filled(forChild.Height, height) : forChild.Height,
+        };
+        child = Measure(scroll.Child, filled, ctx, at?.ChildAt(0));
+        // The arrange half of the stretch, for the one node that cannot take it while it measures: a text
+        // sizes itself to its lines, and is given the extent through the wrappers that take its size, as a
+        // row's stretch gives it the line's. A container that measured at less than the extent did so for a
+        // reason (a cap, a size of its own) and keeps it, with what it holds arranged in it.
+        if (TextUnder(child))
+        {
+            if (shortW) Pin(child, horizontal: true, width);
+            if (shortH) Pin(child, horizontal: false, height);
+        }
+        return child;
+
+        static AxisConstraint Filled(AxisConstraint axis, float extent) =>
+            axis.WithMax(extent).DecidedByContent(false).Stretched(StretchKind.Flex);
+
+        static void Pin(LayoutNode node, bool horizontal, float extent)
+        {
+            while (true)
+            {
+                if ((horizontal ? node.Bounds.Width : node.Bounds.Height) < extent)
+                    node.Bounds = horizontal ? node.Bounds with { Width = extent } : node.Bounds with { Height = extent };
+                if (!TakesItsChildSize(node)) return;
+                node = node.Children[0];
+            }
+        }
+
+        static bool TextUnder(LayoutNode node)
+        {
+            while (TakesItsChildSize(node)) node = node.Children[0];
+            return node.Source is Text;
+        }
+
+        // The wrappers SizedBy walks, and a component, whose node is what it built (#1158): a component that
+        // builds a text is a text to the web's flex line, which lays out the element it built.
+        static bool TakesItsChildSize(LayoutNode node) =>
+            node.Children.Count == 1
+            && (node.Source is Anchored or UiComponent
+                || node.Source is SingleChildNode wrapper && wrapper.IsLayoutTransparent());
     }
 
     /// <summary>Walks the scrolled content for Pinned wrappers and clamps their viewport-relative Y
@@ -609,16 +685,20 @@ internal sealed partial class MeasureVisitor
 
         var contentW = gapTotal + grid.Padding.Horizontal;
         foreach (var w in widths) contentW += w;
+        // A hugging axis a FLEX line stretches is the line's, as a stack's is and as the web's grid is in
+        // its flex item (#1158); its tracks stay where they were laid.
         var width = grid.Width.Kind switch
         {
             SizeKind.Fixed => grid.Width.Value,
             SizeKind.Fill when !float.IsPositiveInfinity(maxW) => maxW,
+            SizeKind.Hug when FlexStretched(constraints.Width) => maxW,
             _ => contentW,
         };
         var height = grid.Height.Kind switch
         {
             SizeKind.Fixed => grid.Height.Value,
             SizeKind.Fill when !float.IsPositiveInfinity(maxH) => maxH,
+            SizeKind.Hug when FlexStretched(constraints.Height) => maxH,
             _ => (rowCount > 0 ? y - rowGap : y) + grid.Padding.Bottom,
         };
         result.Bounds = new Rect(0, 0, width, height);

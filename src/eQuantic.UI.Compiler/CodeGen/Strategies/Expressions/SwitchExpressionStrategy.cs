@@ -28,7 +28,6 @@ public class SwitchExpressionStrategy : IConversionStrategy
     {
         var switchExpr = (SwitchExpressionSyntax)node;
         var governingExpr = context.Converter.ConvertExpression(switchExpr.GoverningExpression);
-        var governingType = context.SemanticHelper.GetType(switchExpr.GoverningExpression);
 
         // The arms are ONE pattern-matching operation: a Deconstruct the app wrote is called once for the
         // value, however many arms read its parts, and held where the arrow declares it (MatchParts),
@@ -44,9 +43,9 @@ public class SwitchExpressionStrategy : IConversionStrategy
                     break; // discard matches everything
                 }
 
-                var condition = PatternConverter.BuildCondition(arm.Pattern, Subject, context, governingType);
+                var condition = PatternConverter.BuildCondition(arm.Pattern, Subject, context);
                 var bindings = new List<(string Name, string Access)>();
-                PatternConverter.CollectBindings(arm.Pattern, Subject, context, bindings, governingType);
+                PatternConverter.CollectBindings(arm.Pattern, Subject, context, bindings);
                 var armResult = context.Converter.ConvertExpression(arm.Expression);
 
                 if (bindings.Count > 0)

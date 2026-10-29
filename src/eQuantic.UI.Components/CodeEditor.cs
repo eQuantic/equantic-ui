@@ -798,11 +798,6 @@ public sealed class CodeEditor : StatefulComponent
             ViewportOffset = _offset,
             ViewportHeight = _viewport,
             ViewportWidth = _viewportWidth,
-            // A bounded editor's code fills its viewport however short the file: a press under the
-            // last line is in the code, and the completion list has the viewport's room under it. A
-            // hugging editor's viewport is its code, and taking its height as a floor would keep it
-            // from ever shrinking.
-            MinHeight = bounded ? _viewport : 0,
             // Every caret's line is washed, and the selections are drawn under the text — the pieces of
             // state the read-only block cannot know about. All are the ENGINE's measurements, on the grid
             // handed to it above, and only for the lines the window builds.
@@ -929,12 +924,20 @@ public sealed class CodeEditor : StatefulComponent
         // the selection — which are drawn against it — travel with it too, and a pointer lands on
         // the column it is pointing at however far the file has been scrolled.
         //
-        // Note the order: the SCROLLERS fill, the SURFACE hugs the code. That is what keeps a long
-        // line from widening the pane it sits in — the viewport takes the width it is given and the
-        // line overflows INSIDE it, which is the whole reason a scroll view is here at all.
+        // Note the order: the SCROLLERS take the room they are given, and the surface is never smaller
+        // than that room and as large as its code past it. That is what keeps a long line from widening
+        // the pane it sits in — the viewport takes the width it is given and the line overflows INSIDE
+        // it, which is the whole reason a scroll view is here at all.
+        //
+        // And it is LAYOUT that makes the surface fill the room, never a number reported from it (#1143):
+        // both scroll views fill their viewports, and the row below stretches this one to the vertical
+        // viewport's height, so the code under a short file is as tall as the room under this scroll
+        // view's own scrollbar. A press under the last line is in the code, and a short file never scrolls
+        // by the scrollbar a reported height counted as room.
         VisualNode viewport = new ScrollView(surface, ScrollAxis.Horizontal)
         {
             Width = SizeValue.Fill,
+            FillViewport = true,
             // How wide it turned out to be, handed back to the block so the code is never narrower
             // than the space you can click in.
             OnViewportChanged = width =>
@@ -961,13 +964,15 @@ public sealed class CodeEditor : StatefulComponent
         // instance builds them, over the same window, so there is one set of numbers built from one
         // measurement — and ContentLeft counts from where the CODE begins, not from where the gutter
         // does, which is what makes this arrangement possible at all.
-        if (ShowLineNumbers)
-        {
-            var withGutter = new Row(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Start };
-            withGutter.Add(block.Gutter(context));
-            withGutter.Add(new Flexible(viewport));
-            viewport = withGutter;
-        }
+        //
+        // The row is there with no gutter too, and STRETCHES what it holds: the sideways scroll view is
+        // then as tall as the row, which the vertical viewport fills, so the code fills the room. Straight
+        // inside the vertical scroll view, the web resolved the sideways one's `height: 100%` to exactly
+        // the viewport, and a file longer than its pane was cut at its bottom with nothing to scroll.
+        var row = new Row(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Stretch };
+        if (ShowLineNumbers) row.Add(block.Gutter(context));
+        row.Add(new Flexible(viewport));
+        viewport = row;
 
         if (windowed)
         {
@@ -981,6 +986,9 @@ public sealed class CodeEditor : StatefulComponent
             {
                 Width = SizeValue.Fill,
                 Height = bounded ? SizeValue.Fill : SizeValue.Hug,
+                // The row is never shorter than the viewport, so the code under a short file is the
+                // code's own room, from the first frame.
+                FillViewport = true,
                 // The window the block builds, reported from the viewport that actually moves.
                 OnScrolled = offset =>
                 {

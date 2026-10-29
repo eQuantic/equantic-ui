@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=301 · fenced=119 · invalid-probe=6 · native=607
+# totals: eq=303 · fenced=119 · invalid-probe=6 · native=605
 fenced:EQ2004  Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -599,7 +599,7 @@ eq             Int64.ToString()
 eq             Int64.ToString(String)
 eq             Int64.TrailingZeroCount(Int64)
 native         List<Int32>.Add(Int32)
-native         List<Int32>.AddRange(IEnumerable<Int32>)
+eq             List<Int32>.AddRange(IEnumerable<Int32>)
 native         List<Int32>.AsReadOnly()
 eq             List<Int32>.BinarySearch(Int32)
 fenced:EQ2004  List<Int32>.Capacity
@@ -613,7 +613,7 @@ native         List<Int32>.IndexOf(Int32)
 eq             List<Int32>.IndexOf(Int32,Int32)
 eq             List<Int32>.IndexOf(Int32,Int32,Int32)
 native         List<Int32>.Insert(Int32,Int32)
-native         List<Int32>.InsertRange(Int32,IEnumerable<Int32>)
+eq             List<Int32>.InsertRange(Int32,IEnumerable<Int32>)
 native         List<Int32>.LastIndexOf(Int32)
 eq             List<Int32>.LastIndexOf(Int32,Int32)
 eq             List<Int32>.LastIndexOf(Int32,Int32,Int32)
