@@ -47,12 +47,16 @@ public sealed class Flexible : SingleChildNode
     /// <para>
     /// Zero (the default) is no basis. A weighted child then contributes nothing of its own and is
     /// sized purely from its weight, the historical behaviour; a child of weight zero is sized by its
-    /// content, because nothing else would give it a size. A non-zero basis is what makes a WRAPPING
-    /// container work like the web's, because the basis is the size the line-breaker measures
-    /// against: give two panes a basis of 440 and they sit side by side while there is room for both,
-    /// then each takes a full line of its own. Without it a wrapping row could only ever place
-    /// children at their natural size, which is why a responsive two-pane layout was previously
-    /// inexpressible.
+    /// content, because nothing else would give it a size. A weighted child WITH a basis starts from
+    /// it and grows by its share on top: <c>basis: 540</c> beside a weight of the same size and no
+    /// basis, in a row of 1440, is 990 beside 450 on every target.
+    /// </para>
+    /// <para>
+    /// A non-zero basis is what makes a WRAPPING container work like the web's, because the basis
+    /// is the size the line-breaker measures against: give two panes a basis of 440 and they sit
+    /// side by side while there is room for both, then each takes a full line of its own. Without
+    /// one a weighted child asks the line-breaker for nothing, as CSS's <c>0%</c> does, and any other
+    /// child for its natural size.
     /// </para>
     /// <para>
     /// A basis is a size in dp, so a negative one, or one that is not a finite number, is refused
@@ -72,17 +76,14 @@ public sealed class Flexible : SingleChildNode
     /// How readily this child gives space back when the line overflows — CSS <c>flex-shrink</c>.
     /// Defaults to 1, matching what the web realizer has always emitted. Zero refuses to shrink, and
     /// a negative shrink means nothing on any target, so it is refused where it is written.
-    /// Shrinking is weighted by the shrink times the size, as CSS scales it. A Flexible's minimum
-    /// main size is zero (the web writes it <c>min-width: 0</c> in a row), so in a ROW a weight of
-    /// zero shrinks past its child's min-content on both targets, and a child with a fixed width
-    /// overflows it. The other items Photon shrinks keep their min-content floor, and so, for now,
-    /// does a Flexible in a wrapping row, where the web lets it go past (see
-    /// <see cref="FlexNode.Wrap"/>).
-    /// <para>
-    /// In a single-line COLUMN Photon takes nothing back from an overflowing line yet, from any
-    /// item: a zero weight at a basis of 540 after a fixed 100, in a column 400 tall, stays 540
-    /// there, where a browser shrinks it to 300.
-    /// </para>
+    /// Shrinking is weighted by the shrink times the size the item starts from (its basis, or its
+    /// content for a weight of zero without one), as CSS scales it, so a weighted child without a
+    /// basis starts from nothing and has nothing to give. A Flexible's minimum main size is zero
+    /// (the web writes it <c>min-width: 0</c> in a row, <c>min-height: 0</c> in a column), so in a
+    /// single line it shrinks past its child's min-content on both targets, and a child with a fixed
+    /// size overflows it. The other items Photon shrinks keep their min-content floor, which in a
+    /// column is the height they measure, and so, for now, does a Flexible in a wrapping row, where
+    /// the web lets it go past (see <see cref="FlexNode.Wrap"/>).
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The shrink is negative.</exception>
     public int Shrink
