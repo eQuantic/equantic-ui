@@ -162,4 +162,22 @@ public class CollectionTailConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record Point(int X, int Y);");
     }
+
+    /// <summary>
+    /// A receiver typed as the concrete <c>Lookup&lt;TKey, TElement&gt;</c>, the class <c>ToLookup</c> builds,
+    /// answers its indexer and <c>Contains</c> as the interface does. Its <c>Contains</c> was taken for a
+    /// collection's, an element search among the groups, and its indexer for an array's (#1168).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var l = (Lookup<string, string>)new[] { \"a\", \"b\" }.ToLookup(s => s); return l.Contains(\"b\") + \",\" + l.Contains(\"z\");")] // True,False
+    [InlineData("var l = (Lookup<string, int>)new[] { 1, 2, 3 }.ToLookup(x => x % 2 == 0 ? \"e\" : \"o\"); return string.Join(\",\", l[\"o\"]) + \"|\" + l[\"z\"].Count();")] // 1,3|0
+    [InlineData("var l = (Lookup<Point, Point>)new[] { new Point(1, 2) }.ToLookup(p => p); return l.Contains(new Point(1, 2)) + \",\" + l[new Point(1, 2)].Count();")] // True,1: by value
+    [InlineData("ILookup<int, int> i = new[] { 1, 2 }.ToLookup(x => x); if (i is Lookup<int, int> lk) return lk.Contains(2) + \",\" + lk[1].Count(); return \"no\";")] // True,1
+    [InlineData("var lk = new[] { \"a\" }.ToLookup(s => s) as Lookup<string, string>; return lk.Contains(\"a\") + \",\" + lk.Contains(\"b\");")] // True,False
+    [InlineData("Lookup<int, int> none = null; var l = (Lookup<int, int>)new[] { 1, 2 }.ToLookup(x => x % 2); return (none?.Contains(1) == null) + \",\" + l?.Contains(0);")] // True,True
+    public void ConcreteLookup_MatchesDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record Point(int X, int Y);");
+    }
 }
