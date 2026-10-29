@@ -2130,7 +2130,7 @@ function lowerTableScrollbar(inTable: boolean): HtmlNode {
 /**
  * An item of a scroller's line that fills its viewport (C# twin: FillsViewport): it never shrinks under its
  * content, and it grows to the viewport on the scroll axis unless it states a length there, a fixed size or
- * the window's (`px` or `calc`), which stands, as it does on Photon and across under the line's stretch.
+ * the window's (`px`, `100vh` or `calc`), which stands, as it does on Photon and across under the line's stretch.
  * Through a wrapper that draws no box, the items are the first descendants that draw one (#1158).
  * The shrink is REPLACED, not added: a rigid child already says `flex-shrink: 0`, and two classes for one
  * property would leave the winner to the stylesheet's order and write a class set the C# side does not.
@@ -2143,7 +2143,7 @@ function fillsViewport(lowered: HtmlNode | null, horizontal: boolean): HtmlNode 
     return lowered;
   }
   const own = atomicDeclaration(lowered, horizontal ? 'width' : 'height')?.trim();
-  if (!own || !(own.endsWith('px') || own.startsWith('calc('))) mergeAtomicDeclaration(lowered, 'flex-grow', '1');
+  if (!own || !/(px|vh|vw)$|^calc\(/.test(own)) mergeAtomicDeclaration(lowered, 'flex-grow', '1');
   replaceAtomicDeclaration(lowered, 'flex-shrink', '0');
   return lowered;
 }

@@ -63,6 +63,20 @@ public class ScrollViewRealizerTests
         node.Children[0].Attributes["style"].Should().Contain("flex-shrink: 0").And.NotContain("flex-grow");
     }
 
+    /// <summary>The window's own size stands too, which lowers to a bare <c>100vh</c> with no inset (found by
+    /// Copilot reviewing #1158). CROSS-PIN with the TS twin.</summary>
+    [Fact]
+    public void AViewportFilledByAWindowSizedChild_KeepsTheWindowsSize()
+    {
+        var node = Render(new ScrollView(new Primitives.Box(new BoxStyle { Height = SizeValue.WindowMinus(0) }))
+        {
+            Height = SizeValue.Fixed(1000),
+            FillViewport = true,
+        });
+
+        node.Children[0].Attributes["style"].Should().Contain("height: 100vh").And.NotContain("flex-grow");
+    }
+
     /// <summary>Each arm of an adaptive child is the line's item, since the gates are display:contents and a
     /// grow on one does nothing (found by Copilot reviewing #1158). CROSS-PIN with the TS twin.</summary>
     [Fact]

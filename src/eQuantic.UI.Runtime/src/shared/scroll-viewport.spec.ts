@@ -413,6 +413,20 @@ describe('a scroll view that fills its viewport', () => {
     expect(child).not.toContain('flex-grow');
   });
 
+  it("keeps the window's own size, a bare 100vh", () => {
+    const lowered = lowerVisualNode(
+      scrollNode({
+        child: box({ height: { kind: 'windowMinus', value: 0 } }),
+        height: { kind: 'fixed', value: 1000 },
+        fillViewport: true,
+      }),
+      context(),
+    ) as HtmlNode;
+    const child = effectiveStyle(lowered.children[0]);
+    expect(child).toContain('height: 100vh');
+    expect(child).not.toContain('flex-grow');
+  });
+
   it('grows the box inside a wrapper that draws no box, an InView', () => {
     const inView = { nodeKind: 'inView', child: box({ width: { kind: 'fill', value: 0 } }) } as never;
     const lowered = lowerVisualNode(

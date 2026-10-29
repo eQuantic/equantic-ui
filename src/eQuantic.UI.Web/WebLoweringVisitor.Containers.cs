@@ -584,7 +584,7 @@ internal sealed partial class WebLoweringVisitor
     /// <summary>
     /// An item of a scroller's line that fills its viewport (TS twin: <c>fillsViewport</c>): it never shrinks
     /// under its content, and it grows to the viewport on the scroll axis unless it states a length there, a
-    /// fixed size or the window's (<c>px</c> or <c>calc</c>), which stands, as it does on Photon and across
+    /// fixed size or the window's (<c>px</c>, <c>100vh</c> or <c>calc</c>), which stands, as it does on Photon and across
     /// under the line's stretch. Its own flex-shrink is replaced, never joined. Through a wrapper that draws no
     /// box, the items are the first descendants that draw one (#1158).
     /// </summary>
@@ -599,7 +599,8 @@ internal sealed partial class WebLoweringVisitor
         }
         lowered.Style ??= new HtmlStyle();
         var own = (horizontal ? lowered.Style.Width : lowered.Style.Height)?.Trim();
-        if (own is null || !(own.EndsWith("px", StringComparison.Ordinal) || own.StartsWith("calc(", StringComparison.Ordinal)))
+        if (own is null || !(own.EndsWith("px", StringComparison.Ordinal) || own.EndsWith("vh", StringComparison.Ordinal)
+                || own.EndsWith("vw", StringComparison.Ordinal) || own.StartsWith("calc(", StringComparison.Ordinal)))
             lowered.Style.FlexGrow = "1";
         lowered.Style.FlexShrink = "0";
         return lowered;

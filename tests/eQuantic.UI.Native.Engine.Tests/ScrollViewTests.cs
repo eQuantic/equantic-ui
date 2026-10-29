@@ -179,6 +179,44 @@ public class ScrollViewTests
         node.Children[0].Bounds.Height.Should().Be(40);
     }
 
+    /// <summary>A grid a viewport that fills stretches is as large as the viewport, as the web's grid is in its
+    /// flex item; its tracks stay where they were laid (found by Copilot reviewing #1158).</summary>
+    [Fact]
+    public void AGridInAViewportThatFills_IsAsLargeAsTheViewport()
+    {
+        var grid = new Grid([GridTrack.Fixed(20)]);
+        grid.Add(new Primitives.Box(new BoxStyle { Width = 20, Height = 20 }));
+        var node = Layout(new ScrollView(grid, ScrollAxis.Horizontal)
+        {
+            Width = SizeValue.Fixed(120), Height = SizeValue.Fixed(80), FillViewport = true,
+        });
+
+        (node.Children[0].Bounds.Width, node.Children[0].Bounds.Height).Should().Be((120f, 80f));
+        (node.Children[0].Children[0].Bounds.X, node.Children[0].Children[0].Bounds.Y).Should().Be((0f, 0f));
+    }
+
+    /// <summary>A component that builds a text is a text to a viewport that fills, as it is to the web's flex
+    /// line, which lays out the element it built: its node wrapped the text, and the text stayed one line high
+    /// (found by Copilot reviewing #1158).</summary>
+    [Fact]
+    public void AComponentThatBuildsATextInASidewaysViewportThatFills_IsAsTallAsTheViewport()
+    {
+        var host = new PhotonHost(new ScrollView(new BuildsAText(), ScrollAxis.Horizontal)
+        {
+            Width = SizeValue.Fixed(120), Height = SizeValue.Fixed(80), FillViewport = true,
+        }, PhotonTheme.Instance, ThemeMode.Light, 200, 200);
+
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        Find(frame.Root, n => n.Source is BuildsAText)!.Bounds.Height.Should().Be(80);
+        Find(frame.Root, n => n.Source is Primitives.Text)!.Bounds.Height.Should().Be(80);
+    }
+
+    private sealed class BuildsAText : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new Primitives.Text("row", TypeRole.BodyM);
+    }
+
     private static LayoutNode? Find(LayoutNode node, Func<LayoutNode, bool> predicate)
     {
         if (predicate(node)) return node;

@@ -69,10 +69,8 @@ internal sealed partial class MeasureVisitor
         // stretches (#1158): it was the content's, and the line moved the bounds after the children had
         // been aligned in the smaller box, so a centred child stood at the corner. A block stretch stays
         // the content's, as a box's stretch reaches no grid on the web.
-        var stretchedW = stack.Width.Kind == SizeKind.Hug && constraints.Width.Stretch == StretchKind.Flex
-            && !outerIndeterminateW && !float.IsPositiveInfinity(maxW);
-        var stretchedH = stack.Height.Kind == SizeKind.Hug && constraints.Height.Stretch == StretchKind.Flex
-            && !outerIndeterminateH && !float.IsPositiveInfinity(maxH);
+        var stretchedW = stack.Width.Kind == SizeKind.Hug && FlexStretched(constraints.Width);
+        var stretchedH = stack.Height.Kind == SizeKind.Hug && FlexStretched(constraints.Height);
         // The stack's own extent where it is known before its children are: the box a positioned
         // child's fractions are of, and the room a filling one is measured against.
         float? knownW = stack.Width.Kind == SizeKind.Fixed ? stack.Width.Value
@@ -166,6 +164,11 @@ internal sealed partial class MeasureVisitor
 
         return result;
     }
+
+    /// <summary>Whether a flex line decided this axis for the node: a stack and a grid take that size, as the
+    /// web's grid does in its flex item, where a box's block stretch reaches no grid there.</summary>
+    private static bool FlexStretched(AxisConstraint axis) =>
+        axis.Stretch == StretchKind.Flex && !axis.Indeterminate && !axis.IsUnbounded;
 
     /// <summary>Whether any child asked for a layer — the cheap question, asked before the sort that
     /// answering it would otherwise pay for on every Stack in the tree.</summary>
@@ -277,7 +280,7 @@ internal sealed partial class MeasureVisitor
         // sizes itself to its lines, and is given the extent through the wrappers that take its size, as a
         // row's stretch gives it the line's. A container that measured at less than the extent did so for a
         // reason (a cap, a size of its own) and keeps it, with what it holds arranged in it.
-        if (SizedBy(child).Source is Text)
+        if (TextUnder(child))
         {
             if (shortW) Pin(child, horizontal: true, width);
             if (shortH) Pin(child, horizontal: false, height);
@@ -293,12 +296,23 @@ internal sealed partial class MeasureVisitor
             {
                 if ((horizontal ? node.Bounds.Width : node.Bounds.Height) < extent)
                     node.Bounds = horizontal ? node.Bounds with { Width = extent } : node.Bounds with { Height = extent };
-                if (node.Children.Count != 1
-                    || !(node.Source is Anchored || node.Source is SingleChildNode wrapper && wrapper.IsLayoutTransparent()))
-                    return;
+                if (!TakesItsChildSize(node)) return;
                 node = node.Children[0];
             }
         }
+
+        static bool TextUnder(LayoutNode node)
+        {
+            while (TakesItsChildSize(node)) node = node.Children[0];
+            return node.Source is Text;
+        }
+
+        // The wrappers SizedBy walks, and a component, whose node is what it built (#1158): a component that
+        // builds a text is a text to the web's flex line, which lays out the element it built.
+        static bool TakesItsChildSize(LayoutNode node) =>
+            node.Children.Count == 1
+            && (node.Source is Anchored or UiComponent
+                || node.Source is SingleChildNode wrapper && wrapper.IsLayoutTransparent());
     }
 
     /// <summary>Walks the scrolled content for Pinned wrappers and clamps their viewport-relative Y
@@ -671,16 +685,20 @@ internal sealed partial class MeasureVisitor
 
         var contentW = gapTotal + grid.Padding.Horizontal;
         foreach (var w in widths) contentW += w;
+        // A hugging axis a FLEX line stretches is the line's, as a stack's is and as the web's grid is in
+        // its flex item (#1158); its tracks stay where they were laid.
         var width = grid.Width.Kind switch
         {
             SizeKind.Fixed => grid.Width.Value,
             SizeKind.Fill when !float.IsPositiveInfinity(maxW) => maxW,
+            SizeKind.Hug when FlexStretched(constraints.Width) => maxW,
             _ => contentW,
         };
         var height = grid.Height.Kind switch
         {
             SizeKind.Fixed => grid.Height.Value,
             SizeKind.Fill when !float.IsPositiveInfinity(maxH) => maxH,
+            SizeKind.Hug when FlexStretched(constraints.Height) => maxH,
             _ => (rowCount > 0 ? y - rowGap : y) + grid.Padding.Bottom,
         };
         result.Bounds = new Rect(0, 0, width, height);
