@@ -49,15 +49,15 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
     }
 
     /// <summary>
-    /// The typeface of a shipped <paramref name="family"/> for a style: its file that sets the weight and
-    /// the slant, chosen as every shell chooses it (ShippedFaces.FileFor, a browser's rule). Null when its
-    /// files did not all register: the family resolves from them whole or not at all, so a missing cut is
-    /// reported and falls back rather than being drawn from another.
+    /// The typeface of a shipped <paramref name="family"/> for a style, and its file: the one that sets the
+    /// weight and the slant, chosen as every shell chooses it (ShippedFaces.FileFor, a browser's rule). Null
+    /// when its files did not all register: the family resolves from them whole or not at all, so a missing
+    /// cut is reported and falls back rather than being drawn from another.
     /// </summary>
-    private static Typeface? ShippedFace(FontFamily family, FontWeight weight, bool italic)
+    private static (Typeface Face, FontFile File)? ShippedFace(FontFamily family, FontWeight weight, bool italic)
     {
         if (!Shipped.Register(family) || ShippedFaces.FileFor(family, weight, italic) is not { } file) return null;
-        lock (ShippedTypefaces) return ShippedTypefaces.GetValueOrDefault(file);
+        lock (ShippedTypefaces) return ShippedTypefaces.TryGetValue(file, out var face) ? (face, file) : null;
     }
 
     public TextMeasurement Measure(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines)
@@ -202,9 +202,15 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         // missing — and an instrument that cries wolf on a correct value is one nobody reads by the
         // end of the week. What is left is a brand face, which is the case this exists for.
         var baseFace = mono ? Typeface.Monospace : Typeface.Default;
+        var asked = (int)weight;   // the weight the face is asked for, from Android 9
         if (family is { Files.Count: > 0 })
         {
-            if (ShippedFace(family, weight, italic) is { } shipped) baseFace = shipped;
+            if (ShippedFace(family, weight, italic) is { } shipped)
+            {
+                baseFace = shipped.Face;
+                if (OperatingSystem.IsAndroidVersionAtLeast(28) && ShippedFaces.IsDrawnAsItIs(shipped.File, weight))
+                    asked = shipped.Face.Weight;
+            }
             else eQuantic.UI.Primitives.FaceResolution.Missing(family.Name);
         }
         else if (family is { Name.Length: > 0 })
@@ -220,9 +226,15 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         // From Android 9 (API 28) a typeface is asked for the weight itself, so every one of the nine
         // draws as named and a family that ships a file per weight draws from the file of the weight
         // (#1082). Below it the shell has regular and bold, which is all those versions take.
-        paint.SetTypeface(OperatingSystem.IsAndroidVersionAtLeast(28)
-            ? Typeface.Create(baseFace, (int)weight, italic)
-            : Typeface.Create(baseFace, style));
+        //
+        // A shipped file drawn as it is is asked for at the weight the typeface reads in its file: the
+        // engine lays a fake bold over a face asked for 200 above that weight, and a file the catalog
+        // weighs at 700 that declares 400 drew bolder than on every other target (#1109). A heavier
+        // weight than a lighter file sets is asked for as it is, and the fake bold is what it lacks.
+        if (OperatingSystem.IsAndroidVersionAtLeast(28))
+            paint.SetTypeface(Typeface.Create(baseFace, asked, italic));
+        else
+            paint.SetTypeface(Typeface.Create(baseFace, style));
         _paints[(size, weight, mono, italic, family)] = paint;
         return paint;
     }

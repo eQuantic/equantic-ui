@@ -7,4 +7,5 @@
 [EQX0001]eQuantic.UI.Native.Framework.ShippedFaces.ShippedFaces(System.Func<eQuantic.UI.Primitives.FontFile!, byte[]!, bool>! register) -> void
 [EQX0001]static eQuantic.UI.Native.Framework.ShippedFaces.CacheFile(string! folder, eQuantic.UI.Primitives.FontFile! file, byte[]! bytes) -> string?
 [EQX0001]static eQuantic.UI.Native.Framework.ShippedFaces.FileFor(eQuantic.UI.Primitives.FontFamily! family, eQuantic.UI.Primitives.FontWeight weight, bool italic) -> eQuantic.UI.Primitives.FontFile?
+[EQX0001]static eQuantic.UI.Native.Framework.ShippedFaces.IsDrawnAsItIs(eQuantic.UI.Primitives.FontFile! file, eQuantic.UI.Primitives.FontWeight weight) -> bool
 [EQX0001]static eQuantic.UI.Native.Framework.ScrollClock.Settle(eQuantic.UI.Primitives.Element? at, float standing, float range) -> void
