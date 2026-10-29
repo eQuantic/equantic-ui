@@ -56,6 +56,17 @@ public class ComponentParityFixtureTests
         ("capped-scroller", new Box(new BoxStyle { Width = SizeValue.Fill, MaxHeight = 120 },
             new ScrollView(Stack(Space.S2, new Text("one", TypeRole.BodyM, Theme.TextPrimary),
                 new Text("two", TypeRole.BodyM, Theme.TextPrimary)))), NoPresses),
+        // Content that FILLS its viewport (#1143), sideways inside a vertical one as a bounded code editor
+        // nests them: each scroller is a flex line on its axis and its child grows and never shrinks. The
+        // inner child is rigid, so its own `flex-shrink: 0` must stay one declaration on both sides.
+        ("filled-scrollers", new ScrollView(new ScrollView(new Box(new BoxStyle { Width = 40 }), ScrollAxis.Horizontal)
+        {
+            FillViewport = true,
+        })
+        {
+            Height = SizeValue.Fixed(120),
+            FillViewport = true,
+        }, NoPresses),
         // A hover that LIFTS a card, with every member a state can set (#504). CSS replaces
         // box-shadow whole, so the state writes the list again from its parts and the base's —
         // the elevation, the custom shadows, the inset highlight — and the background layers the

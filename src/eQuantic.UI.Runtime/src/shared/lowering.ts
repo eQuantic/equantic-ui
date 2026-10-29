@@ -2127,12 +2127,39 @@ function lowerTableScrollbar(inTable: boolean): HtmlNode {
   return track;
 }
 
+/**
+ * An item of a scroller's line that fills its viewport (C# twin: FillsViewport): it never shrinks under its
+ * content, and it grows to the viewport on the scroll axis unless it states a length there, a fixed size or
+ * the window's (`px`, `100vh` or `calc`), which stands, as it does on Photon and across under the line's stretch.
+ * Through a wrapper that draws no box, the items are the first descendants that draw one (#1158).
+ * The shrink is REPLACED, not added: a rigid child already says `flex-shrink: 0`, and two classes for one
+ * property would leave the winner to the stylesheet's order and write a class set the C# side does not.
+ */
+function fillsViewport(lowered: HtmlNode | null, horizontal: boolean): HtmlNode | null {
+  if (!lowered) return null;
+  // A wrapper that draws no box (an InView, an arm's gate) is not the line's item: its children are.
+  if (drawsNoBox(lowered)) {
+    for (const inner of lowered.children) fillsViewport(inner, horizontal);
+    return lowered;
+  }
+  const own = atomicDeclaration(lowered, horizontal ? 'width' : 'height')?.trim();
+  if (!own || !/(px|vh|vw)$|^calc\(/.test(own)) mergeAtomicDeclaration(lowered, 'flex-grow', '1');
+  replaceAtomicDeclaration(lowered, 'flex-shrink', '0');
+  return lowered;
+}
+
 /** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
 function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: string): HtmlNode {
-  const children: HtmlNode[] = [];
-  const child = lowerNode(node.child, context, null, path + '/0');
-  if (child) children.push(child);
   const horizontal = node.axis === 'horizontal';
+  const children: HtmlNode[] = [];
+  // Content that fills the viewport is the item of the scroller's flex line, and so is each ARM of an
+  // adaptive child, whose gates are `display: contents` (C# twin: Place).
+  const child = node.fillViewport
+    ? placeChild(node.child, path + '/0', (arm, armPath) =>
+        fillsViewport(lowerNode(arm, context, null, armPath), horizontal),
+      )
+    : lowerNode(node.child, context, null, path + '/0');
+  if (child) children.push(child);
   const view = element(
     'div',
     {
@@ -2156,6 +2183,11 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
       // it whenever a windowed list swapped the rows above what was on screen (C# twin; Photon
       // anchors nothing).
       'overflow-anchor': 'none',
+      // Content that FILLS the viewport is a flex line on the axis (C# twin): it grows to the content
+      // box, which a scrollbar that takes space is outside of, so it never makes a scroller around it
+      // scroll, and needs no percentage to resolve. Across, the line's stretch gives it the breadth.
+      display: node.fillViewport ? 'flex' : undefined,
+      'flex-direction': node.fillViewport ? (horizontal ? 'row' : 'column') : undefined,
     },
     children,
   );
