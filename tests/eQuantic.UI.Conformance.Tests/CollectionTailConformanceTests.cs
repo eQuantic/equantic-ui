@@ -175,6 +175,7 @@ public class CollectionTailConformanceTests
     [InlineData("ILookup<int, int> i = new[] { 1, 2 }.ToLookup(x => x); if (i is Lookup<int, int> lk) return lk.Contains(2) + \",\" + lk[1].Count(); return \"no\";")] // True,1
     [InlineData("var lk = new[] { \"a\" }.ToLookup(s => s) as Lookup<string, string>; return lk.Contains(\"a\") + \",\" + lk.Contains(\"b\");")] // True,False
     [InlineData("Lookup<int, int> none = null; var l = (Lookup<int, int>)new[] { 1, 2 }.ToLookup(x => x % 2); return (none?.Contains(1) == null) + \",\" + l?.Contains(0);")] // True,True
+    [InlineData("var l = (Lookup<string, string>)new[] { \"a\", \"b\", \"a\" }.ToLookup(s => s); ILookup<string, string> i = l; return l.Count + \",\" + i.Count;")] // 2,2
     public void ConcreteLookup_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

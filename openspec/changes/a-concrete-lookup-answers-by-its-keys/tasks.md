@@ -11,7 +11,8 @@
 
 - [x] 2.1 `CollectionTailConformanceTests.ConcreteLookup_MatchesDotNet`, executed on both sides: `Contains` and the
       indexer over a cast, a record key, a type pattern, an `as`, and `?.` over a null concrete lookup and a
-      lookup. All six fail before the change and pass after
+      lookup. All six fail before the change and pass after. A seventh pins `Count` on the class and on the
+      interface, which already answered the number of groups
 - [x] 2.2 With `LookupStrategy` no longer claiming `Contains`, a lookup's `Contains` is EQ2004 at build rather than an
       element search, measured once and restored
 - [x] 2.3 The interface's lookup cases, the key-equality cases, the transpiled pins and the compiler's coverage
