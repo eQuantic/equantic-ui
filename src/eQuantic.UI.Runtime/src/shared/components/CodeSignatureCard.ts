@@ -17,7 +17,7 @@ export class CodeSignatureCard {
         let wanted = Math.fround(CodeHoverCard.widest(context, signature.label, metrics.style) + counterWidth);
         if (!(about == null)) wanted = Math.max(wanted, CodeHoverCard.widest(context, about, prose));
         let documentation: any; 
-        if (((signature.documentation != null && signature.documentation.length > 0) && (documentation = signature.documentation, true))) wanted = Math.max(wanted, CodeHoverCard.widest(context, documentation, prose));
+        if ((($0) => (($0 != null && $0.length > 0) && (documentation = $0, true)))(signature.documentation)) wanted = Math.max(wanted, CodeHoverCard.widest(context, documentation, prose));
         let most = Math.fround(Math.fround(80 * metrics.columnWidth) + chrome);
         if (viewWidth > 0) most = Math.min(most, viewWidth);
         let width = Math.min(most, Math.fround(Math.ceil(wanted) + chrome));
@@ -36,7 +36,7 @@ export class CodeSignatureCard {
             height = Math.fround(height + Math.fround(4 + Math.fround(Math.fround(lines) * proseLine)));
         }
         let documented: any; 
-        if (((signature.documentation != null && signature.documentation.length > 0) && (documented = signature.documentation, true))) {
+        if ((($0) => (($0 != null && $0.length > 0) && (documented = $0, true)))(signature.documentation)) {
             let lines = CodeHoverCard.linesOf(context, documented, prose, room);
             column.add(new Text(documented, 'labelSmall', theme.textMuted, lines, 'start', false, false, null, 0, { styleOverride: prose }));
             height = Math.fround(height + Math.fround(4 + Math.fround(Math.fround(lines) * proseLine)));
@@ -77,13 +77,13 @@ export class CodeSignatureCard {
 
     static said(parameter: CodeSignatureParameter) {
         let documentation: any; 
-        return ((parameter.documentation != null && parameter.documentation.length > 0) && (documentation = parameter.documentation, true)) ? `${parameter.label}: ${documentation}` : parameter.label;
+        return (($0) => (($0 != null && $0.length > 0) && (documentation = $0, true)))(parameter.documentation) ? `${parameter.label}: ${documentation}` : parameter.label;
     }
 
     static described(theme: any, parameter: CodeSignatureParameter) {
         let runs = [new TextRun(parameter.label, theme.textPrimary)];
         let documentation: any; 
-        if (((parameter.documentation != null && parameter.documentation.length > 0) && (documentation = parameter.documentation, true))) runs.push(new TextRun(`: ${documentation}`, theme.textSecondary));
+        if ((($0) => (($0 != null && $0.length > 0) && (documentation = $0, true)))(parameter.documentation)) runs.push(new TextRun(`: ${documentation}`, theme.textSecondary));
         return runs;
     }
 }

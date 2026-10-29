@@ -243,7 +243,7 @@ export class SheetController {
 
     get inputBounds(): Rect {
         let carets: any; 
-        return ((this.carets != null && $eq.collections.count(this.carets) > 0) && (carets = this.carets, true)) ? $eq.collections.item(carets, 0) : this.boundsOf(new SheetRange(this._active));
+        return (($0) => (($0 != null && $eq.collections.count($0) > 0) && (carets = $0, true)))(this.carets) ? $eq.collections.item(carets, 0) : this.boundsOf(new SheetRange(this._active));
     }
 
     get focusVersion(): number {

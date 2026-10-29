@@ -17,7 +17,7 @@ export class CodeHoverCard {
         for (const problem of hover.problems) wanted = Math.max(wanted, Math.fround(marked + CodeHoverCard.widest(context, CodeHoverCard.said(problem), prose)));
         for (const answer of hover.answers) {
             let signature: any; 
-            if (((answer.signature != null && answer.signature.length > 0) && (signature = answer.signature, true))) wanted = Math.max(wanted, CodeHoverCard.widest(context, signature, metrics.style));
+            if ((($0) => (($0 != null && $0.length > 0) && (signature = $0, true)))(answer.signature)) wanted = Math.max(wanted, CodeHoverCard.widest(context, signature, metrics.style));
             wanted = Math.max(wanted, CodeHoverCard.widest(context, answer.text, prose));
         }
         let most = Math.fround(Math.fround(CodeHoverCard.maxColumns * metrics.columnWidth) + chrome);
@@ -38,7 +38,7 @@ export class CodeHoverCard {
         }
         for (const answer of hover.answers) {
             let signature: any; 
-            if (((answer.signature != null && answer.signature.length > 0) && (signature = answer.signature, true))) {
+            if ((($0) => (($0 != null && $0.length > 0) && (signature = $0, true)))(answer.signature)) {
                 let lines = CodeHoverCard.linesOf(context, signature, metrics.style, room);
                 column.add(new Text(signature, 'labelSmall', theme.textPrimary, lines, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style }));
                 height = Math.fround(height + Math.fround((parts++ === 0 ? 0 : 4) + Math.fround(Math.fround(lines) * codeLine)));
@@ -82,9 +82,9 @@ export class CodeHoverCard {
 
     static origin(problem: CodeDiagnostic) {
         let rule: any; 
-        let code = ((problem.code != null && problem.code.length > 0) && (rule = problem.code, true)) ? rule : null;
+        let code = (($0) => (($0 != null && $0.length > 0) && (rule = $0, true)))(problem.code) ? rule : null;
         let by: any; 
-        let source = ((problem.source != null && problem.source.length > 0) && (by = problem.source, true)) ? by : null;
+        let source = (($0) => (($0 != null && $0.length > 0) && (by = $0, true)))(problem.source) ? by : null;
         if (!(code == null) && !(source == null)) return `${source} ${code}`;
         return code ?? source;
     }
