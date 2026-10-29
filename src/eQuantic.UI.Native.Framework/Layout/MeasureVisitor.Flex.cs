@@ -160,9 +160,11 @@ internal sealed partial class MeasureVisitor
         // item's basis. A weighted item is deferred to pass 2, which adds its share of the leftover
         // to that start; laid out from nothing, `Flexible(a, flex: 1, basis: 540)` beside
         // `Flexible(b, flex: 1)` in 1440 was 720 | 720, where a browser gives 990 | 450 (#693).
-        // `rigidSum` is what the line takes before anything is shared: every start, summed.
+        // `rigidSum` is what the line takes before anything is shared: every start, summed. An item
+        // is DEFERRED when it declares a weight, asked of the item itself rather than kept beside it,
+        // because every line is laid out every frame.
         var rigidSum = 0f;
-        var deferred = new bool[children.Count];
+        bool Deferred(int i) => children[i] is Flexible { Flex: > 0 } or Spacer { Flex: > 0 };
         for (var i = 0; i < children.Count; i++)
         {
             switch (children[i])
@@ -178,7 +180,6 @@ internal sealed partial class MeasureVisitor
                         f.Flex, ctx.TimeMs, f.AnimateChanges, ctx.ReducedMotion) ?? f.Flex;
                     if (f.Flex > 0)
                     {
-                        deferred[i] = true;
                         // Only where there is leftover to share: on an unbounded or indeterminate
                         // axis pass 2 gives the item its content's size instead.
                         if (mainBounded)
@@ -214,7 +215,6 @@ internal sealed partial class MeasureVisitor
                 case Spacer { Flex: > 0 } s:
                     flexWeights[i] = ctx.Transitions?.Resolve(children.At(at, i), GlideChannel.Flex,
                         s.Flex, ctx.TimeMs, s.AnimateChanges, ctx.ReducedMotion) ?? s.Flex;
-                    deferred[i] = true;
                     continue;
                 case Spacer fixedSpacer:
                     mains[i] = fixedSpacer.FixedLength;
@@ -288,7 +288,9 @@ internal sealed partial class MeasureVisitor
                 // the others have to give, which is what makes a hugging button keep its word while
                 // the stretchy one beside it absorbs the overflow. In a column that floor is the
                 // height the item measured, which is its min-content height (`min-height: auto`),
-                // so there it gives nothing. A Flexible is written `flex: <weight> <shrink> <basis>;
+                // so there it gives nothing (a scroller is the web's exception, `min-height: 0`, and
+                // Photon does not shrink a scroller of a fixed size on either axis yet, #1186). A
+                // Flexible is written `flex: <weight> <shrink> <basis>;
                 // min-width: 0` (`min-height: 0` in a column), so its floor is zero, a child wider
                 // than the item no longer holds it up (the web lets the child overflow it), and it
                 // is asked by its shrink times its start, as CSS scales a shrink factor: `shrink: 3`
@@ -380,14 +382,14 @@ internal sealed partial class MeasureVisitor
 
         for (var i = 0; i < children.Count; i++)
         {
-            if (!deferred[i] && flexWeights[i] == 0) continue;
+            if (!Deferred(i) && flexWeights[i] == 0) continue;
 
             // Max-content sizing (the CSS twin): when there is no leftover to distribute — the
             // main axis is indeterminate or unbounded — a Flexible with CONTENT contributes its
             // own intrinsic size, exactly what a flex-grow item contributes to a max-content
             // container. A share of 0 here erased real content: a drawer's list rows measured
             // 0x0 because their row was hugging. (A flexible SPACER stays 0 — pure space.)
-            if (!mainBounded && deferred[i] && children[i] is Flexible unbounded)
+            if (!mainBounded && Deferred(i) && children[i] is Flexible unbounded)
             {
                 var (usW, usH) = CrossStretch(unbounded);
                 var intrinsic = MeasureChild(unbounded.Child, horizontal ? mainAvail : crossAvail,
@@ -407,7 +409,7 @@ internal sealed partial class MeasureVisitor
             {
                 // A zero weight was laid out at its start in pass 1; it is laid again only while an
                 // animation still gives it a share.
-                if (!deferred[i] && share <= 0) continue;
+                if (!Deferred(i) && share <= 0) continue;
                 // The flexible slot IS its start plus its share on the main axis (the child fills it).
                 mains[i] += share;
                 laid[i] = Slot(flexible, i, mains[i]);
@@ -546,8 +548,10 @@ internal sealed partial class MeasureVisitor
         // two of them share a line while there is room for both and take a line each when there is
         // not. A WEIGHTED Flexible without a basis asks for nothing, as CSS starts it from zero
         // (`flex: n 1 0%`): broken at its child's natural size, two of them around 600 boxes took a
-        // line of 1000 each, where a browser puts both on one line at 500 (#728). Any other child
-        // asks for the size it measures.
+        // line of 1000 each, where a browser puts both on one line at 500 (#728). That needs a line
+        // to grow it, so on an UNBOUNDED main axis, where no line resolves, it asks for its child's
+        // size instead, the content it contributes to a max-content container, as the single-line
+        // pass gives it. Any other child asks for the size it measures.
         // What the lines lay out: an AdaptiveNode's place is its arm's (see LaidOutChildren).
         var children = new LaidOutChildren(flex.Children, ctx);
         var measured = new List<LayoutNode>(children.Count);
@@ -584,7 +588,7 @@ internal sealed partial class MeasureVisitor
             positions.Add(itemAt);
             sources.Add(source);
             hypothetical.Add(basis > 0 ? basis
-                : flexible is { Flex: > 0 } ? 0
+                : flexible is { Flex: > 0 } && float.IsFinite(mainAvail) ? 0
                 : horizontal ? node.Bounds.Width : node.Bounds.Height);
             grow.Add(flexible?.Flex ?? 0);
             shrink.Add(flexible?.Shrink ?? 0);

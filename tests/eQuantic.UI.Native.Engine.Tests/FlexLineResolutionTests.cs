@@ -155,6 +155,23 @@ public class FlexLineResolutionTests
         node.Children[1].Bounds.Should().Be(new Rect(505, 0, 495, 20));
     }
 
+    /// <summary>
+    /// Starting from nothing needs a line to grow the item, and on an UNBOUNDED main axis no line
+    /// resolves: a wrapping row inside a horizontal scroller gives its weighted Flexible its child's
+    /// size, the content it contributes, as the single-line pass does. Broken on nothing there, the
+    /// item kept nothing and its content vanished (found reviewing this change).
+    /// </summary>
+    [Fact]
+    public void AWrappingRow_OnAnUnboundedAxis_GivesAWeightedItemItsContent()
+    {
+        var row = new Row(gap: 0) { Wrap = true };
+        row.Add(new Flexible(FixedBox(600), flex: 1));
+
+        var scroller = Layout(new ScrollView(row, ScrollAxis.Horizontal));
+
+        scroller.Children[0].Children[0].Bounds.Width.Should().BeApproximately(600, 0.5f);
+    }
+
     // ---- #747: a single-line column takes its overflow back ---------------------------------------
 
     /// <summary>
@@ -246,6 +263,35 @@ public class FlexLineResolutionTests
         var frame = PhotonRealizer.Realize(row, 400, 100, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder());
 
         frame.Root.Children[0].Bounds.Height.Should().Be(20);
+    }
+
+    /// <summary>A window-relative height is as explicit as a fixed one (the web writes it as a
+    /// <c>calc</c> of the viewport), so a row that stretches keeps it: 800 less 750 is 50, not the
+    /// row's 100.</summary>
+    [Fact]
+    public void AStretchingRow_KeepsAWindowRelativeHeight()
+    {
+        var row = new Row(gap: 0, cross: CrossAlign.Stretch) { Width = 400, Height = 100 };
+        row.Add(new Box(new BoxStyle { Width = 40, Height = SizeValue.WindowMinus(750) }));
+
+        Layout(row, 400, 800).Children[0].Bounds.Height.Should().Be(50);
+    }
+
+    /// <summary>The same reading on the main axis: a Flexible whose child is a component that builds
+    /// a box 400 wide keeps the box at 400 in a share of 300, as the web keeps it inside the flex
+    /// item, where asking the component read nothing and pinned it to the share.</summary>
+    [Fact]
+    public void AFlexibleSlot_KeepsTheSizeOfWhatAComponentBuilds()
+    {
+        var row = new Row(gap: 0) { Width = 600, Height = 20 };
+        row.Add(new Flexible(new Builds(FixedBox(400)), flex: 1));
+        row.Add(new Flexible(Pane(), flex: 1));
+
+        var item = PhotonRealizer.Realize(row, 600, 100, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder())
+            .Root.Children[0];
+
+        item.Bounds.Width.Should().BeApproximately(300, 0.5f, "the item is its share");
+        item.Children[0].Bounds.Width.Should().Be(400, "and what the component built keeps its own width");
     }
 
     private sealed class Builds(VisualNode built) : StatelessComponent
