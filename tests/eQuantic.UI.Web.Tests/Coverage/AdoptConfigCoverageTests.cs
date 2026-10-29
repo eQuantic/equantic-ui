@@ -130,7 +130,8 @@ public class AdoptConfigCoverageTests
     /// <summary>
     /// The instrument, in the condition it exists for: a component that forgets one property, wires
     /// another to the wrong source and drops a constructor argument is named for exactly those three,
-    /// and one that keeps the fresh instance whole is named for nothing.
+    /// and one that keeps the fresh instance whole is named for nothing. One that only REMEMBERS the
+    /// fresh instance, in a field that is not its configuration, is measured like any other.
     /// </summary>
     [Fact]
     public void TheMeasurement_NamesWhatAnOverrideDrops_AndNothingElse()
@@ -138,12 +139,25 @@ public class AdoptConfigCoverageTests
         var census = new Census();
         census.Measure(typeof(Forgetful));
         census.Measure(typeof(KeepsTheWholeConfiguration));
+        census.Measure(typeof(RemembersTheLast));
 
         census.Unmeasured.Should().BeEmpty();
         census.Dropped.Keys.Should().BeEquivalentTo(
             $"{typeof(Forgetful).FullName}.{nameof(Forgetful.Forgotten)}",
             $"{typeof(Forgetful).FullName}.{nameof(Forgetful.Crossed)}",
-            $"{typeof(Forgetful).FullName}(subtitle)");
+            $"{typeof(Forgetful).FullName}(subtitle)",
+            $"{typeof(RemembersTheLast).FullName}.{nameof(RemembersTheLast.Forgotten)}");
+    }
+
+    private sealed class RemembersTheLast : StatefulComponent
+    {
+        private UiComponent? _last;
+
+        public string? Forgotten { get; init; }
+
+        public override void AdoptConfig(UiComponent next) => _last = next;
+
+        public override VisualNode Build(ComponentContext context) => new Text($"{Forgotten} {_last?.Key}");
     }
 
     private sealed class Forgetful : StatefulComponent
@@ -221,13 +235,17 @@ public class AdoptConfigCoverageTests
                 return;
             }
 
-            // One plain adoption first: a component that keeps the fresh instance itself carries
-            // every input, and measuring them one by one would only measure the field.
+            // One plain adoption first: a component that keeps the fresh instance itself, in a field
+            // of its own type, carries every input, and measuring them one by one would only measure
+            // the field. A field of another type that happens to hold it (a `UiComponent` remembered
+            // for diffing) is not a configuration, and the inputs are measured.
             if (!TryBuild(constructor, arguments, component.FullName!, out var kept)
                 || !TryBuild(constructor, arguments, component.FullName!, out var fresh)
                 || !TryAdopt(kept, fresh, component.FullName!))
                 return;
-            if (Fields(component).Any(field => ReferenceEquals(field.GetValue(kept), fresh))) return;
+            if (Fields(component).Any(field => field.FieldType == component
+                    && ReferenceEquals(field.GetValue(kept), fresh)))
+                return;
 
             foreach (var property in Settable(component))
                 MeasureProperty(component, constructor, arguments, property);
@@ -245,9 +263,13 @@ public class AdoptConfigCoverageTests
             string? refused = null;
             foreach (var varied in Variations(property.PropertyType, Probe(constructor, arguments, property)))
             {
-                if (Build(constructor, arguments) is not { } kept || Build(constructor, arguments) is not { } fresh)
+                if (Build(constructor, arguments, out var unbuilt) is not { } kept
+                    || Build(constructor, arguments, out unbuilt) is not { } fresh)
+                {
+                    refused = $"building it threw {unbuilt}";
                     break;
-                var from = property.GetValue(fresh);
+                }
+                var from = Read(() => property.GetValue(fresh));
                 try
                 {
                     property.SetValue(fresh, varied);
@@ -257,16 +279,17 @@ public class AdoptConfigCoverageTests
                     refused = $"setting {Show(varied)} threw {failure.InnerException?.Message}";
                     continue;
                 }
-                if (Same(property.GetValue(fresh), from))
+                if (Same(Read(() => property.GetValue(fresh)), from))
                 {
                     refused = $"the setter took {Show(varied)} and still answers {Show(from)}";
                     continue;
                 }
 
                 if (!TryAdopt(kept, fresh, input)) return;
-                if (!Same(property.GetValue(kept), property.GetValue(fresh)))
-                    Dropped[input] = $"stays {Show(property.GetValue(kept))} after a fresh instance handed "
-                        + Show(property.GetValue(fresh));
+                var stayed = Read(() => property.GetValue(kept));
+                var handed = Read(() => property.GetValue(fresh));
+                if (!Same(stayed, handed))
+                    Dropped[input] = $"stays {Show(stayed)} after a fresh instance handed {Show(handed)}";
                 return;
             }
 
@@ -329,7 +352,7 @@ public class AdoptConfigCoverageTests
         /// <summary>What the property answers on an instance built with these arguments: the value
         /// a variation has to differ from.</summary>
         private static object? Probe(ConstructorInfo constructor, object?[] arguments, PropertyInfo property) =>
-            Build(constructor, arguments) is { } built ? property.GetValue(built) : null;
+            Build(constructor, arguments) is { } built ? Read(() => property.GetValue(built)) : null;
 
         private bool TryBuild(ConstructorInfo constructor, object?[] arguments, string input,
             out StatefulComponent built)
