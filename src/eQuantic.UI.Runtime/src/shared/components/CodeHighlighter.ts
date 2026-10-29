@@ -1,4 +1,4 @@
-import { CodeDocument, CodeToken } from "../runtime-exports";
+import { $eq, CodeDocument, CodeToken } from "../runtime-exports";
 
 export class CodeHighlighter {
     constructor(language: any) {
@@ -66,8 +66,8 @@ export class CodeHighlighter {
 
     trimTo(line: number) {
         if (line >= this._tokens.length) return;
-        this._tokens.splice(line, this._tokens.length - line);
-        this._endStates.splice(line, this._endStates.length - line);
+        $eq.collections.listRemoveRange(this._tokens, line, this._tokens.length - line);
+        $eq.collections.listRemoveRange(this._endStates, line, this._endStates.length - line);
     }
 
     toString(): string {
