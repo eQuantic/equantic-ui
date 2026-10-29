@@ -121,6 +121,10 @@ public static class JsExprWriter
     /// <c>{10}</c>, which a single digit left in the text as code.</summary>
     private static readonly Regex Hole = new(@"\{(\d+)\}", RegexOptions.Compiled);
 
+    /// <summary>The holes of a template's text, which are CODE: a string the text holds may spell one
+    /// (<c>s is "{0}"</c> compares with that text) and is left as it is (<see cref="CodeOf"/>).</summary>
+    private static MatchCollection HolesOf(string text) => Hole.Matches(CodeOf(text));
+
     /// <summary>
     /// Single evaluation, decided here and nowhere else. A part the template mentions more than
     /// once is bound to a parameter of an arrow and passed exactly once — unless it is a literal, or a
@@ -148,7 +152,7 @@ public static class JsExprWriter
     private static JsWritten RenderTemplate(JsTemplate template)
     {
         var parts = template.Parts;
-        var holes = Hole.Matches(template.Text);
+        var holes = HolesOf(template.Text);
         var uses = new int[parts.Count];
         var deferred = new bool[parts.Count];
         var inside = InsideAFunction(template.Text, holes);
@@ -197,13 +201,14 @@ public static class JsExprWriter
             last = Array.LastIndexOf(bound, true);
         }
 
+        var named = Enumerable.Range(0, parts.Count).Select(i => Binding(i, declared)).ToArray();
         var body = new JsWrittenBuilder();
         var from = 0;
         foreach (Match match in holes)
         {
             body.Add(template.Text[from..match.Index]);
             var index = int.Parse(match.Groups[1].Value);
-            if (bound[index]) body.Add("$" + index);
+            if (bound[index]) body.Add(named[index]);
             else body.Add(Write(parts[index], PositionOf(template.Text, match), null));
             from = match.Index + match.Length;
         }
@@ -215,9 +220,24 @@ public static class JsExprWriter
         // arguments it is called with, so `$0` keeps the receiver's type and a callback the template
         // hands it is typed from there. Annotated `any`, the receiver lost its type, and the template's
         // own callbacks fell to TS7006 (Copilot's third review of #661).
-        var names = string.Join(", ", indexes.Select(i => "$" + i));
+        var names = string.Join(", ", indexes.Select(i => named[i]));
         return new JsWrittenBuilder().Add($"(({names}) => ").Add(body.Done()).Add(")(")
             .AddJoined(", ", indexes.Select(i => Written(parts[i]))).Add(")").Done();
+    }
+
+    /// <summary>
+    /// The name part <paramref name="index"/> is bound to: <c>$0</c> for the first, unless a function
+    /// the template's own text defines declares that name, which would take a hole inside it for its own
+    /// and read its parameter where the template meant the part. The text may hold another template's
+    /// output, a pattern's constant among them (<c>x is (Level.Low + 1)</c> writes the enum's arithmetic
+    /// with an arrow of its own over <c>$0</c>), so the name is chosen against what the text declares:
+    /// <c>$$0</c> then, and so on (Copilot's third review of #1157).
+    /// </summary>
+    private static string Binding(int index, HashSet<string> declared)
+    {
+        var name = "$" + index;
+        while (declared.Contains(name)) name = "$" + name;
+        return name;
     }
 
     /// <summary>Whether something in the template can reassign the plain name of part
@@ -355,7 +375,7 @@ public static class JsExprWriter
     /// expression literal) leaves the whole text as it is, so a real read is never missed: a part
     /// taken for a reader stays where it was, and only a part taken for a non-reader moves.
     /// </summary>
-    private static string CodeOf(string text)
+    internal static string CodeOf(string text)
     {
         var code = text.ToCharArray();
         for (var i = 0; i < code.Length; i++)

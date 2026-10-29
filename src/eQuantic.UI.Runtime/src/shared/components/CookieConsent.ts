@@ -27,7 +27,7 @@ export class CookieConsent extends StatefulComponent {
         actions.add(new Button(config.acceptLabel ?? SdkStrings.acceptCookies, 'primary', 'small', () => this.answer(consent.grant.bind(consent))));
         actions.add(new Button(config.rejectLabel ?? SdkStrings.rejectCookies, 'secondary', 'small', () => this.answer(consent.deny.bind(consent))));
         let href: any; 
-        if (((config.policyHref != null && config.policyHref.length > 0) && (href = config.policyHref, true))) {
+        if ((($0) => (($0 != null && $0.length > 0) && (href = $0, true)))(config.policyHref)) {
             actions.add(new Link(href, new Text(config.policyLabel ?? SdkStrings.privacyPolicy, 'labelSmall', theme.colors('primary').base, 1)));
         }
         let column = new Column(8, 'start', 'stretch', false, null, null, { width: SizeValue.fill });

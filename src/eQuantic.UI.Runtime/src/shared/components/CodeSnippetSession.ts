@@ -124,7 +124,7 @@ export class CodeSnippetSession {
 
     offerChoices(stop: CodeSnippetStop) {
         let options: any; 
-        if (((stop.choices != null && $eq.collections.count(stop.choices) > 0) && (options = stop.choices, true))) this._editor.completion.offerChoices(stop.ranges[0], options);
+        if ((($0) => (($0 != null && $eq.collections.count($0) > 0) && (options = $0, true)))(stop.choices)) this._editor.completion.offerChoices(stop.ranges[0], options);
     }
 
     leaving() {

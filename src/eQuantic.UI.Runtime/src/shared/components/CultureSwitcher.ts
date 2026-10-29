@@ -37,11 +37,11 @@ export class CultureSwitcher extends StatelessComponent {
         let items: MenuItem[] = [];
         for (const option of this.options) {
             let flag: any; 
-            items.push(new MenuItem(((option.flag != null && option.flag.length > 0) && (flag = option.flag, true)) ? `${flag}  ${option.label}` : option.label));
+            items.push(new MenuItem((($0) => (($0 != null && $0.length > 0) && (flag = $0, true)))(option.flag) ? `${flag}  ${option.label}` : option.label));
         }
         let chosen = $eq.collections.item(this.options, selected);
         let code: any; 
-        return new Menu(new Button(((chosen.short != null && chosen.short.length > 0) && (code = chosen.short, true)) ? code : chosen.label, 'ghost', this.size, null, { leading: this.icon }), items, (index: number) => this.switch(controller, index));
+        return new Menu(new Button((($0) => (($0 != null && $0.length > 0) && (code = $0, true)))(chosen.short) ? code : chosen.label, 'ghost', this.size, null, { leading: this.icon }), items, (index: number) => this.switch(controller, index));
     }
 
     switch(controller: any, index: number) {

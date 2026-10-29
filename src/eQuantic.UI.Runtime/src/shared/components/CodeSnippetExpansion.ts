@@ -99,7 +99,7 @@ export class CodeSnippetExpansion {
         if (!(($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null), false)))(this._defining) || this._resolving.includes(index)) return '';
         this._resolving.push(index);
         let choices: any; let children: any; 
-        let text = ((defining.choices != null && $eq.collections.count(defining.choices) > 0) && (choices = defining.choices, true)) ? $eq.collections.item(choices, 0) : (children = defining.children) != null ? this.plain(children) : defining.text;
+        let text = (($0) => (($0 != null && $eq.collections.count($0) > 0) && (choices = $0, true)))(defining.choices) ? $eq.collections.item(choices, 0) : (children = defining.children) != null ? this.plain(children) : defining.text;
         $eq.collections.remove(this._resolving, index);
         $eq.mapSet(this._defaults, index, text);
         return text;

@@ -8,6 +8,7 @@ export class BoundReceivers extends StatelessComponent {
     _ticks: bigint[] = [4n, 6n];
     _prices: Decimal[] = [$eq.num.dec("1.5"), $eq.num.dec("2.25")];
     _seen: boolean = false;
+    _level: number = 1;
 
     build(_context: BuildContext) {
         let average = $eq.linq.average(this.items(), undefined, 'int', false);
@@ -29,7 +30,8 @@ export class BoundReceivers extends StatelessComponent {
         let ticks = this._ticks.map((tick: bigint) => tick * 2n).reduce(($a, $b) => $a + $b, 0n);
         let price = $eq.linq.average(this._prices, (each: Decimal) => each, 'decimal', false);
         let fallback = $eq.linq.firstOrDefault(this.items(), undefined, 9) + $eq.linq.lastOrDefault(this.items(), (item: number) => item > 1, 9) + $eq.linq.singleOrDefault(this.items(), (item: number) => item > 2, 9);
-        return new Text(`${$eq.text.format(average, null)} ${$eq.text.format(doubled, null)} ${$eq.text.format(sum, null, undefined, undefined, 'int32')} ${$eq.text.format(total, null, undefined, undefined, 'int32')} ${first} ${$eq.text.format(distinct, null, undefined, undefined, 'int32')} ${$eq.text.format(this._seen, null)} ${$eq.text.format(count, null, undefined, undefined, 'int32')} ` + `${$eq.text.format(groups, null, undefined, undefined, 'int32')} ${$eq.text.format(found, null, undefined, undefined, 'int32')} ${$eq.text.format(zipped, null, undefined, undefined, 'int32')} ${$eq.text.format(triples, null, undefined, undefined, 'int32')} ${$eq.text.format(same, null)} ${$eq.text.format(fallback, null, undefined, undefined, 'int32')} ${$eq.text.format(ticks, null)} ${$eq.text.format(price, null)}`, 'caption');
+        let discarded = ((void (-1), true)) && ((void (!this._seen), true)) && ((void (this._level + 1), true)) && ((void this.items().length, true));
+        return new Text(`${$eq.text.format(average, null)} ${$eq.text.format(doubled, null)} ${$eq.text.format(sum, null, undefined, undefined, 'int32')} ${$eq.text.format(total, null, undefined, undefined, 'int32')} ${first} ${$eq.text.format(distinct, null, undefined, undefined, 'int32')} ${$eq.text.format(this._seen, null)} ${$eq.text.format(count, null, undefined, undefined, 'int32')} ` + `${$eq.text.format(groups, null, undefined, undefined, 'int32')} ${$eq.text.format(found, null, undefined, undefined, 'int32')} ${$eq.text.format(zipped, null, undefined, undefined, 'int32')} ${$eq.text.format(triples, null, undefined, undefined, 'int32')} ${$eq.text.format(same, null)} ${$eq.text.format(fallback, null, undefined, undefined, 'int32')} ${$eq.text.format(ticks, null)} ${$eq.text.format(price, null)} ${$eq.text.format(discarded, null)}`, 'caption');
     }
 
     items() {

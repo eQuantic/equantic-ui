@@ -329,7 +329,7 @@ export class CodeFolding {
         let answers = [];
         for (const one of asked) {
             let answer: any; 
-            if (!((answer = await one) != null)) return;
+            if (!((answer = (await one)) != null)) return;
             answers.push(answer);
         }
         UiThread.run(() => {
