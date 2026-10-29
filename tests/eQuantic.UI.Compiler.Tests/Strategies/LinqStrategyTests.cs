@@ -1,5 +1,6 @@
 using FluentAssertions;
 using eQuantic.UI.Compiler.CodeGen;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Strategies;
@@ -251,6 +252,17 @@ public class LinqStrategyTests
         var result = TestHelper.ConvertExpression("list.Min(x => x.Value)");
         result.Should().Be("$eq.linq.min(this.list, (x) => x.value, 'value', false)");
     }
+
+    /// <summary>
+    /// With no model to say what the call answers, <c>Max</c> and <c>Min</c> keep the numeric answer of
+    /// <c>Math.max</c> and <c>Math.min</c>, folded over the values: spread into the call, the values were
+    /// its arguments, past the cap an engine sets on them (#1060).
+    /// </summary>
+    [Theory]
+    [InlineData("values.Max()", "values.reduce(($m, $v) => Math.max($m, $v), -Infinity)")]
+    [InlineData("values.Min(x => x.Size)", "values.map((x) => x.size).reduce(($m, $v) => Math.min($m, $v), Infinity)")]
+    public void MaxMin_WithNoModel_FoldTheValues(string code, string expected) =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
 
     [Fact]
     public void MaxMin_OverAnEnum_OrdersByItsMembersValues()

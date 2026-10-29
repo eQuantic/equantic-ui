@@ -8,7 +8,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 /// <summary>
 /// LINQ's <c>Min()</c>, <c>Min(selector)</c>, <c>Max()</c> and <c>Max(selector)</c>, through the
 /// runtime's <c>$eq.linq.min</c>/<c>max</c> with the ordering the answered type calls for. Only a call
-/// no model binds keeps the old <c>Math.min</c>/<c>Math.max</c> spread.
+/// no model binds keeps the old numeric answer of <c>Math.min</c>/<c>Math.max</c>, folded over the values:
+/// spread into the call, they were its arguments, and an engine caps those (#1060).
 /// </summary>
 public class MinMaxStrategy : IConversionStrategy
 {
@@ -43,20 +44,15 @@ public class MinMaxStrategy : IConversionStrategy
         if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method)
             return Extreme(invocation, memberAccess, method, methodName == "Min" ? Eq.LinqMin : Eq.LinqMax, context);
 
-        // No model to ask what the call answers: the numeric shape it always had.
+        // No model to ask what the call answers: the numeric answer it always had, Math.min's of no
+        // values (Infinity) for an empty list, and a NaN among them winning.
         var caller = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
-        var mathFunc = methodName == "Min" ? "Math.min" : "Math.max";
-
-        if (args.Count > 0)
-        {
-            // Min(x => x.Value) -> Math.min(...array.map(selector))
-            var selector = context.Converter.ConvertExpression(args[0].Expression);
-            return $"{mathFunc}(...{caller}.map({selector}))";
-        }
-
-        // Min() without selector
-        return $"{mathFunc}(...{caller})";
+        var (mathFunc, none) = methodName == "Min" ? ("Math.min", "Infinity") : ("Math.max", "-Infinity");
+        var values = args.Count > 0
+            ? $"{caller}.map({context.Converter.ConvertExpression(args[0].Expression)})"
+            : caller;
+        return $"{values}.reduce(($m, $v) => {mathFunc}($m, $v), {none})";
     }
 
     /// <summary>

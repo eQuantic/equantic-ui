@@ -10,6 +10,8 @@
  *    `indexOf` never finds a NaN, a record, a tuple or a decimal equal to the one sought (#425);
  *  - `Find` and `FindLast`, which answer the element type's default for no match, and `FindIndex`'s
  *    and `FindLastIndex`'s ranges, which `findIndex` took for its predicate;
+ *  - `AddRange` and `InsertRange`, one element at a time, where a spread passed an engine's cap on a
+ *    call's arguments, and `InsertRange`'s index checked (#1060);
  *  - `RemoveAll`, which answers how many it removed, asking the predicate once per element in order;
  *  - `CopyTo`, which writes into the array it is handed, where `[...list]` made a copy nothing read.
  *
@@ -402,6 +404,41 @@ export function arrayFindLastIndex<T>(
   count?: number,
 ): number {
   return findLastIndex(requireArray(array), match, startIndex, count);
+}
+
+// ---- AddRange, InsertRange -----------------------------------------------------------------------
+
+/** What a range adds: an array as it is, and anything else as {@link listCopy} copies it, a null refused. */
+function rangeOf<T>(collection: Iterable<T> | string | null): readonly T[] {
+  return Array.isArray(collection) ? collection : listCopy(collection);
+}
+
+/**
+ * `List<T>.AddRange(collection)`: the collection's elements appended in its order, one `push` each. It
+ * was `push(...items)`, which hands every element to the call as an argument, and an engine caps a
+ * call's arguments (V8 near 125,000, JavaScriptCore near 640,000), so a large range threw a RangeError
+ * where .NET adds any number (#1060). The spread also read a string by its code points and a null as a
+ * TypeError. The length is read once, so a list added to itself adds what it held, as .NET's does.
+ */
+export function addRange<T>(list: T[], collection: Iterable<T> | string | null): void {
+  const items = rangeOf(collection);
+  for (let i = 0, count = items.length; i < count; i++) list.push(items[i]);
+}
+
+/**
+ * `List<T>.InsertRange(index, collection)`: the collection's elements in its order from `index`, the
+ * collection checked before the index, as .NET checks them. It was `splice(index, 0, ...items)`, which
+ * passed the cap `push` did (#1060), and an index past the end appended where .NET refuses it, a
+ * negative one inserting before the last. The elements from `index` on are taken off and put back after
+ * the range, so a list inserted into itself inserts what it held.
+ */
+export function insertRange<T>(list: T[], index: number, collection: Iterable<T> | string | null): void {
+  const range = rangeOf(collection);
+  if (index < 0 || index > list.length) throw outOfRange('index', INDEX_LESS_OR_EQUAL);
+  const items = range === list ? list.slice() : range;
+  const tail = list.splice(index);
+  for (let i = 0, count = items.length; i < count; i++) list.push(items[i]);
+  for (let i = 0, count = tail.length; i < count; i++) list.push(tail[i]);
 }
 
 // ---- RemoveAll, CopyTo ---------------------------------------------------------------------------
