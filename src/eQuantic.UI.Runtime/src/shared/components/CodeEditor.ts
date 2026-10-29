@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeFold, CodeGoToView, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeLocation, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Rect, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeFold, CodeGoToView, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeLocation, CodeNoteBuilder, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Rect, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
@@ -161,20 +161,20 @@ export class CodeEditor extends StatefulComponent {
         let hover = editor.hover;
         if (hover.isOpen && offered == null) {
             let [card, cardWidth, cardHeight] = CodeHoverCard.build(context, hover, metrics, this._viewportWidth);
-            let [x, y] = CodeHoverCard.place(editor.caretRect(hover.range.start), viewTop, this._scrollX, this._viewportWidth, cardWidth, cardHeight);
-            notes.push(new Positioned(card, y, null, null, x));
+            let at: any; 
+            if ((at = CodeNoteBuilder.place(editor.caretRect(hover.range.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, cardWidth, cardHeight, null)) != null) notes.push(new Positioned(card, at.y, null, null, at.x));
         }
         let nothing: any; 
         if ((nothing = editor.goTo.notFound) != null && !hover.isOpen && offered == null) {
             let [said, saidWidth, saidHeight] = CodeHoverCard.message(context, metrics, CodeGoToView.notFoundText(nothing), this._viewportWidth);
-            let [x, y] = CodeHoverCard.place(editor.caretRect(nothing.at), viewTop, this._scrollX, this._viewportWidth, saidWidth, saidHeight);
-            notes.push(new Positioned(said, y, null, null, x));
+            let at: any; 
+            if ((at = CodeNoteBuilder.place(editor.caretRect(nothing.at), viewTop, viewBottom, this._scrollX, this._viewportWidth, saidWidth, saidHeight, null)) != null) notes.push(new Positioned(said, at.y, null, null, at.x));
         }
         let signatures = editor.signatureHelp;
         if (signatures.isOpen && !(signatures.signature == null) && !hover.isOpen) {
             let [panel, panelWidth, panelHeight] = CodeSignatureCard.build(context, signatures, metrics, this._viewportWidth);
             let at: any; 
-            if ((at = CodeSignatureCard.place(editor.caretRect(editor.caret), viewTop, viewBottom, this._scrollX, this._viewportWidth, panelWidth, panelHeight, listAbove)) != null) notes.push(new Positioned(panel, at.y, null, null, at.x));
+            if ((at = CodeNoteBuilder.place(editor.caretRect(editor.caret), viewTop, viewBottom, this._scrollX, this._viewportWidth, panelWidth, panelHeight, listAbove)) != null) notes.push(new Positioned(panel, at.y, null, null, at.x));
         }
         let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => this.notify(editor)), options: offered, optionsOrigin: offeredAt, highlightedOption: highlighted, notes: notes });
         let viewport: VisualNode = new ScrollView(surface, 'horizontal', { width: SizeValue.fill, onViewportChanged: (width: number) => {

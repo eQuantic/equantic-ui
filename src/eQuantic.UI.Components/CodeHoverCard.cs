@@ -15,21 +15,12 @@ namespace eQuantic.UI.Components;
 /// </summary>
 internal static class CodeHoverCard
 {
-    /// <summary>The widest a card grows, in columns of code; past it a line wraps.</summary>
-    internal const int MaxColumns = 80;
-
-    /// <summary>The most lines one message, signature or answer takes; past them it is cut.</summary>
-    internal const int MaxLinesEach = 8;
-
-    /// <summary>The card's frame, a hairline.</summary>
-    internal const float Border = 1;
-
     /// <summary>A problem's severity mark: a dot this wide, before its message.</summary>
     private const float Mark = 8;
 
     /// <summary>
     /// The card for what <paramref name="hover"/> holds, as wide as its longest line up to
-    /// <see cref="MaxColumns"/> and <paramref name="viewWidth"/> (zero while nothing has measured the
+    /// <see cref="CodeNoteBuilder.MaxColumns"/> and <paramref name="viewWidth"/> (zero while nothing has measured the
     /// view), with how wide and how tall it is: the editor places it from those. Each text is laid out in
     /// as many lines as it measures, which wrapping can only exceed, so what does not fit is cut rather
     /// than short of the card.
@@ -38,129 +29,66 @@ internal static class CodeHoverCard
         CodeHoverSession hover, CodeBlock.CodeMetrics metrics, float viewWidth)
     {
         var theme = context.Theme;
-        var prose = metrics.Style with { Mono = false };
-        // The heights a line of each face lays out at: a text's own, and never the code's row, which
-        // is taller than its type (measured: a 17dp row of 14.5dp type).
-        var proseLine = prose.ScaledLineHeight(context.TypeScale);
-        var codeLine = metrics.Style.ScaledLineHeight(context.TypeScale);
-        var chrome = 2 * (Border + Space.S2);
+        var note = new CodeNoteBuilder(context, metrics, viewWidth);
         var marked = Mark + Space.S1;
 
         // How wide the card wants to be: its longest line, each measured in the face it is drawn in.
-        var wanted = 0f;
         foreach (var problem in hover.Problems)
-            wanted = MathF.Max(wanted, marked + Widest(context, Said(problem), prose));
+            note.Want(marked + note.Widest(Said(problem), note.Prose));
         foreach (var answer in hover.Answers)
         {
             if (answer.Signature is { Length: > 0 } signature)
-                wanted = MathF.Max(wanted, Widest(context, signature, metrics.Style));
-            wanted = MathF.Max(wanted, Widest(context, answer.Text, prose));
+                note.Want(note.Widest(signature, note.Code));
+            note.Want(note.Widest(answer.Text, note.Prose));
         }
-        var most = MaxColumns * metrics.ColumnWidth + chrome;
-        if (viewWidth > 0) most = MathF.Min(most, viewWidth);
-        // A whole pixel for the widest line: a box exactly as wide as a fractional measure loses the
-        // rounding of a browser's layout, and the line it was measured for ends cut by an ellipsis.
-        var width = MathF.Min(most, MathF.Ceiling(wanted) + chrome);
-        var room = MathF.Max(1, width - chrome);
+        var room = note.Fit();
 
-        var column = new Column(gap: Space.S1) { Width = SizeValue.Fill };
-        var height = 2 * (Border + Space.S1);
-        var parts = 0;
         foreach (var problem in hover.Problems)
         {
-            var lines = LinesOf(context, Said(problem), prose, room - marked);
-            column.Add(Problem(theme, problem, prose, proseLine, lines));
-            height += (parts++ == 0 ? 0 : Space.S1) + lines * proseLine;
+            var lines = note.LinesOf(Said(problem), note.Prose, room - marked);
+            note.Add(Problem(theme, problem, note.Prose, note.ProseLine, lines), lines * note.ProseLine);
         }
         if (hover.Problems.Count > 0 && hover.Answers.Count > 0)
-        {
-            column.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 1, Background = theme.Border }));
-            height += Space.S1 + 1;
-        }
+            note.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 1, Background = theme.Border }), 1);
         foreach (var answer in hover.Answers)
         {
             if (answer.Signature is { Length: > 0 } signature)
             {
-                var lines = LinesOf(context, signature, metrics.Style, room);
-                column.Add(new Text(signature, TypeRole.LabelSmall, theme.TextPrimary, maxLines: lines)
+                var lines = note.LinesOf(signature, note.Code, room);
+                note.Add(new Text(signature, TypeRole.LabelSmall, theme.TextPrimary, maxLines: lines)
                 {
                     Mono = true,
-                    StyleOverride = metrics.Style,
-                });
-                height += (parts++ == 0 ? 0 : Space.S1) + lines * codeLine;
+                    StyleOverride = note.Code,
+                }, lines * note.CodeLine);
             }
             if (answer.Text.Length > 0)
             {
-                var lines = LinesOf(context, answer.Text, prose, room);
-                column.Add(new Text(answer.Text, TypeRole.LabelSmall, theme.TextSecondary, maxLines: lines)
+                var lines = note.LinesOf(answer.Text, note.Prose, room);
+                note.Add(new Text(answer.Text, TypeRole.LabelSmall, theme.TextSecondary, maxLines: lines)
                 {
-                    StyleOverride = prose,
-                });
-                height += (parts++ == 0 ? 0 : Space.S1) + lines * proseLine;
+                    StyleOverride = note.Prose,
+                }, lines * note.ProseLine);
             }
         }
-
-        VisualNode card = new Box(new BoxStyle
-        {
-            Width = width,
-            Background = theme.Surface,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
-            BorderWidth = Border,
-            BorderColor = theme.Border,
-            Elevation = 2,
-            Padding = EdgeInsets.Symmetric(Space.S2, Space.S1),
-            Clip = true,
-        }, column);
-        if (hover.ByKeyboard) card = new LiveRegion(card);
-        return (card, width, height);
+        return note.Build(announced: hover.ByKeyboard);
     }
 
     /// <summary>
     /// A card that says one thing, <paramref name="said"/>, in the hover card's coat, as wide as it measures up to
-    /// <see cref="MaxColumns"/> and <paramref name="viewWidth"/>: what the editor says when nothing was found where
-    /// the person asked (#1084), as VS Code's message stands at the caret. The keyboard asked, so it is announced.
+    /// <see cref="CodeNoteBuilder.MaxColumns"/> and <paramref name="viewWidth"/>: what the editor says when nothing
+    /// was found where the person asked (#1084), as VS Code's message stands at the caret. The keyboard asked, so it
+    /// is announced.
     /// </summary>
     internal static (VisualNode Card, float Width, float Height) Message(ComponentContext context, CodeBlock.CodeMetrics metrics,
         string said, float viewWidth)
     {
-        var theme = context.Theme;
-        var prose = metrics.Style with { Mono = false };
-        var proseLine = prose.ScaledLineHeight(context.TypeScale);
-        var chrome = 2 * (Border + Space.S2);
-        var most = MaxColumns * metrics.ColumnWidth + chrome;
-        if (viewWidth > 0) most = MathF.Min(most, viewWidth);
-        var width = MathF.Min(most, MathF.Ceiling(Widest(context, said, prose)) + chrome);
-        var lines = LinesOf(context, said, prose, MathF.Max(1, width - chrome));
-        var card = new LiveRegion(new Box(new BoxStyle
+        var note = new CodeNoteBuilder(context, metrics, viewWidth);
+        note.Want(note.Widest(said, note.Prose));
+        var lines = note.LinesOf(said, note.Prose, note.Fit());
+        return note.Frame(new Text(said, TypeRole.LabelSmall, context.Theme.TextSecondary, maxLines: lines)
         {
-            Width = width,
-            Background = theme.Surface,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
-            BorderWidth = Border,
-            BorderColor = theme.Border,
-            Elevation = 2,
-            Padding = EdgeInsets.Symmetric(Space.S2, Space.S1),
-            Clip = true,
-        }, new Text(said, TypeRole.LabelSmall, theme.TextSecondary, maxLines: lines) { StyleOverride = prose }));
-        return (card, width, 2 * (Border + Space.S1) + lines * proseLine);
-    }
-
-    /// <summary>
-    /// Where a card <paramref name="width"/> by <paramref name="height"/> stands: its left at
-    /// <paramref name="start"/>'s, where what it explains starts (in the surface's coordinates), and its
-    /// bottom at the top of that line, or its top at the bottom of the line when the view has no room
-    /// above it. It never leaves the view on the left or on the right, the view being from
-    /// <paramref name="viewLeft"/> across <paramref name="viewWidth"/> (zero while nothing has measured
-    /// it).
-    /// </summary>
-    internal static (float X, float Y) Place(Rect start, float viewTop, float viewLeft, float viewWidth,
-        float width, float height)
-    {
-        var y = start.Y - height >= viewTop ? start.Y - height : start.Y + start.Height;
-        var x = start.X;
-        if (viewWidth > 0) x = MathF.Min(x, viewLeft + viewWidth - width);
-        x = MathF.Max(x, viewLeft);
-        return (x, y);
+            StyleOverride = note.Prose,
+        }, lines * note.ProseLine, announced: true);
     }
 
     /// <summary>What a problem says: its message, then its rule and its source when it has them.</summary>
@@ -211,52 +139,4 @@ internal static class CodeHoverCard
         CodeDiagnosticSeverity.Information => theme.Colors(Variant.Info).Base,
         _ => theme.TextMuted,
     };
-
-    /// <summary>The widest paragraph of <paramref name="text"/> in <paramref name="style"/>.</summary>
-    internal static float Widest(ComponentContext context, string text, TypeStyle style)
-    {
-        var widest = 0f;
-        foreach (var paragraph in text.Split('\n'))
-            widest = MathF.Max(widest, context.MeasureText(paragraph, style));
-        return widest;
-    }
-
-    /// <summary>How many lines <paramref name="text"/> takes <paramref name="room"/> wide: at least one
-    /// per paragraph, and no more than <see cref="MaxLinesEach"/>.</summary>
-    internal static int LinesOf(ComponentContext context, string text, TypeStyle style, float room)
-    {
-        var lines = 0;
-        foreach (var paragraph in text.Split('\n'))
-        {
-            lines += WrappedLines(context, paragraph, style, MathF.Max(1, room));
-            if (lines >= MaxLinesEach) return MaxLinesEach;
-        }
-        return lines;
-    }
-
-    /// <summary>
-    /// How many lines <paramref name="paragraph"/> wraps to <paramref name="room"/> wide, broken between
-    /// words as both targets break it: a word that does not fit on the line starts the next, and a word
-    /// wider than the room takes as many lines as it is wide. Dividing the paragraph's width by the room
-    /// counted the lines a wrap leaves half empty as full, and cut the last of them.
-    /// </summary>
-    private static int WrappedLines(ComponentContext context, string paragraph, TypeStyle style, float room)
-    {
-        var lines = 1;
-        var line = "";
-        foreach (var word in paragraph.Split(' '))
-        {
-            var longer = line.Length == 0 ? word : line + " " + word;
-            if (context.MeasureText(longer, style) <= room)
-            {
-                line = longer;
-                continue;
-            }
-            if (line.Length > 0) lines++;
-            line = word;
-            var wide = context.MeasureText(word, style);
-            if (wide > room) lines += (int)MathF.Ceiling(wide / room) - 1;
-        }
-        return lines;
-    }
 }

@@ -881,9 +881,9 @@ public sealed class CodeEditor : StatefulComponent
         if (hover.IsOpen && offered is null)
         {
             var (card, cardWidth, cardHeight) = CodeHoverCard.Build(context, hover, metrics, _viewportWidth);
-            var (x, y) = CodeHoverCard.Place(editor.CaretRect(hover.Range.Start), viewTop,
-                _scrollX, _viewportWidth, cardWidth, cardHeight);
-            notes.Add(new Positioned(card, top: y, start: x));
+            if (CodeNoteBuilder.Place(editor.CaretRect(hover.Range.Start), viewTop, viewBottom, _scrollX, _viewportWidth,
+                    cardWidth, cardHeight, aboveTaken: null) is { } at)
+                notes.Add(new Positioned(card, top: at.Y, start: at.X));
         }
 
         // What was said about nothing found where the person asked, at the caret where it was asked, while no card
@@ -892,9 +892,9 @@ public sealed class CodeEditor : StatefulComponent
         {
             var (said, saidWidth, saidHeight) = CodeHoverCard.Message(context, metrics, CodeGoToView.NotFoundText(nothing),
                 _viewportWidth);
-            var (x, y) = CodeHoverCard.Place(editor.CaretRect(nothing.At), viewTop, _scrollX, _viewportWidth,
-                saidWidth, saidHeight);
-            notes.Add(new Positioned(said, top: y, start: x));
+            if (CodeNoteBuilder.Place(editor.CaretRect(nothing.At), viewTop, viewBottom, _scrollX, _viewportWidth,
+                    saidWidth, saidHeight, aboveTaken: null) is { } at)
+                notes.Add(new Positioned(said, top: at.Y, start: at.X));
         }
 
         // The panel of the call being written, while one shows and no card does (the card is what the person
@@ -904,8 +904,8 @@ public sealed class CodeEditor : StatefulComponent
         if (signatures.IsOpen && signatures.Signature is not null && !hover.IsOpen)
         {
             var (panel, panelWidth, panelHeight) = CodeSignatureCard.Build(context, signatures, metrics, _viewportWidth);
-            if (CodeSignatureCard.Place(editor.CaretRect(editor.Caret), viewTop, viewBottom, _scrollX, _viewportWidth,
-                    panelWidth, panelHeight, listAbove) is { } at)
+            if (CodeNoteBuilder.Place(editor.CaretRect(editor.Caret), viewTop, viewBottom, _scrollX, _viewportWidth,
+                    panelWidth, panelHeight, aboveTaken: listAbove) is { } at)
                 notes.Add(new Positioned(panel, top: at.Y, start: at.X));
         }
 
