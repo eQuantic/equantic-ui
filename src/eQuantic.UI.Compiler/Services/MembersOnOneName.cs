@@ -122,11 +122,13 @@ internal static class MembersOnOneName
                 ? "which JavaScript gives every class itself and refuses to a static member, so the module would not load. "
                     + "Give it a name of its own."
                 : null;
+        // A component's own names are its runtime base's, `constructor` among them, which EQ2011 holds.
+        if (isComponent) return null;
         if (member.Lowered == "constructor")
             return "the name of the class's own constructor, which the twin writes: a method of that name would be a second "
                 + "constructor and a field or an accessor of it is refused, so the module would not load, and a record's "
                 + "property of it would replace what each value says its class is. Give it a name of its own.";
-        if (allStatic || isComponent) return null;
+        if (allStatic) return null;
         string Unless(string overridden, string what) =>
             member.Method is { } method && TwinOwnMembers.Overrides(method, overridden)
                 ? ""
