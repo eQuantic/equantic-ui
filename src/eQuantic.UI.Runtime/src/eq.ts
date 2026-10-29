@@ -160,6 +160,7 @@ import {
   tupleEquality,
 } from './utils/key-equality';
 import {
+  addRange,
   arrayFind,
   arrayFindIndex,
   arrayFindLast,
@@ -178,6 +179,7 @@ import {
   findLast,
   findLastIndex,
   indexOf as listIndexOf,
+  insertRange,
   lastIndexOf as listLastIndexOf,
   listCapacity,
   listCopy,
@@ -558,6 +560,9 @@ export const $eq = {
     arrayFindLast,
     arrayFindIndex,
     arrayFindLastIndex,
+    /** `List<T>.AddRange` and `InsertRange`, one element at a time, never a spread past an engine's cap (#1060). */
+    addRange,
+    insertRange,
     removeAll,
     copyTo,
     copyRangeTo,
