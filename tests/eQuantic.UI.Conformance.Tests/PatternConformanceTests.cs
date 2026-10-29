@@ -1,4 +1,5 @@
 using eQuantic.UI.Conformance.Tests.Infrastructure;
+using FluentAssertions;
 using Xunit;
 
 namespace eQuantic.UI.Conformance.Tests;
@@ -174,6 +175,9 @@ public class PatternConformanceTests
     [InlineData("int n = 0; System.Func<int> f = () => { n++; return 3; }; switch (f()) { case 1 or 2: return n * 10 + 1; case > 2 and < 5: return n * 10 + 2; default: return n * 10; }")] // 12
     [InlineData("int n = 0; int[] xs = { 1, 2 }; int[] Take() { n++; return xs; } var hit = Take() is [1, _] or [_, 1]; return n * 10 + (hit ? 1 : 0);")] // 11
     [InlineData("int n = 0; System.Func<int> f = () => { n++; return 1; }; var hit = f() is var _; return n * 10 + (hit ? 1 : 0);")]                 // 11
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 1; }; var hit = f() is var _ or 2; return n * 10 + (hit ? 1 : 0);")]            // 11
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 1; }; var hit = f() is not var _ or 1; return n * 10 + (hit ? 1 : 0);")]       // 11
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 1; }; var hit = f() is var _ and 2; return n * 10 + (hit ? 1 : 0);")]           // 10
     [InlineData("int n = 0; System.Func<string> f = () => { n++; return \"{0}\"; }; var hit = f() is \"{0}\" or \"$v0\"; return n * 10 + (hit ? 1 : 0);")] // 11: a constant that spells a hole
     public void APatternReadsItsInputOnce(string statements)
     {
@@ -219,4 +223,16 @@ public class PatternConformanceTests
     [InlineData(false)]
     public void APatternReadsAMemberInputOnce(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Counted, typeAnnotations, CountedCases);
+
+    /// <summary>
+    /// An input whose read nobody can observe, a name or a literal, is left out when the pattern names
+    /// nothing of it, in the author's parentheses too: written left of a comma, <c>((n), true)</c>, it
+    /// is code TypeScript refuses (TS2695), and the runtime's own components are type-checked.
+    /// </summary>
+    [Theory]
+    [InlineData("int n = 1; return (n) is var _;")]
+    [InlineData("return (42) is var _;")]
+    [InlineData("return (\"x\") is var _;")]
+    public void AnInputNobodyCanSeeRead_IsLeftOutWhenThePatternNamesNothing(string statements) =>
+        Transpiler.TranspileStatements(statements).Should().Contain("return true;");
 }

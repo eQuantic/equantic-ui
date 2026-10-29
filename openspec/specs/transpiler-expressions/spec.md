@@ -732,3 +732,8 @@ statement SHALL evaluate their input once.
 
 - **WHEN** `int n = 0; System.Func<int> f = () => { n++; return 1; }; var hit = f() is var _; return n * 10 + (hit ? 1 : 0);` runs
 - **THEN** it answers 11, as .NET does, where `f` was never called and the answer was 1
+
+#### Scenario: An input behind an alternative that matches everything
+
+- **WHEN** `int n = 0; System.Func<int> f = () => { n++; return 1; }; var hit = f() is var _ or 2; return n * 10 + (hit ? 1 : 0);` runs
+- **THEN** it answers 11, as .NET does, where the input's one read sat behind `true ||` and never ran

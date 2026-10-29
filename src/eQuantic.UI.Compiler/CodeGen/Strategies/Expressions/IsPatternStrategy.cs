@@ -162,12 +162,8 @@ public class IsPatternStrategy : IConversionStrategy
     {
         var code = JsExprWriter.CodeOf(tested);
         var named = Placeholder.Matches(code).Where(name => name.Value == subject).ToList();
-        // A name or a literal left out reads nothing anybody can observe, and TypeScript refuses one
-        // left of a comma (TS2695): a text strategy's name is one too, though the writer cannot tell.
         if (named.Count == 0)
-            return JsExprWriter.IsInlinable(input) || input is JsOpaque { Text: var text } && Name.IsMatch(text)
-                ? tested
-                : JsExprWriter.Write(JsExpr.Template("({0}, " + tested + ")", input));
+            return ReadsNothing(input) ? tested : JsExprWriter.Write(JsExpr.Template("({0}, " + tested + ")", input));
 
         // The writer names what it binds `$0`, and the hole is in the test's own code: a function the
         // test defined with a `$0` of its own would take the hole's reads for its own. None does (the
@@ -192,8 +188,21 @@ public class IsPatternStrategy : IConversionStrategy
     /// never the head of a longer one.</summary>
     private static readonly Regex Placeholder = new(@"(?<![\w$])\$v\d+(?![\w$])", RegexOptions.Compiled);
 
-    /// <summary>A plain name, as a text strategy writes one.</summary>
-    private static readonly Regex Name = new(@"^[A-Za-z_$][\w$]*$", RegexOptions.Compiled);
+    /// <summary>
+    /// Whether leaving the input out reads nothing anybody can observe: a name or a literal, in the
+    /// author's parentheses or not (<c>(n) is var _</c>), as the writer's node or as a text strategy's
+    /// text, which the writer cannot tell from any other. TypeScript refuses one left of a comma
+    /// (TS2695), where a call or a member read is evaluated there, as C# evaluates it.
+    /// </summary>
+    private static bool ReadsNothing(JsExpr input)
+    {
+        while (input is JsGroup group) input = group.Inner;
+        return JsExprWriter.IsInlinable(input) || input is JsOpaque { Text: var text } && Inert.IsMatch(text);
+    }
+
+    /// <summary>A plain name, a number or a string, as a text strategy writes one.</summary>
+    private static readonly Regex Inert = new(
+        @"^(?:[A-Za-z_$][\w$]*|-?\d[\w.]*|'(?:[^'\\]|\\.)*'|""(?:[^""\\]|\\.)*"")$", RegexOptions.Compiled);
 
     /// <summary>
     /// A test whose operation holds the parts a <c>Deconstruct</c> the app wrote hands back
