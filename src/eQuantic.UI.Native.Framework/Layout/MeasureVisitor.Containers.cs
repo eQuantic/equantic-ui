@@ -193,14 +193,20 @@ internal sealed partial class MeasureVisitor
                 ? forChild with { Width = forChild.Width with { Visible = shown } }
                 : forChild with { Height = forChild.Height with { Visible = shown } };
         var child = Measure(scroll.Child, forChild, ctx, at?.ChildAt(0));
-        result.Adopt(child);
 
-        var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW));
+        // A hugging axis the parent STRETCHES is the stretched size, as a box's and a row's are, and as
+        // the web's `height: 100%` is (#1143). The row used to move the bounds after the scroller had
+        // measured its content against its own height, so nothing inside could fill the row.
+        var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW),
+            stretched: constraints.Width.IsStretched);
         // A Flexible's slot caps a scroller's declared width at the slot, the web's `max-width:
         // 100%` (LayoutConstraints.WidthIsACeiling): capped HERE, before the scroll range below is
         // taken from it, so a horizontal scroller scrolls as far as its capped viewport needs.
         if (constraints.WidthIsACeiling) width = MathF.Min(width, maxW);
-        var height = ResolveSelf(scroll.Height, maxH, MathF.Min(child.Bounds.Height, maxH));
+        var height = ResolveSelf(scroll.Height, maxH, MathF.Min(child.Bounds.Height, maxH),
+            stretched: constraints.Height.IsStretched);
+        if (scroll.FillViewport) child = FillViewport(scroll, child, forChild, width, height, ctx, at);
+        result.Adopt(child);
         result.Bounds = new Rect(0, 0, width, height);
 
         var maxOffset = MathF.Max(0, horizontal ? child.Bounds.Width - width : child.Bounds.Height - height);
@@ -237,6 +243,36 @@ internal sealed partial class MeasureVisitor
             PinSticky(child, accumulatedY: child.Bounds.Y);
 
         return result;
+    }
+
+    /// <summary>
+    /// Content that fills its viewport (<see cref="ScrollView.FillViewport"/>, #1143): measured again at the
+    /// viewport's size, stretched, on each axis it came out smaller on, so a hugging row takes the viewport's
+    /// height and hands it to what it stretches. On the scroll axis the viewport is a floor whatever length
+    /// the content asks for, as a grown flex item's is on the web; across, a size of its own stands, as
+    /// under any stretch. Decided here, in the measure that sizes the viewport: a size reported after the
+    /// frame and built back lagged one, so a pane that shrank ran its content past it until the next.
+    /// </summary>
+    private LayoutNode FillViewport(ScrollView scroll, LayoutNode child, LayoutConstraints forChild,
+        float width, float height, LayoutContext ctx, Element? at)
+    {
+        var shortW = child.Bounds.Width < width - 0.01f;
+        var shortH = child.Bounds.Height < height - 0.01f;
+        if (!shortW && !shortH) return child;
+        var filled = forChild with
+        {
+            Width = shortW ? Filled(forChild.Width, width) : forChild.Width,
+            Height = shortH ? Filled(forChild.Height, height) : forChild.Height,
+        };
+        child = Measure(scroll.Child, filled, ctx, at?.ChildAt(0));
+        if (scroll.Axis == ScrollAxis.Horizontal && child.Bounds.Width < width)
+            child.Bounds = child.Bounds with { Width = width };
+        else if (scroll.Axis != ScrollAxis.Horizontal && child.Bounds.Height < height)
+            child.Bounds = child.Bounds with { Height = height };
+        return child;
+
+        static AxisConstraint Filled(AxisConstraint axis, float extent) =>
+            axis.WithMax(extent).DecidedByContent(false).Stretched(StretchKind.Flex);
     }
 
     /// <summary>Walks the scrolled content for Pinned wrappers and clamps their viewport-relative Y

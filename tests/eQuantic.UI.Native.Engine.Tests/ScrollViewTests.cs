@@ -50,6 +50,80 @@ public class ScrollViewTests
         beyond.Children[0].Bounds.Y.Should().Be(-(240 - 100), "the offset clamps to the max scroll extent");
     }
 
+    // ---- content that fills its viewport (#1143) -------------------------------------------------
+
+    [Fact]
+    public void AViewportFilledByItsChild_StretchesAShortChildToIt()
+    {
+        var node = Layout(new ScrollView(TallContent(2)) { Height = SizeValue.Fixed(100), Width = SizeValue.Fill, FillViewport = true });
+
+        node.Children[0].Bounds.Height.Should().Be(100, "content shorter than its viewport is as tall as the viewport");
+        node.ScrollRange.Should().Be(0, "and leaves nothing to scroll");
+    }
+
+    [Fact]
+    public void AViewportFilledByItsChild_StillScrollsALongOne()
+    {
+        var node = Layout(new ScrollView(TallContent()) { Height = SizeValue.Fixed(100), Width = SizeValue.Fill, FillViewport = true });
+
+        node.Children[0].Bounds.Height.Should().Be(240, "content longer than its viewport keeps its length");
+        node.ScrollRange.Should().Be(140);
+    }
+
+    /// <summary>On the scroll axis the viewport is a floor whatever length the content asks for, as a
+    /// grown flex item's is on the web; across, a size of its own is kept, as under any stretch.</summary>
+    [Fact]
+    public void AViewportFilledByItsChild_IsAFloorOnItsAxis_AndAStretchAcross()
+    {
+        var node = Layout(new ScrollView(new Primitives.Box(new BoxStyle { Width = 30, Height = 40 }))
+        {
+            Height = SizeValue.Fixed(100), Width = SizeValue.Fixed(120), FillViewport = true,
+        });
+
+        node.Children[0].Bounds.Height.Should().Be(100, "the viewport is the least it is long");
+        node.Children[0].Bounds.Width.Should().Be(30, "and across, its own width stands");
+    }
+
+    [Fact]
+    public void ASidewaysViewportFilledByItsChild_StretchesItBothWays()
+    {
+        var content = new Primitives.Box(new BoxStyle(), new Primitives.Box(new BoxStyle { Width = 50, Height = 20 }));
+        var node = Layout(new ScrollView(content, ScrollAxis.Horizontal)
+        {
+            Width = SizeValue.Fixed(120), Height = SizeValue.Fixed(80), FillViewport = true,
+        });
+
+        node.Children[0].Bounds.Width.Should().Be(120, "as wide as its viewport");
+        node.Children[0].Bounds.Height.Should().Be(80, "and as tall, which is its viewport across");
+    }
+
+    /// <summary>
+    /// A scroll view stretched by its row is as tall as the row, as its `height: 100%` is on the web, so
+    /// what fills it fills the row. It kept its content's height, and the row only moved its bounds after it
+    /// had measured its content against that height: a code editor's code stopped where its file did.
+    /// </summary>
+    [Fact]
+    public void AScrollViewStretchedByItsRow_FillsTheRow()
+    {
+        var content = new Primitives.Box(new BoxStyle(), new Primitives.Box(new BoxStyle { Width = 50, Height = 20 }));
+        var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fixed(90), Cross = CrossAlign.Stretch };
+        row.Add(new Flexible(new ScrollView(content, ScrollAxis.Horizontal) { FillViewport = true }));
+
+        var node = Layout(row, 200, 300);
+
+        var scroll = Find(node, n => n.Source is ScrollView)!;
+        scroll.Bounds.Height.Should().Be(90, "the row stretches it");
+        scroll.Children[0].Bounds.Height.Should().Be(90, "and its content fills what it was given");
+    }
+
+    private static LayoutNode? Find(LayoutNode node, Func<LayoutNode, bool> predicate)
+    {
+        if (predicate(node)) return node;
+        foreach (var child in node.Children)
+            if (Find(child, predicate) is { } found) return found;
+        return null;
+    }
+
     [Fact]
     public void ScrolledViewport_Golden()
     {

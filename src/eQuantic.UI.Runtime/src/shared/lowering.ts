@@ -2156,9 +2156,20 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
       // it whenever a windowed list swapped the rows above what was on screen (C# twin; Photon
       // anchors nothing).
       'overflow-anchor': 'none',
+      // Content that FILLS the viewport is a flex line on the axis (C# twin): it grows to the content
+      // box, which a scrollbar that takes space is outside of, so it never makes a scroller around it
+      // scroll, and needs no percentage to resolve. Across, the line's stretch gives it the breadth.
+      display: node.fillViewport ? 'flex' : undefined,
+      'flex-direction': node.fillViewport ? (horizontal ? 'row' : 'column') : undefined,
     },
     children,
   );
+  if (node.fillViewport && child) {
+    mergeAtomicDeclaration(child, 'flex-grow', '1');
+    // REPLACED, not added: a rigid child already says `flex-shrink: 0`, and two classes for one property
+    // would leave the winner to the stylesheet's order and write a class set the C# side does not.
+    replaceAtomicDeclaration(child, 'flex-shrink', '0');
+  }
   // The out-channels a WINDOWED LIST lives on (the native realizer has carried them all along):
   // the scroll event reports where the view is; the after-pass sweep reports how tall the
   // viewport turned out to be (and applies the initial offset once, on adoption — the browser

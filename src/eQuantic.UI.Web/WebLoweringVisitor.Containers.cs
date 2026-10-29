@@ -565,6 +565,21 @@ internal sealed partial class WebLoweringVisitor
         };
         var child = Lower(scroll.Child, horizontalAxis: null);
         if (child != null) element.Children.Add(child);
+        if (scroll.FillViewport)
+        {
+            // Content that FILLS the viewport is a flex line on the axis: it grows to the content box,
+            // which a scrollbar that takes space is outside of, so it never makes a scroller around it
+            // scroll, and needs no percentage to resolve. Across, the line's stretch gives it the
+            // breadth. The child's own flex-shrink is replaced, never joined (TS twin: lowerScrollView).
+            element.Style!.Display = Display.Flex;
+            element.Style.FlexDirection = scroll.Axis == ScrollAxis.Horizontal ? FlexDirection.Row : FlexDirection.Column;
+            if (child != null)
+            {
+                child.Style ??= new HtmlStyle();
+                child.Style.FlexGrow = "1";
+                child.Style.FlexShrink = "0";
+            }
+        }
         return element;
     }
 
