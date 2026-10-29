@@ -46,9 +46,9 @@ public sealed class ScrollView : SingleChildNode
     public Action<float>? OnViewportChanged { get; init; }
 
     /// <summary>
-    /// Whether the content is never smaller than the viewport: on the scroll axis it is at least as long
-    /// as the viewport, whatever length it asks for, and scrolls past it only when it is longer; across,
-    /// it takes the viewport's breadth unless it states its own, as a stretched child does. The room
+    /// Whether the content fills the viewport: it is stretched to the viewport on both
+    /// axes, as a stretched child is, and scrolls past it only when it is longer. A size the content
+    /// states on an axis stands, a fixed one or the window's, so a box of 40 stays 40. The room
     /// under a short document is then the document's own, which is what a code editor's press under its
     /// last line needs. The viewport is the room INSIDE the scroller: a scrollbar that takes space is
     /// not in it, so content that fills it never makes the scroller around it scroll.

@@ -20,9 +20,8 @@ scroll).
 For a developer using the SDK, nothing to write for the editor: a bounded editor's code fills its pane on
 every target, from its first frame, and a short file never scrolls.
 
-- **`ScrollView.FillViewport`.** A scroll view can say its content is never smaller than its viewport: on the
-  scroll axis the content is at least as long as the viewport and scrolls only when it is longer; across, it
-  takes the viewport's breadth unless it states its own. Decided by layout on both targets, with no number
+- **`ScrollView.FillViewport`.** A scroll view can say its content fills its viewport: the content is stretched
+  to the viewport on both axes and scrolls only where it is longer, and a size it states stands. Decided by layout on both targets, with no number
   reported: on the web the scroller lays its child out as a growing flex item, over its content box, which
   leaves a scrollbar that takes space out; on Photon the scroll view measures its child again at the
   viewport's size where it came out smaller.

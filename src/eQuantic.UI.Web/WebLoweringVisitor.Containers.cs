@@ -563,24 +563,39 @@ internal sealed partial class WebLoweringVisitor
                 OverflowAnchor = "none",
             },
         };
-        var child = Lower(scroll.Child, horizontalAxis: null);
+        var horizontal = scroll.Axis == ScrollAxis.Horizontal;
+        // Content that FILLS the viewport is the item of the scroller's flex line, and so is each ARM of
+        // an adaptive child, whose gates are display:contents (TS twin: lowerScrollView).
+        var child = scroll.FillViewport
+            ? Place(scroll.Child, arm => FillsViewport(Lower(arm, horizontalAxis: null), horizontal))
+            : Lower(scroll.Child, horizontalAxis: null);
         if (child != null) element.Children.Add(child);
         if (scroll.FillViewport)
         {
-            // Content that FILLS the viewport is a flex line on the axis: it grows to the content box,
-            // which a scrollbar that takes space is outside of, so it never makes a scroller around it
-            // scroll, and needs no percentage to resolve. Across, the line's stretch gives it the
-            // breadth. The child's own flex-shrink is replaced, never joined (TS twin: lowerScrollView).
+            // A flex line on the axis: the content grows to the content box, which a scrollbar that
+            // takes space is outside of, so it never makes a scroller around it scroll, and needs no
+            // percentage to resolve. Across, the line's stretch gives it the breadth.
             element.Style!.Display = Display.Flex;
-            element.Style.FlexDirection = scroll.Axis == ScrollAxis.Horizontal ? FlexDirection.Row : FlexDirection.Column;
-            if (child != null)
-            {
-                child.Style ??= new HtmlStyle();
-                child.Style.FlexGrow = "1";
-                child.Style.FlexShrink = "0";
-            }
+            element.Style.FlexDirection = horizontal ? FlexDirection.Row : FlexDirection.Column;
         }
         return element;
+    }
+
+    /// <summary>
+    /// An item of a scroller's line that fills its viewport (TS twin: <c>fillsViewport</c>): it never shrinks
+    /// under its content, and it grows to the viewport on the scroll axis unless it states a length there, a
+    /// fixed size or the window's (<c>px</c> or <c>calc</c>), which stands, as it does on Photon and across
+    /// under the line's stretch. Its own flex-shrink is replaced, never joined.
+    /// </summary>
+    private static HtmlElement? FillsViewport(HtmlElement? lowered, bool horizontal)
+    {
+        if (lowered is null) return null;
+        lowered.Style ??= new HtmlStyle();
+        var own = (horizontal ? lowered.Style.Width : lowered.Style.Height)?.Trim();
+        if (own is null || !(own.EndsWith("px", StringComparison.Ordinal) || own.StartsWith("calc(", StringComparison.Ordinal)))
+            lowered.Style.FlexGrow = "1";
+        lowered.Style.FlexShrink = "0";
+        return lowered;
     }
 
     // The two halves of CSS `place-items` = "<align> <justify>" (vertical then horizontal).

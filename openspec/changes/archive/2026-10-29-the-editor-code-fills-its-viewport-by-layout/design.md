@@ -35,9 +35,11 @@ reported number stays because the marks paint across it.
   stretch takes the content box's breadth when the child states none. The child's `flex-shrink` is replaced
   rather than added, so one declaration carries it and the C# and TypeScript producers write the same class.
 - **On Photon, a second measure at the viewport's size.** After the viewport is resolved, a child that came out
-  smaller on an axis is measured again with that axis decided at the viewport's extent, stretched. On the
-  scroll axis a child that still comes out shorter, because it fixes its own length, is given the viewport's
-  length, as a grown flex item is on the web.
+  smaller on an axis is measured again with that axis decided at the viewport's extent, stretched. A child
+  that sizes itself to what it holds and takes no stretch while it measures, a text, is given the extent as a
+  row's stretch gives it, through the wrappers that take its size. A size a child states stands on both
+  targets: the web grows the item only when it states no length on the scroll axis (first written as a floor
+  whatever the child asked; Copilot found it left a fixed child laid out for its old size, #1158).
 - **A stretched scroll view takes the stretched size on Photon.** A scroll view hugging on an axis its parent
   stretches now resolves to the stretched extent, as a box and a row do there and as the web's
   `height: 100%` does. Without it the row moved the scroll view's bounds after the scroll view had measured

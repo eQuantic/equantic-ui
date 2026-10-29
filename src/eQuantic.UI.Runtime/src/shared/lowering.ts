@@ -2127,12 +2127,33 @@ function lowerTableScrollbar(inTable: boolean): HtmlNode {
   return track;
 }
 
+/**
+ * An item of a scroller's line that fills its viewport (C# twin: FillsViewport): it never shrinks under its
+ * content, and it grows to the viewport on the scroll axis unless it states a length there, a fixed size or
+ * the window's (`px` or `calc`), which stands, as it does on Photon and across under the line's stretch.
+ * The shrink is REPLACED, not added: a rigid child already says `flex-shrink: 0`, and two classes for one
+ * property would leave the winner to the stylesheet's order and write a class set the C# side does not.
+ */
+function fillsViewport(lowered: HtmlNode | null, horizontal: boolean): HtmlNode | null {
+  if (!lowered) return null;
+  const own = atomicDeclaration(lowered, horizontal ? 'width' : 'height')?.trim();
+  if (!own || !(own.endsWith('px') || own.startsWith('calc('))) mergeAtomicDeclaration(lowered, 'flex-grow', '1');
+  replaceAtomicDeclaration(lowered, 'flex-shrink', '0');
+  return lowered;
+}
+
 /** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
 function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: string): HtmlNode {
-  const children: HtmlNode[] = [];
-  const child = lowerNode(node.child, context, null, path + '/0');
-  if (child) children.push(child);
   const horizontal = node.axis === 'horizontal';
+  const children: HtmlNode[] = [];
+  // Content that fills the viewport is the item of the scroller's flex line, and so is each ARM of an
+  // adaptive child, whose gates are `display: contents` (C# twin: Place).
+  const child = node.fillViewport
+    ? placeChild(node.child, path + '/0', (arm, armPath) =>
+        fillsViewport(lowerNode(arm, context, null, armPath), horizontal),
+      )
+    : lowerNode(node.child, context, null, path + '/0');
+  if (child) children.push(child);
   const view = element(
     'div',
     {
@@ -2164,12 +2185,6 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
     },
     children,
   );
-  if (node.fillViewport && child) {
-    mergeAtomicDeclaration(child, 'flex-grow', '1');
-    // REPLACED, not added: a rigid child already says `flex-shrink: 0`, and two classes for one property
-    // would leave the winner to the stylesheet's order and write a class set the C# side does not.
-    replaceAtomicDeclaration(child, 'flex-shrink', '0');
-  }
   // The out-channels a WINDOWED LIST lives on (the native realizer has carried them all along):
   // the scroll event reports where the view is; the after-pass sweep reports how tall the
   // viewport turned out to be (and applies the initial offset once, on adoption — the browser

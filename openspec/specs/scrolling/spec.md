@@ -55,9 +55,9 @@ so a reader's own scrolling after it stays. A glide whose range shrinks under it
 ### Requirement: A scroll view's content can fill its viewport
 
 A `ScrollView` whose `FillViewport` is set SHALL lay its content out never smaller than its viewport, on the
-web and on Photon, in the layout that sizes the viewport and with no size reported back: on the scroll axis
-the content SHALL be at least as long as the viewport, whatever length it asks for, and SHALL scroll only when
-it is longer; across, it SHALL take the viewport's breadth unless it states its own. The viewport SHALL be the
+web and on Photon, in the layout that sizes the viewport and with no size reported back: the content SHALL
+take the viewport's extent on each axis on which it is smaller, and SHALL scroll only where it is longer. A size
+the content states on an axis, a fixed one or the window's, SHALL stand. The viewport SHALL be the
 room inside the scroller, with no scrollbar that takes space in it, so content that fills it never makes an
 enclosing scroller scroll. A scroll view whose parent stretches it on an axis it hugs SHALL take the stretched
 size on both targets.

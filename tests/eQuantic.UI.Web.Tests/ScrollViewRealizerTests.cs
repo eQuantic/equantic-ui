@@ -42,13 +42,48 @@ public class ScrollViewRealizerTests
         vertical.Attributes["style"].Should().Contain("display: flex").And.Contain("flex-direction: column");
         vertical.Children[0].Attributes["style"].Should().Contain("flex-grow: 1").And.Contain("flex-shrink: 0");
 
-        var sideways = Render(new ScrollView(new Primitives.Box(new BoxStyle { Width = 40 }), ScrollAxis.Horizontal)
+        var sideways = Render(new ScrollView(new Primitives.Box(new BoxStyle { Height = 20 }), ScrollAxis.Horizontal)
         {
             FillViewport = true,
         });
         sideways.Attributes["style"].Should().Contain("display: flex").And.Contain("flex-direction: row");
         sideways.Children[0].Attributes["style"].Should().Contain("flex-grow: 1").And.Contain("flex-shrink: 0");
     }
+
+    /// <summary>A length the child states on the scroll axis stands, as on Photon: it never shrinks, and it
+    /// does not grow either (found by Copilot reviewing #1158).</summary>
+    [Fact]
+    public void AViewportFilledByItsChild_KeepsALengthTheChildStates()
+    {
+        var node = Render(new ScrollView(new Primitives.Box(new BoxStyle { Width = 40 }), ScrollAxis.Horizontal)
+        {
+            FillViewport = true,
+        });
+
+        node.Children[0].Attributes["style"].Should().Contain("flex-shrink: 0").And.NotContain("flex-grow");
+    }
+
+    /// <summary>Each arm of an adaptive child is the line's item, since the gates are display:contents and a
+    /// grow on one does nothing (found by Copilot reviewing #1158). CROSS-PIN with the TS twin.</summary>
+    [Fact]
+    public void AViewportFilledByAnAdaptiveChild_GrowsEachArm()
+    {
+        var node = Render(new ScrollView(new AdaptiveNode(
+            new Primitives.Box(new BoxStyle { Width = SizeValue.Fill }),
+            expanded: new Primitives.Box(new BoxStyle { Width = SizeValue.Fill })))
+        {
+            Height = SizeValue.Fixed(100),
+            FillViewport = true,
+        });
+
+        var arms = Descendants(node).Where(n => n.Attributes.TryGetValue("style", out var style)
+            && style!.Contains("width: 100%")).ToList();
+        arms.Should().HaveCount(2);
+        arms.Should().OnlyContain(arm => arm.Attributes["style"]!.Contains("flex-grow: 1"));
+    }
+
+    private static IEnumerable<HtmlNode> Descendants(HtmlNode node) =>
+        node.Children.SelectMany(child => new[] { child }.Concat(Descendants(child)));
 
     [Fact]
     public void AViewportNotFilled_LaysItsChildOutAsABlock()

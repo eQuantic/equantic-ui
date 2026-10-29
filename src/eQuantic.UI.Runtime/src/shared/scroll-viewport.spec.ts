@@ -393,7 +393,7 @@ describe('a scroll view that fills its viewport', () => {
     expect(effectiveStyle(vertical.children[0])).toContain('flex-shrink: 0');
 
     const sideways = lowerVisualNode(
-      scrollNode({ child: box({ width: { kind: 'fixed', value: 40 } }), axis: 'horizontal', fillViewport: true }),
+      scrollNode({ child: box({ height: { kind: 'fixed', value: 20 } }), axis: 'horizontal', fillViewport: true }),
       context(),
     ) as HtmlNode;
     expect(effectiveStyle(sideways)).toContain('flex-direction: row');
@@ -401,6 +401,33 @@ describe('a scroll view that fills its viewport', () => {
     expect(child).toContain('flex-grow: 1');
     // The rigid box's own `flex-shrink: 0` and the scroller's are one declaration, as on the C# side.
     expect(child.match(/flex-shrink/g)).toHaveLength(1);
+  });
+
+  it('keeps a length the child states on the scroll axis, as Photon does', () => {
+    const lowered = lowerVisualNode(
+      scrollNode({ child: box({ width: { kind: 'fixed', value: 40 } }), axis: 'horizontal', fillViewport: true }),
+      context(),
+    ) as HtmlNode;
+    const child = effectiveStyle(lowered.children[0]);
+    expect(child).toContain('flex-shrink: 0');
+    expect(child).not.toContain('flex-grow');
+  });
+
+  it("grows each arm of an adaptive child, since the gates are display: contents", () => {
+    const fill = { width: { kind: 'fill', value: 0 } };
+    const adaptive = { nodeKind: 'adaptive', compact: box(fill), expanded: box(fill) } as never;
+    const lowered = lowerVisualNode(
+      scrollNode({ child: adaptive, height: { kind: 'fixed', value: 100 }, fillViewport: true }),
+      context(),
+    ) as HtmlNode;
+    const arms: HtmlNode[] = [];
+    const walk = (node: HtmlNode) => {
+      if (effectiveStyle(node).includes('width: 100%')) arms.push(node);
+      node.children.forEach(walk);
+    };
+    lowered.children.forEach(walk);
+    expect(arms).toHaveLength(2);
+    for (const arm of arms) expect(effectiveStyle(arm)).toContain('flex-grow: 1');
   });
 
   it('lays its child out as a block when it does not fill', () => {

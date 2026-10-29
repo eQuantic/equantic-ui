@@ -70,18 +70,51 @@ public class ScrollViewTests
         node.ScrollRange.Should().Be(140);
     }
 
-    /// <summary>On the scroll axis the viewport is a floor whatever length the content asks for, as a
-    /// grown flex item's is on the web; across, a size of its own is kept, as under any stretch.</summary>
+    /// <summary>A size the content states stands on both axes, as under any stretch and as the web's flex
+    /// line keeps it. Its bounds alone were raised to the viewport on the scroll axis, so what it held
+    /// stayed laid out for the size it stated (found by Copilot reviewing #1158).</summary>
     [Fact]
-    public void AViewportFilledByItsChild_IsAFloorOnItsAxis_AndAStretchAcross()
+    public void AViewportFilledByItsChild_KeepsASizeTheChildStates()
     {
         var node = Layout(new ScrollView(new Primitives.Box(new BoxStyle { Width = 30, Height = 40 }))
         {
             Height = SizeValue.Fixed(100), Width = SizeValue.Fixed(120), FillViewport = true,
         });
 
-        node.Children[0].Bounds.Height.Should().Be(100, "the viewport is the least it is long");
-        node.Children[0].Bounds.Width.Should().Be(30, "and across, its own width stands");
+        node.Children[0].Bounds.Height.Should().Be(40, "its own height stands");
+        node.Children[0].Bounds.Width.Should().Be(30, "and so does its own width");
+    }
+
+    /// <summary>A scroller of its own height inside one that fills keeps that height, and scrolls by what
+    /// its content runs past IT: raised to the outer viewport, it kept the range of the height it stated, and
+    /// showed blank room past its content (found by Copilot reviewing #1158).</summary>
+    [Fact]
+    public void AScrollerOfItsOwnHeightInsideAFilledViewport_KeepsItsHeightAndItsRange()
+    {
+        var inner = new ScrollView(TallContent()) { Height = SizeValue.Fixed(40), Width = SizeValue.Fill };
+        var node = Layout(new ScrollView(inner) { Height = SizeValue.Fixed(100), Width = SizeValue.Fill, FillViewport = true });
+
+        var scroller = node.Children[0];
+        scroller.Bounds.Height.Should().Be(40);
+        scroller.ScrollRange.Should().Be(200, "240 of content in a viewport of 40");
+    }
+
+    /// <summary>
+    /// A text sizes itself to its lines and takes no stretch while it measures: across a sideways viewport
+    /// that fills, it is given the viewport's height as a row's stretch gives it the line's, through a
+    /// wrapper that takes its size, which the web's flex line does to the element (found by Copilot reviewing
+    /// #1158).
+    /// </summary>
+    [Fact]
+    public void ATextInASidewaysViewportThatFills_IsAsTallAsTheViewport()
+    {
+        var node = Layout(new ScrollView(new Pressable(new Primitives.Text("row", TypeRole.BodyM), () => { }), ScrollAxis.Horizontal)
+        {
+            Width = SizeValue.Fixed(120), Height = SizeValue.Fixed(80), FillViewport = true,
+        });
+
+        node.Children[0].Bounds.Height.Should().Be(80, "the wrapper is as tall as the viewport");
+        node.Children[0].Children[0].Bounds.Height.Should().Be(80, "and so is the text whose size it takes");
     }
 
     [Fact]

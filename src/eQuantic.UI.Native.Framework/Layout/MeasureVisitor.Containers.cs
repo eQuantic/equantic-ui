@@ -248,10 +248,12 @@ internal sealed partial class MeasureVisitor
     /// <summary>
     /// Content that fills its viewport (<see cref="ScrollView.FillViewport"/>, #1143): measured again at the
     /// viewport's size, stretched, on each axis it came out smaller on, so a hugging row takes the viewport's
-    /// height and hands it to what it stretches. On the scroll axis the viewport is a floor whatever length
-    /// the content asks for, as a grown flex item's is on the web; across, a size of its own stands, as
-    /// under any stretch. Decided here, in the measure that sizes the viewport: a size reported after the
-    /// frame and built back lagged one, so a pane that shrank ran its content past it until the next.
+    /// height and hands it to what it stretches. A size the content states stands, on either axis, as under
+    /// any stretch and as the web's flex line keeps it; one that sizes itself to what it holds and took no
+    /// stretch while it measured, a text, is given the viewport's extent through the wrappers that take its
+    /// size, as a row's stretch gives it the line's. Decided here, in the measure that sizes the viewport: a
+    /// size reported after the frame and built back lagged one, so a pane that shrank ran its content past
+    /// it until the next.
     /// </summary>
     private LayoutNode FillViewport(ScrollView scroll, LayoutNode child, LayoutConstraints forChild,
         float width, float height, LayoutContext ctx, Element? at)
@@ -265,14 +267,28 @@ internal sealed partial class MeasureVisitor
             Height = shortH ? Filled(forChild.Height, height) : forChild.Height,
         };
         child = Measure(scroll.Child, filled, ctx, at?.ChildAt(0));
-        if (scroll.Axis == ScrollAxis.Horizontal && child.Bounds.Width < width)
-            child.Bounds = child.Bounds with { Width = width };
-        else if (scroll.Axis != ScrollAxis.Horizontal && child.Bounds.Height < height)
-            child.Bounds = child.Bounds with { Height = height };
+        if (shortW) Pin(child, horizontal: true, width);
+        if (shortH) Pin(child, horizontal: false, height);
         return child;
 
         static AxisConstraint Filled(AxisConstraint axis, float extent) =>
             axis.WithMax(extent).DecidedByContent(false).Stretched(StretchKind.Flex);
+
+        // The arrange half of the stretch, where the measure could not take it: the wrapper and every node
+        // whose size it takes, down to the one that declares a size, which keeps it.
+        static void Pin(LayoutNode node, bool horizontal, float extent)
+        {
+            if (MainSizeKind(SizedBy(node).Source, horizontal) is SizeKind.Fixed or SizeKind.WindowMinus) return;
+            while (true)
+            {
+                if ((horizontal ? node.Bounds.Width : node.Bounds.Height) < extent)
+                    node.Bounds = horizontal ? node.Bounds with { Width = extent } : node.Bounds with { Height = extent };
+                if (node.Children.Count != 1
+                    || !(node.Source is Anchored || node.Source is SingleChildNode wrapper && wrapper.IsLayoutTransparent()))
+                    return;
+                node = node.Children[0];
+            }
+        }
     }
 
     /// <summary>Walks the scrolled content for Pinned wrappers and clamps their viewport-relative Y
