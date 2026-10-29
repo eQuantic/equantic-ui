@@ -19,7 +19,7 @@ public class NestedTypeConformanceTests
         public class Calc { static class Ops { public static int Twice(int x) => x * 2; } public int Run(int x) => Ops.Twice(x); }
         public class Outer { public class Inner { public int N = 4; } }
         public class A { public class B { public class C { public int V = 1; } } }
-        public class Counter { private static int made; public class Ticket { public int Id = ++made; } public static int Made => made; }
+        public class Counter { private static int issued; public class Ticket { public int Id = ++issued; } public static int Made => issued; }
         """;
 
     private static readonly (string Name, string Statements)[] ClassCases =

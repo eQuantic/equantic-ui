@@ -81,12 +81,12 @@ export class CodeGoToView {
         row.add(new Text(name, 'labelSmall', ink, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(name, entry.matches, ink, accent) }));
         let room = columns - CodeLineCells.widthOf(name, 4) - 2;
         let held: any; 
-        if (((entry.container != null && entry.container.length > 0) && (held = entry.container, true)) && room >= 2) {
+        if ((($0) => (($0 != null && $0.length > 0) && (held = $0, true)))(entry.container) && room >= 2) {
             let container = CodeCompletionView.fit(held, room);
             row.add(new Text(container, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(container, entry.containerMatches, theme.textMuted, accent) }));
         }
         let container2: any; 
-        return new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, padding: EdgeInsets.symmetric(8, 0), background: selected ? theme.colors('primary').subtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), pressed, { role: 'option', selected: selected, canRequestFocus: false, label: ((entry.container != null && entry.container.length > 0) && (container2 = entry.container, true)) ? entry.name + ', ' + container2 : entry.name });
+        return new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, padding: EdgeInsets.symmetric(8, 0), background: selected ? theme.colors('primary').subtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), pressed, { role: 'option', selected: selected, canRequestFocus: false, label: (($0) => (($0 != null && $0.length > 0) && (container2 = $0, true)))(entry.container) ? entry.name + ', ' + container2 : entry.name });
     }
 
     static kindOf(kind: CodeSymbolKindValue) {

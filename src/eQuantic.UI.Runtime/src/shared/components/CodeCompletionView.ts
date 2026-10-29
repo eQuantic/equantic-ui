@@ -26,7 +26,7 @@ export class CodeCompletionView {
 
     static entryColumns(item: CodeCompletionItem) {
         let detail: any; 
-        return Math.min(CodeCompletionView.cellsOf(item.label) + (((item.detail != null && item.detail.length > 0) && (detail = item.detail, true)) ? 2 + CodeCompletionView.cellsOf(detail) : 0), CodeCompletionView.maxColumns);
+        return Math.min(CodeCompletionView.cellsOf(item.label) + ((($0) => (($0 != null && $0.length > 0) && (detail = $0, true)))(item.detail) ? 2 + CodeCompletionView.cellsOf(detail) : 0), CodeCompletionView.maxColumns);
     }
 
     static widthOf(metrics: CodeBlock$CodeMetrics, columns: number) {
@@ -118,13 +118,13 @@ export class CodeCompletionView {
         row.add(new Text(label, 'labelSmall', ink, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(label, match.highlights, ink, theme.colors('primary').base) }));
         let room = columns - CodeCompletionView.cellsOf(label) - 2;
         let said: any; 
-        let detail = ((item.detail != null && item.detail.length > 0) && (said = item.detail, true)) && room >= 2 ? CodeCompletionView.fit(said, room) : null;
+        let detail = (($0) => (($0 != null && $0.length > 0) && (said = $0, true)))(item.detail) && room >= 2 ? CodeCompletionView.fit(said, room) : null;
         if (!(detail == null)) {
             row.add(new Flexible(new Spacer()));
             row.add(new Text(detail, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style }));
         }
         let whole: any; 
-        return new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, padding: EdgeInsets.symmetric(8, 0), background: selected ? theme.colors('primary').subtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), pressed, { role: 'option', selected: selected, canRequestFocus: false, label: ((item.detail != null && item.detail.length > 0) && (whole = item.detail, true)) ? item.label + ', ' + whole : item.label });
+        return new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, padding: EdgeInsets.symmetric(8, 0), background: selected ? theme.colors('primary').subtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), pressed, { role: 'option', selected: selected, canRequestFocus: false, label: (($0) => (($0 != null && $0.length > 0) && (whole = $0, true)))(item.detail) ? item.label + ', ' + whole : item.label });
     }
 
     static cellsOf(text: string) {

@@ -36,7 +36,7 @@ public static class TypeSymbolExtensions
     /// WHICH framework base the type reaches by walking its chain, or <see cref="ComponentBaseKind.None"/>.
     ///
     /// <para>
-    /// The four names are the abstract bases the framework defines, and they are matched here and
+    /// The names are the abstract bases the framework defines, and they are matched here and
     /// nowhere else. An intermediate base the app or a library wrote is reached BY THE WALK — naming
     /// one would be the brittleness this replaces.
     /// </para>
@@ -58,6 +58,10 @@ public static class TypeSymbolExtensions
                 case "StatelessComponent": return ComponentBaseKind.StatelessComponent;
                 case "HtmlElement": return ComponentBaseKind.HtmlElement;
                 case "ComponentState": return ComponentBaseKind.ComponentState;
+                // The root by the vocabulary's own name only: the app may call a class of its own UiComponent,
+                // and the chain binds it to what it is (Copilot's second review of #1171).
+                case "UiComponent" when t.ContainingNamespace?.ToDisplayString() == "eQuantic.UI.Primitives":
+                    return ComponentBaseKind.UiComponent;
             }
         }
         return ComponentBaseKind.None;
@@ -125,6 +129,20 @@ public static class TypeSymbolExtensions
     /// </summary>
     public static bool IsUiComponent(this ITypeSymbol? type) =>
         type.ResolveComponentBase() != ComponentBaseKind.None;
+
+    /// <summary>
+    /// Whether the compilation binds every base class on <paramref name="type"/>'s chain, so that
+    /// <see cref="IsUiComponent"/> is the whole answer to whether it is a component. A base from a reference the
+    /// compilation lacks is an error type, and there the chain says nothing: what the declaration writes (a
+    /// <c>Build</c> it declares) is all a caller has. Where every base binds, a method's name says nothing, and a
+    /// builder whose last step is <c>Build</c> is the plain class it is (#1164).
+    /// </summary>
+    internal static bool BasesBind(this ITypeSymbol type)
+    {
+        for (var t = type.BaseType; t != null; t = t.BaseType)
+            if (t.TypeKind == TypeKind.Error) return false;
+        return true;
+    }
 
     /// <summary>
     /// True when the type is a NODE — anything that ends up in the built tree, which is everything

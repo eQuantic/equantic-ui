@@ -486,7 +486,7 @@ export class CodeBlock extends StatelessComponent {
             }
             let from = line === start.line ? start.column : 0;
             let to = line === end.line ? end.column : document.line(line).length;
-            let point = $eq.equals(start, end) && (decoration.kind === 'squiggle' || decoration.kind === 'dots');
+            let point = $eq.equals(start, end) && (($0) => ($0 === 'squiggle' || $0 === 'dots'))(decoration.kind);
             if (to <= from && !point) continue;
             let cells = cellsOf(line);
             let left = Math.fround(metrics.contentLeft + Math.fround(Math.fround(cells.cellOf(from)) * metrics.columnWidth));

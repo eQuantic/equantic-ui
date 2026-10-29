@@ -191,10 +191,11 @@ internal static class PlainClassModule
         return false;
     }
 
-    /// <summary>Marked <c>[ServerOnly]</c>: by its full name, or by the name as written where the
-    /// attribute binds to an error type, a compilation that does not reference it.</summary>
-    private static bool IsServerOnly(INamedTypeSymbol type) =>
-        type.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute");
+    /// <summary>Marked <c>[ServerOnly]</c>, a type or a method: by its full name, or by the name as written
+    /// where the attribute binds to an error type, a compilation that does not reference it. The one
+    /// reading of the attribute off a symbol, which every rule that asks one reads (#1140).</summary>
+    internal static bool IsServerOnly(ISymbol symbol) =>
+        symbol.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute");
 
     /// <summary>Whether <paramref name="type"/> is <c>System.Attribute</c> itself.</summary>
     private static bool IsAttributeRoot(INamedTypeSymbol type) =>
