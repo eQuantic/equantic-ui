@@ -46,13 +46,16 @@ public class MinMaxStrategy : IConversionStrategy
 
         // No model to ask what the call answers: the numeric answer it always had, Math.min's of no
         // values (Infinity) for an empty list, and a NaN among them winning.
-        var caller = LinqSource.Text(memberAccess.Expression, context);
+        // The fold is IR, an arrow that holds no C#: the selector is mapped over the values before it.
+        var source = LinqSource.Ir(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
-        var (mathFunc, none) = methodName == "Min" ? ("Math.min", "Infinity") : ("Math.max", "-Infinity");
+        var (extreme, none) = methodName == "Min" ? ("min", "Infinity") : ("max", "-Infinity");
         var values = args.Count > 0
-            ? $"{caller}.map({context.Converter.ConvertExpression(args[0].Expression)})"
-            : caller;
-        return $"{values}.reduce(($m, $v) => {mathFunc}($m, $v), {none})";
+            ? JsExpr.Call(JsExpr.Member(source, "map"), context.Converter.ConvertIr(args[0].Expression))
+            : source;
+        var fold = JsExpr.Arrow("$m, $v", JsExpr.Call(JsExpr.Member(JsExpr.Identifier("Math"), extreme),
+            JsExpr.Identifier("$m"), JsExpr.Identifier("$v")));
+        return JsExprWriter.Write(JsExpr.Call(JsExpr.Member(values, "reduce"), fold, JsExpr.Literal(none)));
     }
 
     /// <summary>
