@@ -168,6 +168,10 @@ describe("List<T>'s AddRange and InsertRange, of a range of any size (#1060)", (
     const end = [1];
     insertRange(end, 1, [9]);
     expect(end).toEqual([1, 9]);
+    const none = [1, 2];
+    insertRange(none, 0, []);
+    insertRange(none, 0, none.slice(0, 0));
+    expect(none).toEqual([1, 2]);
   });
 
   it('refuses a null list first, and an index before the collection is read', () => {

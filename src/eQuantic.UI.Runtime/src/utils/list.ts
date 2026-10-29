@@ -440,6 +440,8 @@ export function insertRange<T>(list: T[], index: number, collection: Iterable<T>
   if (collection == null) throw argumentNull('collection');
   if (index < 0 || index > list.length) throw outOfRange('index', INDEX_LESS_OR_EQUAL);
   const range = rangeOf(collection);
+  // An empty range moves nothing: the tail is taken off and put back only for a range that inserts.
+  if (range.length === 0) return;
   const items = range === list ? list.slice() : range;
   const tail = list.splice(index);
   for (let i = 0, count = items.length; i < count; i++) list.push(items[i]);
