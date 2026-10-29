@@ -535,8 +535,7 @@ internal static class OverloadedMethods
             // A server-only method never reaches a twin, so it takes no name there (asked in review,
             // #418, for a component's, and so for every type's since #816), as CheckInherited leaves it
             // out too.
-            && !(member is IMethodSymbol
-                && member.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly")));
+            && !(member is IMethodSymbol && PlainClassModule.IsServerOnly(member)));
 
     /// <summary>
     /// A method whose name a BASE already takes (see the type's remarks): the first inherited method
@@ -630,8 +629,7 @@ internal static class OverloadedMethods
                 if (member.ExplicitInterfaceImplementations.Length > 0 || Overrides(method, member)) continue;
                 // A defining half of a partial method reaches no twin, nor does a server-only one.
                 if (member.IsPartialDefinition && member.PartialImplementationPart is null) continue;
-                if (member.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly"))
-                    continue;
+                if (PlainClassModule.IsServerOnly(member)) continue;
                 return member;
             }
         }

@@ -486,8 +486,7 @@ public class ComponentParser
         // WRITTEN. The second is the playground's world, and a type that says it stays on the
         // server must be believed there too.
         if (TryGetSemanticModel(classDecl.SyntaxTree)?.GetDeclaredSymbol(classDecl) is { } symbol
-            && symbol.GetAttributes()
-                .Any(a => a.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute"))
+            && PlainClassModule.IsServerOnly(symbol))
             return true;
 
         return classDecl.AttributeLists.SelectMany(list => list.Attributes)
@@ -577,7 +576,7 @@ public class ComponentParser
             : ReferenceEquals(model.SyntaxTree, method.SyntaxTree) ? model
             : model.Compilation.ModelOf(method.SyntaxTree);
         return own?.GetDeclaredSymbol(method) is IMethodSymbol symbol
-            ? symbol.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute")
+            ? PlainClassModule.IsServerOnly(symbol)
             : PlainClassModule.IsServerOnlyDeclaration(method);
     }
 
