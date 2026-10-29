@@ -230,19 +230,19 @@ internal static class MembersOnOneName
                         $"{name}.{property.Identifier.ValueText}", property.Identifier, Held: PropertyStore.IsAuto(property));
                     break;
 
-                case MethodDeclarationSyntax method when OverloadedMethods.TakesAName(method, isComponent):
+                case MethodDeclarationSyntax method when OverloadedMethods.TakesAName(method, isComponent, ownModel):
                     yield return new(TwinMethodName.Of(method, ownModel), IsStatic(method),
                         $"{name}.{OverloadedMethods.Signature(method)}", method.Identifier, Held: false, Method: method);
                     break;
 
-                case OperatorDeclarationSyntax op when !Parser.ComponentParser.StaysOnTheServer(op, inAComponent: false)
+                case OperatorDeclarationSyntax op when !Parser.ComponentParser.StaysOnTheServer(op, inAComponent: false, ownModel)
                                                        && OperatorName(op) is { } lowered:
                     yield return new(lowered, true, $"{name}.operator {op.OperatorToken.Text}({Types(op.ParameterList)})",
                         op.OperatorToken, Held: false, Operator: true);
                     break;
 
                 case ConversionOperatorDeclarationSyntax conversion
-                    when !Parser.ComponentParser.StaysOnTheServer(conversion, inAComponent: false):
+                    when !Parser.ComponentParser.StaysOnTheServer(conversion, inAComponent: false, ownModel):
                     yield return new(ConversionName(conversion, name, ownModel), true,
                         $"{name}.{conversion.ImplicitOrExplicitKeyword.Text} operator {conversion.Type}({Types(conversion.ParameterList)})",
                         conversion.ImplicitOrExplicitKeyword, Held: false, Operator: true);
@@ -262,7 +262,7 @@ internal static class MembersOnOneName
                                 yield return new(Indexer.Get, true, $"{receiver}.this[{Types(indexer.ParameterList)}]",
                                     indexer.ThisKeyword, Held: false);
                                 break;
-                            case MethodDeclarationSyntax method when OverloadedMethods.TakesAName(method, isComponent: false):
+                            case MethodDeclarationSyntax method when OverloadedMethods.TakesAName(method, isComponent: false, ownModel):
                                 yield return new(TwinMethodName.Of(method, ownModel), true,
                                     $"{receiver}.{OverloadedMethods.Signature(method)}", method.Identifier, Held: false, Method: method);
                                 break;

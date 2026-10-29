@@ -28,6 +28,14 @@ internal static class DefaultInterfaceMembers
     /// specific default (the class lists an interface that overrides it) is the class's own, written
     /// over the base's: skipping every interface the base implements dropped it, and the class
     /// answered with its base's default (found in review, #418).
+    /// <para>
+    /// A default or a helper marked <c>[ServerOnly]</c> is none of them: no twin holds it, so it is left
+    /// out here, before the helpers the defaults reach are collected, and every reader of the list (the
+    /// emitters, the import scan, the EQ1007 guard) reads the same set. Left out by the emitters alone,
+    /// a private helper only such a default calls still crossed with its server code, and a record whose
+    /// member was named like the default was refused as two members on one name (Copilot's review of
+    /// #1151).
+    /// </para>
     /// </summary>
     public static IReadOnlyList<Inherited> Of(INamedTypeSymbol type, Compilation compilation)
     {
@@ -42,6 +50,7 @@ internal static class DefaultInterfaceMembers
                 if (type.FindImplementationForInterfaceMember(member) is not { } implementation
                     || implementation.ContainingType.TypeKind != TypeKind.Interface
                     || implementation.IsAbstract
+                    || Services.PlainClassModule.IsServerOnly(implementation)
                     || !seen.Add(implementation))
                     continue;
                 if (type.BaseType?.FindImplementationForInterfaceMember(member) is { } based
@@ -66,6 +75,7 @@ internal static class DefaultInterfaceMembers
                     || helper.DeclaredAccessibility != Accessibility.Private
                     || helper.ContainingType?.TypeKind != TypeKind.Interface
                     || helper is not (IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary })
+                    || Services.PlainClassModule.IsServerOnly(helper)
                     || !seen.Add(helper))
                     continue;
                 var helperDeclaration = DeclarationOf(helper);

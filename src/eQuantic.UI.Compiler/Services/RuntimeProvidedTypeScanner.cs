@@ -145,7 +145,7 @@ public static class RuntimeProvidedTypeScanner
         ISet<string> runtimeProvided, ISet<string> enumTypes, ISet<string>? appTypes = null,
         IDictionary<string, SyntaxNode>? hostOnly = null)
     {
-        var crossing = root.DescendantNodes(node => !Parser.ComponentParser.StaysOnTheServer(node, asComponent)
+        var crossing = root.DescendantNodes(node => !Parser.ComponentParser.StaysOnTheServer(node, asComponent, model)
             && !(node is InvocationExpressionSyntax invocation && invocation.IsNameOf(model))).ToList();
 
         // A type the vocabulary declares [ServerOnly] ships no runtime export, so its NAME must not

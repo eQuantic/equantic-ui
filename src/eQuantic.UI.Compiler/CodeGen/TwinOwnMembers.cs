@@ -31,7 +31,7 @@ internal static class TwinOwnMembers
         if (method.Identifier.ValueText != name
             || !method.Modifiers.Any(SyntaxKind.OverrideKeyword)
             || method.Modifiers.Any(SyntaxKind.StaticKeyword)
-            || Parser.ComponentParser.StaysOnTheServer(method, inAComponent: false))
+            || Parser.ComponentParser.StaysOnTheServer(method, inAComponent: false, model))
             return false;
         if (model?.SyntaxTree == method.SyntaxTree && model.GetDeclaredSymbol(method) is IMethodSymbol symbol)
         {

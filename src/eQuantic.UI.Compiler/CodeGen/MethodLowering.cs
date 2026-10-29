@@ -68,7 +68,7 @@ internal sealed class MethodLowering
     {
         if (method.Modifiers.Any(SyntaxKind.AbstractKeyword)) return null;
         if (method.Body == null && method.ExpressionBody == null) return null;
-        if (Parser.ComponentParser.StaysOnTheServer(method, inAComponent: false)) return null;
+        if (Parser.ComponentParser.StaysOnTheServer(method, inAComponent: false, _modelFor(method))) return null;
 
         var byReference = OutParameters.Of(method.ParameterList);
         // The names the body mentions, by their value: a search of its TEXT found `class` inside a

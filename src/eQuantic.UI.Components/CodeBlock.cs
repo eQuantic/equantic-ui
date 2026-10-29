@@ -184,14 +184,6 @@ public sealed class CodeBlock : StatelessComponent
     /// </summary>
     public float ViewportWidth { get; init; }
 
-    /// <summary>
-    /// The least the code's box is tall, in dp. An editor whose viewport is taller than its code
-    /// makes the code fill it, so the room under the last line is the code's: a press there lands on
-    /// the last line, as it does in any code editor, and the list the editor draws at its caret has
-    /// the viewport's room under a short file rather than the file's own. Zero is as tall as the code.
-    /// </summary>
-    public float MinHeight { get; init; }
-
     /// <summary>Reported when the viewport moves or resizes — an editor feeds these back in.</summary>
     public Action<float>? OnScrolled { get; init; }
     public Action<float>? OnViewportChanged { get; init; }
@@ -377,11 +369,7 @@ public sealed class CodeBlock : StatelessComponent
         // unbounded on the scroll axis, which is the point of a scroll view — so a Fill there has
         // nothing to fill and collapses to the code. Taking the width the viewport REPORTED settles
         // it in one arithmetic both realizers already agree on.
-        VisualNode body = new Box(new BoxStyle
-        {
-            Width = SizeValue.Fixed(width),
-            MinHeight = MinHeight,
-        }, content);
+        VisualNode body = new Box(new BoxStyle { Width = SizeValue.Fixed(width) }, content);
 
         // Bare CONTENT, exactly as wide as the code: no slab, no viewport, no corner. An editor
         // frames and scrolls this from outside, and a block that framed itself here would paint a

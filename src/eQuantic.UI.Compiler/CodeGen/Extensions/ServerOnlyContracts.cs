@@ -114,21 +114,20 @@ internal static class ServerOnlyContracts
     }
 
     /// <summary>
-    /// The methods, operators and conversions of a compilation's source that no twin holds, found from
-    /// their declarations as written, by the rule the emitters leave them out by: a project's every
-    /// member is not bound to learn which few they are.
+    /// The methods, operators and conversions of a compilation's source that no twin holds, found by the
+    /// rule the emitters leave them out by: a project's every member is not bound to learn which few they
+    /// are, since the rule binds only a member that writes an attribute or is a partial method.
     /// </summary>
     private static IEnumerable<IMethodSymbol> ServerOnlyMethods(Compilation compilation)
     {
         foreach (var tree in compilation.SyntaxTrees)
         {
-            SemanticModel? model = null;
+            var model = compilation.GetSemanticModel(tree);
             foreach (var declaration in tree.GetRoot()
                          .DescendantNodes(node => node is CompilationUnitSyntax or BaseNamespaceDeclarationSyntax or TypeDeclarationSyntax)
                          .OfType<BaseMethodDeclarationSyntax>())
             {
-                if (!Parser.ComponentParser.StaysOnTheServer(declaration, inAComponent: false)) continue;
-                model ??= compilation.GetSemanticModel(tree);
+                if (!Parser.ComponentParser.StaysOnTheServer(declaration, inAComponent: false, model)) continue;
                 if (model.GetDeclaredSymbol(declaration) is IMethodSymbol method) yield return method;
             }
         }
