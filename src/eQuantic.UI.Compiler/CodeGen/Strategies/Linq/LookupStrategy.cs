@@ -5,8 +5,9 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
-/// The two members an <c>ILookup&lt;TKey, TElement&gt;</c> answers by a key: its indexer
-/// <c>lookup[key]</c> and <c>lookup.Contains(key)</c>. A lookup (from <see cref="LinqTableStrategy"/>'s
+/// The two members a lookup answers by a key, <c>ILookup&lt;TKey, TElement&gt;</c> or the concrete
+/// <c>Lookup&lt;TKey, TElement&gt;</c> it is: its indexer <c>lookup[key]</c> and <c>lookup.Contains(key)</c>.
+/// A lookup (from <see cref="LinqTableStrategy"/>'s
 /// <c>ToLookup</c> / GroupBy) is represented as an array of groupings, each an items array carrying a
 /// <c>key</c> property, so both search the groups for the one of that key: the indexer answers it, and,
 /// matching .NET `ILookup`, an <b>empty sequence</b> (never throws) for an absent key; <c>Contains</c>
@@ -59,11 +60,12 @@ public class LookupStrategy : IExpressionIrStrategy
             : null;
 
     /// <summary>Whether a type is <c>System.Linq.ILookup&lt;TKey, TElement&gt;</c>, what <c>ToLookup</c>
-    /// answers.</summary>
+    /// answers, or <c>System.Linq.Lookup&lt;TKey, TElement&gt;</c>, the class it builds, which a cast, an
+    /// <c>as</c> or a type pattern reaches (#1168).</summary>
     private static bool IsLookup(ITypeSymbol? type) =>
         type is INamedTypeSymbol named
         && named.OriginalDefinition?.ContainingNamespace?.ToDisplayString() == "System.Linq"
-        && named.OriginalDefinition.Name == "ILookup";
+        && named.OriginalDefinition.Name is "ILookup" or "Lookup";
 
     public int Priority => 12;
 }
