@@ -151,7 +151,10 @@ public sealed class ServerOnlyMethodBySymbolTests
     /// and an interface's default, which the emitters write into the twin of a class or a record that takes
     /// it. Each reads a file and constructs the app's <c>ColdStore</c>. A record that took a server-only
     /// default was refused (EQ1008) as relying on a body nothing could read, the attribute written on the
-    /// default included, where a class left it out.</summary>
+    /// default included, where a class left it out. And a private helper of the interface that only such
+    /// a default calls travelled with it into both twins, and its file access was refused (EQ2112), the
+    /// default being filtered after the helpers it reaches were collected (Copilot's review of
+    /// #1151).</summary>
     public static TheoryData<string, string, string, string, string> OtherMembers() => new()
     {
         { "a class's operator", "Amount",
@@ -175,6 +178,12 @@ public sealed class ServerOnlyMethodBySymbolTests
         { "an interface's default a record takes, marked as written", "Note",
             "public interface IReads\n{\n    [ServerOnly] string Read() => File.ReadAllText(new ColdStore().Path);\n}\n\npublic sealed record Note(string Name) : IReads;",
             "new App.Model.Note(\"n\").Name", "read(" },
+        { "a private helper only a server-only default a record takes calls", "Note",
+            "public interface IReads\n{\n    [Keep] string Read() => Load();\n\n    private string Load() => File.ReadAllText(new ColdStore().Path);\n}\n\npublic sealed record Note(string Name) : IReads;",
+            "new App.Model.Note(\"n\").Name", "load(" },
+        { "a private helper only a server-only default a class takes calls", "Plain",
+            "public interface IReads\n{\n    [ServerOnly] string Read() => Load();\n\n    private string Load() => File.ReadAllText(new ColdStore().Path);\n}\n\npublic sealed class Plain : IReads\n{\n    public int V => 1;\n}",
+            "new App.Model.Plain().V.ToString()", "load(" },
         { "an interface's default a class takes", "Plain",
             "public interface IReads\n{\n    [Keep] string Read() => File.ReadAllText(new ColdStore().Path);\n}\n\npublic sealed class Plain : IReads\n{\n    public int V => 1;\n}",
             "new App.Model.Plain().V.ToString()", "read(" },

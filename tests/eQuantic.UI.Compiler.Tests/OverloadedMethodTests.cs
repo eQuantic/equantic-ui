@@ -272,6 +272,30 @@ public class OverloadedMethodTests
         result.TypeScript.Should().Contain("label(", Exactly.Once(), "the twin holds the method that crosses, and only it");
     }
 
+    /// <summary>A server-only default a type takes from its interface reaches no twin, so it takes no
+    /// name there either: a record whose positional member is named like it was refused as two members
+    /// on one name (Copilot's review of #1151).</summary>
+    [Theory]
+    [InlineData("[ServerOnly]")]
+    [InlineData("[Keep]")]
+    public void AServerOnlyDefaultATypeTakes_TakesNoName(string attribute)
+    {
+        var result = Compile($$"""
+            using eQuantic.UI.Primitives;
+            using Keep = eQuantic.UI.Primitives.ServerOnlyAttribute;
+
+            public interface IReads
+            {
+                {{attribute}} string Read() => "x";
+            }
+
+            public sealed record Note(int Read) : IReads;
+            """, "Note");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007");
+        result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => $"{error.Code} {error.Message}")));
+    }
+
     /// <summary>A static class nested in a component is embedded in its module, a class of its own.</summary>
     [Fact]
     public void AStaticClassNestedInAComponent_IsCheckedToo()

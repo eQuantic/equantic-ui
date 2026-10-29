@@ -620,12 +620,11 @@ public class RecordTypeEmitter
                 }
                 switch (member)
                 {
-                    // A [ServerOnly] default is no member of the twin, as the record's own is not. Asked
-                    // in the arm, as the class emitter asks it: asked in the arm's condition, it sent the
-                    // default to the last arm, which refused it as a body nothing could read (EQ1008).
+                    // A [ServerOnly] default is none of these: DefaultInterfaceMembers leaves it out. Asked
+                    // here, in this arm's condition, it sent the default to the last arm, which refused it
+                    // as a body nothing could read (EQ1008).
                     case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
-                        if (!Parser.ComponentParser.StaysOnTheServer(method, inAComponent: false, ModelFor(method)))
-                            _converter.InFileOf(method, () => sb.Append(EmitMethod(method, name)));
+                        _converter.InFileOf(method, () => sb.Append(EmitMethod(method, name)));
                         break;
                     case PropertyDeclarationSyntax property when ComputedGetter(property) is not null || IsSetterOnly(property):
                         _converter.InFileOf(property, () => sb.Append(ComputedProperty(property, name)));
