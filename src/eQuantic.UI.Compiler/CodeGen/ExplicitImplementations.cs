@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -59,34 +61,50 @@ internal static class ExplicitImplementations
         _ => false,
     };
 
+    /// <summary>What each type settled, by name and side: every call site asks it of the method it binds
+    /// (<see cref="TwinMethodName.ExplicitBeside"/>), and settling binds the bodies of the explicit ones.</summary>
+    private static readonly ConditionalWeakTable<INamedTypeSymbol, ConcurrentDictionary<(string Name, bool IsStatic), Settled>> Cache = new();
+
+    /// <summary>The explicit implementations of one name and side a type writes, and the ones it leaves out.</summary>
+    private sealed record Settled(IReadOnlyList<ISymbol> Written, HashSet<ISymbol> LeftOut);
+
     /// <summary>
     /// What <paramref name="type"/> does with its explicit implementations of one name and side: the ones
     /// it writes, and the ones it leaves out because they hand back what the member holding the name
     /// answers. One that hands off to an explicit implementation with an answer of its own leaves it the
-    /// name. One that hands off to a method of the type's own leaves it the name when that method holds it,
-    /// which it does unless it hides an inherited member, is a typed <c>Equals</c>, or stands beside an
-    /// explicit implementation with an answer of its own (which takes the name, #708). One that hands off
-    /// to a member of a base leaves it the name when the base's twin holds it under the name. A property of
-    /// the type's own or a base's always holds its name.
+    /// name, and so does one that hands off to a member of a base whose twin holds it under the name. A
+    /// property of the type's own or a base's always holds its name. One that hands off to a method of the
+    /// type's own leaves it the name when that method holds it, which it does unless it hides an inherited
+    /// member, is a typed <c>Equals</c>, or stands beside an explicit implementation the type writes, which
+    /// takes the name (#708): so those are settled last, once every other one is.
     /// </summary>
-    private static (IReadOnlyList<ISymbol> Written, HashSet<ISymbol> LeftOut) Settle(INamedTypeSymbol type, string name, bool isStatic)
-    {
-        var group = type.GetMembers()
-            .Where(member => IsExplicit(member) && member.IsStatic == isStatic && member.MemberTwinName() == name
-                && !IterableTwin.LeavesOut(member))
-            .OrderBy(member => member.Locations.FirstOrDefault()?.SourceSpan.Start ?? 0)
-            .Select(member => (Member: member, Reached: Reached(member)))
-            .ToList();
-        // What hands off to nothing that can hold the name answers on its own, and takes the name.
-        var own = group.Where(entry => entry.Reached is not { } reached || !CanHold(reached, entry.Member, name)).ToList();
-        var leftOut = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
-        foreach (var (member, reached) in group)
+    private static Settled Settle(INamedTypeSymbol type, string name, bool isStatic) =>
+        Cache.GetValue(type.OriginalDefinition, _ => new()).GetOrAdd((name, isStatic), _ =>
         {
-            if (reached is null || !CanHold(reached, member, name)) continue;
-            if (Holds(reached, type, name, besideOwn: own.Count > 0)) leftOut.Add(member.OriginalDefinition);
-        }
-        return (group.Select(entry => entry.Member).Where(member => !leftOut.Contains(member.OriginalDefinition)).ToList(), leftOut);
-    }
+            var group = type.GetMembers()
+                .Where(member => IsExplicit(member) && member.IsStatic == isStatic && member.MemberTwinName() == name
+                    && !IterableTwin.LeavesOut(member))
+                .OrderBy(member => member.Locations.FirstOrDefault()?.SourceSpan.Start ?? 0)
+                .Select(member => (Member: member, Reached: Reached(member)))
+                .Select(entry => (entry.Member, Reached: entry.Reached is { } reached && CanHold(reached, entry.Member, name) ? reached : null))
+                .ToList();
+            var leftOut = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
+            var toOwn = group.Where(entry => entry.Reached is not null && IsOwnMethod(entry.Reached, type)).ToList();
+            foreach (var (member, reached) in group.Except(toOwn))
+                if (reached is not null && Holds(reached, type, name, besideWritten: false))
+                    leftOut.Add(member.OriginalDefinition);
+            var besideWritten = group.Except(toOwn).Any(entry => !leftOut.Contains(entry.Member.OriginalDefinition));
+            foreach (var (member, reached) in toOwn)
+                if (Holds(reached!, type, name, besideWritten))
+                    leftOut.Add(member.OriginalDefinition);
+            return new Settled(group.Select(entry => entry.Member).Where(member => !leftOut.Contains(member.OriginalDefinition)).ToList(), leftOut);
+        });
+
+    /// <summary>Whether <paramref name="reached"/> is a method whose name <paramref name="type"/> settles: one
+    /// it declares that fills no base's slot.</summary>
+    private static bool IsOwnMethod(ISymbol reached, INamedTypeSymbol type) =>
+        reached is IMethodSymbol method && !IsExplicit(method)
+        && SymbolEqualityComparer.Default.Equals(TwinMethodName.Slot(method).ContainingType.OriginalDefinition, type.OriginalDefinition);
 
     /// <summary>Whether <paramref name="reached"/>, the member an explicit implementation's hand-offs end at,
     /// could hold its name: a member of the same kind and side, written under the same name, that a twin
@@ -99,17 +117,16 @@ internal static class ExplicitImplementations
         && !reached.IsHostOnly();
 
     /// <summary>Whether <paramref name="reached"/> holds <paramref name="name"/> on its type's twin, beside an
-    /// explicit implementation of <paramref name="type"/> with an answer of its own or not.</summary>
-    private static bool Holds(ISymbol reached, INamedTypeSymbol type, string name, bool besideOwn)
+    /// explicit implementation <paramref name="type"/> writes or not.</summary>
+    private static bool Holds(ISymbol reached, INamedTypeSymbol type, string name, bool besideWritten)
     {
         if (IsExplicit(reached)) return HandsOff(reached) is null && !IterableTwin.LeavesOut(reached);
         if (reached is not IMethodSymbol method) return true;
         // A method of a base, or an override, whose slot a base holds: that type's twin settles its name.
-        var slot = TwinMethodName.Slot(method);
-        if (!SymbolEqualityComparer.Default.Equals(slot.ContainingType.OriginalDefinition, type.OriginalDefinition))
-            return TwinMethodName.Of(method) == name;
+        if (!IsOwnMethod(method, type)) return TwinMethodName.Of(method) == name;
         // The type's own method: its name is settled here, beside its explicit siblings (TwinMethodName.Of).
-        return !besideOwn && !TwinMethodName.TypedEquals(slot) && TwinMethodName.Hidden(slot) is null;
+        var slot = TwinMethodName.Slot(method);
+        return !besideWritten && !TwinMethodName.TypedEquals(slot) && TwinMethodName.Hidden(slot) is null;
     }
 
     /// <summary>The member <paramref name="member"/> reaches through its hand-offs (<see cref="HandsOff"/>),
@@ -192,13 +209,26 @@ internal static class ExplicitImplementations
             : null;
     }
 
-    /// <summary>Whether a member is reached on the object <paramref name="member"/> answers for: through
-    /// <c>this</c>, written or not, cast or not, for an instance member, and through no object for a
-    /// static one.</summary>
+    /// <summary>
+    /// Whether a member is reached on the object <paramref name="member"/> answers for, as a call through
+    /// its interface would reach it: through <c>this</c>, written or not, cast or not, for an instance
+    /// member, and through no object, on its type or a base, for a static one. A call through <c>base</c>
+    /// skips the type's override, which a call through the interface would reach.
+    /// </summary>
     private static bool OnTheSameObject(ISymbol member, IOperation? receiver, ISymbol target) =>
         member.IsStatic
-            ? target.IsStatic && receiver is null
-            : !target.IsStatic && Unconverted(receiver) is IInstanceReferenceOperation { ReferenceKind: InstanceReferenceKind.ContainingTypeInstance };
+            ? target.IsStatic && receiver is null && InChain(member.ContainingType, target.ContainingType)
+            : !target.IsStatic
+              && Unconverted(receiver) is IInstanceReferenceOperation { ReferenceKind: InstanceReferenceKind.ContainingTypeInstance } self
+              && self.Syntax is not BaseExpressionSyntax;
+
+    /// <summary>Whether <paramref name="holder"/> is <paramref name="type"/> or one of its bases.</summary>
+    private static bool InChain(INamedTypeSymbol type, INamedTypeSymbol holder)
+    {
+        for (INamedTypeSymbol? at = type; at is not null; at = at.BaseType)
+            if (SymbolEqualityComparer.Default.Equals(at.OriginalDefinition, holder.OriginalDefinition)) return true;
+        return false;
+    }
 
     /// <summary>Whether <paramref name="call"/> passes each of <paramref name="member"/>'s parameters, and
     /// only them, in the place of the parameter it binds, as written and by the same kind of reference,

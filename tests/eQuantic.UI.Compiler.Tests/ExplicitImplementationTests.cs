@@ -245,6 +245,62 @@ public class ExplicitImplementationTests
         error.Message.Should().Contain(said, why);
     }
 
+    /// <summary>
+    /// A call through <c>base</c> is no hand-off: it skips the type's override, which a call through the
+    /// interface would reach on the twin, so the explicit one is written, and refused beside the override.
+    /// A static one that calls another type's static of its name is written too: the twin of the type it
+    /// answers for would hold nothing under the name.
+    /// </summary>
+    [Fact]
+    public void WhatACallThroughTheInterfaceWouldNotReach_IsNoHandOff()
+    {
+        var based = Compile("""
+            public class B { public virtual string Run() => "b"; }
+            public class T : B, IFoo
+            {
+                public override string Run() => "t";
+                string IFoo.Run() => base.Run();
+            }
+            """, "T");
+        based.Errors.Should().ContainSingle().Which.Message.Should().Contain("'T.Run()' lowers to `run()`");
+
+        var elsewhere = Compile("""
+            public static class Helper { public static string Make() => "h"; }
+            public class Maker : IMake { static string IMake.Make() => Helper.Make(); }
+            """, "Maker");
+        elsewhere.Errors.Should().BeEmpty();
+        Declared(elsewhere.TypeScript, "make").Should().Be(1);
+    }
+
+    /// <summary>The hand-off a refusal proposes for a property with a setter writes both accessors, as the
+    /// interface asks; an explicit event, which no twin holds (#746), meets nothing.</summary>
+    [Fact]
+    public void TheProposedHandOff_IsOneCSharpTakes()
+    {
+        var result = Compile("""
+            public interface ISet1 { int Value { get; set; } }
+            public interface ISet2 { int Value { get; set; } }
+            public class Settable : ISet1, ISet2
+            {
+                private int a, b;
+                int ISet1.Value { get => a; set => a = value; }
+                int ISet2.Value { get => b; set => b = value; }
+            }
+            """, "Settable");
+        result.Errors.Should().ContainSingle().Which.Message.Should()
+            .Contain("`int ISet2.Value { get => ((ISet1)this).Value; set => ((ISet1)this).Value = value; }`");
+
+        var evented = Compile("""
+            public interface IHas { event System.Action Run; }
+            public class Evented : IHas, IFoo
+            {
+                event System.Action IHas.Run { add { } remove { } }
+                string IFoo.Run() => "foo";
+            }
+            """, "Evented");
+        evented.Errors.Should().BeEmpty();
+    }
+
     /// <summary>The error points at the later of the two, as every EQ1007 does.</summary>
     [Fact]
     public void TheErrorPointsAtTheSecond()

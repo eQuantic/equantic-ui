@@ -726,7 +726,7 @@ internal static class OverloadedMethods
             {
                 Refuse(errors, sourcePath, held, type,
                     $"'{declared.Name}.{Answering(own)}' lowers to {lowered}, and so does the explicit implementation "
-                    + $"'{Answering(held)}' beside it, which holds that name for every call through '{Display(Face(held))}'. "
+                    + $"'{Answering(held)}' beside it, which holds that name for every call through '{Display(Face(held)!)}'. "
                     + "A JavaScript class holds one member per name, so one of them would answer the other's calls. Where "
                     + $"they answer alike, have the explicit one hand back what '{Answering(own)}' answers{Through(held, own)}; "
                     + $"otherwise give '{Answering(own)}' a name of its own.");
@@ -737,7 +737,7 @@ internal static class OverloadedMethods
             var at = where is { } span ? $" ({Path.GetFileName(span.Path)} line {span.StartLinePosition.Line + 1})" : "";
             var (other, reached) = ExplicitImplementations.IsExplicit(inherited)
                 ? ($"the explicit implementation of '{Answering(inherited)}' it inherits from '{inherited.ContainingType.Name}'{at}",
-                    $"every call through '{Display(Face(inherited))}' on a '{declared.Name}' too")
+                    $"every call through '{Display(Face(inherited)!)}' on a '{declared.Name}' too")
                 : ($"'{inherited.ContainingType.Name}.{Answering(inherited)}', which it inherits{at}",
                     $"every call to '{inherited.ContainingType.Name}.{Answering(inherited)}' on a '{declared.Name}'");
             Refuse(errors, sourcePath, held, type,
@@ -794,7 +794,7 @@ internal static class OverloadedMethods
             when !method.IsHostOnly() && !(method.IsPartialDefinition && method.PartialImplementationPart is null)
                 && !(method.IsAbstract && method.ContainingType.TypeKind != TypeKind.Interface && !method.IsOverride) =>
             TwinMethodName.Of(method),
-        IPropertySymbol { IsIndexer: false } or IEventSymbol => Lowered(member),
+        IPropertySymbol { IsIndexer: false } or IEventSymbol { ExplicitInterfaceImplementations.IsEmpty: true } => Lowered(member),
         _ => null,
     };
 
@@ -806,12 +806,12 @@ internal static class OverloadedMethods
         _ => [],
     };
 
-    /// <summary>The interface an explicit implementation answers.</summary>
-    private static INamedTypeSymbol Face(ISymbol member) => member switch
+    /// <summary>The interface an explicit implementation answers, or null for any other member.</summary>
+    private static INamedTypeSymbol? Face(ISymbol member) => member switch
     {
         IMethodSymbol { ExplicitInterfaceImplementations: [var method, ..] } => method.ContainingType,
         IPropertySymbol { ExplicitInterfaceImplementations: [var property, ..] } => property.ContainingType,
-        _ => member.ContainingType,
+        _ => null,
     };
 
     /// <summary>
@@ -822,13 +822,20 @@ internal static class OverloadedMethods
     private static string Through(ISymbol member, ISymbol other)
     {
         if (member.IsStatic || Shape(member) is not { } shape || shape != Shape(other)) return "";
-        var face = ExplicitImplementations.IsExplicit(other) ? $"(({Display(Face(other))})this)." : "";
-        if (member is not IMethodSymbol method)
-            return $": `{Display(((IPropertySymbol)member).Type)} {Display(Face(member))}.{member.DeclaredName()} => {face}{other.DeclaredName()};`";
+        var face = ExplicitImplementations.IsExplicit(other) ? $"(({Display(Face(other)!)})this)." : "";
+        if (member is IPropertySymbol property)
+        {
+            var read = $"{face}{other.DeclaredName()}";
+            var accessors = property.SetMethod is { } setter
+                ? $" {{ get => {read}; {(setter.IsInitOnly ? "init" : "set")} => {read} = value; }}"
+                : $" => {read};";
+            return $": `{Display(property.Type)} {Display(Face(member)!)}.{member.DeclaredName()}{accessors}`";
+        }
+        if (member is not IMethodSymbol method) return "";
         var generics = method.Arity > 0 ? $"<{string.Join(", ", method.TypeParameters.Select(parameter => parameter.Name))}>" : "";
         var declared = string.Join(", ", method.Parameters.Select(parameter => $"{Passing(parameter)}{Display(parameter.Type)} {parameter.Name}"));
         var passed = string.Join(", ", method.Parameters.Select(parameter => $"{Passing(parameter)}{parameter.Name}"));
-        return $": `{Display(method.ReturnType)} {Display(Face(member))}.{member.DeclaredName()}{generics}({declared}) => "
+        return $": `{Display(method.ReturnType)} {Display(Face(member)!)}.{member.DeclaredName()}{generics}({declared}) => "
             + $"{face}{other.DeclaredName()}({passed});`";
     }
 
@@ -941,12 +948,7 @@ internal static class OverloadedMethods
             _ => null,
         };
         var call = member is IMethodSymbol ? "()" : "";
-        var face = held switch
-        {
-            IMethodSymbol { ExplicitInterfaceImplementations: [var method, ..] } => method.ContainingType,
-            IPropertySymbol { ExplicitInterfaceImplementations: [var property, ..] } => property.ContainingType,
-            _ => null,
-        };
+        var face = Face(held);
         var through = face is null ? held.Name : $"(({Display(face)})this).{held.DeclaredName()}";
         return $"{(type is null ? "" : Display(type) + " ")}{Answering(member)} => {through}{call};";
     }
@@ -968,12 +970,7 @@ internal static class OverloadedMethods
     /// interface as C# writes it (<c>IEnumerator&lt;int&gt;.Current</c>), any other by its own name.</summary>
     private static string Answering(ISymbol member)
     {
-        var face = member switch
-        {
-            IMethodSymbol { ExplicitInterfaceImplementations: [var method, ..] } => method.ContainingType,
-            IPropertySymbol { ExplicitInterfaceImplementations: [var property, ..] } => property.ContainingType,
-            _ => null,
-        };
+        var face = Face(member);
         var name = member.DeclaredName() + (member is IMethodSymbol ? "()" : "");
         return face is null ? name : $"{Display(face)}.{name}";
     }
