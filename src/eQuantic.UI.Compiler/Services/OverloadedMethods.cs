@@ -722,6 +722,15 @@ internal static class OverloadedMethods
                     + "otherwise give one of the interfaces' members a name of its own.");
                 return;
             }
+            if (!held.IsStatic && held is IMethodSymbol && ReadByTheRuntime.TryGetValue(name, out var read))
+            {
+                Refuse(errors, sourcePath, held, type,
+                    $"'{declared.Name}' implements '{Answering(held)}' explicitly, which lowers to {lowered}, the name the "
+                    + $"runtime reads for {read} of every object, which C# answers with the type's own. A JavaScript class "
+                    + "holds one member per name, so the explicit one would answer those too. Give the interface's member a "
+                    + "name of its own.");
+                return;
+            }
             if (Beside(declared, held, name) is { } own)
             {
                 Refuse(errors, sourcePath, held, type,
@@ -749,6 +758,17 @@ internal static class OverloadedMethods
             return;
         }
     }
+
+    /// <summary>The names the runtime reads on any object for a member of <c>object</c>'s, each with what it
+    /// reads it for: an explicit implementation can hold none of them (#1139), since <c>IProbe.Equals(object)</c>
+    /// written as <c>equals</c> answered every comparison of a set, a list's <c>Contains</c> and
+    /// <c>object.Equals</c>, and the reference comparison inside it called itself.</summary>
+    private static readonly Dictionary<string, string> ReadByTheRuntime = new(StringComparer.Ordinal)
+    {
+        ["equals"] = "`Equals(object)`, which `object.Equals`, a list's `Contains` and a set's or a dictionary's comparison ask",
+        ["getHashCode"] = "`GetHashCode()`, which a set and a dictionary ask",
+        ["toString"] = "`ToString()`, which a conversion to text and an interpolation ask",
+    };
 
     /// <summary>A member the type declares, no explicit implementation, that its twin holds under
     /// <paramref name="name"/> on <paramref name="held"/>'s side, beside the explicit one: a method the name
@@ -793,9 +813,10 @@ internal static class OverloadedMethods
     /// that never reaches a twin, or one the compiler declares, by none.</summary>
     private static string? HeldUnder(ISymbol member) => member switch
     {
+        // An abstract method holds the name its overrides fill, though the base's twin writes nothing for
+        // it (Copilot's second review of #1139).
         IMethodSymbol { MethodKind: MethodKind.Ordinary } method
-            when !method.IsHostOnly() && !(method.IsPartialDefinition && method.PartialImplementationPart is null)
-                && !(method.IsAbstract && method.ContainingType.TypeKind != TypeKind.Interface && !method.IsOverride) =>
+            when !method.IsHostOnly() && !(method.IsPartialDefinition && method.PartialImplementationPart is null) =>
             TwinMethodName.Of(method),
         IPropertySymbol { IsIndexer: false } or IEventSymbol { ExplicitInterfaceImplementations.IsEmpty: true } => Lowered(member),
         _ => null,

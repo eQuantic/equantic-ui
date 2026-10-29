@@ -7,16 +7,17 @@ implements, which every call through the interface reaches, a call through a con
 included. One whose body hands back what the member holding its name answers (a method of the same
 object called with its own parameters passed through as they came, or a property of it read, cast to an
 interface or not, and a property's setter writing what its getter reads, through no member a derived
-type can override on the way, and handing back the value as it was, neither widened nor boxed into a
-copy) SHALL NOT be written, so that
+type can override on the way, and handing back the value as it was, neither widened, boxed into a copy
+nor cast down, with no `out` or `ref`, a server action's stub ending it) SHALL NOT be written, so that
 member answers every call through each interface, as they answer alike in .NET, and a method of the
 type's own it hands off to SHALL keep its name. A component's explicit implementation beside a method of
 its name SHALL be written with it. eqc SHALL refuse with EQ1007, naming both members and the interfaces,
 what else its twin would hold on the name of an explicit implementation it writes: another one the type
 writes under that name (two interfaces' members of one name, or one interface over two type arguments,
-static ones too), a property, an event or an override the type declares on that name, and a member a base
-the source declares holds on it, unless that is the base's explicit implementation of the same interface
-member, which the type re-implements.
+static ones too), a property, an event or an override the type declares on that name, a member a base
+the source declares holds on it (an abstract method's included), unless that is the base's explicit
+implementation of the same interface member, which the type re-implements, and a name the runtime reads
+of every object (`equals`, `getHashCode`, `toString`).
 
 #### Scenario: Two interfaces of one name, one handing off to the other
 

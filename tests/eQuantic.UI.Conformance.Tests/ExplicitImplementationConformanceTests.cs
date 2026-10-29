@@ -82,6 +82,24 @@ public class ExplicitImplementationConformanceTests
             public Spot Get() => saved;
             object IBoxed.Get() => Get();
         }
+        public class Slot : IFoo, IBar
+        {
+            string IFoo.Run() => Other();
+            string IBar.Run() => ((IFoo)this).Run();
+            private string Other() => "slot";
+        }
+        public interface IOut { void Run(out int result); }
+        public class Outs : IOut
+        {
+            public void Run(out int value) { value = 42; }
+            void IOut.Run(out int result) => Run(out result);
+        }
+        public interface IMaybe { string? Maybe(); }
+        public class Caster : IMaybe
+        {
+            public object Maybe() => 5;
+            string? IMaybe.Maybe() => Maybe() as string;
+        }
         public static class Through
         {
             public static string Foo<T>(T value) where T : IFoo => value.Run();
@@ -115,6 +133,10 @@ public class ExplicitImplementationConformanceTests
             "ILong w = new Widened(); object o = w.Wide(); return (o is long) + \"|\" + (w.Wide() + 1L) + \"|\" + new Widened().Wide();"),
         ("an explicit one that boxes a struct, each call a copy of its own",
             "IBoxed b = new Boxer(); return ReferenceEquals(b.Get(), b.Get());"),
+        ("an explicit one handing off to another that hands off under another name",
+            "var s = new Slot(); IFoo foo = s; IBar bar = s; return foo.Run() + \"|\" + bar.Run();"),
+        ("an explicit one passing an out through", "IOut o = new Outs(); o.Run(out var r); var v = 0; new Outs().Run(out v); return r + \"|\" + v;"),
+        ("an explicit one handing back an as", "IMaybe m = new Caster(); return (m.Maybe() is null) + \"|\" + new Caster().Maybe();"),
         ("each interface over a list of them",
             "var all = new List<IBar> { new Forwarded(), new Mixed(), new Relayed() }; return string.Join(\",\", all.Select(x => x.Run()));"),
     ];

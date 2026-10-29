@@ -77,12 +77,15 @@ internal static class ExplicitImplementations
     /// <summary>
     /// What <paramref name="type"/> does with its explicit implementations of one name and side: the ones
     /// it writes, and the ones it leaves out because they hand back what the member holding the name
-    /// answers. One that hands off to an explicit implementation with an answer of its own leaves it the
-    /// name, and so does one that hands off to a member of a base whose twin holds it under the name. A
-    /// property of the type's own or a base's always holds its name. One that hands off to a method of the
-    /// type's own leaves it the name when that method holds it, which it does unless it hides an inherited
-    /// member, is a typed <c>Equals</c>, or stands beside an explicit implementation the type writes, which
-    /// takes the name (#708): so those are settled last, once every other one is.
+    /// answers. One that hands off to another explicit implementation of the name answers as it: that one
+    /// holds the name, or hands off in turn to what holds it, unless the two hand off to each other, which
+    /// leaves the name to neither (Copilot's second review of #1139: <c>IFoo.Run() =&gt; Other()</c> holds the
+    /// name, and <c>IBar.Run()</c> handing off to it was refused). So does one that hands off to a member of a
+    /// base, whose twin holds it under the name, and to a property of the type's own or a base's, which always
+    /// holds its name. One that hands off to a method of the type's own leaves it the name when that method
+    /// holds it, which it does unless it hides an inherited member, is a typed <c>Equals</c>, or stands beside
+    /// an explicit implementation the type writes, which takes the name (#708): so those are settled last,
+    /// once every other one is.
     /// </summary>
     private static Settled Settle(INamedTypeSymbol type, string name, bool isStatic) =>
         Cache.GetValue(type = type.OriginalDefinition, _ => new()).GetOrAdd((name, isStatic), _ =>
@@ -98,8 +101,11 @@ internal static class ExplicitImplementations
                 .ToList();
             var leftOut = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
             var toOwn = group.Where(entry => entry.Reached is not null && IsOwnMethod(entry.Reached, type)).ToList();
+            var reachedFrom = group.ToDictionary(entry => entry.Member.OriginalDefinition, entry => entry.Reached?.OriginalDefinition,
+                SymbolEqualityComparer.Default);
             foreach (var (member, reached) in group.Except(toOwn))
-                if (reached is not null && Holds(reached, type, name, besideWritten: false))
+                if (reached is not null
+                    && (IsExplicit(reached) ? !HandsBackTo(reached, member, reachedFrom) : Holds(reached, type, name, besideWritten: false)))
                     leftOut.Add(member.OriginalDefinition);
             var besideWritten = group.Except(toOwn).Any(entry => !leftOut.Contains(entry.Member.OriginalDefinition));
             foreach (var (member, reached) in toOwn)
@@ -108,6 +114,16 @@ internal static class ExplicitImplementations
             return new Settled(group.Select(entry => entry.Member).Where(member => !leftOut.Contains(member.OriginalDefinition)).ToList(), leftOut);
         });
 
+    /// <summary>Whether the explicit implementation <paramref name="reached"/> hands back, through the group's
+    /// own hand-offs, to <paramref name="member"/>, which reached it: then neither holds the name.</summary>
+    private static bool HandsBackTo(ISymbol reached, ISymbol member, Dictionary<ISymbol, ISymbol?> reachedFrom)
+    {
+        var seen = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
+        for (ISymbol? at = reached.OriginalDefinition; at is not null && seen.Add(at) && reachedFrom.TryGetValue(at, out var next); at = next)
+            if (SymbolEqualityComparer.Default.Equals(next, member.OriginalDefinition)) return true;
+        return false;
+    }
+
     /// <summary>Whether <paramref name="reached"/> is a method whose name <paramref name="type"/> settles: one
     /// it declares that fills no base's slot.</summary>
     private static bool IsOwnMethod(ISymbol reached, INamedTypeSymbol type) =>
@@ -115,13 +131,16 @@ internal static class ExplicitImplementations
         && SymbolEqualityComparer.Default.Equals(TwinMethodName.Slot(method).ContainingType.OriginalDefinition, type.OriginalDefinition);
 
     /// <summary>Whether <paramref name="reached"/>, the member an explicit implementation's hand-offs end at,
-    /// could hold its name: a member of the same kind and side, written under the same name, that a twin
-    /// carries (not one kept on the server, and not an interface's default).</summary>
+    /// could hold its name: a member of the same kind and side, written under the same name, that a twin eqc
+    /// writes carries. Not one kept on the server, not an interface's default, and not a member of a type
+    /// with no source, <c>object</c>'s among them, whose call is lowered as a call and never reaches a member
+    /// of the twin (Copilot's second review of #1139: <c>object.Equals</c> answered nothing).</summary>
     private static bool CanHold(ISymbol reached, ISymbol member, string name) =>
         !SymbolEqualityComparer.Default.Equals(reached.OriginalDefinition, member.OriginalDefinition)
         && reached.Kind == member.Kind && reached.IsStatic == member.IsStatic
         && reached.MemberTwinName() == name
         && reached.ContainingType.TypeKind is TypeKind.Class or TypeKind.Struct
+        && reached.Locations.Any(location => location.IsInSource)
         && !StaysOnTheServer(reached);
 
     /// <summary>Whether a member is kept on the server, out of every twin: marked <c>[ServerOnly]</c> itself or
@@ -134,7 +153,6 @@ internal static class ExplicitImplementations
     /// explicit implementation <paramref name="type"/> writes or not.</summary>
     private static bool Holds(ISymbol reached, INamedTypeSymbol type, string name, bool besideWritten)
     {
-        if (IsExplicit(reached)) return Step(reached, compilation: null, exact: true) is null && !IterableTwin.LeavesOut(reached);
         if (reached is not IMethodSymbol method) return true;
         // A method of a base, or an override, whose slot a base holds: that type's twin settles its name.
         if (!IsOwnMethod(method, type)) return TwinMethodName.Of(method) == name;
@@ -198,6 +216,9 @@ internal static class ExplicitImplementations
     {
         if (member.DeclaringSyntaxReferences is not [var reference]) return null;
         var declaration = reference.GetSyntax();
+        // A component's server action runs its body on the server, and the browser calls its stub: the body
+        // hands nothing off there.
+        if (declaration is MethodDeclarationSyntax action && Parser.ComponentParser.IsServerAction(action)) return null;
         if (ModelOf(member, compilation, declaration.SyntaxTree) is not { } model) return null;
         var reading = new Reading(model, exact);
         var target = declaration switch
@@ -300,8 +321,13 @@ internal static class ExplicitImplementations
     {
         var parameters = Parameters(member);
         var typeParameters = member is IMethodSymbol method ? method.TypeParameters : [];
-        if (call.Arguments.Length != parameters.Length
-            || !call.TargetMethod.TypeArguments.SequenceEqual<ITypeSymbol>(typeParameters, SymbolEqualityComparer.Default))
+        if (call.Arguments.Length != parameters.Length) return false;
+        // Read exactly, the type arguments pass through too, and a `ref` or an `out` is no hand-off: its
+        // results come back in an object whose fields are named after the parameters of the method that
+        // wrote it, which the call through the interface reads by the interface's names.
+        if (reading.Exact
+            && (!call.TargetMethod.TypeArguments.SequenceEqual<ITypeSymbol>(typeParameters, SymbolEqualityComparer.Default)
+                || parameters.Any(parameter => parameter.RefKind is RefKind.Ref or RefKind.Out)))
             return false;
         foreach (var argument in call.Arguments)
         {
@@ -341,12 +367,13 @@ internal static class ExplicitImplementations
 
     /// <summary>
     /// Whether a conversion of a value of <paramref name="from"/> hands on the very value the browser holds:
-    /// an identity, a reference's, and a box of a number, a bool, a char or an enum, which the browser holds
-    /// as itself. A box of a struct or a tuple copies it (<c>ValueCopies</c>), and a numeric conversion may
+    /// an identity, an implicit reference's, and a box of a number, a bool, a char or an enum, which the
+    /// browser holds as itself. A cast down, or an <c>as</c>, may answer otherwise than the value it is given
+    /// (Copilot's second review of #1139). A box of a struct or a tuple copies it (<c>ValueCopies</c>), and a numeric conversion may
     /// change what the browser holds (an <c>int</c> widened to a <c>long</c> is a BigInt).
     /// </summary>
     private static bool Kept(Conversion conversion, ITypeSymbol? from) =>
-        conversion.IsIdentity || conversion.IsReference
+        conversion.IsIdentity || conversion is { IsReference: true, IsImplicit: true }
         || conversion.IsBoxing && from is { SpecialType: not SpecialType.None } or { TypeKind: TypeKind.Enum };
 
     /// <summary>Whether what a member hands back of <paramref name="from"/> reaches its caller as its own

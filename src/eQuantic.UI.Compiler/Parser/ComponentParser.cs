@@ -569,7 +569,12 @@ public class ComponentParser
         {
             var isPublic = prop.Modifiers.Any(SyntaxKind.PublicKeyword);
             
-            if (definition.Properties.Any(p => p.Name == prop.Identifier.ValueText)) continue;
+            // An explicit implementation is a property of its own beside the component's of its name, and
+            // the emitter leaves out the one that hands off to the other (#1139): taken for a second
+            // declaration, whichever came second was dropped, and a getter read itself.
+            if (definition.Properties.Any(p => p.Name == prop.Identifier.ValueText
+                    && p.Node?.ExplicitInterfaceSpecifier?.ToString() == prop.ExplicitInterfaceSpecifier?.ToString()))
+                continue;
 
             definition.Properties.Add(new PropertyDefinition
             {

@@ -660,7 +660,8 @@ public class TypeScriptEmitter
                                 var camelName = param.Name.ToCamelCase();
                                 var local = param.Name.ToJsIdentifier();
                                 var target = component.Properties
-                                    .FirstOrDefault(pr => !pr.IsStatic && pr.Name.ToCamelCase() == camelName);
+                                    .FirstOrDefault(pr => !pr.IsStatic && pr.Node?.ExplicitInterfaceSpecifier is null
+                                        && pr.Name.ToCamelCase() == camelName);
                                 // PRIMARY-constructor params are implicit fields — always assign. With an
                                 // EXPLICIT ctor body, only params that map onto a real auto-property assign
                                 // here; one that merely feeds a private/state field (`NestedChild(label)` →
@@ -1533,6 +1534,10 @@ public class TypeScriptEmitter
         {
             var node = prop.Node;
             if (node == null) continue;
+            // An explicit property that hands back what the member holding its name reads is that member
+            // on the twin (#1139).
+            if (ModelFor(node)?.GetDeclaredSymbol(node) is IPropertySymbol declared && ExplicitImplementations.LeavesOut(declared))
+                continue;
             var name = prop.Name.ToCamelCase();
             var stat = prop.IsStatic ? "static " : "";
 

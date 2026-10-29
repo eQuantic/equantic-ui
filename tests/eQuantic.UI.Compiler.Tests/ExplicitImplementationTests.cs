@@ -27,14 +27,18 @@ public class ExplicitImplementationTests
         public interface IGet<T> { string Get(); }
         public interface ILong { long Run(); }
         public interface IObj { object Run(); }
+        public interface IOut { void Run(out int result); }
+        public interface IMaybe { string? Run(); }
+        public interface IProbe { bool Equals(object other); }
         """;
 
     private static CompilationResult Compile(string source, string name) =>
         new ComponentCompiler().CompileSource(Faces + "\n" + source, "Probe.cs").Single(result => result.ComponentName == name);
 
-    /// <summary>How many members of <paramref name="name"/> a twin declares: a method, a getter, a static.</summary>
+    /// <summary>How many members of <paramref name="name"/> a twin declares: a method, an async one, a getter, a
+    /// static.</summary>
     private static int Declared(string typeScript, string name) =>
-        Regex.Matches(typeScript, $@"^\s*(static\s+)?(get\s+)?{Regex.Escape(name)}\(", RegexOptions.Multiline).Count;
+        Regex.Matches(typeScript, $@"^\s*(static\s+)?(async\s+)?(get\s+)?{Regex.Escape(name)}\(", RegexOptions.Multiline).Count;
 
     public static TheoryData<string, string, string, int, bool> HandOffs => new()
     {
@@ -92,6 +96,16 @@ public class ExplicitImplementationTests
                 string IBar.Run() => Run();
             }
             """, "run", 1, true
+        },
+        {
+            "an explicit one to another that hands off under another name, and so holds the name", """
+            public class Slot : IFoo, IBar
+            {
+                string IFoo.Run() => Other();
+                string IBar.Run() => ((IFoo)this).Run();
+                private string Other() => "x";
+            }
+            """, "run", 1, false
         },
         {
             "an explicit one to a base's method", """
@@ -361,6 +375,24 @@ public class ExplicitImplementationTests
             }
             """, "Split", "return 'client';"
         },
+        {
+            "a hand-off of an out, whose results come back under the names of the method that wrote them", """
+            public class Outs : IOut
+            {
+                public void Run(out int value) { value = 42; }
+                void IOut.Run(out int result) => Run(out result);
+            }
+            """, "Outs", "run$1()"
+        },
+        {
+            "a hand-off through an as, which may answer null", """
+            public class Caster : IMaybe
+            {
+                public object Run() => 5;
+                string? IMaybe.Run() => Run() as string;
+            }
+            """, "Caster", "run$1()"
+        },
     };
 
     /// <summary>
@@ -387,6 +419,26 @@ public class ExplicitImplementationTests
             public class GetBase : IGet<int> { string IGet<int>.Get() => "int"; }
             public class GetDerived : GetBase, IGet<string> { string IGet<string>.Get() => "string"; }
             """, "GetDerived", "the explicit implementation of 'IGet<int>.Get()' it inherits from 'GetBase'"
+        },
+        {
+            "an inherited abstract method, whose overrides fill its name", """
+            public abstract class AbsBase { public abstract string Run(); }
+            public abstract class Mid : AbsBase, IFoo { string IFoo.Run() => "interface"; }
+            """, "Mid", "and so does 'AbsBase.Run()', which it inherits"
+        },
+        {
+            "an explicit one on the name the runtime reads for object's Equals", """
+            public class Probe : IProbe { bool IProbe.Equals(object other) => Equals(other); }
+            """, "Probe", "the name the runtime reads for `Equals(object)`"
+        },
+        {
+            "two explicit ones that hand off to each other", """
+            public class Loop : IFoo, IBar
+            {
+                string IFoo.Run() => ((IBar)this).Run();
+                string IBar.Run() => ((IFoo)this).Run();
+            }
+            """, "Loop", "'Loop' implements 'IFoo.Run()' and 'IBar.Run()' explicitly"
         },
         {
             "a hand-off through this boxed to an interface, which calls a copy", """
@@ -438,6 +490,71 @@ public class ExplicitImplementationTests
 
         result.Errors.Should().ContainSingle().Which.Message.Should()
             .Contain("the explicit implementation of 'IBar.Run()' it inherits from 'GenBase'");
+    }
+
+    /// <summary>A component's server action is a stub in the browser, whose body runs on the server, so an
+    /// explicit implementation that calls it hands off to the stub and goes no further (Copilot's second
+    /// review of #1139).</summary>
+    [Fact]
+    public void AServerActionIsWhereAHandOffEnds()
+    {
+        var result = new ComponentCompiler().CompileSource("""
+            using System.Threading.Tasks;
+            using eQuantic.UI.Primitives;
+            public interface IAsync { Task<string> Run(); }
+            public sealed class Fetcher : StatefulComponent, IAsync
+            {
+                Task<string> IAsync.Run() => Fetch();
+                [ServerAction] public Task<string> Fetch() => Run();
+                public Task<string> Run() => Task.FromResult("local");
+                public override VisualNode Build(ComponentContext context) => new Text("t");
+            }
+            """, "Probe.cs").Single(result => result.ComponentName == "Fetcher");
+
+        result.Errors.Should().BeEmpty();
+        Declared(result.TypeScript, "run").Should().Be(1);
+        result.TypeScript.Should().Contain("this.fetch()");
+    }
+
+    /// <summary>A component's explicit property beside its own of the name, before or after it, is kept and
+    /// left out where it hands off: the parser dropped the second, and the getter that remained read
+    /// itself.</summary>
+    [Theory]
+    [InlineData("int IVal.Value => Value; public int Value => 5;")]
+    [InlineData("public int Value => 5; int IVal.Value => Value;")]
+    public void AComponentsExplicitPropertyThatHandsOff_LeavesItsOwn(string members)
+    {
+        var result = new ComponentCompiler().CompileSource($$"""
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Components;
+            public interface IVal { int Value { get; } }
+            public class Gauge : StatelessComponent, IVal
+            {
+                {{members}}
+                public override IComponent Build(RenderContext context) => new Text(((IVal)this).Value.ToString());
+            }
+            """, "Probe.cs").Single(result => result.ComponentName == "Gauge");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("return 5;");
+        Declared(result.TypeScript, "value").Should().Be(1);
+    }
+
+    /// <summary>The enumeration interfaces' contract reads a hand-off as it did: two explicit
+    /// <c>GetEnumerator()</c>s over one generic helper answer alike, whatever type argument they give it.</summary>
+    [Fact]
+    public void TwoEnumeratorsOverOneGenericHelper_AnswerAlike()
+    {
+        var result = Compile("""
+            public class Seq : System.Collections.Generic.IEnumerable<int>
+            {
+                System.Collections.Generic.IEnumerator<int> System.Collections.Generic.IEnumerable<int>.GetEnumerator() => Make<int>();
+                System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => Make<int>();
+                private System.Collections.Generic.IEnumerator<int> Make<T>() { yield return 1; }
+            }
+            """, "Seq");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007");
     }
 
     /// <summary>The error points at the later of the two, as every EQ1007 does.</summary>
