@@ -172,7 +172,7 @@ internal static class OverloadedMethods
         }
         if (taken.Count == 0 || allStatic) yield break;
 
-        foreach (var (name, shown, at) in HeldOnEachInstance(type, model))
+        foreach (var (name, shown, at) in HeldOnEachInstance(type, isComponent, model))
             if (taken.Contains(name.ToCamelCase()))
                 yield return new(name.ToCamelCase(), false, shown, at, Bearer.Member);
     }
@@ -200,7 +200,7 @@ internal static class OverloadedMethods
             return;
         }
         if (type is not (RecordDeclarationSyntax or StructDeclarationSyntax)) return;
-        var instance = HeldOnEachInstance(type, model)
+        var instance = HeldOnEachInstance(type, isComponent: false, model)
             .Concat(type.Members.OfType<MethodDeclarationSyntax>()
                 .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && TakesAName(method, isComponent: false))
                 .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)));
@@ -280,7 +280,7 @@ internal static class OverloadedMethods
         if (type.ParameterList is null) return;
         var held = type.ParameterList.Parameters.Where(parameter => type.HoldsParameter(parameter, model)).ToList();
         if (held.Count == 0) return;
-        var members = HeldOnEachInstance(type, model).Where(member => member.At.Parent is not ParameterSyntax)
+        var members = HeldOnEachInstance(type, isComponent: false, model).Where(member => member.At.Parent is not ParameterSyntax)
             .Concat(type.Members.OfType<MethodDeclarationSyntax>()
                 .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && TakesAName(method, isComponent: false))
                 .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)))
@@ -310,13 +310,13 @@ internal static class OverloadedMethods
 
     /// <summary>The members besides its methods a twin holds on each instance, by their C# names: its
     /// fields, properties and events, and a primary constructor's parameters the instance holds (a
-    /// record's being its properties, a class's or a struct's those a member reads,
-    /// <see cref="TypeDeclarationExtensions.HoldsParameter"/>).</summary>
+    /// record's being its properties, a class's or a struct's those a member reads, and a component's
+    /// every one, <see cref="MembersOnOneName.Holds"/>).</summary>
     private static IEnumerable<(string Name, string Shown, SyntaxToken At)> HeldOnEachInstance(TypeDeclarationSyntax type,
-        SemanticModel? model)
+        bool isComponent, SemanticModel? model)
     {
         foreach (var parameter in type.ParameterList?.Parameters ?? default)
-            if (type.HoldsParameter(parameter, model))
+            if (MembersOnOneName.Holds(type, parameter, isComponent, model))
                 yield return (parameter.Identifier.ValueText, $"{type.Identifier.ValueText}({parameter.Identifier.ValueText})", parameter.Identifier);
         foreach (var member in type.Members)
         {

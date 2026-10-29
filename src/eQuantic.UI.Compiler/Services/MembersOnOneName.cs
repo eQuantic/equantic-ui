@@ -183,8 +183,7 @@ internal static class MembersOnOneName
         foreach (var parameter in type.ParameterList?.Parameters ?? default)
         {
             var held = parameter.Identifier.ValueText;
-            if (declared.Contains(held) || !(isComponent || type.HoldsParameter(parameter, model))) continue;
-            if (isComponent && OnlyInitializesItsNamesake(type, parameter, ownModel)) continue;
+            if ((!isComponent && declared.Contains(held)) || !Holds(type, parameter, isComponent, model)) continue;
             yield return new(held.ToCamelCase(), false, $"{name}({held})", parameter.Identifier, Held: true);
         }
 
@@ -270,15 +269,28 @@ internal static class MembersOnOneName
             : property.Modifiers.Any(SyntaxKind.PartialKeyword) && PropertyStore.IsAuto(property);
 
     /// <summary>
+    /// Whether the twin holds a primary constructor's parameter on each instance as a member of its own,
+    /// which every pass that puts the twin's members on their keys asks: a record's as its property, a
+    /// class's or a struct's where a member reads it (<see cref="TypeDeclarationExtensions.HoldsParameter"/>),
+    /// and a component's whether or not one does, since its constructor writes every parameter it is handed
+    /// onto the instance, beside a method and an indexer's <c>item</c> alike. A component's parameter that
+    /// only initializes the member of its name is that member.
+    /// </summary>
+    internal static bool Holds(TypeDeclarationSyntax type, ParameterSyntax parameter, bool isComponent, SemanticModel? model) =>
+        isComponent ? !OnlyInitializesItsNamesake(type, parameter, model) : type.HoldsParameter(parameter, model);
+
+    /// <summary>
     /// Whether a component's parameter is read nowhere but as the whole initializer of the property or the
-    /// field of its name, a case apart (<c>PolicyHref { get; init; } = policyHref</c>, the C# 12 idiom): the
-    /// twin's constructor writes the parameter into that member's slot, and the initializer, which runs
-    /// only where the slot is still empty, would have written the same value, so the two are one member.
-    /// Any other initializer is skipped there (<c>= policyHref?.Trim()</c> held the untrimmed value), and
+    /// field of its name, whatever its case (<c>PolicyHref { get; init; } = policyHref</c>, the C# 12 idiom),
+    /// with no conversion between the two: the twin's constructor writes the parameter into that member's
+    /// slot, and the initializer, which runs only where the slot is still empty, would have written the same
+    /// value, so the two are one member. Any other initializer is skipped there (<c>= policyHref?.Trim()</c>
+    /// held the untrimmed value, and <c>long Count = count</c> an int where every read takes a long), and
     /// any other read sees the slot after a prop wrote it.
     /// </summary>
     private static bool OnlyInitializesItsNamesake(TypeDeclarationSyntax type, ParameterSyntax parameter, SemanticModel? model)
     {
+        model = model?.SyntaxTree == parameter.SyntaxTree ? model : null;
         var name = parameter.Identifier.ValueText;
         var symbol = model?.GetDeclaredSymbol(parameter);
         var reads = type.Members.SelectMany(member => member.DescendantNodes().OfType<IdentifierNameSyntax>())
@@ -288,13 +300,19 @@ internal static class MembersOnOneName
             .ToList();
         if (reads is not [{ Parent: EqualsValueClauseSyntax initializer }]) return false;
         var key = name.ToCamelCase();
-        return initializer.Parent switch
+        var (member, memberType) = initializer.Parent switch
         {
-            PropertyDeclarationSyntax property => property.Identifier.ValueText.ToCamelCase() == key,
-            VariableDeclaratorSyntax variable => variable.Parent?.Parent is FieldDeclarationSyntax
-                && variable.Identifier.ValueText.ToCamelCase() == key,
-            _ => false,
+            PropertyDeclarationSyntax property => (property.Identifier.ValueText, property.Type),
+            VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax { Parent: FieldDeclarationSyntax } declaration } variable =>
+                (variable.Identifier.ValueText, declaration.Type),
+            _ => (null, null),
         };
+        if (member?.ToCamelCase() != key) return false;
+        // The same value only where the initializer converts nothing, asked of the bound tree, and of the
+        // types as written where there is none.
+        return model is not null
+            ? model.GetConversion(initializer.Value).IsIdentity
+            : parameter.Type?.ValueText() == memberType?.ValueText();
     }
 
     /// <summary>The C# names a member of the body declares, which a primary constructor's parameter of

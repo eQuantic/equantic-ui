@@ -12,7 +12,8 @@ which on a component is every one, read or not. A member's key SHALL be the name
 under: a field's slot, a hiding method's own name, an operator's and a conversion's static. What the twin
 holds as one member SHALL NOT be refused: the two accessors of a property, a plain class's field that
 moved to a slot of its own, a positional parameter its record redeclares, a component's parameter that is
-read nowhere but as the whole initializer of the member of its name, and a static beside an instance
+read nowhere but as the whole initializer of the member of its name, in either case and with nothing
+to convert between the two, and a static beside an instance
 member of its name. A static class nested in a type SHALL be checked once, as the module it is, and a
 `[ServerOnly]` one, which is no module, SHALL NOT be checked.
 
@@ -40,6 +41,16 @@ member of its name. A static class nested in a type SHALL be checked once, as th
 
 - **WHEN** a component declares `class Tile(string caption) : StatelessComponent` and `public string Caption()`, and no member reads `caption`
 - **THEN** the build fails with EQ1007 at `Caption`, naming `Tile.Caption()` and `Tile(caption)`
+
+#### Scenario: A component's parameter that initializes its property through a conversion
+
+- **WHEN** `class Meter(int count) : StatelessComponent` declares `public long Count { get; init; } = count;`
+- **THEN** the build fails with EQ1007 at `Count`, naming `Meter.Count` and `Meter(count)`
+
+#### Scenario: A component's parameter on an indexer's name
+
+- **WHEN** `class Grid(string item) : StatelessComponent` declares `public int this[int i] => i * 2;`, and no member reads `item`
+- **THEN** the build fails with EQ1007, naming the indexer and `Grid(item)`
 
 #### Scenario: A component's parameter that initializes its property
 

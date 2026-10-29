@@ -777,6 +777,8 @@ public class OverloadedMethodTests
     [InlineData("Halves", "public sealed partial class Halves { public partial int Level { get; set; } public partial int Level { get => field; set => field = value * 2; } public partial event System.Action? Moved; public partial event System.Action? Moved { add { } remove { } } }")]
     [InlineData("Shown", "using eQuantic.UI.Primitives; public sealed class Shown : StatelessComponent { public override string ToString() => \"Shown\"; public override VisualNode Build(ComponentContext context) => new Text(\"\", TypeRole.BodyM); }")]
     [InlineData("Consent", "using eQuantic.UI.Primitives; public sealed class Consent(string? policyHref = null) : StatefulComponent { public string? PolicyHref { get; init; } = policyHref; public override VisualNode Build(ComponentContext context) => new Text(PolicyHref ?? \"\", TypeRole.BodyM); }")]
+    [InlineData("Exact", "using eQuantic.UI.Primitives; public sealed class Exact(string? PolicyHref = null) : StatefulComponent { public string? PolicyHref { get; init; } = PolicyHref; public override VisualNode Build(ComponentContext context) => new Text(PolicyHref ?? \"\", TypeRole.BodyM); }")]
+    [InlineData("Wide", "using eQuantic.UI.Primitives; public sealed class Wide(long count) : StatelessComponent { public long Count { get; init; } = count; public override VisualNode Build(ComponentContext context) => new Text(\"\" + Count, TypeRole.BodyM); }")]
     [InlineData("Typed", "public record Root(int X) { public virtual bool Equals(int x) => X == x; } public sealed record Typed(int X, int Y) : Root(X) { public override bool Equals(int x) => Y == x; }")]
     public void OneMemberOnItsName_IsNotRefused(string name, string source) =>
         Compile(source, name).Errors.Where(error => error.Code == "EQ1007").Should().BeEmpty();
@@ -900,11 +902,18 @@ public class OverloadedMethodTests
     /// constructor writes each one it is handed onto the instance, where it hid a method of its name
     /// (<c>Caption()</c> was "not a function" wherever a caption was handed over), and where it filled the
     /// slot of the property of its name before that property's initializer ran, which then ran nowhere
-    /// (<c>= policyHref?.Trim()</c> held the untrimmed value).
+    /// (<c>= policyHref?.Trim()</c> held the untrimmed value, <c>long Count = count</c> an int every read
+    /// took as a long), spelled a case apart or exactly like it, and where it hid an indexer's method
+    /// (<c>item</c> for its getter, <c>setItem</c> for its setter).
     /// </summary>
     [Theory]
     [InlineData("Tile(string caption) : StatelessComponent", "public string Caption() => \"x\";", "'Tile.Caption()' lowers to `caption`", "'Tile(caption)' (line 4)")]
     [InlineData("Tile(string? policyHref = null) : StatefulComponent", "public string? PolicyHref { get; init; } = policyHref?.Trim();", "'Tile.PolicyHref' lowers to `policyHref`", "'Tile(policyHref)' (line 4)")]
+    [InlineData("Tile(string? PolicyHref = null) : StatefulComponent", "public string? PolicyHref { get; init; } = PolicyHref?.Trim();", "'Tile.PolicyHref' lowers to `policyHref`", "'Tile(PolicyHref)' (line 4)")]
+    [InlineData("Tile(string Caption) : StatelessComponent", "public string Caption() => \"x\";", "'Tile.Caption()' lowers to `caption`", "'Tile(Caption)' (line 4)")]
+    [InlineData("Tile(int count) : StatelessComponent", "public long Count { get; init; } = count;", "'Tile.Count' lowers to `count`", "'Tile(count)' (line 4)")]
+    [InlineData("Tile(string item) : StatelessComponent", "public int this[int i] => i * 2;", "'Tile.this[int]' lowers to `item()`", "'Tile(item)' (line 4)")]
+    [InlineData("Tile(string setItem) : StatefulComponent", "public int this[int i] { get => i; set { } }", "'Tile.this[int]'s setter' lowers to `setItem()`", "'Tile(setItem)' (line 4)")]
     public void AComponentsParameter_HoldsItsKey_ReadOrNot(string declaration, string member, string later, string earlier)
     {
         var error = Compile($$"""
