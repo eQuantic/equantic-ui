@@ -746,7 +746,7 @@ export class CodeEditorController {
                     return true;
                 case 'paste':
                     if (clipboard == null) return false;
-                    if ((($v51846) => (($v51846 != null && $v51846.length > 0) && (pasted = $v51846, true)))(clipboard.read())) this.paste(pasted);
+                    if ((($0) => (($0 != null && $0.length > 0) && (pasted = $0, true)))(clipboard.read())) this.paste(pasted);
                     return true;
                 case 'completionShow':
                     return this.completion.invoke();
@@ -1717,7 +1717,7 @@ export class CodeEditorController {
             let primary: any; 
             let carets = ($o => (primary = $o.primary, $o.$))(this.caretsInOrder());
             if (carets.length !== copies.length) return false;
-            stops.push(...CodeEditorController.stopsOf(copies, carets, primary));
+            $eq.collections.addRange(stops, CodeEditorController.stopsOf(copies, carets, primary));
             this.placeSelections(stops[0].ranges);
             return true;
         });
@@ -2065,7 +2065,7 @@ export class CodeEditorController {
             }
             let space = length > 0;
             let tail = parts[parts.length - 1];
-            if (space && (($v157414) => ($v157414 === ' ' || $v157414 === '\t'))(tail[tail.length - 1])) {
+            if (space && (($0) => ($0 === ' ' || $0 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
                 parts[parts.length - 1] = kept;

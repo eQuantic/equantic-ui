@@ -84,10 +84,19 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     /// The dictionary an initializer nested under a dictionary-typed member seeds (<c>Map = { ["a"] = 1 }</c>),
     /// built as a constructed one is.
     /// </summary>
-    internal static JsExpr Seeded(ITypeSymbol type, InitializerExpressionSyntax initializer, ConversionContext context)
+    internal static JsExpr Seeded(ITypeSymbol type, InitializerExpressionSyntax initializer, ConversionContext context) =>
+        Initialized(Empty(type, null, context), initializer, context);
+
+    /// <summary>
+    /// The empty dictionary a collection expression builds (<c>Dictionary&lt;string, int&gt; ids = []</c>),
+    /// constructed as <c>new()</c> constructs it, with the capacity its <c>with(…)</c> hands the
+    /// constructor, which a sorted one drops as its construction does. It went out as an array (#1144).
+    /// </summary>
+    internal static JsExpr Empty(ITypeSymbol type, JsExpr? capacity, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        return Initialized(Factory(type.DictionaryFactory()!, type, null), initializer, context);
+        var factory = type.DictionaryFactory()!;
+        return Factory(factory, type, factory == Eq.Dictionary ? capacity : null);
     }
 
     /// <summary>

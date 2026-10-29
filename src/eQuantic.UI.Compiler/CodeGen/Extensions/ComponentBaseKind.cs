@@ -6,7 +6,7 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// it reaches one at all.
 ///
 /// <para>
-/// The four members are the abstract bases the framework itself defines, and the list is
+/// The members are the abstract bases the framework itself defines, and the list is
 /// deliberately tiny: an intermediate base the app or a library wrote is REACHED by the walk, never
 /// named here. That is the whole point — a component written over <c>CardBase</c> resolves to the
 /// <c>StatelessComponent</c> behind it, and nothing downstream has to know that <c>CardBase</c>
@@ -39,4 +39,11 @@ public enum ComponentBaseKind
     /// <summary>Reaches <c>ComponentState</c>: a stateful component's state class, emitted by its
     /// own page rather than as a standalone module.</summary>
     ComponentState,
+
+    /// <summary>Reaches the vocabulary's <c>UiComponent</c>, the root every component derives from, and none
+    /// of the bases below it: a component written over the root itself, which builds as a stateless one. It
+    /// was <see cref="None"/>, a component only by a method called <c>Build</c>, until the chain decided
+    /// (#1164, found by Copilot's review of #1171). The root is known by its namespace too: an app's own
+    /// class called <c>UiComponent</c> is none.</summary>
+    UiComponent,
 }

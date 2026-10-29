@@ -12,12 +12,16 @@ namespace eQuantic.UI.Components;
 /// It is a polite live region on both targets, so the parameter the caret moved to is read out: its label is
 /// in the panel's text, which changes as the argument does.
 /// </para>
+/// <para>
+/// It stands as every note does (<see cref="CodeNoteBuilder.Place"/>): over the caret's line, under it when the view
+/// has no room above, and on the other side of a completion list showing, or nowhere when that side has no room.
+/// </para>
 /// </summary>
 internal static class CodeSignatureCard
 {
     /// <summary>
     /// The panel for what <paramref name="session"/> shows, as wide as its longest line up to
-    /// <see cref="CodeHoverCard.MaxColumns"/> and <paramref name="viewWidth"/> (zero while nothing has measured
+    /// <see cref="CodeNoteBuilder.MaxColumns"/> and <paramref name="viewWidth"/> (zero while nothing has measured
     /// the view), with how wide and how tall it is: the editor places it from those.
     /// </summary>
     internal static (VisualNode Card, float Width, float Height) Build(ComponentContext context,
@@ -25,107 +29,50 @@ internal static class CodeSignatureCard
     {
         var theme = context.Theme;
         var signature = session.Signature!;
-        var prose = metrics.Style with { Mono = false };
-        var proseLine = prose.ScaledLineHeight(context.TypeScale);
-        var codeLine = metrics.Style.ScaledLineHeight(context.TypeScale);
-        var chrome = 2 * (CodeHoverCard.Border + Space.S2);
+        var note = new CodeNoteBuilder(context, metrics, viewWidth);
 
         var count = session.Help!.Signatures.Count;
         var counter = count > 1 ? $"{session.ActiveSignature + 1}/{count}" : null;
-        var counterWidth = counter is null ? 0 : context.MeasureText(counter, prose) + Space.S2;
+        var counterWidth = counter is null ? 0 : context.MeasureText(counter, note.Prose) + Space.S2;
 
         var active = session.ActiveParameter;
         var parameter = active >= 0 && active < signature.Parameters.Count ? signature.Parameters[active] : null;
         var about = parameter is null ? null : Said(parameter);
 
-        var wanted = CodeHoverCard.Widest(context, signature.Label, metrics.Style) + counterWidth;
-        if (about is not null) wanted = MathF.Max(wanted, CodeHoverCard.Widest(context, about, prose));
+        note.Want(note.Widest(signature.Label, note.Code) + counterWidth);
+        if (about is not null) note.Want(note.Widest(about, note.Prose));
         if (signature.Documentation is { Length: > 0 } documentation)
-            wanted = MathF.Max(wanted, CodeHoverCard.Widest(context, documentation, prose));
-        var most = CodeHoverCard.MaxColumns * metrics.ColumnWidth + chrome;
-        if (viewWidth > 0) most = MathF.Min(most, viewWidth);
-        // A whole pixel for the widest line, as the card has it: a box exactly as wide as a fractional
-        // measure loses the rounding of a browser's layout, and the label ends cut by an ellipsis.
-        var width = MathF.Min(most, MathF.Ceiling(wanted) + chrome);
-        var room = MathF.Max(1, width - chrome);
+            note.Want(note.Widest(documentation, note.Prose));
+        var room = note.Fit();
 
-        var column = new Column(gap: Space.S1) { Width = SizeValue.Fill };
-        var height = 2 * (CodeHoverCard.Border + Space.S1);
-
-        var labelLines = CodeHoverCard.LinesOf(context, signature.Label, metrics.Style, room - counterWidth);
+        var labelLines = note.LinesOf(signature.Label, note.Code, room - counterWidth);
         var first = new Row(gap: Space.S2, cross: CrossAlign.Start) { Width = SizeValue.Fill };
         first.Add(new Flexible(new Text(signature.Label, TypeRole.LabelSmall, theme.TextPrimary, maxLines: labelLines)
         {
             Mono = true,
-            StyleOverride = metrics.Style,
+            StyleOverride = note.Code,
             Spans = Marked(theme, signature, active),
         }));
         if (counter is not null)
-            first.Add(new Text(counter, TypeRole.LabelSmall, theme.TextMuted, maxLines: 1) { StyleOverride = prose });
-        column.Add(first);
-        height += MathF.Max(labelLines * codeLine, counter is null ? 0 : proseLine);
+            first.Add(new Text(counter, TypeRole.LabelSmall, theme.TextMuted, maxLines: 1) { StyleOverride = note.Prose });
+        note.Add(first, MathF.Max(labelLines * note.CodeLine, counter is null ? 0 : note.ProseLine));
 
         if (about is not null)
         {
-            var lines = CodeHoverCard.LinesOf(context, about, prose, room);
-            column.Add(new Text(about, TypeRole.LabelSmall, theme.TextSecondary, maxLines: lines)
+            var lines = note.LinesOf(about, note.Prose, room);
+            note.Add(new Text(about, TypeRole.LabelSmall, theme.TextSecondary, maxLines: lines)
             {
-                StyleOverride = prose,
+                StyleOverride = note.Prose,
                 Spans = Described(theme, parameter!),
-            });
-            height += Space.S1 + lines * proseLine;
+            }, lines * note.ProseLine);
         }
         if (signature.Documentation is { Length: > 0 } documented)
         {
-            var lines = CodeHoverCard.LinesOf(context, documented, prose, room);
-            column.Add(new Text(documented, TypeRole.LabelSmall, theme.TextMuted, maxLines: lines) { StyleOverride = prose });
-            height += Space.S1 + lines * proseLine;
+            var lines = note.LinesOf(documented, note.Prose, room);
+            note.Add(new Text(documented, TypeRole.LabelSmall, theme.TextMuted, maxLines: lines) { StyleOverride = note.Prose },
+                lines * note.ProseLine);
         }
-
-        VisualNode card = new Box(new BoxStyle
-        {
-            Width = width,
-            Background = theme.Surface,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
-            BorderWidth = CodeHoverCard.Border,
-            BorderColor = theme.Border,
-            Elevation = 2,
-            Padding = EdgeInsets.Symmetric(Space.S2, Space.S1),
-            Clip = true,
-        }, column);
-        return (new LiveRegion(card), width, height);
-    }
-
-    /// <summary>
-    /// Where a panel <paramref name="width"/> by <paramref name="height"/> stands, its left edge at the
-    /// caret's and inside the view, the view being from <paramref name="viewLeft"/> across
-    /// <paramref name="viewWidth"/> (zero while nothing has measured it): over the caret's line, or under it
-    /// when the view has no room above. With a list showing (<paramref name="listAbove"/> says on which side
-    /// of the line), on the other side, and nowhere, null, when that side has no room.
-    /// </summary>
-    internal static Point? Place(Rect caret, float viewTop, float viewBottom, float viewLeft, float viewWidth,
-        float width, float height, bool? listAbove)
-    {
-        var above = caret.Y - height;
-        var below = caret.Y + caret.Height;
-        var roomAbove = above >= viewTop;
-        var roomBelow = below + height <= viewBottom;
-        float y;
-        if (listAbove is null) y = roomAbove ? above : below;
-        else if (listAbove == false)
-        {
-            if (!roomAbove) return null;
-            y = above;
-        }
-        else
-        {
-            if (!roomBelow) return null;
-            y = below;
-        }
-        var x = caret.X;
-        if (viewWidth > 0) x = MathF.Min(x, viewLeft + viewWidth - width);
-        x = MathF.Max(x, viewLeft);
-        return new Point(x, y);
+        return note.Build(announced: true);
     }
 
     /// <summary>The label in runs: the active parameter's span in the accent colour, the rest in the ink.</summary>

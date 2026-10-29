@@ -141,6 +141,12 @@ public class CodeDefinitionsViewTests : IDisposable
 
         var said = All<LiveRegion>(drawn).Single();
         All<Text>(said).Select(text => text.Content).Should().Equal(SdkStrings.NoDefinitionFound("amount"));
+        // The note's frame, round the text itself, as wide as its line to a whole pixel (CodeNoteBuilder): a box as
+        // wide as a fractional measure loses a browser's rounding, and the line ends cut by an ellipsis.
+        var frame = said.Child.Should().BeOfType<Box>().Subject;
+        frame.Child.Should().BeOfType<Text>("a note that says one thing frames the text as it is");
+        frame.Style.Width.Kind.Should().Be(SizeKind.Fixed);
+        frame.Style.Width.Value.Should().Be(MathF.Ceiling(frame.Style.Width.Value)).And.BeGreaterThan(0);
         editor.Editor.Selection = new CodeRange(At(6, 0));
         All<LiveRegion>(editor.Build(context)).Should().BeEmpty("a caret that moves takes it away");
     }

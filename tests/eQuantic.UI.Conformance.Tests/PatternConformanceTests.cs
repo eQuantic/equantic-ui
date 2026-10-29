@@ -1,4 +1,5 @@
 using eQuantic.UI.Conformance.Tests.Infrastructure;
+using FluentAssertions;
 using Xunit;
 
 namespace eQuantic.UI.Conformance.Tests;
@@ -104,6 +105,58 @@ public class PatternConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    private const string MemberPrelude =
+        "public record Stats(int Count);\n"
+        + "public record Holder(HashSet<int> Roles, Dictionary<string, int> Map, Stats Inner, Queue<int> Line);\n"
+        + "public record Pt(int X, int Y);\npublic record Box(Pt P);\npublic record struct Sp(int X, int Y);";
+
+    private const string AHolder =
+        "var h = new Holder(new HashSet<int> { 1 }, new Dictionary<string, int> { [\"a\"] = 1 }, new Stats(2), new Queue<int>(new[] { 5 })); ";
+
+    /// <summary>
+    /// A property pattern reads its member as a member access of it reads it, because it is one: the
+    /// read goes through the member-access strategies, with the type the bound pattern gives the value it
+    /// reads from at every depth. The pattern kept a table of its own, and a nested pattern knew no
+    /// receiver type, so its <c>Count</c> read an array's <c>length</c> on a set, a dictionary, a queue and
+    /// an app's record; a tuple's element was read as a field, where a tuple is an array; and a
+    /// dictionary's <c>Keys</c> as a member the Map has not (#1147).
+    /// </summary>
+    [SkippableTheory]
+    // Already right, and kept right: read directly, and through an extended path.
+    [InlineData("var set = new HashSet<int> { 1 }; return set is { Count: 1 };")]                                   // -> true
+    [InlineData("var map = new Dictionary<string, int> { [\"a\"] = 1 }; return map is { Count: 1 };")]              // -> true
+    [InlineData("return new Stats(3) is { Count: 3 };")]                                                            // -> true
+    [InlineData("return \"abc\" is { Length: 3 } && new List<int> { 1, 2 } is { Count: 2 } && new[] { 1 } is { Length: 1 };")] // -> true
+    [InlineData("var d = new DateTime(2026, 10, 29); return d is { Year: 2026, Month: 10, Day: 29 };")]             // -> true
+    [InlineData(AHolder + "return h switch { { Inner.Count: 2, Line.Count: var c } => c, _ => -1 };")]             // -> 5
+    // Nested in another pattern, where the type was lost.
+    [InlineData(AHolder + "return h is { Roles: { Count: 1 } };")]                                                   // -> true
+    [InlineData(AHolder + "return h is { Map: { Count: 1 } };")]                                                     // -> true
+    [InlineData(AHolder + "return h is { Line: { Count: 1 } };")]                                                    // -> true
+    [InlineData(AHolder + "return h is { Inner: { Count: 2 } };")]                                                   // -> true
+    [InlineData(AHolder + "return h is { Roles: { Count: var n } } ? n : -1;")]                                      // -> 1
+    [InlineData("var t = (new HashSet<int> { 1, 2 }, 3); return t is ({ Count: 2 }, 3);")]                          // -> true
+    [InlineData("var all = new[] { new HashSet<int> { 1 } }; return all is [{ Count: 1 }];")]                       // -> true
+    [InlineData("var all = new[] { new Stats(1) }; return all is [{ Count: 1 }];")]                                 // -> true
+    [InlineData("return new Box(new Pt(1, 2)) is { P: (1, 2) };")]                                                  // -> true
+    // A member a strategy translates.
+    [InlineData("var p = (1, 2); return p is { Item1: 1, Item2: 2 };")]                                             // -> true
+    [InlineData("(int A, int B) p = (1, 2); return p is { A: 1, B: 2 };")]                                          // -> true
+    [InlineData("var map = new Dictionary<string, int> { [\"a\"] = 1 }; return map is { Keys.Count: 1, Values.Count: 1 };")] // -> true
+    public void AMemberInAPattern_ReadsAsItsMemberAccessReadsIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, MemberPrelude);
+    }
+
+    /// <summary>
+    /// A .NET member no value in the browser carries is refused in a pattern as its member access is
+    /// (EQ2004, #847): the pattern named it with no diagnostic, and the test was quietly false (#920).
+    /// </summary>
+    [Fact]
+    public void AMemberNoBrowserValueCarries_IsRefusedInAPatternAsInAMemberAccess() =>
+        ConformanceRunner.AssertStatementsRefusedByTheBuild("var l = new List<int>(8); return l is { Capacity: 8 };", "EQ2004");
+
     /// <summary>
     /// <c>x is Limits.Max</c> parses as the type test and binds as a constant pattern: it was
     /// answered <c>x != null</c>, true for every number (#451). An enum's member is the member.
@@ -115,6 +168,8 @@ public class PatternConformanceTests
     [InlineData("var l = Level.High; return l is Level.High;")]           // true
     [InlineData("var l = Level.Low; return l is Level.High;")]            // false
     [InlineData("var l = Level.High; return l is (Level)1;")]             // true
+    [InlineData("var l = Level.High; return l is (Level.Low + 1);")]      // true
+    [InlineData("int n = 0; Level Pick() { n++; return Level.High; } return (Pick() is (Level.Low + 1) or Level.Low) ? n : -1;")] // 1
     public void IsANamedConstant_ComparesToItsValue(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -149,4 +204,89 @@ public class PatternConformanceTests
             "public static class Limits { public const long Five = 5; public const decimal Rate = 1.5m; "
             + "public const double NotANumber = double.NaN; public const string Nothing = null; public const int Small = 5; }");
     }
+
+    private const string CountedPrelude = "record Pt(int X, int Y);";
+
+    /// <summary>
+    /// A pattern reads its input ONCE, whatever its shape, as C# does: an input that counts its reads
+    /// answers how many there were. A call is bound once, a switch holds its value once, and an input
+    /// the pattern never names is still evaluated: <c>f() is var _</c> was <c>true</c>, and never
+    /// called <c>f</c>.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 1; }; var hit = f() is 2 or 1; return n * 10 + (hit ? 1 : 0);")]                // 11
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 5; }; var hit = f() is > 0 and < 10; return n * 10 + (hit ? 1 : 0);")]         // 11
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 4; }; var hit = f() is not (2 or 3); return n * 10 + (hit ? 1 : 0);")]         // 11
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 4; }; var hit = f() is not > 0 and not 7; return n * 10 + (hit ? 1 : 0);")]    // 10
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 42; }; var hit = f() is (> 0 and < 10) or 42; return n * 10 + (hit ? 1 : 0);")] // 11
+    [InlineData("int n = 0; Pt Make() { n++; return new Pt(1, 2); } var hit = Make() is { X: 1, Y: 2 }; return n * 10 + (hit ? 1 : 0);")]           // 11
+    [InlineData("int n = 0; Pt Make() { n++; return new Pt(1, 2); } var hit = Make() is (1, 2) or (2, 1); return n * 10 + (hit ? 1 : 0);")]         // 11
+    [InlineData("int n = 0; Pt Make() { n++; return new Pt(3, 2); } var hit = Make() is { X: > 0 and < 5 } and not { Y: 9 }; return n * 10 + (hit ? 1 : 0);")] // 11
+    [InlineData("int n = 0; object Read() { n++; return 5L; } var hit = Read() is int or long; return n * 10 + (hit ? 1 : 0);")]                     // 11
+    [InlineData("int n = 0; object Read() { n++; return 5; } if (Read() is not int k) return -1; return n * 10 + k;")]                              // 15
+    [InlineData("int n = 0; Pt Make() { n++; return new Pt(1, 2); } return Make() is { X: var x, Y: 2 } ? n * 10 + x : -1;")]                       // 11
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 3; }; var hit = f() switch { 1 or 2 => 1, > 2 and < 5 => 2, _ => 0 }; return n * 10 + hit;")] // 12
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 3; }; switch (f()) { case 1 or 2: return n * 10 + 1; case > 2 and < 5: return n * 10 + 2; default: return n * 10; }")] // 12
+    [InlineData("int n = 0; int[] xs = { 1, 2 }; int[] Take() { n++; return xs; } var hit = Take() is [1, _] or [_, 1]; return n * 10 + (hit ? 1 : 0);")] // 11
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 1; }; var hit = f() is var _; return n * 10 + (hit ? 1 : 0);")]                 // 11
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 1; }; var hit = f() is var _ or 2; return n * 10 + (hit ? 1 : 0);")]            // 11
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 1; }; var hit = f() is not var _ or 1; return n * 10 + (hit ? 1 : 0);")]       // 11
+    [InlineData("int n = 0; System.Func<int> f = () => { n++; return 1; }; var hit = f() is var _ and 2; return n * 10 + (hit ? 1 : 0);")]           // 10
+    [InlineData("int n = 0; System.Func<string> f = () => { n++; return \"{0}\"; }; var hit = f() is \"{0}\" or \"$v0\"; return n * 10 + (hit ? 1 : 0);")] // 11: a constant that spells a hole
+    public void APatternReadsItsInputOnce(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, CountedPrelude);
+    }
+
+    private const string Counted = """
+        public record Pt(int X, int Y);
+        public class Counter
+        {
+            public int Reads;
+            public int Value { get { Reads++; return 1; } }
+            public Pt Corner { get { Reads++; return new Pt(1, 2); } }
+            public object Boxed { get { Reads++; return 5L; } }
+            public object Text { get { Reads++; return "xy"; } }
+            public bool Small() => Value is 2 or 1;
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] CountedCases =
+    [
+        ("or", "var c = new Counter(); var hit = c.Value is 2 or 1; return c.Reads * 10 + (hit ? 1 : 0);"),                        // 11
+        ("and", "var c = new Counter(); var hit = c.Value is > 0 and < 10; return c.Reads * 10 + (hit ? 1 : 0);"),                 // 11
+        ("not", "var c = new Counter(); var hit = c.Value is not (2 or 3); return c.Reads * 10 + (hit ? 1 : 0);"),                 // 11
+        ("a property pattern", "var c = new Counter(); var hit = c.Corner is { X: 1, Y: 2 }; return c.Reads * 10 + (hit ? 1 : 0);"), // 11
+        ("a positional pattern", "var c = new Counter(); var hit = c.Corner is (2, 1) or (1, 2); return c.Reads * 10 + (hit ? 1 : 0);"), // 11
+        ("a type pattern", "var c = new Counter(); var hit = c.Boxed is int or long; return c.Reads * 10 + (hit ? 1 : 0);"),       // 11
+        ("a binding", "var c = new Counter(); return c.Value is > 0 and var v ? c.Reads * 10 + v : -1;"),                          // 11
+        ("a member of this", "var c = new Counter(); var hit = c.Small(); return c.Reads * 10 + (hit ? 1 : 0);"),                  // 11
+        ("the type test", "var c = new Counter(); var hit = c.Text is char; return c.Reads * 10 + (hit ? 1 : 0);"),                // 10
+        ("a pattern that names nothing", "var c = new Counter(); var hit = c.Value is var _; return c.Reads * 10 + (hit ? 1 : 0);"), // 11
+    ];
+
+    /// <summary>
+    /// An input that is a MEMBER is read once too: a property's getter may count its calls, as this
+    /// one does. A path of names was taken for a read nobody could observe, and read again at each
+    /// mention, so <c>c.Value is 2 or 1</c> called the getter twice where .NET calls it once, and the
+    /// type test <c>c.Text is char</c> read a string twice to ask its length.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void APatternReadsAMemberInputOnce(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Counted, typeAnnotations, CountedCases);
+
+    /// <summary>
+    /// An input whose read nobody can observe, a name or a literal, is left out when the pattern names
+    /// nothing of it, in the author's parentheses too: written left of a comma, <c>((n), true)</c>, it
+    /// is code TypeScript refuses (TS2695), and the runtime's own components are type-checked.
+    /// </summary>
+    [Theory]
+    [InlineData("int n = 1; return (n) is var _;")]
+    [InlineData("return (42) is var _;")]
+    [InlineData("return (\"x\") is var _;")]
+    public void AnInputNobodyCanSeeRead_IsLeftOutWhenThePatternNamesNothing(string statements) =>
+        Transpiler.TranspileStatements(statements).Should().Contain("return true;");
 }

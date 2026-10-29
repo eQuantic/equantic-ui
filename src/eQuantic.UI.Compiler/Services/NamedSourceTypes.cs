@@ -91,7 +91,7 @@ internal sealed class NamedSourceTypes
             try
             {
                 // The code no twin is written from, by the parser's own rule.
-                if (Parser.ComponentParser.StaysOnTheServer(node, asComponent)) continue;
+                if (Parser.ComponentParser.StaysOnTheServer(node, asComponent, model)) continue;
                 if (WritesNothing(node, model))
                 {
                     // Nothing of what it NAMES is written. What is written in its place is a value,

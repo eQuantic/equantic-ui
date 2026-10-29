@@ -448,7 +448,7 @@ export class CodeCompletion {
     inCommentOrString(caret: CodePosition) {
         if (caret.column === 0) return false;
         for (const token of this._editor.highlighter.tokensFor(this._editor.document, caret.line)) {
-            if (token.start <= caret.column - 1 && caret.column - 1 < token.end) return (token.kind === 'comment' || token.kind === 'string');
+            if (token.start <= caret.column - 1 && caret.column - 1 < token.end) return (($0) => ($0 === 'comment' || $0 === 'string'))(token.kind);
         }
         return false;
     }

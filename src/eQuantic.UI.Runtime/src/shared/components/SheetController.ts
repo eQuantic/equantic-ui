@@ -112,7 +112,7 @@ export class SheetController {
 
     get ranges(): SheetRange[] {
         let ranges: SheetRange[] = ($eq.collections.listCapacity(this._others.length + 1), []);
-        ranges.push(...this._others);
+        $eq.collections.addRange(ranges, this._others);
         ranges.push(this._selection);
         return ranges;
     }
@@ -161,7 +161,7 @@ export class SheetController {
         this._summaryAt = this.document.version;
         this._summaryCulture = culture;
         this._summaryRanges.splice(0);
-        this._summaryRanges.push(...ranges);
+        $eq.collections.addRange(this._summaryRanges, ranges);
         return this._summary;
     }
 
@@ -243,7 +243,7 @@ export class SheetController {
 
     get inputBounds(): Rect {
         let carets: any; 
-        return ((this.carets != null && $eq.collections.count(this.carets) > 0) && (carets = this.carets, true)) ? $eq.collections.item(carets, 0) : this.boundsOf(new SheetRange(this._active));
+        return (($0) => (($0 != null && $eq.collections.count($0) > 0) && (carets = $0, true)))(this.carets) ? $eq.collections.item(carets, 0) : this.boundsOf(new SheetRange(this._active));
     }
 
     get focusVersion(): number {

@@ -208,6 +208,16 @@ public class QueueStackStrategy : IExpressionIrStrategy
             : Expressions.ObjectCreationStrategy.AddPerElementConstruction(initializer, construction, context);
     }
 
+    /// <summary>The empty queue, stack or linked list a collection expression builds
+    /// (<c>Queue&lt;int&gt; pending = []</c>), constructed as <c>new()</c> constructs it, with the capacity
+    /// its <c>with(…)</c> hands the constructor. It went out as an array (#1144).</summary>
+    internal static JsExpr Empty(string kind, JsExpr? capacity, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        var factory = JsExpr.Identifier($"$eq.collections.{kind}");
+        return capacity is null ? JsExpr.Call(factory) : JsExpr.Call(factory, capacity);
+    }
+
     /// <summary>
     /// <c>new SortedSet&lt;T&gt;(…)</c>: the elements it copies, and the order it keeps them in, which is
     /// its element type's (<see cref="ValueOrdering"/>) unless the comparer it is handed asks for the

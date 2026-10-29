@@ -42,7 +42,7 @@ export class Banner extends StatelessComponent {
             content.add(new Pressable(new Icon(IconGlyph.fromIcons('close'), 20, tint.onSubtle), this.onDismiss, { label: SdkStrings.dismiss }));
         }
         let surface = new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(14, 12, 14, 12), background: tint.subtle, cornerRadius: new CornerRadii(context.theme.shape('large')) }), content);
-        return new LiveRegion(surface, { urgency: (this.status === 'warning' || this.status === 'destructive') ? 'assertive' : 'polite' });
+        return new LiveRegion(surface, { urgency: (($0) => ($0 === 'warning' || $0 === 'destructive'))(this.status) ? 'assertive' : 'polite' });
     }
 }
 
