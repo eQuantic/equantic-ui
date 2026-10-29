@@ -10,6 +10,8 @@ import { lowerVisualNode, type LoweringContext } from './lowering';
 import type { ScrollViewNode } from './nodes';
 import { commitScrollViewports, declareScrollViewport, scheduleScrollViewportCommit } from './scroll-viewports';
 import { photonTheme } from './design-system.generated';
+import { effectiveStyle } from './style-atomizer';
+import type { HtmlNode } from '../core/types';
 
 function context(): LoweringContext {
   return { textPrimary: photonTheme.textPrimary } as LoweringContext;
@@ -369,5 +371,99 @@ describe('ScrollView web out-channels', () => {
     const lowered = lowerVisualNode(scrollNode({}), context());
     const attrs = (lowered as { attributes: Record<string, string> }).attributes;
     expect(attrs['data-eq-scroll']).toBeUndefined();
+  });
+});
+
+/**
+ * Content that fills its viewport (#1143): the scroller is a flex line on its axis and its child grows to
+ * the scroller's content box, which leaves a scrollbar that takes space out, never shrinks under its
+ * content, and is stretched across. CROSS-PIN with the C# twin (ScrollViewRealizerTests).
+ */
+describe('a scroll view that fills its viewport', () => {
+  const box = (style: Record<string, unknown>) => ({ nodeKind: 'box', style }) as never;
+
+  it('lays its child out as a growing flex item, on its axis', () => {
+    const vertical = lowerVisualNode(
+      scrollNode({ child: box({ width: { kind: 'fill', value: 0 } }), height: { kind: 'fixed', value: 100 }, fillViewport: true }),
+      context(),
+    ) as HtmlNode;
+    expect(effectiveStyle(vertical)).toContain('display: flex');
+    expect(effectiveStyle(vertical)).toContain('flex-direction: column');
+    expect(effectiveStyle(vertical.children[0])).toContain('flex-grow: 1');
+    expect(effectiveStyle(vertical.children[0])).toContain('flex-shrink: 0');
+
+    const sideways = lowerVisualNode(
+      scrollNode({ child: box({ height: { kind: 'fixed', value: 20 } }), axis: 'horizontal', fillViewport: true }),
+      context(),
+    ) as HtmlNode;
+    expect(effectiveStyle(sideways)).toContain('flex-direction: row');
+    const child = effectiveStyle(sideways.children[0]);
+    expect(child).toContain('flex-grow: 1');
+    // The rigid box's own `flex-shrink: 0` and the scroller's are one declaration, as on the C# side.
+    expect(child.match(/flex-shrink/g)).toHaveLength(1);
+  });
+
+  it('keeps a length the child states on the scroll axis, as Photon does', () => {
+    const lowered = lowerVisualNode(
+      scrollNode({ child: box({ width: { kind: 'fixed', value: 40 } }), axis: 'horizontal', fillViewport: true }),
+      context(),
+    ) as HtmlNode;
+    const child = effectiveStyle(lowered.children[0]);
+    expect(child).toContain('flex-shrink: 0');
+    expect(child).not.toContain('flex-grow');
+  });
+
+  it("keeps the window's own size, a bare 100vh", () => {
+    const lowered = lowerVisualNode(
+      scrollNode({
+        child: box({ height: { kind: 'windowMinus', value: 0 } }),
+        height: { kind: 'fixed', value: 1000 },
+        fillViewport: true,
+      }),
+      context(),
+    ) as HtmlNode;
+    const child = effectiveStyle(lowered.children[0]);
+    expect(child).toContain('height: 100vh');
+    expect(child).not.toContain('flex-grow');
+  });
+
+  it('grows the box inside a wrapper that draws no box, an InView', () => {
+    const inView = { nodeKind: 'inView', child: box({ width: { kind: 'fill', value: 0 } }) } as never;
+    const lowered = lowerVisualNode(
+      scrollNode({ child: inView, height: { kind: 'fixed', value: 100 }, fillViewport: true }),
+      context(),
+    ) as HtmlNode;
+    const found: HtmlNode[] = [];
+    const walk = (node: HtmlNode) => {
+      if (effectiveStyle(node).includes('width: 100%')) found.push(node);
+      node.children.forEach(walk);
+    };
+    lowered.children.forEach(walk);
+    expect(found).toHaveLength(1);
+    expect(effectiveStyle(found[0])).toContain('flex-grow: 1');
+    expect(effectiveStyle(found[0])).toContain('flex-shrink: 0');
+  });
+
+  it("grows each arm of an adaptive child, since the gates are display: contents", () => {
+    const fill = { width: { kind: 'fill', value: 0 } };
+    const adaptive = { nodeKind: 'adaptive', compact: box(fill), expanded: box(fill) } as never;
+    const lowered = lowerVisualNode(
+      scrollNode({ child: adaptive, height: { kind: 'fixed', value: 100 }, fillViewport: true }),
+      context(),
+    ) as HtmlNode;
+    const arms: HtmlNode[] = [];
+    const walk = (node: HtmlNode) => {
+      if (effectiveStyle(node).includes('width: 100%')) arms.push(node);
+      node.children.forEach(walk);
+    };
+    lowered.children.forEach(walk);
+    expect(arms).toHaveLength(2);
+    for (const arm of arms) expect(effectiveStyle(arm)).toContain('flex-grow: 1');
+  });
+
+  it('lays its child out as a block when it does not fill', () => {
+    const lowered = lowerVisualNode(scrollNode({ child: box({ width: { kind: 'fill', value: 0 } }) }), context()) as HtmlNode;
+    expect(effectiveStyle(lowered)).not.toContain('display: flex');
+    expect(effectiveStyle(lowered.children[0])).not.toContain('flex-grow');
   });
 });

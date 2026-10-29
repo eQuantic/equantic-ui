@@ -199,13 +199,11 @@ Enumerable.Where(IEnumerable<TSource>,Func<TSource,Int32,Boolean>) predicate  ty
 Enumerable.Where(IEnumerable<TSource>,Func<TSource,Int32,Boolean>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,Func<TFirst,TSecond,TResult>) first  type  Zip is the runtime's zip, which reads a null first sequence or result selector through null
 Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,Func<TFirst,TSecond,TResult>) resultSelector  type  Zip is the runtime's zip, which reads a null first sequence or result selector through null
-List<Int32>.AddRange(IEnumerable<Int32>) collection  type  lowered to a spread, which reads a null collection through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.Exists(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.FindAll(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.FindIndex(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.FindLastIndex(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.ForEach(Action<Int32>) action  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
-List<Int32>.InsertRange(Int32,IEnumerable<Int32>) collection  type  lowered to a spread, which reads a null collection through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.TrueForAll(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 String.Concat(IEnumerable<String>) values  type  string.Concat of one argument is lowered to a spread of it, which reads a null through null, and an object that is no sequence too
 String.Concat(IEnumerable<T>) values  type  string.Concat of one argument is lowered to a spread of it, which reads a null through null, and an object that is no sequence too

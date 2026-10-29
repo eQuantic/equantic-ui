@@ -252,6 +252,13 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         ),
       ),
     ),
+    'filled-scrollers': still(
+      new ScrollView(
+        new ScrollView(new Box(new BoxStyle({ width: 40 })), 'horizontal', { fillViewport: true }),
+        'vertical',
+        { height: 120, fillViewport: true },
+      ),
+    ),
     'box-hover-lift': still(hoverLift()),
     // SimulatedState.Hovered | SimulatedState.Focused
     'box-hover-lift-simulated': still(new Simulated(1 | 4, hoverLift())),

@@ -115,13 +115,16 @@ public sealed class CodeScreen : StatefulComponent
             Padding = new EdgeInsets(Space.S4, Space.S4, 0, Space.S4),
         }, new Text(_status.Length == 0 ? "Rest the pointer on a name, ⌘-click it or press F12 to go to it and ⇧F12 for its uses, type a call such as Add(, press ⌃G or ⇧⌘O, or press F8." : _status,
             TypeRole.BodyM, theme.TextSecondary, maxLines: 1)));
+        // A pane of its own, as an IDE gives an editor: the editor fills it, and a file shorter than the pane
+        // leaves the room under its last line to the code, which takes a press there.
         page.Add(new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
+            Height = 600,
             Padding = EdgeInsets.All(Space.S4),
         }, new CodeEditor(Source, "csharp")
         {
-            MaxHeight = 520,
+            Height = SizeValue.Fill,
             Caption = "Ledger.cs",
             OnSelectionChanged = range => SetState(() =>
                 _status = $"Ln {range.Focus.Line + 1}, Col {range.Focus.Column + 1}"),

@@ -1,4 +1,6 @@
+using eQuantic.UI.Compiler.CodeGen;
 using FluentAssertions;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Strategies;
@@ -12,11 +14,36 @@ public class ListStrategyTests
         result.Should().Be("this.list.push(this.item)");
     }
 
-    [Fact]
-    public void AddRange_MapsToPushSpread()
+    /// <summary>
+    /// <c>AddRange</c> and <c>InsertRange</c> go through the runtime, one element at a time: they were
+    /// <c>push(...items)</c> and <c>splice(index, 0, ...items)</c>, which hand every element to the call as
+    /// an argument, past the cap an engine sets on them (#1060). A named argument fills the parameter it
+    /// names, where the collection took the index's place.
+    /// </summary>
+    [Theory]
+    [InlineData("list.AddRange(otherList)", "$eq.collections.addRange(this.list, this.otherList)")]
+    [InlineData("list.InsertRange(1, otherList)", "$eq.collections.insertRange(this.list, 1, this.otherList)")]
+    [InlineData("list.InsertRange(collection: otherList, index: 1)", "$eq.collections.insertRange(this.list, 1, this.otherList)")]
+    public void ARange_IsTheRuntimes(string code, string expected) =>
+        TestHelper.ConvertExpression(code).Should().Be(expected);
+
+    /// <summary>With no model to bind the call, a range goes through the same runtime functions.</summary>
+    [Theory]
+    [InlineData("list.AddRange(items)", "$eq.collections.addRange(list, items)")]
+    [InlineData("list.InsertRange(0, items)", "$eq.collections.insertRange(list, 0, items)")]
+    public void ARange_WithNoModel_IsTheRuntimes(string code, string expected) =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
+
+    /// <summary>With no model, a named argument could fill either of a range's parameters: a build error
+    /// rather than a guess, which put a named collection in the index's place.</summary>
+    [Theory]
+    [InlineData("list.InsertRange(collection: items, index: 0)")]
+    [InlineData("list.AddRange(collection: items)")]
+    public void ARange_WithNoModel_RefusesANamedArgument(string code)
     {
-        var result = TestHelper.ConvertExpression("list.AddRange(otherList)");
-        result.Should().Be("this.list.push(...this.otherList)");
+        var converter = new CSharpToJsConverter();
+        converter.ConvertExpression(SyntaxFactory.ParseExpression(code));
+        converter.Diagnostics.Should().Contain(d => d.Code == "EQ1004");
     }
 
     [Fact]

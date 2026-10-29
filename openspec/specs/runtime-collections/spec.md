@@ -272,10 +272,10 @@ The view SHALL take .NET's paths through the set operations: it SHALL never merg
 `SymmetricExceptWith` adds element by element and refuses the first outside the range; a set of its
 comparer compared with another SHALL be asked for a view of the other's range, which a narrower view
 refuses, two sets of one element type, an enum's included, having one comparer; and its `ExceptWith` SHALL ask the count it last counted. The count SHALL be taken again where
-.NET reads the view as a collection: reading `Count`, a copy into a list or a set, and a set's operation
-that asks the view its count; a walk SHALL NOT take it again. Two divergences are known: LINQ takes it again
-before every operator, `First` and `Where` included, which only walk the view in .NET, and `AddRange` does
-not take it, where .NET's does.
+.NET reads the view as a collection: reading `Count`, a copy into a list or a set, a list's `AddRange` and
+`InsertRange`, and a set's operation that asks the view its count; a walk SHALL NOT take it again. One
+divergence is known: LINQ takes it again before every operator, `First` and `Where` included, which only walk
+the view in .NET.
 
 #### Scenario: A view, live both ways
 
@@ -301,3 +301,36 @@ not take it, where .NET's does.
 
 - **WHEN** browser-side code asks `new SortedSet<int> { 3 }.Overlaps(v)` of a view whose `Count` was never read, then calls `v.ExceptWith(new[] { 3 })`
 - **THEN** 3 is removed, as in .NET, which asked the view its count
+
+#### Scenario: A view added to a list
+
+- **WHEN** browser-side code calls `new List<int>().AddRange(v)` with a view whose `Count` was never read,
+  then `v.ExceptWith(new[] { 3 })`
+- **THEN** 3 is removed, as in .NET, whose `AddRange` asked the view its count; nothing was removed
+
+### Requirement: An empty collection expression builds the queue, the stack or the linked list its target names
+
+A collection expression whose target is a `Queue`, a `Stack` or a `LinkedList` SHALL build on the web the
+runtime's class `new()` builds for that type, wherever it is written, and the capacity `with(…)` hands the
+constructor SHALL be the queue's or the stack's capacity, as `new(capacity)` makes it. An element, which only an
+`Add` of the app's own can add to one of these types, SHALL fail the build with EQ1004.
+
+#### Scenario: A queue started empty
+
+- **WHEN** browser-side code runs `Queue<int> q = []; q.Enqueue(1); q.Enqueue(2); return q.Dequeue() + "," + q.Count;`
+- **THEN** it answers "1,1", as in .NET, where `q.enqueue` was not a function
+
+#### Scenario: A stack's capacity handed by with
+
+- **WHEN** browser-side code runs `Stack<int> s = [with(3)]; return s.Capacity;`
+- **THEN** it answers 3, as in .NET
+
+#### Scenario: An element an extension adds
+
+- **WHEN** an app declares `Add(this Queue<int>, int)` and writes `Queue<int> q = [1, 2];` in code that crosses
+- **THEN** the build fails with EQ1004
+
+#### Scenario: A linked list started empty
+
+- **WHEN** browser-side code runs `LinkedList<int> l = []; l.AddLast(1); l.AddFirst(0);` and joins it
+- **THEN** it reads "0,1", as in .NET
