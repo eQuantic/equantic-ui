@@ -216,9 +216,14 @@ internal static class ExplicitImplementations
     {
         if (member.DeclaringSyntaxReferences is not [var reference]) return null;
         var declaration = reference.GetSyntax();
-        // A component's server action runs its body on the server, and the browser calls its stub: the body
-        // hands nothing off there.
+        // A component's server action runs its body on the server, and the browser calls its stub, and a
+        // member kept on the server is in no twin, its call refused where it is written (EQ2010): neither
+        // body hands anything off in the browser (Copilot's third review of #1139).
         if (declaration is MethodDeclarationSyntax action && Parser.ComponentParser.IsServerAction(action)) return null;
+        if (StaysOnTheServer(member)) return null;
+        // An async body completes its own task, whatever the task it calls: `async Task IFoo.Run() { Run(); }`
+        // completes where the call it drops may throw.
+        if (exact && member is IMethodSymbol { IsAsync: true }) return null;
         if (ModelOf(member, compilation, declaration.SyntaxTree) is not { } model) return null;
         var reading = new Reading(model, exact);
         var target = declaration switch
@@ -335,7 +340,9 @@ internal static class ExplicitImplementations
                 || Unconverted(argument.Value, reading) is not IParameterReferenceOperation { Parameter: var passed }
                 || !SymbolEqualityComparer.Default.Equals(passed, parameters[bound.Ordinal])
                 || passed.RefKind != bound.RefKind
-                || reading.Exact && !Kept(passed.Type, bound.Type, reading))
+                // A params parameter is a rest parameter on the twin, which takes an array passed to it as
+                // one element: an array handed to one, or a params array to a plain one, is no hand-off.
+                || reading.Exact && (passed.IsParams != bound.IsParams || !Kept(passed.Type, bound.Type, reading)))
                 return false;
         }
         return true;

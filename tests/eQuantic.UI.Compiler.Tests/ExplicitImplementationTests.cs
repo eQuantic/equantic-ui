@@ -30,6 +30,9 @@ public class ExplicitImplementationTests
         public interface IOut { void Run(out int result); }
         public interface IMaybe { string? Run(); }
         public interface IProbe { bool Equals(object other); }
+        public interface ICount { int Run(int[] xs); }
+        public interface ITask { System.Threading.Tasks.Task Run(); }
+        public interface IText { string ToString { get; } }
         """;
 
     private static CompilationResult Compile(string source, string name) =>
@@ -385,6 +388,24 @@ public class ExplicitImplementationTests
             """, "Outs", "run$1()"
         },
         {
+            "a hand-off of an array to a params parameter, which takes it as one element", """
+            public class Counted : ICount
+            {
+                public int Run(params int[] xs) => xs.Length;
+                int ICount.Run(int[] xs) => Run(xs);
+            }
+            """, "Counted", "run$1("
+        },
+        {
+            "an async body, which completes its own task", """
+            public class Tasker : ITask
+            {
+                public async System.Threading.Tasks.Task Run() { await System.Threading.Tasks.Task.Yield(); throw new System.InvalidOperationException(); }
+                async System.Threading.Tasks.Task ITask.Run() { Run(); }
+            }
+            """, "Tasker", "run$1()"
+        },
+        {
             "a hand-off through an as, which may answer null", """
             public class Caster : IMaybe
             {
@@ -430,6 +451,21 @@ public class ExplicitImplementationTests
             "an explicit one on the name the runtime reads for object's Equals", """
             public class Probe : IProbe { bool IProbe.Equals(object other) => Equals(other); }
             """, "Probe", "the name the runtime reads for `Equals(object)`"
+        },
+        {
+            "an explicit property on the name the runtime reads for object's ToString", """
+            public class Texted : IText { string IText.ToString => "text"; }
+            """, "Texted", "the name the runtime reads for `ToString()`"
+        },
+        {
+            "an explicit static beside a static field of its name, which stays in its slot", """
+            public interface IMake3 { static abstract string Make(); }
+            public class Made : IMake3
+            {
+                public static string Make = "field";
+                static string IMake3.Make() => "interface";
+            }
+            """, "Made", "'Made.Make' lowers to `static make()`"
         },
         {
             "two explicit ones that hand off to each other", """
@@ -490,6 +526,27 @@ public class ExplicitImplementationTests
 
         result.Errors.Should().ContainSingle().Which.Message.Should()
             .Contain("the explicit implementation of 'IBar.Run()' it inherits from 'GenBase'");
+    }
+
+    /// <summary>A member kept on the server is where a hand-off ends: its body never runs in the browser, so the
+    /// explicit implementation that calls it is written, and an app's build refuses the call there (EQ2010),
+    /// where following the body left the explicit one out and the refusal with it (Copilot's third review of
+    /// #1139). Here, with no reference for the attribute to bind to, the call is written.</summary>
+    [Fact]
+    public void AMemberKeptOnTheServer_IsWhereAHandOffEnds()
+    {
+        var result = Compile("""
+            public class Hidden : IFoo
+            {
+                string IFoo.Run() => Secret();
+                [eQuantic.UI.Primitives.ServerOnly] string Secret() => Run();
+                public string Run() => "local";
+            }
+            """, "Hidden");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("return this.secret();");
+        Declared(result.TypeScript, "run").Should().Be(1);
     }
 
     /// <summary>A component's server action is a stub in the browser, whose body runs on the server, so an

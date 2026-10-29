@@ -722,7 +722,7 @@ internal static class OverloadedMethods
                     + "otherwise give one of the interfaces' members a name of its own.");
                 return;
             }
-            if (!held.IsStatic && held is IMethodSymbol && ReadByTheRuntime.TryGetValue(name, out var read))
+            if (!held.IsStatic && ReadByTheRuntime.TryGetValue(name, out var read))
             {
                 Refuse(errors, sourcePath, held, type,
                     $"'{declared.Name}' implements '{Answering(held)}' explicitly, which lowers to {lowered}, the name the "
@@ -773,7 +773,8 @@ internal static class OverloadedMethods
     /// <summary>A member the type declares, no explicit implementation, that its twin holds under
     /// <paramref name="name"/> on <paramref name="held"/>'s side, beside the explicit one: a method the name
     /// stays with (an override fills its base's slot, and one that moved aside holds another), a property or
-    /// an event. A field moves aside for it (<see cref="FieldSlotExtensions.TwinSlot"/>).</summary>
+    /// an event, or a field that stays in its slot (<see cref="FieldSlotExtensions.TwinSlot"/>): an instance
+    /// field of a class moves aside for it, and a static one does not.</summary>
     private static ISymbol? Beside(INamedTypeSymbol type, ISymbol held, string name) =>
         type.GetMembers().FirstOrDefault(member => member.IsStatic == held.IsStatic && !member.IsImplicitlyDeclared
             && !ExplicitImplementations.IsExplicit(member) && HeldUnder(member) == name);
@@ -809,8 +810,8 @@ internal static class OverloadedMethods
 
     /// <summary>The name a member that is no explicit implementation holds on its twin, or null for one the
     /// twin holds under no name of the explicit ones' kind: a method by the name it holds
-    /// (<see cref="TwinMethodName"/>), a property or an event by its own, and a field, an indexer, a method
-    /// that never reaches a twin, or one the compiler declares, by none.</summary>
+    /// (<see cref="TwinMethodName"/>), a property or an event by its own, a field by its slot, and an indexer,
+    /// a method that never reaches a twin, or one the compiler declares, by none.</summary>
     private static string? HeldUnder(ISymbol member) => member switch
     {
         // An abstract method holds the name its overrides fill, though the base's twin writes nothing for
@@ -819,6 +820,9 @@ internal static class OverloadedMethods
             when !method.IsHostOnly() && !(method.IsPartialDefinition && method.PartialImplementationPart is null) =>
             TwinMethodName.Of(method),
         IPropertySymbol { IsIndexer: false } or IEventSymbol { ExplicitInterfaceImplementations.IsEmpty: true } => Lowered(member),
+        // A field by the slot it lives in, which an instance field moves for a member of its name and a
+        // static one does not (Copilot's third review of #1139).
+        IFieldSymbol => Lowered(member),
         _ => null,
     };
 

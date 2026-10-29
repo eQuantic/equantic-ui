@@ -100,6 +100,12 @@ public class ExplicitImplementationConformanceTests
             public object Maybe() => 5;
             string? IMaybe.Maybe() => Maybe() as string;
         }
+        public interface ICount { int Count(int[] xs); }
+        public class Counted : ICount
+        {
+            public int Count(params int[] xs) => xs.Length;
+            int ICount.Count(int[] xs) => Count(xs);
+        }
         public static class Through
         {
             public static string Foo<T>(T value) where T : IFoo => value.Run();
@@ -137,6 +143,8 @@ public class ExplicitImplementationConformanceTests
             "var s = new Slot(); IFoo foo = s; IBar bar = s; return foo.Run() + \"|\" + bar.Run();"),
         ("an explicit one passing an out through", "IOut o = new Outs(); o.Run(out var r); var v = 0; new Outs().Run(out v); return r + \"|\" + v;"),
         ("an explicit one handing back an as", "IMaybe m = new Caster(); return (m.Maybe() is null) + \"|\" + new Caster().Maybe();"),
+        ("an explicit one handing an array to a params parameter",
+            "ICount c = new Counted(); return c.Count(new[] { 1, 2 }) + \"|\" + new Counted().Count(1, 2, 3);"),
         ("each interface over a list of them",
             "var all = new List<IBar> { new Forwarded(), new Mixed(), new Relayed() }; return string.Join(\",\", all.Select(x => x.Run()));"),
     ];
