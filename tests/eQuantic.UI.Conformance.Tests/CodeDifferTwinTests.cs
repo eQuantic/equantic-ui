@@ -126,6 +126,24 @@ public class CodeDifferTwinTests
         BothSidesAgree([(original, modified)], "two texts too far apart to search");
     }
 
+    /// <summary>
+    /// Lines and words named like what every JavaScript object inherits, which a JavaScript source being
+    /// diffed is full of: the engine numbers each distinct line and word through a dictionary, and a
+    /// dictionary that took <c>__proto__</c> to the prototype's setter would number every occurrence
+    /// afresh, so two equal lines would never match on the web (#1144 measured that it does not).
+    /// </summary>
+    [SkippableFact]
+    public void InheritedNames_DiffAsAnyOtherText()
+    {
+        BothSidesAgree(
+        [
+            ("__proto__\nconstructor\ntoString", "__proto__\nvalueOf\ntoString"),
+            ("a.__proto__ = b.constructor;\nhasOwnProperty", "c.__proto__ = b.constructor;\nhasOwnProperty"),
+            ("x __proto__ y __proto__", "z __proto__ y __proto__ w"),
+            ("constructor toString valueOf", "toString constructor valueOf"),
+        ], "texts of inherited names");
+    }
+
     private static string Lines(Random random, string alphabet)
     {
         var lines = new string[random.Next(0, 25)];

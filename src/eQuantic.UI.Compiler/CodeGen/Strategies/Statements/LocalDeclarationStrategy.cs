@@ -112,6 +112,12 @@ public class LocalDeclarationStrategy : IStatementStrategy
             return "";
         }
 
+        // An empty dictionary written the newer way, `Dictionary<string, int> ids = []`, is the runtime's
+        // class as `new()` builds it, and degrades to `any` as that one does (#1144).
+        if (variable.Initializer?.Value is CollectionExpressionSyntax empty
+            && context.SemanticHelper.GetConvertedType(empty).IsDictionary())
+            return ": any";
+
         // The same empty collection written the newer way: `IReadOnlyList<int> found = []` is an array the
         // collection expression writes as `[]`, which TypeScript infers as `any[]` and, in strict mode,
         // refuses once a branch assigns the local (#1086). A set is the runtime's helper, typed already,
