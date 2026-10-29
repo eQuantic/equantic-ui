@@ -912,7 +912,9 @@ public class OverloadedMethodTests
     }
 
     /// <summary>A server-only override is no member of the twin, so the twin keeps its own: the record's
-    /// synthesized text, which a server-only <c>ToString()</c> took away with nothing in its place.</summary>
+    /// synthesized text and its hash. A server-only <c>GetHashCode()</c> took the hash away with nothing in
+    /// its place, so the runtime hashed the record by its identity: two equal records hashed apart, and a
+    /// dictionary keyed by one never found the other.</summary>
     [Fact]
     public void AServerOnlyOverride_LeavesTheTwinsOwnInPlace()
     {
@@ -922,11 +924,13 @@ public class OverloadedMethodTests
             public sealed record Note(int V)
             {
                 [ServerOnly] public override string ToString() => System.IO.Path.GetTempPath();
+                [ServerOnly] public override int GetHashCode() => System.IO.Path.GetTempPath().Length;
             }
             """, "Note");
 
         result.Errors.Should().BeEmpty();
-        result.TypeScript.Should().Contain("$eq.text.record(this, 'Note'");
+        result.TypeScript.Should().Contain("$eq.text.record(this, 'Note'")
+            .And.Contain("$eq.hash.combine(this.");
     }
 
     [Fact]
