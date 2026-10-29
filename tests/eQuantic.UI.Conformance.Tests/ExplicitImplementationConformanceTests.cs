@@ -1,0 +1,100 @@
+using eQuantic.UI.Conformance.Tests.Infrastructure;
+using Xunit;
+
+namespace eQuantic.UI.Conformance.Tests;
+
+/// <summary>
+/// A type's explicit interface implementations answer every call through each interface as .NET answers
+/// it, run through the module graph an app's build writes, both sides executed (#1139). Each is written
+/// under the name of the member it implements, which a call through the interface reaches, and the twin
+/// holds a name once: one that hands back what the member holding its name answers is not written, so
+/// that member answers for both interfaces, where the later of two was written over the other and,
+/// handing off to it, called itself until the stack overflowed. A method of the type's own that answers
+/// another interface beside one that hands off to it was refused, and is the one that answers.
+/// </summary>
+public class ExplicitImplementationConformanceTests
+{
+    private const string Source = """
+        using System.Collections.Generic;
+        using System.Linq;
+        public interface IFoo { string Run(); }
+        public interface IBar { string Run(); }
+        public interface IVal { int Value { get; } }
+        public interface IOther { int Value { get; } }
+        public interface ITake { string Take(int x, string y); }
+        public interface IGive { string Take(int x, string y); }
+        public class Forwarded : IFoo, IBar
+        {
+            string IFoo.Run() => "foo";
+            string IBar.Run() => ((IFoo)this).Run();
+        }
+        public class Mixed : IFoo, IBar
+        {
+            public string Run() => "own";
+            string IFoo.Run() => Run();
+        }
+        public class Labeled : IFoo
+        {
+            public string Run() => "own";
+            string IFoo.Run() => "interface";
+        }
+        public class Relayed : IFoo, IBar
+        {
+            public string Run() => ((IFoo)this).Run() + "!";
+            string IFoo.Run() => "foo";
+            string IBar.Run() => ((IFoo)this).Run();
+        }
+        public class Held : IVal, IOther
+        {
+            public int Value => 5;
+            int IVal.Value => Value;
+        }
+        public class Valued : IVal, IOther
+        {
+            int IVal.Value => 1;
+            int IOther.Value => ((IVal)this).Value;
+        }
+        public class Passing : ITake, IGive
+        {
+            string ITake.Take(int x, string y) => y + x;
+            string IGive.Take(int x, string y) => ((ITake)this).Take(x, y);
+        }
+        public class Base { public string Run() => "base"; }
+        public class Derived : Base, IFoo { string IFoo.Run() => Run(); }
+        public static class Through
+        {
+            public static string Foo<T>(T value) where T : IFoo => value.Run();
+            public static string Bar<T>(T value) where T : IBar => value.Run();
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] Cases =
+    [
+        ("two interfaces of one name, one handing off to the other's, called through each",
+            "var f = new Forwarded(); IFoo foo = f; IBar bar = f; return foo.Run() + \"|\" + bar.Run();"),
+        ("an implicit method that answers one interface beside an explicit one that hands off to it",
+            "var m = new Mixed(); IFoo foo = m; IBar bar = m; return m.Run() + \"|\" + foo.Run() + \"|\" + bar.Run();"),
+        ("an implicit method beside an explicit one with an answer of its own",
+            "var l = new Labeled(); IFoo foo = l; return l.Run() + \"|\" + foo.Run();"),
+        ("an implicit method that hands off to an explicit one, which another one hands off to",
+            "var r = new Relayed(); IFoo foo = r; IBar bar = r; return r.Run() + \"|\" + foo.Run() + \"|\" + bar.Run();"),
+        ("an explicit property beside the type's own, which it reads",
+            "var h = new Held(); IVal val = h; IOther other = h; return h.Value + \"|\" + val.Value + \"|\" + other.Value;"),
+        ("two explicit properties, one reading the other",
+            "var v = new Valued(); IVal val = v; IOther other = v; return val.Value + \"|\" + other.Value;"),
+        ("two explicit methods, one passing its parameters to the other",
+            "var p = new Passing(); ITake take = p; IGive give = p; return take.Take(1, \"a\") + \"|\" + give.Take(2, \"b\");"),
+        ("an explicit one that hands off to a base's method",
+            "var d = new Derived(); IFoo foo = d; Base b = d; return foo.Run() + \"|\" + d.Run() + \"|\" + b.Run();"),
+        ("a call through a constrained type parameter of each interface",
+            "return Through.Foo(new Forwarded()) + \"|\" + Through.Bar(new Forwarded()) + \"|\" + Through.Bar(new Mixed());"),
+        ("each interface over a list of them",
+            "var all = new List<IBar> { new Forwarded(), new Mixed(), new Relayed() }; return string.Join(\",\", all.Select(x => x.Run()));"),
+    ];
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnExplicitImplementation_AnswersThroughEachInterface_AsDotNetDoes(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Source, typeAnnotations, Cases);
+}
