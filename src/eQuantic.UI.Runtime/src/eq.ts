@@ -179,6 +179,8 @@ import {
   findLast,
   findLastIndex,
   indexOf as listIndexOf,
+  getRange as listGetRange,
+  insert as listInsert,
   insertRange,
   lastIndexOf as listLastIndexOf,
   listCapacity,
@@ -188,6 +190,8 @@ import {
   listSortBy,
   order,
   removeAll,
+  removeAt as listRemoveAt,
+  removeRange as listRemoveRange,
   stringOrder,
 } from './utils/list';
 import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
@@ -563,6 +567,11 @@ export const $eq = {
     /** `List<T>.AddRange` and `InsertRange`, one element at a time, never a spread past an engine's cap (#1060). */
     addRange,
     insertRange,
+    /** `List<T>.Insert`, `RemoveAt`, `RemoveRange` and `GetRange`, each position checked as .NET checks it (#1160). */
+    listInsert,
+    listRemoveAt,
+    listRemoveRange,
+    listGetRange,
     removeAll,
     copyTo,
     copyRangeTo,
