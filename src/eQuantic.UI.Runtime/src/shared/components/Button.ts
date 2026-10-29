@@ -41,7 +41,7 @@ export class Button extends StatelessComponent {
         let iconSize = Sizing.icon(this.size);
         let radius = theme.shape(this.size === 'xLarge' ? 'large' : 'medium');
         if (this.variant === 'link') padX = 6;
-        let fill = ((this.variant === 'outline' || this.variant === 'ghost') || this.variant === 'link') ? null : colors.base;
+        let fill = (($0) => (($0 === 'outline' || $0 === 'ghost') || $0 === 'link'))(this.variant) ? null : colors.base;
         let textColor = colors.onBase;
         let borderWidth = this.variant === 'outline' ? 1 : 0;
         let borderColor = theme.borderStrong;

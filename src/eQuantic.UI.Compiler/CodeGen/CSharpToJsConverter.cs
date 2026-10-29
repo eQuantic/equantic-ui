@@ -324,7 +324,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<AverageStrategy>();
         _strategyRegistry.Register<MinMaxStrategy>();
         _strategyRegistry.Register<GroupByStrategy>();
-        _strategyRegistry.Register<LookupIndexerStrategy>();
+        _strategyRegistry.Register<LookupStrategy>();
         _strategyRegistry.Register<ZipStrategy>();
         _strategyRegistry.Register<CastStrategy>();
         _strategyRegistry.Register<OfTypeStrategy>();

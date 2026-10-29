@@ -38,11 +38,21 @@ public sealed class ListView : StatefulComponent
     public Func<int, VisualNode> ItemBuilder { get; private set; }
 
     /// <summary>Rows built beyond each edge of the viewport, so a scroll shows content instead of
-    /// a blank margin while the next window builds.</summary>
-    public int Overscan { get; init; } = 3;
+    /// a blank margin while the next window builds.
+    /// <para>
+    /// Backed by a field, so <see cref="AdoptConfig"/> can carry it, as are the width and the
+    /// height: this instance is kept across the parent's rebuilds, and an <c>init</c> accessor
+    /// cannot be written from there.
+    /// </para>
+    /// </summary>
+    public int Overscan { get => _overscan; init => _overscan = value; }
 
-    public SizeValue Width { get; init; }
-    public SizeValue Height { get; init; }
+    public SizeValue Width { get => _width; init => _width = value; }
+    public SizeValue Height { get => _height; init => _height = value; }
+
+    private int _overscan = 3;
+    private SizeValue _width;
+    private SizeValue _height;
 
     public override void AdoptConfig(UiComponent next)
     {
@@ -50,6 +60,9 @@ public sealed class ListView : StatefulComponent
         Count = fresh.Count;
         ItemExtent = fresh.ItemExtent;
         ItemBuilder = fresh.ItemBuilder;
+        _overscan = fresh.Overscan;
+        _width = fresh.Width;
+        _height = fresh.Height;
     }
 
     private (int First, int Last) WindowFor(float offset, float viewport)

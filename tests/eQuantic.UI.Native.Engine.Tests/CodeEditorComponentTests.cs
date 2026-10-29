@@ -421,6 +421,46 @@ public class CodeEditorComponentTests
     }
 
     /// <summary>
+    /// The code fills its viewport by LAYOUT, from the frame the viewport is first drawn (#1143). It was as
+    /// tall as a number the vertical scroll view reported after a frame, so the first frame drew the code as
+    /// tall as the file, and a press under it landed on the scroll view around it.
+    /// </summary>
+    [Fact]
+    public void ABoundedEditorsCode_FillsItsViewport_FromItsFirstFrame()
+    {
+        var editor = new CodeEditor("one\ntwo three", "csharp") { Height = SizeValue.Fill };
+        var host = Host(editor, 500, 400);
+
+        var region = Frame(host).CodeRegions.Single();
+        region.Bounds.Height.Should().BeApproximately(400, 1, "the code is as tall as its place before anything was reported");
+        host.PressDown(region.Bounds.X + 40, region.Bounds.Y + 300);
+        host.PressUp(region.Bounds.X + 40, region.Bounds.Y + 300);
+        Settle(host);
+
+        editor.Editor.Caret.Should().Be(new CodePosition(1, 9), "a press under the code is the end of the document");
+        host.CodeTarget.Should().NotBeNull("and gives the editor the keyboard");
+    }
+
+    /// <summary>
+    /// A pane that shrinks leaves a short file nothing to scroll on the frame it shrinks (#1143). The code kept
+    /// the height the viewport had reported before, so it ran 100 past a viewport 300 tall until the next
+    /// report came back.
+    /// </summary>
+    [Fact]
+    public void APaneThatShrinks_LeavesAShortFileNothingToScroll()
+    {
+        var host = Host(new CodeEditor("one\ntwo three", "csharp") { Height = SizeValue.Fill }, 500, 400);
+        Settle(host);
+
+        host.Resize(500, 300);
+        var frame = Frame(host);
+
+        frame.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical).MaxOffset.Should().Be(0,
+            "the code is never taller than the viewport that shows a short file");
+        frame.CodeRegions.Single().Bounds.Height.Should().BeApproximately(300, 1, "and still fills it");
+    }
+
+    /// <summary>
     /// A bounded editor with a cap is capped whole, slab and all. The cap was the inner viewport's
     /// alone, so a Fill editor in a pane taller than its MaxHeight scrolled its code in the top of a
     /// slab that went on, empty, to the bottom of the pane.

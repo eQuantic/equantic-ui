@@ -11,15 +11,15 @@ export class SheetKeymap {
                 let copied: any; let cut: any; let pasted: any;
                 switch ($eq.text.toLower(key[0], true)) {
                     case 'c':
-                        if ((($v2566) => (($v2566 != null && $v2566.length > 0) && (copied = $v2566, true)))(sheet.copyText())) clipboard.write(copied);
+                        if ((($0) => (($0 != null && $0.length > 0) && (copied = $0, true)))(sheet.copyText())) clipboard.write(copied);
                         return true;
                     case 'x':
-                        if ((($v2902) => !((($v2902 != null && $v2902.length > 0) && (cut = $v2902, true))))(sheet.copyText())) return true;
+                        if ((($0) => !((($0 != null && $0.length > 0) && (cut = $0, true))))(sheet.copyText())) return true;
                         clipboard.write(cut);
                         sheet.cut();
                         return true;
                     case 'v':
-                        if ((($v3118) => (($v3118 != null && $v3118.length > 0) && (pasted = $v3118, true)))(clipboard.read())) sheet.paste(pasted);
+                        if ((($0) => (($0 != null && $0.length > 0) && (pasted = $0, true)))(clipboard.read())) sheet.paste(pasted);
                         return true;
                 }
             }

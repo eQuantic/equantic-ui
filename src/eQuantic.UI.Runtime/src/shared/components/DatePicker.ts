@@ -4,12 +4,20 @@ export class DatePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.DatePicker';
     _open: boolean = false;
     _typing: any = null;
+    _disabled: boolean = false;
     declare selected: any;
     declare onChanged: ((dateOnly: DateOnly) => void) | null;
     declare min: any;
     declare max: any;
     declare label: string;
-    declare disabled: boolean;
+
+    get disabled() {
+        return this._disabled;
+    }
+
+    set disabled(value) {
+        this._disabled = value;
+    }
 
     constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, label: any = '', props?: any) {
         super();
@@ -18,7 +26,6 @@ export class DatePicker extends StatefulComponent {
         if (min !== undefined) this.min = min;
         if (max !== undefined) this.max = max;
         if (label !== undefined) this.label = label;
-        if (this.disabled === undefined) this.disabled = false;
         this.selected = selected;
         this.onChanged = onChanged;
         this.min = min;
@@ -32,7 +39,7 @@ export class DatePicker extends StatefulComponent {
         let value: any; 
         let shown = this._typing ?? ((value = this.selected) != null ? DatePicker.format(value) : '');
         let typed: any; 
-        let invalid = ((this._typing != null && this._typing.length > 0) && (typed = this._typing, true)) && DatePicker.parse(typed) == null;
+        let invalid = (($0) => (($0 != null && $0.length > 0) && (typed = $0, true)))(this._typing) && DatePicker.parse(typed) == null;
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.all(12) }), new Calendar(this.selected, this.pick.bind(this), this.min, this.max));
         let opener: VisualNode = new Anchored(new Pressable(new Icon(IconGlyph.fromIcons('calendar'), 20, theme.textSecondary), this.toggle.bind(this), { label: SdkStrings.chooseDate, expanded: this._open }), panel, { open: this._open && !this.disabled, onDismiss: this.close.bind(this), panelRole: 'dialog' });
         opener = new Shortcut(opener, KeyChord.escape, this.close.bind(this), { enabled: this._open && !this.disabled });
@@ -49,6 +56,7 @@ export class DatePicker extends StatefulComponent {
         this.min = fresh.min;
         this.max = fresh.max;
         this.label = fresh.label;
+        this._disabled = fresh.disabled;
     }
 
     pick(day: DateOnly) {

@@ -422,3 +422,63 @@ interface.
 - **WHEN** `class Labeled : INamedThing { public string Name() => "own"; string INamedThing.Name() => "interface"; }`
   and `var l = new Labeled(); INamedThing n = l; return l.Name() + "|" + n.Name();`
 - **THEN** it answers `own|interface`, as .NET does, where both calls answered the one written last
+
+### Requirement: A class is a component by what it derives from
+
+A class SHALL be transpiled as a component when its chain of base classes reaches a component's base, and
+as a plain class when the compilation binds every base on its chain and none is a component's, whatever
+its methods are called. Where a base on the chain does not bind (a reference the compilation lacks), a
+class that declares `Build` or `Render` SHALL still be taken for a component, as nothing else says what it
+is. The parser, which writes the twin, and the dependency resolver, which decides how it is imported, SHALL
+give the same answer.
+
+#### Scenario: A builder whose last step is Build
+
+- **WHEN** `public sealed class NoteBuilder { public NoteBuilder(string said) { … } public VisualNode Build(bool announced) => … }`
+  is transpiled with the project's compilation
+- **THEN** its twin extends nothing and carries no component's type id, its `build` takes
+  `announced: boolean`, and the resolver lists it among the plain classes
+
+#### Scenario: A component over the component root itself
+
+- **WHEN** `public sealed class Bare : UiComponent { public override VisualNode Build(ComponentContext context) => … }`
+  is transpiled with the project's compilation
+- **THEN** it is written as a component, `extends UiComponent` with its type id, and the resolver lists it
+  among no plain classes
+
+#### Scenario: A class of the app's named like the root
+
+- **WHEN** `namespace App.Models { public class UiComponent { … } public sealed class Panel : UiComponent { … } }`
+  is transpiled with the project's compilation
+- **THEN** both are written as plain classes, with no component's type id, and the resolver lists both
+  among the plain classes
+
+#### Scenario: A class over a base the compilation cannot bind
+
+- **WHEN** `public sealed class Legacy : MissingBase { public override VisualNode Build(ComponentContext context) => … }`
+  is transpiled, and nothing the compilation reaches declares `MissingBase`
+- **THEN** it is written as a component, and the resolver lists it among no plain classes
+
+### Requirement: A member TypeScript reads as never null starts as a value TypeScript takes
+
+A member whose start is C#'s null, or the `undefined` a vocabulary struct with no zero of its own starts
+as, SHALL be said to be one where TypeScript reads the member as never null, so the runtime's strict build
+takes the twin. A member that may be null SHALL keep its bare start.
+
+#### Scenario: A struct with no zero of its own
+
+- **WHEN** a class declares `public TypeStyle Code { get; }` and `public TypeStyle? Maybe { get; }`
+- **THEN** its twin starts `this.code = undefined!;` and `this.maybe = null;`
+
+### Requirement: A component's field of a struct with no zero twin is left as a property of one is
+
+A component's instance or static field whose type is a vocabulary struct the twin cannot build a zero
+for (`SizeValue`, `EdgeInsets`), declared with no initializer, SHALL hold that twin's own default as a
+property of the same type does, and its module SHALL type-check: the instance field is declared with
+no initializer and definitely assigned, and the static field with no initializer.
+
+#### Scenario: An init setting backed by a struct field
+
+- **WHEN** a component declares `private SizeValue _width;` and `public SizeValue Width { get => _width; init => _width = value; }`
+- **THEN** its module declares `_width!: SizeValue;`, `tsc` accepts it, and a `Width` never set reads
+  what an unset `SizeValue Width { get; init; }` read before

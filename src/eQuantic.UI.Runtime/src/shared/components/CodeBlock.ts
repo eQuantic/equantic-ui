@@ -49,7 +49,6 @@ export class CodeBlock extends StatelessComponent {
     declare viewportOffset: number;
     declare viewportHeight: number;
     declare viewportWidth: number;
-    declare minHeight: number;
     declare onScrolled: ((float: number) => void) | null;
     declare onViewportChanged: ((float: number) => void) | null;
 
@@ -143,7 +142,6 @@ export class CodeBlock extends StatelessComponent {
         if (this.viewportOffset === undefined) this.viewportOffset = 0;
         if (this.viewportHeight === undefined) this.viewportHeight = 0;
         if (this.viewportWidth === undefined) this.viewportWidth = 0;
-        if (this.minHeight === undefined) this.minHeight = 0;
         this.document = CodeDocument.fromText(code);
         this.language = CodeLanguages.for(language);
         if (props && typeof props === 'object') Object.assign(this, props);
@@ -204,7 +202,7 @@ export class CodeBlock extends StatelessComponent {
             layered.add(content);
             content = layered;
         }
-        let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(width), minHeight: this.minHeight }), content);
+        let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(width) }), content);
         if (!this.standalone) return body;
         body = new ScrollView(body, 'horizontal', { width: SizeValue.fill });
         if (this.showLineNumbers) {
@@ -488,7 +486,7 @@ export class CodeBlock extends StatelessComponent {
             }
             let from = line === start.line ? start.column : 0;
             let to = line === end.line ? end.column : document.line(line).length;
-            let point = $eq.equals(start, end) && (decoration.kind === 'squiggle' || decoration.kind === 'dots');
+            let point = $eq.equals(start, end) && (($0) => ($0 === 'squiggle' || $0 === 'dots'))(decoration.kind);
             if (to <= from && !point) continue;
             let cells = cellsOf(line);
             let left = Math.fround(metrics.contentLeft + Math.fround(Math.fround(cells.cellOf(from)) * metrics.columnWidth));

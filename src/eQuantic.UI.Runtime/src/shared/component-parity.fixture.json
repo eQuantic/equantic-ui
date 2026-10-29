@@ -592,6 +592,34 @@
       ]
     }
   ],
+  "filled-scrollers": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-18plna0 eq-1gudvpj eq-1k83940 eq-5ew4ww eq-81tj3u eq-aexooi eq-g7fowl eq-jzi5e5 eq-m92pvu eq-wkc34x"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-18plna0 eq-1dw337v eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-372o7v eq-5ew4ww eq-bo3n4y eq-g7fowl eq-iwaszp eq-jzi5e5 eq-m92pvu"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1eb13m5 eq-1xrfuoj eq-bo3n4y eq-kngwsg"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "box-hover-lift": [
     {
       "tag": "div",

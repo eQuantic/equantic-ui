@@ -199,6 +199,37 @@ public class StructDefaultTests
         ts.Should().Contain("import { Empty } from \"./Empty\"");
     }
 
+    private const string FieldSource = """
+        using eQuantic.UI.Primitives;
+
+        public sealed class Sized : StatefulComponent
+        {
+            private SizeValue _width;
+            private static SizeValue _shared;
+
+            public SizeValue Width { get => _width; init => _width = value; }
+
+            public override VisualNode Build(ComponentContext context) =>
+                new Box(new BoxStyle { Width = _width, Height = _shared });
+        }
+        """;
+
+    /// <summary>
+    /// A component's field of a vocabulary struct whose twin cannot build its zero, with no
+    /// initializer, is the slot left alone, as a property of one is: it holds the twin's own default,
+    /// undefined. It was written `_width: SizeValue = undefined`, which tsc refuses for the type it
+    /// names, the day a component backed an <c>init</c> setting with such a field (#1142).
+    /// </summary>
+    [Fact]
+    public void AComponentFieldOfAStructWithNoZeroTwin_IsLeftAlone_AsAPropertyOfOneIs()
+    {
+        var ts = TypeScriptOf(FieldSource, "Sized.cs", "Sized");
+
+        ts.Should().NotContain("= undefined", "an initializer of undefined is a value tsc refuses for SizeValue");
+        ts.Should().MatchRegex(@"\b_width!: SizeValue;", "the instance field is defined, undefined, and typed as the struct");
+        ts.Should().MatchRegex(@"static _shared: SizeValue;", "a static field is not asked to be definitely assigned");
+    }
+
     [Fact]
     public void TheStructItNamesIsImported()
     {

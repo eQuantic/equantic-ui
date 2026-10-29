@@ -358,6 +358,25 @@ public class DatePickerTests
         ValueOf(Render(typing)).Should().Be("07/01/2026", "the reader is still mid-word");
     }
 
+    /// <summary>
+    /// A form disables its fields while it submits, by building them again with <c>Disabled</c>. The
+    /// picker on screen is the one its position KEPT, so the setting reaches it only through
+    /// <c>AdoptConfig</c>, which left it out until #1142: the field stayed editable mid-submit.
+    /// </summary>
+    [Fact]
+    public void AKeptPicker_IsDisabledWhenItsParentDisablesIt()
+    {
+        var picker = new DatePicker(new DateOnly(2026, 7, 17));
+        Input(Render(picker)).Attributes.Should().NotContainKey("disabled");
+
+        picker.AdoptConfig(new DatePicker(new DateOnly(2026, 7, 17)) { Disabled = true });
+
+        Input(Render(picker)).Attributes.Should().ContainKey("disabled",
+            "the parent disabled the field, and the picker on screen is the one its position kept");
+    }
+
+    private static HtmlNode Input(HtmlNode tree) => Walk(tree).First(n => n.Tag == "input");
+
     [Fact]
     public void TheTimeListIsSteerableByKeyboard_NotOnlyByPointer()
     {

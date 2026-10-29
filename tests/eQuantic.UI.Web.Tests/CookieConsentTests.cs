@@ -81,6 +81,34 @@ public class CookieConsentTests
             "a host with no tag manager to gate has nothing to ask consent for");
     }
 
+    /// <summary>
+    /// The card is kept by position across its parent's rebuilds, so what a parent hands it later
+    /// reaches the card on screen only through <c>AdoptConfig</c>. It had no override until #1142, and
+    /// copy or a policy named after the first build never arrived. It keeps the fresh instance whole
+    /// now, which the coverage test counts as carrying everything without reading what Build reads:
+    /// this is the check that Build reads the configuration it kept.
+    /// </summary>
+    [Fact]
+    public void AKeptCard_DrawsTheCopyAndThePolicyItsParentHandsItLater()
+    {
+        var kept = CookieConsent();
+        kept.AdoptConfig(new eQuantic.UI.Components.CookieConsent("/privacy")
+        {
+            Title = "Cookies, briefly",
+            Body = "Only what the site needs.",
+            AcceptLabel = "Fine",
+            RejectLabel = "No thanks",
+            PolicyLabel = "How we use them",
+        });
+
+        var nodes = Rendered(new FakeConsent(ConsentState.Unknown), kept);
+        var text = AllText(nodes);
+        text.Should().Contain("Cookies, briefly").And.Contain("Only what the site needs.")
+            .And.Contain("Fine").And.Contain("No thanks").And.Contain("How we use them");
+        nodes.Any(n => n.Attributes.TryGetValue("href", out var href) && href == "/privacy").Should().BeTrue(
+            "the policy a parent names on a later build is the one the kept card links to");
+    }
+
     [Fact]
     public void WithoutAPolicyHref_TheLinkIsAbsent()
     {

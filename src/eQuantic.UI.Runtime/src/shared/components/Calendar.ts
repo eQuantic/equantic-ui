@@ -4,13 +4,21 @@ export class Calendar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Calendar';
     _month: DateOnly = $eq.time.dateOnly.minValue();
     _cursor: any = null;
+    _label: any = null;
     static cellSize: number = 44;
     static headerHeight: number = 28;
     declare selected: any;
     declare onChanged: ((dateOnly: DateOnly) => void) | null;
     declare min: any;
     declare max: any;
-    declare label: any;
+
+    get label() {
+        return this._label;
+    }
+
+    set label(value) {
+        this._label = value;
+    }
 
     constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, props?: any) {
         super();
@@ -62,6 +70,7 @@ export class Calendar extends StatefulComponent {
         this.onChanged = fresh.onChanged;
         this.min = fresh.min;
         this.max = fresh.max;
+        this._label = fresh.label;
         let chosen: any; 
         if (moved && (chosen = this.selected) != null) {
             this._month = Calendar.firstOfMonth(chosen);

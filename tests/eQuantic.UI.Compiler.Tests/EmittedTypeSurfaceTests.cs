@@ -136,6 +136,23 @@ public class EmittedTypeSurfaceTests
         ts.Should().Contain("this._lookup = null!;").And.Contain("this._maybe = null;");
     }
 
+    /// <summary>A member of a vocabulary struct whose twin builds no zero of its own (one not marked
+    /// <c>[ZeroConstructs]</c>) starts as <c>undefined</c>, which the twin reads as its own default, and TypeScript is
+    /// told to take it as it is told to take a reference's null (#1169): the bare <c>undefined</c> was refused by the
+    /// runtime's strict build at the code editor's note builder, whose <c>TypeStyle</c> properties start so. One that
+    /// may be null keeps its bare null.</summary>
+    [Fact]
+    public void AStructWithNoZeroOfItsOwn_StartsAsTheUndefinedAMemberTakes()
+    {
+        var ts = TestHelper.ConvertClass("""
+            public eQuantic.UI.Primitives.TypeStyle Code { get; }
+            public eQuantic.UI.Primitives.TypeStyle? Maybe { get; }
+            public Sample(eQuantic.UI.Primitives.TypeStyle code) { Code = code; }
+            """);
+
+        ts.Should().Contain("this.code = undefined!;").And.Contain("this.maybe = null;");
+    }
+
     [Fact]
     public void ADateTimeIsTheRuntimeTicks_NotTheBrowsersDate()
     {

@@ -277,7 +277,7 @@ export class CodeDiff extends StatefulComponent {
             return Math.min(change.modifiedStart, modified.document.lineCount - 1);
         };
         let source: any; let modified: any; let original: any; 
-        if (!(((this._source != null && this._source.changes != null && $eq.collections.count(this._source.changes) > 0) && (source = this._source, true))) || !((modified = this._modified) != null) || !((original = this._original) != null)) return;
+        if ((($0) => !((($0 != null && $0.changes != null && $eq.collections.count($0.changes) > 0) && (source = $0, true))))(this._source) || !((modified = this._modified) != null) || !((original = this._original) != null)) return;
         let caret = modified.caret.line;
         let target = forward ? $eq.collections.item(source.changes, 0) : $eq.collections.item(source.changes, $eq.collections.count(source.changes) - 1);
         if (forward) {

@@ -180,9 +180,10 @@ public class ComponentParser
         var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
 
         // Pre-pass: which classes are components. A class is one if its base resolves to a known component
-        // base (semantic walk) / matches a base-name heuristic / it declares Build|Render — AND, transitively,
-        // any class extending another in-file component (so a subclass of a user component is recognized even
-        // without its own Build and without relying on the semantic model resolving the full base chain).
+        // base (semantic walk) / matches a base-name heuristic / it declares Build|Render where nothing can
+        // bind its chain — AND, transitively, any class extending another in-file component (so a subclass of a
+        // user component is recognized even without its own Build and without relying on the semantic model
+        // resolving the full base chain).
         string? BaseName(ClassDeclarationSyntax c) => c.BaseList?.Types.FirstOrDefault()?.Type.TwinTypeName(model);
         bool OwnersAdmit(ClassDeclarationSyntax c) =>
             c.Parent is not TypeDeclarationSyntax
@@ -198,8 +199,11 @@ public class ComponentParser
 
             var bn = BaseName(c);
             var hasBR = c.Members.OfType<MethodDeclarationSyntax>().Any(m => IsBuildEntryPoint(m, "Render", "Build"));
+            // With the model, the chain decides wherever it binds: a builder whose last step is `Build` derives
+            // from nothing a component does, and was written as one (#1164). The name of a method is the answer
+            // only where a base on the chain does not bind, or there is no model at all.
             bool direct = model?.GetDeclaredSymbol(c) is INamedTypeSymbol s
-                ? (s.IsUiComponent() || hasBR)
+                ? (s.IsUiComponent() || hasBR && !s.BasesBind())
                 : (bn is "StatefulComponent" or "StatelessComponent" or "HtmlElement" or "Flex" or "Container" or "Stack" || hasBR);
             // A component is known by its twin's name, a nested one by its owner's too, so a top-level
             // component and a nested plain class of the same simple name are never taken for each
@@ -486,8 +490,7 @@ public class ComponentParser
         // WRITTEN. The second is the playground's world, and a type that says it stays on the
         // server must be believed there too.
         if (TryGetSemanticModel(classDecl.SyntaxTree)?.GetDeclaredSymbol(classDecl) is { } symbol
-            && symbol.GetAttributes()
-                .Any(a => a.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute"))
+            && PlainClassModule.IsServerOnly(symbol))
             return true;
 
         return classDecl.AttributeLists.SelectMany(list => list.Attributes)
@@ -544,14 +547,42 @@ public class ComponentParser
     /// <param name="node">A node of the declaration being read.</param>
     /// <param name="inAComponent">Whether that declaration is a component's: a <c>[ServerAction]</c> is
     /// served for a component alone, so on any other type it is a method like the rest.</param>
-    internal static bool StaysOnTheServer(SyntaxNode node, bool inAComponent) => node switch
+    /// <param name="model">A model of the compilation that holds <paramref name="node"/>, which says
+    /// whether a method is marked (<see cref="IsServerOnlyMethod"/>); null where the caller has none,
+    /// and the method is read as written.</param>
+    internal static bool StaysOnTheServer(SyntaxNode node, bool inAComponent, SemanticModel? model) => node switch
     {
         MethodDeclarationSyntax or OperatorDeclarationSyntax or ConversionOperatorDeclarationSyntax =>
-            PlainClassModule.IsServerOnlyDeclaration((MemberDeclarationSyntax)node),
+            IsServerOnlyMethod((BaseMethodDeclarationSyntax)node, model),
         BlockSyntax or ArrowExpressionClauseSyntax => inAComponent
             && node.Parent is MethodDeclarationSyntax action && IsServerAction(action),
         _ => false,
     };
+
+    /// <summary>
+    /// Whether a method, an operator or a conversion is marked <c>[ServerOnly]</c>, asked of its SYMBOL
+    /// wherever a model holds its tree, and of its attribute lists by name only where none does. The
+    /// lists alone missed two spellings C# accepts (#1140): an alias
+    /// (<c>using Keep = eQuantic.UI.Primitives.ServerOnlyAttribute;</c>), and the defining half of a
+    /// partial method, whose attributes C# merges with those of the implementing half, the one with the
+    /// body. Each was written into its type's twin, and its server code refused there.
+    /// <para>
+    /// The minimal model of a standalone compile answers too: with no reference the attribute binds to an
+    /// error type, which still carries its name, the alias target's for an alias. A member that writes no
+    /// attribute and is no partial method can carry none, so it is answered without binding anything,
+    /// which keeps the scans that ask the rule of every node of a declaration as cheap as they were.
+    /// </para>
+    /// </summary>
+    private static bool IsServerOnlyMethod(BaseMethodDeclarationSyntax method, SemanticModel? model)
+    {
+        if (method.AttributeLists.Count == 0 && !method.Modifiers.Any(SyntaxKind.PartialKeyword)) return false;
+        var own = model is null ? null
+            : ReferenceEquals(model.SyntaxTree, method.SyntaxTree) ? model
+            : model.Compilation.ModelOf(method.SyntaxTree);
+        return own?.GetDeclaredSymbol(method) is IMethodSymbol symbol
+            ? PlainClassModule.IsServerOnly(symbol)
+            : PlainClassModule.IsServerOnlyDeclaration(method);
+    }
 
     /// <summary>A method a component runs on the server and calls from the browser: its twin is a stub
     /// written from its SIGNATURE, and its body never crosses.</summary>
@@ -569,7 +600,12 @@ public class ComponentParser
         {
             var isPublic = prop.Modifiers.Any(SyntaxKind.PublicKeyword);
             
-            if (definition.Properties.Any(p => p.Name == prop.Identifier.ValueText)) continue;
+            // An explicit implementation is a property of its own beside the component's of its name, and
+            // the emitter leaves out the one that hands off to the other (#1139): taken for a second
+            // declaration, whichever came second was dropped, and a getter read itself.
+            if (definition.Properties.Any(p => p.Name == prop.Identifier.ValueText
+                    && p.Node?.ExplicitInterfaceSpecifier?.ToString() == prop.ExplicitInterfaceSpecifier?.ToString()))
+                continue;
 
             definition.Properties.Add(new PropertyDefinition
             {
@@ -585,10 +621,11 @@ public class ComponentParser
         // Extract methods (excluding Render/Build which are handled separately)
         var methods = classDecl.Members
             .OfType<MethodDeclarationSyntax>();
+        var model = TryGetSemanticModel(classDecl.SyntaxTree);
         
         foreach (var method in methods)
         {
-            if (StaysOnTheServer(method, inAComponent: true)) continue;
+            if (StaysOnTheServer(method, inAComponent: true, model)) continue;
             // A [ServerAction] body runs on the SERVER; the client twin is the RPC stub the
             // emitter writes from definition.ServerActions. Transpiling the body here shipped
             // server code (DbContexts, Stopwatches, the compiler itself) into the browser.
@@ -609,7 +646,12 @@ public class ComponentParser
                 continue;
             }
 
-            if (definition.Methods.Any(m => m.Name == methodName)) continue;
+            // An explicit interface implementation is a member of its own beside a method of its name,
+            // which holds a name of its own on the twin (#708): taken for a second overload, it was
+            // dropped, and the twin called a method nobody wrote (#1139). Overloads are EQ1007's.
+            if (definition.Methods.Any(m => m.Name == methodName
+                    && m.SyntaxNode?.ExplicitInterfaceSpecifier?.ToString() == method.ExplicitInterfaceSpecifier?.ToString()))
+                continue;
 
             var methodDef = new MethodDefinition
             {

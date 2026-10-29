@@ -1,0 +1,14 @@
+# Inputs a StatefulComponent does NOT carry from a fresh configuration to the instance its
+# position keeps, and why each is right. AdoptConfigCoverageTests hands every component a second
+# configuration, one input at a time, and fails on an input that stays at its first value unless
+# it is named here.
+#
+# This list may ONLY SHRINK. An entry is written BY HAND, with the reason the input is read once.
+# Regenerate with EQ_UPDATE_ADOPT_CONFIG_BASELINE=1 after a REMOVAL: it keeps every reason already
+# written and never adds an entry, so an input that newly stays fails until someone adopts it or
+# writes down why not.
+#
+# An entry is `<type>.<property>` for a property, and `<type>(<parameter>)` for a constructor
+# parameter no settable property carries.
+eQuantic.UI.Components.Accordion(openIndex)  the section open when the accordion first appears: which sections are open is the reader's from then on, and v1 has no controlled mode
+eQuantic.UI.Components.CodeEditor.InitialCode  the text the editor OPENS with: the document is the editor's own from the first keystroke, and adopting it would overwrite what someone is typing on every parent build

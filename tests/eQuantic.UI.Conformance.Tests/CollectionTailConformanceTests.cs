@@ -141,4 +141,25 @@ public class CollectionTailConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// <c>ILookup.Contains(key)</c> answers whether the lookup holds a group of that key, comparing keys as
+    /// its indexer does: a record by value, a NaN equal to itself, a null key a key like another. It was
+    /// lowered as a collection's <c>Contains</c>, which looked for an ELEMENT equal to the key among the
+    /// groups and answered false for every key (#1145).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var l = new[] { \"a\", \"b\", \"a\" }.ToLookup(s => s); return l.Contains(\"b\") + \",\" + l.Contains(\"z\");")] // True,False
+    [InlineData("var l = new[] { 1, 2, 3 }.ToLookup(x => x % 2, x => x * 10); return l.Contains(1) + \",\" + l.Contains(5);")] // True,False
+    [InlineData("var l = new[] { new Point(1, 2), new Point(3, 4) }.ToLookup(p => p); return l.Contains(new Point(3, 4)) + \",\" + l.Contains(new Point(9, 9));")] // True,False: by value
+    [InlineData("var l = new[] { double.NaN, 1.0 }.ToLookup(x => x); return l.Contains(double.NaN) + \",\" + l.Contains(2.0);")] // True,False
+    [InlineData("var l = new[] { \"a\", null }.ToLookup(s => s); return l.Contains(null) + \",\" + l.Contains(\"a\");")] // True,True
+    [InlineData("var l = new[] { \"__proto__\" }.ToLookup(s => s); return l.Contains(\"__proto__\") + \",\" + l.Contains(\"constructor\");")] // True,False
+    [InlineData("int n = 0; string K() { n++; return \"c\"; } var l = new[] { \"a\", \"b\", \"c\" }.ToLookup(s => s); return l.Contains(K()) + \",\" + n;")] // True,1: the key runs once
+    [InlineData("ILookup<int, int> none = null; var l = new[] { 1, 2 }.ToLookup(x => x % 2); return (none?.Contains(1) == null) + \",\" + l?.Contains(0);")] // True,True
+    public void LookupContains_MatchesDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record Point(int X, int Y);");
+    }
 }
