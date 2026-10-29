@@ -372,7 +372,11 @@ public class ComponentDependencyResolver
     /// </summary>
     private static bool IsComponentLike(ClassDeclarationSyntax classDecl, INamedTypeSymbol? symbol)
     {
-        if (symbol is not null && (symbol.IsUiComponent() || symbol.BasesBind())) return symbol.IsUiComponent();
+        if (symbol is not null)
+        {
+            if (symbol.IsUiComponent()) return true;
+            if (symbol.BasesBind()) return false;
+        }
 
         if (classDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax>()
             .Any(m => m.Identifier.ValueText is "Build" or "Render" or "CreateState"))

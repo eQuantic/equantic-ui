@@ -57,5 +57,12 @@ nothing but `object` (#1164). Its twin extended `StatelessComponent` and typed `
   `CodeEditor`) and their transpiled twins under `src/eQuantic.UI.Runtime/src/shared/components/`.
 - **Compiler**: `ComponentParser`, `ComponentDependencyResolver`, `TypeSymbolExtensions` and
   `TwinConstructor`, with `ComponentByItsBasesTests` and a case in `EmittedTypeSurfaceTests`.
+  `RuntimeProvidedClassTests` wrote its probe as `class Probe { public int Build() … }`, a component only
+  by that name: it now says `: StatelessComponent`, since the fallback it pins is the component path's.
+  Where no compilation exists, a plain class still imports no `[RuntimeProvided]` helper, and the parser and
+  the resolver still read different names where a base does not bind: #1170, measured on main.
+- **The builder's order**: `Want`, `Fit`, then `Add` and `Build`; out of that order it throws, since a note
+  built before its width is settled would be drawn nothing wide. The not-found card's frame is pinned in
+  `CodeDefinitionsViewTests` (a box round the text itself, a whole pixel wide), which had no golden.
 - **Public surface**: none. The types are internal, and the developer surface does not move. An app's
   class over no component's base that declares `Build` is now written as the plain class it is.

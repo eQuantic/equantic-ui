@@ -9,6 +9,7 @@ export class CodeNoteBuilder {
         this._width = 0;
         this._height = 0;
         this._parts = 0;
+        this._fitted = false;
         this.code = undefined!;
         this.prose = undefined!;
         this.codeLine = 0;
@@ -31,6 +32,7 @@ export class CodeNoteBuilder {
     _width!: number;
     _height!: number;
     _parts!: number;
+    _fitted!: boolean;
     code!: TypeStyle;
     prose!: TypeStyle;
     codeLine!: number;
@@ -45,15 +47,18 @@ export class CodeNoteBuilder {
     static down: number = 10;
 
     want(wide: number) {
-        return this._wanted = Math.max(this._wanted, wide);
+        if (this._fitted) throw $eq.exceptions.create(['System.InvalidOperationException', 'System.SystemException', 'System.Exception'], 'A note is asked for its lines before it fits: its width is settled.');
+        this._wanted = Math.max(this._wanted, wide);
     }
 
     fit() {
+        this._fitted = true;
         this._width = Math.min(this._most, Math.fround(Math.ceil(this._wanted) + CodeNoteBuilder.across));
         return Math.max(1, Math.fround(this._width - CodeNoteBuilder.across));
     }
 
     add(part: VisualNode, tall: number) {
+        this.fitted();
         this._stack.add(part);
         this._height = Math.fround(this._height + Math.fround((this._parts++ === 0 ? 0 : CodeNoteBuilder.gap) + tall));
     }
@@ -101,10 +106,15 @@ export class CodeNoteBuilder {
     }
 
     framed(content: VisualNode, height: number, announced: boolean): [VisualNode, number, number] {
+        this.fitted();
         let theme = this._context.theme;
         let card: VisualNode = new Box(new BoxStyle({ width: this._width, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: CodeNoteBuilder.border, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(CodeNoteBuilder.paddingAcross, CodeNoteBuilder.paddingDown), clip: true }), content);
         if (announced) card = new LiveRegion(card);
         return [card, this._width, height];
+    }
+
+    fitted() {
+        if (!this._fitted) throw $eq.exceptions.create(['System.InvalidOperationException', 'System.SystemException', 'System.Exception'], 'A note fits before its parts are added: its width is not settled.');
     }
 
     wrappedLines(paragraph: string, style: TypeStyle, room: number) {

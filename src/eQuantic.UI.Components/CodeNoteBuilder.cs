@@ -48,6 +48,7 @@ internal sealed class CodeNoteBuilder
     private float _width;
     private float _height;
     private int _parts;
+    private bool _fitted;
 
     /// <summary>
     /// A note of an editor drawn on <paramref name="metrics"/>, in a view <paramref name="viewWidth"/> wide (zero
@@ -81,14 +82,20 @@ internal sealed class CodeNoteBuilder
     internal float ProseLine { get; }
 
     /// <summary>Asks for a line <paramref name="wide"/> across: the note is as wide as the widest it was asked for.</summary>
-    internal void Want(float wide) => _wanted = MathF.Max(_wanted, wide);
+    internal void Want(float wide)
+    {
+        if (_fitted) throw new InvalidOperationException("A note is asked for its lines before it fits: its width is settled.");
+        _wanted = MathF.Max(_wanted, wide);
+    }
 
     /// <summary>
     /// Settles the note's width from the lines it was asked for, and answers the room its parts have across. Every
-    /// <see cref="Want"/> comes before it, and every <see cref="Add"/> after.
+    /// <see cref="Want"/> comes before it, and every <see cref="Add"/> after: out of that order the builder throws,
+    /// as a note built before its width is settled would be drawn nothing wide.
     /// </summary>
     internal float Fit()
     {
+        _fitted = true;
         // A whole pixel for the widest line: a box exactly as wide as a fractional measure loses the
         // rounding of a browser's layout, and the line it was measured for ends cut by an ellipsis.
         _width = MathF.Min(_most, MathF.Ceiling(_wanted) + Across);
@@ -101,6 +108,7 @@ internal sealed class CodeNoteBuilder
     /// </summary>
     internal void Add(VisualNode part, float tall)
     {
+        Fitted();
         _stack.Add(part);
         _height += (_parts++ == 0 ? 0 : Gap) + tall;
     }
@@ -176,6 +184,7 @@ internal sealed class CodeNoteBuilder
 
     private (VisualNode Card, float Width, float Height) Framed(VisualNode content, float height, bool announced)
     {
+        Fitted();
         var theme = _context.Theme;
         VisualNode card = new Box(new BoxStyle
         {
@@ -190,6 +199,11 @@ internal sealed class CodeNoteBuilder
         }, content);
         if (announced) card = new LiveRegion(card);
         return (card, _width, height);
+    }
+
+    private void Fitted()
+    {
+        if (!_fitted) throw new InvalidOperationException("A note fits before its parts are added: its width is not settled.");
     }
 
     /// <summary>
