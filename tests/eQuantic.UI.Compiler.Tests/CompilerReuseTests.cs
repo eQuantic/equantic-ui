@@ -43,6 +43,77 @@ public class CompilerReuseTests
         }
         """;
 
+    /// <summary>A plain class that binds two temporaries, a call receiver's null-conditional tail
+    /// in each of two statements (#539).</summary>
+    private const string TwoTemporariesSource = """
+        public class First
+        {
+            private string Get() => " a ";
+
+            public string Both()
+            {
+                var a = Get()?.Trim();
+                var b = Get()?.Trim();
+                return a + b;
+            }
+        }
+        """;
+
+    /// <summary>A plain class that binds one.</summary>
+    private const string PlainClassSource = """
+        public class Second
+        {
+            private string Name() => " b ";
+
+            public string Upper()
+            {
+                return Name()?.ToUpperInvariant();
+            }
+        }
+        """;
+
+    /// <summary>A static helper that binds one.</summary>
+    private const string StaticHelperSource = """
+        public static class Third
+        {
+            private static string Name() => " c ";
+
+            public static string Upper()
+            {
+                return Name()?.ToUpperInvariant();
+            }
+        }
+        """;
+
+    /// <summary>Two records that bind a temporary each, in one file.</summary>
+    private const string RecordsSource = """
+        public record Former(string Text)
+        {
+            private string Get() => Text;
+
+            public string Both()
+            {
+                var a = Get()?.Trim();
+                var b = Get()?.Trim();
+                return a + b;
+            }
+        }
+
+        public record Latter(string Text)
+        {
+            private string Get() => Text;
+
+            public string Upper()
+            {
+                return Get()?.ToUpperInvariant();
+            }
+        }
+        """;
+
+    /// <summary>The first temporary a module names.</summary>
+    private static string FirstTemporaryOf(string module) =>
+        System.Text.RegularExpressions.Regex.Match(module, @"\$n\d+").Value;
+
     private static string ImportsOf(string typeScript) => string.Join
     (
         "\n",
@@ -67,6 +138,65 @@ public class CompilerReuseTests
         var afterBusy = ImportsOf(shared.CompileSource(FrugalSource, "Frugal.cs").Single().TypeScript);
 
         Assert.Equal(alone, afterBusy);
+    }
+
+    /// <summary>
+    /// A plain class's and a static helper's module start from a reset converter, as a component's
+    /// does (#1138). Their emitter cleared the names it used and the diagnostics, and nothing else, so
+    /// a module numbered its temporaries after the module written before it (the runtime's
+    /// <c>SheetController</c> twin began at <c>$n49</c>), and an edit to one class renumbered every
+    /// twin written after it. Asked of the output, byte for byte: whatever was compiled before, the
+    /// module is the one it is alone.
+    /// </summary>
+    [Theory]
+    [InlineData(PlainClassSource, "Second.cs")]
+    [InlineData(StaticHelperSource, "Third.cs")]
+    public void AClassModule_NumbersItsOwnTemporaries_WhateverWasCompiledBeforeIt(string source, string path)
+    {
+        var alone = new ComponentCompiler { TypeAnnotations = false }.CompileSource(source, path).Single().TypeScript;
+
+        var shared = new ComponentCompiler { TypeAnnotations = false };
+        var before = shared.CompileSource(TwoTemporariesSource, "First.cs").Single().TypeScript;
+        Assert.Contains("let $n1;", before);
+        var after = shared.CompileSource(source, path).Single().TypeScript;
+
+        Assert.Equal("$n0", FirstTemporaryOf(after));
+        Assert.Equal(alone, after);
+    }
+
+    /// <summary>
+    /// The record emitter's module starts from a reset converter too, which no build of the compiler
+    /// shows, since it hands each record a converter of its own: a host that shares one, as the
+    /// conformance harness shares one between a prelude's records, met the same numbering.
+    /// </summary>
+    [Fact]
+    public void ARecordModule_NumbersItsOwnTemporaries_ThroughAConverterItShares()
+    {
+        var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(RecordsSource,
+            eQuantic.UI.Compiler.Services.ParseDefaults.Options);
+        var compilation = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create("Records", [tree],
+            [TestReferences.Of(typeof(object).Assembly.Location)],
+            new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary));
+        var model = compilation.GetSemanticModel(tree);
+        var records = tree.GetRoot().DescendantNodes()
+            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.RecordDeclarationSyntax>().ToList();
+
+        string Module(eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter converter, Microsoft.CodeAnalysis.CSharp.Syntax.RecordDeclarationSyntax record) =>
+            new eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter(converter).EmitModule(record, tsTypeDeclarations: false);
+        eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter Converter()
+        {
+            var converter = new eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter();
+            converter.SetSemanticModel(model);
+            return converter;
+        }
+
+        var alone = Module(Converter(), records[1]);
+        var shared = Converter();
+        Assert.Contains("let $n1;", Module(shared, records[0]));
+        var after = Module(shared, records[1]);
+
+        Assert.Equal("$n0", FirstTemporaryOf(after));
+        Assert.Equal(alone, after);
     }
 
     /// <summary>

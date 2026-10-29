@@ -134,6 +134,12 @@ public class RecordTypeEmitter
     /// frame.</param>
     public string EmitModule(TypeDeclarationSyntax type, bool tsTypeDeclarations = true)
     {
+        // A module starts from a converter that holds nothing of the one written before it, as the
+        // class and component modules do (TypeScriptEmitter.BeginModule, #1138): its temporaries
+        // number from `$n0`. The caller's model stays, which a reset never touches. `Emit` does not
+        // reset: it writes one class, and a host may write several into one module (the conformance
+        // harness writes a prelude's records together, and reads their diagnostics after the last).
+        _converter.Reset();
         // What the BODIES reference, not just what the members declare: a computed property
         // (`InsertedRange => new CodeRange(new CodePosition(…))`) names types the positional
         // members never mention, and an unimported name is `Cannot find name 'CodePosition'`.

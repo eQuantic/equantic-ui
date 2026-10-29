@@ -265,7 +265,7 @@ public class CSharpToJsConverter
 
     public void ClearDiagnostics() => _context.ClearDiagnostics();
 
-    /// <summary>See <see cref="ConversionContext.Reset"/> — call between components, not just
+    /// <summary>See <see cref="ConversionContext.Reset"/> — call between modules, not just
     /// between diagnostics.</summary>
     public void Reset() => _context.Reset();
 
