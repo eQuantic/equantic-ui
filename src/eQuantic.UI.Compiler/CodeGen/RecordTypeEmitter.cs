@@ -335,7 +335,7 @@ public class RecordTypeEmitter
             var baseTyped = recordSymbol is { BaseType: { IsRecord: true } recordBase } ? ElementEquality.SelfMethod(recordBase) : null;
             // A struct that overrides Equals(object) has its own written with its methods, in place of this one,
             // as getHashCode's is below: both were written, and the browser kept the later (#1146).
-            var writesEquals = !TwinOwnMembers.OverriddenIn(type, nameof(Equals));
+            var writesEquals = !TwinOwnMembers.OverriddenIn(type, nameof(Equals), ModelFor(type));
             if (writesEquals && ownTyped is not null)
             {
                 var typedName = TwinMethodName.Of(ownTyped);
@@ -462,7 +462,7 @@ public class RecordTypeEmitter
             // .NET does. A record derived from a record of this compilation combines its base's hash
             // first, which is the base's own override where it wrote one, as .NET's synthesized hash
             // calls it.
-            if (!TwinOwnMembers.OverriddenIn(type, nameof(GetHashCode)))
+            if (!TwinOwnMembers.OverriddenIn(type, nameof(GetHashCode), ModelFor(type)))
             {
                 var hashed = members.Select(m => $"this.{m.Store}");
                 if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { IsRecord: true } baseRecord }
@@ -657,7 +657,7 @@ public class RecordTypeEmitter
         // writes it, where the twin wrote two spaces. The runtime's record text writes it, each member
         // as a concatenation would (#454): a template hole wrote JavaScript's own text of each. A
         // plain struct is no record: it writes its full name, as ValueType.ToString does (#570).
-        if (!TwinOwnMembers.OverriddenIn(type, nameof(ToString)))
+        if (!TwinOwnMembers.OverriddenIn(type, nameof(ToString), ModelFor(type)))
         {
             var plainStruct = type is StructDeclarationSyntax
                 && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol declared

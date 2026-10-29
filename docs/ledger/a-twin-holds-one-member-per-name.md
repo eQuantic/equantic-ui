@@ -10,6 +10,9 @@
   one member (a moved field, a property's accessors, an override of `Equals(object)`, `GetHashCode()` or
   `ToString()`). The record emitter now writes such an override in place of its own and nothing else there, and a
   `[ServerOnly]` override, which is no member of the twin, leaves the twin's own in place: a server-only
-  `GetHashCode()` had left a record no hash at all, so two equal records hashed apart. Every
+  `GetHashCode()` had left a record no hash at all, so two equal records hashed apart. A component's twin
+  holds every parameter of its primary constructor, read or not, unless it only initializes the member of
+  its name, and is asked the runtime's names as any value is, and a static class nested in a component is
+  checked once, as the module it is, so a `[ServerOnly]` one is checked nowhere. Every
   SDK source the runtime embeds, every sample and every template transpile with it, refused nowhere. Proposed and
   archived through OpenSpec (`transpiler-names`).

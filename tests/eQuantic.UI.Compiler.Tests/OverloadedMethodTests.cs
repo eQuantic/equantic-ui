@@ -239,11 +239,12 @@ public class OverloadedMethodTests
         result.TypeScript.Should().Contain("label(", Exactly.Once(), "the twin holds the method that crosses, and only it");
     }
 
-    /// <summary>A static class nested in a component is embedded in its module, a class of its own.</summary>
+    /// <summary>A static class nested in a component is a module of its own (#654), checked as one, and
+    /// refused once, where it is written: checked from its owner as well, it was refused twice.</summary>
     [Fact]
     public void AStaticClassNestedInAComponent_IsCheckedToo()
     {
-        var result = Compile("""
+        var results = new ComponentCompiler().CompileSource("""
             using eQuantic.UI.Primitives;
 
             [Page("/probe")]
@@ -257,9 +258,11 @@ public class OverloadedMethodTests
 
                 public override VisualNode Build(ComponentContext context) => new Text(Copy.Title(1), TypeRole.BodyM);
             }
-            """, "Page");
+            """, "Probe.cs");
 
-        result.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 9 });
+        results.Single(result => result.ComponentName == "Page$Copy").Errors.Should().ContainSingle()
+            .Which.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 9 });
+        results.Single(result => result.ComponentName == "Page").Errors.Should().BeEmpty();
     }
 
     /// <summary>
@@ -772,6 +775,9 @@ public class OverloadedMethodTests
     [InlineData("Same", "public sealed record Same(int V) { public bool Equals(Same? other) => other?.V == V; public override int GetHashCode() => V; }")]
     [InlineData("Fmt", "public sealed record Fmt(int V) { public static string ToString(int v) => v.ToString(); }")]
     [InlineData("Halves", "public sealed partial class Halves { public partial int Level { get; set; } public partial int Level { get => field; set => field = value * 2; } public partial event System.Action? Moved; public partial event System.Action? Moved { add { } remove { } } }")]
+    [InlineData("Shown", "using eQuantic.UI.Primitives; public sealed class Shown : StatelessComponent { public override string ToString() => \"Shown\"; public override VisualNode Build(ComponentContext context) => new Text(\"\", TypeRole.BodyM); }")]
+    [InlineData("Consent", "using eQuantic.UI.Primitives; public sealed class Consent(string? policyHref = null) : StatefulComponent { public string? PolicyHref { get; init; } = policyHref; public override VisualNode Build(ComponentContext context) => new Text(PolicyHref ?? \"\", TypeRole.BodyM); }")]
+    [InlineData("Typed", "public record Root(int X) { public virtual bool Equals(int x) => X == x; } public sealed record Typed(int X, int Y) : Root(X) { public override bool Equals(int x) => Y == x; }")]
     public void OneMemberOnItsName_IsNotRefused(string name, string source) =>
         Compile(source, name).Errors.Where(error => error.Code == "EQ1007").Should().BeEmpty();
 
@@ -840,8 +846,8 @@ public class OverloadedMethodTests
         error.Message.Should().StartWith($"'{later}' lowers to").And.Contain($"and so does '{earlier}' (line 6)");
     }
 
-    /// <summary>A static class nested in a component is a class of its own in the component's module,
-    /// and holds one member per key too.</summary>
+    /// <summary>A static class nested in a component is a module of its own, and holds one member per key
+    /// too.</summary>
     [Fact]
     public void AStaticClassNestedInAComponent_HoldsOneMemberPerKey()
     {
@@ -859,9 +865,87 @@ public class OverloadedMethodTests
 
                 public override VisualNode Build(ComponentContext context) => new Text(Copy.Count().ToString(), TypeRole.BodyM);
             }
-            """, "Page");
+            """, "Page$Copy");
 
         result.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 9 });
+    }
+
+    /// <summary>A <c>[ServerOnly]</c> static class nested in a component is no module, so nothing of it
+    /// reaches a twin, and its owner is refused nothing for it: checked from its owner, its backing-field
+    /// idiom was refused.</summary>
+    [Fact]
+    public void AServerOnlyClassNestedInAComponent_IsRefusedNowhere()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            using eQuantic.UI.Primitives;
+
+            [Page("/probe")]
+            public sealed class Page : StatelessComponent
+            {
+                [ServerOnly] private static class Backend
+                {
+                    private static int count;
+                    public static int Count => count;
+                }
+
+                public override VisualNode Build(ComponentContext context) => new Text("", TypeRole.BodyM);
+            }
+            """, "Probe.cs");
+
+        results.Should().ContainSingle().Which.Errors.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// A component's instance holds every parameter of its primary constructor, read or not: its
+    /// constructor writes each one it is handed onto the instance, where it hid a method of its name
+    /// (<c>Caption()</c> was "not a function" wherever a caption was handed over), and where it filled the
+    /// slot of the property of its name before that property's initializer ran, which then ran nowhere
+    /// (<c>= policyHref?.Trim()</c> held the untrimmed value).
+    /// </summary>
+    [Theory]
+    [InlineData("Tile(string caption) : StatelessComponent", "public string Caption() => \"x\";", "'Tile.Caption()' lowers to `caption`", "'Tile(caption)' (line 4)")]
+    [InlineData("Tile(string? policyHref = null) : StatefulComponent", "public string? PolicyHref { get; init; } = policyHref?.Trim();", "'Tile.PolicyHref' lowers to `policyHref`", "'Tile(policyHref)' (line 4)")]
+    public void AComponentsParameter_HoldsItsKey_ReadOrNot(string declaration, string member, string later, string earlier)
+    {
+        var error = Compile($$"""
+            using eQuantic.UI.Primitives;
+
+            [Page("/probe")]
+            public sealed class {{declaration}}
+            {
+                {{member}}
+                public override VisualNode Build(ComponentContext context) => new Text("", TypeRole.BodyM);
+            }
+            """, "Tile").Errors.Should().ContainSingle().Subject;
+
+        error.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 6 });
+        error.Message.Should().StartWith(later).And.Contain($"and so does {earlier}");
+    }
+
+    /// <summary>
+    /// A component's twin is asked the names the runtime asks any value, and an overload there answered
+    /// for <c>ToString()</c>: <c>"" + this</c> called <c>ToString(string)</c> with no argument. Its
+    /// <c>constructor</c> is EQ2011's (<see cref="ShadowedRuntimeMembersTests"/>).
+    /// </summary>
+    [Theory]
+    [InlineData("public string ToString(string prefix) => prefix;", "'Page.ToString(string)' lowers to `toString`")]
+    [InlineData("public int GetHashCode(int salt) => salt;", "'Page.GetHashCode(int)' lowers to `getHashCode`")]
+    [InlineData("public string ToJSON() => \"j\";", "'Page.ToJSON()' lowers to `toJSON`")]
+    public void AComponentsMemberOnANameTheRuntimeAsks_IsRefused(string members, string named)
+    {
+        var error = Compile($$"""
+            using eQuantic.UI.Primitives;
+
+            [Page("/probe")]
+            public sealed class Page : StatelessComponent
+            {
+                {{members}}
+                public override VisualNode Build(ComponentContext context) => new Text("" + this, TypeRole.BodyM);
+            }
+            """, "Page").Errors.Should().ContainSingle().Subject;
+
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().StartWith(named).And.Contain("a name of its own");
     }
 
     /// <summary>
@@ -931,6 +1015,21 @@ public class OverloadedMethodTests
         result.Errors.Should().BeEmpty();
         result.TypeScript.Should().Contain("$eq.text.record(this, 'Note'")
             .And.Contain("$eq.hash.combine(this.");
+    }
+
+    /// <summary>An override of a typed <c>Equals</c> a base record declares fills that one's slot, a name of
+    /// its own, and leaves the twin's <c>equals</c> in place: it took it away, and the derived record's
+    /// values compared as its base's, its own state unread.</summary>
+    [Fact]
+    public void ADerivedRecordsTypedEqualsOverride_LeavesItsEqualsInPlace()
+    {
+        var result = Compile("""
+            public record Base(int X) { public virtual bool Equals(int x) => X == x; }
+            public sealed record Derived(int X, int Y) : Base(X) { public override bool Equals(int x) => Y == x; }
+            """, "Derived");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("$eq.equals(this.y, o.y)", "the derived record compares its own state");
     }
 
     [Fact]

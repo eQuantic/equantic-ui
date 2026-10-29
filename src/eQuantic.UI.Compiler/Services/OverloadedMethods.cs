@@ -56,8 +56,10 @@ internal static class OverloadedMethods
 {
     /// <param name="type">The declaration whose module is being emitted.</param>
     /// <param name="sourcePath">Where it lives, for the error.</param>
-    /// <param name="isComponent">A component's module embeds the static classes nested in it, each a
-    /// class of its own, and its <c>[ServerAction]</c> crosses as a stub of its name.</param>
+    /// <param name="isComponent">Whether the declaration is a component's, whose <c>[ServerAction]</c> crosses
+    /// as a stub of its name. A static class nested in it is a module of its own (#654), checked as one
+    /// where discovery finds that it crosses, and never from its owner: checked from there too, it was
+    /// refused twice, and a <c>[ServerOnly]</c> one, which no module holds, was refused at all.</param>
     /// <param name="model">The model of the declaration's tree, which walks its bases; without one only
     /// the declaration itself is checked.</param>
     public static List<CompilationError> Check(TypeDeclarationSyntax type, string sourcePath, bool isComponent,
@@ -73,15 +75,6 @@ internal static class OverloadedMethods
         if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInterfaceIndexers(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInheritedFields(type, sourcePath, model, errors);
-        if (isComponent)
-        {
-            foreach (var nested in type.Members.OfType<ClassDeclarationSyntax>()
-                         .Where(nested => nested.Modifiers.Any(SyntaxKind.StaticKeyword)))
-            {
-                CheckOne(nested, sourcePath, isComponent: false, model, errors);
-                if (errors.Count == 0) MembersOnOneName.Check(nested, sourcePath, isComponent: false, model, errors);
-            }
-        }
         return errors;
     }
 

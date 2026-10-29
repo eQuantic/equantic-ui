@@ -33,7 +33,8 @@ namespace eQuantic.UI.Compiler.Services;
 /// own, #563), a property, an event and a held primary constructor's parameter camelCased, an operator
 /// and a conversion under the static the twin calls, an extension block's members as statics of the
 /// class. The two accessors of a property are one member, and so are the two halves of a partial property
-/// or event, and a positional parameter its record redeclares (#546). The second member on a key is
+/// or event, a positional parameter its record redeclares (#546), and a component's parameter that only
+/// initializes the member of its name. The second member on a key is
 /// refused, naming the first. An explicit interface implementation is left out, as the overload check
 /// leaves it out: its name is the interface's (#1139).
 /// </para>
@@ -44,7 +45,9 @@ namespace eQuantic.UI.Compiler.Services;
 /// <c>equals</c>, <c>getHashCode</c>, <c>toString</c> and <c>toJSON</c>, which the runtime and JavaScript
 /// ask a value wherever .NET calls <c>Equals(object)</c>, <c>GetHashCode()</c>, <c>ToString()</c> and
 /// never a <c>ToJSON</c>. An override of one of object's three is the member .NET calls there, and the
-/// twin writes it in place of its own (<see cref="TwinOwnMembers"/>), so it stands.
+/// twin writes it in place of its own (<see cref="TwinOwnMembers"/>), so it stands. A component's twin
+/// is asked those names as any value is, and its <c>constructor</c> is its runtime base's, which EQ2011
+/// holds with the base's other names.
 /// </para>
 /// </summary>
 internal static class MembersOnOneName
@@ -60,7 +63,8 @@ internal static class MembersOnOneName
     /// <param name="type">The declaration whose twin is being written.</param>
     /// <param name="sourcePath">Where it lives, for the error.</param>
     /// <param name="isComponent">Whether the twin is a component's, whose <c>[ServerAction]</c> crosses as a
-    /// stub of its name and whose runtime names are EQ2011's.</param>
+    /// stub of its name, whose instance holds every parameter of its primary constructor, and whose runtime
+    /// names are EQ2011's.</param>
     /// <param name="model">The model of the declaration's tree: it says where a field's slot moved, which
     /// method hides a member, and which primary constructor's parameter an instance holds.</param>
     /// <param name="errors">Where the refusal goes: the first member that lands on a taken key.</param>
@@ -71,7 +75,7 @@ internal static class MembersOnOneName
         var first = new Dictionary<(bool Static, string Lowered), Member>();
         foreach (var member in Members(type, allStatic, isComponent, model).OrderBy(member => member.At.SpanStart))
         {
-            if (TwinHolds(type, allStatic, isComponent, member) is { } held)
+            if (TwinHolds(type, allStatic, isComponent, member, model) is { } held)
             {
                 errors.Add(Refusal(sourcePath, member.At,
                     $"'{member.Shown}' lowers to `{(member.Static ? "static " : "")}{member.Lowered}`, {held}"));
@@ -112,25 +116,25 @@ internal static class MembersOnOneName
     /// <summary>
     /// Why <paramref name="member"/> cannot hold a name the twin holds itself, or null where it may: a
     /// class's own <c>constructor</c> and static <c>prototype</c>, a value's <c>with</c>, and the names the
-    /// runtime asks a value for its equality, its hash, its text and its JSON. A component's other names
-    /// are its runtime base's, which EQ2011 holds.
+    /// runtime asks a value for its equality, its hash, its text and its JSON. A component's
+    /// <c>constructor</c> is its runtime base's, which EQ2011 holds with the base's other names, and a
+    /// component's twin writes none of the four itself.
     /// </summary>
-    private static string? TwinHolds(TypeDeclarationSyntax type, bool allStatic, bool isComponent, Member member)
+    private static string? TwinHolds(TypeDeclarationSyntax type, bool allStatic, bool isComponent, Member member,
+        SemanticModel? model)
     {
         if (member.Static)
             return member.Lowered == "prototype"
                 ? "which JavaScript gives every class itself and refuses to a static member, so the module would not load. "
                     + "Give it a name of its own."
                 : null;
-        // A component's own names are its runtime base's, `constructor` among them, which EQ2011 holds.
-        if (isComponent) return null;
         if (member.Lowered == "constructor")
-            return "the name of the class's own constructor, which the twin writes: a method of that name would be a second "
+            return isComponent ? null : "the name of the class's own constructor, which the twin writes: a method of that name would be a second "
                 + "constructor and a field or an accessor of it is refused, so the module would not load, and a record's "
                 + "property of it would replace what each value says its class is. Give it a name of its own.";
         if (allStatic) return null;
         string Unless(string overridden, string what) =>
-            member.Method is { } method && TwinOwnMembers.Overrides(method, overridden)
+            member.Method is { } method && TwinOwnMembers.Overrides(method, overridden, model)
                 ? ""
                 : what + $" Only an override of `{overridden}({(overridden == nameof(Equals) ? "object" : "")})` takes "
                     + "that place. Give this one a name of its own.";
@@ -148,10 +152,11 @@ internal static class MembersOnOneName
                 + "set's included, and which the twin of a record or a struct writes itself, so it would answer there."),
             "toString" => Unless(nameof(ToString),
                 "the member JavaScript asks for a value's text wherever .NET calls `ToString()`, a concatenation and an "
-                + "interpolation included, and which the twin writes itself, so it would answer there."),
+                + $"interpolation included, {(isComponent ? "" : "and which the twin writes itself, ")}so it would answer there."),
             "toJSON" =>
-                "the member JSON serialization calls on the twin, which writes one itself where a member keeps a store, "
-                + "and which .NET's serializer never calls, so a server action would receive what it returns where .NET "
+                "the member JSON serialization calls on the twin, "
+                + (isComponent ? "" : "which writes one itself where a member keeps a store, and ")
+                + "which .NET's serializer never calls, so a server action would receive what it returns where .NET "
                 + "sends the members. Give it a name of its own.",
             _ => null,
         };
@@ -164,6 +169,8 @@ internal static class MembersOnOneName
     /// explicit implementation of an interface's, and so is an explicit implementation. A record's
     /// positional parameter is its property, unless a member of the body declares its name, and a class's
     /// or a struct's is held only where a member reads it, and is that member where one declares its name.
+    /// A component's is held whether or not a member reads it: its constructor writes every parameter it is
+    /// handed onto the instance. One that only initializes the member of its name is that member.
     /// </summary>
     private static IEnumerable<Member> Members(TypeDeclarationSyntax type, bool allStatic, bool isComponent, SemanticModel? model)
     {
@@ -176,7 +183,8 @@ internal static class MembersOnOneName
         foreach (var parameter in type.ParameterList?.Parameters ?? default)
         {
             var held = parameter.Identifier.ValueText;
-            if (declared.Contains(held) || !type.HoldsParameter(parameter, model)) continue;
+            if (declared.Contains(held) || !(isComponent || type.HoldsParameter(parameter, model))) continue;
+            if (isComponent && OnlyInitializesItsNamesake(type, parameter, ownModel)) continue;
             yield return new(held.ToCamelCase(), false, $"{name}({held})", parameter.Identifier, Held: true);
         }
 
@@ -260,6 +268,34 @@ internal static class MembersOnOneName
         model?.GetDeclaredSymbol(property) is IPropertySymbol symbol
             ? symbol.IsPartialDefinition
             : property.Modifiers.Any(SyntaxKind.PartialKeyword) && PropertyStore.IsAuto(property);
+
+    /// <summary>
+    /// Whether a component's parameter is read nowhere but as the whole initializer of the property or the
+    /// field of its name, a case apart (<c>PolicyHref { get; init; } = policyHref</c>, the C# 12 idiom): the
+    /// twin's constructor writes the parameter into that member's slot, and the initializer, which runs
+    /// only where the slot is still empty, would have written the same value, so the two are one member.
+    /// Any other initializer is skipped there (<c>= policyHref?.Trim()</c> held the untrimmed value), and
+    /// any other read sees the slot after a prop wrote it.
+    /// </summary>
+    private static bool OnlyInitializesItsNamesake(TypeDeclarationSyntax type, ParameterSyntax parameter, SemanticModel? model)
+    {
+        var name = parameter.Identifier.ValueText;
+        var symbol = model?.GetDeclaredSymbol(parameter);
+        var reads = type.Members.SelectMany(member => member.DescendantNodes().OfType<IdentifierNameSyntax>())
+            .Where(identifier => identifier.Identifier.ValueText == name
+                && (symbol is null || SymbolEqualityComparer.Default.Equals(model!.GetSymbolInfo(identifier).Symbol, symbol)))
+            .Take(2)
+            .ToList();
+        if (reads is not [{ Parent: EqualsValueClauseSyntax initializer }]) return false;
+        var key = name.ToCamelCase();
+        return initializer.Parent switch
+        {
+            PropertyDeclarationSyntax property => property.Identifier.ValueText.ToCamelCase() == key,
+            VariableDeclaratorSyntax variable => variable.Parent?.Parent is FieldDeclarationSyntax
+                && variable.Identifier.ValueText.ToCamelCase() == key,
+            _ => false,
+        };
+    }
 
     /// <summary>The C# names a member of the body declares, which a primary constructor's parameter of
     /// the same name is one with.</summary>
