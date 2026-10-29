@@ -105,6 +105,58 @@ public class PatternConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    private const string MemberPrelude =
+        "public record Stats(int Count);\n"
+        + "public record Holder(HashSet<int> Roles, Dictionary<string, int> Map, Stats Inner, Queue<int> Line);\n"
+        + "public record Pt(int X, int Y);\npublic record Box(Pt P);\npublic record struct Sp(int X, int Y);";
+
+    private const string AHolder =
+        "var h = new Holder(new HashSet<int> { 1 }, new Dictionary<string, int> { [\"a\"] = 1 }, new Stats(2), new Queue<int>(new[] { 5 })); ";
+
+    /// <summary>
+    /// A property pattern reads its member as a member access of it reads it, because it is one: the
+    /// read goes through the member-access strategies, with the type the bound pattern gives the value it
+    /// reads from at every depth. The pattern kept a table of its own, and a nested pattern knew no
+    /// receiver type, so its <c>Count</c> read an array's <c>length</c> on a set, a dictionary, a queue and
+    /// an app's record; a tuple's element was read as a field, where a tuple is an array; and a
+    /// dictionary's <c>Keys</c> as a member the Map has not (#1147).
+    /// </summary>
+    [SkippableTheory]
+    // Already right, and kept right: read directly, and through an extended path.
+    [InlineData("var set = new HashSet<int> { 1 }; return set is { Count: 1 };")]                                   // -> true
+    [InlineData("var map = new Dictionary<string, int> { [\"a\"] = 1 }; return map is { Count: 1 };")]              // -> true
+    [InlineData("return new Stats(3) is { Count: 3 };")]                                                            // -> true
+    [InlineData("return \"abc\" is { Length: 3 } && new List<int> { 1, 2 } is { Count: 2 } && new[] { 1 } is { Length: 1 };")] // -> true
+    [InlineData("var d = new DateTime(2026, 10, 29); return d is { Year: 2026, Month: 10, Day: 29 };")]             // -> true
+    [InlineData(AHolder + "return h switch { { Inner.Count: 2, Line.Count: var c } => c, _ => -1 };")]             // -> 5
+    // Nested in another pattern, where the type was lost.
+    [InlineData(AHolder + "return h is { Roles: { Count: 1 } };")]                                                   // -> true
+    [InlineData(AHolder + "return h is { Map: { Count: 1 } };")]                                                     // -> true
+    [InlineData(AHolder + "return h is { Line: { Count: 1 } };")]                                                    // -> true
+    [InlineData(AHolder + "return h is { Inner: { Count: 2 } };")]                                                   // -> true
+    [InlineData(AHolder + "return h is { Roles: { Count: var n } } ? n : -1;")]                                      // -> 1
+    [InlineData("var t = (new HashSet<int> { 1, 2 }, 3); return t is ({ Count: 2 }, 3);")]                          // -> true
+    [InlineData("var all = new[] { new HashSet<int> { 1 } }; return all is [{ Count: 1 }];")]                       // -> true
+    [InlineData("var all = new[] { new Stats(1) }; return all is [{ Count: 1 }];")]                                 // -> true
+    [InlineData("return new Box(new Pt(1, 2)) is { P: (1, 2) };")]                                                  // -> true
+    // A member a strategy translates.
+    [InlineData("var p = (1, 2); return p is { Item1: 1, Item2: 2 };")]                                             // -> true
+    [InlineData("(int A, int B) p = (1, 2); return p is { A: 1, B: 2 };")]                                          // -> true
+    [InlineData("var map = new Dictionary<string, int> { [\"a\"] = 1 }; return map is { Keys.Count: 1, Values.Count: 1 };")] // -> true
+    public void AMemberInAPattern_ReadsAsItsMemberAccessReadsIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, MemberPrelude);
+    }
+
+    /// <summary>
+    /// A .NET member no value in the browser carries is refused in a pattern as its member access is
+    /// (EQ2004, #847): the pattern named it with no diagnostic, and the test was quietly false (#920).
+    /// </summary>
+    [Fact]
+    public void AMemberNoBrowserValueCarries_IsRefusedInAPatternAsInAMemberAccess() =>
+        ConformanceRunner.AssertStatementsRefusedByTheBuild("var l = new List<int>(8); return l is { Capacity: 8 };", "EQ2004");
+
     /// <summary>
     /// <c>x is Limits.Max</c> parses as the type test and binds as a constant pattern: it was
     /// answered <c>x != null</c>, true for every number (#451). An enum's member is the member.

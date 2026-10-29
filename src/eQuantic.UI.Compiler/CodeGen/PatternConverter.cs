@@ -24,12 +24,11 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// while a record/struct uses its <c>Deconstruct</c> element names (<c>.x</c>, <c>.y</c>) — a record is a
 /// plain object at runtime, so index access would read <c>undefined</c> — and a <c>Deconstruct</c> the app
 /// wrote is called (<see cref="PositionalPart"/>). A property subpattern reads its member as a member
-/// access reads it, a field in its slot (<see cref="Access"/>).
+/// access of it reads it, through the same strategies (<see cref="Read"/>).
 /// </summary>
 public static class PatternConverter
 {
-    public static string BuildCondition(PatternSyntax pattern, string access, ConversionContext context,
-        ITypeSymbol? accessType = null)
+    public static string BuildCondition(PatternSyntax pattern, string access, ConversionContext context)
     {
         switch (pattern)
         {
@@ -60,13 +59,13 @@ public static class PatternConverter
                 return TypeCheck(typePattern.Type, access, context);
 
             case RecursivePatternSyntax recursive:
-                return BuildRecursive(recursive, access, context, accessType);
+                return BuildRecursive(recursive, access, context);
 
             case ListPatternSyntax list:
                 return BuildList(list, access, context);
 
             case UnaryPatternSyntax unary when unary.OperatorToken.IsKind(SyntaxKind.NotKeyword):
-                return BuildCondition(unary.Pattern, access, context, accessType) switch
+                return BuildCondition(unary.Pattern, access, context) switch
                 {
                     "true" => "false",
                     "false" => "true",
@@ -74,8 +73,8 @@ public static class PatternConverter
                 };
 
             case BinaryPatternSyntax binary:
-                var l = BuildCondition(binary.Left, access, context, accessType);
-                var r = BuildCondition(binary.Right, access, context, accessType);
+                var l = BuildCondition(binary.Left, access, context);
+                var r = BuildCondition(binary.Right, access, context);
                 var or = binary.OperatorToken.IsKind(SyntaxKind.OrKeyword);
                 // A left side that matches everything or nothing (`var _`, `not var _`) decides the
                 // combination, or hands it to the right, before the right is read: written as it was,
@@ -91,7 +90,7 @@ public static class PatternConverter
                 };
 
             case ParenthesizedPatternSyntax paren:
-                return BuildCondition(paren.Pattern, access, context, accessType);
+                return BuildCondition(paren.Pattern, access, context);
 
             case DiscardPatternSyntax:
             case VarPatternSyntax:
@@ -143,7 +142,7 @@ public static class PatternConverter
         };
 
     public static void CollectBindings(PatternSyntax pattern, string access, ConversionContext context,
-        List<(string Name, string Access)> bindings, ITypeSymbol? accessType = null)
+        List<(string Name, string Access)> bindings)
     {
         switch (pattern)
         {
@@ -163,20 +162,14 @@ public static class PatternConverter
                 if (recursive.PositionalPatternClause is { } positional)
                 {
                     // Read after the test, which called the app's Deconstruct, if the pattern has one.
-                    var part = PositionalPart(recursive, access, accessType, context, out _);
+                    var part = PositionalPart(recursive, access, context, out _);
                     for (int i = 0; i < positional.Subpatterns.Count; i++)
                         CollectBindings(positional.Subpatterns[i].Pattern, part(i), context, bindings);
                 }
                 if (recursive.PropertyPatternClause != null)
                     foreach (var sp in recursive.PropertyPatternClause.Subpatterns)
                         if (MemberPath(sp) is { } path)
-                        {
-                            var receivers = ReceiverTypes(sp, PatternType(recursive, context) ?? accessType, context);
-                            CollectBindings(sp.Pattern,
-                                path.Select((name, i) => (name, i))
-                                    .Aggregate(access, (at, step) => Access(at, step.name, receivers[step.i], context)),
-                                context, bindings);
-                        }
+                            CollectBindings(sp.Pattern, ReadPath(path, access, recursive, context, checks: null), context, bindings);
                 break;
 
             case ListPatternSyntax list:
@@ -184,18 +177,18 @@ public static class PatternConverter
                 break;
 
             case ParenthesizedPatternSyntax paren:
-                CollectBindings(paren.Pattern, access, context, bindings, accessType);
+                CollectBindings(paren.Pattern, access, context, bindings);
                 break;
 
             case BinaryPatternSyntax binary when binary.OperatorToken.IsKind(SyntaxKind.AndKeyword):
-                CollectBindings(binary.Left, access, context, bindings, accessType);
-                CollectBindings(binary.Right, access, context, bindings, accessType);
+                CollectBindings(binary.Left, access, context, bindings);
+                CollectBindings(binary.Right, access, context, bindings);
                 break;
         }
     }
 
     private static string BuildRecursive(RecursivePatternSyntax recursive, string access,
-        ConversionContext context, ITypeSymbol? accessType)
+        ConversionContext context)
     {
         var checks = new List<string>();
         // `OpenGate(var percent)` — the pattern NAMES a type, and the test must be that type's,
@@ -209,7 +202,7 @@ public static class PatternConverter
 
         if (recursive.PositionalPatternClause is { } positional)
         {
-            var part = PositionalPart(recursive, access, accessType, context, out var called);
+            var part = PositionalPart(recursive, access, context, out var called);
             if (called is not null) checks.Add(called);
             for (int i = 0; i < positional.Subpatterns.Count; i++)
             {
@@ -221,16 +214,7 @@ public static class PatternConverter
             foreach (var sp in recursive.PropertyPatternClause.Subpatterns)
             {
                 if (MemberPath(sp) is not { } path) continue;
-                var receivers = ReceiverTypes(sp, PatternType(recursive, context) ?? accessType, context);
-                // `{ A.B: p }` is `{ A: { B: p } }`: every member before the last must be there, or
-                // the pattern answers false, as C#'s does, rather than reading through a null.
-                var at = access;
-                for (var i = 0; i < path.Count - 1; i++)
-                {
-                    at = Access(at, path[i], receivers[i], context);
-                    checks.Add($"{at} != null");
-                }
-                var sub = BuildCondition(sp.Pattern, Access(at, path[^1], receivers[^1], context), context);
+                var sub = BuildCondition(sp.Pattern, ReadPath(path, access, recursive, context, checks), context);
                 if (sub != "true") checks.Add(sub);
             }
 
@@ -297,7 +281,7 @@ public static class PatternConverter
     /// reads by index.
     /// </summary>
     private static Func<int, string> PositionalPart(RecursivePatternSyntax recursive, string access,
-        ITypeSymbol? accessType, ConversionContext context, out string? called)
+        ConversionContext context, out string? called)
     {
         called = null;
         if (context.SemanticHelper.GetOperation(recursive)
@@ -306,14 +290,15 @@ public static class PatternConverter
         {
             // The pattern's OWN type decides the deconstruction names — the governing
             // expression's static type may be the base (`GateState`), which deconstructs
-            // nothing and left positional access as `[i]` on a plain object: undefined.
-            var names = PositionalNames(PatternType(recursive, context) ?? accessType);
+            // nothing and left positional access as `[i]` on a plain object: undefined. The bound
+            // pattern knows it at every depth, nested in another pattern too.
+            var names = PositionalNames(InputType(recursive, context));
             return i => PositionalAccess(access, i, names);
         }
         var outs = deconstruct.Parameters.Where(parameter => parameter.RefKind == RefKind.Out).ToList();
         var parts = JsExprWriter.Write(
             Strategies.DeconstructionPattern.Through(
-                deconstruct, PatternType(recursive, context) ?? accessType, recursive, JsExpr.Opaque(access), context));
+                deconstruct, InputType(recursive, context), recursive, JsExpr.Opaque(access), context));
         var held = context.MatchParts.Held(access, deconstruct);
         called = $"({held} ?? ({held} = {parts}))";
         return i => $"{held}.{outs[i].Name.ToJsIdentifier()}";
@@ -496,66 +481,98 @@ public static class PatternConverter
 
     /// <summary>
     /// The members a subpattern names, outermost first: one for <c>{ X: … }</c>, the whole path for
-    /// the extended <c>{ A.B.C: … }</c>, each as the name the model binds to its member. The path was
+    /// the extended <c>{ A.B.C: … }</c>. Each is the name the model binds to its member, beside the
+    /// in-tree node that READS it: the name itself for the first, and for each one after, the member
+    /// access <c>A.B</c> the path spells, whose receiver is the member before it. The path was
     /// lower-cased as ONE name, so <c>{ Changes.Count: > 0 }</c> read <c>changes.Count</c>, undefined,
     /// and was quietly always false.
     /// </summary>
-    private static List<SimpleNameSyntax>? MemberPath(SubpatternSyntax sp)
+    private static List<(SimpleNameSyntax Name, ExpressionSyntax Read)>? MemberPath(SubpatternSyntax sp)
     {
-        if (sp.NameColon is { } nameColon) return [nameColon.Name];
+        if (sp.NameColon is { } nameColon) return [(nameColon.Name, nameColon.Name)];
         if (sp.ExpressionColon is not { } expressionColon) return null;
-        var path = new List<SimpleNameSyntax>();
+        var path = new List<(SimpleNameSyntax Name, ExpressionSyntax Read)>();
         var at = expressionColon.Expression;
         while (at is MemberAccessExpressionSyntax member)
         {
-            path.Insert(0, member.Name);
+            path.Insert(0, (member.Name, member));
             at = member.Expression;
         }
         // C# accepts nothing else before the colon (CS8918): a name, then members of it.
         if (at is not IdentifierNameSyntax first) return null;
-        path.Insert(0, first);
+        path.Insert(0, (first, first));
         return path;
     }
 
     /// <summary>
-    /// The type each member of a subpattern's path is read from, aligned with <see cref="MemberPath"/>:
-    /// the pattern's own type for the first, and the member before it for each one after, so
-    /// <c>{ Map.Count: > 0 }</c> reads a dictionary's <c>size</c> as <c>{ Count: > 0 }</c> does. A type
-    /// the model cannot give is null, and the member takes its plain camelCase name.
+    /// The value a subpattern's path is read from, member by member, with the null test of every member
+    /// before the last: <c>{ A.B: p }</c> is <c>{ A: { B: p } }</c>, so a null on the way answers false, as
+    /// C#'s does, rather than reading through it. Its first member is read from the value the pattern
+    /// tests, whose type is the BOUND pattern's (<see cref="InputType"/>), and each one after from the
+    /// member before it, whose type is the model's answer for the path's own member access.
     /// </summary>
-    private static List<ITypeSymbol?> ReceiverTypes(SubpatternSyntax sp, ITypeSymbol? first, ConversionContext context)
+    private static string ReadPath(List<(SimpleNameSyntax Name, ExpressionSyntax Read)> path, string access,
+        RecursivePatternSyntax recursive, ConversionContext context, List<string>? checks)
     {
-        var receivers = new List<ITypeSymbol?> { first };
-        if (sp.ExpressionColon is not { } expressionColon) return receivers;
-        var prefixes = new List<ExpressionSyntax>();
-        for (var at = expressionColon.Expression; at is MemberAccessExpressionSyntax member; at = member.Expression)
-            prefixes.Insert(0, member.Expression);
-        foreach (var prefix in prefixes) receivers.Add(context.SemanticHelper.GetType(prefix));
-        return receivers;
+        var at = access;
+        for (var i = 0; i < path.Count; i++)
+        {
+            if (i > 0) checks?.Add($"{at} != null");
+            var receiver = i == 0
+                ? InputType(recursive, context)
+                : context.SemanticHelper.GetType(((MemberAccessExpressionSyntax)path[i].Read).Expression);
+            at = Read(at, receiver, path[i].Name, path[i].Read, context);
+        }
+        return at;
     }
 
     /// <summary>
-    /// A property pattern names a MEMBER, read as a member access reads it. A FIELD, asked of the
-    /// model, is read in its slot (<see cref="FieldSlotExtensions.TwinSlot"/>), the one rule every read
-    /// of a field takes, ahead of the collections' table below: named by its text,
-    /// <c>this is { value: 1 }</c> beside a property <c>Value</c> read the property, and a field called
-    /// <c>Count</c> the method <c>count()</c> a case apart from it, each answering the opposite of .NET
-    /// (#396). Any other member's JS name is not always its camelCase: a collection's <c>Count</c> is
-    /// <c>length</c>, a string's <c>Length</c> likewise. Lower-casing blindly emitted
-    /// <c>actions.count</c> on a JS array — <c>undefined</c>, so <c>Actions is { Count: > 3 }</c> was
-    /// quietly always false, with nothing to see at build time. A <c>Count</c> reads as a member access
-    /// reads it (<see cref="Strategies.CountSpelling"/>, one table for both): <c>{ Roles.Count: > 0 }</c>
-    /// over a set read <c>length</c>, and was false in the browser where the server had drawn the other
-    /// branch (#516).
+    /// The type of the value a recursive pattern reads its members from, as the bound tree narrows it: the
+    /// type it names (<c>Stats { Count: 4 }</c> over an <c>object</c>), or the type of what it tests. Asked
+    /// of the pattern itself, so a pattern nested in another, in a positional part or in a list's element
+    /// knows it as the outermost does: handed down from the subject alone, a nested one knew nothing, and
+    /// <c>{ Roles: { Count: 1 } }</c> over a set counted a <c>length</c> it does not have.
     /// </summary>
-    private static string Access(string at, SimpleNameSyntax name, ITypeSymbol? receiver, ConversionContext context) =>
-        (context.SemanticHelper.GetSymbol(name), name.Identifier.ValueText) switch
+    private static ITypeSymbol? InputType(RecursivePatternSyntax recursive, ConversionContext context) =>
+        context.SemanticHelper.GetOperation(recursive) is IRecursivePatternOperation { NarrowedType: { } narrowed }
+            ? narrowed
+            : PatternType(recursive, context);
+
+    /// <summary>
+    /// A property pattern names a MEMBER, and reads it as a member access of it reads it, because it IS
+    /// one: the read is written as the member access <c>$pattern.Member</c>, on a placeholder that stands
+    /// for the value read from, and handed to the converter, which translates it as it translates any
+    /// other. The placeholder is that value already translated, of the type the model gives it, a
+    /// nullable's value's (a pattern tests it is there first), and the access stands for the in-tree node
+    /// that reads the member, so the model answers for it with the member's symbol.
+    /// <para>
+    /// Every strategy that translates a member access translates the pattern's read with it, and every
+    /// fence that refuses one refuses the other. The pattern used to keep a table of its own: a field in
+    /// its slot, a sorted set's ends, a <c>Count</c> by its receiver's type and anything else by its
+    /// camelCase name. A tuple's <c>Item1</c> was read as a field, where a tuple is an array; a
+    /// dictionary's <c>Keys</c> as a property the Map has not; a nested pattern's <c>Count</c> with no
+    /// receiver type, as an array's <c>length</c>; and a .NET member no browser value carries was named
+    /// with no diagnostic (#920). Each answered false where .NET answered true.
+    /// </para>
+    /// </summary>
+    private static string Read(string at, ITypeSymbol? receiver, SimpleNameSyntax name, ExpressionSyntax read,
+        ConversionContext context)
+    {
+        var access = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+            SyntaxFactory.IdentifierName("$pattern"), name.WithoutTrivia());
+        var placeholder = access.Expression;
+        context.SetCached(placeholder, JsExpr.Opaque(at));
+        context.SemanticHelper.MapType(placeholder, receiver.UnwrapNullable());
+        context.SemanticHelper.MapSynthetic(access, read);
+        context.SemanticHelper.MapSynthetic(access.Name, name);
+        // The model types a name before a colon as nothing: the member's own type is the read's.
+        context.SemanticHelper.MapType(access, context.SemanticHelper.GetSymbol(name) switch
         {
-            (IFieldSymbol field, _) => $"{at}.{field.TwinSlot()}",
-            (var member, _) when Strategies.Types.QueueStackStrategy.SortedSetEnd(JsExpr.Opaque(at), member, context) is { } end =>
-                JsExprWriter.WriteIn(end, JsPrecedence.Call),
-            (_, "Count") => JsExprWriter.Write(Strategies.CountSpelling.Read(JsExpr.Opaque(at), receiver, context)),
-            (_, "Length") => $"{at}.length",
-            (_, var member) => $"{at}.{TwinName.Of(member)}",
-        };
+            IPropertySymbol property => property.Type,
+            IFieldSymbol field => field.Type,
+            _ => null,
+        });
+        // Spliced as it is, the receiver of the next member of a path among other places: written as one.
+        return JsExprWriter.WriteIn(context.Converter.ConvertIr(access), JsPrecedence.Call);
+    }
 }
