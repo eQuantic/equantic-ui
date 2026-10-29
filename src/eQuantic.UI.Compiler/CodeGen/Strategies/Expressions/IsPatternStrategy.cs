@@ -162,8 +162,12 @@ public class IsPatternStrategy : IConversionStrategy
     {
         var code = JsExprWriter.CodeOf(tested);
         var named = Placeholder.Matches(code).Where(name => name.Value == subject).ToList();
+        // Discarded through `void`, which evaluates its operand and is TypeScript's own way to say the
+        // value is unused on purpose: left of a comma as it is, an input TypeScript judges free of effects
+        // (`-1`, `!seen`, `a + 1`) is refused (TS2695), and asking which ones it judges so would be a list
+        // that is never complete (Copilot's second review of #1157).
         if (named.Count == 0)
-            return ReadsNothing(input) ? tested : JsExprWriter.Write(JsExpr.Template("({0}, " + tested + ")", input));
+            return ReadsNothing(input) ? tested : JsExprWriter.Write(JsExpr.Template("(void {0}, " + tested + ")", input));
 
         // The writer names what it binds `$0`, and the hole is in the test's own code: a function the
         // test defined with a `$0` of its own would take the hole's reads for its own. None does (the
@@ -191,8 +195,8 @@ public class IsPatternStrategy : IConversionStrategy
     /// <summary>
     /// Whether leaving the input out reads nothing anybody can observe: a name or a literal, in the
     /// author's parentheses or not (<c>(n) is var _</c>), as the writer's node or as a text strategy's
-    /// text, which the writer cannot tell from any other. TypeScript refuses one left of a comma
-    /// (TS2695), where a call or a member read is evaluated there, as C# evaluates it.
+    /// text, which the writer cannot tell from any other. Anything else is evaluated where C# evaluates
+    /// it, and discarded (<see cref="Read"/>).
     /// </summary>
     private static bool ReadsNothing(JsExpr input)
     {
