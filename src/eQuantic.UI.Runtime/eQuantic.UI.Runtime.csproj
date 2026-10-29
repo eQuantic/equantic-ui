@@ -13,58 +13,15 @@
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
-    <!-- Resolve the embedded Bun (from the sibling platform runtime projects), mirroring the
-         Server's ResolveBunForServer. Zero Node. -->
-    <Target Name="ResolveBunForRuntime">
-        <PropertyGroup>
-            <_EqOsArch>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_EqOsArch>
-            <_BunOsxDir Condition="'$(_EqOsArch)' == 'Arm64'">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.OsxArm64/tools/bun</_BunOsxDir>
-            <_BunOsxDir Condition="'$(_BunOsxDir)' == ''">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Osx64/tools/bun</_BunOsxDir>
-            <_BunWinDir Condition="'$(_EqOsArch)' == 'Arm64'">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.WinArm64/tools/bun</_BunWinDir>
-            <_BunWinDir Condition="'$(_BunWinDir)' == ''">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Win64/tools/bun</_BunWinDir>
-            <_BunLinuxDir Condition="'$(_EqOsArch)' == 'Arm64'">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.LinuxArm64/tools/bun</_BunLinuxDir>
-            <_BunLinuxDir Condition="'$(_BunLinuxDir)' == ''">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Linux64/tools/bun</_BunLinuxDir>
-            <_BunOsxPath>$(_BunOsxDir)/bun-darwin</_BunOsxPath>
-            <_BunWinPath>$(_BunWinDir)/bun.exe</_BunWinPath>
-            <_BunLinuxPath>$(_BunLinuxDir)/bun-linux</_BunLinuxPath>
-            <_BunPath Condition="$([MSBuild]::IsOSPlatform('OSX')) And Exists('$(_BunOsxPath)')">$(_BunOsxPath)</_BunPath>
-            <_BunPath Condition="$([MSBuild]::IsOSPlatform('Windows')) And Exists('$(_BunWinPath)')">$(_BunWinPath)</_BunPath>
-            <_BunPath Condition="$([MSBuild]::IsOSPlatform('Linux')) And Exists('$(_BunLinuxPath)')">$(_BunLinuxPath)</_BunPath>
-        </PropertyGroup>
-
-        <PropertyGroup Condition="'$(_BunPath)' == ''">
-            <_BunZipOsx>$(_BunOsxDir)/bun-darwin.zip</_BunZipOsx>
-            <_BunZipWin>$(_BunWinDir)/bun.exe.zip</_BunZipWin>
-            <_BunZipLinux>$(_BunLinuxDir)/bun-linux.zip</_BunZipLinux>
-        </PropertyGroup>
-        <Unzip SourceFiles="$(_BunZipOsx)"
-            DestinationFolder="$(_BunOsxDir)"
-            Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_BunPath)' == '' And Exists('$(_BunZipOsx)')" />
-        <Unzip SourceFiles="$(_BunZipWin)"
-            DestinationFolder="$(_BunWinDir)"
-            Condition="$([MSBuild]::IsOSPlatform('Windows')) And '$(_BunPath)' == '' And Exists('$(_BunZipWin)')" />
-        <Unzip SourceFiles="$(_BunZipLinux)"
-            DestinationFolder="$(_BunLinuxDir)"
-            Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(_BunPath)' == '' And Exists('$(_BunZipLinux)')" />
-
-        <PropertyGroup>
-            <_BunPath Condition="'$(_BunPath)' == '' And $([MSBuild]::IsOSPlatform('OSX')) And Exists('$(_BunOsxPath)')">$(_BunOsxPath)</_BunPath>
-            <_BunPath Condition="'$(_BunPath)' == '' And $([MSBuild]::IsOSPlatform('Windows')) And Exists('$(_BunWinPath)')">$(_BunWinPath)</_BunPath>
-            <_BunPath Condition="'$(_BunPath)' == '' And $([MSBuild]::IsOSPlatform('Linux')) And Exists('$(_BunLinuxPath)')">$(_BunLinuxPath)</_BunPath>
-        </PropertyGroup>
-
-        <Exec Command="chmod +x &quot;$(_BunPath)&quot;"
-            Condition="'$(_BunPath)' != '' And !$([MSBuild]::IsOSPlatform('Windows'))" />
-        <Error Condition="'$(_BunPath)' == ''"
-            Text="Bun runtime not found. Ensure eQuantic.UI.Runtime.* projects carry the embedded bun." />
-    </Target>
+    <!-- The embedded bun of this machine, unpacked where the SDK unpacks it: ResolveEmbeddedBun. -->
+    <Import Project="../Shared/EmbeddedBun.targets" />
 
     <!-- The runtime's own proof, through the same embedded bun — one command on every OS, no Node:
              dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
          Dependencies come from bun.lock as pinned (a drift fails, it is not repaired in passing); tsc
          is the type-check that makes an exhaustive switch fail to compile when a case is missing,
          which the Server's bundle is produced WITHOUT, and vitest runs once and exits. -->
-    <Target Name="TestRuntime" DependsOnTargets="ResolveBunForRuntime">
+    <Target Name="TestRuntime" DependsOnTargets="ResolveEmbeddedBun">
         <Message Text="eQuantic.UI.Runtime: bun install, tsc, vitest run (embedded bun)..." Importance="high" />
         <Exec Command="&quot;$(_BunPath)&quot; install --frozen-lockfile" WorkingDirectory="$(MSBuildThisFileDirectory)" />
         <Exec Command="&quot;$(_BunPath)&quot; x tsc" WorkingDirectory="$(MSBuildThisFileDirectory)" />

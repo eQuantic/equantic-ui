@@ -1,0 +1,48 @@
+<Project>
+
+    <!--
+        THE SOURCE TREE'S BUN, for the two projects that run it outside an app's build: the Server,
+        whose BundleRuntime writes the runtime it serves, and the Runtime, whose TestRuntime type-checks
+        and tests the TypeScript. The zip is the one the SDK picks on this machine, the per-OS and
+        per-architecture runtime package's (Sdk.targets, BunRuntimePackageId), and it is unpacked by the
+        same task the SDK runs, into the user's cache under the zip's SHA-256 (ProgramArchive). Each
+        project unpacked it beside the zip itself, and only when no binary was there, so a worktree kept
+        the bun of the first zip it ever saw after the zip moved on (#932).
+
+        The task is built in this graph, as an app beside the source tree builds it: an edge orders it,
+        links nothing and copies nothing, and a task host that ends with the build loads it, so a
+        rebuilt assembly is the one that runs.
+    -->
+    <ItemGroup>
+        <ProjectReference Include="$(MSBuildThisFileDirectory)../eQuantic.UI.Sdk.Tasks/eQuantic.UI.Sdk.Tasks.csproj"
+            ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" SkipGetTargetFrameworkProperties="true"
+            GlobalPropertiesToRemove="TargetFramework;RuntimeIdentifier;RuntimeIdentifiers;SelfContained;PublishAot;PublishTrimmed" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <_EqBunTasks>$(MSBuildThisFileDirectory)../eQuantic.UI.Sdk.Tasks/bin/$(Configuration)/netstandard2.0/eQuantic.UI.Sdk.Tasks.dll</_EqBunTasks>
+    </PropertyGroup>
+
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.UnpackProgram" AssemblyFile="$(_EqBunTasks)" TaskFactory="TaskHostFactory" />
+
+    <Target Name="ResolveEmbeddedBun" DependsOnTargets="ResolveProjectReferences">
+        <PropertyGroup>
+            <_EqBunArch>64</_EqBunArch>
+            <_EqBunArch Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64'">Arm64</_EqBunArch>
+            <_EqBunArchive Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Osx$(_EqBunArch)/tools/bun/bun-darwin.zip</_EqBunArchive>
+            <_EqBunArchive Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Linux$(_EqBunArch)/tools/bun/bun-linux.zip</_EqBunArchive>
+            <_EqBunArchive Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Win$(_EqBunArch)/tools/bun/bun.exe.zip</_EqBunArchive>
+        </PropertyGroup>
+
+        <Error Condition="!Exists('$(_EqBunTasks)')"
+            Text="$(MSBuildProjectName): the SDK's tasks were not built at '$(_EqBunTasks)', and the bun cannot be unpacked. The ProjectReference to eQuantic.UI.Sdk.Tasks orders them; a build that skipped it is a broken graph." />
+        <Error Condition="!Exists('$(_EqBunArchive)')"
+            Text="$(MSBuildProjectName): no embedded bun for this machine at '$(_EqBunArchive)'." />
+
+        <UnpackProgram Archive="$(_EqBunArchive)">
+            <Output TaskParameter="Program" PropertyName="_BunPath" />
+        </UnpackProgram>
+        <Message Text="Using Bun from: $(_BunPath)" Importance="high" />
+    </Target>
+
+</Project>

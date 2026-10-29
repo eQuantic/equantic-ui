@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Threading;
+using eQuantic.UI.Sdk.Tasks;
 
 namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 
 /// <summary>
 /// Executes JavaScript for the conformance harness. The PRIMARY engine is the project's embedded
 /// Bun binary — resolved exactly like the SDK does: per-OS <b>and per-architecture</b> (the native
-/// arm64 build on Apple Silicon / arm64 Linux·Windows, the x64-baseline build elsewhere), extracted
-/// on demand from the tracked <c>.zip</c> if the binary isn't already unpacked. If Bun is present but
+/// arm64 build on Apple Silicon / arm64 Linux·Windows, the x64-baseline build elsewhere), and
+/// unpacked from the tracked <c>.zip</c> by the SDK's own <see cref="ProgramArchive"/>. If Bun is present but
 /// cannot execute JS on the current machine (e.g. an AVX-less VM where this Bun build crashes at
 /// startup), the harness falls back to a local Node, purely so development/CI isn't blocked. This is
 /// an internal test-only fallback and does NOT relax the shipped SDK's "no Node/npm required"
@@ -20,8 +20,8 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 public static class JsExecutor
 {
     /// <summary>
-    /// Answered ONCE, by one thread, in this order: where Bun is (extracting it if the tree only
-    /// has the zip), then whether it runs, then — only if it does not — whether Node does.
+    /// Answered ONCE, by one thread, in this order: where Bun is (unpacking it from the tree's
+    /// zip), then whether it runs, then — only if it does not — whether Node does.
     /// <para>
     /// These were three <c>bool?</c> fields written outside any lock, and xUnit runs test classes
     /// in parallel. Two classes arriving together both probed and both wrote, so the answer a test
@@ -129,37 +129,26 @@ public static class JsExecutor
             : null;
         if (packageId == null) return null;
 
-        var exeName =
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "bun.exe"
-            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "bun-linux"
-            : "bun-darwin";
+        var zipName =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "bun.exe.zip"
+            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "bun-linux.zip"
+            : "bun-darwin.zip";
+        var zipPath = Path.Combine(root, "src", packageId, "tools", "bun", zipName);
+        if (!File.Exists(zipPath)) return null;
 
-        var bunDir = Path.Combine(root, "src", packageId, "tools", "bun");
-        var exePath = Path.Combine(bunDir, exeName);
-        var zipPath = exePath + ".zip"; // bun-darwin.zip / bun-linux.zip / bun.exe.zip
-
-        // Only the .zip is tracked in git; the SDK extracts the binary on first build. Mirror that here
-        // so the harness runs on the same Bun the framework ships instead of silently using Node.
-        if (!File.Exists(exePath) && File.Exists(zipPath))
+        // Only the .zip is tracked in git. It is unpacked by the SDK's own owner, into the user's cache
+        // under the zip's SHA-256, so the harness runs the bun the zip holds: unpacked beside the zip and
+        // only when no binary was there, a worktree went on running bun 1.3.14 after the zip moved to
+        // 1.4.3, and failed two cell-width cases nothing else failed (#932).
+        try
         {
-            try
-            {
-                ZipFile.ExtractToDirectory(zipPath, bunDir, overwriteFiles: true);
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && File.Exists(exePath))
-                {
-                    File.SetUnixFileMode(exePath,
-                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                        UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                        UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
-                }
-            }
-            catch
-            {
-                // Extraction failed (corrupt zip, perms): answer null so we fall back to Node.
-            }
+            return ProgramArchive.Unpack(zipPath, ProgramArchive.DefaultCache()).Program;
         }
-
-        return File.Exists(exePath) ? exePath : null;
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            // Unpacking failed (a corrupt zip, a cache that cannot be written): answer null so we fall back to Node.
+            return null;
+        }
     }
 
     private static bool BunWorks() => BunRuns.Value;

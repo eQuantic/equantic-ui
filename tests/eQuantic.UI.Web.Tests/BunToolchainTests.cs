@@ -1,6 +1,6 @@
-using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
+using eQuantic.UI.Sdk.Tasks;
 using FluentAssertions;
 
 namespace eQuantic.UI.Web.Tests;
@@ -120,19 +120,16 @@ public class BunToolchainTests
         var archive = Path.Combine(root, "src", relative);
         if (!File.Exists(archive)) return;
 
+        // Unpacked by the owner every build runs, ProgramArchive, so the zip that is pinned is also
+        // proven to hold the program it is named for, ready to run (#364).
         var scratch = Directory.CreateTempSubdirectory("eq-bun");
         try
         {
-            ZipFile.ExtractToDirectory(archive, scratch.FullName);
-            var binary = Directory.GetFiles(scratch.FullName, "*", SearchOption.AllDirectories)
-                .FirstOrDefault(f => Path.GetFileName(f).StartsWith("bun", StringComparison.Ordinal));
-            binary.Should().NotBeNull($"{relative} should contain a bun binary");
-
-            if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(binary!, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+            var (binary, _) = ProgramArchive.Unpack(archive, scratch.FullName);
 
             // A minute for a program that answers in milliseconds: a Bun that hangs fails this case
             // rather than holding the test host (#971).
-            var reported = ChildProcess.Run(binary!, ["--version"], TimeSpan.FromMinutes(1)).Output.Trim();
+            var reported = ChildProcess.Run(binary, ["--version"], TimeSpan.FromMinutes(1)).Output.Trim();
 
             reported.Should().Be(manifest.Version,
                 "the manifest is the answer to \"which Bun is embedded\", and an answer nobody "
