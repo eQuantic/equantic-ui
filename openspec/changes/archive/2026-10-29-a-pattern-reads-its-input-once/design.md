@@ -33,9 +33,11 @@ constant may spell `{0}`. The writer reads holes in the code of a template's tex
 template's output changes: none places a hole inside a string. A template literal's interpolation is code,
 and its hole is filled.
 
-**The writer's name for a bound part is `$0`.** A function the test defined that declared a `$0` of its own
-would take the hole's reads for its own. None does (the arrow that holds a `Deconstruct`'s parts declares
-`$p…`), so the strategy refuses such a test with an exception rather than write a miscompile nobody sees.
+**The writer names a bound part against what the template's text declares.** A function the text
+defines that declared the writer's `$0` would take a hole's reads inside it for its own. A pattern's
+constant writes one (`x is (Level.Low + 1)` lowers the enum's arithmetic with an arrow over `$0`), so the
+writer binds the part to a name the text does not declare (`$$0` there), and no template can capture its
+own part. A refusal in the strategy, tried first, refused that valid pattern.
 
 **An input the pattern never names is evaluated before the test.** `({0}, test)`, unless the input is a name
 or a literal, whose read nobody can observe (and which TypeScript reports when it stands left of a comma).

@@ -202,6 +202,16 @@ public class JsTemplateTests
             .Should().Be("(($0) => ($0 === '{0}' || $0 === \"{1}\" || $0 === `{1}${$0}`))(f())");
     }
 
+    /// <summary>A function the template's text defines may declare the name a bound part would take,
+    /// and one holding a hole would read its own parameter there: the bound part takes a name the text
+    /// does not declare. A pattern's constant writes such a function (<c>x is (Level.Low + 1)</c>).</summary>
+    [Fact]
+    public void ABoundPart_TakesANameTheTextDoesNotDeclare()
+    {
+        Write(JsExpr.Template("((($0) => $0 + {0})(1) === {0})", Call("f()")))
+            .Should().Be("(($$0) => ((($0) => $0 + $$0)(1) === $$0))(f())");
+    }
+
     [Fact]
     public void TheFillIsOnePass_APartIsNeverScannedForHoles()
     {

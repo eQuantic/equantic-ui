@@ -169,14 +169,6 @@ public class IsPatternStrategy : IConversionStrategy
         if (named.Count == 0)
             return ReadsNothing(input) ? tested : JsExprWriter.Write(JsExpr.Template("(void {0}, " + tested + ")", input));
 
-        // The writer names what it binds `$0`, and the hole is in the test's own code: a function the
-        // test defined with a `$0` of its own would take the hole's reads for its own. None does (the
-        // arrow that holds a Deconstruct's parts declares `$p…`), and one that did would be a miscompile
-        // nobody sees, so it stops the build instead.
-        if (JsExprWriter.DeclaredBy(code).Contains("$0"))
-            throw new InvalidOperationException(
-                $"A pattern's test declares `$0`, the name the writer binds its input to: `{tested}`.");
-
         var holed = new StringBuilder(tested.Length);
         var from = 0;
         foreach (var name in named)

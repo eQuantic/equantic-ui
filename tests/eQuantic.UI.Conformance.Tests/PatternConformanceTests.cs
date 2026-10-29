@@ -116,6 +116,8 @@ public class PatternConformanceTests
     [InlineData("var l = Level.High; return l is Level.High;")]           // true
     [InlineData("var l = Level.Low; return l is Level.High;")]            // false
     [InlineData("var l = Level.High; return l is (Level)1;")]             // true
+    [InlineData("var l = Level.High; return l is (Level.Low + 1);")]      // true
+    [InlineData("int n = 0; Level Pick() { n++; return Level.High; } return (Pick() is (Level.Low + 1) or Level.Low) ? n : -1;")] // 1
     public void IsANamedConstant_ComparesToItsValue(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
