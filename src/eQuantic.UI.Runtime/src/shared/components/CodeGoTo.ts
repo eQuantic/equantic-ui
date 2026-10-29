@@ -584,7 +584,7 @@ export class CodeGoTo {
         this._enclose = false;
         this._revealed = null;
         this._places.splice(0);
-        this._places.push(...places);
+        $eq.collections.addRange(this._places, places);
         this._nearest = this.nearest(at);
         this._placeAt = this._nearest;
         this.refresh();

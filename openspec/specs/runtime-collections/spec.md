@@ -272,10 +272,10 @@ The view SHALL take .NET's paths through the set operations: it SHALL never merg
 `SymmetricExceptWith` adds element by element and refuses the first outside the range; a set of its
 comparer compared with another SHALL be asked for a view of the other's range, which a narrower view
 refuses, two sets of one element type, an enum's included, having one comparer; and its `ExceptWith` SHALL ask the count it last counted. The count SHALL be taken again where
-.NET reads the view as a collection: reading `Count`, a copy into a list or a set, and a set's operation
-that asks the view its count; a walk SHALL NOT take it again. Two divergences are known: LINQ takes it again
-before every operator, `First` and `Where` included, which only walk the view in .NET, and `AddRange` does
-not take it, where .NET's does.
+.NET reads the view as a collection: reading `Count`, a copy into a list or a set, a list's `AddRange` and
+`InsertRange`, and a set's operation that asks the view its count; a walk SHALL NOT take it again. One
+divergence is known: LINQ takes it again before every operator, `First` and `Where` included, which only walk
+the view in .NET.
 
 #### Scenario: A view, live both ways
 
@@ -301,6 +301,12 @@ not take it, where .NET's does.
 
 - **WHEN** browser-side code asks `new SortedSet<int> { 3 }.Overlaps(v)` of a view whose `Count` was never read, then calls `v.ExceptWith(new[] { 3 })`
 - **THEN** 3 is removed, as in .NET, which asked the view its count
+
+#### Scenario: A view added to a list
+
+- **WHEN** browser-side code calls `new List<int>().AddRange(v)` with a view whose `Count` was never read,
+  then `v.ExceptWith(new[] { 3 })`
+- **THEN** 3 is removed, as in .NET, whose `AddRange` asked the view its count; nothing was removed
 
 ### Requirement: An empty collection expression builds the queue, the stack or the linked list its target names
 
