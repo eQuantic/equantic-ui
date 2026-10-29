@@ -2121,7 +2121,7 @@ public class TypeScriptEmitter
                                 "extension indexer has no getter body the compiler can lower.");
                             break;
                         }
-                        c.Member(JsClassMember.Method("static ", "item", "", WithReceiver(pars),
+                        c.Member(JsClassMember.Method("static ", Strategies.Expressions.Indexer.Get, "", WithReceiver(pars),
                             Annotation(DeclaredType(indexer.Type)), ExtensionGetter(getterBlock, body)), indexer);
                         ReportExtensionSetter(indexer.AccessorList?.Accessors, "this[]");
                         break;
