@@ -173,3 +173,5 @@ eQuantic.UI.Primitives.FontWeight.Black = 900 -> eQuantic.UI.Primitives.FontWeig
 eQuantic.UI.Primitives.FontWeight.ExtraLight = 200 -> eQuantic.UI.Primitives.FontWeight
 eQuantic.UI.Primitives.FontWeight.Light = 300 -> eQuantic.UI.Primitives.FontWeight
 eQuantic.UI.Primitives.FontWeight.Thin = 100 -> eQuantic.UI.Primitives.FontWeight
+eQuantic.UI.Primitives.ScrollView.FillViewport.get -> bool
+eQuantic.UI.Primitives.ScrollView.FillViewport.init -> void

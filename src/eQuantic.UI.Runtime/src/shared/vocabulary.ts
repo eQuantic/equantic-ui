@@ -1305,6 +1305,8 @@ export class ScrollView extends VisualNode {
   onScrolled: ((offset: number) => void) | null = null;
   /** How tall the viewport turned out to be, once layout knows. */
   onViewportChanged: ((height: number) => void) | null = null;
+  /** The content is never smaller than the viewport (C# `ScrollView.FillViewport`). */
+  fillViewport = false;
 
   constructor(
     child: VisualChild,
@@ -1316,6 +1318,7 @@ export class ScrollView extends VisualNode {
       request?: ScrollRequest | null;
       onScrolled?: ((offset: number) => void) | null;
       onViewportChanged?: ((height: number) => void) | null;
+      fillViewport?: boolean;
     },
   ) {
     super();
