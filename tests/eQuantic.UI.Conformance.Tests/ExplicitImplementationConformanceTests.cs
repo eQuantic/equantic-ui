@@ -61,6 +61,27 @@ public class ExplicitImplementationConformanceTests
         }
         public class Base { public string Run() => "base"; }
         public class Derived : Base, IFoo { string IFoo.Run() => Run(); }
+        public class Via : IFoo
+        {
+            public string Run() => "own";
+            public virtual string Other() => Run();
+            string IFoo.Run() => Other();
+        }
+        public class ViaDerived : Via { public override string Other() => "derived"; }
+        public interface ILong { long Wide(); }
+        public class Widened : ILong
+        {
+            public int Wide() => 1;
+            long ILong.Wide() => Wide();
+        }
+        public struct Spot { public int X; }
+        public interface IBoxed { object Get(); }
+        public class Boxer : IBoxed
+        {
+            private Spot saved;
+            public Spot Get() => saved;
+            object IBoxed.Get() => Get();
+        }
         public static class Through
         {
             public static string Foo<T>(T value) where T : IFoo => value.Run();
@@ -88,6 +109,12 @@ public class ExplicitImplementationConformanceTests
             "var d = new Derived(); IFoo foo = d; Base b = d; return foo.Run() + \"|\" + d.Run() + \"|\" + b.Run();"),
         ("a call through a constrained type parameter of each interface",
             "return Through.Foo(new Forwarded()) + \"|\" + Through.Bar(new Forwarded()) + \"|\" + Through.Bar(new Mixed());"),
+        ("an explicit one that hands off through an overridable method, over a type that overrides it",
+            "IFoo a = new Via(); IFoo b = new ViaDerived(); return a.Run() + \"|\" + b.Run() + \"|\" + new ViaDerived().Run();"),
+        ("an explicit one that widens what it hands back to a long",
+            "ILong w = new Widened(); object o = w.Wide(); return (o is long) + \"|\" + (w.Wide() + 1L) + \"|\" + new Widened().Wide();"),
+        ("an explicit one that boxes a struct, each call a copy of its own",
+            "IBoxed b = new Boxer(); return ReferenceEquals(b.Get(), b.Get());"),
         ("each interface over a list of them",
             "var all = new List<IBar> { new Forwarded(), new Mixed(), new Relayed() }; return string.Join(\",\", all.Select(x => x.Run()));"),
     ];

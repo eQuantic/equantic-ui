@@ -6,7 +6,9 @@ An explicit interface implementation SHALL be written under the name of the inte
 implements, which every call through the interface reaches, a call through a constrained type parameter
 included. One whose body hands back what the member holding its name answers (a method of the same
 object called with its own parameters passed through as they came, or a property of it read, cast to an
-interface or not, and a property's setter writing what its getter reads) SHALL NOT be written, so that
+interface or not, and a property's setter writing what its getter reads, through no member a derived
+type can override on the way, and handing back the value as it was, neither widened nor boxed into a
+copy) SHALL NOT be written, so that
 member answers every call through each interface, as they answer alike in .NET, and a method of the
 type's own it hands off to SHALL keep its name. A component's explicit implementation beside a method of
 its name SHALL be written with it. eqc SHALL refuse with EQ1007, naming both members and the interfaces,

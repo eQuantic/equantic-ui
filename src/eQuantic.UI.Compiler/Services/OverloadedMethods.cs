@@ -773,8 +773,11 @@ internal static class OverloadedMethods
                 if (member.IsStatic || member.IsImplicitlyDeclared) continue;
                 if (ExplicitImplementations.IsExplicit(member))
                 {
+                    // The base's twin is written from its definition, and the contracts compared as each type
+                    // constructs them: IGet<int>.Get in a base is no re-implementation of IGet<string>.Get.
                     if (ExplicitImplementations.NameOf(member) == name && !Contracts(member).Intersect(Contracts(held), SymbolEqualityComparer.Default).Any()
-                        && ExplicitImplementations.Written(current, name, isStatic: false).Contains(member, SymbolEqualityComparer.Default))
+                        && ExplicitImplementations.Written(current, name, isStatic: false)
+                            .Any(written => SymbolEqualityComparer.Default.Equals(written.OriginalDefinition, member.OriginalDefinition)))
                         return member;
                     continue;
                 }
@@ -798,11 +801,12 @@ internal static class OverloadedMethods
         _ => null,
     };
 
-    /// <summary>The interface members an explicit implementation implements, each as declared.</summary>
+    /// <summary>The interface members an explicit implementation implements, over the type arguments its type
+    /// gives the interface.</summary>
     private static IEnumerable<ISymbol> Contracts(ISymbol member) => member switch
     {
-        IMethodSymbol method => method.ExplicitInterfaceImplementations.Select(contract => (ISymbol)contract.OriginalDefinition),
-        IPropertySymbol property => property.ExplicitInterfaceImplementations.Select(contract => (ISymbol)contract.OriginalDefinition),
+        IMethodSymbol method => method.ExplicitInterfaceImplementations,
+        IPropertySymbol property => property.ExplicitInterfaceImplementations,
         _ => [],
     };
 

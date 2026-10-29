@@ -25,6 +25,8 @@ public class ExplicitImplementationTests
         public interface IGive { string Take(int x, string y); }
         public interface IMake { static abstract string Make(); }
         public interface IGet<T> { string Get(); }
+        public interface ILong { long Run(); }
+        public interface IObj { object Run(); }
         """;
 
     private static CompilationResult Compile(string source, string name) =>
@@ -316,6 +318,126 @@ public class ExplicitImplementationTests
 
         result.Errors.Should().BeEmpty();
         result.TypeScript.Should().Contain("equals$1(").And.Contain("equals$2(");
+    }
+
+    public static TheoryData<string, string, string, string> Kept => new()
+    {
+        {
+            "a hand-off through an overridable method, which a derived type may answer otherwise", """
+            public class Via : IFoo
+            {
+                public string Run() => "own";
+                public virtual string Other() => Run();
+                string IFoo.Run() => Other();
+            }
+            """, "Via", "return this.other();"
+        },
+        {
+            "a hand-off widening a number to a long, which the browser holds as a BigInt", """
+            public class Wide : ILong
+            {
+                public int Run() => 1;
+                long ILong.Run() => Run();
+            }
+            """, "Wide", "run$1()"
+        },
+        {
+            "a hand-off boxing a struct, which copies it", """
+            public struct Spot { public int X; }
+            public class Boxer : IObj
+            {
+                private Spot saved;
+                public Spot Run() => saved;
+                object IObj.Run() => Run();
+            }
+            """, "Boxer", "run$1()"
+        },
+        {
+            "a member kept on the server, which no twin holds", """
+            public class Split : IFoo, IBar
+            {
+                [eQuantic.UI.Primitives.ServerOnly] string IFoo.Run() => "server";
+                string IBar.Run() => "client";
+            }
+            """, "Split", "return 'client';"
+        },
+    };
+
+    /// <summary>
+    /// What a call through the interface would not reach the same way is no hand-off (Copilot's review of
+    /// #1139): a member passed over on the way that a derived type may override, a value the hand-off widens
+    /// or boxes into a copy. The explicit one is written, and a method of the type's own beside it moves
+    /// aside. An explicit implementation kept on the server is in no twin, so it meets nothing there.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Kept))]
+    public void WhatACallThroughTheInterfaceWouldReachOtherwise_IsWritten(string why, string source, string name, string written)
+    {
+        var result = Compile(source, name);
+
+        result.Errors.Should().BeEmpty(why);
+        result.TypeScript.Should().Contain(written, why);
+        Declared(result.TypeScript, "run").Should().Be(1, why);
+    }
+
+    public static TheoryData<string, string, string, string> RefusedAcrossTheChain => new()
+    {
+        {
+            "a base's explicit one of the same interface over another type argument", """
+            public class GetBase : IGet<int> { string IGet<int>.Get() => "int"; }
+            public class GetDerived : GetBase, IGet<string> { string IGet<string>.Get() => "string"; }
+            """, "GetDerived", "the explicit implementation of 'IGet<int>.Get()' it inherits from 'GetBase'"
+        },
+        {
+            "a hand-off through this boxed to an interface, which calls a copy", """
+            public struct Counter : IFoo, IBar
+            {
+                private int n;
+                string IBar.Run() => (++n).ToString();
+                string IFoo.Run() => ((IBar)this).Run();
+            }
+            """, "Counter", "'Counter' implements 'IBar.Run()' and 'IFoo.Run()' explicitly"
+        },
+    };
+
+    /// <summary>A base's explicit implementation is judged from its definition, whichever construction was
+    /// settled first, and a re-implementation is the same interface member over the same type arguments;
+    /// a struct's hand-off through <c>this</c> boxed to an interface calls a copy, and is no hand-off.</summary>
+    [Theory]
+    [MemberData(nameof(RefusedAcrossTheChain))]
+    public void WhatTheChainWouldHoldTwice_IsRefused(string why, string source, string name, string said)
+    {
+        var result = Compile(source, name);
+
+        var error = result.Errors.Should().ContainSingle(why).Subject;
+        error.Code.Should().Be("EQ1007", why);
+        error.Message.Should().Contain(said, why);
+    }
+
+    /// <summary>
+    /// A generic base is settled once, from its definition, whichever construction asks first (Copilot's review
+    /// of #1139). Asking the name of the base's own <c>Run()</c>, which the check of a derived method does, settled
+    /// the definition, and the base's explicit one, taken from the construction, was then found among none of
+    /// the definition's members, so its collision passed.
+    /// </summary>
+    [Fact]
+    public void AGenericBaseSettledFromItsDefinition_IsJudgedAsItsConstruction()
+    {
+        var result = Compile("""
+            public class GenBase<T> : IBar
+            {
+                public string Run() => "own";
+                string IBar.Run() => "bar";
+            }
+            public class OnInt : GenBase<int>, IFoo
+            {
+                public string Hello() => "hi";
+                string IFoo.Run() => "foo";
+            }
+            """, "OnInt");
+
+        result.Errors.Should().ContainSingle().Which.Message.Should()
+            .Contain("the explicit implementation of 'IBar.Run()' it inherits from 'GenBase'");
     }
 
     /// <summary>The error points at the later of the two, as every EQ1007 does.</summary>
