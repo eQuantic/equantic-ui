@@ -35,7 +35,7 @@ src/eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs  1  n
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/AverageStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/GroupByStrategy.cs  3  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/LinqTableStrategy.cs  21  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/LookupIndexerStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/LookupStrategy.cs  1  arguments only: the search reads its group, and the key is a template part the writer binds outside it
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/OfTypeStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/OrderByStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/SumStrategy.cs  2  not looked at yet
