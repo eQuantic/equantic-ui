@@ -1,0 +1,301 @@
+using eQuantic.UI.Compiler.CodeGen;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
+namespace eQuantic.UI.Compiler.Services;
+
+/// <summary>
+/// EVERY MEMBER OF A TYPE HOLDS A NAME OF ITS OWN ON THE TWIN, whatever kind of member it is (#1146).
+///
+/// <para>
+/// <see cref="OverloadedMethods"/> refused two methods of one name, and a record's or a struct's state
+/// beside a member of its name. Every other pair that lands on one key of the twin, the same lowered
+/// name and the same static-ness, passed the build, and the browser kept one of them. Measured on each
+/// emitter: a static field beside a static property or method of its name (<c>static int next;</c> and
+/// <c>static int Next() =&gt; ++next;</c>), where the field took the method's place when the class was
+/// defined and <c>Seq.Next()</c> was "not a function"; a component's field beside its property, whose
+/// instance field hid the getter (<c>Label =&gt; label.ToUpper()</c> answered "x"); a property beside a
+/// method a case apart, an event beside either, an extension block's property or indexer beside a method
+/// of the static class, two <c>operator +</c> of one type, a conversion beside a method of its name
+/// (<c>FromInt</c>), and members on the names the twin writes itself (a record's <c>With(int)</c>, a
+/// class's <c>ToString(string)</c>, a <c>Constructor()</c>, which no module parses). TypeScript refuses
+/// most of them as duplicate identifiers, but only where a twin is type-checked, which is the runtime's
+/// own: an app's module is bundled unchecked.
+/// </para>
+///
+/// <para>
+/// So every member the twin holds is put on its key, as the emitters write it: a field in its slot
+/// (<see cref="FieldSlotExtensions.TwinSlot"/>, which moves a plain class's field out of a member's way,
+/// #396), a method under <see cref="TwinMethodName"/> (a method that hides a member holds a name of its
+/// own, #563), a property, an event and a held primary constructor's parameter camelCased, an operator
+/// and a conversion under the static the twin calls, an extension block's members as statics of the
+/// class. The two accessors of a property are one member, and so is a positional parameter its record
+/// redeclares (#546). The second member on a key is refused, naming the first. An explicit interface
+/// implementation is left out, as the overload check leaves it out: its name is the interface's (#1139).
+/// </para>
+///
+/// <para>
+/// A member on a name the twin holds itself is refused the same way: a class's <c>constructor</c> and its
+/// static <c>prototype</c>, which JavaScript gives every class; a record's or a struct's <c>with</c>; and
+/// <c>equals</c>, <c>getHashCode</c>, <c>toString</c> and <c>toJSON</c>, which the runtime and JavaScript
+/// ask a value wherever .NET calls <c>Equals(object)</c>, <c>GetHashCode()</c>, <c>ToString()</c> and
+/// never a <c>ToJSON</c>. An override of one of object's three is the member .NET calls there, and the
+/// twin writes it in place of its own (<see cref="TwinOwnMembers"/>), so it stands.
+/// </para>
+/// </summary>
+internal static class MembersOnOneName
+{
+    /// <summary>A member of the twin: the key it is written under, how a message shows it, where it is
+    /// declared, whether it is a value the twin holds (a field, an auto-property, a field-like event, a
+    /// held parameter) rather than an accessor or a method, whether it is an operator or a conversion,
+    /// whose name the author cannot change, and the method it is, for the overrides that stand on a name
+    /// the twin holds.</summary>
+    private readonly record struct Member(string Lowered, bool Static, string Shown, SyntaxToken At, bool Held,
+        bool Operator = false, MethodDeclarationSyntax? Method = null);
+
+    /// <param name="type">The declaration whose twin is being written.</param>
+    /// <param name="sourcePath">Where it lives, for the error.</param>
+    /// <param name="isComponent">Whether the twin is a component's, whose <c>[ServerAction]</c> crosses as a
+    /// stub of its name and whose runtime names are EQ2011's.</param>
+    /// <param name="model">The model of the declaration's tree: it says where a field's slot moved, which
+    /// method hides a member, and which primary constructor's parameter an instance holds.</param>
+    /// <param name="errors">Where the refusal goes: the first member that lands on a taken key.</param>
+    public static void Check(TypeDeclarationSyntax type, string sourcePath, bool isComponent, SemanticModel? model,
+        List<CompilationError> errors)
+    {
+        var allStatic = type.Modifiers.Any(SyntaxKind.StaticKeyword);
+        var first = new Dictionary<(bool Static, string Lowered), Member>();
+        foreach (var member in Members(type, allStatic, isComponent, model).OrderBy(member => member.At.SpanStart))
+        {
+            if (TwinHolds(type, allStatic, isComponent, member) is { } held)
+            {
+                errors.Add(Refusal(sourcePath, member.At,
+                    $"'{member.Shown}' lowers to `{(member.Static ? "static " : "")}{member.Lowered}`, {held}"));
+                return;
+            }
+            if (first.TryAdd((member.Static, member.Lowered), member)) continue;
+            var earlier = first[(member.Static, member.Lowered)];
+            errors.Add(Refusal(sourcePath, member.At,
+                Clash(member, earlier, earlier.At.GetLocation().GetLineSpan().StartLinePosition.Line + 1)));
+            return;
+        }
+    }
+
+    /// <summary>The refusal of two members on one key, naming both, and the one to rename where only one
+    /// of them can be.</summary>
+    private static string Clash(Member later, Member earlier, int earlierLine)
+    {
+        var both = $"'{later.Shown}' lowers to `{(later.Static ? "static " : "")}{later.Lowered}`, and so does "
+            + $"'{earlier.Shown}' (line {earlierLine}). ";
+        if (later.Operator && earlier.Operator)
+            return both + "C# tells the two apart by their operands, and the twin names an operator by its symbol and a "
+                + "conversion by the other type, one static member per name, so it would keep one of them and every use "
+                + "of the other would reach it. Keep one of them, and write the other as a method of its own name.";
+        var where = later.Static ? "on the class itself, and is defined over the other when the class is"
+            : "on each instance, where it hides the other";
+        var why = (later.Held, earlier.Held) switch
+        {
+            (true, true) => "both are held in one slot, so the two would share one value. ",
+            (true, false) => $"'{later.Shown}' is held {where}, so every access to '{earlier.Shown}' would reach it. ",
+            (false, true) => $"'{earlier.Shown}' is held {where}, so every access to '{later.Shown}' would reach it. ",
+            _ => "only one of them would stand, and every access to the other would reach it. ",
+        };
+        var renamed = later.Operator ? earlier.Shown : earlier.Operator ? later.Shown : null;
+        return both + $"A JavaScript class holds one {(later.Static ? "static " : "")}member per name: " + why
+            + (renamed is null ? "Rename one of them." : $"Rename '{renamed}'.");
+    }
+
+    /// <summary>
+    /// Why <paramref name="member"/> cannot hold a name the twin holds itself, or null where it may: a
+    /// class's own <c>constructor</c> and static <c>prototype</c>, a value's <c>with</c>, and the names the
+    /// runtime asks a value for its equality, its hash, its text and its JSON. A component's other names
+    /// are its runtime base's, which EQ2011 holds.
+    /// </summary>
+    private static string? TwinHolds(TypeDeclarationSyntax type, bool allStatic, bool isComponent, Member member)
+    {
+        if (member.Static)
+            return member.Lowered == "prototype"
+                ? "which JavaScript gives every class itself and refuses to a static member, so the module would not load. "
+                    + "Give it a name of its own."
+                : null;
+        if (member.Lowered == "constructor")
+            return "the name of the class's own constructor, which the twin writes: a method of that name would be a second "
+                + "constructor and a field or an accessor of it is refused, so the module would not load, and a record's "
+                + "property of it would replace what each value says its class is. Give it a name of its own.";
+        if (allStatic || isComponent) return null;
+        string Unless(string overridden, string what) =>
+            member.Method is { } method && TwinOwnMembers.Overrides(method, overridden)
+                ? ""
+                : what + $" Only an override of `{overridden}({(overridden == nameof(Equals) ? "object" : "")})` takes "
+                    + "that place: give this one a name of its own.";
+        var held = member.Lowered switch
+        {
+            "with" when type is RecordDeclarationSyntax or StructDeclarationSyntax =>
+                $"the member the twin of a record or a struct writes for C#'s `with` expression, so every `with` on "
+                + $"'{type.Identifier.ValueText}' would reach it, or it would never be reached. Give it a name of its own.",
+            "equals" => Unless(nameof(Equals),
+                "the member the runtime asks for a value's equality wherever .NET calls `Equals(object)`, a dictionary's "
+                + "keys and `==` on a record included, and which the twin of a record or a struct writes itself, so it "
+                + "would answer there."),
+            "getHashCode" => Unless(nameof(GetHashCode),
+                "the member the runtime asks for a value's hash wherever .NET calls `GetHashCode()`, a dictionary's and a "
+                + "set's included, and which the twin of a record or a struct writes itself, so it would answer there."),
+            "toString" => Unless(nameof(ToString),
+                "the member JavaScript asks for a value's text wherever .NET calls `ToString()`, a concatenation and an "
+                + "interpolation included, and which the twin writes itself, so it would answer there."),
+            "toJSON" =>
+                "the member JSON serialization calls on the twin, which writes one itself where a member keeps a store, "
+                + "and which .NET's serializer never calls, so a server action would receive what it returns where .NET "
+                + "sends the members. Give it a name of its own.",
+            _ => null,
+        };
+        return string.IsNullOrEmpty(held) ? null : held;
+    }
+
+    /// <summary>
+    /// The members the twin holds under a name, each on its key (see the type's remarks). An instance
+    /// indexer is <see cref="OverloadedMethods"/>' to judge, which knows the names it takes beside an
+    /// explicit implementation of an interface's, and so is an explicit implementation. A record's
+    /// positional parameter is its property, unless a member of the body declares its name, and a class's
+    /// or a struct's is held only where a member reads it, and is that member where one declares its name.
+    /// </summary>
+    private static IEnumerable<Member> Members(TypeDeclarationSyntax type, bool allStatic, bool isComponent, SemanticModel? model)
+    {
+        var name = type.Identifier.ValueText;
+        var ownModel = model?.SyntaxTree == type.SyntaxTree ? model : null;
+        bool IsStatic(MemberDeclarationSyntax member) =>
+            allStatic || member.Modifiers.Any(SyntaxKind.StaticKeyword) || member.Modifiers.Any(SyntaxKind.ConstKeyword);
+
+        var declared = type.Members.SelectMany(DeclaredNames).ToHashSet(StringComparer.Ordinal);
+        foreach (var parameter in type.ParameterList?.Parameters ?? default)
+        {
+            var held = parameter.Identifier.ValueText;
+            if (declared.Contains(held) || !type.HoldsParameter(parameter, model)) continue;
+            yield return new(held.ToCamelCase(), false, $"{name}({held})", parameter.Identifier, Held: true);
+        }
+
+        foreach (var member in type.Members)
+        {
+            switch (member)
+            {
+                case FieldDeclarationSyntax field:
+                    foreach (var variable in field.Declaration.Variables)
+                        yield return new(ownModel?.GetDeclaredSymbol(variable) is IFieldSymbol symbol
+                                ? symbol.TwinSlot()
+                                : variable.Identifier.ValueText.ToCamelCase(),
+                            IsStatic(field), $"{name}.{variable.Identifier.ValueText}", variable.Identifier, Held: true);
+                    break;
+
+                case EventFieldDeclarationSyntax handler:
+                    foreach (var variable in handler.Declaration.Variables)
+                        yield return new(variable.Identifier.ValueText.ToCamelCase(), IsStatic(handler),
+                            $"{name}.{variable.Identifier.ValueText}", variable.Identifier, Held: true);
+                    break;
+
+                case EventDeclarationSyntax { ExplicitInterfaceSpecifier: null } handler:
+                    yield return new(handler.Identifier.ValueText.ToCamelCase(), IsStatic(handler),
+                        $"{name}.{handler.Identifier.ValueText}", handler.Identifier, Held: false);
+                    break;
+
+                case PropertyDeclarationSyntax { ExplicitInterfaceSpecifier: null } property:
+                    yield return new(property.Identifier.ValueText.ToCamelCase(), IsStatic(property),
+                        $"{name}.{property.Identifier.ValueText}", property.Identifier, Held: IsAuto(property));
+                    break;
+
+                case MethodDeclarationSyntax method when OverloadedMethods.TakesAName(method, isComponent):
+                    yield return new(TwinMethodName.Of(method, ownModel), IsStatic(method),
+                        $"{name}.{OverloadedMethods.Signature(method)}", method.Identifier, Held: false, Method: method);
+                    break;
+
+                case OperatorDeclarationSyntax op when !Parser.ComponentParser.StaysOnTheServer(op, inAComponent: false)
+                                                       && OperatorName(op) is { } lowered:
+                    yield return new(lowered, true, $"{name}.operator {op.OperatorToken.Text}({Types(op.ParameterList)})",
+                        op.OperatorToken, Held: false, Operator: true);
+                    break;
+
+                case ConversionOperatorDeclarationSyntax conversion
+                    when !Parser.ComponentParser.StaysOnTheServer(conversion, inAComponent: false):
+                    yield return new(ConversionName(conversion, name, ownModel), true,
+                        $"{name}.{conversion.ImplicitOrExplicitKeyword.Text} operator {conversion.Type}({Types(conversion.ParameterList)})",
+                        conversion.ImplicitOrExplicitKeyword, Held: false, Operator: true);
+                    break;
+
+                case ExtensionBlockDeclarationSyntax block:
+                    var receiver = $"{name}.extension({block.ParameterList?.Parameters.FirstOrDefault()?.Type})";
+                    foreach (var extension in block.Members)
+                    {
+                        switch (extension)
+                        {
+                            case PropertyDeclarationSyntax property:
+                                yield return new(property.Identifier.ValueText.ToCamelCase(), true,
+                                    $"{receiver}.{property.Identifier.ValueText}", property.Identifier, Held: false);
+                                break;
+                            case IndexerDeclarationSyntax indexer:
+                                yield return new(Indexer.Get, true, $"{receiver}.this[{Types(indexer.ParameterList)}]",
+                                    indexer.ThisKeyword, Held: false);
+                                break;
+                            case MethodDeclarationSyntax method when OverloadedMethods.TakesAName(method, isComponent: false):
+                                yield return new(TwinMethodName.Of(method, ownModel), true,
+                                    $"{receiver}.{OverloadedMethods.Signature(method)}", method.Identifier, Held: false, Method: method);
+                                break;
+                        }
+                    }
+                    break;
+            }
+        }
+    }
+
+    /// <summary>An auto-property, which the twin holds as a value where any other property is an
+    /// accessor: no accessor has a body, and the property none of its own.</summary>
+    private static bool IsAuto(PropertyDeclarationSyntax property) =>
+        property.ExpressionBody is null && property.AccessorList?.Accessors
+            .All(accessor => accessor.Body is null && accessor.ExpressionBody is null) == true;
+
+    /// <summary>The C# names a member of the body declares, which a primary constructor's parameter of
+    /// the same name is one with.</summary>
+    private static IEnumerable<string> DeclaredNames(MemberDeclarationSyntax member) => member switch
+    {
+        BaseFieldDeclarationSyntax field => field.Declaration.Variables.Select(variable => variable.Identifier.ValueText),
+        PropertyDeclarationSyntax property => [property.Identifier.ValueText],
+        EventDeclarationSyntax handler => [handler.Identifier.ValueText],
+        MethodDeclarationSyntax method => [method.Identifier.ValueText],
+        _ => [],
+    };
+
+    /// <summary>The static an operator is written as: a unary one named by what it does, a binary one by
+    /// its symbol (<see cref="RecordTypeEmitter.OperatorMethodName"/>), and none for one with no lowering.</summary>
+    private static string? OperatorName(OperatorDeclarationSyntax op) =>
+        op.ParameterList.Parameters.Count == 1
+            ? RecordTypeEmitter.UnaryOperatorMethodName(op.OperatorToken.Text)
+            : RecordTypeEmitter.OperatorMethodName(op.OperatorToken.Text);
+
+    /// <summary>The static a conversion is written as, from its symbol as every call site names it, and
+    /// from its syntax where there is no model, as the emitters do.</summary>
+    private static string ConversionName(ConversionOperatorDeclarationSyntax conversion, string type, SemanticModel? model)
+    {
+        if (model?.GetDeclaredSymbol(conversion) is IMethodSymbol symbol) return RecordTypeEmitter.ConversionNameFor(symbol);
+        var toSelf = conversion.Type.ValueText() == type;
+        return RecordTypeEmitter.ConversionMethodName(
+            toSelf ? conversion.ParameterList.Parameters[0].Type!.ValueText() : conversion.Type.ValueText(), from: toSelf);
+    }
+
+    /// <summary>A parameter list's types, as a message names an operator or an indexer.</summary>
+    private static string Types(BaseParameterListSyntax parameters) =>
+        string.Join(", ", parameters.Parameters.Select(parameter => parameter.Type?.ValueText() ?? parameter.Identifier.ValueText));
+
+    private static CompilationError Refusal(string sourcePath, SyntaxToken at, string message)
+    {
+        var position = at.GetLocation().GetLineSpan().StartLinePosition;
+        return new CompilationError
+        {
+            Code = "EQ1007",
+            Message = message,
+            SourcePath = sourcePath,
+            Line = position.Line + 1,
+            Column = position.Character + 1,
+        };
+    }
+}

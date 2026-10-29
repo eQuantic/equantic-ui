@@ -748,10 +748,12 @@ public class OverloadedMethodTests
 
     /// <summary>
     /// What is one member is not refused: a positional parameter the body redeclares under its own name
-    /// (#546), a static beside an instance member of the name, and a struct's primary constructor
-    /// parameter read only by an initializer, which no instance holds. A plain class's backing field
-    /// beside its property answers right, its field being a class field that shadows the getter, and is
-    /// left as it is.
+    /// (#546), a static beside an instance member of the name, a struct's primary constructor parameter
+    /// read only by an initializer, which no instance holds, and the two accessors of one property. A
+    /// plain class's field beside a member of its name moves to a slot of its own (`count$`, #396). An
+    /// override of object's <c>ToString()</c>, <c>GetHashCode()</c> or <c>Equals(object)</c> is written
+    /// in place of the twin's own (#1146), a typed <c>Equals</c> holds a name of its own (#947), and a
+    /// static <c>ToString</c> lives on the class, apart from the instance's text.
     /// </summary>
     [Theory]
     [InlineData("Box", "public sealed record Box(int X, int Y) { public int X { get; set; } = X; }")]
@@ -760,6 +762,160 @@ public class OverloadedMethodTests
     [InlineData("Point", "public readonly struct Point(int x, int y) { public int X { get; } = x; public int Y { get; } = y; }")]
     [InlineData("Spot", "public class Spot(int x) { public int X { get; } = x; }")]
     [InlineData("Badge", "public class Badge(string label) { public string Name => label; }")]
+    [InlineData("Gauge", "public sealed class Gauge { private int level; public int Level { get => level; set => level = value * 2; } }")]
+    [InlineData("Person", "public sealed class Person { private string name = \"x\"; public string Name { get; set; } = \"y\"; }")]
+    [InlineData("Tally", "public sealed class Tally { public static int Count => 1; public int count; }")]
+    [InlineData("Cash", "public sealed record Cash(int Cents) { public override string ToString() => \"$\" + Cents; public override int GetHashCode() => Cents; }")]
+    [InlineData("Pin", "public struct Pin { public int X; public override bool Equals(object? o) => o is Pin p && p.X == X; public override int GetHashCode() => X; public override string ToString() => \"pin\"; }")]
+    [InlineData("Key", "public sealed class Key { public int X; public override bool Equals(object? o) => o is Key k && k.X == X; public override int GetHashCode() => X; public override string ToString() => \"key\"; }")]
+    [InlineData("Same", "public sealed record Same(int V) { public bool Equals(Same? other) => other?.V == V; public override int GetHashCode() => V; }")]
+    [InlineData("Fmt", "public sealed record Fmt(int V) { public static string ToString(int v) => v.ToString(); }")]
     public void OneMemberOnItsName_IsNotRefused(string name, string source) =>
         Compile(source, name).Errors.Where(error => error.Code == "EQ1007").Should().BeEmpty();
+
+    /// <summary>
+    /// Every pair of members of one type that lands on one key of its twin, the same lowered name and the
+    /// same static-ness, whatever kind each member is (#1146). Each passed the build, and the browser kept
+    /// one of them: a static field took the place of a static accessor or method of its name when the
+    /// class was defined (<c>Seq.Next()</c> was "not a function"), a value held on each instance hid an
+    /// accessor or a method of its name, two statics of one name answered for each other, and so did two
+    /// <c>operator +</c>, which the twin names by their symbol alone.
+    /// </summary>
+    public static TheoryData<string, string, string, string> MembersOnOneKey => new()
+    {
+        { "Counter", "public static class Counter { private static int count; public static int Count { get => count; set => count = value * 2; } }", "Counter.Count", "Counter.count" },
+        { "Seq", "public static class Seq { private static int next; public static int Next() => ++next; }", "Seq.Next()", "Seq.next" },
+        { "Limits", "public static class Limits { public const int Max = 3; public static int max => 4; }", "Limits.max", "Limits.Max" },
+        { "Ids", "public sealed class Ids { private static int next; public static int Next() => ++next; }", "Ids.Next()", "Ids.next" },
+        { "Cfg", "public sealed class Cfg { private static int count; public static int Count { get; set; } = 5; }", "Cfg.Count", "Cfg.count" },
+        { "Shape", "public sealed class Shape { public int Total => 3; public int total() => 4; }", "Shape.total()", "Shape.Total" },
+        { "Twins", "public sealed class Twins { public int Total { get; set; } = 1; public int total { get; set; } = 2; }", "Twins.total", "Twins.Total" },
+        { "Named", "public sealed class Named { public string Name { get; set; } = \"a\"; public string name() => Name; }", "Named.name()", "Named.Name" },
+        { "Clicker", "public sealed class Clicker { public event System.Action? Changed; public void changed() => Changed?.Invoke(); }", "Clicker.changed()", "Clicker.Changed" },
+        { "Sizes", "public static class Sizes { extension(string s) { public int Size => s.Length; } public static int Size(this System.Collections.Generic.List<int> l) => l.Count; }", "Sizes.Size(List<int>)", "Sizes.extension(string).Size" },
+        { "Items", "public static class Items { extension(string s) { public char this[int i] => s[i]; } public static int Item(int x) => x; }", "Items.Item(int)", "Items.extension(string).this[int]" },
+        { "Texts", "public static class Texts { extension(string) { public static string Blank => \"\"; } public static string blank() => \"b\"; }", "Texts.blank()", "Texts.extension(string).Blank" },
+        { "Money", "public sealed record Money(int Cents) { public static implicit operator Money(int cents) => new(cents); public static Money FromInt(int cents) => new(cents * 100); }", "Money.FromInt(int)", "Money.implicit operator Money(int)" },
+        { "Sum", "public sealed record Sum(int V) { public static Sum operator +(Sum a, Sum b) => new(a.V + b.V); public static Sum operator +(Sum a, int b) => new(a.V + b); }", "Sum.operator +(Sum, int)", "Sum.operator +(Sum, Sum)" },
+    };
+
+    [Theory]
+    [MemberData(nameof(MembersOnOneKey))]
+    public void TwoMembersOfAnyKindOnOneKey_AreRefused(string name, string source, string later, string earlier)
+    {
+        var error = Compile(source, name).Errors.Should().ContainSingle().Subject;
+
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().StartWith($"'{later}' lowers to").And.Contain($"and so does '{earlier}' (line 1)");
+    }
+
+    /// <summary>
+    /// A component's members land on one key the same way, stateless and stateful alike. Its fields keep
+    /// the names the server hydrates them under, so none moves as a plain class's does (#662): a field
+    /// beside its property hid the getter (<c>Label =&gt; label.ToUpper()</c> answered "x"), and a
+    /// setter never ran.
+    /// </summary>
+    [Theory]
+    [InlineData("StatelessComponent", "private readonly string label = \"x\"; public string Label => label.ToUpper();", "Page.Label", "Page.label")]
+    [InlineData("StatefulComponent", "private int count; public int Count { get => count; set => count = value * 2; }", "Page.Count", "Page.count")]
+    [InlineData("StatelessComponent", "public string Title => \"t\"; private string title() => \"x\";", "Page.title()", "Page.Title")]
+    [InlineData("StatelessComponent", "private static int count; public static int Count => count;", "Page.Count", "Page.count")]
+    [InlineData("StatefulComponent", "public event System.Action? Changed; private bool changed;", "Page.changed", "Page.Changed")]
+    public void AComponentsMembersOnOneKey_AreRefused(string kind, string members, string later, string earlier)
+    {
+        var error = Compile($$"""
+            using eQuantic.UI.Primitives;
+
+            [Page("/probe")]
+            public sealed class Page : {{kind}}
+            {
+                {{members}}
+                public override VisualNode Build(ComponentContext context) => new Text("", TypeRole.BodyM);
+            }
+            """, "Page").Errors.Should().ContainSingle().Subject;
+
+        error.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 6 });
+        error.Message.Should().StartWith($"'{later}' lowers to").And.Contain($"and so does '{earlier}' (line 6)");
+    }
+
+    /// <summary>A static class nested in a component is a class of its own in the component's module,
+    /// and holds one member per key too.</summary>
+    [Fact]
+    public void AStaticClassNestedInAComponent_HoldsOneMemberPerKey()
+    {
+        var result = Compile("""
+            using eQuantic.UI.Primitives;
+
+            [Page("/probe")]
+            public sealed class Page : StatelessComponent
+            {
+                private static class Copy
+                {
+                    private static int count;
+                    public static int Count() => ++count;
+                }
+
+                public override VisualNode Build(ComponentContext context) => new Text(Copy.Count().ToString(), TypeRole.BodyM);
+            }
+            """, "Page");
+
+        result.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 9 });
+    }
+
+    /// <summary>
+    /// A member on a name the twin holds itself: a record's or a struct's <c>with</c>, the names the
+    /// runtime and JavaScript ask a value for its equality, its hash, its text and its JSON, a class's
+    /// <c>constructor</c> and its static <c>prototype</c> (#1146). Each answered in the twin's place, or
+    /// lost to it, or left a module that did not parse. Only an override of object's member stands there.
+    /// </summary>
+    public static TheoryData<string, string, string> NamesTheTwinHolds => new()
+    {
+        { "Style", "public sealed record Style(int Size) { public Style With(int size) => this with { Size = size }; }", "'Style.With(int)' lowers to `with`" },
+        { "Vec", "public readonly record struct Vec(int X) { public Vec With(int x) => new(x); }", "'Vec.With(int)' lowers to `with`" },
+        { "Fit", "public sealed record Fit(int With, int Height);", "'Fit(With)' lowers to `with`" },
+        { "Pt", "public sealed record Pt(int X) { public bool equals(Pt other) => X == other.X; }", "'Pt.equals(Pt)' lowers to `equals`" },
+        { "Seed", "public sealed record Seed(int V) { public int GetHashCode(int salt) => V ^ salt; }", "'Seed.GetHashCode(int)' lowers to `getHashCode`" },
+        { "Temp", "public sealed class Temp { public double C = 1; public string ToString(string unit) => C + unit; }", "'Temp.ToString(string)' lowers to `toString`" },
+        { "Tag", "public sealed record Tag(string V) { public string ToString(string prefix) => prefix + V; }", "'Tag.ToString(string)' lowers to `toString`" },
+        { "Doc", "public sealed class Doc { public string Title = \"a\"; public string ToJSON() => Title; }", "'Doc.ToJSON()' lowers to `toJSON`" },
+        { "Js", "public sealed record Js(int V) { public string ToJSON() => \"x\"; }", "'Js.ToJSON()' lowers to `toJSON`" },
+        { "Builder", "public sealed class Builder { public string Constructor() => \"c\"; }", "'Builder.Constructor()' lowers to `constructor`" },
+        { "Shaped", "public sealed record Shaped(int Constructor);", "'Shaped(Constructor)' lowers to `constructor`" },
+        { "Proto", "public static class Proto { public static int Prototype => 2; }", "'Proto.Prototype' lowers to `static prototype`" },
+    };
+
+    [Theory]
+    [MemberData(nameof(NamesTheTwinHolds))]
+    public void AMemberOnANameTheTwinHolds_IsRefused(string name, string source, string named)
+    {
+        var error = Compile(source, name).Errors.Should().ContainSingle().Subject;
+
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().StartWith(named).And.Contain("Give").And.Contain("a name of its own");
+    }
+
+    /// <summary>
+    /// The twin writes an override of object's member in place of its own, and nothing else in its place
+    /// (#1146): a struct's <c>Equals(object)</c> was written beside the twin's <c>equals</c>, the browser
+    /// keeping the later, and a record's static <c>ToString(int)</c> took the place of its synthesized
+    /// text, which the twin then wrote nowhere.
+    /// </summary>
+    [Fact]
+    public void AStructsEqualsOverride_IsItsTwinsOneEquals()
+    {
+        var result = Compile("public struct Pin { public int X; public override bool Equals(object? o) => o is Pin p && p.X == X; public override int GetHashCode() => X; }", "Pin");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("equals(", Exactly.Once(), "the override is the twin's equals, and nothing beside it");
+    }
+
+    [Fact]
+    public void ARecordsStaticToString_LeavesItsTextInPlace()
+    {
+        var result = Compile("public sealed record Fmt(int V) { public static string ToString(int v) => v.ToString(); }", "Fmt");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("$eq.text.record(this, 'Fmt'", "the record's text is still the one C# synthesizes")
+            .And.Contain("static toString(");
+    }
 }

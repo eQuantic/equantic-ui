@@ -66,6 +66,7 @@ internal static class OverloadedMethods
         var errors = new List<CompilationError>();
         CheckOne(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0) CheckState(type, sourcePath, model, errors);
+        if (errors.Count == 0) MembersOnOneName.Check(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckInherited(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckSequences(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckHidingImplementations(type, sourcePath, model, errors);
@@ -78,6 +79,7 @@ internal static class OverloadedMethods
                          .Where(nested => nested.Modifiers.Any(SyntaxKind.StaticKeyword)))
             {
                 CheckOne(nested, sourcePath, isComponent: false, model, errors);
+                if (errors.Count == 0) MembersOnOneName.Check(nested, sourcePath, isComponent: false, model, errors);
             }
         }
         return errors;
@@ -192,8 +194,9 @@ internal static class OverloadedMethods
     /// beside an accessor or a method of its name was written over it by the constructor, which threw
     /// at <c>new</c>. A member the body declares under a positional parameter's own name is that
     /// parameter's property (#546), one member, and two methods of one name are overloads, which
-    /// <see cref="CheckOne"/> judges. A plain class keeps its state in class fields, which shadow the
-    /// prototype's getter of the same name, so its backing-field idiom answers right and is left as it is.
+    /// <see cref="CheckOne"/> judges. A plain class's field moves out of the way of a member of its name
+    /// (#396), and every other pair, a class's, a component's and a static's, is
+    /// <see cref="MembersOnOneName"/>' to judge.
     /// </summary>
     private static void CheckState(TypeDeclarationSyntax type, string sourcePath, SemanticModel? model, List<CompilationError> errors)
     {
@@ -276,8 +279,7 @@ internal static class OverloadedMethods
     /// instance under its camelCased name as a struct's (#583), beside a member that lands on the same
     /// name: `class Greeter(string name) { public string Name => name.ToUpper(); }` held "ada" where the
     /// getter `name` stands, and the instance's own value hid the getter, so `Name` answered "ada" where
-    /// C# answers "ADA". A class's members among themselves are not judged here: its fields are class
-    /// state its own accessors read through, and #396 is theirs.
+    /// C# answers "ADA". A class's members among themselves are <see cref="MembersOnOneName"/>' to judge.
     /// </summary>
     private static void CheckHeldParameters(TypeDeclarationSyntax type, string sourcePath, SemanticModel? model,
         List<CompilationError> errors)
@@ -838,7 +840,7 @@ internal static class OverloadedMethods
     /// "rename it" would be an answer nobody can follow. How it lowers is its own question.
     /// </para>
     /// </summary>
-    private static bool TakesAName(MethodDeclarationSyntax method, bool isComponent)
+    internal static bool TakesAName(MethodDeclarationSyntax method, bool isComponent)
     {
         if (method.ExplicitInterfaceSpecifier is not null) return false;
         if (method.Modifiers.Any(SyntaxKind.PartialKeyword) && method.Body is null && method.ExpressionBody is null)
@@ -848,6 +850,6 @@ internal static class OverloadedMethods
 
     /// <summary><c>Compare(CodeDocument, CodeDocument)</c>: the name and the parameter types, which is
     /// what tells a reader the two apart.</summary>
-    private static string Signature(MethodDeclarationSyntax method) =>
+    internal static string Signature(MethodDeclarationSyntax method) =>
         $"{method.Identifier.ValueText}({string.Join(", ", method.ParameterList.Parameters.Select(parameter => parameter.Type?.ValueText() ?? parameter.Identifier.ValueText))})";
 }
