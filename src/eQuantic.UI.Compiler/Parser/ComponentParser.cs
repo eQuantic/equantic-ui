@@ -600,7 +600,12 @@ public class ComponentParser
         {
             var isPublic = prop.Modifiers.Any(SyntaxKind.PublicKeyword);
             
-            if (definition.Properties.Any(p => p.Name == prop.Identifier.ValueText)) continue;
+            // An explicit implementation is a property of its own beside the component's of its name, and
+            // the emitter leaves out the one that hands off to the other (#1139): taken for a second
+            // declaration, whichever came second was dropped, and a getter read itself.
+            if (definition.Properties.Any(p => p.Name == prop.Identifier.ValueText
+                    && p.Node?.ExplicitInterfaceSpecifier?.ToString() == prop.ExplicitInterfaceSpecifier?.ToString()))
+                continue;
 
             definition.Properties.Add(new PropertyDefinition
             {
@@ -641,7 +646,12 @@ public class ComponentParser
                 continue;
             }
 
-            if (definition.Methods.Any(m => m.Name == methodName)) continue;
+            // An explicit interface implementation is a member of its own beside a method of its name,
+            // which holds a name of its own on the twin (#708): taken for a second overload, it was
+            // dropped, and the twin called a method nobody wrote (#1139). Overloads are EQ1007's.
+            if (definition.Methods.Any(m => m.Name == methodName
+                    && m.SyntaxNode?.ExplicitInterfaceSpecifier?.ToString() == method.ExplicitInterfaceSpecifier?.ToString()))
+                continue;
 
             var methodDef = new MethodDefinition
             {
