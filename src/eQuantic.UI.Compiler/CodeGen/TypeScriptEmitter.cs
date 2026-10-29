@@ -1705,8 +1705,9 @@ public class TypeScriptEmitter
             foreach (var p in cls.Members.OfType<PropertyDeclarationSyntax>())
             {
                 // An enumerator's explicit IEnumerator.Current beside its generic one holds its name, and
-                // answers alike: written, it replaced the generic one and read itself (#612).
-                if (ModelFor(p)?.GetDeclaredSymbol(p) is IPropertySymbol declaredProperty && IterableTwin.LeavesOut(declaredProperty))
+                // answers alike: written, it replaced the generic one and read itself (#612). So does an
+                // explicit property that hands back what the member holding its name reads (#1139).
+                if (ModelFor(p)?.GetDeclaredSymbol(p) is IPropertySymbol declaredProperty && ExplicitImplementations.LeavesOut(declaredProperty))
                     continue;
                 // An ABSTRACT property is DECLARED, never emitted. The derived class supplies the
                 // getter, and a field here would become an OWN property on the instance — which
@@ -1957,8 +1958,9 @@ public class TypeScriptEmitter
     {
         if (Parser.ComponentParser.StaysOnTheServer(m, inAComponent: false)) return;
         // The non-generic IEnumerable.GetEnumerator() beside the generic one holds its name, and is the
-        // same sequence: written, it replaced the generic one and called itself (#612).
-        if (ModelFor(m)?.GetDeclaredSymbol(m) is IMethodSymbol declared && IterableTwin.LeavesOut(declared)) return;
+        // same sequence: written, it replaced the generic one and called itself (#612). So does an
+        // explicit implementation that hands back what the member holding its name answers (#1139).
+        if (ModelFor(m)?.GetDeclaredSymbol(m) is IMethodSymbol declared && ExplicitImplementations.LeavesOut(declared)) return;
         if (Lowering.Method(m, asStatic, DeclaredType, returns: TupleReturn) is { } member) c.Member(member, m);
     }
 
@@ -2855,6 +2857,11 @@ public class TypeScriptEmitter
         // Abstract methods (no body, no expression body) have nothing to emit — the concrete subclass
         // supplies the implementation, and TS needs no abstract stub on the base.
         if (method.SyntaxNode != null && method.SyntaxNode.Body == null && method.SyntaxNode.ExpressionBody == null)
+            return;
+        // An explicit implementation that hands back what the member holding its name answers is that
+        // member on the twin (#1139).
+        if (method.SyntaxNode is { } node && ModelFor(node)?.GetDeclaredSymbol(node) is IMethodSymbol symbol
+            && ExplicitImplementations.LeavesOut(symbol))
             return;
 
         // Same resolvability contract as property declarations: a signature must never introduce a

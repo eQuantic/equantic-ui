@@ -1,7 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 
@@ -159,77 +158,17 @@ internal static class IterableTwin
 
     /// <summary>
     /// Whether <paramref name="member"/> answers as <paramref name="held"/>, the member the twin holds in
-    /// its place (<see cref="HeldOnce"/>): its body hands back what a member of the same object answers,
-    /// with no argument, and that member is the one <paramref name="held"/> reaches the same way, each
-    /// followed through every such hand-off (<c>IEnumerator IEnumerable.GetEnumerator() =&gt; GetEnumerator();</c>,
+    /// its place (<see cref="HeldOnce"/>): its body hands back what a member of the same object answers
+    /// (<see cref="ExplicitImplementations.HandsOff"/>), and that member is the one <paramref name="held"/>
+    /// reaches the same way, each followed through every such hand-off
+    /// (<c>IEnumerator IEnumerable.GetEnumerator() =&gt; GetEnumerator();</c>,
     /// <c>object IEnumerator.Current =&gt; Current;</c>, a cast to the interface included). Anything else
     /// may answer otherwise, which C# allows: an iterator of its own walked the generic one's sequence in
     /// the browser, and a <c>Current</c> of its own read the public one's.
     /// </summary>
     public static bool AnswersAs(ISymbol member, ISymbol held, Compilation compilation) =>
-        HandsOff(member, compilation) is { } first
-        && Same(Reached(first, compilation), Reached(held, compilation));
-
-    /// <summary>The member <paramref name="member"/> reaches through its hand-offs (<see cref="HandsOff"/>),
-    /// itself where it hands nothing off.</summary>
-    private static ISymbol Reached(ISymbol member, Compilation compilation)
-    {
-        var seen = new HashSet<ISymbol>(SymbolEqualityComparer.Default) { member.OriginalDefinition };
-        while (HandsOff(member, compilation) is { } next && seen.Add(next.OriginalDefinition)) member = next;
-        return member;
-    }
-
-    /// <summary>
-    /// The member whose answer <paramref name="member"/>'s body hands back as it is: a method's or a
-    /// getter's one statement, or its expression, returning a call with no argument of a method, or a read
-    /// of a property, of the same object (<c>this</c>, written or not, cast to an interface or not), what it
-    /// returns converted only as a reference or a box. A member of an interface is the one the type
-    /// implements it with. Null for any other body, and for a member with no source.
-    /// </summary>
-    private static ISymbol? HandsOff(ISymbol member, Compilation compilation)
-    {
-        if (member.DeclaringSyntaxReferences is not [var reference]) return null;
-        var declaration = reference.GetSyntax();
-        SyntaxNode? body = declaration switch
-        {
-            MethodDeclarationSyntax method => (SyntaxNode?)method.Body ?? method.ExpressionBody,
-            PropertyDeclarationSyntax { ExpressionBody: { } arrow } => arrow,
-            PropertyDeclarationSyntax property => property.AccessorList?.Accessors
-                .FirstOrDefault(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration)) is { } getter
-                ? (SyntaxNode?)getter.Body ?? getter.ExpressionBody
-                : null,
-            _ => null,
-        };
-        var returned = body switch
-        {
-            ArrowExpressionClauseSyntax arrow => arrow.Expression,
-            BlockSyntax { Statements: [ReturnStatementSyntax { Expression: { } value }] } => value,
-            _ => null,
-        };
-        if (returned is null) return null;
-        var (target, receiver) = Unconverted(compilation.ModelOf(returned.SyntaxTree)?.GetOperation(returned)) switch
-        {
-            IInvocationOperation { Arguments.Length: 0 } call => ((ISymbol?)call.TargetMethod, call.Instance),
-            IPropertyReferenceOperation { Arguments.Length: 0 } read => (read.Property, read.Instance),
-            _ => (null, null),
-        };
-        if (target is null
-            || Unconverted(receiver) is not IInstanceReferenceOperation { ReferenceKind: InstanceReferenceKind.ContainingTypeInstance })
-            return null;
-        return target.ContainingType.TypeKind == TypeKind.Interface
-            ? member.ContainingType.FindImplementationForInterfaceMember(target)
-            : target;
-    }
-
-    /// <summary>An operation under the conversions that keep its value: an identity, a reference's and a
-    /// box.</summary>
-    private static IOperation? Unconverted(IOperation? operation)
-    {
-        while (operation is IConversionOperation converted
-               && converted.GetConversion() is { IsIdentity: true } or { IsReference: true } or { IsBoxing: true })
-            operation = converted.Operand;
-        return operation;
-    }
+        ExplicitImplementations.Reached(member, compilation) is { } reached
+        && Same(reached, ExplicitImplementations.Reached(held, compilation) ?? held);
 
     /// <summary>The member <paramref name="type"/> implements <paramref name="face"/>'s member of
     /// <paramref name="name"/> with, or null.</summary>

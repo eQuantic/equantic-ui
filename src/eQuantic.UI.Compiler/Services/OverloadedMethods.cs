@@ -69,6 +69,7 @@ internal static class OverloadedMethods
         if (errors.Count == 0 && model is not null) CheckInherited(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckSequences(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckHidingImplementations(type, sourcePath, model, errors);
+        if (errors.Count == 0 && model is not null) CheckExplicitImplementations(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInterfaceIndexers(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInheritedFields(type, sourcePath, model, errors);
@@ -684,6 +685,190 @@ internal static class OverloadedMethods
     }
 
     /// <summary>
+    /// An explicit interface implementation the twin writes holds the name of the member it implements,
+    /// which every call through the interface reaches, so nothing else of that name can stand beside it on
+    /// the twin's chain (#1139): another one the type writes under it (two interfaces' members of one name,
+    /// or one interface over two type arguments), a member of the type's own the twin holds under it (a
+    /// property, an event, an override, which fills its base's slot), or a member of a base the source
+    /// declares, which the explicit one would answer for on every instance of the type. Each was written
+    /// and the later replaced the other in silence. One that hands back what the member holding its name
+    /// answers is not written (<see cref="ExplicitImplementations.LeavesOut"/>), and a method of the type's
+    /// own beside one moves aside (<see cref="TwinMethodName.ExplicitBeside"/>), so neither is refused. A
+    /// base's explicit implementation of the same interface member is the one the type re-implements, as
+    /// C# reaches it, and stays.
+    /// </summary>
+    private static void CheckExplicitImplementations(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
+        List<CompilationError> errors)
+    {
+        if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared) return;
+        var written = declared.GetMembers().Where(ExplicitImplementations.IsExplicit)
+            .Select(member => (Name: Lowered(member), member.IsStatic))
+            .Distinct()
+            .SelectMany(key => ExplicitImplementations.Written(declared, key.Name, key.IsStatic))
+            .OrderBy(member => member.Locations.FirstOrDefault()?.SourceSpan.Start ?? 0)
+            .ToList();
+        foreach (var held in written)
+        {
+            var name = Lowered(held);
+            var lowered = $"`{(held.IsStatic ? "static " : "")}{name}{(held is IMethodSymbol ? "()" : "")}`";
+            if (written.FirstOrDefault(other => !SymbolEqualityComparer.Default.Equals(other, held)
+                    && Lowered(other) == name && other.IsStatic == held.IsStatic) is { } second)
+            {
+                Refuse(errors, sourcePath, second, type,
+                    $"'{declared.Name}' implements '{Answering(held)}' and '{Answering(second)}' explicitly, and both lower to "
+                    + $"{lowered}. A call through an interface reaches its member by the member's name, whatever type "
+                    + "implements it, and a JavaScript class holds one member per name, so one of them would answer the "
+                    + $"other's calls. Where the two answer alike, have one hand back what the other answers{Through(second, held)}; "
+                    + "otherwise give one of the interfaces' members a name of its own.");
+                return;
+            }
+            if (Beside(declared, held, name) is { } own)
+            {
+                Refuse(errors, sourcePath, held, type,
+                    $"'{declared.Name}.{Answering(own)}' lowers to {lowered}, and so does the explicit implementation "
+                    + $"'{Answering(held)}' beside it, which holds that name for every call through '{Display(Face(held))}'. "
+                    + "A JavaScript class holds one member per name, so one of them would answer the other's calls. Where "
+                    + $"they answer alike, have the explicit one hand back what '{Answering(own)}' answers{Through(held, own)}; "
+                    + $"otherwise give '{Answering(own)}' a name of its own.");
+                return;
+            }
+            if (held.IsStatic || InheritedOn(declared, held, name) is not { } inherited) continue;
+            var where = inherited.Locations.FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
+            var at = where is { } span ? $" ({Path.GetFileName(span.Path)} line {span.StartLinePosition.Line + 1})" : "";
+            var (other, reached) = ExplicitImplementations.IsExplicit(inherited)
+                ? ($"the explicit implementation of '{Answering(inherited)}' it inherits from '{inherited.ContainingType.Name}'{at}",
+                    $"every call through '{Display(Face(inherited))}' on a '{declared.Name}' too")
+                : ($"'{inherited.ContainingType.Name}.{Answering(inherited)}', which it inherits{at}",
+                    $"every call to '{inherited.ContainingType.Name}.{Answering(inherited)}' on a '{declared.Name}'");
+            Refuse(errors, sourcePath, held, type,
+                $"'{declared.Name}' implements '{Answering(held)}' explicitly, which lowers to {lowered}, and so does "
+                + $"{other}. A JavaScript class chain holds one member per name, so the explicit one would answer "
+                + $"{reached}. Where they answer alike, have "
+                + $"the explicit one hand back what '{Answering(inherited)}' answers{Through(held, inherited)}; otherwise give "
+                + "one of them a name of its own.");
+            return;
+        }
+    }
+
+    /// <summary>A member the type declares, no explicit implementation, that its twin holds under
+    /// <paramref name="name"/> on <paramref name="held"/>'s side, beside the explicit one: a method the name
+    /// stays with (an override fills its base's slot, and one that moved aside holds another), a property or
+    /// an event. A field moves aside for it (<see cref="FieldSlotExtensions.TwinSlot"/>).</summary>
+    private static ISymbol? Beside(INamedTypeSymbol type, ISymbol held, string name) =>
+        type.GetMembers().FirstOrDefault(member => member.IsStatic == held.IsStatic && !member.IsImplicitlyDeclared
+            && !ExplicitImplementations.IsExplicit(member) && HeldUnder(member) == name);
+
+    /// <summary>The first member of a base the source declares that its twin holds under <paramref name="name"/>,
+    /// which <paramref name="held"/> would stand over on the twin's chain: any but an explicit implementation
+    /// of an interface member <paramref name="held"/> implements too, which the type re-implements.</summary>
+    private static ISymbol? InheritedOn(INamedTypeSymbol type, ISymbol held, string name)
+    {
+        var seen = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+        for (var current = type.BaseType;
+             current is { DeclaringSyntaxReferences.Length: > 0 } && seen.Add(current);
+             current = current.BaseType)
+        {
+            foreach (var member in current.GetMembers())
+            {
+                if (member.IsStatic || member.IsImplicitlyDeclared) continue;
+                if (ExplicitImplementations.IsExplicit(member))
+                {
+                    if (Lowered(member) == name && !Contracts(member).Intersect(Contracts(held), SymbolEqualityComparer.Default).Any()
+                        && ExplicitImplementations.Written(current, name, isStatic: false).Contains(member, SymbolEqualityComparer.Default))
+                        return member;
+                    continue;
+                }
+                if (HeldUnder(member) == name) return member;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>The name a member that is no explicit implementation holds on its twin, or null for one the
+    /// twin holds under no name of the explicit ones' kind: a method by the name it holds
+    /// (<see cref="TwinMethodName"/>), a property or an event by its own, and a field, an indexer, a method
+    /// that never reaches a twin, or one the compiler declares, by none.</summary>
+    private static string? HeldUnder(ISymbol member) => member switch
+    {
+        IMethodSymbol { MethodKind: MethodKind.Ordinary } method
+            when !method.IsHostOnly() && !(method.IsPartialDefinition && method.PartialImplementationPart is null)
+                && !(method.IsAbstract && method.ContainingType.TypeKind != TypeKind.Interface && !method.IsOverride) =>
+            TwinMethodName.Of(method),
+        IPropertySymbol { IsIndexer: false } or IEventSymbol => Lowered(member),
+        _ => null,
+    };
+
+    /// <summary>The interface members an explicit implementation implements, each as declared.</summary>
+    private static IEnumerable<ISymbol> Contracts(ISymbol member) => member switch
+    {
+        IMethodSymbol method => method.ExplicitInterfaceImplementations.Select(contract => (ISymbol)contract.OriginalDefinition),
+        IPropertySymbol property => property.ExplicitInterfaceImplementations.Select(contract => (ISymbol)contract.OriginalDefinition),
+        _ => [],
+    };
+
+    /// <summary>The interface an explicit implementation answers.</summary>
+    private static INamedTypeSymbol Face(ISymbol member) => member switch
+    {
+        IMethodSymbol { ExplicitInterfaceImplementations: [var method, ..] } => method.ContainingType,
+        IPropertySymbol { ExplicitInterfaceImplementations: [var property, ..] } => property.ContainingType,
+        _ => member.ContainingType,
+    };
+
+    /// <summary>
+    /// The hand-off that makes <paramref name="member"/> answer as <paramref name="other"/>, as a reader
+    /// writes it after a colon (<c>string IBar.Run() =&gt; ((IFoo)this).Run();</c>), where the two are
+    /// instance members of one shape, and nothing where they are not.
+    /// </summary>
+    private static string Through(ISymbol member, ISymbol other)
+    {
+        if (member.IsStatic || Shape(member) is not { } shape || shape != Shape(other)) return "";
+        var face = ExplicitImplementations.IsExplicit(other) ? $"(({Display(Face(other))})this)." : "";
+        if (member is not IMethodSymbol method)
+            return $": `{Display(((IPropertySymbol)member).Type)} {Display(Face(member))}.{member.DeclaredName()} => {face}{other.DeclaredName()};`";
+        var generics = method.Arity > 0 ? $"<{string.Join(", ", method.TypeParameters.Select(parameter => parameter.Name))}>" : "";
+        var declared = string.Join(", ", method.Parameters.Select(parameter => $"{Passing(parameter)}{Display(parameter.Type)} {parameter.Name}"));
+        var passed = string.Join(", ", method.Parameters.Select(parameter => $"{Passing(parameter)}{parameter.Name}"));
+        return $": `{Display(method.ReturnType)} {Display(Face(member))}.{member.DeclaredName()}{generics}({declared}) => "
+            + $"{face}{other.DeclaredName()}({passed});`";
+    }
+
+    /// <summary>What a member takes and answers, which two members share to hand one off to the other.</summary>
+    private static string? Shape(ISymbol member) => member switch
+    {
+        IMethodSymbol method => $"{method.Arity}:{Display(method.ReturnType)}("
+            + $"{string.Join(", ", method.Parameters.Select(parameter => Passing(parameter) + Display(parameter.Type)))})",
+        IPropertySymbol property => Display(property.Type),
+        _ => null,
+    };
+
+    /// <summary>How a parameter is passed, as C# writes it before it: <c>ref </c>, <c>out </c>, <c>in </c>
+    /// or nothing.</summary>
+    private static string Passing(IParameterSymbol parameter) => parameter.RefKind switch
+    {
+        RefKind.Ref => "ref ",
+        RefKind.Out => "out ",
+        RefKind.In => "in ",
+        _ => "",
+    };
+
+    /// <summary>Refuses a type at a member of it, where the type's own declaration shows it.</summary>
+    private static void Refuse(List<CompilationError> errors, string sourcePath, ISymbol member, TypeDeclarationSyntax type,
+        string message)
+    {
+        var location = member.Locations.FirstOrDefault(at => at.SourceTree == type.SyntaxTree && type.Span.Contains(at.SourceSpan))
+            ?? type.Identifier.GetLocation();
+        var position = location.GetLineSpan().StartLinePosition;
+        errors.Add(new CompilationError
+        {
+            Code = "EQ1007",
+            Message = message,
+            SourcePath = sourcePath,
+            Line = position.Line + 1,
+            Column = position.Character + 1,
+        });
+    }
+
+    /// <summary>
     /// A sequence's twin has ONE iteration and ONE <c>current</c> where C# lets members answer apart
     /// (<see cref="IterableTwin"/>, #612): LINQ, a spread, <c>string.Join</c> and a <c>foreach</c> over each
     /// interface of the type walk its <c>[Symbol.iterator]</c>, and a walk of an enumerator reads its
@@ -833,9 +1018,12 @@ internal static class OverloadedMethods
     /// abstract method does take its name, though the base's twin writes nothing for it: the
     /// subclass that implements it writes it, over any overload the base carried.
     /// <para>
-    /// An explicit interface implementation (<c>IEnumerable.GetEnumerator()</c> beside the generic
-    /// one) is left out: its name is the interface's, which the author cannot give another, and
-    /// "rename it" would be an answer nobody can follow. How it lowers is its own question.
+    /// An explicit interface implementation is left out here: its name is the interface member's, which
+    /// the author cannot give another, so "rename it" is no answer, and a method of the type's own beside
+    /// it moves aside to a name of its own (<see cref="TwinMethodName.ExplicitBeside"/>, #708). It is
+    /// judged where what it holds is known (<see cref="CheckExplicitImplementations"/>, #1139): one that
+    /// hands back what the member holding its name answers is not written, and one the twin writes on a
+    /// name something else holds on its chain is refused, naming the interfaces.
     /// </para>
     /// </summary>
     private static bool TakesAName(MethodDeclarationSyntax method, bool isComponent)

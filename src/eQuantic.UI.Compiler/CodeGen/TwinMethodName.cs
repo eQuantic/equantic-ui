@@ -119,14 +119,15 @@ internal static class TwinMethodName
 
     /// <summary>
     /// The explicit interface implementation that <paramref name="method"/> shares its name with in its
-    /// type, or null: one the twin writes (<see cref="IterableTwin.LeavesOut"/>), on the same side of the
-    /// twin, under the name of the interface member it implements. That one holds the name, which every call
-    /// through the interface reaches, so the method holds a name of its own beside it. They were written
+    /// type, or null: one the twin writes (<see cref="ExplicitImplementations.Written"/>), on the same side of
+    /// the twin, under the name of the interface member it implements. That one holds the name, which every
+    /// call through the interface reaches, so the method holds a name of its own beside it. They were written
     /// under one name and the later replaced the other: a class whose public <c>GetEnumerator()</c> and
     /// explicit <c>IEnumerable&lt;T&gt;.GetEnumerator()</c> answer differently, which C# allows, walked one
-    /// sequence for a <c>foreach</c> over the class and for LINQ alike (Copilot's review of #708). Only a
-    /// method this compilation declares can be given a name of its own, as with one that hides a member.
-    /// An override is asked of the slot it fills, whose name it holds.
+    /// sequence for a <c>foreach</c> over the class and for LINQ alike (Copilot's review of #708). One that
+    /// hands back what the method answers is not written, and leaves it the name (#1139). Only a method this
+    /// compilation declares can be given a name of its own, as with one that hides a member. An override is
+    /// asked of the slot it fills, whose name it holds.
     /// </summary>
     public static IMethodSymbol? ExplicitBeside(IMethodSymbol method)
     {
@@ -134,10 +135,8 @@ internal static class TwinMethodName
         if (method.MethodKind != MethodKind.Ordinary || !method.Locations.Any(location => location.IsInSource)
             || method.ContainingType is not { TypeKind: TypeKind.Class or TypeKind.Struct, IsExtension: false } type)
             return null;
-        var name = SimpleName(method).ToCamelCase();
-        return type.GetMembers().OfType<IMethodSymbol>().FirstOrDefault(member =>
-            member.MethodKind == MethodKind.ExplicitInterfaceImplementation && member.IsStatic == method.IsStatic
-            && SimpleName(member).ToCamelCase() == name && !IterableTwin.LeavesOut(member));
+        return ExplicitImplementations.Written(type, SimpleName(method).ToCamelCase(), method.IsStatic)
+            .OfType<IMethodSymbol>().FirstOrDefault();
     }
 
     /// <summary>
@@ -175,7 +174,7 @@ internal static class TwinMethodName
 
     /// <summary>The method whose slot <paramref name="method"/> fills: itself, or, for an override, the
     /// method it overrides, followed until one is no override.</summary>
-    private static IMethodSymbol Slot(IMethodSymbol method)
+    public static IMethodSymbol Slot(IMethodSymbol method)
     {
         var at = method.OriginalDefinition;
         while (at.IsOverride && at.OverriddenMethod is { } overridden) at = overridden.OriginalDefinition;

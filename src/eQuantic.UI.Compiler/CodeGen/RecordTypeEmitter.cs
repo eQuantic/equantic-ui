@@ -500,8 +500,9 @@ public class RecordTypeEmitter
             // the server code in it was refused as the record's (#816).
             if (Parser.ComponentParser.StaysOnTheServer(method, inAComponent: false)) continue;
             // The non-generic IEnumerable.GetEnumerator() beside the generic one holds its name, and is
-            // the same sequence (#612).
-            if (ModelFor(method)?.GetDeclaredSymbol(method) is IMethodSymbol declared && IterableTwin.LeavesOut(declared)) continue;
+            // the same sequence (#612), and so is an explicit implementation that hands back what the
+            // member holding its name answers (#1139).
+            if (ModelFor(method)?.GetDeclaredSymbol(method) is IMethodSymbol declared && ExplicitImplementations.LeavesOut(declared)) continue;
             if (method.Identifier.ValueText == "ToString") userToString = true;
             sb.Append(EmitMethod(method, name));
         }
@@ -599,8 +600,9 @@ public class RecordTypeEmitter
         // BEHAVIOUR; emitting only its positional members threw the behaviour away.
         foreach (var property in type.Members.OfType<PropertyDeclarationSyntax>())
         {
-            // An enumerator's explicit IEnumerator.Current beside its generic one holds its name (#612).
-            if (ModelFor(property)?.GetDeclaredSymbol(property) is IPropertySymbol declared && IterableTwin.LeavesOut(declared)) continue;
+            // An enumerator's explicit IEnumerator.Current beside its generic one holds its name (#612), and
+            // so does a member an explicit property hands off to (#1139).
+            if (ModelFor(property)?.GetDeclaredSymbol(property) is IPropertySymbol declared && ExplicitImplementations.LeavesOut(declared)) continue;
             sb.Append(ComputedProperty(property, name));
         }
 

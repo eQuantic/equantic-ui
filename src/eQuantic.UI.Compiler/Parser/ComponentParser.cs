@@ -609,7 +609,12 @@ public class ComponentParser
                 continue;
             }
 
-            if (definition.Methods.Any(m => m.Name == methodName)) continue;
+            // An explicit interface implementation is a member of its own beside a method of its name,
+            // which holds a name of its own on the twin (#708): taken for a second overload, it was
+            // dropped, and the twin called a method nobody wrote (#1139). Overloads are EQ1007's.
+            if (definition.Methods.Any(m => m.Name == methodName
+                    && m.SyntaxNode?.ExplicitInterfaceSpecifier?.ToString() == method.ExplicitInterfaceSpecifier?.ToString()))
+                continue;
 
             var methodDef = new MethodDefinition
             {
