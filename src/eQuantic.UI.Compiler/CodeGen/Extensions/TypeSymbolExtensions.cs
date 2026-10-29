@@ -127,6 +127,20 @@ public static class TypeSymbolExtensions
         type.ResolveComponentBase() != ComponentBaseKind.None;
 
     /// <summary>
+    /// Whether the compilation binds every base class on <paramref name="type"/>'s chain, so that
+    /// <see cref="IsUiComponent"/> is the whole answer to whether it is a component. A base from a reference the
+    /// compilation lacks is an error type, and there the chain says nothing: what the declaration writes (a
+    /// <c>Build</c> it declares) is all a caller has. Where every base binds, a method's name says nothing, and a
+    /// builder whose last step is <c>Build</c> is the plain class it is (#1164).
+    /// </summary>
+    internal static bool BasesBind(this ITypeSymbol type)
+    {
+        for (var t = type.BaseType; t != null; t = t.BaseType)
+            if (t.TypeKind == TypeKind.Error) return false;
+        return true;
+    }
+
+    /// <summary>
     /// True when the type is a NODE — anything that ends up in the built tree, which is everything
     /// deriving from <c>VisualNode</c>: the abstract vocabulary (<c>Box</c>, <c>Row</c>, <c>Text</c>)
     /// and every component, since <c>UiComponent : VisualNode</c>.
