@@ -4,8 +4,8 @@ Closes #1178, a Task under #306 (the security hardening review).
 
 ## Why
 
-Dependabot reports seventeen open advisories against `extensions/vscode/package-lock.json`, three
-high. Sixteen of them close with a version inside the ranges the extension's tooling already
+Dependabot reports seventeen open advisories against `extensions/vscode/package-lock.json`, five
+high. Sixteen of them, four high, close with a version inside the ranges the extension's tooling already
 declares: `undici` 7.29.0 (seven advisories, through `@vscode/vsce` → cheerio), `markdown-it` 14.3.0
 (four, through vsce), `fast-uri` 3.1.7 (four, through vsce → ajv, held by the manifest's
 `overrides`) and `brace-expansion` 5.0.9 (one, through minimatch).
