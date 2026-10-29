@@ -239,9 +239,9 @@ A .NET type's member reached bare through `using static` SHALL be converted as i
 
 ### Requirement: A module names its temporaries by its own code alone
 
-The temporaries a module declares SHALL be numbered by the module's own code, from `$n0`, whatever the build
-emitted before it: a component's module, a plain class's, a static helper's and a record's alike. A module's
-text SHALL be the text it has when it is emitted alone.
+The temporaries a module declares SHALL be numbered by the module's own code alone, the first name its
+conversion takes being `$n0`, whatever the build emitted before it: a component's module, a plain class's, a
+static helper's and a record's alike. A module's text SHALL be the text it has when it is emitted alone.
 
 #### Scenario: A plain class compiled after one that binds two temporaries
 
