@@ -36,7 +36,7 @@ public static class TypeSymbolExtensions
     /// WHICH framework base the type reaches by walking its chain, or <see cref="ComponentBaseKind.None"/>.
     ///
     /// <para>
-    /// The four names are the abstract bases the framework defines, and they are matched here and
+    /// The names are the abstract bases the framework defines, and they are matched here and
     /// nowhere else. An intermediate base the app or a library wrote is reached BY THE WALK — naming
     /// one would be the brittleness this replaces.
     /// </para>
@@ -58,6 +58,7 @@ public static class TypeSymbolExtensions
                 case "StatelessComponent": return ComponentBaseKind.StatelessComponent;
                 case "HtmlElement": return ComponentBaseKind.HtmlElement;
                 case "ComponentState": return ComponentBaseKind.ComponentState;
+                case "UiComponent": return ComponentBaseKind.UiComponent;
             }
         }
         return ComponentBaseKind.None;

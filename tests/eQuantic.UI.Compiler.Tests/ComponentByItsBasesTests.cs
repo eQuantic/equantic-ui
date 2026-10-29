@@ -54,6 +54,29 @@ public class ComponentByItsBasesTests
     }
 
     /// <summary>
+    /// A component written directly over <c>UiComponent</c>, the root every component derives from, is one by its
+    /// chain as much as one over <c>StatelessComponent</c> is: the chain named only the four bases below the root,
+    /// so once a method's name stopped deciding, the class lost its component's twin and its type id (Copilot's
+    /// review of #1171).
+    /// </summary>
+    [Fact]
+    public void AClassOverTheComponentRootItself_IsAComponent()
+    {
+        var (modules, resolver) = Transpile("""
+            using eQuantic.UI.Primitives;
+
+            public sealed class Bare : UiComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text("bare", TypeRole.BodyM);
+            }
+            """);
+
+        modules["Bare"].Should().Contain("extends UiComponent").And.Contain("$typeId", "the component path writes it");
+        resolver.GetAllPlainClasses().Should().NotContain("Bare");
+        resolver.IsModule("Bare").Should().BeTrue();
+    }
+
+    /// <summary>
     /// Where the compilation cannot bind a base on the chain (a reference it lacks), it cannot say what the class
     /// derives from, and the declaration's own words decide, as they always did: a class that overrides
     /// <c>Build</c> over an unknown base is still taken for a component.

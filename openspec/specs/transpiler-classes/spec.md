@@ -439,6 +439,13 @@ give the same answer.
 - **THEN** its twin extends nothing and carries no component's type id, its `build` takes
   `announced: boolean`, and the resolver lists it among the plain classes
 
+#### Scenario: A component over the component root itself
+
+- **WHEN** `public sealed class Bare : UiComponent { public override VisualNode Build(ComponentContext context) => … }`
+  is transpiled with the project's compilation
+- **THEN** it is written as a component, `extends UiComponent` with its type id, and the resolver lists it
+  among no plain classes
+
 #### Scenario: A class over a base the compilation cannot bind
 
 - **WHEN** `public sealed class Legacy : MissingBase { public override VisualNode Build(ComponentContext context) => … }`

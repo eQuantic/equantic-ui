@@ -36,7 +36,9 @@ nothing but `object` (#1164). Its twin extended `StatelessComponent` and typed `
   order, so every width and height is the float it was.
 - eqc decides whether a class is a component by its chain of bases wherever the compilation binds it, in
   the parser and in the resolver alike (`TypeSymbolExtensions.BasesBind`); the name of a method decides
-  only where a base on the chain does not bind, or the host has no compilation (#1164).
+  only where a base on the chain does not bind, or the host has no compilation (#1164). The chain names
+  `UiComponent`, the root every component derives from, as a kind of its own, so a component written over
+  the root itself stays one (found by Copilot's review of the pull request).
 - A plain class's member that TypeScript reads as never null and starts as `undefined` is said to be one,
   `undefined!`, as one that starts as null already was (`TwinConstructor.StartOf`, #1169).
 

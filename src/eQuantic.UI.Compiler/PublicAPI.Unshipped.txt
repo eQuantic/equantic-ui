@@ -6,3 +6,4 @@ static eQuantic.UI.Compiler.Services.SourceMapComposer.Compose(string! outerMap,
 static eQuantic.UI.Compiler.Services.SourceMapComposer.ComposeFile(string! mapFile, string? namesFrom = null) -> void
 const eQuantic.UI.Compiler.CodeGen.Eq.ListAddRange = "$eq.collections.addRange" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListInsertRange = "$eq.collections.insertRange" -> string!
+eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.UiComponent = 5 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
