@@ -191,6 +191,17 @@ public class JsTemplateTests
             .Should().Be("(($0) => ($0 === g() ? $0 : 0))(a)");
     }
 
+    /// <summary>A hole is CODE: a string the template's text holds may spell one, as the test of
+    /// <c>s is "{0}"</c> does, and is written as it is. A template literal's interpolation is code, and
+    /// its hole is filled. Read in the strings too, the hole was filled with the part, and
+    /// <c>{1}</c> asked for a part the template does not have.</summary>
+    [Fact]
+    public void AStringThatSpellsAHole_IsLeftAsItIs()
+    {
+        Write(JsExpr.Template("({0} === '{0}' || {0} === \"{1}\" || {0} === `{1}${{0}}`)", Call("f()")))
+            .Should().Be("(($0) => ($0 === '{0}' || $0 === \"{1}\" || $0 === `{1}${$0}`))(f())");
+    }
+
     [Fact]
     public void TheFillIsOnePass_APartIsNeverScannedForHoles()
     {

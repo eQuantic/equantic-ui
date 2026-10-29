@@ -121,6 +121,10 @@ public static class JsExprWriter
     /// <c>{10}</c>, which a single digit left in the text as code.</summary>
     private static readonly Regex Hole = new(@"\{(\d+)\}", RegexOptions.Compiled);
 
+    /// <summary>The holes of a template's text, which are CODE: a string the text holds may spell one
+    /// (<c>s is "{0}"</c> compares with that text) and is left as it is (<see cref="CodeOf"/>).</summary>
+    private static MatchCollection HolesOf(string text) => Hole.Matches(CodeOf(text));
+
     /// <summary>
     /// Single evaluation, decided here and nowhere else. A part the template mentions more than
     /// once is bound to a parameter of an arrow and passed exactly once — unless it is a literal, or a
@@ -148,7 +152,7 @@ public static class JsExprWriter
     private static JsWritten RenderTemplate(JsTemplate template)
     {
         var parts = template.Parts;
-        var holes = Hole.Matches(template.Text);
+        var holes = HolesOf(template.Text);
         var uses = new int[parts.Count];
         var deferred = new bool[parts.Count];
         var inside = InsideAFunction(template.Text, holes);
@@ -311,7 +315,7 @@ public static class JsExprWriter
     /// <summary>The names the template's own text declares: its functions' parameters and its
     /// <c>const</c>, <c>let</c> and <c>var</c>. A part that reads one belongs inside the function that
     /// declares it.</summary>
-    private static HashSet<string> DeclaredBy(string text)
+    internal static HashSet<string> DeclaredBy(string text)
     {
         var names = new HashSet<string>(StringComparer.Ordinal);
         foreach (Match list in ParenthesizedParameters.Matches(text)) AddParameters(list.Groups[1].Value, names);
@@ -355,7 +359,7 @@ public static class JsExprWriter
     /// expression literal) leaves the whole text as it is, so a real read is never missed: a part
     /// taken for a reader stays where it was, and only a part taken for a non-reader moves.
     /// </summary>
-    private static string CodeOf(string text)
+    internal static string CodeOf(string text)
     {
         var code = text.ToCharArray();
         for (var i = 0; i < code.Length; i++)

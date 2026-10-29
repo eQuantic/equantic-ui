@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -25,7 +27,7 @@ public class IsPatternStrategy : IConversionStrategy
     {
         if (node is IsPatternExpressionSyntax isPattern)
         {
-            var expr = context.Converter.ConvertExpression(isPattern.Expression);
+            var input = context.Converter.ConvertIr(isPattern.Expression);
             var exprType = context.SemanticHelper.GetType(isPattern.Expression);
 
             // Peel top-level `not`s FIRST: bindings live in the inner pattern and must assign when
@@ -46,18 +48,17 @@ public class IsPatternStrategy : IConversionStrategy
             // Deconstruct-aware positional access, list patterns, nested var bindings). A bound `is` pattern
             // assigns its variables — to slots IfStatementStrategy hoisted (`let x;`) — inside the condition
             // via a comma sequence, guarded by `&&` so the reads only run once the pattern has matched.
-            // A subject that is not a plain path (a call, an element, an await) is read ONCE, as C#
-            // reads it (see Once).
-            var once = IsPath(expr) ? null : $"$v{isPattern.SpanStart}";
-            var access = once ?? expr;
+            // The test is written over a name for the input, which C# reads ONCE, and the writer decides
+            // how the input reaches it (Read).
+            var subject = $"$v{isPattern.SpanStart}";
             // The test is ONE pattern-matching operation: a Deconstruct the app wrote is called once for the
             // value, however many alternatives read its parts (`t is (1, _) or (_, 4)`), and held where the
             // test's own arrow declares it (MatchParts, Holding).
             var ((condition, bindings), held) = context.MatchParts.In(isPattern.SpanStart, () =>
             {
-                var built = PatternConverter.BuildCondition(pattern, access, context, exprType);
+                var built = PatternConverter.BuildCondition(pattern, subject, context, exprType);
                 var collected = new List<(string Name, string Access)>();
-                PatternConverter.CollectBindings(pattern, access, context, collected, exprType);
+                PatternConverter.CollectBindings(pattern, subject, context, collected, exprType);
                 return (built, collected);
             });
 
@@ -71,39 +72,37 @@ public class IsPatternStrategy : IConversionStrategy
             // replaces expected `x != null` and BuildCondition produces `(x != null)`, so the
             // optimisation never once ran — the call kept being evaluated twice, which is wasted
             // work when it is pure and a different answer when it is not.
-            if (bindings.Count == 1 && bindings[0].Access == access && IsPresenceOnly(pattern))
+            if (bindings.Count == 1 && bindings[0].Access == subject && IsPresenceOnly(pattern))
             {
-                var assigned = $"({bindings[0].Name} = {expr}) != null";
-                return negated ? $"!({assigned})" : assigned;
+                var assigned = $"({bindings[0].Name} = {subject}) != null";
+                return Read(negated ? $"!({assigned})" : assigned, subject, input);
             }
 
             var bound = bindings.Count == 0
                 ? condition
                 : $"({condition} && ({string.Concat(bindings.Select(b => $"{b.Name} = {b.Access}, "))}true))";
             var tested = negated ? $"!({bound})" : bound;
-            if (held.Count > 0) return Holding(tested, held, once, expr, context);
-            return once is null ? tested : Once(tested, once, expr);
+            return Read(held.Count > 0 ? Holding(tested, held, context) : tested, subject, input);
         }
 
         if (node is BinaryExpressionSyntax binary)
         {
-            var expr = context.Converter.ConvertExpression(binary.Left);
+            var input = context.Converter.ConvertIr(binary.Left);
             // `x is Type` asks the SAME question a type pattern does, so it gets the same answer
             // from the same place. It used to carry a copy of the rule that stopped at the
             // primitives and answered `!= null` for everything else — so `node is Icon` was true for
             // any non-null node, silently.
             // …unless it BINDS as a constant: `x is Limits.Max` parses as the type test and binds as a
             // constant pattern over the const, and was answered `x != null` (#451).
-            var once = IsPath(expr) ? null : $"$v{binary.SpanStart}";
-            var access = once ?? expr;
+            var subject = $"$v{binary.SpanStart}";
             string tested;
             if (context.SemanticHelper.GetOperation(binary) is IIsPatternOperation { Pattern: IConstantPatternOperation constant })
-                tested = PatternConverter.ConstantTest(access, ConstantOf(constant.Value, binary.Right, context), constant.Value, context);
+                tested = PatternConverter.ConstantTest(subject, ConstantOf(constant.Value, binary.Right, context), constant.Value, context);
             else if (binary.Right is TypeSyntax typeSyntax)
-                tested = PatternConverter.TypeCheck(typeSyntax, access, context);
+                tested = PatternConverter.TypeCheck(typeSyntax, subject, context);
             else
-                tested = $"{access} != null";
-            return once is null ? tested : Once(tested, once, expr);
+                tested = $"{subject} != null";
+            return Read(tested, subject, input);
         }
 
         throw new InvalidOperationException($"Invalid node type for IsPatternStrategy: {node.GetType().Name}");
@@ -145,39 +144,70 @@ public class IsPatternStrategy : IConversionStrategy
     public int Priority => 10;
 
     /// <summary>
-    /// A test written over <paramref name="subject"/>, a placeholder for <paramref name="expr"/>,
-    /// with the subject read ONCE, as C# reads it: bound by an arrow when the test, a subpattern or a
-    /// binding names it more than once (`Read() is char` called Read twice, and the second answer
-    /// could be another one), and written in its place when it names it once.
+    /// A test written over <paramref name="subject"/>, a name no C# identifier can take, with the
+    /// <paramref name="input"/> it stands for read ONCE, as C# reads it, whatever the pattern's shape.
+    /// The test becomes a template whose hole is each place its CODE names the subject, and the writer
+    /// decides single evaluation for it as for any template (<see cref="JsExprWriter"/>): the input is
+    /// bound once where the test reads it more than once, and a plain name or a literal is written in
+    /// its place. This strategy kept a rule of its own, which took a path of names (<c>c.Value</c>,
+    /// <c>this.value</c>) for a read nobody could observe and read it again at each mention, where a
+    /// property's getter runs each time (#1149).
+    /// <para>
+    /// An input the test never names is evaluated all the same, as C# evaluates it: <c>f() is var _</c>
+    /// called nothing. The template is written here, as the text this strategy returns, which every
+    /// consumer splices as it is.
+    /// </para>
     /// </summary>
-    private static string Once(string tested, string subject, string expr)
+    private static string Read(string tested, string subject, JsExpr input)
     {
-        var uses = System.Text.RegularExpressions.Regex.Matches(tested,
-            System.Text.RegularExpressions.Regex.Escape(subject) + @"(?![\w$])").Count;
-        return uses > 1 ? $"(({subject}) => {tested})({expr})" : tested.Replace(subject, expr);
+        var code = JsExprWriter.CodeOf(tested);
+        var named = Placeholder.Matches(code).Where(name => name.Value == subject).ToList();
+        // A name or a literal left out reads nothing anybody can observe, and TypeScript refuses one
+        // left of a comma (TS2695): a text strategy's name is one too, though the writer cannot tell.
+        if (named.Count == 0)
+            return JsExprWriter.IsInlinable(input) || input is JsOpaque { Text: var text } && Name.IsMatch(text)
+                ? tested
+                : JsExprWriter.Write(JsExpr.Template("({0}, " + tested + ")", input));
+
+        // The writer names what it binds `$0`, and the hole is in the test's own code: a function the
+        // test defined with a `$0` of its own would take the hole's reads for its own. None does (the
+        // arrow that holds a Deconstruct's parts declares `$p…`), and one that did would be a miscompile
+        // nobody sees, so it stops the build instead.
+        if (JsExprWriter.DeclaredBy(code).Contains("$0"))
+            throw new InvalidOperationException(
+                $"A pattern's test declares `$0`, the name the writer binds its input to: `{tested}`.");
+
+        var holed = new StringBuilder(tested.Length);
+        var from = 0;
+        foreach (var name in named)
+        {
+            holed.Append(tested, from, name.Index - from).Append("{0}");
+            from = name.Index + name.Length;
+        }
+        holed.Append(tested, from, tested.Length - from);
+        return JsExprWriter.Write(JsExpr.Template(holed.ToString(), input));
     }
+
+    /// <summary>A name the test is written over, <c>$v</c> and the span it starts at: a whole name,
+    /// never the head of a longer one.</summary>
+    private static readonly Regex Placeholder = new(@"(?<![\w$])\$v\d+(?![\w$])", RegexOptions.Compiled);
+
+    /// <summary>A plain name, as a text strategy writes one.</summary>
+    private static readonly Regex Name = new(@"^[A-Za-z_$][\w$]*$", RegexOptions.Compiled);
 
     /// <summary>
     /// A test whose operation holds the parts a <c>Deconstruct</c> the app wrote hands back
     /// (<see cref="MatchParts"/>), in an arrow of its own that declares where it holds them, fresh each
     /// time the test runs, so it needs no statement around it: an initializer called the
     /// <c>Deconstruct</c> once per part where no statement could declare a temporary (Copilot's second
-    /// review of #696). A subject that is not a plain path is the arrow's argument, read once, and an
-    /// <c>await</c> in it stays in the function it is written in.
+    /// review of #696). The input it reads is read once outside it (<see cref="Read"/>), and an
+    /// <c>await</c> in the input stays in the function it is written in.
     /// </summary>
-    private static string Holding(string tested, IReadOnlyList<string> held, string? subject, string expr,
-        ConversionContext context)
+    private static string Holding(string tested, IReadOnlyList<string> held, ConversionContext context)
     {
         var declared = ExpressionVariableScanner.Declarations(held, context.TypeAnnotations);
-        return subject is null
-            ? $"(() => {{ {declared}return {tested}; }})()"
-            : $"(({subject}) => {{ {declared}return {tested}; }})({expr})";
+        return $"(() => {{ {declared}return {tested}; }})()";
     }
-
-    /// <summary>A name, or names joined by dots (<c>this.items</c>): read again, it reads the same
-    /// thing, as the conversion has always assumed of a path.</summary>
-    private static bool IsPath(string converted) =>
-        System.Text.RegularExpressions.Regex.IsMatch(converted, @"^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$");
 
     /// <summary>
     /// Whether the pattern is `{ } name` — no type, no positional or property subpatterns, one
