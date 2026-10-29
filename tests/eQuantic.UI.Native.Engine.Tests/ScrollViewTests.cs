@@ -149,6 +149,36 @@ public class ScrollViewTests
         scroll.Children[0].Bounds.Height.Should().Be(90, "and its content fills what it was given");
     }
 
+    /// <summary>A stack a viewport that fills stretches aligns what it holds in the stretched box, as the web's
+    /// grid does in its flex line: it measured at its content's size and was only made larger afterwards, so
+    /// a centred box stood at the corner (found by Copilot reviewing #1158).</summary>
+    [Fact]
+    public void AStackInAViewportThatFills_AlignsWhatItHoldsInTheViewport()
+    {
+        var stack = new Stack(Alignment.Center);
+        stack.Add(new Primitives.Box(new BoxStyle { Width = 20, Height = 20 }));
+        var node = Layout(new ScrollView(stack, ScrollAxis.Horizontal)
+        {
+            Width = SizeValue.Fixed(120), Height = SizeValue.Fixed(80), FillViewport = true,
+        });
+
+        (node.Children[0].Bounds.Width, node.Children[0].Bounds.Height).Should().Be((120f, 80f));
+        var box = node.Children[0].Children[0].Bounds;
+        (box.X, box.Y).Should().Be((50f, 30f), "centred in the viewport it fills");
+    }
+
+    /// <summary>A cap stands in a viewport that fills, as the web's `max-height` holds a growing flex item: the
+    /// box measured at its cap and was then made as tall as the viewport, with what it held arranged for the
+    /// cap (found by Copilot reviewing #1158).</summary>
+    [Fact]
+    public void ACappedBoxInAViewportThatFills_KeepsItsCap()
+    {
+        var capped = new Primitives.Box(new BoxStyle { MaxHeight = 40 }, new Primitives.Box(new BoxStyle { Width = 10, Height = 20 }));
+        var node = Layout(new ScrollView(capped) { Height = SizeValue.Fixed(100), Width = SizeValue.Fill, FillViewport = true });
+
+        node.Children[0].Bounds.Height.Should().Be(40);
+    }
+
     private static LayoutNode? Find(LayoutNode node, Func<LayoutNode, bool> predicate)
     {
         if (predicate(node)) return node;

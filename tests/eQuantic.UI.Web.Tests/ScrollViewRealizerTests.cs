@@ -82,6 +82,21 @@ public class ScrollViewRealizerTests
         arms.Should().OnlyContain(arm => arm.Attributes["style"]!.Contains("flex-grow: 1"));
     }
 
+    /// <summary>Through a wrapper that draws no box, an InView's, the item is the box inside, since a grow on a
+    /// display:contents element does nothing (found by Copilot reviewing #1158). CROSS-PIN with the TS twin.</summary>
+    [Fact]
+    public void AViewportFilledThroughAWrapperThatDrawsNoBox_GrowsTheBoxInside()
+    {
+        var node = Render(new ScrollView(new InView(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill }), _ => { }))
+        {
+            Height = SizeValue.Fixed(100),
+            FillViewport = true,
+        });
+
+        var box = Descendants(node).Single(n => n.Attributes.TryGetValue("style", out var style) && style!.Contains("width: 100%"));
+        box.Attributes["style"].Should().Contain("flex-grow: 1").And.Contain("flex-shrink: 0");
+    }
+
     private static IEnumerable<HtmlNode> Descendants(HtmlNode node) =>
         node.Children.SelectMany(child => new[] { child }.Concat(Descendants(child)));
 

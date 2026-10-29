@@ -39,7 +39,10 @@ reported number stays because the marks paint across it.
   that sizes itself to what it holds and takes no stretch while it measures, a text, is given the extent as a
   row's stretch gives it, through the wrappers that take its size. A size a child states stands on both
   targets: the web grows the item only when it states no length on the scroll axis (first written as a floor
-  whatever the child asked; Copilot found it left a fixed child laid out for its old size, #1158).
+  whatever the child asked; Copilot found it left a fixed child laid out for its old size, #1158). A cap
+  stands too, and the bounds-only stretch is the text's alone: a container measured at less than the extent
+  keeps that size with what it holds arranged in it. A stack takes a flex line's stretch while it measures,
+  as the web's grid does, so it aligns its children in the stretched box.
 - **A stretched scroll view takes the stretched size on Photon.** A scroll view hugging on an axis its parent
   stretches now resolves to the stretched extent, as a box and a row do there and as the web's
   `height: 100%` does. Without it the row moved the scroll view's bounds after the scroll view had measured

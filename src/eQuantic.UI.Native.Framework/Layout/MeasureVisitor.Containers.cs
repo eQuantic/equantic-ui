@@ -65,12 +65,20 @@ internal sealed partial class MeasureVisitor
         var stackIndetH = stack.Height.Kind != SizeKind.Fixed && outerIndeterminateH;
         var contentW = 0f;
         var contentH = 0f;
+        // A hugging axis a FLEX line stretches is the line's, as the web's grid is when its flex item
+        // stretches (#1158): it was the content's, and the line moved the bounds after the children had
+        // been aligned in the smaller box, so a centred child stood at the corner. A block stretch stays
+        // the content's, as a box's stretch reaches no grid on the web.
+        var stretchedW = stack.Width.Kind == SizeKind.Hug && constraints.Width.Stretch == StretchKind.Flex
+            && !outerIndeterminateW && !float.IsPositiveInfinity(maxW);
+        var stretchedH = stack.Height.Kind == SizeKind.Hug && constraints.Height.Stretch == StretchKind.Flex
+            && !outerIndeterminateH && !float.IsPositiveInfinity(maxH);
         // The stack's own extent where it is known before its children are: the box a positioned
         // child's fractions are of, and the room a filling one is measured against.
         float? knownW = stack.Width.Kind == SizeKind.Fixed ? stack.Width.Value
-            : stack.Width.Kind == SizeKind.Fill && !float.IsPositiveInfinity(maxW) ? maxW : null;
+            : (stack.Width.Kind == SizeKind.Fill || stretchedW) && !float.IsPositiveInfinity(maxW) ? maxW : null;
         float? knownH = stack.Height.Kind == SizeKind.Fixed ? stack.Height.Value
-            : stack.Height.Kind == SizeKind.Fill && !float.IsPositiveInfinity(maxH) ? maxH : null;
+            : (stack.Height.Kind == SizeKind.Fill || stretchedH) && !float.IsPositiveInfinity(maxH) ? maxH : null;
 
         for (var stackIndex = 0; stackIndex < stack.Children.Count; stackIndex++)
         {
@@ -100,8 +108,8 @@ internal sealed partial class MeasureVisitor
             contentH = MathF.Max(contentH, measured.Bounds.Height);
         }
 
-        var width = ResolveSelf(stack.Width, maxW, contentW);
-        var height = ResolveSelf(stack.Height, maxH, contentH);
+        var width = ResolveSelf(stack.Width, maxW, contentW, stretched: stretchedW);
+        var height = ResolveSelf(stack.Height, maxH, contentH, stretched: stretchedH);
         result.Bounds = new Rect(0, 0, width, height);
 
         for (var i = 0; i < stack.Children.Count; i++)
@@ -249,9 +257,7 @@ internal sealed partial class MeasureVisitor
     /// Content that fills its viewport (<see cref="ScrollView.FillViewport"/>, #1143): measured again at the
     /// viewport's size, stretched, on each axis it came out smaller on, so a hugging row takes the viewport's
     /// height and hands it to what it stretches. A size the content states stands, on either axis, as under
-    /// any stretch and as the web's flex line keeps it; one that sizes itself to what it holds and took no
-    /// stretch while it measured, a text, is given the viewport's extent through the wrappers that take its
-    /// size, as a row's stretch gives it the line's. Decided here, in the measure that sizes the viewport: a
+    /// any stretch and as the web's flex line keeps it, and so does a cap. Decided here, in the measure that sizes the viewport: a
     /// size reported after the frame and built back lagged one, so a pane that shrank ran its content past
     /// it until the next.
     /// </summary>
@@ -267,18 +273,22 @@ internal sealed partial class MeasureVisitor
             Height = shortH ? Filled(forChild.Height, height) : forChild.Height,
         };
         child = Measure(scroll.Child, filled, ctx, at?.ChildAt(0));
-        if (shortW) Pin(child, horizontal: true, width);
-        if (shortH) Pin(child, horizontal: false, height);
+        // The arrange half of the stretch, for the one node that cannot take it while it measures: a text
+        // sizes itself to its lines, and is given the extent through the wrappers that take its size, as a
+        // row's stretch gives it the line's. A container that measured at less than the extent did so for a
+        // reason (a cap, a size of its own) and keeps it, with what it holds arranged in it.
+        if (SizedBy(child).Source is Text)
+        {
+            if (shortW) Pin(child, horizontal: true, width);
+            if (shortH) Pin(child, horizontal: false, height);
+        }
         return child;
 
         static AxisConstraint Filled(AxisConstraint axis, float extent) =>
             axis.WithMax(extent).DecidedByContent(false).Stretched(StretchKind.Flex);
 
-        // The arrange half of the stretch, where the measure could not take it: the wrapper and every node
-        // whose size it takes, down to the one that declares a size, which keeps it.
         static void Pin(LayoutNode node, bool horizontal, float extent)
         {
-            if (MainSizeKind(SizedBy(node).Source, horizontal) is SizeKind.Fixed or SizeKind.WindowMinus) return;
             while (true)
             {
                 if ((horizontal ? node.Bounds.Width : node.Bounds.Height) < extent)

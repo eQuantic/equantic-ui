@@ -413,6 +413,23 @@ describe('a scroll view that fills its viewport', () => {
     expect(child).not.toContain('flex-grow');
   });
 
+  it('grows the box inside a wrapper that draws no box, an InView', () => {
+    const inView = { nodeKind: 'inView', child: box({ width: { kind: 'fill', value: 0 } }) } as never;
+    const lowered = lowerVisualNode(
+      scrollNode({ child: inView, height: { kind: 'fixed', value: 100 }, fillViewport: true }),
+      context(),
+    ) as HtmlNode;
+    const found: HtmlNode[] = [];
+    const walk = (node: HtmlNode) => {
+      if (effectiveStyle(node).includes('width: 100%')) found.push(node);
+      node.children.forEach(walk);
+    };
+    lowered.children.forEach(walk);
+    expect(found).toHaveLength(1);
+    expect(effectiveStyle(found[0])).toContain('flex-grow: 1');
+    expect(effectiveStyle(found[0])).toContain('flex-shrink: 0');
+  });
+
   it("grows each arm of an adaptive child, since the gates are display: contents", () => {
     const fill = { width: { kind: 'fill', value: 0 } };
     const adaptive = { nodeKind: 'adaptive', compact: box(fill), expanded: box(fill) } as never;

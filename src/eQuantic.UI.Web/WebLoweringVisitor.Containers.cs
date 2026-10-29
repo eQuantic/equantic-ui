@@ -585,11 +585,18 @@ internal sealed partial class WebLoweringVisitor
     /// An item of a scroller's line that fills its viewport (TS twin: <c>fillsViewport</c>): it never shrinks
     /// under its content, and it grows to the viewport on the scroll axis unless it states a length there, a
     /// fixed size or the window's (<c>px</c> or <c>calc</c>), which stands, as it does on Photon and across
-    /// under the line's stretch. Its own flex-shrink is replaced, never joined.
+    /// under the line's stretch. Its own flex-shrink is replaced, never joined. Through a wrapper that draws no
+    /// box, the items are the first descendants that draw one (#1158).
     /// </summary>
     private static HtmlElement? FillsViewport(HtmlElement? lowered, bool horizontal)
     {
         if (lowered is null) return null;
+        // A wrapper that draws no box (an InView, an arm's gate) is not the line's item: its children are.
+        if (DrawsNoBox(lowered))
+        {
+            foreach (var inner in lowered.Children.OfType<HtmlElement>()) FillsViewport(inner, horizontal);
+            return lowered;
+        }
         lowered.Style ??= new HtmlStyle();
         var own = (horizontal ? lowered.Style.Width : lowered.Style.Height)?.Trim();
         if (own is null || !(own.EndsWith("px", StringComparison.Ordinal) || own.StartsWith("calc(", StringComparison.Ordinal)))
