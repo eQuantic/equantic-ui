@@ -77,10 +77,10 @@ public static class Transpiler
     /// what it holds. The project compilation is replaced, with the referenced trees beside it, and so
     /// is the dependency resolver, scanned from that compilation (the emitter's import net, the
     /// parser's chains and the converter's fallback receivers all read the new one). No referenced
-    /// modules are ever handed over: a prelude references no project. The emitter clears the
-    /// converter's diagnostics, its refused twins and the names it used at every module, and builds a
-    /// new semantic helper with each model. What survives is keyed by identity (the converter's node
-    /// cache, and the static tables of <c>ValueCopies</c>, <c>LocalFunctionName</c>,
+    /// modules are ever handed over: a prelude references no project. The emitter resets the
+    /// converter at every module (its diagnostics, its refused twins, the names it used, its node cache
+    /// and its temporaries), and builds a new semantic helper with each model. What survives is keyed by
+    /// identity (the static tables of <c>ValueCopies</c>, <c>LocalFunctionName</c>,
     /// <c>ResourceClasses</c> and <c>JsExprWriter</c>, keyed by a compilation, a node or an IR node),
     /// or is never read for an error (the resource reads and the discovered resource classes), or is
     /// keyed by name and answered by a type .NET loads, which no prelude's is

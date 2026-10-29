@@ -453,8 +453,8 @@ export class CodeGoTo {
                     }
                 }
             }
-            let $n64: any; 
-            found.push(($n64 = new CodeGoToEntry(name, symbol.kind, symbol.range, symbol.selectionRange.start), $n64.container = container, $n64.deprecated = symbol.deprecated, $n64.matches = matches, $n64.containerMatches = containerMatches, $n64));
+            let $n8: any; 
+            found.push(($n8 = new CodeGoToEntry(name, symbol.kind, symbol.range, symbol.selectionRange.start), $n8.container = container, $n8.deprecated = symbol.deprecated, $n8.matches = matches, $n8.containerMatches = containerMatches, $n8));
             scores.push(score);
         }
         let order: number[] = [];
@@ -634,8 +634,8 @@ export class CodeGoTo {
         let where = $eq.text.format(start.line + 1, null, undefined, undefined, 'int32') + ':' + $eq.text.format(start.column + 1, null, undefined, undefined, 'int32');
         let other: any; 
         if ((other = place.document) != null) {
-            let $n68: any; 
-            return ($n68 = new CodeGoToEntry(CodeGoTo.nameOf(other), null, place.range, start), $n68.container = where, $n68.document = other, $n68);
+            let $n12: any; 
+            return ($n12 = new CodeGoToEntry(CodeGoTo.nameOf(other), null, place.range, start), $n12.container = where, $n12.document = other, $n12);
         }
         let at = document.clamp(start);
         let text = document.line(at.line);
@@ -646,8 +646,8 @@ export class CodeGoTo {
         let to = (end.line === at.line ? end.column : text.length) - lead;
         let marked: number[] = [];
         for (let column = Math.max(at.column, lead) - lead; column < to && column < name.length; column++) marked.push(column);
-        let $n69: any; 
-        return ($n69 = new CodeGoToEntry(name, null, place.range, start), $n69.container = where, $n69.matches = marked, $n69);
+        let $n13: any; 
+        return ($n13 = new CodeGoToEntry(name, null, place.range, start), $n13.container = where, $n13.matches = marked, $n13);
     }
 
     static nameOf(document: string) {

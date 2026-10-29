@@ -332,21 +332,38 @@ public class TypeScriptEmitter
     public IReadOnlyList<Services.ResourceUse> GetLastResourceUses() => _converter.ResourceUses;
 
     /// <summary>
+    /// Where every module this emitter writes starts, a component's and a class's alike: from a
+    /// converter that holds nothing of the module written before it (<see cref="ConversionContext.Reset"/>),
+    /// with this module's model and class in force. The two are set after the reset, whatever it keeps
+    /// of them: a module's model is its own file's, never the one the module before it left. Its
+    /// diagnostics start at zero too, since the compiler drains them for this module's file alone.
+    /// <para>
+    /// A class's module cleared the names it used and its diagnostics, and nothing else, so it numbered
+    /// its temporaries after the module before it (the runtime's <c>SheetController</c> twin began at
+    /// <c>$n88</c>), an edit to one class renumbered every twin written after it, and the node cache kept
+    /// every earlier module's trees alive (#1138).
+    /// </para>
+    /// </summary>
+    private void BeginModule(SemanticModel? semanticModel, string className)
+    {
+        _converter.Reset();
+        _converter.EmitTypeAnnotations(TypeAnnotations);
+        _converter.EmitDesignOrigins(DesignMode);
+        _semanticModel = semanticModel;
+        _converter.SetSemanticModel(semanticModel);
+        _converter.SetCurrentClass(className);
+        _hydrationReferences.Clear();
+        _hydrationRuntimeReferences.Clear();
+        _annotationReferences.Clear();
+    }
+
+    /// <summary>
     /// Generate TypeScript code for a component
     /// </summary>
     public string Emit(ComponentDefinition component, SemanticModel? semanticModel = null)
     {
-        _converter.EmitTypeAnnotations(TypeAnnotations);
-        _converter.EmitDesignOrigins(DesignMode);
+        BeginModule(semanticModel, component.Name);
         _builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
-        _semanticModel = semanticModel;
-        _converter.SetSemanticModel(semanticModel);
-        // Everything the PREVIOUS component left behind goes here — the node cache above all, which
-        // pins a syntax tree per entry and used to survive this point (see ConversionContext.Reset).
-        _converter.Reset();
-        _hydrationReferences.Clear();
-        _hydrationRuntimeReferences.Clear();
-        _annotationReferences.Clear();
         component.UsedHelpers.Clear();
 
         // Note: We'll emit imports AFTER generating component code
@@ -2728,19 +2745,9 @@ public class TypeScriptEmitter
 
     private string EmitClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel, bool asStatic)
     {
-        if (semanticModel != null) { _semanticModel = semanticModel; _converter.SetSemanticModel(semanticModel); }
-        _converter.EmitTypeAnnotations(TypeAnnotations);
-        _converter.EmitDesignOrigins(DesignMode);
-        _converter.SetCurrentClass(cls.TwinTypeName());
-        _converter.UsedHelpers.Clear();
-        _converter.UsedAppTypes.Clear();
-        _converter.UsedRuntimeTypes.Clear();
-        // This module's diagnostics start at zero — without this, GetLastDiagnostics() after a
-        // plain-class/static-helper emit still carried the PREVIOUS component's entries, and now
-        // that ComponentCompiler drains every branch, a leak here would fail the wrong file.
-        _converter.ClearDiagnostics();
         // Its twin's name, its owners' and its own (#584): a nested class is a module of its own too.
         var name = cls.TwinTypeName();
+        BeginModule(semanticModel, name);
 
         // The BASE class travels. Dropping it is how `CSharpLanguage : CurlyBraceLanguage` came out
         // as an empty class that answered "tokenize is not a function" — from very far away from the
