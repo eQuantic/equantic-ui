@@ -77,10 +77,10 @@ case "$bun" in "$packages"/*)
 esac
 
 # And the bun did its work: the app's modules, beside the runtime the Server package ships.
-modules=$(find "$work/app/wwwroot/_equantic" -maxdepth 1 -name '*.js' ! -name runtime.js | wc -l | tr -d ' ')
-if [ "$modules" -eq 0 ]; then
+modules=$(cd "$work/app/wwwroot/_equantic" 2>/dev/null && find . -maxdepth 1 -name '*.js' ! -name runtime.js | sed 's|^\./||' | LC_ALL=C sort | tr '\n' ' ')
+if [ -z "$modules" ]; then
     echo "::error::the build wrote no module of the app under wwwroot/_equantic"
     exit 1
 fi
 
-echo "Built against a read-only package cache: $modules module(s), bun from $bun."
+echo "Built against a read-only package cache: $modules(bun from $bun)."

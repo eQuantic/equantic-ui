@@ -72,8 +72,20 @@ public static class ProgramArchive
         if (File.Exists(program)) return (program, false);
 
         // A folder of that name holds the whole program or nothing, unless a hand took the program out
-        // of it: that one goes, or the rename below could never land.
-        if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        // of it: that one goes, or the rename below could never land. The program is asked again
+        // here, since another build may have renamed its folder into place since the line above,
+        // and that folder is whole.
+        if (Directory.Exists(folder) && !File.Exists(program))
+        {
+            try
+            {
+                Directory.Delete(folder, recursive: true);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // Another build took the same broken folder away first.
+            }
+        }
 
         var staging = folder + ".partial-" + Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(staging);
