@@ -23,6 +23,13 @@ give the same answer.
 - **THEN** it is written as a component, `extends UiComponent` with its type id, and the resolver lists it
   among no plain classes
 
+#### Scenario: A class of the app's named like the root
+
+- **WHEN** `namespace App.Models { public class UiComponent { … } public sealed class Panel : UiComponent { … } }`
+  is transpiled with the project's compilation
+- **THEN** both are written as plain classes, with no component's type id, and the resolver lists both
+  among the plain classes
+
 #### Scenario: A class over a base the compilation cannot bind
 
 - **WHEN** `public sealed class Legacy : MissingBase { public override VisualNode Build(ComponentContext context) => … }`

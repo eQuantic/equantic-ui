@@ -58,7 +58,10 @@ public static class TypeSymbolExtensions
                 case "StatelessComponent": return ComponentBaseKind.StatelessComponent;
                 case "HtmlElement": return ComponentBaseKind.HtmlElement;
                 case "ComponentState": return ComponentBaseKind.ComponentState;
-                case "UiComponent": return ComponentBaseKind.UiComponent;
+                // The root by the vocabulary's own name only: the app may call a class of its own UiComponent,
+                // and the chain binds it to what it is (Copilot's second review of #1171).
+                case "UiComponent" when t.ContainingNamespace?.ToDisplayString() == "eQuantic.UI.Primitives":
+                    return ComponentBaseKind.UiComponent;
             }
         }
         return ComponentBaseKind.None;

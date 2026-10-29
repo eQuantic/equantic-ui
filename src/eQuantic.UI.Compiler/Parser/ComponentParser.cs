@@ -250,7 +250,6 @@ public class ComponentParser
                     case "StatelessComponent": return ComponentBaseKind.StatelessComponent;
                     case "HtmlElement": return ComponentBaseKind.HtmlElement;
                     case "ComponentState": return ComponentBaseKind.ComponentState;
-                    case "UiComponent": return ComponentBaseKind.UiComponent;
                 }
                 name = writtenBaseByName.TryGetValue(name, out var next) ? next : null;
             }

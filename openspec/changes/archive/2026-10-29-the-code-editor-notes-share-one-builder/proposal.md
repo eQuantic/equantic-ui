@@ -38,7 +38,8 @@ nothing but `object` (#1164). Its twin extended `StatelessComponent` and typed `
   the parser and in the resolver alike (`TypeSymbolExtensions.BasesBind`); the name of a method decides
   only where a base on the chain does not bind, or the host has no compilation (#1164). The chain names
   `UiComponent`, the root every component derives from, as a kind of its own, so a component written over
-  the root itself stays one (found by Copilot's review of the pull request).
+  the root itself stays one (found by Copilot's review of the pull request), and only the vocabulary's root,
+  by its namespace, so an app's own class called `UiComponent` stays plain (its second review).
 - A plain class's member that TypeScript reads as never null and starts as `undefined` is said to be one,
   `undefined!`, as one that starts as null already was (`TwinConstructor.StartOf`, #1169).
 

@@ -40,9 +40,10 @@ public enum ComponentBaseKind
     /// own page rather than as a standalone module.</summary>
     ComponentState,
 
-    /// <summary>Reaches <c>UiComponent</c>, the root every component derives from, and none of the bases
-    /// below it: a component written over the root itself, which builds as a stateless one. It was
-    /// <see cref="None"/>, a component only by a method called <c>Build</c>, until the chain decided
-    /// (#1164, found by Copilot's review of #1171).</summary>
+    /// <summary>Reaches the vocabulary's <c>UiComponent</c>, the root every component derives from, and none
+    /// of the bases below it: a component written over the root itself, which builds as a stateless one. It
+    /// was <see cref="None"/>, a component only by a method called <c>Build</c>, until the chain decided
+    /// (#1164, found by Copilot's review of #1171). The root is known by its namespace too: an app's own
+    /// class called <c>UiComponent</c> is none.</summary>
     UiComponent,
 }

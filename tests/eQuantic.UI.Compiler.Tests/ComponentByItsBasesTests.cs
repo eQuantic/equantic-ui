@@ -77,6 +77,30 @@ public class ComponentByItsBasesTests
     }
 
     /// <summary>
+    /// Only the vocabulary's root is the root: a class of the app's that happens to be called <c>UiComponent</c>,
+    /// and a class over it, are plain classes the chain binds, whatever the name says (Copilot's second review of
+    /// #1171). Matched by its simple name, the root made both components, with a type id and no method called
+    /// <c>Build</c> in either.
+    /// </summary>
+    [Fact]
+    public void AnAppClassNamedLikeTheRoot_IsAPlainClass()
+    {
+        var (modules, resolver) = Transpile("""
+            namespace App.Models
+            {
+                public class UiComponent { public string Name = "model"; }
+                public sealed class Panel : UiComponent { public int Width = 3; }
+            }
+            """);
+
+        foreach (var plain in new[] { "UiComponent", "Panel" })
+        {
+            modules[plain].Should().NotContain("$typeId", $"{plain} derives from no component");
+            resolver.GetAllPlainClasses().Should().Contain(plain, "the resolver reads the same chain");
+        }
+    }
+
+    /// <summary>
     /// Where the compilation cannot bind a base on the chain (a reference it lacks), it cannot say what the class
     /// derives from, and the declaration's own words decide, as they always did: a class that overrides
     /// <c>Build</c> over an unknown base is still taken for a component.
