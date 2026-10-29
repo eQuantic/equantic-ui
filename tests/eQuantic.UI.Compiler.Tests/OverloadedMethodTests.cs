@@ -239,6 +239,39 @@ public class OverloadedMethodTests
         result.TypeScript.Should().Contain("label(", Exactly.Once(), "the twin holds the method that crosses, and only it");
     }
 
+    /// <summary>A server-only method that only its symbol says is one, by an alias or on the defining
+    /// half of a partial method, is left out of the twin as one marked where it is written (#1140), so it
+    /// names nothing there either: it took the name its overload holds, and the type was refused.</summary>
+    [Theory]
+    [InlineData("public sealed partial class Bag", "", "alias")]
+    [InlineData("public static partial class Bag", "static ", "alias")]
+    [InlineData("public sealed partial record Bag(int N)", "", "alias")]
+    [InlineData("public partial struct Bag", "", "alias")]
+    [InlineData("public sealed partial class Bag", "", "partial")]
+    [InlineData("public static partial class Bag", "static ", "partial")]
+    [InlineData("public sealed partial record Bag(int N)", "", "partial")]
+    [InlineData("public partial struct Bag", "", "partial")]
+    public void AServerOnlyMethodKnownByItsSymbol_TakesNoName(string declaration, string modifier, string spelling)
+    {
+        var serverOnly = spelling == "alias"
+            ? $"[Keep] public {modifier}string Label(System.Net.Http.HttpClient client) => \"\";"
+            : $"[ServerOnly] public {modifier}partial string Label(System.Net.Http.HttpClient client);\n"
+              + $"    public {modifier}partial string Label(System.Net.Http.HttpClient client) => \"\";";
+        var result = Compile($$"""
+            using eQuantic.UI.Primitives;
+            using Keep = eQuantic.UI.Primitives.ServerOnlyAttribute;
+
+            {{declaration}}
+            {
+                {{serverOnly}}
+                public {{modifier}}string Label(string s) => s;
+            }
+            """, "Bag");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007");
+        result.TypeScript.Should().Contain("label(", Exactly.Once(), "the twin holds the method that crosses, and only it");
+    }
+
     /// <summary>A static class nested in a component is embedded in its module, a class of its own.</summary>
     [Fact]
     public void AStaticClassNestedInAComponent_IsCheckedToo()

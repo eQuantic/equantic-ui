@@ -151,7 +151,7 @@ internal static class OverloadedMethods
     private static IEnumerable<Name> Names(TypeDeclarationSyntax type, bool allStatic, bool isComponent, SemanticModel? model)
     {
         // Each by the name it holds on the twin: one that hides an inherited member holds its own (#563).
-        foreach (var (method, isStatic) in Methods(type, allStatic, isComponent))
+        foreach (var (method, isStatic) in Methods(type, allStatic, isComponent, model))
             yield return new(TwinMethodName.Of(method, model?.SyntaxTree == method.SyntaxTree ? model : null), isStatic,
                 Signature(method), method.Identifier, Bearer.Method);
 
@@ -206,7 +206,7 @@ internal static class OverloadedMethods
         if (type is not (RecordDeclarationSyntax or StructDeclarationSyntax)) return;
         var instance = HeldOnEachInstance(type, model)
             .Concat(type.Members.OfType<MethodDeclarationSyntax>()
-                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && TakesAName(method, isComponent: false))
+                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && TakesAName(method, isComponent: false, model))
                 .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)));
         var first = new Dictionary<string, (string Name, string Shown, SyntaxToken At)>(StringComparer.Ordinal);
         foreach (var member in instance.OrderBy(member => member.At.SpanStart))
@@ -287,7 +287,7 @@ internal static class OverloadedMethods
         if (held.Count == 0) return;
         var members = HeldOnEachInstance(type, model).Where(member => member.At.Parent is not ParameterSyntax)
             .Concat(type.Members.OfType<MethodDeclarationSyntax>()
-                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && TakesAName(method, isComponent: false))
+                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && TakesAName(method, isComponent: false, model))
                 .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)))
             .ToList();
         foreach (var parameter in held)
@@ -549,7 +549,7 @@ internal static class OverloadedMethods
         if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared)
             return;
         var allStatic = type.Modifiers.Any(SyntaxKind.StaticKeyword);
-        foreach (var (method, isStatic) in Methods(type, allStatic, isComponent))
+        foreach (var (method, isStatic) in Methods(type, allStatic, isComponent, model))
         {
             if (model.GetDeclaredSymbol(method) is not IMethodSymbol symbol) continue;
             var name = TwinMethodName.Of(symbol);
@@ -807,19 +807,19 @@ internal static class OverloadedMethods
     /// <summary>The methods that take a name in the twin, in declaration order, with whether each
     /// one is static there.</summary>
     private static IEnumerable<(MethodDeclarationSyntax Method, bool Static)> Methods(TypeDeclarationSyntax type,
-        bool allStatic, bool isComponent)
+        bool allStatic, bool isComponent, SemanticModel? model)
     {
         foreach (var member in type.Members)
         {
             switch (member)
             {
-                case MethodDeclarationSyntax method when TakesAName(method, isComponent):
+                case MethodDeclarationSyntax method when TakesAName(method, isComponent, model):
                     yield return (method, allStatic || method.Modifiers.Any(SyntaxKind.StaticKeyword));
                     break;
 
                 case ExtensionBlockDeclarationSyntax block:
                     foreach (var extension in block.Members.OfType<MethodDeclarationSyntax>()
-                                 .Where(extension => TakesAName(extension, isComponent: false)))
+                                 .Where(extension => TakesAName(extension, isComponent: false, model)))
                         yield return (extension, true);
                     break;
             }
@@ -838,12 +838,12 @@ internal static class OverloadedMethods
     /// "rename it" would be an answer nobody can follow. How it lowers is its own question.
     /// </para>
     /// </summary>
-    private static bool TakesAName(MethodDeclarationSyntax method, bool isComponent)
+    private static bool TakesAName(MethodDeclarationSyntax method, bool isComponent, SemanticModel? model)
     {
         if (method.ExplicitInterfaceSpecifier is not null) return false;
         if (method.Modifiers.Any(SyntaxKind.PartialKeyword) && method.Body is null && method.ExpressionBody is null)
             return false;
-        return !Parser.ComponentParser.StaysOnTheServer(method, isComponent);
+        return !Parser.ComponentParser.StaysOnTheServer(method, isComponent, model);
     }
 
     /// <summary><c>Compare(CodeDocument, CodeDocument)</c>: the name and the parameter types, which is

@@ -544,14 +544,42 @@ public class ComponentParser
     /// <param name="node">A node of the declaration being read.</param>
     /// <param name="inAComponent">Whether that declaration is a component's: a <c>[ServerAction]</c> is
     /// served for a component alone, so on any other type it is a method like the rest.</param>
-    internal static bool StaysOnTheServer(SyntaxNode node, bool inAComponent) => node switch
+    /// <param name="model">A model of the compilation that holds <paramref name="node"/>, which says
+    /// whether a method is marked (<see cref="IsServerOnlyMethod"/>); null where the caller has none,
+    /// and the method is read as written.</param>
+    internal static bool StaysOnTheServer(SyntaxNode node, bool inAComponent, SemanticModel? model) => node switch
     {
         MethodDeclarationSyntax or OperatorDeclarationSyntax or ConversionOperatorDeclarationSyntax =>
-            PlainClassModule.IsServerOnlyDeclaration((MemberDeclarationSyntax)node),
+            IsServerOnlyMethod((BaseMethodDeclarationSyntax)node, model),
         BlockSyntax or ArrowExpressionClauseSyntax => inAComponent
             && node.Parent is MethodDeclarationSyntax action && IsServerAction(action),
         _ => false,
     };
+
+    /// <summary>
+    /// Whether a method, an operator or a conversion is marked <c>[ServerOnly]</c>, asked of its SYMBOL
+    /// wherever a model holds its tree, and of its attribute lists by name only where none does. The
+    /// lists alone missed two spellings C# accepts (#1140): an alias
+    /// (<c>using Keep = eQuantic.UI.Primitives.ServerOnlyAttribute;</c>), and the defining half of a
+    /// partial method, whose attributes C# merges with those of the implementing half, the one with the
+    /// body. Each was written into its type's twin, and its server code refused there.
+    /// <para>
+    /// The minimal model of a standalone compile answers too: with no reference the attribute binds to an
+    /// error type, which still carries its name, the alias target's for an alias. A member that writes no
+    /// attribute and is no partial method can carry none, so it is answered without binding anything,
+    /// which keeps the scans that ask the rule of every node of a declaration as cheap as they were.
+    /// </para>
+    /// </summary>
+    private static bool IsServerOnlyMethod(BaseMethodDeclarationSyntax method, SemanticModel? model)
+    {
+        if (method.AttributeLists.Count == 0 && !method.Modifiers.Any(SyntaxKind.PartialKeyword)) return false;
+        var own = model is null ? null
+            : ReferenceEquals(model.SyntaxTree, method.SyntaxTree) ? model
+            : model.Compilation.ModelOf(method.SyntaxTree);
+        return own?.GetDeclaredSymbol(method) is IMethodSymbol symbol
+            ? symbol.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute")
+            : PlainClassModule.IsServerOnlyDeclaration(method);
+    }
 
     /// <summary>A method a component runs on the server and calls from the browser: its twin is a stub
     /// written from its SIGNATURE, and its body never crosses.</summary>
@@ -585,10 +613,11 @@ public class ComponentParser
         // Extract methods (excluding Render/Build which are handled separately)
         var methods = classDecl.Members
             .OfType<MethodDeclarationSyntax>();
+        var model = TryGetSemanticModel(classDecl.SyntaxTree);
         
         foreach (var method in methods)
         {
-            if (StaysOnTheServer(method, inAComponent: true)) continue;
+            if (StaysOnTheServer(method, inAComponent: true, model)) continue;
             // A [ServerAction] body runs on the SERVER; the client twin is the RPC stub the
             // emitter writes from definition.ServerActions. Transpiling the body here shipped
             // server code (DbContexts, Stopwatches, the compiler itself) into the browser.
