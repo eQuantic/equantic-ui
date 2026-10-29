@@ -131,7 +131,7 @@ internal static class MembersOnOneName
             member.Method is { } method && TwinOwnMembers.Overrides(method, overridden)
                 ? ""
                 : what + $" Only an override of `{overridden}({(overridden == nameof(Equals) ? "object" : "")})` takes "
-                    + "that place: give this one a name of its own.";
+                    + "that place. Give this one a name of its own.";
         var held = member.Lowered switch
         {
             "with" when type is RecordDeclarationSyntax or StructDeclarationSyntax =>

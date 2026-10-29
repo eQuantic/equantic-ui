@@ -794,7 +794,7 @@ public class OverloadedMethodTests
         { "Twins", "public sealed class Twins { public int Total { get; set; } = 1; public int total { get; set; } = 2; }", "Twins.total", "Twins.Total" },
         { "Named", "public sealed class Named { public string Name { get; set; } = \"a\"; public string name() => Name; }", "Named.name()", "Named.Name" },
         { "Clicker", "public sealed class Clicker { public event System.Action? Changed; public void changed() => Changed?.Invoke(); }", "Clicker.changed()", "Clicker.Changed" },
-        { "Sizes", "public static class Sizes { extension(string s) { public int Size => s.Length; } public static int Size(this System.Collections.Generic.List<int> l) => l.Count; }", "Sizes.Size(List<int>)", "Sizes.extension(string).Size" },
+        { "Sizes", "public static class Sizes { extension(string s) { public int Size => s.Length; } public static int Size(this System.Collections.Generic.List<int> l) => l.Count; }", "Sizes.Size(System.Collections.Generic.List<int>)", "Sizes.extension(string).Size" },
         { "Items", "public static class Items { extension(string s) { public char this[int i] => s[i]; } public static int Item(int x) => x; }", "Items.Item(int)", "Items.extension(string).this[int]" },
         { "Texts", "public static class Texts { extension(string) { public static string Blank => \"\"; } public static string blank() => \"b\"; }", "Texts.blank()", "Texts.extension(string).Blank" },
         { "Money", "public sealed record Money(int Cents) { public static implicit operator Money(int cents) => new(cents); public static Money FromInt(int cents) => new(cents * 100); }", "Money.FromInt(int)", "Money.implicit operator Money(int)" },
