@@ -46,8 +46,11 @@ public class MinMaxStrategy : IConversionStrategy
 
         // No model to ask what the call answers: the numeric answer it always had, Math.min's of no
         // values (Infinity) for an empty list, and a NaN among them winning.
-        // The fold is IR, an arrow that holds no C#: the selector is mapped over the values before it.
-        var source = LinqSource.Ir(memberAccess.Expression, context);
+        // The fold is IR, an arrow that holds no C#: the selector is mapped over the values before it. The
+        // values are the runtime's sequence of the source, an array as it is, since no model says the
+        // source is one: a set's spread worked, and a set has no `reduce`.
+        context.UsedHelpers.Add(Eq.Import);
+        var source = JsExpr.Call(JsExpr.Identifier(Eq.LinqSeq), LinqSource.Ir(memberAccess.Expression, context));
         var args = invocation.ArgumentList.Arguments;
         var (extreme, none) = methodName == "Min" ? ("min", "Infinity") : ("max", "-Infinity");
         var values = args.Count > 0

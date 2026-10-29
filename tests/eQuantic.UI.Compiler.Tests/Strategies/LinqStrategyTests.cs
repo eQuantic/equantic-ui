@@ -256,11 +256,13 @@ public class LinqStrategyTests
     /// <summary>
     /// With no model to say what the call answers, <c>Max</c> and <c>Min</c> keep the numeric answer of
     /// <c>Math.max</c> and <c>Math.min</c>, folded over the values: spread into the call, the values were
-    /// its arguments, past the cap an engine sets on them (#1060).
+    /// its arguments, past the cap an engine sets on them (#1060). The values are the runtime's sequence of
+    /// the source, which no model says is an array: a set's spread worked, and a set has no <c>reduce</c>
+    /// (found by Copilot's review of #1161).
     /// </summary>
     [Theory]
-    [InlineData("values.Max()", "values.reduce(($m, $v) => Math.max($m, $v), -Infinity)")]
-    [InlineData("values.Min(x => x.Size)", "values.map((x) => x.size).reduce(($m, $v) => Math.min($m, $v), Infinity)")]
+    [InlineData("values.Max()", "$eq.linq.seq(values).reduce(($m, $v) => Math.max($m, $v), -Infinity)")]
+    [InlineData("values.Min(x => x.Size)", "$eq.linq.seq(values).map((x) => x.size).reduce(($m, $v) => Math.min($m, $v), Infinity)")]
     public void MaxMin_WithNoModel_FoldTheValues(string code, string expected) =>
         new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
 

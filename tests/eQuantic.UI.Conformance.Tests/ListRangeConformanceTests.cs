@@ -38,8 +38,8 @@ public class ListRangeConformanceTests
     /// TypeError; a string adds its UTF-16 chars, where the spread read its code points; an index past the
     /// end or below zero is refused, where <c>splice</c> appended or counted from the end; the collection
     /// is checked before the index, as .NET checks them; a named argument fills the parameter it names,
-    /// where the collection took the index's place and was spread from a number; and a collection is
-    /// read as one, as .NET reads it.
+    /// where the collection took the index's place and was spread from a number; a collection is read as
+    /// one, as .NET reads it; and a null list is refused before its arguments are, as a call through null is.
     /// </summary>
     [SkippableTheory]
     [InlineData("try { new List<int>().AddRange(null); return \"added\"; } catch (ArgumentNullException e) { return e.Message; }")] // "Value cannot be null. (Parameter 'collection')"
@@ -54,6 +54,11 @@ public class ListRangeConformanceTests
     // where the spread only walked it: an ExceptWith after it reads that count.
     [InlineData(View + "new List<int>().AddRange(v); v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")] // "1,5,7"
     [InlineData(View + "new List<int> { 0 }.InsertRange(1, v); v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")] // "1,5,7"
+    // A null list is refused before its arguments, and a bad index before the collection is read
+    // (found by Copilot's review of #1161): the view's count is taken only for an insertion that runs.
+    [InlineData("List<int> l = null; try { l.AddRange(new int[0]); return \"added\"; } catch (NullReferenceException) { return \"null\"; }")] // "null"
+    [InlineData("List<int> l = null; try { l.InsertRange(-1, null); return \"inserted\"; } catch (NullReferenceException) { return \"null\"; } catch (ArgumentException) { return \"argument\"; }")] // "null"
+    [InlineData(View + "try { new List<int>().InsertRange(5, v); } catch (ArgumentOutOfRangeException) { } v.ExceptWith(new[] { 3 }); return string.Join(\",\", t);")] // "1,3,5,7"
     public void ARange_IsCheckedAndPlacedAsDotNetDoes(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

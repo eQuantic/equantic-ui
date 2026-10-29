@@ -18,7 +18,7 @@
  * An array stands for a `List<T>` and for a `T[]` alike. Where the two check differently, each has
  * its own function, named for it.
  */
-import { exception } from './exceptions';
+import { exception, receiver } from './exceptions';
 import { sameBy, type KeyEquality } from './key-equality';
 import { binarySearchIn, introSort, type SortOrder } from './sort';
 import { readAsACollection } from './sorted';
@@ -418,23 +418,28 @@ function rangeOf<T>(collection: Iterable<T> | string | null): readonly T[] {
  * was `push(...items)`, which hands every element to the call as an argument, and an engine caps a
  * call's arguments (V8 near 125,000, JavaScriptCore near 640,000), so a large range threw a RangeError
  * where .NET adds any number (#1060). The spread also read a string by its code points and a null as a
- * TypeError. The length is read once, so a list added to itself adds what it held, as .NET's does.
+ * TypeError. The length is read once, so a list added to itself adds what it held, as .NET's does. A
+ * null list is refused first, as the call through null is, even for an empty range.
  */
 export function addRange<T>(list: T[], collection: Iterable<T> | string | null): void {
+  receiver(list);
   const items = rangeOf(collection);
   for (let i = 0, count = items.length; i < count; i++) list.push(items[i]);
 }
 
 /**
- * `List<T>.InsertRange(index, collection)`: the collection's elements in its order from `index`, the
- * collection checked before the index, as .NET checks them. It was `splice(index, 0, ...items)`, which
+ * `List<T>.InsertRange(index, collection)`: the collection's elements in its order from `index`, checked
+ * as .NET checks them: the list, a null collection, the index, and only then the collection read, so a
+ * refused index enumerates nothing and asks a sorted set's view no count. It was `splice(index, 0, ...items)`, which
  * passed the cap `push` did (#1060), and an index past the end appended where .NET refuses it, a
  * negative one inserting before the last. The elements from `index` on are taken off and put back after
  * the range, so a list inserted into itself inserts what it held.
  */
 export function insertRange<T>(list: T[], index: number, collection: Iterable<T> | string | null): void {
-  const range = rangeOf(collection);
+  receiver(list);
+  if (collection == null) throw argumentNull('collection');
   if (index < 0 || index > list.length) throw outOfRange('index', INDEX_LESS_OR_EQUAL);
+  const range = rangeOf(collection);
   const items = range === list ? list.slice() : range;
   const tail = list.splice(index);
   for (let i = 0, count = items.length; i < count; i++) list.push(items[i]);

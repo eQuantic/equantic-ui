@@ -169,6 +169,21 @@ describe("List<T>'s AddRange and InsertRange, of a range of any size (#1060)", (
     insertRange(end, 1, [9]);
     expect(end).toEqual([1, 9]);
   });
+
+  it('refuses a null list first, and an index before the collection is read', () => {
+    const throughNull = 'Object reference not set to an instance of an object.';
+    expect(fails(() => addRange(null as unknown as number[], []))).toBe(throughNull);
+    expect(fails(() => insertRange(null as unknown as number[], -1, null))).toBe(throughNull);
+    let read = false;
+    const asked: Iterable<number> = {
+      *[Symbol.iterator]() {
+        read = true;
+        yield 1;
+      },
+    };
+    expect(fails(() => insertRange([], 5, asked))).toContain("(Parameter 'index')");
+    expect(read).toBe(false);
+  });
 });
 
 describe("List<T>'s RemoveAll and CopyTo (#488)", () => {
