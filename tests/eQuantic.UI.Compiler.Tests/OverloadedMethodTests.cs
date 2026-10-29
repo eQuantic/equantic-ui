@@ -1086,17 +1086,21 @@ public class OverloadedMethodTests
     /// <summary>A server-only override is no member of the twin, so the twin keeps its own: the record's
     /// synthesized text and its hash. A server-only <c>GetHashCode()</c> took the hash away with nothing in
     /// its place, so the runtime hashed the record by its identity: two equal records hashed apart, and a
-    /// dictionary keyed by one never found the other.</summary>
-    [Fact]
-    public void AServerOnlyOverride_LeavesTheTwinsOwnInPlace()
+    /// dictionary keyed by one never found the other. An alias marks it as much as the attribute does
+    /// (#1140): the overrides are asked of their symbol.</summary>
+    [Theory]
+    [InlineData("[ServerOnly]")]
+    [InlineData("[Keep]")]
+    public void AServerOnlyOverride_LeavesTheTwinsOwnInPlace(string attribute)
     {
-        var result = Compile("""
+        var result = Compile($$"""
             using eQuantic.UI.Primitives;
+            using Keep = eQuantic.UI.Primitives.ServerOnlyAttribute;
 
             public sealed record Note(int V)
             {
-                [ServerOnly] public override string ToString() => System.IO.Path.GetTempPath();
-                [ServerOnly] public override int GetHashCode() => System.IO.Path.GetTempPath().Length;
+                {{attribute}} public override string ToString() => System.IO.Path.GetTempPath();
+                {{attribute}} public override int GetHashCode() => System.IO.Path.GetTempPath().Length;
             }
             """, "Note");
 
