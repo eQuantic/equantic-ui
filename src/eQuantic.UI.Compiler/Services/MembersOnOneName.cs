@@ -33,8 +33,9 @@ namespace eQuantic.UI.Compiler.Services;
 /// own, #563), a property, an event and a held primary constructor's parameter camelCased, an operator
 /// and a conversion under the static the twin calls, an extension block's members as statics of the
 /// class. The two accessors of a property are one member, and so are the two halves of a partial property
-/// or event, and a positional parameter its record redeclares (#546). The second member on a key is refused, naming the first. An explicit interface
-/// implementation is left out, as the overload check leaves it out: its name is the interface's (#1139).
+/// or event, and a positional parameter its record redeclares (#546). The second member on a key is
+/// refused, naming the first. An explicit interface implementation is left out, as the overload check
+/// leaves it out: its name is the interface's (#1139).
 /// </para>
 ///
 /// <para>
@@ -204,7 +205,7 @@ internal static class MembersOnOneName
                 case PropertyDeclarationSyntax { ExplicitInterfaceSpecifier: null } property
                     when !DefinesAPartial(property, ownModel):
                     yield return new(property.Identifier.ValueText.ToCamelCase(), IsStatic(property),
-                        $"{name}.{property.Identifier.ValueText}", property.Identifier, Held: IsAuto(property));
+                        $"{name}.{property.Identifier.ValueText}", property.Identifier, Held: PropertyStore.IsAuto(property));
                     break;
 
                 case MethodDeclarationSyntax method when OverloadedMethods.TakesAName(method, isComponent):
@@ -250,19 +251,13 @@ internal static class MembersOnOneName
         }
     }
 
-    /// <summary>An auto-property, which the twin holds as a value where any other property is an
-    /// accessor: no accessor has a body, and the property none of its own.</summary>
-    private static bool IsAuto(PropertyDeclarationSyntax property) =>
-        property.ExpressionBody is null && property.AccessorList?.Accessors
-            .All(accessor => accessor.Body is null && accessor.ExpressionBody is null) == true;
-
     /// <summary>The defining half of a partial property, which is the property its implementing half
     /// declares, as a partial method's two halves are one method: asked of the model, and of the syntax
     /// where there is none, the half whose accessors have no body.</summary>
     private static bool DefinesAPartial(PropertyDeclarationSyntax property, SemanticModel? model) =>
         model?.GetDeclaredSymbol(property) is IPropertySymbol symbol
             ? symbol.IsPartialDefinition
-            : property.Modifiers.Any(SyntaxKind.PartialKeyword) && IsAuto(property);
+            : property.Modifiers.Any(SyntaxKind.PartialKeyword) && PropertyStore.IsAuto(property);
 
     /// <summary>The C# names a member of the body declares, which a primary constructor's parameter of
     /// the same name is one with.</summary>

@@ -911,6 +911,24 @@ public class OverloadedMethodTests
         result.TypeScript.Should().Contain("equals(", Exactly.Once(), "the override is the twin's equals, and nothing beside it");
     }
 
+    /// <summary>A server-only override is no member of the twin, so the twin keeps its own: the record's
+    /// synthesized text, which a server-only <c>ToString()</c> took away with nothing in its place.</summary>
+    [Fact]
+    public void AServerOnlyOverride_LeavesTheTwinsOwnInPlace()
+    {
+        var result = Compile("""
+            using eQuantic.UI.Primitives;
+
+            public sealed record Note(int V)
+            {
+                [ServerOnly] public override string ToString() => System.IO.Path.GetTempPath();
+            }
+            """, "Note");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("$eq.text.record(this, 'Note'");
+    }
+
     [Fact]
     public void ARecordsStaticToString_LeavesItsTextInPlace()
     {
