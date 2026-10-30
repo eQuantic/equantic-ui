@@ -41,20 +41,22 @@ public static class ProgramArchive
     /// application data on Windows, <c>~/Library/Caches</c> on macOS, and <c>$XDG_CACHE_HOME</c>
     /// or <c>~/.cache</c> elsewhere.
     /// </summary>
-    /// <exception cref="InvalidOperationException">There is no home folder to keep it in.</exception>
+    /// <exception cref="InvalidOperationException">No such folder is named, and there is no home to find one in.</exception>
     public static string DefaultCache()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "eQuantic", "Cache");
 
+        var macOS = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        var xdg = Environment.GetEnvironmentVariable("XDG_CACHE_HOME");
+        if (!macOS && !string.IsNullOrEmpty(xdg)) return Path.Combine(xdg, "eQuantic");
+
         var home = Environment.GetEnvironmentVariable("HOME");
         if (string.IsNullOrEmpty(home))
             throw new InvalidOperationException("HOME is not set, so there is no user cache to unpack a program into.");
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            return Path.Combine(home, "Library", "Caches", "eQuantic");
-
-        var xdg = Environment.GetEnvironmentVariable("XDG_CACHE_HOME");
-        return Path.Combine(string.IsNullOrEmpty(xdg) ? Path.Combine(home, ".cache") : xdg!, "eQuantic");
+        return macOS
+            ? Path.Combine(home, "Library", "Caches", "eQuantic")
+            : Path.Combine(home, ".cache", "eQuantic");
     }
 
     /// <summary>
@@ -67,27 +69,12 @@ public static class ProgramArchive
     public static (string Program, bool Unpacked) Unpack(string archive, string cache)
     {
         var name = Path.GetFileNameWithoutExtension(archive);
+        SweepAbandoned(Path.Combine(cache, name));
         var folder = Path.Combine(cache, name, Digest(archive));
         var program = Path.Combine(folder, name);
         if (File.Exists(program)) return (program, false);
+        if (!RemoveEmptied(folder, program)) return (program, false);
 
-        // A folder of that name holds the whole program or nothing, unless a hand took the program out
-        // of it: that one goes, or the rename below could never land. The program is asked again
-        // here, since another build may have renamed its folder into place since the line above,
-        // and that folder is whole.
-        if (Directory.Exists(folder) && !File.Exists(program))
-        {
-            try
-            {
-                Directory.Delete(folder, recursive: true);
-            }
-            catch (DirectoryNotFoundException)
-            {
-                // Another build took the same broken folder away first.
-            }
-        }
-
-        SweepAbandoned(Path.Combine(cache, name));
         var staging = folder + Partial + Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(staging);
         try
@@ -118,12 +105,36 @@ public static class ProgramArchive
         }
     }
 
+    /// <summary>
+    /// Clears a folder of that name that holds no program, which only a hand can leave, or the rename
+    /// could never land, and answers false when another build's whole folder turned out to be there.
+    /// The delete is not recursive: the program is the folder's one file, so an empty folder is the only
+    /// kind that goes, and a folder another build renamed into place since the look before it stays.
+    /// </summary>
+    private static bool RemoveEmptied(string folder, string program)
+    {
+        try
+        {
+            if (Directory.Exists(folder)) Directory.Delete(folder);
+            return true;
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return true; // Another build cleared it first.
+        }
+        catch (IOException) when (File.Exists(program))
+        {
+            return false;
+        }
+    }
+
     /// <summary>What names a folder being unpacked, before its rename.</summary>
     private const string Partial = ".partial-";
 
     /// <summary>
     /// The partial folders a build left when it was stopped mid-unpack, 70 MB each: one older than an
-    /// hour belongs to no build that is still running.
+    /// hour belongs to no build that is still running. Asked on every call, a hit included, or a
+    /// folder left beside a program that is already whole would never be asked about again.
     /// </summary>
     private static void SweepAbandoned(string programFolder)
     {

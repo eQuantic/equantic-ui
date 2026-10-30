@@ -138,6 +138,79 @@ public class ProgramArchiveTests
     }
 
     [Fact]
+    public void BuildsRepairingOneFolderAtOnce_LeaveTheProgramTheyAnswered()
+    {
+        // Two builds both saw a folder with no program. Deleting it recursively, the slower one could
+        // take away the whole folder the faster one had just renamed into place and handed to its build.
+        var root = Directory.CreateTempSubdirectory("eq-unpack-").FullName;
+        try
+        {
+            var cache = Path.Combine(root, "cache");
+            var archive = Zip(Path.Combine(root, "tools"), "tool", "repaired");
+            var (program, _) = ProgramArchive.Unpack(archive, cache);
+
+            for (var round = 0; round < 200; round++)
+            {
+                File.Delete(program);
+                Parallel.For(0, 8, _ => ProgramArchive.Unpack(archive, cache));
+                File.Exists(program).Should().BeTrue($"round {round} answered this program to every build");
+            }
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AFolderStrangersWroteInto_FailsNamingItself_AndIsLeftAlone()
+    {
+        var root = Directory.CreateTempSubdirectory("eq-unpack-").FullName;
+        try
+        {
+            var cache = Path.Combine(root, "cache");
+            var archive = Zip(Path.Combine(root, "tools"), "tool", "x");
+            var (program, _) = ProgramArchive.Unpack(archive, cache);
+            File.Delete(program);
+            var stranger = Path.Combine(Path.GetDirectoryName(program)!, "notes.txt");
+            File.WriteAllText(stranger, "mine");
+
+            var unpack = () => ProgramArchive.Unpack(archive, cache);
+
+            unpack.Should().Throw<IOException>();
+            File.Exists(stranger).Should().BeTrue("the owner removes an empty folder and nothing else");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void APartialFolderLeftBesideAWholeProgram_IsSwept()
+    {
+        // A hit returned before the sweep, so a folder left while another build published the same
+        // digest was never looked at again.
+        var root = Directory.CreateTempSubdirectory("eq-unpack-").FullName;
+        try
+        {
+            var cache = Path.Combine(root, "cache");
+            var archive = Zip(Path.Combine(root, "tools"), "tool", "x");
+            var (program, _) = ProgramArchive.Unpack(archive, cache);
+            var abandoned = Directory.CreateDirectory(Path.Combine(cache, "tool", "0123.partial-old")).FullName;
+            Directory.SetLastWriteTimeUtc(abandoned, DateTime.UtcNow.AddHours(-2));
+
+            ProgramArchive.Unpack(archive, cache).Should().Be((program, false));
+
+            Directory.Exists(abandoned).Should().BeFalse();
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void APartialFolderAnInterruptedBuildLeft_IsSweptOnceItIsOld()
     {
         var root = Directory.CreateTempSubdirectory("eq-unpack-").FullName;
