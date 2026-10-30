@@ -33,6 +33,16 @@ public class InvocationStrategy : IExpressionIrStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var call = ConvertCall(invocation, context);
 
+        // A generic method builds its record where the type arguments are only known at run time, and the value
+        // comes back unmarked to the code that knows them: the call's own type closes it (#687).
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { OriginalDefinition.ReturnType: var open } bound
+            && ObjectCreationStrategy.ContainsTypeParameter(open)
+            && ObjectCreationStrategy.ClosureOf(bound.ReturnType) is { } typeArguments)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            call = JsExpr.Call(JsExpr.Identifier(Eq.Closing), call, JsExpr.Literal($"'{typeArguments}'"));
+        }
+
         var byReference = ByReferenceArguments(invocation, context);
         if (byReference.Count == 0) return call;
         // Only a method the compiler EMITS returns the object this unwraps. A framework method with

@@ -150,7 +150,10 @@ public static class DefaultValue
         if (type is INamedTypeSymbol { TypeKind: TypeKind.Struct } structType && ZeroOf(structType, named, typeParameter) is { } structZero)
         {
             named?.Invoke(structType);
-            return structZero;
+            // Its zero is of the closed type it is the zero of, which its `$zero` is not told (#687).
+            return Expressions.ObjectCreationStrategy.ClosureOf(structType) is { } typeArguments
+                ? $"{Eq.Closing}({structZero}, '{typeArguments}')"
+                : structZero;
         }
 
         // A tuple is an ARRAY on this side, and its zero is an array of its elements' zeros.

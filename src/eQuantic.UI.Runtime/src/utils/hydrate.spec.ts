@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { closing, sameClosure } from './closing';
 import { hydrate, type HydrationSpec } from './hydrate';
 import { hydrateValue } from './hydrate-value';
 import { Decimal, dec } from './decimal';
@@ -250,6 +251,20 @@ describe('typed hydration', () => {
     expect(holder.name).toBe('x');
     expect(holder.first).toBe('decimal');
     expect(holder.second).toBeNull();
+  });
+});
+
+describe('a constructed generic record', () => {
+  class Box {
+    static $hydration = {};
+    value!: number;
+  }
+
+  it('is of the closed type its spec names, which the wire says nothing of', () => {
+    const spec = { of: Box, members: {}, closed: 'int' } as unknown as HydrationSpec;
+    const read = hydrate({ value: 1 }, spec) as object;
+    expect(sameClosure(read, closing(new Box(), 'double'))).toBe(false);
+    expect(sameClosure(read, closing(new Box(), 'int'))).toBe(true);
   });
 });
 

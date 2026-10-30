@@ -6,6 +6,7 @@ import {
   decParse,
   decTryParse,
 } from './utils/decimal';
+import { closing, closingLike, sameClosure } from './utils/closing';
 import { boundDelegate, combineDelegate, delegateOver, removeDelegate } from './utils/delegates';
 import { hydrate } from './utils/hydrate';
 import { twinJson } from './utils/twin-json';
