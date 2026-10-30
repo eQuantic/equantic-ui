@@ -996,11 +996,20 @@ function parseDateTime(text: string, invariant = false): DateTime {
   return read.zone === null ? new DateTime(ticks) : localFrom(ticks, read.zone);
 }
 
-/** The ticks of the clock time a text names, its date and clock. */
-function momentTicks({ date, clock }: Moment): bigint {
-  const now = new Date();
-  // A clock with no date is today's, as .NET reads it.
-  const { year, month, day } = date ?? { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+/** Today where a text names no date: at `zone` where a `DateTimeOffset` reads one, as .NET takes it, and the
+ * local day otherwise. */
+function today(zone: Moment['zone']): { year: number; month: number; day: number } {
+  if (zone === null) {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+  }
+  const at = new Date(Date.now() + Number((zone === 'utc' ? 0n : zone) / TICKS_PER_MILLISECOND));
+  return { year: at.getUTCFullYear(), month: at.getUTCMonth() + 1, day: at.getUTCDate() };
+}
+
+/** The ticks of the clock time a text names, its date and clock, a clock with no date being today's at `zone`. */
+function momentTicks({ date, clock }: Moment, zone: Moment['zone'] = null): bigint {
+  const { year, month, day } = date ?? today(zone);
   return (
     fromComponents(year, month, day, clock?.hour ?? 0, clock?.minute ?? 0, clock?.second ?? 0).ticks +
     BigInt(clock?.fraction ?? 0)
@@ -1693,7 +1702,7 @@ function parseDateTimeOffset(text: string, invariant = false): DateTimeOffset {
   if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
   const read = readMoment(text, readingCulture(invariant));
   if ('refused' in read) throw refusalOf(text, read);
-  const local = momentTicks(read);
+  const local = momentTicks(read, read.zone);
   const offset = read.zone === null ? localOffsetFor(local) : read.zone === 'utc' ? 0n : read.zone;
   return new DateTimeOffset(local, offset);
 }

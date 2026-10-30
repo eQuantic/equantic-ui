@@ -63,6 +63,78 @@ public class DateReadingConformanceTests
             culture: culture);
     }
 
+    /// <summary>What a culture writes reads back: its long date, its month and day, and its month and year,
+    /// each with its words (<c>de</c>, <c>г.</c>, <c>年</c>) and a day's name after the date where it goes there.</summary>
+    [SkippableTheory]
+    [InlineData("en-US")]
+    [InlineData("de-DE")]
+    [InlineData("pt-BR")]
+    [InlineData("es-ES")]
+    [InlineData("fr-FR")]
+    [InlineData("it-IT")]
+    [InlineData("nl-NL")]
+    [InlineData("ru-RU")]
+    [InlineData("pl-PL")]
+    [InlineData("bg-BG")]
+    [InlineData("hu-HU")]
+    [InlineData("lt-LT")]
+    [InlineData("lv-LV")]
+    [InlineData("tr-TR")]
+    [InlineData("sv-SE")]
+    [InlineData("ja-JP")]
+    [InlineData("ko-KR")]
+    [InlineData("zh-CN")]
+    public void WhatACultureWrites_ReadsBack(string culture)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "var d = new DateTime(2024, 1, 15, 9, 30, 0); var text = \"\"; "
+            + "foreach (var form in new[] { \"D\", \"F\", \"m\", \"Y\" }) { var t = d.ToString(form); var ok = DateTime.TryParse(t, out var back); "
+            + "text += t + \" => \" + ok + \" \" + (ok ? back.Month + \"-\" + back.Day + \" \" + back.Hour : \"\") + \"; \"; } return text;",
+            culture: culture);
+    }
+
+    [SkippableTheory]
+    [InlineData("15 Jan 2024 Monday", "en-US")]
+    [InlineData("January 15, 2024 Monday", "en-US")]
+    [InlineData("January 15, 2024, Monday", "en-US")]
+    [InlineData("January 15, 2024 Tuesday", "en-US")]
+    [InlineData("1/15/2024 Monday", "en-US")]
+    [InlineData("Jan 15.", "en-US")]
+    [InlineData("January 2024.", "en-US")]
+    [InlineData("Jan. 15, 2024.", "en-US")]
+    [InlineData("15. Januar", "de-DE")]
+    [InlineData("Januar 15.", "de-DE")]
+    [InlineData("15. Januar 2024.", "de-DE")]
+    [InlineData("15. Januar 2024", "de-DE")]
+    [InlineData("Montag, 15. Januar 2024", "de-DE")]
+    [InlineData("15 de janeiro de 2024", "pt-BR")]
+    [InlineData("15 de 01 de 2024", "pt-BR")]
+    [InlineData("15 января 2024 г", "ru-RU")]
+    [InlineData("2024年1月15日", "ja-JP")]
+    [InlineData("2024年1月", "ja-JP")]
+    [InlineData("2024年1月15日 9:30", "ja-JP")]
+    public void ADateWithItsWords_IsReadAsDotNetReadsIt(string text, string culture)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            $"var ok = DateTime.TryParse(\"{text}\", out var d); return ok + \"|\" + (ok ? d.Year + \"-\" + d.Month + \"-\" + d.Day + \" \" + d.Hour : \"\");",
+            culture: culture);
+    }
+
+    /// <summary>A <c>DateTimeOffset</c> with no date is today at the offset it names, a day from the local one
+    /// at either end of the offsets.</summary>
+    [SkippableTheory]
+    [InlineData("10:00 +14:00", 14)]
+    [InlineData("10:00 -11:00", -11)]
+    [InlineData("10:00 Z", 0)]
+    public void AnOffsetWithNoDate_IsTodayAtTheOffset(string text, int hours)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            $"var f = DateTimeOffset.Parse(\"{text}\"); return (f.Day == DateTime.UtcNow.AddHours({hours}).Day).ToString();");
+    }
+
     /// <summary>A clock with no date is today's.</summary>
     [SkippableTheory]
     [MemberData(nameof(ClockCases))]

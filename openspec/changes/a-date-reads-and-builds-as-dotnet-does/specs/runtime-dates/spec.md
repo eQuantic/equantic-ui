@@ -54,3 +54,17 @@ and ticks outside a day with .NET's ArgumentOutOfRangeException in its words.
 
 - **WHEN** `new TimeOnly(25, 0)` runs
 - **THEN** it throws "Hour, Minute, and Second parameters describe an un-representable DateTime.", as .NET does
+
+### Requirement: What a culture writes reads back
+
+A date with a month's name SHALL be read with the words the culture's long, month-day and year-month patterns write between its parts, a point after a day, and a day's name before or after it. A `DateTimeOffset` with a zone and no date SHALL be today at the offset it names.
+
+#### Scenario: A long date with words
+
+- **WHEN** a pt-BR page reads `15 de janeiro de 2024`, or a ja-JP page `2024年1月15日月曜日`
+- **THEN** the date is January 15, 2024, as in .NET
+
+#### Scenario: An offset with no date
+
+- **WHEN** a program reads `10:00 +14:00` as a `DateTimeOffset`
+- **THEN** its day is today's at that offset, which may be a day after the local one
