@@ -147,7 +147,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     private static bool IsIntegral(ITypeSymbol? type) => type?.SpecialType is
         SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16 or
         SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_UInt16 or
-        SpecialType.System_UInt32 or SpecialType.System_UInt64;
+        SpecialType.System_UInt32 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr;
 
     /// <summary>
     /// A number brought into an enum's underlying type, as C#'s explicit conversion brings it:

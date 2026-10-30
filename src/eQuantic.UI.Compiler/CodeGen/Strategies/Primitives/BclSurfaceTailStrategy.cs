@@ -54,7 +54,7 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
         // also C#'s answer for a boxed cross-type compare). Guids ride as strings.
         if (name is "Equals" && argCount == 1
             && (home.SpecialType is SpecialType.System_Boolean or SpecialType.System_Char
-                    or SpecialType.System_Int32 or SpecialType.System_Int64
+                    or SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_IntPtr
                 || home is { Name: "Guid", ContainingNamespace.Name: "System" }))
         {
             return "({0} === {1})";

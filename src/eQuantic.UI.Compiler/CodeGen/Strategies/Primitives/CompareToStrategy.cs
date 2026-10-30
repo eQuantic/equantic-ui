@@ -103,7 +103,7 @@ public class CompareToStrategy : IExpressionIrStrategy
                 or SpecialType.System_Single or SpecialType.System_Int16
                 or SpecialType.System_Byte => SpecialType.System_Int32,
             // A long is a BigInt: subtraction answers a BigInt, so it takes the ordered arrow.
-            SpecialType.System_Int64 => SpecialType.System_String,
+            SpecialType.System_Int64 or SpecialType.System_IntPtr => SpecialType.System_String,
             SpecialType.System_String => SpecialType.System_String,
             SpecialType.System_Char => SpecialType.System_Char,
             SpecialType.System_Boolean => SpecialType.System_Boolean,

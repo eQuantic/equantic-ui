@@ -177,7 +177,7 @@ public static class ValueFlow
             && IntegerWidth.Of(from) is not null)
         {
             var exact = (double)single == System.Convert.ToDouble(operandConstant, CultureInfo.InvariantCulture);
-            return exact && from is not { SpecialType: SpecialType.System_Int64 or SpecialType.System_UInt64 }
+            return exact && from is not { SpecialType: SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr }
                 ? translated
                 : JsExpr.Literal(((double)single).ToString("R", CultureInfo.InvariantCulture));
         }
@@ -283,7 +283,7 @@ public static class ValueFlow
             return TupleElements(tuple, target, translated, isChecked, context);
 
         var value = translated;
-        var fromSpecial = from?.SpecialType ?? SpecialType.None;
+        var fromSpecial = HeldAs(from?.SpecialType ?? SpecialType.None);
 
         // A DECIMAL SOURCE is a runtime Decimal (the typed world guarantees it): its number is
         // asked for once, and the value then narrows or widens like any double. A decimal
@@ -363,7 +363,7 @@ public static class ValueFlow
         ConversionContext context)
     {
         var text = JsExprWriter.WriteIn(value, JsPrecedence.Call);
-        var target = to?.SpecialType ?? SpecialType.None;
+        var target = HeldAs(to?.SpecialType ?? SpecialType.None);
         switch (target)
         {
             // DIRECTLY to a single, as .NET's conversion does: through the double, a long past 2^53
@@ -403,7 +403,7 @@ public static class ValueFlow
         // A fractional source truncates toward zero FIRST — C# rounds the value before it checks
         // or wraps it, so `checked((byte)255.9)` is 255, not an overflow.
         var fractional = from is SpecialType.System_Single or SpecialType.System_Double;
-        var target = to?.SpecialType ?? SpecialType.None;
+        var target = HeldAs(to?.SpecialType ?? SpecialType.None);
 
         switch (target)
         {
@@ -480,10 +480,19 @@ public static class ValueFlow
         ? to.Bits > from.Bits || (to.Bits == from.Bits && to.Unsigned)
         : !to.Unsigned && to.Bits >= from.Bits;
 
+    /// <summary>The primitive a number of this type is held as here: a native integer is a long or a ulong
+    /// on every target this SDK ships to (#649), and every other type is itself.</summary>
+    private static SpecialType HeldAs(SpecialType type) => type switch
+    {
+        SpecialType.System_IntPtr => SpecialType.System_Int64,
+        SpecialType.System_UIntPtr => SpecialType.System_UInt64,
+        _ => type,
+    };
+
     private static JsExpr? Constant(object? constant, ITypeSymbol? to) => to?.SpecialType switch
     {
         // A long is a BigInt: the literal carries the suffix, or nothing else will.
-        SpecialType.System_Int64 or SpecialType.System_UInt64 =>
+        SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr =>
             JsExpr.Literal(System.Convert.ToString(constant, CultureInfo.InvariantCulture) + "n"),
         _ => null,
     };
