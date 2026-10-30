@@ -2919,7 +2919,7 @@ public class TypeScriptEmitter
                 ? list[index].Default?.Value
                 : null;
             var isRest = syntaxParameters is { } paramList && index < paramList.Count
-                && paramList[index].Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword);
+                && Strategies.BoundArguments.IsRest(paramList[index], _converter.Compilation);
             return Lowering.ParamWithDefault(name, DeclarationType(component, p.Type),
                 defaultValue is null ? null : _converter.ConvertExpression(defaultValue), isRest);
         }));
