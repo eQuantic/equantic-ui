@@ -1,5 +1,37 @@
 import { receiver } from './exceptions';
 
+/** The contract `IEquatable<T>` over the value's own type, which `EqualityComparer<T>.Default` asks. */
+export const SELF = 'System.IEquatable<T>|@';
+
+/** The statics a twin the build writes carries, which say what kind of value it is (`RecordTypeEmitter`). */
+type TwinStatics = { $record?: unknown; $zero?: unknown; $equatable?: unknown };
+
+/**
+ * Whether a value's own `Equals` checks the reference before it reads anything, as C# synthesizes a record
+ * CLASS's: `(object)this == other || …`, so a record compared with itself is equal and no member is compared.
+ * Its twin says it is a record (`$record`) and carries no zero (`$zero`, which every struct's twin carries), and
+ * its class answers no `IEquatable<T>` over itself with a method of the app's own (`|@` in an `$equatable` of its
+ * own, not one a base's twin holds), which replaces the synthesized one and checks nothing it did not write. A
+ * struct's `Equals`, a class's override and the app's typed `Equals` check no reference.
+ */
+export function checksItsReference(value: unknown): boolean {
+  if (value === null || typeof value !== 'object') return false;
+  const type = (value as { constructor?: TwinStatics }).constructor;
+  if (type === undefined || type.$record !== true || typeof type.$zero === 'function') return false;
+  const own = Object.prototype.hasOwnProperty.call(type, '$equatable') ? type.$equatable : undefined;
+  return own === null || typeof own !== 'object' || (own as Record<string, unknown>)[SELF] === undefined;
+}
+
+/** Whether a value compared with itself is still asked: it carries an `Equals` that checks no reference. */
+function asksItself(value: unknown): boolean {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { equals?: unknown }).equals === 'function' &&
+    !checksItsReference(value)
+  );
+}
+
 /**
  * Structural (value) equality for .NET value-shaped data: records, `record struct`/`struct`, value
  * tuples, and anonymous types — all represented as plain JS objects / arrays by the transpiler.
@@ -21,8 +53,9 @@ import { receiver } from './exceptions';
  * where it knows their types (TupleEquality): a tuple and an array are both arrays here.
  */
 export function equals(a: unknown, b: unknown): boolean {
-  // Identical reference, or equal primitives (number/string/boolean/bigint/symbol).
-  if (a === b) return true;
+  // Identical reference, or equal primitives (number/string/boolean/bigint/symbol). A value that carries
+  // an `Equals` is asked even of itself, as .NET asks it, unless that `Equals` checks the reference first.
+  if (a === b && !asksItself(a)) return true;
 
   // Two numbers `===` did not match are equal only as two NaNs, as a double's Equals holds them.
   if (typeof a === 'number' && typeof b === 'number') return a !== a && b !== b;
