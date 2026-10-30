@@ -365,6 +365,7 @@ public class TypeScriptEmitter
         BeginModule(semanticModel, component.Name);
         _builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
         component.UsedHelpers.Clear();
+        if (component.ClassSyntax is { } componentClass) TwinOwnMembers.RefuseKeptOnTheServer(componentClass, semanticModel, _converter);
 
         // Note: We'll emit imports AFTER generating component code
         // to ensure UsedHelpers is populated
@@ -2748,6 +2749,7 @@ public class TypeScriptEmitter
         // Its twin's name, its owners' and its own (#584): a nested class is a module of its own too.
         var name = cls.TwinTypeName();
         BeginModule(semanticModel, name);
+        TwinOwnMembers.RefuseKeptOnTheServer(cls, semanticModel, _converter);
 
         // The BASE class travels. Dropping it is how `CSharpLanguage : CurlyBraceLanguage` came out
         // as an empty class that answered "tokenize is not a function" — from very far away from the

@@ -144,6 +144,32 @@ public class APackagesTypeTests
         built.Module("Home").Should().BeNull("a refused page writes no module");
     }
 
+    /// <summary>
+    /// A type test of a package's type has nothing to ask (#951): the runtime holds no twin to test
+    /// against, so `is` was a null check, true for any value, and `as` handed the value back.
+    /// </summary>
+    [Theory]
+    [InlineData("(Value is Gauge).ToString()", "using Vendor;", "'Vendor.Gauge'")]
+    [InlineData("(Value is Vendor.Gauge).ToString()", "", "'Vendor.Gauge'")]
+    [InlineData("(Value is G).ToString()", "using G = Vendor.Gauge;", "'Vendor.Gauge'")]
+    [InlineData("(Value is Money).ToString()", "using Vendor;", "'Vendor.Money'")]
+    [InlineData("(Value is Spot).ToString()", "using Vendor;", "'Vendor.Spot'")]
+    [InlineData("(Value is IStatus).ToString()", "using Vendor;", "'Vendor.IStatus'")]
+    [InlineData("(Value is Level).ToString()", "using Vendor;", "'Vendor.Level'")]
+    [InlineData("(Value is Box<int>).ToString()", "using Vendor;", "'Vendor.Box<int>'")]
+    [InlineData("(Value as Gauge) == null ? \"a\" : \"b\"", "using Vendor;", "'Vendor.Gauge'")]
+    [InlineData("Value is Gauge ? \"a\" : \"b\"", "using Vendor;", "'Vendor.Gauge'")]
+    [InlineData("Value switch { Gauge => \"a\", _ => \"b\" }", "using Vendor;", "'Vendor.Gauge'")]
+    public void ATypeTestOfAPackagesType_FailsTheBuild_NamingTheTypeAndTheAssembly(string expression, string usings, string type)
+    {
+        using var solution = With(Home(expression, usings, "    private static object Value => \"x\";"));
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue("nothing in the browser can say a value is a package's type");
+        built.ErrorsIn("App").Should().ContainSingle()
+            .Which.Should().Contain("error EQ2004").And.Contain(type).And.Contain("'Vendor'");
+    }
+
     /// <summary>A target-typed construction names the class as surely as one that spells it.</summary>
     [Fact]
     public void ATargetTypedConstructionOfAPackagesType_FailsTheBuild()
