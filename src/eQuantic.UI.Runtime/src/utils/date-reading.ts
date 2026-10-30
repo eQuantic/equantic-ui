@@ -98,6 +98,8 @@ interface Shapes {
   months: { text: string; value: number }[];
   /** Each name and the day it names, as `System.DayOfWeek` counts, the longest first. */
   days: { text: string; value: number }[];
+  /** The words the culture's date patterns write between a date's parts, the longest first. */
+  words: string[];
 }
 
 /** The English names, which .NET reads in every culture, beside the culture's own. */
@@ -112,12 +114,34 @@ function spellings(lists: readonly (readonly string[])[], base: number): { text:
   const found = new Map<string, number>();
   for (const list of lists) {
     list.forEach((name, index) => {
-      if (name.length > 0) found.set(name.toLowerCase(), index + base);
+      const text = name.toLowerCase();
+      if (text.length > 0 && !found.has(text)) found.set(text, index + base);
     });
   }
   return [...found]
     .map(([text, value]) => ({ text, value }))
     .sort((a, b) => b.text.length - a.text.length);
+}
+
+/**
+ * The words a culture's date patterns write between a date's parts, .NET's date words: pt-BR's `de`,
+ * ru-RU's `г.`, ja-JP's `年`. A quoted literal is one, and so is what is left of a pattern with its parts
+ * and its punctuation taken out. A point is no part of one: {@link Cursor.word} reads it after any.
+ */
+function dateWordsOf(culture: DateTimeFormatData): string[] {
+  const words = new Set<string>();
+  const add = (word: string): void => {
+    const text = word.trim().replace(/\.$/, '').toLowerCase();
+    if (text.length > 0) words.add(text);
+  };
+  for (const pattern of [culture.longDatePattern, culture.monthDayPattern, culture.yearMonthPattern]) {
+    const bare = pattern.replace(/'([^']*)'/g, (_, quoted: string) => {
+      add(quoted);
+      return ' ';
+    });
+    bare.split(/[dMyg\s,./-]+/).forEach(add);
+  }
+  return [...words].sort((a, b) => b.length - a.length);
 }
 
 /** Whether a pattern writes `first` before `second`, as .NET's `GetMonthDayOrder` reads one. */
@@ -174,6 +198,7 @@ function shapesOf(culture: DateTimeFormatData): Shapes {
       [culture.dayNames, culture.abbreviatedDayNames, ENGLISH_DAYS, ENGLISH_DAYS.map((day) => day.slice(0, 3))],
       0,
     ),
+    words: dateWordsOf(culture),
   };
 }
 
@@ -214,6 +239,22 @@ class Cursor {
       }
     }
     return null;
+  }
+
+  /** One of a culture's date `words` here, in any case, with the point it may end with, consumed. A word of a
+   * script with no case runs on into what follows it: ja-JP's `日` into the day's name. */
+  word(words: readonly string[]): boolean {
+    for (const word of words) {
+      const after = this.at + word.length;
+      const last = word[word.length - 1];
+      const runsOn = last.toLowerCase() === last.toUpperCase();
+      if (this.text.slice(this.at, after).toLowerCase() === word && (runsOn || !isLetter(this.text[after]))) {
+        this.at = after;
+        this.take(['.']);
+        return true;
+      }
+    }
+    return false;
   }
 
   /** The ASCII digits here, the only ones .NET reads, and the marks of direction after them. */
@@ -371,7 +412,7 @@ function readIso(cursor: Cursor, date: ReadDate): Moment | Refusal {
  */
 function readDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
   const start = cursor.at;
-  const weekday = cursor.name(shapes.days);
+  let weekday = cursor.name(shapes.days);
   if (weekday !== null) {
     cursor.space();
     cursor.take([',']);
@@ -383,8 +424,18 @@ function readDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
     cursor.at = start;
     return 'none';
   }
-  if (read !== 'invalid' && read !== 'weekday' && weekday !== null && weekdayOf(read.date) !== weekday) return 'weekday';
-  return read;
+  if (read === 'invalid' || read === 'weekday') return read;
+  // A day's name may follow the date too, as ko-KR's and ja-JP's long dates write it.
+  if (weekday === null) {
+    const after = cursor.at;
+    cursor.take(['.']);
+    cursor.space();
+    cursor.take([',']);
+    cursor.space();
+    weekday = cursor.name(shapes.days);
+    if (weekday === null) cursor.at = after;
+  }
+  return weekday !== null && weekdayOf(read.date) !== weekday ? 'weekday' : read;
 }
 
 /** A date as a reader of one answers it. */
@@ -424,8 +475,9 @@ function readNamedDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
     const before = cursor.at;
     if (i > 0) {
       cursor.space();
-      cursor.take([',', '-', '/']);
+      cursor.take([',', '-', '/', '.']);
       cursor.space();
+      if (cursor.word(shapes.words)) cursor.space();
     }
     if (month === null) {
       month = cursor.name(shapes.months);
@@ -446,9 +498,25 @@ function readNamedDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
     cursor.at = start;
     return 'none';
   }
+  endOfDate(cursor, shapes);
   if (numbers.some((number) => number.length > 8)) return 'invalid';
   const date = namedDateOf(month, numbers, numberFirst, shapes);
   return date === null ? 'invalid' : { date, yearFirst: false };
+}
+
+/**
+ * What a date may end with: a word, ru-RU's `г.` and ja-JP's `日`, beside its last part or after white space,
+ * then the literal the culture's date ends with, which it writes after the day (ko-KR's `2024. 1. 15.`),
+ * or the point any date may end with, but where a point is what separates the culture's date.
+ */
+function endOfDate(cursor: Cursor, shapes: Shapes): void {
+  const before = cursor.at;
+  cursor.space();
+  if (!cursor.word(shapes.words)) cursor.at = before;
+  const end = shapes.dateEnd.length > 0 ? shapes.dateEnd : shapes.dateSeparator === '.' ? null : '.';
+  const last = cursor.at;
+  cursor.space();
+  if (end === null || cursor.take([end]) === null) cursor.at = last;
 }
 
 /** Which of a month's numbers is the day and which the year. */
@@ -487,7 +555,7 @@ function readNumericDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
     if (i > 0) {
       const spaced = cursor.space();
       const separator = cursor.take(shapes.dateSeparators);
-      written = separator !== null;
+      written = separator !== null || cursor.word(shapes.words);
       if (!written && !spaced) {
         if (i === 2) {
           cursor.at = before;
@@ -512,12 +580,7 @@ function readNumericDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
   if (shapes.pointIsClock && points && parts.every((part) => !looksLikeYear(part))) return none();
   // .NET reads a number of eight digits at most.
   if (parts.some((part) => part.length > 8)) return 'invalid';
-  // The literal the culture's date ends with, which it writes after the day (ko-KR's `2024. 1. 15.`),
-  // and the point any date may end with, but where a point is what separates the culture's date.
-  const before = cursor.at;
-  cursor.space();
-  const end = shapes.dateEnd.length > 0 ? shapes.dateEnd : shapes.dateSeparator === '.' ? null : '.';
-  if (end === null || cursor.take([end]) === null) cursor.at = before;
+  endOfDate(cursor, shapes);
   const date = parts.length === 2 ? dateOfTwo(parts, shapes) : dateOf(parts, shapes.pattern);
   return date === null ? 'invalid' : { date, yearFirst: looksLikeYear(parts[0]) };
 }
