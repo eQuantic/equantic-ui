@@ -14,6 +14,8 @@ Two conversions of a number to an integer answered something .NET never answers:
 - An explicit cast of a `double` or a `float` calls `$eq.num.saturate`, `saturateUnsigned` or `saturateLong`. Measured on .NET 10: an `int`, a `uint`, a `long` and a `ulong` saturate at their own ends, and `byte`, `sbyte`, `short`, `ushort` and `char` take the low bits of the saturated `int`, so `(byte)300.0` is 44, `(byte)-1.0` is 255 and `(byte)1e12` is 255. The issue asked for every width to saturate at its own ends: the measurement decides.
 - A char boxed in an `object` is read as a text of one character, and an `int` boxed in an `object` cannot be told from a `double` of the same value. That is #552's limit, stated here and in the runtime's header.
 
+- A `Convert` call reads the type still in sight: an enum converts by its value into every target, a `Nullable` by its value's type, and a checked cast into an enum throws past its underlying type. Where C# boxed a value with nothing left to read, the `object` limit of #552 stands.
+
 ## Impact
 
 - Reaches `eQuantic.UI.Compiler` (`ConvertStrategy`, `ValueFlow`, `CastExpressionStrategy`, `Eq`) and the runtime (`utils/number-convert.ts`, `utils/overflow.ts`, `eq.ts`).

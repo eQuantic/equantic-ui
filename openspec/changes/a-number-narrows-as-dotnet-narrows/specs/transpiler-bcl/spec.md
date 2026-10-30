@@ -37,3 +37,22 @@ text of one character, since a boxed value does not carry its type.
 
 - **WHEN** `object o = "1,5"; Convert.ToInt32(o, CultureInfo.InvariantCulture)` runs
 - **THEN** it throws "The input string '1,5' was not in a correct format.", as .NET does
+
+### Requirement: A conversion reads the type in sight
+
+A `Convert` call whose value C# boxed for the `object` overload SHALL convert by the value's type where the call still shows it: an enum by its value into every target, and a `Nullable` by its value's type, a null being what the `object` overload answers. A checked cast into an enum SHALL throw past its underlying type's range.
+
+#### Scenario: An enum into a real number
+
+- **WHEN** a program evaluates `Convert.ToDouble(Tone.Warm)`, where `Warm` is 1
+- **THEN** the answer is 1, as in .NET
+
+#### Scenario: A nullable char
+
+- **WHEN** a program evaluates `Convert.ToInt32(c)` over a `char?` holding `'5'`
+- **THEN** the answer is 53, its code unit, and 0 for a null
+
+#### Scenario: A checked cast into an enum
+
+- **WHEN** a program evaluates `checked((Small)i)` over an int of 300, where `Small` is a byte enum
+- **THEN** the cast throws `OverflowException`, as in .NET
