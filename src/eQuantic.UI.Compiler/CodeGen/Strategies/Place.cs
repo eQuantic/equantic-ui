@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
@@ -18,6 +19,11 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// bool's compound, the null-conditional assignment, the object initializer's entry and the
 /// deconstruction. Each of them spelled the kinds beside each other, so a rule of any had a writer for
 /// each to be taught in.
+/// <para>
+/// An array's, a list's or a string's entry counted from the end is one too, though JavaScript assigns
+/// its subscript: its position is computed from the receiver (<c>a[a.length - n]</c>), so the receiver
+/// is a part read once, where text named it twice (#394).
+/// </para>
 /// <para>
 /// Its parts are what C# evaluates, in the order it evaluates them: the receiver, then the keys as they
 /// are written, and after them the constants the call passes without evaluating anything. A writer
@@ -39,6 +45,10 @@ internal sealed class Place
         /// <summary>A list face's, through the runtime's <c>item</c> and <c>setItem</c>, handed the
         /// receiver, whichever list the face holds.</summary>
         Face,
+
+        /// <summary>An array's, a list's or a string's counted from the end, through JavaScript's own
+        /// subscript, which is what each of them is on this side.</summary>
+        Subscript,
     }
 
     private readonly Kind _kind;
@@ -80,9 +90,11 @@ internal sealed class Place
         if (node is not ElementAccessExpressionSyntax access) return null;
         if (DictionaryEntry.Of(access, context) is not null)
             return Entry(context.Converter.ConvertIr(access.Expression), access.ArgumentList.Arguments[0].Expression, context);
-        return Indexer.LoweredAt(access, context) is null
-            ? null
-            : Indexed(access, access.ArgumentList, context.Converter.ConvertIr(access.Expression), context);
+        if (Indexer.LoweredAt(access, context) is not null)
+            return Indexed(access, access.ArgumentList, context.Converter.ConvertIr(access.Expression), context);
+        return IndexFromEndStrategy.FromTheEnd(access) is { } hat
+            ? Subscripted(access, context.Converter.ConvertIr(access.Expression), hat, context)
+            : null;
     }
 
     /// <summary>The place an element named without its receiver is, the writer holding the
@@ -94,7 +106,11 @@ internal sealed class Place
         if (context.SemanticHelper.GetSymbol(target) is IPropertySymbol { IsIndexer: true } indexer
             && indexer.ContainingType.IsDictionary() && arguments.Arguments.Count == 1)
             return Entry(receiver, arguments.Arguments[0].Expression, context);
-        return Indexer.LoweredAt(target, context) is null ? null : Indexed(target, arguments, receiver, context);
+        if (Indexer.LoweredAt(target, context) is not null) return Indexed(target, arguments, receiver, context);
+        // An initializer's `[^1] = v` is fenced before it gets here (EQ2008): only `a?[^1]` is left.
+        return arguments.Arguments is [{ Expression: PrefixUnaryExpressionSyntax hat }] && hat.IsKind(SyntaxKind.IndexExpression)
+            ? Subscripted(target, receiver, hat, context)
+            : null;
     }
 
     /// <summary>
@@ -116,6 +132,23 @@ internal sealed class Place
         List<JsExpr> held = [.. Enumerable.Range(0, _keys.Count + 1).Select(i => JsExpr.Index(evaluated[0], JsExpr.Literal(i.ToString())))];
         return new(_kind, held, held.Count, [.. _keys.Select((_, i) => Hole(i + 1))], false, _names, _context);
     }
+
+    /// <summary>
+    /// What an <c>out</c> or a <c>ref</c> argument writes back through when the write comes after the
+    /// call: the one value a computed place evaluates to, the receiver and the position, taken before the
+    /// call. <see cref="ThroughHeld"/> writes the place over it.
+    /// </summary>
+    public static JsExpr? HeldFor(ExpressionSyntax target, ConversionContext context)
+    {
+        while (target is ParenthesizedExpressionSyntax parenthesized) target = parenthesized.Expression;
+        return target is ElementAccessExpressionSyntax access && IndexFromEndStrategy.HatOf(access, context) is not null
+            && Of(access, context) is { _computed: true } place
+            ? place.Evaluated[0]
+            : null;
+    }
+
+    /// <summary>The place a value of <see cref="HeldFor"/> names, as template text over its hole.</summary>
+    public static string ThroughHeld(string hole) => $"{hole}[0][{hole}[1]]";
 
     /// <summary>The read.</summary>
     public JsExpr Read() => Template(ReadText(_keys), _parts);
@@ -148,6 +181,7 @@ internal sealed class Place
     {
         Kind.Entry => DictionaryEntry.Read("{0}", keys[0]),
         Kind.Face => $"{Eq.ListItem}({string.Join(", ", keys.Prepend("{0}"))})",
+        Kind.Subscript => $"{{0}}[{keys[0]}]",
         _ => $"{{0}}.{_names.Get}({string.Join(", ", keys)})",
     };
 
@@ -155,6 +189,7 @@ internal sealed class Place
     {
         Kind.Entry => DictionaryEntry.Write("{0}", keys[0], value),
         Kind.Face => $"{Eq.ListSetItem}({string.Join(", ", keys.Prepend("{0}").Append(value))})",
+        Kind.Subscript => $"({{0}}[{keys[0]}] = {value})",
         _ => $"{{0}}.{_names.Set}({string.Join(", ", keys.Append(value))})",
     };
 
@@ -243,22 +278,41 @@ internal sealed class Place
             context.Unhandled(access, "index-from-end");
             return null;
         }
-        var offset = context.Converter.ConvertIr(hat.Operand);
         // A list face counts whichever list it holds through the runtime, an array's length and a twin's
         // count alike (#586); a twin's own indexer counts by the member the bound tree names.
         var kind = KindOf((IPropertySymbol)index.IndexerSymbol, context);
         var counted = kind == Kind.Face ? $"{Eq.Count}({{0}})" : $"{{0}}.{count.Name.ToCamelCase()}";
-        // A literal offset reads nothing, so the count may come first. Any other is read first, and a
-        // receiver read by its name is then bound once, as C# spills it, where an offset that has an
-        // effect could reassign the name between the two reads (and the template's writer, seeing a name
-        // read after a call, would bind the value of the write ahead of the count).
-        var names = Indexer.NamesOf((IPropertySymbol)index.IndexerSymbol);
+        return CountedBack(kind, receiver, context.Converter.ConvertIr(hat.Operand), counted,
+            Indexer.NamesOf((IPropertySymbol)index.IndexerSymbol), access, context);
+    }
+
+    /// <summary>
+    /// A from-the-end key over an array, a list or a string, which JavaScript subscripts as it is:
+    /// <c>a[^n]</c> is <c>a[a.length - n]</c>, read and written through the subscript, the receiver read
+    /// once and the offset before the length, as C# reads them (#394). It was text that named the
+    /// receiver twice, so <c>Get()[^1]</c> and every write through it called <c>Get</c> twice.
+    /// </summary>
+    private static Place? Subscripted(ExpressionSyntax access, JsExpr receiver, PrefixUnaryExpressionSyntax hat,
+        ConversionContext context) =>
+        CountedBack(Kind.Subscript, receiver, context.Converter.ConvertIr(hat.Operand), "{0}.length",
+            (Indexer.Get, Indexer.Set), access, context);
+
+    /// <summary>
+    /// The place of a key counted back from <paramref name="counted"/>, the count's text over the receiver's
+    /// hole. A literal offset reads nothing, so the count may come first. Any other is read first, and a
+    /// receiver read by its name is then bound once, as C# spills it, where an offset that has an effect
+    /// could reassign the name between the two reads (and the template's writer, seeing a name read after
+    /// a call, would bind the value of the write ahead of the count).
+    /// </summary>
+    private static Place? CountedBack(Kind kind, JsExpr receiver, JsExpr offset, string counted,
+        (string Get, string Set) names, SyntaxNode at, ConversionContext context)
+    {
         if (offset is JsLiteral)
-            return Made(kind, [receiver, offset], evaluated: 2, [$"{counted} - {{1}}"], computed: true, names, access, context);
+            return Made(kind, [receiver, offset], evaluated: 2, [$"{counted} - {{1}}"], computed: true, names, at, context);
         var once = receiver is JsIdentifier { Name: not ("this" or "super") } && !JsExprWriter.IsInlinable(offset)
             ? JsExpr.Group(receiver)
             : receiver;
-        return Made(kind, [once, offset], evaluated: 2, [$"-{{1}} + {counted}"], computed: true, names, access, context);
+        return Made(kind, [once, offset], evaluated: 2, [$"-{{1}} + {counted}"], computed: true, names, at, context);
     }
 
     /// <summary>

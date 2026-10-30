@@ -476,6 +476,14 @@ public static class Eq
     public const string ListAddRange = "$eq.collections.addRange";
     /// <summary><c>List&lt;T&gt;.InsertRange</c>: as <see cref="ListAddRange"/>, the index checked as .NET checks it.</summary>
     public const string ListInsertRange = "$eq.collections.insertRange";
+    /// <summary><c>List&lt;T&gt;.Insert</c> and <c>IList&lt;T&gt;.Insert</c>: the index checked as .NET checks it (#1160).</summary>
+    public const string ListInsert = "$eq.collections.listInsert";
+    /// <summary><c>List&lt;T&gt;.RemoveAt</c> and <c>IList&lt;T&gt;.RemoveAt</c>: the index checked as .NET checks it (#1160).</summary>
+    public const string ListRemoveAt = "$eq.collections.listRemoveAt";
+    /// <summary><c>List&lt;T&gt;.RemoveRange</c>: the range checked as .NET checks it (#1160).</summary>
+    public const string ListRemoveRange = "$eq.collections.listRemoveRange";
+    /// <summary><c>List&lt;T&gt;.GetRange</c>: a new list of the range, checked as .NET checks it (#1160).</summary>
+    public const string ListGetRange = "$eq.collections.listGetRange";
     /// <summary><c>List&lt;T&gt;.RemoveAll</c>: .NET's single pass, answering how many it removed.</summary>
     public const string ListRemoveAll = "$eq.collections.removeAll";
     /// <summary><c>List&lt;T&gt;.CopyTo(array)</c> and <c>CopyTo(array, arrayIndex)</c>, into the array handed.</summary>

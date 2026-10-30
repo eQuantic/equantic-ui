@@ -59,6 +59,11 @@ internal static class OutArgument
         var target = Target(argument, context);
         if (IsBareName(target)) return target;
 
+        // An element counted from the end is computed from its receiver, so what it reads is a template
+        // no value can be assigned to: the receiver and the position are one part, held once.
+        if (Strategies.Place.HeldFor(argument.Expression, context) is { } held)
+            return Strategies.Place.ThroughHeld(hole(held));
+
         var place = context.Converter.ConvertIr(argument.Expression);
         return place switch
         {

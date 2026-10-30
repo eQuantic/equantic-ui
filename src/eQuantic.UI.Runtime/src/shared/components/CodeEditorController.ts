@@ -290,7 +290,7 @@ export class CodeEditorController {
                     let keeps = i === primary ? next : merged.length - 1 === primaryAt ? last : next;
                     let backwards = CodePosition.opLessThan(keeps.focus, keeps.anchor);
                     let range = backwards ? new CodeRange(end, last.start) : new CodeRange(last.start, end);
-                    merged[merged.length - 1] = new CodeCaret(range, i === primary ? caret.advance : merged[merged.length - 1].advance);
+                    (merged[merged.length - 1] = new CodeCaret(range, i === primary ? caret.advance : merged[merged.length - 1].advance));
                     if (i === primary) primaryAt = merged.length - 1;
                     continue;
                 }
@@ -1100,7 +1100,7 @@ export class CodeEditorController {
             let carets: CodeCaret[] = $eq.collections.listCopy(this._others);
             primary = 0;
             while (primary < carets.length && CodePosition.opLessThan(carets[primary].selection.start, this._selection.start)) primary++;
-            carets.splice(primary, 0, new CodeCaret(this._selection, this._desiredAdvance));
+            $eq.collections.listInsert(carets, primary, new CodeCaret(this._selection, this._desiredAdvance));
             return carets;
         })();
         return { $: $r, primary };
@@ -1893,7 +1893,7 @@ export class CodeEditorController {
             for (let i = 0; i < carets.length; i++) {
                 let selection = carets[i].selection;
                 if (CodePosition.opLessThan(at, selection.start) || CodePosition.opLessThan(selection.end, at)) continue;
-                carets.splice(i, 1);
+                $eq.collections.listRemoveAt(carets, i);
                 let next = i === primary ? i > 0 ? i - 1 : 0 : primary > i ? primary - 1 : primary;
                 this._others.splice(0);
                 for (let k = 0; k < carets.length; k++) if (k !== next) this._others.push(carets[k]);

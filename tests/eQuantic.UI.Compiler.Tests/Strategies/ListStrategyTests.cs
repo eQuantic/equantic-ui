@@ -47,24 +47,24 @@ public class ListStrategyTests
     }
 
     [Fact]
-    public void Insert_MapsToSplice()
+    public void Insert_ChecksItsIndexInTheRuntime()
     {
         var result = TestHelper.ConvertExpression("list.Insert(0, item)");
-        result.Should().Be("this.list.splice(0, 0, this.item)");
+        result.Should().Be("$eq.collections.listInsert(this.list, 0, this.item)");
     }
 
     [Fact]
-    public void RemoveAt_MapsToSplice()
+    public void RemoveAt_ChecksItsIndexInTheRuntime()
     {
         var result = TestHelper.ConvertExpression("list.RemoveAt(5)");
-        result.Should().Be("this.list.splice(5, 1)");
+        result.Should().Be("$eq.collections.listRemoveAt(this.list, 5)");
     }
 
     [Fact]
-    public void RemoveRange_MapsToSplice()
+    public void RemoveRange_ChecksItsRangeInTheRuntime()
     {
         var result = TestHelper.ConvertExpression("list.RemoveRange(2, 3)");
-        result.Should().Be("this.list.splice(2, 3)");
+        result.Should().Be("$eq.collections.listRemoveRange(this.list, 2, 3)");
     }
 
     [Fact]
@@ -178,9 +178,9 @@ public class ListStrategyTests
     }
 
     [Fact]
-    public void GetRange_MapsToSlice()
+    public void GetRange_ChecksItsRangeInTheRuntime()
     {
         var result = TestHelper.ConvertExpression("list.GetRange(2, 5)");
-        result.Should().Be("this.list.slice(2, 2 + 5)");
+        result.Should().Be("$eq.collections.listGetRange(this.list, 2, 5)");
     }
 }

@@ -21,3 +21,9 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupStrategy.ConvertIr(Microsoft.
 eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupStrategy.LookupStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.UiComponent = 5 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
+const eQuantic.UI.Compiler.CodeGen.Eq.ListInsert = "$eq.collections.listInsert" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListRemoveAt = "$eq.collections.listRemoveAt" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListRemoveRange = "$eq.collections.listRemoveRange" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListGetRange = "$eq.collections.listGetRange" -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.IndexFromEndStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.IndexFromEndStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!

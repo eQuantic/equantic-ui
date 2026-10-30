@@ -174,8 +174,8 @@ export class MermaidLayout {
                 let next = stackNext[stackNext.length - 1];
                 if (next >= outgoing[node].length) {
                     state[node] = 2;
-                    stackNode.splice(stackNode.length - 1, 1);
-                    stackNext.splice(stackNext.length - 1, 1);
+                    $eq.collections.listRemoveAt(stackNode, stackNode.length - 1);
+                    $eq.collections.listRemoveAt(stackNext, stackNext.length - 1);
                     continue;
                 }
                 stackNext[stackNext.length - 1] = next + 1;

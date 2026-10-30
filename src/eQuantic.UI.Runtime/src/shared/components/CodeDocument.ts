@@ -27,7 +27,7 @@ export class CodeDocument {
     }
 
     get end(): CodePosition {
-        return new CodePosition(this._lines.length - 1, this._lines[this._lines.length - 1].length);
+        return new CodePosition(this._lines.length - 1, (($0) => $0[$0.length - 1])(this._lines).length);
     }
 
     static $slots: any = null;

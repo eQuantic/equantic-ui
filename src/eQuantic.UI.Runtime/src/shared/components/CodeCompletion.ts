@@ -130,7 +130,7 @@ export class CodeCompletion {
             for (let i = this._requests.length - 1; i >= 0; i--) {
                 if (!(this._requests[i].provider === provider)) continue;
                 let stale = this._requests[i];
-                this._requests.splice(i, 1);
+                $eq.collections.listRemoveAt(this._requests, i);
                 this.cancel(stale.cancellation);
             }
             let request = new CodeCompletionRequest(provider, word);
@@ -162,11 +162,11 @@ export class CodeCompletion {
         if (!this._active || request.answered || $eq.collections.indexOf(this._requests, request, 'item') < 0) return;
         request.answered = true;
         let known = this._answers.findIndex((held) => (held.provider === answer.provider));
-        if (known >= 0) this._answers.splice(known, 1);
+        if (known >= 0) $eq.collections.listRemoveAt(this._answers, known);
         let rank = this.rankOf(answer.provider);
         let at = 0;
         while (at < this._answers.length && this.rankOf(this._answers[at].provider) <= rank) at++;
-        this._answers.splice(at, 0, answer);
+        $eq.collections.listInsert(this._answers, at, answer);
         if (this._answers.every((held) => held.offers.length === 0 && !held.isIncomplete) && !this.isLoading) {
             this.close(true);
             return;

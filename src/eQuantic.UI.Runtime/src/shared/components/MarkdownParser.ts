@@ -97,7 +97,7 @@ export class MarkdownParser {
                     let mark = MarkdownParser.bulletOf(lines[i]);
                     if (mark == null) {
                         if (list.items.length > 0 && $eq.text.startsWith(lines[i], '  ', 'ordinal') && $eq.text.trim(lines[i]).length > 0 && !$eq.text.startsWith($eq.text.trimStart(lines[i]), '```', 'ordinal')) {
-                            let last = list.items[list.items.length - 1];
+                            let last = (($0) => $0[$0.length - 1])(list.items);
                             for (const run of MarkdownParser.inline(' ' + $eq.text.trim(lines[i]))) last.runs.push(run);
                             i++;
                             continue;

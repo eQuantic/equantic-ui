@@ -221,9 +221,99 @@ public static class JsExprWriter
         // hands it is typed from there. Annotated `any`, the receiver lost its type, and the template's
         // own callbacks fell to TS7006 (Copilot's third review of #661).
         var names = string.Join(", ", indexes.Select(i => named[i]));
-        return new JsWrittenBuilder().Add($"(({names}) => ").Add(body.Done()).Add(")(")
-            .AddJoined(", ", indexes.Select(i => Written(parts[i]))).Add(")").Done();
+        // A part left inline that suspends runs inside this arrow, so the arrow is async and the template
+        // awaits it (Awaited). Binding the part instead would run it before the template: a `??=`'s value
+        // would run when nothing is written, and a compound would read its target after the await.
+        var suspends = Enumerable.Range(0, parts.Count).Any(i => !bound[i] && Suspends(parts[i]));
+        return new JsWrittenBuilder().Add(suspends ? "(await (async " : "(").Add($"({names}) => ").Add(suspends ? "[" : "")
+            .Add(body.Done()).Add(suspends ? "])(" : ")(")
+            .AddJoined(", ", indexes.Select(i => Written(parts[i]))).Add(suspends ? "))[0]" : ")").Done();
     }
+
+    /// <summary>
+    /// An <paramref name="arrow"/> called where it is written, whose body suspends: async, and awaited by
+    /// the code around it, which is the only way a body keeps its place and its order in an expression.
+    /// The arrow answers its value in an array, since an async function adopts a Promise it answers: a
+    /// <c>Task</c> read from an array would come back as its result, waited for, where C# only reads it.
+    /// </summary>
+    internal static string Awaited(string arrow, string arguments) => $"(await (async {arrow})({arguments}))[0]";
+
+    /// <summary>
+    /// Whether a part suspends the function it is written in: an <c>await</c> of its own, read from what
+    /// it writes since a part may hold spliced text. One in a string, or inside a function the part
+    /// defines, suspends nothing here.
+    /// </summary>
+    internal static bool Suspends(JsExpr part)
+    {
+        var text = Write(part);
+        if (!text.Contains("await", StringComparison.Ordinal)) return false;
+        var code = Executable(text);
+        var awaits = AwaitWord.Matches(code);
+        return InsideAFunction(code, awaits).Any(inside => !inside);
+    }
+
+    /// <summary>The text with what no engine runs blanked in place: a string, and a template literal but
+    /// for the expressions in its <c>${…}</c>, which run where they stand.</summary>
+    private static string Executable(string text)
+    {
+        var kept = text.ToCharArray();
+        var braces = 0;
+        var holes = new Stack<int>();
+
+        // Blanks a template literal's text from `from`, and answers where it stopped: its closing
+        // backtick, or the brace of the next hole it opens.
+        int LiteralText(int from)
+        {
+            var at = from + 1;
+            for (; at < text.Length; at++)
+            {
+                if (text[at] == '\\')
+                {
+                    at++;
+                }
+                else if (text[at] == '`')
+                {
+                    break;
+                }
+                else if (text[at] == '$' && at + 1 < text.Length && text[at + 1] == '{')
+                {
+                    at++;
+                    holes.Push(braces);
+                    break;
+                }
+            }
+            Array.Fill(kept, ' ', from, Math.Min(at, text.Length - 1) - from + 1);
+            return at;
+        }
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            switch (text[i])
+            {
+                case '\'' or '"':
+                    var end = ClosingQuote(text, i);
+                    Array.Fill(kept, ' ', i, end - i + 1);
+                    i = end;
+                    break;
+                case '`':
+                    i = LiteralText(i);
+                    break;
+                case '{':
+                    braces++;
+                    break;
+                case '}' when holes.Count > 0 && holes.Peek() == braces:
+                    holes.Pop();
+                    i = LiteralText(i);
+                    break;
+                case '}':
+                    braces--;
+                    break;
+            }
+        }
+        return new string(kept);
+    }
+
+    private static readonly Regex AwaitWord = new(@"(?<![\w$.])await\b", RegexOptions.Compiled);
 
     /// <summary>
     /// The name part <paramref name="index"/> is bound to: <c>$0</c> for the first, unless a function
