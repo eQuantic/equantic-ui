@@ -129,7 +129,7 @@ export class CodeNoteBuilder {
             if (line.length > 0) lines++;
             line = word;
             let wide = this._context.measureText(word, style);
-            if (wide > room) lines += (Math.trunc(Math.ceil(Math.fround(wide / room))) | 0) - 1;
+            if (wide > room) lines += $eq.num.saturate(Math.ceil(Math.fround(wide / room))) - 1;
         }
         return lines;
     }

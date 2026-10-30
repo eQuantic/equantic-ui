@@ -1,4 +1,4 @@
-import { BuildContext, Column, ScrollView, SizeValue, Spacer, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, BuildContext, Column, ScrollView, SizeValue, Spacer, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
 
 export class ListView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.ListView';
@@ -73,8 +73,8 @@ export class ListView extends StatefulComponent {
 
     windowFor(offset: number, viewport: number): [number, number] {
         if (this.count === 0 || this.itemExtent <= 0) return [0, -1];
-        let first = Math.max(0, (Math.trunc(Math.floor(Math.fround(offset / this.itemExtent))) | 0) - this.overscan);
-        let last = Math.min(this.count - 1, (Math.trunc(Math.ceil(Math.fround(Math.fround(offset + viewport) / this.itemExtent))) | 0) + this.overscan);
+        let first = Math.max(0, $eq.num.saturate(Math.floor(Math.fround(offset / this.itemExtent))) - this.overscan);
+        let last = Math.min(this.count - 1, $eq.num.saturate(Math.ceil(Math.fround(Math.fround(offset + viewport) / this.itemExtent))) + this.overscan);
         return [first, last];
     }
 

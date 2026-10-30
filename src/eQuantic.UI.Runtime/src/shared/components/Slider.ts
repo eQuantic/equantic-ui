@@ -54,7 +54,7 @@ export class Slider extends StatelessComponent {
     }
 
     static weight(fraction: number) {
-        return Math.max(1, (Math.trunc($eq.math.roundSingle(Math.fround(fraction * 1000))) | 0));
+        return Math.max(1, $eq.num.saturate($eq.math.roundSingle(Math.fround(fraction * 1000))));
     }
 
     static trackHalf(color: ColorToken, filled: boolean, enabled: boolean, onPressed: () => void) {
