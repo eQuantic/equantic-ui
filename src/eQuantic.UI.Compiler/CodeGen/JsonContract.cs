@@ -17,14 +17,15 @@ internal static class JsonContract
     /// <summary>
     /// The JavaScript array of what a twin of <paramref name="type"/> writes: each member's twin name, or a pair of its
     /// JSON name and its twin name where <c>[JsonPropertyName]</c> sets one. Null where the twin holds nothing else, so
-    /// its own keys are the contract, and for a type a framework class derives, whose members are no JSON of ours.
+    /// its own keys are the contract, and for a type of the SDK's or one a framework class derives, which never crosses
+    /// to a server action, so its twin carries no list.
     /// </summary>
     internal static string? Members(INamedTypeSymbol type)
     {
         var chain = new List<INamedTypeSymbol>();
         for (var at = type; at is { SpecialType: not (SpecialType.System_Object or SpecialType.System_ValueType) }; at = at.BaseType)
         {
-            if (!at.Locations.Any(location => location.IsInSource)) return null;
+            if (!at.Locations.Any(location => location.IsInSource) || at.IsFramework()) return null;
             chain.Insert(0, at);
         }
         if (!chain.Any(HoldsWhatItDoesNotWrite)) return null;
