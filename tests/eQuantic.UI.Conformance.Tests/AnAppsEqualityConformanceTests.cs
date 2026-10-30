@@ -19,6 +19,9 @@ public class AnAppsEqualityConformanceTests
         public class Plain { }
         public class Derived : Plain { public override bool Equals(object o) { Counted.Calls++; return ReferenceEquals(this, o); } public override int GetHashCode() => 1; }
         public class Typed : IEquatable<Typed> { public static int Calls; public bool Equals(Typed o) { Calls++; return ReferenceEquals(this, o); } public override bool Equals(object o) => false; public override int GetHashCode() => 1; }
+        public class Asks { public override bool Equals(object o) { Counted.Calls++; return base.Equals(o); } public override int GetHashCode() => 1; }
+        public class Below : Counted { public override bool Equals(object o) => base.Equals(o); public override int GetHashCode() => 1; }
+        public record AsksRecord(int V) { public virtual bool Equals(AsksRecord o) => o != null && V == o.V; public override int GetHashCode() => V; }
         public record Holder(Counted C);
         public struct Box { public Counted C; public Box(Counted c) { C = c; } }
         public record struct Wrap(Typed T);
@@ -68,6 +71,10 @@ public class AnAppsEqualityConformanceTests
     // Generic code through IEquatable<U>, over a class that answers it for several other types (#962).
     [InlineData("var m = new Multi(); return Gen.Same(m, 1) + \"|\" + Gen.Same(m, 2) + \"|\" + Gen.Same(m, \"a\") + \"|\" + Gen.Same(m, \"b\");")]
     [InlineData("var m = new Multi(); return Gen.Same<Multi, Plain>(m, new Derived()) + \"|\" + Gen.Same<Multi, Plain>(m, new Plain());")]
+    // An override that asks its base, which must not ask the override again.
+    [InlineData("var a = new Asks(); var b = new Asks(); return a.Equals(a) + \"|\" + a.Equals(b) + \"|\" + new List<Asks> { a }.Contains(a) + \"|\" + Counted.Calls;")]
+    [InlineData("var a = new AsksRecord(1); var b = new AsksRecord(1); return a.Equals(a) + \"|\" + a.Equals(b) + \"|\" + a.Equals(new AsksRecord(2));")]
+    [InlineData("var a = new Below(); return a.Equals(a) + \"|\" + a.Equals(new Below()) + \"|\" + Counted.Calls;")]
     public void AnEqualsOfTheApps_IsAskedAsDotNetAsksIt(string statements) =>
         ModuleGraph.AssertSameAsDotNet(Source, false, ("case", "Counted.Calls = 0; Typed.Calls = 0; Own.Calls = 0; " + statements));
 }

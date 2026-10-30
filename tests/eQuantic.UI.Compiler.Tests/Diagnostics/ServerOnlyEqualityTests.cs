@@ -51,6 +51,14 @@ public class ServerOnlyEqualityTests
 
         public sealed class Plain { }
 
+        public sealed record Holds(Vaulted V);
+
+        public readonly struct Boxes
+        {
+            public Boxes(Vaulted v) { V = v; }
+            public Vaulted V { get; }
+        }
+
         public readonly struct Kept
         {
             public Kept(int n) { N = n; }
@@ -112,6 +120,10 @@ public class ServerOnlyEqualityTests
         { "object Run(Vaulted c)", "new { C = c }.Equals(new { C = c })", "'Vaulted.Equals' is HOST ONLY" },
         { "object Run(KeyValuePair<Vaulted, int> p)", "EqualityComparer<KeyValuePair<Vaulted, int>>.Default.Equals(p, p)", "'Vaulted.Equals' is HOST ONLY" },
         { "object Run(HashSet<Vaulted> l)", "new List<(Vaulted, int)>().Contains((null, 1))", "'Vaulted.Equals' is HOST ONLY" },
+        // A record's and a struct's members, each compared with its own type's comparer.
+        { "object Run(Holds a, Holds b)", "a.Equals(b)", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(Boxes a, Boxes b)", "EqualityComparer<Boxes>.Default.Equals(a, b)", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(Holds a)", "new HashSet<Holds> { a }", "'Vaulted.Equals' is HOST ONLY" },
         // An instance call through a contract, which the invocation's fence never sees.
         { "object Run(Open x)", "x.Equals(x)", "'object.Equals' may reach 'Closed.Equals', marked [ServerOnly]" },
         { "object Run(object o)", "o.Equals(o)", "'object.Equals' may reach " },
