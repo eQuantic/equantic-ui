@@ -6,8 +6,8 @@
  * `ToInt32(double)` and speak of an Int32, and `ToInt64` and `ToUInt64` of a double are a checked cast
  * and speak of arithmetic.
  *
- * A char held in an `object` cannot be told from a text of one character here, nor an `int` from a
- * `double` of the same value (#552): the first is read as text, and the second as the integer, whose
+ * A char or an enum's member held in an `object` cannot be told from a text here, nor an `int` from a
+ * `double` of the same value (#552): the first two are read as text, and the last as the integer, whose
  * overflow names the target where a double's narrow width names an Int32.
  */
 import { boolConvert } from './boolean-text';

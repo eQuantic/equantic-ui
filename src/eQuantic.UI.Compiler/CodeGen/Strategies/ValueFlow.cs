@@ -142,6 +142,11 @@ public static class ValueFlow
         if (convertedConstant is not null && Constant(convertedConstant, to) is { } folded)
             return folded;
 
+        // A cast of a floating constant the COMPILER folded is the compiler's value, which is no run-time
+        // conversion's: `unchecked((int)1e12)` is 0 where the same cast of a variable saturates (#1015).
+        if (convertedConstant is not null && operandConstant is double or float && IntegerWidth.Of(to) is not null)
+            return JsExpr.Literal(System.Convert.ToString(convertedConstant, CultureInfo.InvariantCulture)!);
+
         // A DATE becoming an INSTANT is the twin's own conversion, at the offset its kind gives, as .NET's
         // implicit operator converts it: an instant's operator over a date, `instant - date`, bound that
         // conversion and handed the operator the date as it was (#961).

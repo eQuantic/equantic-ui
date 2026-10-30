@@ -80,9 +80,12 @@ public class ConvertStrategy : IExpressionIrStrategy
                 : context.Converter.ConvertIr(providerExpr);
             var reads = ReadsText(invocation, argExpr, context);
             if (reads) context.UsedHelpers.Add(Eq.Import);
+            var boxedEnum = EnumOf(argExpr, context);
             JsExpr Of(JsExpr value) => reads
                 ? JsExpr.Template($"{Eq.BoolConvert}({{0}})", [value])
-                : ToBoolean(value, context.SemanticHelper.GetType(argExpr), context);
+                : boxedEnum is not null && !context.SemanticHelper.GetType(argExpr).IsNullableValue()
+                    ? JsExpr.Template("(({0}) !== 0)", [Types.EnumShape.ValueOf(boxedEnum, value, context)])
+                    : ToBoolean(value, context.SemanticHelper.GetType(argExpr), context);
             if (provider is null) return Of(context.Converter.ConvertIr(argExpr));
             // Both arguments in the order they are WRITTEN, which a named argument may reverse
             // (`Convert.ToBoolean(provider: P(), value: V())` runs P first), then the conversion of
@@ -122,9 +125,18 @@ public class ConvertStrategy : IExpressionIrStrategy
         if (TextReader(name) is { Reader: Eq.RealConvert } real)
             return ToReal(invocation, argExpr, providerExpr, real.Tag, context);
         if (name == "ToChar")
+        {
+            // .NET reads no provider here, and this names the ones the browser can leave unread (EQ2108).
+            if (providerExpr is not null) NamedCulture.ReadsInvariant(invocation, providerExpr, context, NumberMethodStrategy.ReadingANumber);
             return ToChar(invocation, argExpr, context);
+        }
         return JsExpr.Opaque(context.Converter.ConvertExpression(argExpr));
     }
+
+    /// <summary>The enum a value is written as, a nullable one's included: C# boxes it for the <c>object</c>
+    /// overload, and only here is its type still known. A member is held as its key, no number.</summary>
+    private static INamedTypeSymbol? EnumOf(ExpressionSyntax value, ConversionContext context) =>
+        context.SemanticHelper.GetType(value).UnwrapNullable() as INamedTypeSymbol is { TypeKind: TypeKind.Enum } type ? type : null;
 
     /// <summary>The type of the value the overload C# bound takes, or the argument's where no model
     /// can say. It is <c>object</c> for a nullable and an enum, which have no overload of their own.</summary>
@@ -166,8 +178,12 @@ public class ConvertStrategy : IExpressionIrStrategy
         var source = Source(invocation, value, context);
         var quoted = JsExpr.Literal($"'{tag}'");
         JsExpr Call(string helper, JsExpr of) => JsExpr.Call(JsExpr.Identifier(helper), of, quoted);
-        if (context.SemanticHelper.GetType(value) is INamedTypeSymbol { TypeKind: TypeKind.Enum } written)
-            return Call(Eq.IntegerFrom, Types.EnumShape.ValueOf(written, converted, context));
+        if (EnumOf(value, context) is { } written)
+        {
+            JsExpr Number(JsExpr held) => Call(Eq.IntegerFrom, Types.EnumShape.ValueOf(written, held, context));
+            if (!context.SemanticHelper.GetType(value).IsNullableValue()) return Number(converted);
+            return JsExpr.Template(tag is "long" or "ulong" ? "({0} ?? 0n)" : "({0} ?? 0)", [NullableLift.Unary(converted, Number, context)]);
+        }
         switch (source?.SpecialType)
         {
             case SpecialType.System_Double or SpecialType.System_Single:

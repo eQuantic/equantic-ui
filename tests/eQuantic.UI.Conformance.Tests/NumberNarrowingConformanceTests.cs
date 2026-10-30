@@ -89,6 +89,10 @@ public class NumberNarrowingConformanceTests
     [SkippableTheory]
     [InlineData("int? none = null; int? some = 5; return Convert.ToInt32(none) + \"|\" + Convert.ToInt32(some) + \"|\" + Convert.ToBoolean(none) + \"|\" + Convert.ToBoolean(some);")] // 0|5|False|True
     [InlineData("return Convert.ToInt32(Tone.Warm) + \"|\" + Convert.ToByte(Tone.Warm) + \"|\" + Convert.ToInt64(Tone.Warm).ToString();")] // 3|3|3
+    [InlineData("Tone? none = null; Tone? some = Tone.Warm; return Convert.ToInt32(none) + \"|\" + Convert.ToInt32(some) + \"|\" + Convert.ToInt64(some).ToString() + \"|\" + Convert.ToInt64(none).ToString();")] // 0|3|3|0
+    [InlineData("return Convert.ToBoolean(Tone.Warm) + \"|\" + Convert.ToBoolean((Tone)0);")] // True|False
+    [InlineData("return Convert.ToBoolean(1.5f) + \"|\" + Convert.ToBoolean((byte)0) + \"|\" + Convert.ToBoolean(0L) + \"|\" + Convert.ToBoolean(double.NaN);")] // True|False|False|True
+    [InlineData("return Convert.ToChar(\"A\", System.Globalization.CultureInfo.InvariantCulture).ToString();")] // A
     [InlineData("return Convert.ToDouble(true) + \"|\" + Convert.ToDouble(2.5m) + \"|\" + Convert.ToSingle(2.5m) + \"|\" + Convert.ToDouble(3L);")] // 1|2.5|2.5|3
     [InlineData("object o = 2.5m; object b = true; object t = \"2.5\"; object n = null; return Convert.ToDouble(o) + \"|\" + Convert.ToDouble(b) + \"|\" + Convert.ToSingle(t) + \"|\" + Convert.ToDouble(n);")] // 2.5|1|2.5|0
     [InlineData("try { return Convert.ToDouble('A'); } catch (InvalidCastException e) { return e.Message; }")]
@@ -137,6 +141,8 @@ public class NumberNarrowingConformanceTests
     [InlineData("double d = -0.9; return ((int)d).ToString() + \"|\" + (byte)d + \"|\" + ((long)d).ToString();")]
     // A checked cast still throws.
     [InlineData("double d = 1e12; try { return checked((int)d); } " + Catch)]
+    // A constant the compiler folds, a long's and an int's.
+    [InlineData("return unchecked((int)1e12) + \"|\" + unchecked((long)1e30).ToString();")]
     // An enum over a byte, which a cast of a double reaches as the width does.
     [InlineData("double d = 1e12; return (int)(Level)d;")]
     public void ACastOfADouble_SaturatesAsDotNetDoes(string statements)
