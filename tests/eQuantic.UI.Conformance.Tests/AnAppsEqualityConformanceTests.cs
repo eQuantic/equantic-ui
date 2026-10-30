@@ -22,6 +22,15 @@ public class AnAppsEqualityConformanceTests
         public record Holder(Counted C);
         public struct Box { public Counted C; public Box(Counted c) { C = c; } }
         public record struct Wrap(Typed T);
+        public class Multi : IEquatable<int>, IEquatable<string>, IEquatable<Plain>
+        {
+            public bool Equals(int o) => o == 1;
+            public bool Equals(string o) => o == "a";
+            public bool Equals(Plain o) => o is Derived;
+            public override bool Equals(object o) => false;
+            public override int GetHashCode() => 1;
+        }
+        public static class Gen { public static bool Same<T, U>(T a, U b) where T : IEquatable<U> => a.Equals(b); }
         public record struct Own(int V) { public static int Calls; public bool Equals(Own o) { Calls++; return V == o.V; } public override int GetHashCode() => V; }
         """;
 
@@ -56,6 +65,9 @@ public class AnAppsEqualityConformanceTests
     // Generic code, which settles it at run time.
     [InlineData("static bool Same<T>(T a, T b) => EqualityComparer<T>.Default.Equals(a, b); var c = new Counted(); return Same(c, c) + \"|\" + Counted.Calls;")]
     [InlineData("static bool Has<T>(List<T> l, T v) => l.Contains(v); var c = new Counted(); return Has(new List<Counted> { c }, c) + \"|\" + Counted.Calls;")]
+    // Generic code through IEquatable<U>, over a class that answers it for several other types (#962).
+    [InlineData("var m = new Multi(); return Gen.Same(m, 1) + \"|\" + Gen.Same(m, 2) + \"|\" + Gen.Same(m, \"a\") + \"|\" + Gen.Same(m, \"b\");")]
+    [InlineData("var m = new Multi(); return Gen.Same<Multi, Plain>(m, new Derived()) + \"|\" + Gen.Same<Multi, Plain>(m, new Plain());")]
     public void AnEqualsOfTheApps_IsAskedAsDotNetAsksIt(string statements) =>
         ModuleGraph.AssertSameAsDotNet(Source, false, ("case", "Counted.Calls = 0; Typed.Calls = 0; Own.Calls = 0; " + statements));
 }
