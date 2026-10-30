@@ -552,6 +552,7 @@ function readNumericDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
   for (let i = 0; i < 3; i++) {
     const before = cursor.at;
     let written = true;
+    let joinedByAPoint = true;
     if (i > 0) {
       const spaced = cursor.space();
       const separator = cursor.take(shapes.dateSeparators);
@@ -563,7 +564,7 @@ function readNumericDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
         }
         return none();
       }
-      points &&= separator === '.';
+      joinedByAPoint = separator === '.';
       cursor.space();
     }
     const part = cursor.digits();
@@ -575,6 +576,7 @@ function readNumericDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
       }
       return none();
     }
+    points &&= joinedByAPoint;
     parts.push(part);
   }
   if (shapes.pointIsClock && points && parts.every((part) => !looksLikeYear(part))) return none();
