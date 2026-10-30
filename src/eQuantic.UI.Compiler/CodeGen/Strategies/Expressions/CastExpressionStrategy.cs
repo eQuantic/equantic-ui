@@ -91,7 +91,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             // Another enum's value: its own table gives the number, and this one's gives the key.
             if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum)
                 operandIr = Types.EnumShape.ValueOf(sourceEnum, operandIr, context);
-            operandIr = IntoUnderlying(operandIr, operandType, enumTarget);
+            operandIr = IntoUnderlying(operandIr, operandType, enumTarget, context);
             // Flags: the int IS the runtime value (identity). Normal: map value → member-name string.
             return Types.EnumShape.Held(enumTarget, operandIr, context);
         }
@@ -149,7 +149,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     /// that fits already is left as it is, a long's BigInt is narrowed, and a 64-bit enum, a number
     /// here (#551), takes the value as it comes.
     /// </summary>
-    private static JsExpr IntoUnderlying(JsExpr number, ITypeSymbol? source, INamedTypeSymbol target)
+    private static JsExpr IntoUnderlying(JsExpr number, ITypeSymbol? source, INamedTypeSymbol target, ConversionContext context)
     {
         if (IntegerWidth.Of(target.EnumUnderlyingType) is not { } width || width.Bits == 64) return number;
         var from = source is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum
@@ -163,7 +163,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
                 ? number
                 : IntegerWidth.Wrap(number, width);
         return source?.SpecialType is SpecialType.System_Single or SpecialType.System_Double
-            ? IntegerWidth.Wrap(JsExpr.Callish($"Math.trunc({JsExprWriter.Write(number)})"), width)
+            ? ValueFlow.Saturated(number, width, context)
             : number;
     }
 

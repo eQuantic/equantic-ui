@@ -6,12 +6,12 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
 /// <summary>
-/// Strategy for System.Convert.ToXxx conversions, argument-type aware where it matters.
-/// <c>ToDecimal</c> is .NET's, by the type it converts (see <see cref="ToDecimal"/>), and text into
-/// any other numeric type reads as that type's Parse does (see <see cref="TextReader"/>). The rest
-/// cover the common faithful cases; semantics that need .NET-exact behavior (banker's rounding for
-/// numeric→integer, Int64 precision) are best-effort here and will move to the eq compat helper
-/// (see DOTNET-COVERAGE-PROGRAM.md).
+/// Strategy for System.Convert.ToXxx conversions, each by the overload C# bound. <c>ToDecimal</c> is
+/// .NET's, by the type it converts (see <see cref="ToDecimal"/>), and text into any other numeric type
+/// reads as that type's Parse does (see <see cref="TextReader"/>). Anything else into an integer, a
+/// double, a single or a char goes through the runtime (<c>utils/number-convert.ts</c>), which rounds and
+/// checks as .NET does, and a value whose type the call site cannot settle, an <c>object</c>, is read by
+/// what it holds when the call runs (see <see cref="ToInteger"/>, #401).
 /// </summary>
 public class ConvertStrategy : IExpressionIrStrategy
 {
@@ -117,7 +117,132 @@ public class ConvertStrategy : IExpressionIrStrategy
             return JsExpr.Template($"{text.Reader}({{0}}, '{text.Tag}'{(invariant ? ", true" : "")})",
                 [context.Converter.ConvertIr(argExpr)]);
         }
-        return JsExpr.Opaque(Converted(name, argExpr, context));
+        if (TextReader(name) is { Reader: Eq.IntConvert } integer)
+            return ToInteger(invocation, argExpr, providerExpr, integer.Tag, context);
+        if (TextReader(name) is { Reader: Eq.RealConvert } real)
+            return ToReal(invocation, argExpr, providerExpr, real.Tag, context);
+        if (name == "ToChar")
+            return ToChar(invocation, argExpr, context);
+        return JsExpr.Opaque(context.Converter.ConvertExpression(argExpr));
+    }
+
+    /// <summary>The type of the value the overload C# bound takes, or the argument's where no model
+    /// can say. It is <c>object</c> for a nullable and an enum, which have no overload of their own.</summary>
+    private static ITypeSymbol? Source(InvocationExpressionSyntax invocation, ExpressionSyntax value, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [var first, ..] }
+            ? first.Type
+            : context.SemanticHelper.GetType(value);
+
+    /// <summary>Whether a call reads an <c>object</c> in the invariant culture, which only a text it holds
+    /// when the call runs can ask of it.</summary>
+    private static bool ObjectReadsInvariant(InvocationExpressionSyntax invocation, ExpressionSyntax value,
+        ExpressionSyntax? provider, ConversionContext context) =>
+        MayHoldText(context.SemanticHelper.GetType(value), context)
+        && NamedCulture.ReadsInvariant(invocation, provider, context, NumberMethodStrategy.ReadingANumber);
+
+    /// <summary>What a conversion with no meaning throws, after evaluating its argument, as .NET does.</summary>
+    private static JsExpr InvalidCast(JsExpr value, string from, string to, ConversionContext context)
+    {
+        var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Template(
+            $"({parameter} => {{ throw {Eq.ExceptionOf}('System.InvalidCastException', \"Invalid cast from '{from}' to '{to}'.\"); }})({{0}})",
+            [value]);
+    }
+
+    /// <summary>
+    /// <c>Convert.To&lt;integer&gt;</c> of what is not text, by the overload C# bound (#401): an integer
+    /// of another width with its range checked, a double or a float rounded half to even, a decimal by
+    /// <c>decimal.Round</c>, a char as its code unit, a bool as 1 or 0, and an <c>object</c> by what it
+    /// holds when the call runs, an enum boxed for the call being its value. Every one was
+    /// <c>$eq.math.round</c>, which checked no range, made no BigInt, handed a decimal back and read a
+    /// char and a text as a number.
+    /// </summary>
+    private static JsExpr ToInteger(InvocationExpressionSyntax invocation, ExpressionSyntax value, ExpressionSyntax? provider,
+        string tag, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        var converted = context.Converter.ConvertIr(value);
+        var source = Source(invocation, value, context);
+        var quoted = JsExpr.Literal($"'{tag}'");
+        JsExpr Call(string helper, JsExpr of) => JsExpr.Call(JsExpr.Identifier(helper), of, quoted);
+        if (context.SemanticHelper.GetType(value) is INamedTypeSymbol { TypeKind: TypeKind.Enum } written)
+            return Call(Eq.IntegerFrom, Types.EnumShape.ValueOf(written, converted, context));
+        switch (source?.SpecialType)
+        {
+            case SpecialType.System_Double or SpecialType.System_Single:
+                return Call(Eq.IntegerFromDouble, converted);
+            case SpecialType.System_Decimal:
+                return Call(Eq.IntegerFromDecimal, converted);
+            case SpecialType.System_Char:
+                return Call(Eq.IntegerFrom, JsExpr.Template("{0}.charCodeAt(0)", [converted]));
+            case SpecialType.System_Boolean:
+                return tag is "long" or "ulong" ? JsExpr.Template("({0} ? 1n : 0n)", [converted]) : JsExpr.Template("({0} ? 1 : 0)", [converted]);
+            case SpecialType.System_DateTime:
+                return InvalidCast(converted, "DateTime", source.Name, context);
+        }
+        if (source is { } integer && integer.IsIntegral())
+            return IntegerWidth.Of(integer) == IntegerWidth.Of(context.SemanticHelper.GetType(invocation)) ? converted : Call(Eq.IntegerFrom, converted);
+        return ObjectReadsInvariant(invocation, value, provider, context)
+            ? JsExpr.Call(JsExpr.Identifier(Eq.IntegerFromObject), converted, quoted, JsExpr.Literal("true"))
+            : Call(Eq.IntegerFromObject, converted);
+    }
+
+    /// <summary>
+    /// <c>Convert.ToDouble</c> and <c>ToSingle</c> of what is not text: a 64-bit integer to a single
+    /// directly, as the cast converts it, through a double it rounds twice; an <c>object</c> by what it
+    /// holds when the call runs; and a char and a date, which have no conversion to a number here.
+    /// </summary>
+    private static JsExpr ToReal(InvocationExpressionSyntax invocation, ExpressionSyntax value, ExpressionSyntax? provider,
+        string tag, ConversionContext context)
+    {
+        var converted = context.Converter.ConvertIr(value);
+        var source = Source(invocation, value, context);
+        var target = tag == "single" ? "Single" : "Double";
+        switch (source?.SpecialType)
+        {
+            case SpecialType.System_Char:
+                return InvalidCast(converted, "Char", target, context);
+            case SpecialType.System_DateTime:
+                return InvalidCast(converted, "DateTime", target, context);
+            case SpecialType.System_Int64 or SpecialType.System_UInt64 when tag == "single":
+                context.UsedHelpers.Add(Eq.Import);
+                return JsExpr.Call(JsExpr.Identifier(Eq.SingleFromLong), converted);
+        }
+        if (source is null or { SpecialType: SpecialType.System_Object } or { TypeKind: TypeKind.TypeParameter or TypeKind.Dynamic })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return ObjectReadsInvariant(invocation, value, provider, context)
+                ? JsExpr.Call(JsExpr.Identifier(Eq.RealFromObject), converted, JsExpr.Literal($"'{tag}'"), JsExpr.Literal("true"))
+                : JsExpr.Call(JsExpr.Identifier(Eq.RealFromObject), converted, JsExpr.Literal($"'{tag}'"));
+        }
+        // A single, as every float this side produces (SinglePrecision).
+        return JsExpr.Template(tag == "single" ? "Math.fround(Number({0}))" : "Number({0})", [converted]);
+    }
+
+    /// <summary>
+    /// <c>Convert.ToChar</c>: a char is itself, a text must be one char, an integer is its code unit in
+    /// the char's range, an <c>object</c> is read by what it holds when the call runs, and a bool, a real
+    /// number, a decimal and a date have no conversion to a char. Every one was
+    /// <c>String.fromCharCode</c>, which read a text as a zero and wrapped an integer past the range.
+    /// </summary>
+    private static JsExpr ToChar(InvocationExpressionSyntax invocation, ExpressionSyntax value, ConversionContext context)
+    {
+        var converted = context.Converter.ConvertIr(value);
+        var source = Source(invocation, value, context);
+        switch (source?.SpecialType)
+        {
+            case SpecialType.System_Char:
+                return converted;
+            case SpecialType.System_String:
+                context.UsedHelpers.Add(Eq.Import);
+                return JsExpr.Call(JsExpr.Identifier(Eq.CharFromText), converted);
+            case SpecialType.System_Boolean or SpecialType.System_Double or SpecialType.System_Single
+                or SpecialType.System_Decimal or SpecialType.System_DateTime:
+                return InvalidCast(converted, source.Name, "Char", context);
+        }
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(source is { } integer && integer.IsIntegral() ? Eq.CharFrom : Eq.CharFromObject), converted);
     }
 
     /// <summary>
@@ -353,12 +478,7 @@ public class ConvertStrategy : IExpressionIrStrategy
             case SpecialType.System_Boolean:
                 return JsExpr.Template($"{Eq.Dec}({{0}} ? 1 : 0)", [value]);
             case SpecialType.System_Char or SpecialType.System_DateTime:
-                var from = type.SpecialType == SpecialType.System_Char ? "Char" : "DateTime";
-                var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
-                context.UsedHelpers.Add(Eq.Import);
-                return JsExpr.Template(
-                    $"({parameter} => {{ throw {Eq.ExceptionOf}('System.InvalidCastException', \"Invalid cast from '{from}' to 'Decimal'.\"); }})({{0}})",
-                    [value]);
+                return InvalidCast(value, type.Name, "Decimal", context);
         }
         if (type.IsIntegral()) return Call(Eq.Dec);
         return invariant ? Call(Eq.DecConvert, JsExpr.Literal("'double'"), JsExpr.Literal("true")) : Call(Eq.DecConvert);
@@ -414,10 +534,7 @@ public class ConvertStrategy : IExpressionIrStrategy
                 read.Add(JsExpr.Literal("true"));
             return JsExpr.Call(JsExpr.Identifier($"{Eq.DateTime}.convert"), read);
         }
-        var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
-        return JsExpr.Template(
-            $"({parameter} => {{ throw {Eq.ExceptionOf}('System.InvalidCastException', \"Invalid cast from '{type.Name}' to 'DateTime'.\"); }})({{0}})",
-            [converted]);
+        return InvalidCast(converted, type.Name, "DateTime", context);
     }
 
     private static bool BindsToCultureInfo(ExpressionSyntax provider, ConversionContext context) =>
@@ -430,8 +547,9 @@ public class ConvertStrategy : IExpressionIrStrategy
     /// its own zero; and a char or a DateTime has no conversion, which .NET throws after evaluating the
     /// argument. Text reads as <c>bool.Parse</c> does before this. The lowering compared every value
     /// with the number zero, so a false bool was true (<c>false !== 0</c>) and so was <c>0L</c>
-    /// (<c>0n !== 0</c>). An object is #401's: its type is the run time's to settle, and it still
-    /// compares with zero.
+    /// (<c>0n !== 0</c>). An object, and a nullable boxed for the call, are the run time's to settle
+    /// (#401): a null is false and a text reads as <c>bool.Parse</c> reads it, where <c>null !== 0</c> was
+    /// true and so was any text.
     /// </summary>
     private static JsExpr ToBoolean(JsExpr value, ITypeSymbol? type, ConversionContext context)
     {
@@ -446,47 +564,14 @@ public class ConvertStrategy : IExpressionIrStrategy
                 context.UsedHelpers.Add(Eq.Import);
                 return Template($"!({{0}}).equals({Eq.Dec}(0))");
             case SpecialType.System_Char or SpecialType.System_DateTime:
-                var from = type.SpecialType == SpecialType.System_Char ? "Char" : "DateTime";
-                var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
-                context.UsedHelpers.Add(Eq.Import);
-                return Template($"({parameter} => {{ throw {Eq.ExceptionOf}('System.InvalidCastException', \"Invalid cast from '{from}' to 'Boolean'.\"); }})({{0}})");
-            default:
+                return InvalidCast(value, type.Name, "Boolean", context);
+            case SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Byte or SpecialType.System_SByte
+                or SpecialType.System_Int16 or SpecialType.System_UInt16 or SpecialType.System_Int32 or SpecialType.System_UInt32:
                 return Template("(({0}) !== 0)");
+            default:
+                context.UsedHelpers.Add(Eq.Import);
+                return JsExpr.Call(JsExpr.Identifier(Eq.BoolFromObject), value);
         }
-    }
-
-    private static string Converted(string name, ExpressionSyntax argExpr, ConversionContext context)
-    {
-        var value = context.Converter.ConvertExpression(argExpr);
-        var argType = context.SemanticHelper.GetType(argExpr);
-
-        // Numeric → integer uses .NET banker's rounding via the $eq.math.round compat helper. Text
-        // never gets here: it reads as the type's Parse does (TextReader).
-        bool isIntegerTarget = name is "ToInt32" or "ToInt16" or "ToByte" or "ToSByte"
-            or "ToUInt32" or "ToUInt16" or "ToInt64" or "ToUInt64";
-        if (isIntegerTarget)
-        {
-            context.UsedHelpers.Add(Eq.Import);
-            return $"{Eq.Round}({value})";
-        }
-
-        // A 64-bit integer converts to a single ONCE, from all 64 bits, as the cast does: through a
-        // double it rounds twice, and a value just above a midpoint between two singles lands on it.
-        if (name == "ToSingle" && argType?.SpecialType is SpecialType.System_Int64 or SpecialType.System_UInt64)
-        {
-            context.UsedHelpers.Add(Eq.Import);
-            return $"{Eq.SingleFromLong}({value})";
-        }
-
-        return name switch
-        {
-            // A single, as every float this side produces (SinglePrecision). Text never gets here:
-            // it reads as float.Parse and double.Parse do (TextReader).
-            "ToSingle" => $"Math.fround(Number({value}))",
-            "ToDouble" => $"Number({value})",
-            "ToChar" => $"String.fromCharCode({value})",
-            _ => $"String({value})"
-        };
     }
 
     // Above ToStringStrategy (10) so Convert.ToString(x) is handled here, not as x.ToString().

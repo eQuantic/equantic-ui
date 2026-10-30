@@ -61,6 +61,30 @@ public static class Eq
     /// <summary><c>Convert.ToDouble(string)</c> and <c>Convert.ToSingle(string)</c>: a null text is 0, any other reads as Parse does.</summary>
     public const string RealConvert = "$eq.num.realConvert";
     public const string Long = "$eq.num.long";
+    /// <summary><c>Convert.To&lt;integer&gt;</c> of an integer of another width: its range checked, in .NET's words (#401).</summary>
+    public const string IntegerFrom = "$eq.num.integerFrom";
+    /// <summary><c>Convert.To&lt;integer&gt;</c> of a double or a float: rounded half to even, then .NET's checks.</summary>
+    public const string IntegerFromDouble = "$eq.num.integerFromDouble";
+    /// <summary><c>Convert.To&lt;integer&gt;</c> of a decimal: <c>decimal.Round</c>, then the range.</summary>
+    public const string IntegerFromDecimal = "$eq.num.integerFromDecimal";
+    /// <summary><c>Convert.To&lt;integer&gt;</c> of an <c>object</c>, by what it holds when the call runs.</summary>
+    public const string IntegerFromObject = "$eq.num.integerFromObject";
+    /// <summary><c>Convert.ToDouble</c> and <c>ToSingle</c> of an <c>object</c>, by what it holds when the call runs.</summary>
+    public const string RealFromObject = "$eq.num.realFromObject";
+    /// <summary><c>Convert.ToChar</c> of an integer: its code unit, in the char's range.</summary>
+    public const string CharFrom = "$eq.num.charFrom";
+    /// <summary><c>Convert.ToChar(string)</c>: a text of exactly one char.</summary>
+    public const string CharFromText = "$eq.num.charFromText";
+    /// <summary><c>Convert.ToChar</c> of an <c>object</c>, by what it holds when the call runs.</summary>
+    public const string CharFromObject = "$eq.num.charFromObject";
+    /// <summary><c>Convert.ToBoolean</c> of an <c>object</c>, by what it holds when the call runs.</summary>
+    public const string BoolFromObject = "$eq.bool.fromObject";
+    /// <summary>An explicit cast of a double or a float to an int, which saturates (#1015).</summary>
+    public const string Saturate = "$eq.num.saturate";
+    /// <summary>The same cast to a uint.</summary>
+    public const string SaturateUnsigned = "$eq.num.saturateUnsigned";
+    /// <summary>The same cast to a long or a ulong, a BigInt here.</summary>
+    public const string SaturateLong = "$eq.num.saturateLong";
     /// <summary>The typed boundary: a server value (SSR state, a Server Action result) coerced
     /// ONCE to its runtime type, by the spec the compiler computed from the C# type.</summary>
     public const string Hydrate = "$eq.hydrate";
