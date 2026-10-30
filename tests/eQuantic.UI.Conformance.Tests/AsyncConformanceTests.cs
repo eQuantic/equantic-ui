@@ -133,17 +133,33 @@ public class AsyncConformanceTests
     }
 
     /// <summary>
-    /// <c>Task.FromException</c> has no translation, and the build refuses it (EQ2004). Swept with the
-    /// rest of the surface above, it passed there by accident: the call was left as written, the
-    /// browser threw a ReferenceError for the <c>Task</c> it names, and the case's own catch took that
-    /// for the exception .NET throws. It pins the refusal until the call is translated (#910).
+    /// A faulted task carries its exception and a canceled one throws <c>TaskCanceledException</c> at its
+    /// <c>await</c>, each already ended where it was made, and a task nobody awaits does nothing. The build
+    /// refused all of them: swept with the rest of the surface above, <c>FromException</c> had passed by
+    /// accident, the browser's ReferenceError for <c>Task</c> taken by the case's own catch (#910).
     /// </summary>
-    [Fact]
-    public void TaskFromException_IsRefusedByTheBuild() =>
-        ConformanceRunner.AssertStatementsRefusedByTheBuild(
-            "var r = 0; try { await Task.FromException(new InvalidOperationException(\"x\")); } "
-            + "catch { r = -1; } var ok = 5; return $\"{r}{ok}\";",
-            "EQ2004");
+    [SkippableTheory]
+    [InlineData("var r = 0; try { await Task.FromException(new InvalidOperationException(\"x\")); } "
+        + "catch { r = -1; } var ok = 5; return $\"{r}{ok}\";")]
+    [InlineData("try { await Task.FromException(new InvalidOperationException(\"boom\")); return \"done\"; } "
+        + "catch (InvalidOperationException e) { return e.Message; }")]
+    [InlineData("try { var n = await Task.FromException<int>(new ArgumentException(\"boom\")); return n.ToString(); } "
+        + "catch (ArgumentException e) { return e.Message; }")]
+    [InlineData("var t = Task.FromException(new InvalidOperationException(\"x\")); await Task.Yield(); return \"unread\";")]
+    [InlineData("var t = Task.FromException<int>(new InvalidOperationException(\"x\")); var log = \"made\"; "
+        + "try { await t; } catch (InvalidOperationException) { log += \"|thrown\"; } return log;")]
+    [InlineData("var source = new " + Source + "(); source.Cancel(); "
+        + "try { await Task.FromCanceled(source.Token); return \"done\"; } catch (TaskCanceledException e) { return e.Message; }")]
+    [InlineData("var source = new " + Source + "(); source.Cancel(); "
+        + "try { var n = await Task.FromCanceled<int>(source.Token); return n.ToString(); } catch (OperationCanceledException e) { return e.Message; }")]
+    [InlineData("var source = new " + Source + "(); source.Cancel(); var t = Task.FromCanceled(source.Token); await Task.Yield(); return \"unread\";")]
+    [InlineData("try { Task.FromException(null); return \"made\"; } catch (ArgumentNullException e) { return e.Message; }")]
+    [InlineData("try { Task.FromCanceled(System.Threading.CancellationToken.None); return \"made\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]
+    public void ATaskAlreadyEnded_AnswersAsDotNet(string program)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(program);
+    }
 
     /// <summary>
     /// A null-conditional call whose translation is a helper was wrapped in an arrow that binds the
