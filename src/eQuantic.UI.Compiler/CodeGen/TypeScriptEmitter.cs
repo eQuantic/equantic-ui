@@ -1901,13 +1901,17 @@ public class TypeScriptEmitter
             // writes an object's own properties, so a server action received `$name` and bound nothing.
             // So does one whose field moved a case apart from a member (`value$`, #396), whose own key
             // is storage no server reads. A derived class inherits it.
-            if (!asStatic && (cls.Members.OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
+            // And a twin that holds more than the serializer writes writes only what it does (#745).
+            var written = !asStatic && ModelFor(cls)?.GetDeclaredSymbol(cls) is INamedTypeSymbol contract ? JsonContract.Members(contract) : null;
+            if (written is not null || (!asStatic && (cls.Members.OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
                     || cls.Members.OfType<FieldDeclarationSyntax>().SelectMany(field => field.Declaration.Variables)
-                        .Any(variable => SlotOf(variable, ModelFor(cls)).EndsWith('$'))))
+                        .Any(variable => SlotOf(variable, ModelFor(cls)).EndsWith('$')))))
             {
                 _converter.UsedHelpers.Add(Eq.Import);
                 c.Member(JsClassMember.Method("", "toJSON", "", "", "",
-                    JsStatement.Return(JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This))), cls);
+                    JsStatement.Return(written is null
+                        ? JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This)
+                        : JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This, JsExpr.Opaque(written)))), cls);
             }
 
             EmitExtensionBlocks(cls, c);
