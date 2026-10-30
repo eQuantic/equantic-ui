@@ -55,10 +55,31 @@ public class PositionConformanceTests
     [InlineData("int[] arr = { 1, 2, 3 }; int[] Get() => arr; async Task<int> Offset() { await Task.Yield(); return 2; } return Get()[^(await Offset())].ToString();")] // 2
     [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } async Task<int> F() { await Task.Yield(); return 9; } Get()[^1] = await F(); return string.Join(\",\", arr) + \"|\" + calls;")] // 1,9|1
     [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } async Task<int> F() { await Task.Yield(); return 9; } Get()[^1] += await F(); return string.Join(\",\", arr) + \"|\" + calls;")] // 1,11|1
+    // Its value is skipped where nothing is written, and a compound reads its target before the await.
+    [InlineData("var asked = 0; int?[] arr = { 1 }; int?[] Get() => arr; async Task<int> F() { asked++; await Task.Yield(); return 9; } Get()[^1] ??= await F(); return arr[0] + \"|\" + asked;")] // 1|0
+    [InlineData("var asked = 0; int?[] arr = { null }; int?[] Get() => arr; async Task<int> F() { asked++; await Task.Yield(); return 9; } Get()[^1] ??= await F(); return arr[0] + \"|\" + asked;")] // 9|1
+    [InlineData("int[] arr = { 1 }; int[] Get() => arr; async Task<int> F() { arr[0] = 10; await Task.Yield(); return 2; } Get()[^1] += await F(); return arr[0].ToString();")] // 3
+    // A null-conditional write that awaits skips its value for a null receiver.
+    [InlineData("var asked = 0; int[] arr = { 1, 2 }; int[] Get() => arr; async Task<int> F() { asked++; await Task.Yield(); return 9; } Get()?[^1] = await F(); return string.Join(\",\", arr) + \"|\" + asked;")] // 1,9|1
+    [InlineData("var asked = 0; int[] none = null; int[] Get() => none; async Task<int> F() { asked++; await Task.Yield(); return 9; } Get()?[^1] = await F(); return asked.ToString();")] // 0
     public void AnElementCountedFromTheEnd_ReadsItsReceiverOnce(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// An <c>out</c> target counted from the end is taken before the call, which is C#'s place for it only
+    /// where nothing ahead of it runs code, so the build refuses the rest: a preceding argument could have
+    /// replaced the array, and the element would be written to the old one.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("int[] a = { 1 }; int[] b = { 2 }; int Swap() { a = b; return 0; } void Put(int x, out int v) { v = 9; } Put(Swap(), out a[^1]); return a[0].ToString();")]
+    [InlineData("int[] a = { 1 }; string Say() => \"x\"; void Put(string x, out int v) { v = 9; } Put(Say(), out a[^1]); return a[0].ToString();")]
+    public void AnOutTargetFromTheEndAfterCode_IsRefused(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsRefusedByTheBuild(statements, "EQ1004");
     }
 
     /// <summary>

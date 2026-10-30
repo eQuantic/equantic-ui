@@ -171,14 +171,6 @@ public static class JsExprWriter
         // A plain name read twice, once the parts that run first are known.
         for (var i = 0; i < parts.Count; i++)
             bound[i] |= uses[i] > 1 && !IsFixed(parts[i]) && Reassignable(i, parts, holes, bound);
-        // A part that suspends cannot run inside the arrow the writer binds with, which is no async
-        // function and would change the template's answer to a Promise if it were: it is bound as well,
-        // an argument of the arrow, where `await` belongs to the function around the template.
-        if (bound.Any(isBound => isBound))
-        {
-            for (var i = 0; i < parts.Count; i++)
-                bound[i] |= !IsFixed(parts[i]) && Suspends(parts[i]);
-        }
         var last = Array.LastIndexOf(bound, true);
         // A bound part runs FIRST, as the arrow's argument, and a name left inline is read later,
         // in the body, after whatever that part did. C# had read the name before it: a key whose
@@ -229,15 +221,30 @@ public static class JsExprWriter
         // hands it is typed from there. Annotated `any`, the receiver lost its type, and the template's
         // own callbacks fell to TS7006 (Copilot's third review of #661).
         var names = string.Join(", ", indexes.Select(i => named[i]));
-        return new JsWrittenBuilder().Add($"(({names}) => ").Add(body.Done()).Add(")(")
-            .AddJoined(", ", indexes.Select(i => Written(parts[i]))).Add(")").Done();
+        // A part left inline that suspends runs inside this arrow, so the arrow is async and the template
+        // awaits it. Binding the part instead would run it before the template: a `??=`'s value would run
+        // when nothing is written, and a compound would read its target after the await.
+        var suspends = Enumerable.Range(0, parts.Count).Any(i => !bound[i] && Suspends(parts[i]));
+        return new JsWrittenBuilder().Add(suspends ? "(await (async " : "(").Add($"({names}) => ").Add(body.Done()).Add(")(")
+            .AddJoined(", ", indexes.Select(i => Written(parts[i]))).Add(suspends ? "))" : ")").Done();
     }
 
-    /// <summary>Whether a part awaits. A part may hold text a strategy spliced, so it is asked of what
-    /// the part writes: a string that says the word only binds what needed no binding.</summary>
-    private static bool Suspends(JsExpr part) => AwaitWord.IsMatch(Write(part));
+    /// <summary>
+    /// Whether a part suspends the function it is written in: an <c>await</c> of its own, read from what
+    /// it writes since a part may hold spliced text. One in a string, or inside a function the part
+    /// defines, suspends nothing here.
+    /// </summary>
+    internal static bool Suspends(JsExpr part)
+    {
+        var text = Write(part);
+        var awaits = AwaitWord.Matches(text);
+        if (awaits.Count == 0) return false;
+        var reached = new bool[awaits.Count];
+        var inside = InsideAFunction(text, awaits, reached);
+        return Enumerable.Range(0, awaits.Count).Any(i => reached[i] && !inside[i]);
+    }
 
-    private static readonly Regex AwaitWord = new(@"\bawait\b", RegexOptions.Compiled);
+    private static readonly Regex AwaitWord = new(@"(?<![\w$.])await\b", RegexOptions.Compiled);
 
     /// <summary>
     /// The name part <paramref name="index"/> is bound to: <c>$0</c> for the first, unless a function
@@ -276,9 +283,10 @@ public static class JsExprWriter
     /// For each hole, whether it sits inside a function the template itself defines, an arrow's body
     /// or a <c>function</c>'s, where its part runs once per call: <c>Intersect</c> wrote its second
     /// sequence inside the filter's arrow, so a call there ran once per element where C# made it once
-    /// (#657). A string is skipped, and a hole is not a brace.
+    /// (#657). A string is skipped, and a hole is not a brace. <paramref name="reached"/>, when given, says
+    /// which holes the walk met, which a hole inside a string is not.
     /// </summary>
-    private static bool[] InsideAFunction(string text, MatchCollection holes)
+    private static bool[] InsideAFunction(string text, MatchCollection holes, bool[]? reached = null)
     {
         var inside = new bool[holes.Count];
         var holeAt = new Dictionary<int, int>();
@@ -296,6 +304,7 @@ public static class JsExprWriter
             if (holeAt.TryGetValue(i, out var hole))
             {
                 inside[hole] = expressionBodies.Count > 0 || brackets.Contains(true);
+                if (reached is not null) reached[hole] = true;
                 i += holes[hole].Length - 1;
                 continue;
             }

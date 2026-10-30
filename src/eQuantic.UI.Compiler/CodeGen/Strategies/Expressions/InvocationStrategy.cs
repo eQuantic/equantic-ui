@@ -88,9 +88,30 @@ public class InvocationStrategy : IExpressionIrStrategy
                 : symbol is not null && index < symbol.Parameters.Length
                     ? symbol.Parameters[index].Name.ToJsIdentifier()
                     : $"$out{index}";
-            result.Add((target, field, isOut, Place.HeldFor(argument.Expression, context)));
+            var held = Place.HeldFor(argument.Expression, context);
+            if (held is not null && !NothingRunsBefore(invocation, index))
+            {
+                context.Unhandled(argument, "out or ref argument counted from the end, after an argument or a receiver that "
+                    + "runs code: its element is taken before the call. Assign the element after the call");
+            }
+            result.Add((target, field, isOut, held));
         }
         return result;
+    }
+
+    /// <summary>Whether what C# evaluates ahead of the argument at <paramref name="index"/>, the call's
+    /// receiver and the arguments written before it, is only reads of names, so holding the argument's
+    /// element before the call takes it where C# takes it.</summary>
+    private static bool NothingRunsBefore(InvocationExpressionSyntax invocation, int index)
+    {
+        static bool Reads(ExpressionSyntax expression) => expression switch
+        {
+            IdentifierNameSyntax or ThisExpressionSyntax or BaseExpressionSyntax or LiteralExpressionSyntax => true,
+            MemberAccessExpressionSyntax member => Reads(member.Expression),
+            _ => false,
+        };
+        return (invocation.Expression is not MemberAccessExpressionSyntax call || Reads(call.Expression))
+            && invocation.ArgumentList.Arguments.Take(index).All(argument => Reads(argument.Expression));
     }
 
     private JsExpr ConvertCall(InvocationExpressionSyntax invocation, ConversionContext context)

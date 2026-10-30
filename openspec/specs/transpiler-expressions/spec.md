@@ -806,3 +806,14 @@ one value whatever expression it is written as.
 
 - **WHEN** `Get()[^1] = await F()` and `Get()[^(await Offset())]` run in an async method
 - **THEN** they answer as .NET does, the await suspending that method; the JavaScript did not parse
+
+#### Scenario: A value that awaits and may not run
+
+- **WHEN** `Get()[^1] ??= await F()` runs over an element that is not null
+- **THEN** `F` does not run, as in .NET, and `Get()[^1] += await F()` reads the element before the await
+
+#### Scenario: An out target after code
+
+- **WHEN** `Put(Swap(), out a[^1])` is built, `Swap` assigning another array to `a`
+- **THEN** the build fails with EQ1004, since the element is taken before the call and C# takes it after
+  `Swap` ran

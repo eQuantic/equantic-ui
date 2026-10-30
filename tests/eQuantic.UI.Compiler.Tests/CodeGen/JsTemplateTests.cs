@@ -14,14 +14,26 @@ public class JsTemplateTests
     private static JsExpr Call(string text) => JsExpr.Callish(text);
     private static string Write(JsExpr e) => JsExprWriter.Write(e);
 
-    /// <summary>A part that awaits is an argument of the arrow the writer binds with, never inside it,
-    /// which is no async function: a twin's <c>Get()[^1] = await F()</c> and an array's alike.</summary>
+    /// <summary>A part that awaits stays where it is written, which keeps it lazy and in its order, so
+    /// the arrow the writer binds with is async and the template awaits it.</summary>
     [Fact]
-    public void APartThatAwaits_IsBoundOutsideTheArrow()
+    public void APartThatAwaits_MakesTheBindingArrowAsync()
     {
         var call = JsExpr.Callish("get()");
         Write(JsExpr.Template("({0}[{0}.length - 1] = {1})", call, JsExpr.Callish("await f()")))
-            .Should().Be("(($0, $1) => ($0[$0.length - 1] = $1))(get(), await f())");
+            .Should().Be("(await (async ($0) => ($0[$0.length - 1] = await f()))(get()))");
+    }
+
+    /// <summary>The word in a string and an await of a function the part defines suspend nothing here,
+    /// and an await in a synchronous function would not parse.</summary>
+    [Theory]
+    [InlineData("say('await me')")]
+    [InlineData("run(async () => await f())")]
+    [InlineData("x.await")]
+    public void APartThatDoesNotSuspendItsFunction_LeavesTheArrowSynchronous(string part)
+    {
+        Write(JsExpr.Template("({0}[{0}.length - 1] = {1})", JsExpr.Callish("get()"), JsExpr.Callish(part)))
+            .Should().StartWith("(($0) => ");
     }
 
     /// <summary>With nothing bound there is no arrow, and the await stays where it is written.</summary>

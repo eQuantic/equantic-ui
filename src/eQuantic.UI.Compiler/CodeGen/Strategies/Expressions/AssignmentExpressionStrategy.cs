@@ -321,8 +321,7 @@ internal static class NullConditionalAssignment
             && Place.Of(entry, JsExpr.Identifier(t), context) is { } place)
         {
             if (!assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)) return null;
-            var write = JsExprWriter.Write(place.Write(context.Converter.ConvertIr(assignment.Right)));
-            return $"({parameter} => {t} == null ? null : {write})({receiver})";
+            return Guard(parameter, t, JsExprWriter.Write(place.Write(context.Converter.ConvertIr(assignment.Right))), receiver);
         }
 
         var target = assignment.Left switch
@@ -338,7 +337,16 @@ internal static class NullConditionalAssignment
         var op = assignment.OperatorToken.Text;
         var right = context.Converter.ConvertExpression(assignment.Right);
         var targetType = context.SemanticHelper.GetType(assignment.Left);
-        return $"({parameter} => {t} == null ? null : ({AssignBody(target, op, right, targetType, context)}))({receiver})";
+        return Guard(parameter, t, $"({AssignBody(target, op, right, targetType, context)})", receiver);
+    }
+
+    /// <summary>The write behind the guard, over the receiver read once. A value that awaits runs behind
+    /// the guard too, as C# skips it for a null receiver, so the arrow is async and the assignment awaits
+    /// it, in the method around it.</summary>
+    private static string Guard(string parameter, string t, string write, string receiver)
+    {
+        var (open, close) = JsExprWriter.Suspends(JsExpr.Callish(write)) ? ("(await (async ", "))") : ("(", ")");
+        return $"{open}{parameter} => {t} == null ? null : {write})({receiver}{close}";
     }
 
     /// <summary>
