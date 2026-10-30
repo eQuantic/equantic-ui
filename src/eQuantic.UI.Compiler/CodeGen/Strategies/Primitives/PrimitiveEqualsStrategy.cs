@@ -12,8 +12,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// browser holds an int and a double as one kind of number and a char and a text of one as one kind of
 /// string, so the other value's type is read where the bound tree still shows it, before C# boxed it. One
 /// of another type answers false with both values evaluated. A value already held as <c>object</c> has lost
-/// its type and compares by what it holds: an int and a double of one value, or a char and a text of one,
-/// are found equal there, which is the limit of a value held as <c>object</c> (#552).
+/// its type and compares by what it holds: two values of one JavaScript kind are found equal there (an int
+/// and a double, a long and a ulong, a char and a text of one), which is the limit of a value held as
+/// <c>object</c> (#552).
 /// A double and a float go through <c>$eq.equals</c>, where NaN equals NaN as their <c>Equals</c> holds it,
 /// and a decimal, which is an object, through its own <c>equals</c>.
 /// </summary>
