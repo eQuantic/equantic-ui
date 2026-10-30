@@ -33,7 +33,8 @@ weight animated to zero at a basis glides down to the basis and lands there.
 
 A wrapping line SHALL break a weighted `Flexible` that declares no basis against a hypothetical size
 of zero, as CSS starts it from `0%`, on the web and on Photon, and SHALL count the gap between two
-items whatever size they ask for.
+items whatever size they ask for. On an unbounded main axis, where no line resolves, the item SHALL
+take its child's size, as a single line gives it.
 
 #### Scenario: Two weights around content wider than half the line
 
@@ -45,6 +46,11 @@ items whatever size they ask for.
 - **WHEN** the same row has a gap of 10
 - **THEN** both sit on one line, each 495 wide, the second at x 505
 
+#### Scenario: On an unbounded axis
+
+- **WHEN** a wrapping row inside a horizontal `ScrollView` holds `Flexible(box 600 wide, flex: 1)`
+- **THEN** the item is 600 wide on Photon
+
 ### Requirement: A line that stretches keeps a declared cross size
 
 A flex line that stretches its children on the cross axis SHALL keep a cross size a child declares,
@@ -55,6 +61,11 @@ the main axis reads, of the node the child measured to, which is what a componen
 
 - **WHEN** a row 400 wide and 100 tall that stretches holds a `Box`, a `Stack`, a `Canvas`, a `CameraPreview` or a `ScrollView` 20 tall
 - **THEN** each is 20 tall on Photon, as in Chrome
+
+#### Scenario: A window-relative height
+
+- **WHEN** the same row, in a window 800 tall, holds a box whose height is `WindowMinus(750)`
+- **THEN** the box is 50 tall on Photon, not the row's 100
 
 #### Scenario: A web frame on Photon
 
@@ -140,6 +151,11 @@ it declares one.
 
 - **WHEN** the same row holds `Flexible(box 100 wide, flex: 1)` first
 - **THEN** the first item is 300 wide and its box 100
+
+#### Scenario: A fixed child a component builds
+
+- **WHEN** the first Flexible holds a component that builds a box 400 wide
+- **THEN** the first item is 300 wide and what the component built 400
 
 #### Scenario: A child without a size of its own
 

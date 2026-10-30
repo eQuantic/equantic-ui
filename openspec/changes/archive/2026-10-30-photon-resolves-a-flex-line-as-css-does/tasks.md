@@ -11,10 +11,10 @@
 - [x] 2.2 Take an overflow back from every Flexible by its shrink times its start, in a column as in a row, the text cut staying a row's
 - [x] 2.3 Break a weighted Flexible without a basis on nothing in the wrapping pass, and count the gap between items that ask for nothing
 - [x] 2.4 Answer both axes with one classifier, `DeclaredSizeKind`, asked of what a child measured to, through a component to what it built; remove `CrossSizeKind` and `WidthKind`
-- [ ] 2.5 Prove it both ways: `FlexLineResolutionTests` fails against af3f714e0 and passes with the fix, and the native engine suite passes with no golden moving
+- [x] 2.5 Prove it both ways: `FlexLineResolutionTests` fails against af3f714e0 and passes with the fix, and the native engine suite passes with no golden moving
 
 ## 3. Documentation
 
 - [x] 3.1 `Flexible.Basis`, `Flexible.Shrink` and `FlexNode.Wrap` say what Photon now does; the wiki states none of the four gaps (its Photon page names only the min-content floor, which still holds for every item but a Flexible), so no page changes
-- [ ] 3.2 One ledger entry under `docs/ledger/` citing #693, #728, #744 and #747
-- [ ] 3.3 Run the docs guards and `openspec validate --all --strict` against the branch
+- [x] 3.2 One ledger entry under `docs/ledger/` citing #693, #728, #744 and #747
+- [x] 3.3 Run the docs guards and `openspec validate --all --strict` against the branch

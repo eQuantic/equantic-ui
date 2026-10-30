@@ -1,4 +1,4 @@
-- **2026-10-29 · Photon resolves a flex line as CSS does**: four Bugs under #166
+- **2026-10-30 · Photon resolves a flex line as CSS does**: four Bugs under #166
   ([#693](https://github.com/eQuantic/equantic-ui/issues/693), [#728](https://github.com/eQuantic/equantic-ui/issues/728),
   [#744](https://github.com/eQuantic/equantic-ui/issues/744), [#747](https://github.com/eQuantic/equantic-ui/issues/747)).
   Photon's single-line pass shared a whole row by weight and never started a weighted Flexible from its basis
