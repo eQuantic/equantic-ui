@@ -51,7 +51,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// the source declares, whose twin eqc writes with the comparison, closed over types the build knows.
     /// A type argument that is a type parameter is known only at run time, and the value goes unmarked.
     /// </summary>
-    private static string? ClosureOf(ITypeSymbol? type) =>
+    internal static string? ClosureOf(ITypeSymbol? type) =>
         type is INamedTypeSymbol { IsGenericType: true } named
         && (named.IsRecord || named.TypeKind == TypeKind.Struct)
         && named.Locations.Any(location => location.IsInSource)
@@ -77,7 +77,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private static readonly SymbolDisplayFormat GenericDefinition =
         SymbolDisplayFormat.FullyQualifiedFormat.WithGenericsOptions(SymbolDisplayGenericsOptions.None);
 
-    private static bool ContainsTypeParameter(ITypeSymbol type) => type switch
+    internal static bool ContainsTypeParameter(ITypeSymbol type) => type switch
     {
         ITypeParameterSymbol => true,
         IArrayTypeSymbol array => ContainsTypeParameter(array.ElementType),
