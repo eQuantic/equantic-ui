@@ -233,6 +233,15 @@ public static class ValueFlow
             return zero is null ? translated : JsExpr.Literal($"'{zero.Name.ToCamelCase()}'");
         }
 
+        // A T[] behind a face that can change a size is marked where the static type still says it is one:
+        // a list and an array are one JavaScript array here, and a call through the face grew it (#711).
+        if (kind.IsReference && from is IArrayTypeSymbol && to is INamedTypeSymbol { IsGenericType: true } face
+            && face.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.ICollection<T>" or "System.Collections.Generic.IList<T>")
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.FixedSize), translated);
+        }
+
         // Identity, reference, boxing, null/default literals, method groups, lambdas,
         // interpolated strings, tuples: the value is already what JavaScript needs.
         return translated;

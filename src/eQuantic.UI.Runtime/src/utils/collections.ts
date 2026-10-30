@@ -20,7 +20,7 @@ import { HashSet } from './hash-set';
 import { sameBy, sameItem, type KeyEquality } from './key-equality';
 import { collectionCount } from './slots';
 import { SortedMap } from './sorted';
-import { refuseAChangeOf } from './view';
+import { refuseAChangeOf, refuseAResize } from './view';
 
 export { pairComparer, sameItem } from './key-equality';
 
@@ -730,6 +730,7 @@ export function remove<T>(
   if (!Array.isArray(list)) return (list as { remove(value: T): boolean }).remove(value);
   // A dictionary's view is an array to everything here, and refuses before it is searched.
   refuseAChangeOf(list);
+  refuseAResize(list);
   const same = sameBy(equality);
   for (let index = 0; index < list.length; index++) {
     if (same(list[index], value)) {
@@ -758,6 +759,7 @@ function nullReference(): Error {
  */
 export function add<T>(collection: unknown, item: T): void {
   if (collection == null) throw nullReference();
+  refuseAResize(collection);
   if (Array.isArray(collection)) collection.push(item);
   else if (collection instanceof LinkedList) collection.addLast(item);
   else if (collection instanceof RuntimeDictionary || collection instanceof SortedMap) {
@@ -774,6 +776,7 @@ export function add<T>(collection: unknown, item: T): void {
  */
 export function clear(collection: unknown): void {
   if (collection == null) throw nullReference();
+  refuseAResize(collection, 'Collection is read-only.');
   if (Array.isArray(collection)) collection.length = 0;
   else (collection as { clear(): void }).clear();
 }
