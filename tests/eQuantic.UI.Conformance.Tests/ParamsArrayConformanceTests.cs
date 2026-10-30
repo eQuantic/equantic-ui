@@ -24,13 +24,14 @@ public class ParamsArrayConformanceTests
             public int Objects(params object[] items) => items.Length;
             public virtual int Virtual(params int[] xs) => xs.Length;
             public bool IsNull(params int[] xs) => xs == null;
+            public int Default(int a = 1, params int[] xs) => a + xs.Length;
         }
-        public class Derived : Bag { public override int Virtual(params int[] xs) => xs.Length * 10; }
+        public class Derived : Bag { public override int Virtual(params int[] xs) => xs.Length * 10; public int Base(params int[] xs) => base.Virtual(1, 2, 3) + xs.Length; }
         public interface ICounts { int Many(params int[] xs); }
         public class Counts : ICounts { public int Many(params int[] xs) => xs.Length; }
         public static class Ext { public static int Tail(this string head, params int[] xs) => head.Length + xs.Length; }
         public delegate int Counter(params int[] xs);
-        public static class Calls { public static int Twice(params int[] xs) => xs.Length * 2; }
+        public static class Calls { public static int Twice(params int[] xs) => xs.Length * 2; public static int Generic<T>(params T[] xs) => xs.Length; }
         """;
 
     [SkippableTheory]
@@ -55,6 +56,12 @@ public class ParamsArrayConformanceTests
     [InlineData("int Local(params int[] xs) => xs.Length; return Local() + \"|\" + Local(1, 2) + \"|\" + Local(new[] { 1 });")]
     // An element that awaits, and the order of evaluation.
     [InlineData("var log = \"\"; int E(int n) { log += n; return n; } var b = new Bag(); var c = b.Count(E(1), E(2)); return log + \"|\" + c;")]
+    // An optional parameter left out before it, a guarded receiver, a base call, a generic method and a lambda.
+    [InlineData("var b = new Bag(); return b.Default() + \"|\" + b.Default(2) + \"|\" + b.Default(2, 3, 4) + \"|\" + b.Default(xs: new[] { 1 });")]
+    [InlineData("Bag b = new Bag(); return (b?.Count(1, 2)).ToString() + \"|\" + (b?.Count(new[] { 1 })) + \"|\" + (b?.Count());")]
+    [InlineData("return new Derived().Base(1, 2).ToString();")]
+    [InlineData("return Calls.Generic(\"a\", \"b\") + \"|\" + Calls.Generic<int>() + \"|\" + Calls.Generic(new[] { 1, 2, 3 });")]
+    [InlineData("var f = (params int[] xs) => xs.Length; return f() + \"|\" + f(1, 2) + \"|\" + f(new[] { 1 });")]
     public void AParamsParameter_IsTheArrayItIs(string statements) =>
         ModuleGraph.AssertSameAsDotNet(Source, false, ("case", statements));
 }
