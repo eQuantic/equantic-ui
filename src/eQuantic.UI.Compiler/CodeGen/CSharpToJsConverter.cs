@@ -339,6 +339,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<PrimitiveStaticStrategy>(); // .NET 7+ statics on the primitives themselves
         _strategyRegistry.Register<TextElementStrategy>();     // StringInfo: grapheme clusters, from the platform
         _strategyRegistry.Register<UnicodeCategoryStrategy>(); // a character's general category, from the platform
+        _strategyRegistry.Register<CollectionIsReadOnlyStrategy>(); // ICollection<T>.IsReadOnly, of what it holds
         _strategyRegistry.Register<BclSurfaceTailStrategy>();  // instance tail: Equals/String/Dictionary/List QoL
         _strategyRegistry.Register<ReverseStrategy>();
         _strategyRegistry.Register<LinqTableStrategy>(); // the LINQ surface as a table of shapes

@@ -3,3 +3,38 @@ const eQuantic.UI.Compiler.CodeGen.Eq.Guard = "$eq.guard" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TypesNamed = "$eq.types.named" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TypesOf = "$eq.types.of" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TypesSame = "$eq.types.same" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListReverse = "$eq.collections.listReverse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ArrayReverse = "$eq.collections.arrayReverse" -> string!
+*REMOVED*static eQuantic.UI.Compiler.Services.SourceMapComposer.Compose(string! outerMap, System.Func<string!, string?>! innerMapOf) -> string!
+static eQuantic.UI.Compiler.Services.SourceMapComposer.Compose(string! outerMap, System.Func<string!, string?>! innerMapOf, System.Func<string!, string!>? nameOf = null, bool carryText = true, bool stayWhenUntraced = false) -> string!
+static eQuantic.UI.Compiler.Services.SourceMapComposer.ComposeFile(string! mapFile, string? namesFrom = null) -> void
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.PatternConverter.BuildCondition(Microsoft.CodeAnalysis.CSharp.Syntax.PatternSyntax! pattern, string! access, eQuantic.UI.Compiler.CodeGen.ConversionContext! context, Microsoft.CodeAnalysis.ITypeSymbol? accessType = null) -> string!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.PatternConverter.CollectBindings(Microsoft.CodeAnalysis.CSharp.Syntax.PatternSyntax! pattern, string! access, eQuantic.UI.Compiler.CodeGen.ConversionContext! context, System.Collections.Generic.List<(string! Name, string! Access)>! bindings, Microsoft.CodeAnalysis.ITypeSymbol? accessType = null) -> void
+static eQuantic.UI.Compiler.CodeGen.PatternConverter.CollectBindings(Microsoft.CodeAnalysis.CSharp.Syntax.PatternSyntax! pattern, string! access, eQuantic.UI.Compiler.CodeGen.ConversionContext! context, System.Collections.Generic.List<(string! Name, string! Access)>! bindings) -> void
+static eQuantic.UI.Compiler.CodeGen.PatternConverter.BuildCondition(Microsoft.CodeAnalysis.CSharp.Syntax.PatternSyntax! pattern, string! access, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListAddRange = "$eq.collections.addRange" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListInsertRange = "$eq.collections.insertRange" -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupIndexerStrategy
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupIndexerStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupIndexerStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupIndexerStrategy.LookupIndexerStrategy() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupIndexerStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupStrategy.LookupStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.UiComponent = 5 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
+const eQuantic.UI.Compiler.CodeGen.Eq.ListInsert = "$eq.collections.listInsert" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListRemoveAt = "$eq.collections.listRemoveAt" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListRemoveRange = "$eq.collections.listRemoveRange" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListGetRange = "$eq.collections.listGetRange" -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.IndexFromEndStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.IndexFromEndStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+const eQuantic.UI.Compiler.CodeGen.Eq.FixedSize = "$eq.collections.fixedSize" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CollectionIsReadOnly = "$eq.collections.isReadOnly" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.CollectionIsReadOnlyStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.Priority.get -> int

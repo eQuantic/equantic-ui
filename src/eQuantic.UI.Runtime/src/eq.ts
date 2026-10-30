@@ -6,6 +6,7 @@ import {
   decParse,
   decTryParse,
 } from './utils/decimal';
+import { fixedSize, isReadOnly } from './utils/view';
 import { combineDelegate, removeDelegate } from './utils/delegates';
 import { hydrate } from './utils/hydrate';
 import { twinJson } from './utils/twin-json';
@@ -520,6 +521,8 @@ export const $eq = {
   /** What a transpiled constructor resolves its dependencies through — see utils/services. */
   services: { resolve: resolveService },
   collections: {
+    fixedSize,
+    isReadOnly,
     queue,
     stack,
     dictionary,
