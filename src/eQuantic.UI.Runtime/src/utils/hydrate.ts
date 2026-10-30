@@ -339,9 +339,10 @@ function instance(incoming: unknown, ctor: HydratableConstructor): unknown {
  * changed does not cross, so it is what its initializer says here. Anything else is the bare prototype.
  */
 function blank(ctor: HydratableConstructor, source: object, member: (key: string) => unknown): object {
-  if (ctor.$primary !== undefined) {
+  // Its own: a derived record inherits the static, and its constructor takes other parameters.
+  if (Object.prototype.hasOwnProperty.call(ctor, '$primary')) {
     const Twin = ctor as unknown as new (...members: unknown[]) => object;
-    return new Twin(...ctor.$primary.map((key) => (key in source ? member(key) : undefined)));
+    return new Twin(...ctor.$primary!.map((key) => (key in source ? member(key) : undefined)));
   }
   return ctor.$zero?.() ?? (Object.create(ctor.prototype) as object);
 }
