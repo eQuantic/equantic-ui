@@ -254,6 +254,45 @@ describe('typed hydration', () => {
   });
 });
 
+describe('a record that holds what the wire does not carry', () => {
+  class Base {
+    static $primary = ['id'];
+    private tag: string;
+    constructor(readonly id: number) {
+      this.tag = `#${id}`;
+    }
+    label(): string {
+      return this.tag;
+    }
+  }
+  class Derived extends Base {
+    static $hydration = {};
+    extra!: number;
+  }
+  class Own extends Base {
+    static $primary = ['id', 'extra'];
+    constructor(
+      id: number,
+      readonly extra: number,
+    ) {
+      super(id + extra);
+    }
+  }
+
+  it('is built through its primary constructor', () => {
+    const read = hydrate({ id: 1 }, Base as unknown as HydrationSpec) as Base;
+    expect(read.label()).toBe('#1');
+    expect(read).toBeInstanceOf(Base);
+  });
+
+  it('reads the list of its own class, never one a base holds', () => {
+    expect((hydrate({ id: 1, extra: 2 }, Own as unknown as HydrationSpec) as Own).label()).toBe('#3');
+    const derived = hydrate({ id: 1, extra: 2 }, Derived as unknown as HydrationSpec) as Derived;
+    expect(derived.extra).toBe(2);
+    expect(derived.label()).toBeUndefined();
+  });
+});
+
 describe('a constructed generic record', () => {
   class Box {
     static $hydration = {};

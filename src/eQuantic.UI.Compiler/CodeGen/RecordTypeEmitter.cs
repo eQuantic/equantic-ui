@@ -421,7 +421,7 @@ public class RecordTypeEmitter
             // carry, a private field above all: its initializer may read the parameters, and equality compares it
             // (hydrate.ts, #590).
             if (type is RecordDeclarationSyntax { ParameterList.Parameters: { Count: > 0 } primary }
-                && type.Members.OfType<FieldDeclarationSyntax>().Any(field => !field.Modifiers.Any(SyntaxKind.StaticKeyword)))
+                && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol held && HoldsAField(held))
                 sb.Append($"static $primary = [{string.Join(", ", primary.Select(parameter => $"'{parameter.Identifier.ValueText.ToCamelCase()}'"))}]; ");
             // Each interface typed Equals the type answers, to the method answering it: what a call through the
             // interface, a collection of the type and generic code ask, by the contract.
@@ -748,6 +748,14 @@ public class RecordTypeEmitter
     }
 
     /// <summary>A struct, or a record struct, whose declaration is a record's.</summary>
+    /// <summary>Whether a value of <paramref name="type"/> holds a field, its own or a base record's.</summary>
+    private static bool HoldsAField(INamedTypeSymbol type)
+    {
+        for (var at = type; at is not null && at.Locations.Any(location => location.IsInSource); at = at.BaseType)
+            if (at.GetMembers().OfType<IFieldSymbol>().Any(field => field is { IsStatic: false, IsImplicitlyDeclared: false })) return true;
+        return false;
+    }
+
     internal static bool IsStruct(TypeDeclarationSyntax type) =>
         type is StructDeclarationSyntax
         || type is RecordDeclarationSyntax record && record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword);

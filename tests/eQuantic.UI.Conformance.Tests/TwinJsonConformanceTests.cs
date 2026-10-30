@@ -21,6 +21,7 @@ public class TwinJsonConformanceTests
         public class PlainAuto { public int A { get; set; } = 1; public string B { get; set; } = "b"; }
         public class Hidden { public int Shown { get; set; } = 1; private int Kept { get; set; } = 2; public int Read { private get; set; } = 3; }
         public class Attributed { [JsonIgnore] public int Gone { get; set; } = 1; [JsonPropertyName("other")] public int Named { get; set; } = 2; [JsonInclude] public int Field = 3; }
+        public class Conditional { private int _x = 0; public string Empty { get; set; } = null; [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string Kept { get; set; } = "k"; [JsonIgnore(Condition = JsonIgnoreCondition.Never)] public int N { get; set; } = 1; [JsonIgnore(Condition = JsonIgnoreCondition.Always)] public int Gone { get; set; } = 2; }
         public class Base { private int _state = 1; public int Inherited { get; set; } = 2; }
         public class Derived : Base { public int Own { get; set; } = 3; }
         public class Primary(int seed) { public int Twice => seed * 2; }
@@ -40,6 +41,7 @@ public class TwinJsonConformanceTests
     [InlineData("return new PlainAuto();")]
     [InlineData("return new Hidden();")]
     [InlineData("return new Attributed();")]
+    [InlineData("return new Conditional();")]
     [InlineData("return new Derived();")]
     [InlineData("return new Primary(2);")]
     [InlineData("return new Product(1, \"x\");")]

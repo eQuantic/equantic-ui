@@ -56,7 +56,7 @@ internal static class JsonContract
 
     private static bool IsWritten(ISymbol member)
     {
-        if (member.IsStatic || HasAttribute(member, "JsonIgnoreAttribute")) return false;
+        if (member.IsStatic || IsIgnored(member)) return false;
         return member switch
         {
             IPropertySymbol { IsIndexer: false, GetMethod: not null, ExplicitInterfaceImplementations.Length: 0 } property =>
@@ -67,6 +67,12 @@ internal static class JsonContract
             _ => false,
         };
     }
+
+    /// <summary>Whether <c>[JsonIgnore]</c> takes a member out always, its default condition, where the others
+    /// (<c>WhenWritingNull</c>, <c>WhenWritingDefault</c>, <c>Never</c>) decide by the value.</summary>
+    private static bool IsIgnored(ISymbol member) =>
+        member.GetAttributes().FirstOrDefault(attribute => attribute.AttributeClass?.Name == "JsonIgnoreAttribute") is { } ignore
+        && ignore.NamedArguments.FirstOrDefault(argument => argument.Key == "Condition").Value.Value is null or 1;
 
     /// <summary>The name <c>[JsonPropertyName]</c> gives a member, or null for its own.</summary>
     private static string? JsonName(ISymbol member) =>
