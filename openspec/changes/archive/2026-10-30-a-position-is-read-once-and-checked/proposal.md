@@ -9,11 +9,12 @@ A position in a sequence was written as text that read its parts as often as the
 
 ## What Changes
 
-- An array's, a list's or a string's element counted from the end is a `Place` (`Place.Subscripted`), read and written through JavaScript's subscript with its position computed from the receiver: the receiver is a part evaluated once, then the offset, then the length, as C# reads them, and the writer parenthesizes the offset. Every writer that takes its place from `Place` (the assignment, the null-conditional assignment, the compound, the step, `??=`, a bool's compound, the deconstruction) gets it. `IndexFromEndStrategy` is on the IR and reads through the place.
+- An array's, a list's or a string's element counted from the end is a `Place` (`Place.Subscripted`), read and written through JavaScript's subscript with its position computed from the receiver: the receiver is a part evaluated once, then the offset, then the length, as C# reads them, and the writer parenthesizes the offset. Every writer that takes its place from `Place` (the assignment, the null-conditional assignment, the compound, the step, `??=`, a bool's compound, the deconstruction) gets it. `IndexFromEndStrategy` is on the IR and reads through the place. An `out` or a `ref` target holds its receiver and position before the call and is written through them. A `ref` target's read is still its own evaluation, so its receiver runs twice: #1190.
+- A template part that awaits is bound as an argument of the arrow the writer makes, in `JsExprWriter`, since that arrow is no async function. Every template gets it, a twin's indexer from the end included.
 - `Insert`, `RemoveAt`, `RemoveRange` and `GetRange` go through `ParameterTemplate`, each argument in its parameter's place and evaluated in the order it is written, to the runtime's `listInsert`, `listRemoveAt`, `listRemoveRange` and `listGetRange` (`utils/list.ts`), which check the position as .NET does and throw its exception in its words. A list's face (`IList<T>`) over a twin calls the twin's own `insert` and `removeAt`. With no model, a named argument is refused (EQ1004), as it is for `AddRange`.
 - A fixed-size array behind `IList<T>` still inserts and removes where .NET refuses the call: that is #711, a change of the array's representation.
 
 ## Impact
 
-- Reaches `eQuantic.UI.Compiler` (`Place`, `IndexFromEndStrategy`, `ListMethodStrategy`, `Eq`) and the runtime (`utils/list.ts`, `eq.ts`).
+- Reaches `eQuantic.UI.Compiler` (`Place`, `IndexFromEndStrategy`, `ListMethodStrategy`, `InvocationStrategy`, `OutArgument`, `JsExprWriter`, `Eq`) and the runtime (`utils/list.ts`, `eq.ts`).
 - Neither `PublicAPI.Shipped.txt` / `PublicAPI.Unshipped.txt` nor `developer-surface.baseline.txt` moves.

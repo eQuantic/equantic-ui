@@ -796,3 +796,13 @@ one value whatever expression it is written as.
 
 - **WHEN** `a[^Swap()]` is read, where `Swap` assigns another array to `a` and answers 1
 - **THEN** it reads the last element of the array `a` held before `Swap` ran, as in .NET
+
+#### Scenario: An out argument
+
+- **WHEN** `Set(out Get()[^1])` runs, `Set` assigning 9 to its parameter
+- **THEN** the last element is 9 and `Get` ran once, before the call, as in .NET
+
+#### Scenario: An await beside a receiver made by a call
+
+- **WHEN** `Get()[^1] = await F()` and `Get()[^(await Offset())]` run in an async method
+- **THEN** they answer as .NET does, the await suspending that method; the JavaScript did not parse

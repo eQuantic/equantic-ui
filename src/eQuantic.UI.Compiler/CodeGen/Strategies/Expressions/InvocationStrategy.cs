@@ -54,10 +54,10 @@ public class InvocationStrategy : IExpressionIrStrategy
                 return $"{Place.ThroughHeld("{" + (parts.Count - 1) + "}")} = $o.{entry.Field}, ";
             })
             .ToList();
-        if (parts.Count == 0)
-            return JsExpr.Callish($"($o => ({string.Concat(assignments)}$o.$))({JsExprWriter.Write(call)})");
+        string Unwrapped(string result) => $"($o => ({string.Concat(assignments)}$o.$))({result})";
+        if (parts.Count == 0) return JsExpr.Callish(Unwrapped(JsExprWriter.Write(call)));
         parts.Add(call);
-        return JsExpr.Template($"(($o) => ({string.Concat(assignments)}$o.$))({{{parts.Count - 1}}})", parts);
+        return JsExpr.Template(Unwrapped("{" + (parts.Count - 1) + "}"), parts);
     }
 
     /// <summary>Each `out`/`ref` argument: what it assigns to, and the field of the result object it
