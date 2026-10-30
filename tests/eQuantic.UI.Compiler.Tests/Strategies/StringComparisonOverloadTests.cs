@@ -80,8 +80,32 @@ public class StringComparisonOverloadTests
     [Theory]
     [InlineData("var r = a.Equals(b, StringComparison.CurrentCulture)")]
     [InlineData("var r = a.ToUpper(System.Globalization.CultureInfo.InvariantCulture)")]
-    [InlineData("var r = a.StartsWith(b)")]
     public void AWholeStringCultureComparisonAndACasingCulture_AreNotRefused(string code) =>
+        TestHelper.DiagnosticsFor(code).Should().NotContain(d => d.Code == "EQ1004");
+
+    /// <summary>A search with no comparison is the current culture's in .NET, which the browser cannot
+    /// run, so it is refused as a culture comparison written out is (#532), and says what to write.</summary>
+    [Theory]
+    [InlineData("var r = a.StartsWith(b)")]
+    [InlineData("var r = a.EndsWith(b)")]
+    [InlineData("var r = a.IndexOf(b)")]
+    [InlineData("var r = a.IndexOf(b, 1)")]
+    [InlineData("var r = a.IndexOf(b, 1, 2)")]
+    [InlineData("var r = a.LastIndexOf(b)")]
+    [InlineData("var r = a.LastIndexOf(b, 1)")]
+    [InlineData("var r = a.LastIndexOf(b, 1, 2)")]
+    public void ASearchWithNoComparison_IsRefused(string code) =>
+        TestHelper.DiagnosticsFor(code).Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("pass StringComparison.Ordinal"));
+
+    /// <summary>.NET's own ordinal searches stay: a char's, and <c>Contains</c>.</summary>
+    [Theory]
+    [InlineData("var r = a.Contains(b)")]
+    [InlineData("var r = a.StartsWith('x')")]
+    [InlineData("var r = a.EndsWith('x')")]
+    [InlineData("var r = a.IndexOf('x')")]
+    [InlineData("var r = a.LastIndexOf('x', 1)")]
+    [InlineData("var r = a.StartsWith(b, StringComparison.Ordinal)")]
+    public void AnOrdinalSearch_IsNotRefused(string code) =>
         TestHelper.DiagnosticsFor(code).Should().NotContain(d => d.Code == "EQ1004");
 
     [Fact]

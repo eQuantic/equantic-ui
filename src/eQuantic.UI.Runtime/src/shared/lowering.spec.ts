@@ -49,6 +49,28 @@ describe('token → CSS formatting (mirrors C# TokenCss)', () => {
     expect(px(3.5)).toBe('3.5px');
     expect(px(0.1)).toBe('0.1px');
   });
+
+  // Each row is `TokenCss.Px` measured on .NET 10, and TokenCssPxTests pins the server's side (#729).
+  it.each([
+    [1.005, '1.01px'],
+    [2.675, '2.68px'],
+    [0.125, '0.13px'],
+    [540.125, '540.13px'],
+    [0.005, '0.01px'],
+    [0.004, '0px'],
+    [-0.001, '-0px'],
+    [-0.005, '-0.01px'],
+    [-1.005, '-1.01px'],
+    [0.995, '1px'],
+    [99.999, '100px'],
+    [123456.79, '123456.8px'],
+    [16777216, '16777220px'],
+    [1e10, '10000000000px'],
+    [3.3333333, '3.33px'],
+    [1.5e-5, '0px'],
+  ])('writes %f as the server writes it', (dp, text) => {
+    expect(px(Math.fround(dp))).toBe(text);
+  });
 });
 
 describe('lowering — identity', () => {

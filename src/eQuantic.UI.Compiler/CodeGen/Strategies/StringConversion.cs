@@ -66,6 +66,13 @@ public static class StringConversion
 
         var real = type.UnwrapNullable() ?? type;
 
+        // What the static type cannot say is the value's to say, as an object's is (#965).
+        if (HoldsAnyValue(real))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Callish($"{Eq.Format}({text}, null)");
+        }
+
         // A number or a date is its text in the culture in force, through the formatter that writes
         // every other number and date (#454): JavaScript's own string of it is invariant, so a
         // pt-BR page read `1.5` where the server had rendered `1,5`, and a float spelled the double
@@ -407,7 +414,7 @@ public static class StringConversion
         var real = type.UnwrapNullable() ?? type;
         // A value held as an object, or as dynamic, may be a number or a date: the formatter reads it, in the
         // invariant culture, where its text was the page's (Copilot's review of #958).
-        if (real is { SpecialType: SpecialType.System_Object } or { TypeKind: TypeKind.Dynamic })
+        if (HoldsAnyValue(real))
         {
             context.UsedHelpers.Add(Eq.Import);
             return JsExpr.Callish($"{Eq.Format}({JsExprWriter.Write(converted)}, null, undefined, true)");
@@ -417,6 +424,17 @@ public static class StringConversion
         var kind = FormatKind.OfText(real) is { } named ? $", '{named}'" : "";
         return JsExpr.Callish($"{Eq.Format}({JsExprWriter.Write(converted)}, null, undefined, true{kind})");
     }
+
+    /// <summary>
+    /// Whether a value of this type may be anything when the code runs, so the formatter reads it: an
+    /// <c>object</c>, <c>dynamic</c>, a type parameter, or an interface a number or a date answers to
+    /// (<c>IFormattable</c>, <c>IComparable</c>). Only the first two were here, and the others were
+    /// JavaScript's own text, which is invariant: <c>IFormattable x = 1.5; $"{x}"</c> read <c>1.5</c> on a
+    /// pt-BR page where the server wrote <c>1,5</c> (#965). A type of the app's behind one writes its own
+    /// text, through the formatter, as behind an <c>object</c>.
+    /// </summary>
+    private static bool HoldsAnyValue(ITypeSymbol type) =>
+        type is { SpecialType: SpecialType.System_Object } or { TypeKind: TypeKind.Dynamic or TypeKind.TypeParameter or TypeKind.Interface };
 
     /// <summary>
     /// Whether the culture changes this type's text: a fraction's separator, a signed integer's

@@ -90,6 +90,39 @@ function collator(invariant: boolean, ignoreCase: boolean): Intl.Collator {
   return found;
 }
 
+/** The forms .NET's ignore-case collation keeps apart: katakana, and the half and full widths. Measured
+ * on .NET 10 over the whole BMP, which is why U+FF3C, U+FF70, U+FF9E, U+FF9F and U+FFE3 are not here. */
+const WIDTH_OR_KANA =
+  /[\u30A1-\u30F6\u30FD\u30FE\uFF01-\uFF3B\uFF3D-\uFF5E\uFF61-\uFF6F\uFF71-\uFF9D\uFFA0-\uFFDC\uFFE0-\uFFE2\uFFE4-\uFFE6]/g;
+
+/** Sorts after every assigned character, so a form it follows ends after whatever its base is before. */
+const AFTER_EVERYTHING = '\u{10FFFD}';
+
+/** The character a form is a primary difference after: a katakana's hiragana, or a width's other form. */
+function formOf(form: string): string {
+  const unit = form.charCodeAt(0);
+  if (unit < 0xff00) return String.fromCharCode(unit - 0x60);
+  const compatible = form.normalize('NFKC');
+  return compatible.length === 1 ? compatible : form;
+}
+
+/**
+ * A text with each form {@link WIDTH_OR_KANA} names spelled as the character it comes after. .NET's ICU
+ * collator for `IgnoreCase` is the secondary strength plus rules that place a full or half width form,
+ * and a katakana, as a PRIMARY difference right after its other form, unless `IgnoreWidth` or
+ * `IgnoreKanaType` is asked, which no `StringComparison` does (`GetCustomRules` in `pal_collation.c`).
+ * `Intl.Collator` takes no rules and its `accent` sensitivity equates them all (#533). Spelled so, the form
+ * sorts after its base and before the next base, ahead of anything that follows it in the text, as a
+ * primary difference does: `\uFF21a` is after `Ab`, and a halfwidth katakana after the fullwidth one, after
+ * the hiragana.
+ */
+function apartByWidthAndKana(text: string): string {
+  return text.replace(WIDTH_OR_KANA, function spell(form: string): string {
+    const base = formOf(form);
+    return (base === form ? form : base.replace(WIDTH_OR_KANA, spell)) + AFTER_EVERYTHING;
+  });
+}
+
 // ---- ordinal ---------------------------------------------------------------------------------
 
 /** A code point's simple upper case, as .NET's ordinal comparison takes it: the invariant culture's,
@@ -181,7 +214,11 @@ function compareBy(
         comparison === 'currentCultureIgnoreCase' || comparison === 'invariantCultureIgnoreCase';
       const left = a.slice(indexA, indexA + lengthA);
       const right = b.slice(indexB, indexB + lengthB);
-      return Math.sign(collator(invariant, ignoreCase).compare(left, right));
+      return Math.sign(
+        ignoreCase
+          ? collator(invariant, true).compare(apartByWidthAndKana(left), apartByWidthAndKana(right))
+          : collator(invariant, false).compare(left, right),
+      );
     }
   }
 }
