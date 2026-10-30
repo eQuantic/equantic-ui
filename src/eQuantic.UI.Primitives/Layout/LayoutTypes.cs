@@ -24,16 +24,15 @@ public enum SizeKind : byte
     /// <summary>
     /// Fill the space the parent offers (collapses to Hug when the parent is unbounded).
     /// <para>
-    /// EACH child asks independently, so two Fill siblings on a stack's MAIN axis do not split it
-    /// between them — they both take the whole extent and the second is laid out past the end. A
-    /// 300dp Column with two Fill children measures <c>y=0 h=300</c> and <c>y=300 h=300</c>: the
-    /// second is full size and outside its parent, where a clip is all that stands between it and
-    /// the viewer. It reads as a pane that simply is not there, with the tree, the hit regions and
-    /// the accessibility count all saying it is.
+    /// EACH child asks independently, so two Fill siblings on a stack's MAIN axis both ask for the
+    /// whole extent, and the line takes the overflow back from them by their sizes, as CSS does: a
+    /// 300dp Column with two Fill children measures <c>y=0 h=150</c> and <c>y=150 h=150</c>, on both
+    /// targets, and a Row the same across. A Fill beside a sibling of a fixed size keeps what the
+    /// sibling leaves.
     /// </para>
     /// <para>
-    /// Splitting is <c>Flexible</c> with weights, which is also the only way a ratio between two
-    /// panes can be anything other than 1:1.
+    /// Splitting by a ratio is <c>Flexible</c> with weights, which is the only way two panes can be
+    /// anything other than as large as they asked to be.
     /// </para>
     /// </summary>
     Fill = 1,

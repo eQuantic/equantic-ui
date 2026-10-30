@@ -8,6 +8,7 @@
   explicit, which stretched a fixed Stack, Canvas, CameraPreview or ScrollView. Every item now starts from its flex
   base size and only the leftover is shared, weights under one sharing only that fraction, which also makes a
   weight animated to zero glide onto its basis instead of snapping there; a column gives its Flexibles' height
-  back; and one classifier, `DeclaredSizeKind`, answers both axes, asked of what a child measured to, through a
-  component to what it built. Measured on the web realizer's own HTML in Chrome 152 and proved both ways on
+  back, and what fills it shares the overflow, so two Fill siblings in a column are 150 | 150 where `SizeKind.Fill`
+  documented the second past the end; and one classifier, `DeclaredSizeKind`, answers both axes, asked of what a
+  child measured to, through a component to what it built. Measured on the web realizer's own HTML in Chrome 152 and proved both ways on
   Photon. Proposed and archived through OpenSpec (`flex-layout`).

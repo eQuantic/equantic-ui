@@ -164,6 +164,11 @@ measured, which is its min-content height, and text SHALL NOT be cut.
 - **WHEN** a column 400 tall holds a box whose width and height are Fill, a row that fills it, or a `ScrollView` around 900 of content that fills it or hugs, and `Flexible(pane, flex: 0, basis: 540)`
 - **THEN** they are 170.21 and 229.79 tall on Photon, as in Chrome
 
+#### Scenario: Two Fill siblings
+
+- **WHEN** a column 300 tall holds two boxes whose height is Fill, or a row 300 wide two boxes whose width is Fill
+- **THEN** each is 150 on the main axis on Photon, as in Chrome, and neither lands past the line's end
+
 #### Scenario: A column stops at the minimum the web writes
 
 - **WHEN** the first item is a box that fills, with a `MinHeight` of 300, or a box that fills the column's height at a fixed width of 200
