@@ -310,7 +310,7 @@ internal sealed partial class MeasureVisitor
                         floors[i] = MathF.Min(mains[i], MinContentWidth(children[i], children.At(at, i), ctx));
                         weights[i] = mains[i] - floors[i];
                     }
-                    else if (ColumnFloor(children[i]) is { } floor)
+                    else if (ColumnFloor(laid[i]!) is { } floor)
                     {
                         // Asked by its size, as CSS scales it, and stopped at its floor by the loop
                         // below: 400 at a floor of 300 gives 100 beside a 540 that gives the rest.
@@ -342,20 +342,20 @@ internal sealed partial class MeasureVisitor
                             if (!settled[i] && weights[i] > 0) weightSum += weights[i];
                         if (weightSum <= 0) break;
 
-                        var stopping = 0f;
+                        // Counted by the items, not by what they gave: one already at its floor gives
+                        // nothing and still leaves the weights, or the rest was shared by a sum that
+                        // counted it.
+                        var stopped = false;
                         for (var i = 0; i < children.Count; i++)
                         {
                             if (settled[i] || weights[i] <= 0) continue;
                             if (remaining * (weights[i] / weightSum) <= mains[i] - floors[i]) continue;
                             given[i] = mains[i] - floors[i];
-                            stopping += given[i];
+                            remaining -= given[i];
                             settled[i] = true;
+                            stopped = true;
                         }
-                        if (stopping > 0)
-                        {
-                            remaining -= stopping;
-                            continue;
-                        }
+                        if (stopped) continue;
 
                         for (var i = 0; i < children.Count; i++)
                             if (!settled[i] && weights[i] > 0) given[i] = remaining * (weights[i] / weightSum);

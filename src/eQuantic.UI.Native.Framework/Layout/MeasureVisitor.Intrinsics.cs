@@ -130,18 +130,23 @@ internal sealed partial class MeasureVisitor
     /// measured. That height is its min-content height (<c>min-height: auto</c>) unless the web
     /// writes the minimum itself: <c>min-height: 0</c> (or the box's own <c>MinHeight</c>) on a box or
     /// a flex container that fills the column, and on a scroller or a table viewport, which take the
-    /// room they are given. A fixed-height one is a size re-measuring cannot move (#1186). Asked after
-    /// <see cref="Shrinkable"/>, which keeps out what declares a fixed width, the web's
-    /// <c>flex-shrink: 0</c>.
+    /// room they are given. A fixed-height one is a size re-measuring cannot move (#1186), and a fixed
+    /// width is the web's <c>flex-shrink: 0</c>. Asked of what the item measured to, through a component
+    /// to what it built, which is what the web lowers it to.
     /// </summary>
-    private static float? ColumnFloor(VisualNode child) => child switch
+    private static float? ColumnFloor(LayoutNode item)
     {
-        Box { Style.Height.Kind: SizeKind.Fill } box => box.Style.MinHeight,
-        FlexNode { Height.Kind: SizeKind.Fill } => 0,
-        ScrollView { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => 0,
-        TableViewport { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => 0,
-        _ => null,
-    };
+        var node = item;
+        while (node.Source is UiComponent && node.Children.Count > 0) node = node.Children[0];
+        return node.Source switch
+        {
+            Box { Style.Height.Kind: SizeKind.Fill, Style.Width.Kind: not SizeKind.Fixed } box => box.Style.MinHeight,
+            FlexNode { Height.Kind: SizeKind.Fill, Width.Kind: not SizeKind.Fixed } => 0,
+            ScrollView { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => 0,
+            TableViewport { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => 0,
+            _ => null,
+        };
+    }
 
     /// <summary>
     /// The text an item ultimately IS, seen through layout-transparent wrappers — the FOURTH reader

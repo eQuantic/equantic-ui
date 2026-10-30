@@ -276,6 +276,35 @@ public class FlexLineResolutionTests
         rigid.Children[1].Bounds.Height.Should().BeApproximately(0, 0.01f);
     }
 
+    /// <summary>A floor the item already stands on takes it out of the sharing: a box at a minimum of
+    /// 400 gives nothing, and the Flexible beside it gives all of its 540 (400 | 0), where the sum of
+    /// the weights still counted the box and left the Flexible 229.79.</summary>
+    [Fact]
+    public void AColumn_SharesNothingWithAnItemAlreadyAtItsFloor()
+    {
+        var node = Layout(ColumnOf(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill, MinHeight = 400 })));
+
+        node.Children[0].Bounds.Height.Should().BeApproximately(400, 0.01f);
+        node.Children[1].Bounds.Height.Should().BeApproximately(0, 0.01f);
+    }
+
+    /// <summary>A component is what it builds: a box that fills out of a component shares the
+    /// overflow as a written one does, and one at a fixed width still gives nothing.</summary>
+    [Fact]
+    public void AColumn_SharesItsOverflow_WithWhatAComponentBuilds()
+    {
+        static Framework.LayoutNode Laid(VisualNode first) =>
+            PhotonRealizer.Realize(ColumnOf(first), 2000, 800, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder()).Root;
+
+        var filling = Laid(new Builds(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill })));
+        filling.Children[0].Bounds.Height.Should().BeApproximately(170.21f, 0.01f);
+        filling.Children[1].Bounds.Height.Should().BeApproximately(229.79f, 0.01f);
+
+        var rigid = Laid(new Builds(new Box(new BoxStyle { Width = 200, Height = SizeValue.Fill })));
+        rigid.Children[0].Bounds.Height.Should().BeApproximately(400, 0.01f);
+        rigid.Children[1].Bounds.Height.Should().BeApproximately(0, 0.01f);
+    }
+
     private static Column ColumnOf(VisualNode first)
     {
         var column = new Column(gap: 0) { Height = 400, Width = 200 };
