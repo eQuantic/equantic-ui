@@ -32,6 +32,8 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
         invocation.TryGetInstanceCall(out var receiverSyntax, out var name);
 
         var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
+        if (name.Identifier.ValueText == "ContainsValue" && method.ContainingType is { TypeArguments: [_, var valueType] })
+            ElementEquality.Refuses(valueType, true, invocation, context);
         var receiver = context.Converter.ConvertIr(receiverSyntax);
         var args = invocation.ArgumentList.Arguments
             .Select(a => context.Converter.ConvertIr(a.Expression))
