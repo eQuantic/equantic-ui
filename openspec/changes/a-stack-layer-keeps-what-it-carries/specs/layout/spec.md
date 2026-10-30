@@ -3,7 +3,8 @@
 ### Requirement: A stack caps a layer only where Photon does
 
 On the web, a `Stack`'s layer SHALL be capped by the stack only on an axis Photon measures it against
-the stack's extent: an axis the layer's child fills, and an axis a `ScrollView` hugs. On any other axis
+the stack's extent: an axis the layer's child fills, an axis a `ScrollView` hugs, and either axis of a
+layer that holds a scroller further down. On any other axis
 the layer's size SHALL count toward the stack's own minimum, on the server and in the twin alike, so a
 line cannot squeeze a hugging stack below its content.
 
@@ -21,6 +22,11 @@ line cannot squeeze a hugging stack below its content.
 
 - **WHEN** the same stack holds a horizontal `ScrollView` with no width of its own
 - **THEN** the stack is 482 wide and its cell is written `min-width: 0` and `min-height: 0`
+
+#### Scenario: A layer that holds a scroller
+
+- **WHEN** a `Stack` that fills a box 482 wide holds a hugging `Column` around a horizontal `ScrollView` over 4000 of content
+- **THEN** the stack is 482 wide and the cell is written `min-width: 0` and `min-height: 0`
 
 #### Scenario: A layer of a fixed size
 

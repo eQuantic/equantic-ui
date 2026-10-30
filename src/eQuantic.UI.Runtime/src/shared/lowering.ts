@@ -2907,18 +2907,48 @@ function lowerLayer(
 }
 
 /**
- * The axes a Stack caps a layer on (C# `CappedByTheStack`): one its child fills, and one a scroller
- * hugs, since a scroller is as wide as the smaller of its content and the room it has.
+ * The axes a Stack caps a layer on (C# `CappedByTheStack`): one its child fills, one a scroller hugs,
+ * since a scroller is as wide as the smaller of its content and the room it has, and either axis of
+ * a layer that holds a scroller further down, whose content would size the track the same way.
  */
 function cappedByTheStack(child: VisualNodeValue): { width: boolean; height: boolean } {
   const filling = fills(child);
-  if (child.nodeKind !== 'scrollView') return filling;
-  const scroller = child as ScrollViewNode;
-  const hugs = (size: { kind?: string } | null | undefined) => (size?.kind ?? 'hug') === 'hug';
-  return {
-    width: filling.width || hugs(scroller.width),
-    height: filling.height || hugs(scroller.height),
+  if (child.nodeKind === 'scrollView') {
+    const scroller = child as ScrollViewNode;
+    const hugs = (size: { kind?: string } | null | undefined) => (size?.kind ?? 'hug') === 'hug';
+    return {
+      width: filling.width || hugs(scroller.width),
+      height: filling.height || hugs(scroller.height),
+    };
+  }
+  return holdsAScroller(child) ? { width: true, height: true } : filling;
+}
+
+/**
+ * Whether a scroller stands in this layer, down through what takes its children's size (C#
+ * `HoldsAScroller`). What a component builds is its own: a stack resolves the layer's component, and
+ * the ones further down have not built yet, on either side.
+ */
+function holdsAScroller(node: VisualNodeValue): boolean {
+  const { nodeKind, child, children } = node as VisualNodeValue & {
+    child?: VisualNodeValue | null;
+    children?: VisualNodeValue[];
   };
+  switch (nodeKind) {
+    case 'scrollView':
+    case 'tableViewport':
+      return true;
+    case 'row':
+    case 'column':
+      return (children ?? []).some(holdsAScroller);
+    // A wrapper with geometry of its own: the C# `IsLayoutTransparent` exceptions.
+    case 'overlay':
+    case 'positioned':
+    case 'tableViewCell':
+      return false;
+    default:
+      return child ? holdsAScroller(child) : false;
+  }
 }
 
 function textLeaf(content: string): HtmlNode {

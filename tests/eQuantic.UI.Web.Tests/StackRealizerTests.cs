@@ -100,6 +100,12 @@ public class StackRealizerTests
             Height = 20,
         });
         fixedScroller.Should().NotContain("min-width").And.NotContain("min-height");
+
+        // A scroller further down sizes the track as one at the top does, and Photon caps it the same.
+        var column = new Column(gap: 0);
+        column.Add(new ScrollView(new Primitives.Box(new BoxStyle { Width = 4000 }), ScrollAxis.Horizontal));
+        var holding = CellOf(new Pressable(new Primitives.Box(new BoxStyle(), column), () => { }));
+        holding.Should().Contain("min-width: 0").And.Contain("min-height: 0");
     }
 
     /// <summary>

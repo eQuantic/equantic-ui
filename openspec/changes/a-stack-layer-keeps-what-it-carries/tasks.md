@@ -2,7 +2,7 @@
 
 ## 1. Measure before changing
 
-- [x] 1.1 Lay out the web realizer's HTML in Chrome 152: a hugging stack beside a wider sibling and a column of them (0 wide, the content overflowing), and a filling and a hugging scroller around 4000 of content in a stack in a box 482 wide (482)
+- [x] 1.1 Lay out the web realizer's HTML in Chrome 152: a hugging stack beside a wider sibling and a column of them (0 wide, the content overflowing), and a filling and a hugging scroller, and a hugging column around one, over 4000 of content in a stack in a box 482 wide (482)
 - [x] 1.2 Render a `Positioned { Bookmark, Key, Origin }` in a stack on the server and in the twin: no id, no key, no origin
 
 ## 2. A layer keeps what it carries

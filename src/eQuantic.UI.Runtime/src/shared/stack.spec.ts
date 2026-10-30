@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   Box,
   BoxStyle,
+  Column,
   Drawing,
   Positioned,
+  Pressable,
   ScrollView,
   Stack,
   VectorDrawing,
@@ -135,5 +137,12 @@ describe('Stack (spec A3) client lowering', () => {
     const fixedScroller = cell(new ScrollView(wide(), 'horizontal', { width: 300, height: 20 }));
     expect(fixedScroller).not.toContain('min-width');
     expect(fixedScroller).not.toContain('min-height');
+
+    // A scroller further down sizes the track as one at the top does, and Photon caps it the same.
+    const column = new Column(0);
+    column.add(new ScrollView(wide(), 'horizontal'));
+    const holding = cell(new Pressable(new Box(new BoxStyle({}), column), () => {}));
+    expect(holding).toContain('min-width: 0');
+    expect(holding).toContain('min-height: 0');
   });
 });

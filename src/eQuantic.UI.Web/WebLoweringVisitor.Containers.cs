@@ -201,8 +201,9 @@ internal sealed partial class WebLoweringVisitor
 
     /// <summary>
     /// The axes a Stack caps a layer on, where Photon measures the layer against the stack's own
-    /// extent and takes the answer: one its child fills, and one a scroller hugs, since a scroller
-    /// is as wide as the smaller of its content and the room it has (TS twin:
+    /// extent and takes the answer: one its child fills, one a scroller hugs, since a scroller is as
+    /// wide as the smaller of its content and the room it has, and either axis of a layer that holds
+    /// a scroller further down, whose content would size the track the same way (TS twin:
     /// <c>cappedByTheStack</c>).
     /// </summary>
     private (bool Width, bool Height) CappedByTheStack(VisualNode child)
@@ -210,8 +211,20 @@ internal sealed partial class WebLoweringVisitor
         var (width, height) = Fills(child);
         return child is ScrollView scroller
             ? (width || scroller.Width.Kind == SizeKind.Hug, height || scroller.Height.Kind == SizeKind.Hug)
-            : (width, height);
+            : HoldsAScroller(child) ? (true, true) : (width, height);
     }
+
+    /// <summary>Whether a scroller stands in this layer, down through what takes its children's size
+    /// (TS twin: <c>holdsAScroller</c>). What a component builds is its own: a stack resolves the
+    /// layer's component, and the ones further down have not built yet, on either side.</summary>
+    private static bool HoldsAScroller(VisualNode node) => node switch
+    {
+        ScrollView or TableViewport => true,
+        Box { Child: { } child } => HoldsAScroller(child),
+        FlexNode flex => flex.Children.Any(HoldsAScroller),
+        SingleChildNode wrapper when wrapper.IsLayoutTransparent() => HoldsAScroller(wrapper.Child),
+        _ => false,
+    };
 
     /// <summary>
     /// Wave 3 anchored overlay: a position:relative host wrapping the anchor; while Open, an
