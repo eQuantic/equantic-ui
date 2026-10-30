@@ -41,6 +41,7 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
 
         // Templates say what they compute; the writer decides what to evaluate once.
         var template = Template(method, name.Identifier.ValueText, args.Length)!;
+        if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray());
     }
 
@@ -48,6 +49,10 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
     private static string? Template(IMethodSymbol method, string name, int argCount)
     {
         var home = method.ContainingType;
+
+        // A delegate is one function for its target and method (`$eq.delegates`), compared by identity.
+        if (name is "Equals" && argCount == 1 && home.ContainingNamespace?.Name == "System" && home.Name is "Delegate" or "MulticastDelegate")
+            return $"{Eq.EqualsInstance}({{0}}, {{1}})";
 
         // Guids ride as strings, which compare exactly with ===.
         if (name is "Equals" && argCount == 1 && home is { Name: "Guid", ContainingNamespace.Name: "System" })

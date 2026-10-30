@@ -95,16 +95,52 @@ function contractsOf(value: unknown): Record<string, string> | undefined {
   return map !== null && typeof map === 'object' ? (map as Record<string, string>) : undefined;
 }
 
+/** What the browser holds a value of each primitive type as. */
+const HELD_AS: Readonly<Record<string, string>> = {
+  string: 'string',
+  char: 'string',
+  bool: 'boolean',
+  long: 'bigint',
+  ulong: 'bigint',
+  nint: 'bigint',
+  nuint: 'bigint',
+  sbyte: 'number',
+  byte: 'number',
+  short: 'number',
+  ushort: 'number',
+  int: 'number',
+  uint: 'number',
+  float: 'number',
+  double: 'number',
+};
+
+/**
+ * Whether a value may be of the type a contract's key names after its `|`, as far as what the browser holds
+ * says: a primitive by its kind, so the first of two number types answers, and anything else by the name of
+ * its class or of one it derives from.
+ */
+function isOfContract(contract: string, value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  const type = contract.slice(contract.indexOf('|') + 1);
+  if (typeof value !== 'object') return HELD_AS[type] === typeof value;
+  const name = type.slice(type.lastIndexOf('.') + 1);
+  for (let at = Object.getPrototypeOf(value); at !== null; at = Object.getPrototypeOf(at)) {
+    if ((at as { constructor?: { name?: string } }).constructor?.name === name) return true;
+  }
+  return false;
+}
+
 /**
  * The method a value's twin answers an interface's typed `Equals` with, found by the CONTRACT a call binds
  * (`System.IEquatable<T>|int`, `App.IProbe|App.IProbe`): its class's `static $equatable` maps each
  * such contract to the method, which holds a name of its own on the twin, since the twin's `equals` is
  * `Equals(object)`'s. A contract over a type parameter (`|*`, generic code, whose type argument is erased)
- * takes the class's own `IEquatable<T>` (`|@`), or the one contract of that interface it answers; a class
- * that answers it over several other types and not over itself is answered by `Equals(object)`. Undefined
- * for a value that answers none: a number, a string, a record's synthesized one, any value of .NET's own types.
+ * takes the class's own `IEquatable<T>` (`|@`), the one contract of that interface it answers, or, among several
+ * over other types, the one whose type `other` is ({@link isOfContract}, #962). A class with no such contract is
+ * answered by `Equals(object)`, as a null `other` is, which says nothing of its type. Undefined for a value
+ * that answers none: a number, a string, a record's synthesized one, any value of .NET's own types.
  */
-function contractMethod(value: unknown, key: string): ((other: unknown) => unknown) | undefined {
+function contractMethod(value: unknown, key: string, other?: unknown): ((other: unknown) => unknown) | undefined {
   const named = contractsOf(value);
   if (named === undefined) return undefined;
   let name = named[key];
@@ -113,7 +149,8 @@ function contractMethod(value: unknown, key: string): ((other: unknown) => unkno
     name = named[`${face}@`];
     if (name === undefined) {
       const answered = Object.keys(named).filter((contract) => contract.startsWith(face));
-      if (answered.length === 1) name = named[answered[0]];
+      const chosen = answered.length === 1 ? answered[0] : answered.find((contract) => isOfContract(contract, other));
+      if (chosen !== undefined) name = named[chosen];
     }
   }
   const method = name === undefined ? undefined : (value as Record<string, unknown>)[name];
@@ -127,7 +164,7 @@ export function answersEquatable(value: unknown): boolean {
 
 /** The interface's typed `Equals` of `key` on `a` with `b`, and what `a` turns out to be where it answers none. */
 function dispatch(key: string, a: unknown, b: unknown): boolean {
-  const method = contractMethod(a, key);
+  const method = contractMethod(a, key, b);
   return method !== undefined ? Boolean(method.call(a, b)) : sameKey(a, b);
 }
 

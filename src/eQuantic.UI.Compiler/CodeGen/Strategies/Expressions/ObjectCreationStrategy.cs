@@ -425,8 +425,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             LambdaExpressionStrategy.Typed(names[i], parameter.Type, context)));
         var call = JsExpr.Call(JsExpr.Identifier(Target), names.Select(JsExpr.Identifier).ToArray());
         context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Call(JsExpr.Group(JsExpr.Arrow(Target, JsExpr.Arrow(parameters, call))),
-            JsExpr.Call(JsExpr.Identifier(Eq.DelegateTarget), source));
+        return JsExpr.Call(JsExpr.Identifier(Eq.DelegateOver), JsExpr.Call(JsExpr.Identifier(Eq.DelegateTarget), source),
+            JsExpr.Arrow(Target, JsExpr.Arrow(parameters, call)));
     }
 
     /// <summary>
