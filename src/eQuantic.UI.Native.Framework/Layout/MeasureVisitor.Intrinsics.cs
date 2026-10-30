@@ -131,19 +131,25 @@ internal sealed partial class MeasureVisitor
     /// writes the minimum itself: <c>min-height: 0</c> (or the box's own <c>MinHeight</c>) on a box or
     /// a flex container that fills the column, and on a scroller or a table viewport, which take the
     /// room they are given. A fixed-height one is a size re-measuring cannot move (#1186), and a fixed
-    /// width is the web's <c>flex-shrink: 0</c>. Asked of what the item measured to, through a component
-    /// to what it built, which is what the web lowers it to.
+    /// width is the web's <c>flex-shrink: 0</c>. Its padding and border are never given back, so they
+    /// are part of the floor, and <c>Insets</c> says what to leave out of the size it is asked by.
+    /// Asked of what the item measured to, through whatever adds no box on the web: a component, which
+    /// is what it builds, and the wrappers that lower to their child or to <c>display: contents</c>.
     /// </summary>
-    private static float? ColumnFloor(LayoutNode item)
+    private static (float Floor, float Insets)? ColumnFloor(LayoutNode item)
     {
         var node = item;
-        while (node.Source is UiComponent && node.Children.Count > 0) node = node.Children[0];
+        while (node.Source is UiComponent or InView or InFlow or Presence or Shortcut or Simulated
+               && node.Children.Count > 0)
+            node = node.Children[0];
         return node.Source switch
         {
-            Box { Style.Height.Kind: SizeKind.Fill, Style.Width.Kind: not SizeKind.Fixed } box => box.Style.MinHeight,
-            FlexNode { Height.Kind: SizeKind.Fill, Width.Kind: not SizeKind.Fixed } => 0,
-            ScrollView { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => 0,
-            TableViewport { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => 0,
+            Box { Style.Height.Kind: SizeKind.Fill, Style.Width.Kind: not SizeKind.Fixed } box =>
+                (MathF.Max(box.Style.MinHeight, InsetsOf(box.Style).Vertical), InsetsOf(box.Style).Vertical),
+            FlexNode { Height.Kind: SizeKind.Fill, Width.Kind: not SizeKind.Fixed } flex =>
+                (flex.Padding.Vertical, flex.Padding.Vertical),
+            ScrollView { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => (0, 0),
+            TableViewport { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => (0, 0),
             _ => null,
         };
     }

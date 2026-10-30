@@ -305,6 +305,45 @@ public class FlexLineResolutionTests
         rigid.Children[1].Bounds.Height.Should().BeApproximately(0, 0.01f);
     }
 
+    /// <summary>A padded box is asked by its inner size and keeps its padding: 100 inside 300 of
+    /// padding beside a 540 share 540 as 100 to 540, 315.63 | 84.38 in Chrome 152.</summary>
+    [Fact]
+    public void AColumn_AsksAPaddedItemByItsInnerSize_AndLeavesItsPadding()
+    {
+        var box = Layout(ColumnOf(new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Padding = new EdgeInsets(0, 150, 0, 150),
+        })));
+        box.Children[0].Bounds.Height.Should().BeApproximately(315.625f, 0.01f);
+        box.Children[1].Bounds.Height.Should().BeApproximately(84.375f, 0.01f);
+
+        var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill, Padding = new EdgeInsets(0, 150, 0, 150) };
+        var flex = Layout(ColumnOf(row));
+        flex.Children[0].Bounds.Height.Should().BeApproximately(315.625f, 0.01f);
+        flex.Children[1].Bounds.Height.Should().BeApproximately(84.375f, 0.01f);
+    }
+
+    /// <summary>What adds no box on the web leaves the item as it is, so it shares the overflow
+    /// through them; what makes a box of its own is that box's to say.</summary>
+    [Fact]
+    public void AColumn_SharesItsOverflow_ThroughAWrapperThatAddsNoBox()
+    {
+        foreach (var wrapped in new VisualNode[]
+        {
+            new InView(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }), _ => { }),
+            new Presence(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill })),
+        })
+        {
+            var node = PhotonRealizer.Realize(ColumnOf(wrapped), 2000, 800, PhotonTheme.Instance, ThemeMode.Light,
+                new DisplayListBuilder()).Root;
+
+            node.Children[0].Bounds.Height.Should().BeApproximately(170.21f, 0.01f, wrapped.GetType().Name);
+            node.Children[1].Bounds.Height.Should().BeApproximately(229.79f, 0.01f, wrapped.GetType().Name);
+        }
+    }
+
     private static Column ColumnOf(VisualNode first)
     {
         var column = new Column(gap: 0) { Height = 400, Width = 200 };

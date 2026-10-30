@@ -174,6 +174,16 @@ measured, which is its min-content height, and text SHALL NOT be cut.
 - **WHEN** the first item is a box that fills, with a `MinHeight` of 300 or of 400, or a box that fills the column's height at a fixed width of 200
 - **THEN** the first are 300 and 100 tall, and 400 and 0, and the last 400 and 0, because a fixed width is the web's `flex-shrink: 0`
 
+#### Scenario: A padded item in a column
+
+- **WHEN** the first item is a box or a row that fills, with 150 of padding above and below
+- **THEN** they are 315.63 and 84.38 tall, because an item is asked by its inner size and keeps its padding
+
+#### Scenario: What adds no box on the web
+
+- **WHEN** the first item is a box that fills, inside an `InView` or a `Presence`
+- **THEN** they are 170.21 and 229.79 tall, as written directly
+
 #### Scenario: What a component builds in a column
 
 - **WHEN** the first item is a component that builds a box that fills, or one that fills the height at a fixed width of 200

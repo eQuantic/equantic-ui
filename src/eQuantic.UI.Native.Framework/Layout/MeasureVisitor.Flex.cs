@@ -310,12 +310,12 @@ internal sealed partial class MeasureVisitor
                         floors[i] = MathF.Min(mains[i], MinContentWidth(children[i], children.At(at, i), ctx));
                         weights[i] = mains[i] - floors[i];
                     }
-                    else if (ColumnFloor(laid[i]!) is { } floor)
+                    else if (ColumnFloor(laid[i]!) is { } column)
                     {
-                        // Asked by its size, as CSS scales it, and stopped at its floor by the loop
-                        // below: 400 at a floor of 300 gives 100 beside a 540 that gives the rest.
-                        floors[i] = MathF.Min(mains[i], floor);
-                        weights[i] = mains[i];
+                        // Asked by its inner size, as CSS scales it, and stopped at its floor by the
+                        // loop below: 400 at a floor of 300 gives 100 beside a 540 that gives the rest.
+                        floors[i] = MathF.Min(mains[i], column.Floor);
+                        weights[i] = MathF.Max(0, mains[i] - column.Insets);
                     }
                     else
                     {
