@@ -23,9 +23,18 @@
          which the Server's bundle is produced WITHOUT, and vitest runs once and exits. -->
     <Target Name="TestRuntime" DependsOnTargets="ResolveEmbeddedBun">
         <Message Text="eQuantic.UI.Runtime: bun install, tsc, vitest run (embedded bun)..." Importance="high" />
-        <Exec Command="&quot;$(_BunPath)&quot; install --frozen-lockfile" WorkingDirectory="$(MSBuildThisFileDirectory)" />
-        <Exec Command="&quot;$(_BunPath)&quot; x tsc" WorkingDirectory="$(MSBuildThisFileDirectory)" />
-        <Exec Command="&quot;$(_BunPath)&quot; x vitest run" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+        <ItemGroup>
+            <_EqInstallArgument Include="command" Value="install" />
+            <_EqInstallArgument Include="lockfile" Value="--frozen-lockfile" />
+            <_EqTscArgument Include="command" Value="x" />
+            <_EqTscArgument Include="program" Value="tsc" />
+            <_EqVitestArgument Include="command" Value="x" />
+            <_EqVitestArgument Include="program" Value="vitest" />
+            <_EqVitestArgument Include="once" Value="run" />
+        </ItemGroup>
+        <RunProgram Program="$(_BunPath)" Arguments="@(_EqInstallArgument)" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+        <RunProgram Program="$(_BunPath)" Arguments="@(_EqTscArgument)" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+        <RunProgram Program="$(_BunPath)" Arguments="@(_EqVitestArgument)" WorkingDirectory="$(MSBuildThisFileDirectory)" />
     </Target>
 
 </Project>

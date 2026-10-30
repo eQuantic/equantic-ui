@@ -318,7 +318,12 @@ public class ProgramArchiveTests
         harness.Should().Contain("ProgramArchive.Unpack(");
 
         foreach (var project in new[] { "eQuantic.UI.Server/eQuantic.UI.Server.csproj", "eQuantic.UI.Runtime/eQuantic.UI.Runtime.csproj" })
-            File.ReadAllText(Path.Combine(root, "src", project)).Should().Contain("../Shared/EmbeddedBun.targets");
+        {
+            var file = File.ReadAllText(Path.Combine(root, "src", project));
+            file.Should().Contain("../Shared/EmbeddedBun.targets");
+            file.Should().Contain("<RunProgram Program=\"$(_BunPath)\"").And.NotContain("&quot;$(_BunPath)&quot;",
+                "the user's cache is a path a shell would read: `$b` in an XDG_CACHE_HOME was expanded before bun was found");
+        }
         File.ReadAllText(Path.Combine(root, "src", "eQuantic.UI.Sdk", "Sdk", "Sdk.targets")).Should().Contain("<UnpackProgram ");
     }
 }

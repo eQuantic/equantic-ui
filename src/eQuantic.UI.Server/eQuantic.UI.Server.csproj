@@ -73,7 +73,16 @@
   <Target Name="BundleRuntime" BeforeTargets="BeforeBuild" DependsOnTargets="ResolveEmbeddedBun">
     <Message Text="Bundling eQuantic UI Runtime..." Importance="high" />
     <MakeDir Directories="wwwroot" />
-    <Exec Command="&quot;$(_BunPath)&quot; build ../eQuantic.UI.Sdk/Resources/boot.ts --outdir wwwroot --entry-naming &quot;runtime.[ext]&quot; --sourcemap=external --minify-syntax --minify-whitespace" />
+    <ItemGroup>
+      <_EqBundleArgument Include="command" Value="build" />
+      <_EqBundleArgument Include="entry" Value="../eQuantic.UI.Sdk/Resources/boot.ts" />
+      <_EqBundleArgument Include="output" Option="--outdir" Value="wwwroot" />
+      <_EqBundleArgument Include="naming" Option="--entry-naming" Value="runtime.[ext]" />
+      <_EqBundleArgument Include="map" Value="--sourcemap=external" />
+      <_EqBundleArgument Include="syntax" Value="--minify-syntax" />
+      <_EqBundleArgument Include="whitespace" Value="--minify-whitespace" />
+    </ItemGroup>
+    <RunProgram Program="$(_BunPath)" Arguments="@(_EqBundleArgument)" />
   </Target>
 
   <!-- eqc leads each module it transpiled from the SDK's C# on to that C#, through the map committed beside

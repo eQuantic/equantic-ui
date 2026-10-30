@@ -24,6 +24,9 @@
     </PropertyGroup>
 
     <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.UnpackProgram" AssemblyFile="$(_EqBunTasks)" TaskFactory="TaskHostFactory" />
+    <!-- And it starts the bun with no shell, as the SDK does (#841): the user's cache is a path anyone
+         can name, and a shell read `$b` in an XDG_CACHE_HOME of `/tmp/cache $b` before bun was found. -->
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqBunTasks)" TaskFactory="TaskHostFactory" />
 
     <Target Name="ResolveEmbeddedBun" DependsOnTargets="ResolveProjectReferences">
         <PropertyGroup>
