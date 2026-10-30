@@ -1138,22 +1138,23 @@ the pill's 40 down.
   case Adjustable adjustable:   // Semantics.cs — the complete set of promotable sources
   ```
 
-### A2 Row · Column · behaviour · **unverified**
+### A2 Row · Column · behaviour · **REFUTED**
 
 - **Component**: `src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs`
 - **Handoff**: Truncation contract: text children shrink to ellipsis before any sibling is pushed out; fixed children (icons, avatars) never shrink.
-- **Code**: The whole truncation block (text-to-ellipsis pass AND the flex-shrink pass that follows it at MeasureVisitor.Flex.cs:222-342 MeasureFlex) is gated on `&& horizontal`, so it runs for Row only. An overflowing Column never clamps its text and never shrinks a child — siblings are pushed past the bottom edge and clipped. The comment two lines above claims the opposite ("Applies whenever the available extent is finite"), and the web realizer emits a plain column flex whose items shrink by default.
+- **Code**: Filed against a truncation block gated on `&& horizontal`, which #747 lifted: an overflowing column now takes its overflow back by the flex-shrink pass, from its Flexibles, which the web writes `min-height: 0` (MeasureVisitor.Flex.cs:242-252 MeasureFlex). The other items keep the height they measure, their min-content height, which is what `min-height: auto` keeps in a browser, and the text cut stays a row's, since a browser does not cut a paragraph in a column either.
 - **Evidence**:
 
   ```
-  if (!float.IsPositiveInfinity(mainAvail) && rigidSum + gapTotal > mainAvail && horizontal)
+  src/eQuantic.UI.Native.Framework/Layout/MeasureVisitor.Flex.cs:242  if (!float.IsPositiveInfinity(mainAvail) && rigidSum + gapTotal > mainAvail)
+  src/eQuantic.UI.Native.Framework/Layout/MeasureVisitor.Flex.cs:252  horizontal && TextWithin(children[i]) is not null && children[i] is not Flexible;
   ```
 
 ### A2 Row · Column · missing-feature · **unverified**
 
 - **Component**: `src/eQuantic.UI.Primitives/Layout/LayoutTypes.cs`
 - **Handoff**: RTL — Row mirrors automatically in RTL locales; reading/focus order stays = child order.
-- **Code**: No realizer mirrors. The native layout maps Start to X unconditionally (MeasureVisitor.Flex.cs:422 MeasureFlex, and Padding.Start→X at 891/927/1473), and the web shell emits lang but never dir (src/eQuantic.UI.Server/Templates/app-shell.html:2 with the culture at UIExtensions.cs:557), so an ar/he culture renders LTR there too. LayoutTypes.cs:5 documents the v1 limit for the insets, while Row's own doc (src/eQuantic.UI.Primitives/Nodes/Row.cs) still asserts mirroring happens.
+- **Code**: No realizer mirrors. The native layout maps Start to X unconditionally (MeasureVisitor.Flex.cs:468 MeasureFlex, and Padding.Start→X at 891/927/1473), and the web shell emits lang but never dir (src/eQuantic.UI.Server/Templates/app-shell.html:2 with the culture at UIExtensions.cs:557), so an ar/he culture renders LTR there too. LayoutTypes.cs:5 documents the v1 limit for the insets, while Row's own doc (src/eQuantic.UI.Primitives/Nodes/Row.cs) still asserts mirroring happens.
 - **Evidence**:
 
   ```
@@ -1285,7 +1286,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Primitives/Layout/LayoutTypes.cs:51-57 —
+  src/eQuantic.UI.Primitives/Layout/LayoutTypes.cs:50-56 —
   public enum CrossAlign : byte
   {
       Start = 0,
@@ -2773,7 +2774,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/FlexNode.cs`
 - **Handoff**: wrap — … Line spacing = gap.
-- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1177-1187 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:499 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
+- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1177-1187 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:547 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
 - **Evidence**:
 
   ```
