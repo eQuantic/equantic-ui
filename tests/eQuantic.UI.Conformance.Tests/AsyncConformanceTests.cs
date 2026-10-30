@@ -155,6 +155,7 @@ public class AsyncConformanceTests
     [InlineData("var source = new " + Source + "(); source.Cancel(); var t = Task.FromCanceled(source.Token); await Task.Yield(); return \"unread\";")]
     [InlineData("try { Task.FromException(null); return \"made\"; } catch (ArgumentNullException e) { return e.Message; }")]
     [InlineData("try { Task.FromCanceled(System.Threading.CancellationToken.None); return \"made\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]
+    [InlineData("try { await Task.FromCanceled(default); return \"done\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]
     public void ATaskAlreadyEnded_AnswersAsDotNet(string program)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

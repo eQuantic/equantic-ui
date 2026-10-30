@@ -45,6 +45,10 @@ public class TaskMethodStrategy : IConversionStrategy
 
         if (!IsTaskType(expr)) return false;
 
+        // A class of the app's that shares the name is its own, as its methods are.
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { ContainingType: { } owner }
+            && owner.ToDisplayString() != "System.Threading.Tasks.Task") return false;
+
         return name is "Delay" or "Run" or "WhenAll" or "WhenAny" or "FromResult" or "Yield"
             or "FromException" or "FromCanceled";
     }

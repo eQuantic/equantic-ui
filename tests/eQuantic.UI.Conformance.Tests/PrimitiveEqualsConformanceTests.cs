@@ -37,6 +37,12 @@ public class PrimitiveEqualsConformanceTests
     // Both are evaluated, in their order, whatever the answer.
     [InlineData("var log = \"\"; int A() { log += \"a\"; return 1; } object B() { log += \"b\"; return 1.0; } var r = A().Equals((object)(double)B()); return log + \"|\" + r;")]
     [InlineData("var log = \"\"; int A() { log += \"a\"; return 1; } double B() { log += \"b\"; return 1.0; } var r = A().Equals((object)B()); return log + \"|\" + r;")]
+    // A null-conditional call and a method group, which take routes of their own.
+    [InlineData("int? n = 1; return (n?.Equals((object)1.0)).ToString() + \"|\" + (n?.Equals((object)1)) + \"|\" + (n?.Equals(1));")]
+    [InlineData("double? d = 1.5; decimal? m = 1m; return (d?.Equals((object)1.5f)).ToString() + \"|\" + (d?.Equals((object)1.5)) + \"|\" + (m?.Equals((object)1m));")]
+    [InlineData("decimal x = 1m; Func<object, bool> f = x.Equals; return f((object)1m) + \"|\" + f((object)2m);")]
+    [InlineData("double x = double.NaN; Func<object, bool> f = x.Equals; return f((object)double.NaN).ToString();")]
+    [InlineData("var l = new List<int> { 1, 2 }; return l.Exists(2.Equals).ToString();")]
     public void APrimitivesEqualsOfObject_AnswersByItsOwnType(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
