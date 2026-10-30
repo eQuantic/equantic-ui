@@ -364,14 +364,16 @@ dotnet pack --configuration Release --output nupkgs
 
 ### TypeScript Runtime (src/eQuantic.UI.Runtime)
 
-The TypeScript runtime is built using **embedded Bun** (bundled in platform-specific runtime packages). Bun binaries are stored as `.zip` files and auto-extracted during build.
+The TypeScript runtime is built using **embedded Bun** (bundled in platform-specific runtime packages). Bun binaries are stored as `.zip` files, and every build unpacks the one it needs into the user's cache, in a folder named by the zip's SHA-256 (`ProgramArchive`, in `eQuantic.UI.Sdk.Tasks`): never beside the zip, where a package cache may be read-only (#364) and a source tree kept an older bun after its zip moved on (#932).
 
 ```bash
 # Type-check (tsc) and test (vitest run) the runtime through the embedded Bun — no Node, any OS.
-# The build extracts the bun itself from the sibling package for this OS and architecture
-# (src/eQuantic.UI.Runtime.<Os><Arch>/tools/bun/), and the target installs from bun.lock first.
+# The build unpacks the bun of the sibling package for this OS and architecture
+# (src/eQuantic.UI.Runtime.<Os><Arch>/tools/bun/*.zip), and the target installs from bun.lock first.
 dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
 
+# That bun's path, for running it by hand:
+#   bun=$(dotnet msbuild -restore src/eQuantic.UI.Runtime -t:ResolveEmbeddedBun -getProperty:_BunPath)
 # Lint and format go through the same binary, from src/eQuantic.UI.Runtime:
 #   <that bun> x eslint src --ext .ts
 #   <that bun> x prettier --write "src/**/*.{ts,json}"

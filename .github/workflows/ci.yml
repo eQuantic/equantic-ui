@@ -417,6 +417,14 @@ jobs:
           # Copy core packages
           find src -name "*.nupkg" -path "*/bin/Release/*" -exec cp {} nupkgs/ \;
 
+      # An app's first build unpacked the embedded bun inside the NuGet package cache, so a cache
+      # restored read-only, baked into an image or shared on a volume failed it (#364). The packages
+      # just packed are restored into a cache of their own, the cache is made read-only, and the web
+      # template builds against it: nothing written there, and the bun ran from the user's cache.
+      - name: An app builds against a read-only package cache
+        shell: bash
+        run: ./scripts/check-read-only-package-cache.sh nupkgs
+
       # README.md names a picture by its path in the repository, which GitHub draws on every branch
       # and nuget.org does not draw at all. So a package's readme is written when it packs, with
       # each picture at its address under the release's tag (#880). A test runs that target. This

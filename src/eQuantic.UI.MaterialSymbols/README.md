@@ -41,11 +41,12 @@ The names are the Iconify ones in PascalCase, so `material-symbols:play-arrow-ro
 ## Regenerating
 
 The catalog has exactly one writer — never hand-edit `MaterialSymbolsIcons.cs`. From the
-repository root, with the bun the Runtime package embeds (no Node; `bun-linux` on Linux,
-`bun.exe` on Windows — the generator's header names all three):
+repository root, with the bun the Runtime package embeds (no Node), which the Runtime project
+unpacks into the user's cache and names:
 
 ```bash
-src/eQuantic.UI.Runtime.OsxArm64/tools/bun/bun-darwin scripts/generate-icons.mjs material-symbols
+bun=$(dotnet msbuild -restore src/eQuantic.UI.Runtime -t:ResolveEmbeddedBun -getProperty:_BunPath)
+"$bun" scripts/generate-icons.mjs material-symbols
 ```
 
 The source is pinned to one commit of `iconify/icon-sets` (`ICON_SETS_REF` in the script), so the
