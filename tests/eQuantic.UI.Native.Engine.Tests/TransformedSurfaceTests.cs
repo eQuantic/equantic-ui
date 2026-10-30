@@ -444,4 +444,166 @@ public class TransformedSurfaceTests
             "the press is 30 and 40 into the canvas as drawn, twice as large, and the drag and the "
             + "release 45 and 20");
     }
+
+    // ---- a captured gesture ---------------------------------------------------------------------
+
+    private static Framework.LayoutNode? FindDraggable(Framework.LayoutNode node) => node.Source is Draggable
+        ? node
+        : node.Children.Select(FindDraggable).FirstOrDefault(found => found is not null);
+
+    /// <summary>A surface 200 wide that fills its turned box, and where its drag ended.</summary>
+    private static (PhotonHost Host, Func<float> Released) MountDrag(Transform2D transform, bool normalized = false)
+    {
+        var released = float.NaN;
+        var drag = new Draggable(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }), value => released = value)
+        {
+            Axis = DragAxis.Horizontal,
+            Normalized = normalized,
+            Min = -1000,
+            Max = 1000,
+        };
+        return (Mount(drag, transform), () => released);
+    }
+
+    private static float DragOffsetAfter(PhotonHost host, float fromX, float fromY, float toX, float toY)
+    {
+        host.PressDown(fromX, fromY);
+        host.PointerMove(toX, toY);
+        host.RenderFrame(new DisplayListBuilder());
+        return FindDraggable(host.LastFrame!.Root)!.DragOffset;
+    }
+
+    /// <summary>
+    /// A drag under a scale travels in the surface's own space: 40 on the screen is 20 of a surface
+    /// drawn twice as large, which is what it reports and what it stores, so its drawing follows the
+    /// finger by 40. Read on the screen it stored 40 and was drawn 80 away (#734).
+    /// </summary>
+    [Fact]
+    public void ADragDrawnTwiceAsLarge_TravelsInItsOwnSpace()
+    {
+        var (host, released) = MountDrag(Transform2D.Scale(2));
+
+        DragOffsetAfter(host, 300, 250, 340, 250).Should().BeApproximately(20, 0.01f);
+
+        host.PressUp(340, 250);
+        released().Should().BeApproximately(20, 0.01f);
+    }
+
+    /// <summary>Normalized, it divides by its own extent: 40 on the screen of a surface 200 wide
+    /// drawn at 400 is 0.1 of it, and 20 of its own dp painted.</summary>
+    [Fact]
+    public void ANormalizedDragDrawnTwiceAsLarge_DividesByItsOwnExtent()
+    {
+        var (host, released) = MountDrag(Transform2D.Scale(2), normalized: true);
+
+        DragOffsetAfter(host, 300, 250, 340, 250).Should().BeApproximately(20, 0.01f);
+
+        host.PressUp(340, 250);
+        released().Should().BeApproximately(0.1f, 0.001f);
+    }
+
+    /// <summary>Turned a quarter, a horizontal drag runs down the screen, where its track is drawn.
+    /// It heard no travel there, and a sideways move, across its track, drove it instead.</summary>
+    [Fact]
+    public void ADragTurnedAQuarter_TravelsAlongItsDrawnTrack()
+    {
+        var (host, released) = MountDrag(Transform2D.Rotate(90));
+
+        DragOffsetAfter(host, 300, 250, 300, 290).Should().BeApproximately(40, 0.01f);
+
+        host.PressUp(300, 290);
+        released().Should().BeApproximately(40, 0.01f);
+    }
+
+    /// <summary>A transform's result moves under a surface that follows the finger, so the gesture
+    /// measures against the transform it pressed: a second move lands where the first ended.</summary>
+    [Fact]
+    public void ADragDrawnTwiceAsLarge_KeepsMeasuringFromWhereItStarted()
+    {
+        var (host, _) = MountDrag(Transform2D.Scale(2));
+
+        DragOffsetAfter(host, 300, 250, 340, 250);
+        host.PointerMove(380, 250);
+        host.RenderFrame(new DisplayListBuilder());
+
+        FindDraggable(host.LastFrame!.Root)!.DragOffset.Should().BeApproximately(40, 0.01f);
+    }
+
+    /// <summary>A dismiss counts its threshold in its own space too: the same distance on the screen
+    /// is half of it at twice the size, short of the threshold.</summary>
+    [Fact]
+    public void ADismissDrawnTwiceAsLarge_CountsItsThresholdInItsOwnSpace()
+    {
+        var dismissed = false;
+        var sheet = new DragDismiss(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }), () => dismissed = true);
+        var host = Mount(sheet, Transform2D.Scale(2));
+
+        host.PressDown(300, 250);
+        host.PointerMove(300, 250 + DragDismiss.ThresholdDp + 1);
+        host.RenderFrame(new DisplayListBuilder());
+        host.PressUp(300, 250 + DragDismiss.ThresholdDp + 1);
+
+        dismissed.Should().BeFalse("that is half the threshold of a sheet drawn twice as large");
+    }
+
+    /// <summary>A list the finger pans, as tall as its transform lets it be.</summary>
+    private static PhotonHost MountPannableList(Transform2D transform)
+    {
+        var column = new Column(gap: 0) { Width = SizeValue.Fill };
+        for (var i = 0; i < 12; i++) column.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }));
+        return Mount(new ScrollView(column) { Width = SizeValue.Fill, Height = SizeValue.Fixed(100) }, transform);
+    }
+
+    private static float OffsetOfTheList(PhotonHost host) =>
+        host.ScrollOffsetOf(host.LastFrame!.ScrollRegions.Single(r => r.MaxOffset > 0).Element);
+
+    private static float OffsetAfterAPan(PhotonHost host, float fromX, float fromY, float toX, float toY)
+    {
+        host.PressDown(fromX, fromY, kind: PointerKind.Touch);
+        host.PointerMove(toX, toY, PointerKind.Touch);
+        host.RenderFrame(new DisplayListBuilder());
+        return OffsetOfTheList(host);
+    }
+
+    /// <summary>A pan moves content under the finger: 40 on the screen of a list drawn twice as large
+    /// is 20 of its own offset. Written as 40, the content ran 80 away from the finger (#734).</summary>
+    [Fact]
+    public void APanDrawnTwiceAsLarge_ScrollsByItsOwnDistance()
+    {
+        var host = MountPannableList(Transform2D.Scale(2));
+
+        OffsetAfterAPan(host, 300, 250, 300, 210).Should().BeApproximately(20, 0.01f);
+    }
+
+    /// <summary>Turned a quarter, a vertical list runs sideways on the screen, and pans that way:
+    /// its own space's down is the screen's left.</summary>
+    [Fact]
+    public void APanTurnedAQuarter_ScrollsAlongItsDrawnAxis()
+    {
+        var host = MountPannableList(Transform2D.Rotate(90));
+
+        OffsetAfterAPan(host, 300, 250, 340, 250).Should().BeApproximately(40, 0.01f);
+    }
+
+    /// <summary>A flick's speed is in the list's own space as well: the same gesture in that space
+    /// lands the same fling, whatever size it is drawn at.</summary>
+    [Fact]
+    public void AFlickDrawnTwiceAsLarge_FlingsAsFarAsItsOwnDistanceAsks()
+    {
+        static float FlungTo(Transform2D transform, float scale)
+        {
+            var host = MountPannableList(transform);
+            host.RenderFrame(new DisplayListBuilder(), 1000);
+            host.PressDown(300, 250, kind: PointerKind.Touch);
+            host.PointerMove(300, 250 - 30 * scale, PointerKind.Touch);
+            host.RenderFrame(new DisplayListBuilder(), 1016);
+            host.PointerMove(300, 250 - 60 * scale, PointerKind.Touch);
+            host.RenderFrame(new DisplayListBuilder(), 1032);
+            host.PressUp(300, 250 - 60 * scale, PointerKind.Touch);
+            for (var t = 1048; t < 2600; t += 16) host.RenderFrame(new DisplayListBuilder(), t);
+            return OffsetOfTheList(host);
+        }
+
+        FlungTo(Transform2D.Scale(2), 2).Should().BeApproximately(FlungTo(Transform2D.Scale(1), 1), 0.5f);
+    }
 }
