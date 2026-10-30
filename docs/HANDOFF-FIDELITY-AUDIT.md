@@ -1154,7 +1154,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Layout/LayoutTypes.cs`
 - **Handoff**: RTL — Row mirrors automatically in RTL locales; reading/focus order stays = child order.
-- **Code**: No realizer mirrors. The native layout maps Start to X unconditionally (MeasureVisitor.Flex.cs:459 MeasureFlex, and Padding.Start→X at 891/927/1473), and the web shell emits lang but never dir (src/eQuantic.UI.Server/Templates/app-shell.html:2 with the culture at UIExtensions.cs:557), so an ar/he culture renders LTR there too. LayoutTypes.cs:5 documents the v1 limit for the insets, while Row's own doc (src/eQuantic.UI.Primitives/Nodes/Row.cs) still asserts mirroring happens.
+- **Code**: No realizer mirrors. The native layout maps Start to X unconditionally (MeasureVisitor.Flex.cs:468 MeasureFlex, and Padding.Start→X at 891/927/1473), and the web shell emits lang but never dir (src/eQuantic.UI.Server/Templates/app-shell.html:2 with the culture at UIExtensions.cs:557), so an ar/he culture renders LTR there too. LayoutTypes.cs:5 documents the v1 limit for the insets, while Row's own doc (src/eQuantic.UI.Primitives/Nodes/Row.cs) still asserts mirroring happens.
 - **Evidence**:
 
   ```
@@ -1286,7 +1286,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Primitives/Layout/LayoutTypes.cs:51-57 —
+  src/eQuantic.UI.Primitives/Layout/LayoutTypes.cs:50-56 —
   public enum CrossAlign : byte
   {
       Start = 0,
@@ -2774,7 +2774,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/FlexNode.cs`
 - **Handoff**: wrap — … Line spacing = gap.
-- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1177-1187 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:540 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
+- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1177-1187 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:547 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
 - **Evidence**:
 
   ```
