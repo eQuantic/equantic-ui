@@ -992,15 +992,15 @@ function parseDateTime(text: string, invariant = false): DateTime {
   if (text == null) throw exception('System.ArgumentNullException', NULL_S);
   const read = readMoment(text, readingCulture(invariant));
   if ('refused' in read) throw refusalOf(text, read);
-  // A clock with no date is today's in .NET, and not read here yet (#807).
-  if (read.date === null) throw unrecognized(text);
   const ticks = momentTicks(read);
   return read.zone === null ? new DateTime(ticks) : localFrom(ticks, read.zone);
 }
 
 /** The ticks of the clock time a text names, its date and clock. */
 function momentTicks({ date, clock }: Moment): bigint {
-  const { year, month, day } = date!;
+  const now = new Date();
+  // A clock with no date is today's, as .NET reads it.
+  const { year, month, day } = date ?? { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
   return (
     fromComponents(year, month, day, clock?.hour ?? 0, clock?.minute ?? 0, clock?.second ?? 0).ticks +
     BigInt(clock?.fraction ?? 0)
@@ -1021,6 +1021,11 @@ function refusalOf(text: string, refusal: Refusal): Error {
       return exception(
         'System.FormatException',
         `The time zone offset of string '${text}' must be within plus or minus 14 hours.`,
+      );
+    case 'weekday':
+      return exception(
+        'System.FormatException',
+        `String '${text}' was not recognized as a valid DateTime because the day of week was incorrect.`,
       );
     default:
       return unrecognized(text);
@@ -1296,14 +1301,22 @@ export interface TimeOnlyFactory {
 }
 
 function timeOnlyImpl(...args: number[] | [bigint]): TimeOnly {
-  if (args.length === 1 && typeof args[0] === 'bigint') return new TimeOnly(args[0]);
-  const n = args as number[];
-  const ticks =
-    BigInt(n[0]) * TICKS_PER_HOUR +
-    BigInt(n[1]) * TICKS_PER_MINUTE +
-    BigInt(n[2] ?? 0) * TICKS_PER_SECOND +
-    BigInt(n[3] ?? 0) * TICKS_PER_MILLISECOND;
-  return new TimeOnly(ticks);
+  if (args.length === 1 && typeof args[0] === 'bigint') {
+    const [ticks] = args;
+    if (ticks < 0n || ticks >= TICKS_PER_DAY) {
+      throw exception(
+        'System.ArgumentOutOfRangeException',
+        "Ticks must be between 0 and and TimeOnly.MaxValue.Ticks. (Parameter 'ticks')",
+      );
+    }
+    return new TimeOnly(ticks);
+  }
+  const [hour, minute, second = 0, millisecond = 0, microsecond = 0] = args as number[];
+  return new TimeOnly(
+    timeTicks(hour, minute, second) +
+      thousandth(millisecond, 'millisecond', TICKS_PER_MILLISECOND) +
+      thousandth(microsecond, 'microsecond', 10n),
+  );
 }
 
 export const timeOnly = timeOnlyImpl as TimeOnlyFactory;
@@ -1680,7 +1693,6 @@ function parseDateTimeOffset(text: string, invariant = false): DateTimeOffset {
   if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
   const read = readMoment(text, readingCulture(invariant));
   if ('refused' in read) throw refusalOf(text, read);
-  if (read.date === null) throw unrecognized(text);
   const local = momentTicks(read);
   const offset = read.zone === null ? localOffsetFor(local) : read.zone === 'utc' ? 0n : read.zone;
   return new DateTimeOffset(local, offset);

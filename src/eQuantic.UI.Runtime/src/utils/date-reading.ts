@@ -13,10 +13,12 @@
  * in de-DE. What it does not change: a fraction of a second is written with a point or a comma in
  * every culture, and AM and PM are read in every one.
  *
- * The forms are the numeric ones: three numbers for a date, a clock of one to three parts, a
- * designator, a zone, and the ISO form, a date whose year comes first, a `T` and a clock of two digits
- * a part. A month's name, a date of two numbers and a clock with no date as today's are .NET's and
- * not read here yet (#807).
+ * The forms: a date of two or three numbers, separated by a culture's separators or white space, a
+ * date with a month's name, in the order the culture's month-day and year-month patterns say a month
+ * and a lone number mean, a day's name before either, which must be the date's day, a clock of one to
+ * three parts, a designator, a zone, `GMT` among them, and the ISO form, a date whose year comes first,
+ * a `T` and a clock of two digits a part (#807). A name is read in the culture's language and in
+ * English, in any case, as .NET reads it in every culture.
  */
 import type { DateTimeFormatData } from './culture';
 import { round } from './dotnet-math';
@@ -49,13 +51,15 @@ export interface Moment {
 /**
  * Why a text names no moment, each a message of its own in .NET: no shape it reads (`format`), a word
  * it does not know at an index (`word`), a clock that does not exist (`clock`, which .NET words as a
- * time its calendar does not support), and an offset past fourteen hours (`zone`).
+ * time its calendar does not support), an offset past fourteen hours (`zone`), and a day's name that
+ * is not the date's day (`weekday`).
  */
 export type Refusal =
   | { refused: 'format' }
   | { refused: 'word'; index: number }
   | { refused: 'clock' }
-  | { refused: 'zone' };
+  | { refused: 'zone' }
+  | { refused: 'weekday' };
 
 const TICKS_PER_HOUR = 36_000_000_000n;
 const TICKS_PER_MINUTE = 600_000_000n;
@@ -83,6 +87,44 @@ interface Shapes {
   /** What the short date pattern writes after its last part (ko-KR's `.`), or nothing. */
   dateEnd: string;
   pattern: string;
+  /** Whether the short date pattern writes its year first. */
+  yearFirst: boolean;
+  /** The culture's own date separator. */
+  dateSeparator: string;
+  /** Whether the month-day pattern and the year-month pattern write the month first. */
+  monthBeforeDay: boolean;
+  monthBeforeYear: boolean;
+  /** Each name and the month it names, the longest first, so `January` is tried before `Jan`. */
+  months: { text: string; value: number }[];
+  /** Each name and the day it names, as `System.DayOfWeek` counts, the longest first. */
+  days: { text: string; value: number }[];
+}
+
+/** The English names, which .NET reads in every culture, beside the culture's own. */
+const ENGLISH_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
+];
+const ENGLISH_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** Each name of the lists as it is spelled, a culture's point included (de-DE's `Sept.` is no `Sept`), in
+ * lower case, the longest first. */
+function spellings(lists: readonly (readonly string[])[], base: number): { text: string; value: number }[] {
+  const found = new Map<string, number>();
+  for (const list of lists) {
+    list.forEach((name, index) => {
+      if (name.length > 0) found.set(name.toLowerCase(), index + base);
+    });
+  }
+  return [...found]
+    .map(([text, value]) => ({ text, value }))
+    .sort((a, b) => b.text.length - a.text.length);
+}
+
+/** Whether a pattern writes `first` before `second`, as .NET's `GetMonthDayOrder` reads one. */
+function comesFirst(pattern: string, first: string, second: string): boolean {
+  const at = pattern.indexOf(first);
+  const other = pattern.indexOf(second);
+  return at >= 0 && (other < 0 || at < other);
 }
 
 function shapesOf(culture: DateTimeFormatData): Shapes {
@@ -113,6 +155,25 @@ function shapesOf(culture: DateTimeFormatData): Shapes {
     designators,
     dateEnd: own(pattern.slice(last + 1).replace(/'/g, '')),
     pattern,
+    yearFirst: comesFirst(pattern.toLowerCase(), 'y', 'd') && comesFirst(pattern.toLowerCase(), 'y', 'm'),
+    dateSeparator,
+    monthBeforeDay: comesFirst(culture.monthDayPattern, 'M', 'd'),
+    monthBeforeYear: comesFirst(culture.yearMonthPattern, 'M', 'y'),
+    months: spellings(
+      [
+        culture.monthNames,
+        culture.abbreviatedMonthNames,
+        culture.monthGenitiveNames,
+        culture.abbreviatedMonthGenitiveNames,
+        ENGLISH_MONTHS,
+        ENGLISH_MONTHS.map((month) => month.slice(0, 3)),
+      ],
+      1,
+    ),
+    days: spellings(
+      [culture.dayNames, culture.abbreviatedDayNames, ENGLISH_DAYS, ENGLISH_DAYS.map((day) => day.slice(0, 3))],
+      0,
+    ),
   };
 }
 
@@ -138,6 +199,18 @@ class Cursor {
       if (this.text.startsWith(option, this.at)) {
         this.at += option.length;
         return option;
+      }
+    }
+    return null;
+  }
+
+  /** One of `names` here, in any case and ending where a word ends, consumed: what it names, or null. */
+  name(names: readonly { text: string; value: number }[]): number | null {
+    for (const { text, value } of names) {
+      const after = this.at + text.length;
+      if (this.text.slice(this.at, after).toLowerCase() === text && !isLetter(this.text[after])) {
+        this.at = after;
+        return value;
       }
     }
     return null;
@@ -177,6 +250,7 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
   let date: ReadDate | null = null;
   const leading = readDate(cursor, shapes);
   if (leading === 'invalid') return FORMAT;
+  if (leading === 'weekday') return { refused: 'weekday' };
   if (leading !== 'none') {
     date = leading.date;
     const before = cursor.at;
@@ -213,6 +287,7 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
     cursor.space();
     const trailing = readDate(cursor, shapes);
     if (trailing === 'invalid') return FORMAT;
+    if (trailing === 'weekday') return { refused: 'weekday' };
     if (trailing === 'none') cursor.at = before;
     else {
       date = trailing.date;
@@ -294,10 +369,111 @@ function readIso(cursor: Cursor, date: ReadDate): Moment | Refusal {
  * `invalid` where its numbers make no date in the culture's order. In a culture whose clock is written
  * with points, three numbers of two digits or fewer joined by points are its clock, not a date.
  */
-function readDate(
-  cursor: Cursor,
-  shapes: Shapes,
-): { date: ReadDate; yearFirst: boolean } | 'none' | 'invalid' {
+function readDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
+  const start = cursor.at;
+  const weekday = cursor.name(shapes.days);
+  if (weekday !== null) {
+    cursor.space();
+    cursor.take([',']);
+    cursor.space();
+  }
+  const named = readNamedDate(cursor, shapes);
+  const read = named === 'none' ? readNumericDate(cursor, shapes) : named;
+  if (read === 'none') {
+    cursor.at = start;
+    return 'none';
+  }
+  if (read !== 'invalid' && read !== 'weekday' && weekday !== null && weekdayOf(read.date) !== weekday) return 'weekday';
+  return read;
+}
+
+/** A date as a reader of one answers it. */
+type ReadingOfADate = { date: ReadDate; yearFirst: boolean } | 'none' | 'invalid' | 'weekday';
+
+/** The day of the week of a date, as `System.DayOfWeek` counts. */
+function weekdayOf({ year, month, day }: ReadDate): number {
+  const date = new Date(Date.UTC(2000, month - 1, day));
+  date.setUTCFullYear(year);
+  return date.getUTCDay();
+}
+
+/** Whether what follows a number makes it an hour rather than a date's: a separator only a clock has
+ * (a point is a date's too, in fi-FI), or a designator, which a clock's hour alone may carry. */
+function startsAClock(cursor: Cursor, shapes: Shapes): boolean {
+  const before = cursor.at;
+  const clock = cursor.take(shapes.timeSeparators.filter((s) => !shapes.dateSeparators.includes(s))) !== null;
+  if (!clock) cursor.space();
+  const designated = !clock && readDesignator(cursor, shapes) !== null;
+  cursor.at = before;
+  return clock || designated;
+}
+
+/**
+ * A date with a month's name and up to two numbers, in any order, as .NET's `GetDayOfMN`, `GetDayOfNM`,
+ * `GetDayOfMNN` and `GetDayOfYMN` read one: a number of three digits or more is the year, a month and a
+ * year are the month's first day, a month and one short number are a day of this year unless the
+ * culture's patterns make it a year, and two short numbers are told apart by the short date pattern.
+ * A month alone is no date.
+ */
+function readNamedDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
+  const start = cursor.at;
+  let month: number | null = null;
+  let numberFirst = false;
+  const numbers: string[] = [];
+  for (let i = 0; i < 3; i++) {
+    const before = cursor.at;
+    if (i > 0) {
+      cursor.space();
+      cursor.take([',', '-', '/']);
+      cursor.space();
+    }
+    if (month === null) {
+      month = cursor.name(shapes.months);
+      if (month !== null) {
+        cursor.take(['.']);
+        continue;
+      }
+    }
+    const number = cursor.digits();
+    if (number === null || (number.length <= 2 && startsAClock(cursor, shapes))) {
+      cursor.at = before;
+      break;
+    }
+    if (month === null) numberFirst = true;
+    numbers.push(number);
+  }
+  if (month === null) {
+    cursor.at = start;
+    return 'none';
+  }
+  if (numbers.some((number) => number.length > 8)) return 'invalid';
+  const date = namedDateOf(month, numbers, numberFirst, shapes);
+  return date === null ? 'invalid' : { date, yearFirst: false };
+}
+
+/** Which of a month's numbers is the day and which the year. */
+function namedDateOf(month: number, numbers: readonly string[], numberFirst: boolean, shapes: Shapes): ReadDate | null {
+  const valid = (date: ReadDate): ReadDate | null => (exists(date) ? date : null);
+  const [one, two] = numbers;
+  if (one === undefined) return null;
+  if (two === undefined) {
+    if (looksLikeYear(one)) return valid({ year: yearOf(one), month, day: 1 });
+    // Each order has a culture that reads its number as a year: `Jan 5` is 2005 in de-DE, `5 Jan` in the invariant one.
+    const isYear = numberFirst ? shapes.monthBeforeDay && !shapes.monthBeforeYear : !shapes.monthBeforeDay && shapes.monthBeforeYear;
+    return valid(isYear ? { year: yearOf(one), month, day: 1 } : { year: new Date().getFullYear(), month, day: +one });
+  }
+  if (looksLikeYear(one) || looksLikeYear(two)) {
+    if (looksLikeYear(one) && looksLikeYear(two)) return null;
+    return looksLikeYear(one) ? valid({ year: yearOf(one), month, day: +two }) : valid({ year: yearOf(two), month, day: +one });
+  }
+  const yearThenDay = valid({ year: yearOf(one), month, day: +two });
+  const dayThenYear = valid({ year: yearOf(two), month, day: +one });
+  return shapes.yearFirst ? (yearThenDay ?? dayThenYear) : (dayThenYear ?? yearThenDay);
+}
+
+/** A date of numbers: three, or two, which are a month and a day of this year in the order of the
+ * culture's month-day pattern, or a month and a year. White space alone may separate them. */
+function readNumericDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
   const start = cursor.at;
   const none = (): 'none' => {
     cursor.at = start;
@@ -306,28 +482,57 @@ function readDate(
   const parts: string[] = [];
   let points = true;
   for (let i = 0; i < 3; i++) {
+    const before = cursor.at;
+    let written = true;
     if (i > 0) {
-      cursor.space();
+      const spaced = cursor.space();
       const separator = cursor.take(shapes.dateSeparators);
-      if (separator === null) return none();
+      written = separator !== null;
+      if (!written && !spaced) {
+        if (i === 2) {
+          cursor.at = before;
+          break;
+        }
+        return none();
+      }
       points &&= separator === '.';
       cursor.space();
     }
     const part = cursor.digits();
-    if (part === null) return none();
+    // A number white space alone sets apart may be a clock's hour; one a separator joins is the date's.
+    if (part === null || (!written && part.length <= 2 && startsAClock(cursor, shapes))) {
+      if (i === 2) {
+        cursor.at = before;
+        break;
+      }
+      return none();
+    }
     parts.push(part);
   }
   if (shapes.pointIsClock && points && parts.every((part) => !looksLikeYear(part))) return none();
   // .NET reads a number of eight digits at most.
   if (parts.some((part) => part.length > 8)) return 'invalid';
-  // The literal the culture's date ends with, which it writes after the day (ko-KR's `2024. 1. 15.`).
-  if (shapes.dateEnd.length > 0) {
-    const before = cursor.at;
-    cursor.space();
-    if (cursor.take([shapes.dateEnd]) === null) cursor.at = before;
-  }
-  const date = dateOf(parts, shapes.pattern);
+  // The literal the culture's date ends with, which it writes after the day (ko-KR's `2024. 1. 15.`),
+  // and the point any date may end with, but where a point is what separates the culture's date.
+  const before = cursor.at;
+  cursor.space();
+  const end = shapes.dateEnd.length > 0 ? shapes.dateEnd : shapes.dateSeparator === '.' ? null : '.';
+  if (end === null || cursor.take([end]) === null) cursor.at = before;
+  const date = parts.length === 2 ? dateOfTwo(parts, shapes) : dateOf(parts, shapes.pattern);
   return date === null ? 'invalid' : { date, yearFirst: looksLikeYear(parts[0]) };
+}
+
+/** Two numbers, as .NET's `GetDayOfNN` and `GetDayOfYN` read them. */
+function dateOfTwo([one, two]: readonly string[], shapes: Shapes): ReadDate | null {
+  const year = new Date().getFullYear();
+  const date = looksLikeYear(one)
+    ? { year: yearOf(one), month: +two, day: 1 }
+    : looksLikeYear(two)
+      ? { year: yearOf(two), month: +one, day: 1 }
+      : shapes.monthBeforeDay
+        ? { year, month: +one, day: +two }
+        : { year, month: +two, day: +one };
+  return exists(date) ? date : null;
 }
 
 /**
@@ -495,6 +700,11 @@ function readZone(cursor: Cursor): 'utc' | bigint | Refusal | null {
   const mark = cursor.text[cursor.at];
   if ((mark === 'Z' || mark === 'z') && !isLetter(cursor.text[cursor.at + 1])) {
     cursor.at++;
+    return 'utc';
+  }
+  // `GMT`, in any case, is the zero offset, and takes none after it.
+  if (cursor.text.slice(cursor.at, cursor.at + 3).toUpperCase() === 'GMT' && !isLetter(cursor.text[cursor.at + 3])) {
+    cursor.at += 3;
     return 'utc';
   }
   if (mark !== '+' && mark !== '-') return null;
