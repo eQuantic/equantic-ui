@@ -42,6 +42,8 @@ public class PositionConformanceTests
     [InlineData("var f = new float[] { 0.1f }; f[^1] += 0.2f; return f[0].ToString();")]                                                                 // 0.3
     // A null-conditional read from the end answers null for a null receiver.
     [InlineData("int[] none = null; int[] some = { 4, 5 }; return (none?[^1] ?? -1) + \"|\" + (some?[^1] ?? -1);")]                                     // -1|5
+    // A null-conditional write from the end writes behind the guard, its receiver made once.
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } int[] none = null; Get()?[^1] = 9; none?[^1] = 7; return string.Join(\",\", arr) + \"|\" + calls;")] // 1,9|1
     public void AnElementCountedFromTheEnd_ReadsItsReceiverOnce(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

@@ -4,7 +4,7 @@
 
 An element of an array, a list or a string counted from the end (`a[^n]`) SHALL be read and written with
 its receiver evaluated once, then its offset, then the length, as C# evaluates them, whatever writes it
-(an assignment, a compound assignment, an increment, `??=`, a deconstruction), and its offset SHALL be
+(an assignment, a null-conditional assignment, a compound assignment, an increment, `??=`, a deconstruction), and its offset SHALL be
 one value whatever expression it is written as.
 
 #### Scenario: A receiver made by a call

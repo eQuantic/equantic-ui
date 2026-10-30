@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
@@ -105,7 +106,11 @@ internal sealed class Place
         if (context.SemanticHelper.GetSymbol(target) is IPropertySymbol { IsIndexer: true } indexer
             && indexer.ContainingType.IsDictionary() && arguments.Arguments.Count == 1)
             return Entry(receiver, arguments.Arguments[0].Expression, context);
-        return Indexer.LoweredAt(target, context) is null ? null : Indexed(target, arguments, receiver, context);
+        if (Indexer.LoweredAt(target, context) is not null) return Indexed(target, arguments, receiver, context);
+        // An initializer's `[^1] = v` is fenced before it gets here (EQ2008): only `a?[^1]` is left.
+        return arguments.Arguments is [{ Expression: PrefixUnaryExpressionSyntax hat }] && hat.IsKind(SyntaxKind.IndexExpression)
+            ? Subscripted(target, receiver, hat, context)
+            : null;
     }
 
     /// <summary>
