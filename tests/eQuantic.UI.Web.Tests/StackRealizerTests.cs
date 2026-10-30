@@ -66,4 +66,66 @@ public class StackRealizerTests
         cell.Should().Contain("min-width: 0");
         cell.Should().Contain("min-height: 0");
     }
+
+    private static string CellOf(VisualNode layer)
+    {
+        var stack = new Stack();
+        stack.Add(layer);
+        return Render(stack).Children[0].Attributes["style"]!;
+    }
+
+    /// <summary>
+    /// A stack caps a layer only where Photon does: on an axis the layer fills, and on one a scroller
+    /// hugs. On any other axis the layer counts toward the stack's own minimum. Written on every
+    /// cell, min-0 took a fixed layer out of that minimum, so a hugging stack beside a sibling wider
+    /// than the line was squeezed to 0 while its content overflowed at the same edge: the
+    /// spreadsheet's row-number strip measured 0 beside a 768 grid in a 726 row (#698).
+    /// CROSS-PIN: the same axes are asserted by the TS lowering spec.
+    /// </summary>
+    [Fact]
+    public void AStackCell_IsCappedOnlyOnAnAxisTheStackCapsItsLayer()
+    {
+        var hugging = CellOf(new ScrollView(new Primitives.Box(new BoxStyle { Width = 4000 }), ScrollAxis.Horizontal));
+        hugging.Should().Contain("min-width: 0").And.Contain("min-height: 0");
+
+        var filling = CellOf(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }));
+        filling.Should().Contain("min-width: 0").And.NotContain("min-height");
+
+        var fixedBox = CellOf(new Primitives.Box(new BoxStyle { Width = 44, Height = 24 }));
+        fixedBox.Should().NotContain("min-width").And.NotContain("min-height");
+
+        var fixedScroller = CellOf(new ScrollView(new Primitives.Box(new BoxStyle { Width = 4000 }), ScrollAxis.Horizontal)
+        {
+            Width = 300,
+            Height = 20,
+        });
+        fixedScroller.Should().NotContain("min-width").And.NotContain("min-height");
+    }
+
+    /// <summary>
+    /// A Positioned's key, bookmark and origin ride on the ANCHOR the stack builds for it, the one
+    /// element that is the Positioned's, as the funnel writes them on every other node's element.
+    /// The stack built the anchor without dispatching the Positioned, so a link to
+    /// <c>#request</c> led nowhere and a rule on the id drew nothing (#940).
+    /// </summary>
+    [Fact]
+    public void APositionedsKeyBookmarkAndOrigin_RideOnItsAnchor()
+    {
+        var stack = new Stack();
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 16, Height = 16 }), top: 0, end: -28)
+        {
+            Bookmark = "request",
+            Key = "request-card",
+            Origin = "Landing.cs:42",
+        });
+
+        var anchor = (HtmlElement)WebRealizer.Lower(stack, PhotonTheme.Instance).Children[0];
+
+        anchor.Id.Should().Be("request");
+        anchor.Key.Should().Be("request-card");
+        anchor.DataAttributes!["eq-origin"].Should().Be("Landing.cs:42");
+        // CROSS-PIN: asserted verbatim by the TS lowering spec (hydration parity).
+        anchor.Render().Attributes["style"].Should().Be(
+            "position: absolute; top: 0; right: -28px; z-index: 1; scroll-margin-top: var(--eq-anchor-offset, 0px)");
+    }
 }

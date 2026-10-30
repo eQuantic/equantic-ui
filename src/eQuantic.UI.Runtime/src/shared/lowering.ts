@@ -2847,7 +2847,7 @@ function lowerLayer(
       (has(positioned.start, positioned.startFraction) && has(positioned.end, positioned.endFraction) && !filling.width) ||
       (has(positioned.top, positioned.topFraction) && has(positioned.bottom, positioned.bottomFraction) && !filling.height);
     const shifted = shift(positioned.shiftX ?? 0, positioned.shiftY ?? 0);
-    return element(
+    const anchor = element(
       'div',
       {
         position: 'absolute',
@@ -2866,9 +2866,13 @@ function lowerLayer(
           : lowered,
       ],
     );
+    // The ANCHOR is the Positioned's element, so it carries what the funnel writes on every node's
+    // element: its key, its bookmark and its origin (C# twin, #940).
+    return decorate(positioned, anchor);
   }
   const lowered = lowerNode(child, context, null, path);
   if (!lowered) return null;
+  const caps = cappedByTheStack(child);
   // The cell IS the stack's available space (native MeasureStack contract): stretched to the grid
   // cell, aligning its child via flex — Fill children cover, hug children anchor.
   return element(
@@ -2880,11 +2884,12 @@ function lowerLayer(
       'align-items': cellAlign,
       width: '100%',
       height: '100%',
-      // …and may not grow PAST it: a grid item's automatic minimum size is min-content, so a layer
-      // holding a scroller would size the track to the scroller's CONTENT and swell the stack to
-      // the widest line in the file.
-      'min-width': '0',
-      'min-height': '0',
+      // …and may not grow PAST it, on an axis the stack caps its layer: a grid item's automatic
+      // minimum size is min-content, so a layer holding a scroller would size the track to the
+      // scroller's CONTENT and swell the stack to the widest line in the file. On any other axis the
+      // layer's size counts toward the stack's own minimum, as it does natively (C# twin, #698).
+      'min-width': caps.width ? '0' : undefined,
+      'min-height': caps.height ? '0' : undefined,
       // Spec A3 (C# twin): paint order IS child order — a child with backdrop-filter/filter/opacity
       // creates a stacking context that CSS would otherwise paint above every plain sibling drawn
       // after it (a blurred scrim covering its own dialog).
@@ -2899,6 +2904,21 @@ function lowerLayer(
     },
     [lowered],
   );
+}
+
+/**
+ * The axes a Stack caps a layer on (C# `CappedByTheStack`): one its child fills, and one a scroller
+ * hugs, since a scroller is as wide as the smaller of its content and the room it has.
+ */
+function cappedByTheStack(child: VisualNodeValue): { width: boolean; height: boolean } {
+  const filling = fills(child);
+  if (child.nodeKind !== 'scrollView') return filling;
+  const scroller = child as ScrollViewNode;
+  const hugs = (size: { kind?: string } | null | undefined) => (size?.kind ?? 'hug') === 'hug';
+  return {
+    width: filling.width || hugs(scroller.width),
+    height: filling.height || hugs(scroller.height),
+  };
 }
 
 function textLeaf(content: string): HtmlNode {
@@ -3563,6 +3583,10 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
     case 'stack': {
       const stack = node as StackNode;
       return { width: stack.width?.kind === 'fill', height: stack.height?.kind === 'fill' };
+    }
+    case 'scrollView': {
+      const scroll = node as ScrollViewNode;
+      return { width: scroll.width?.kind === 'fill', height: scroll.height?.kind === 'fill' };
     }
     case 'tableViewport': {
       // A table viewport's hug is a fill: it takes the room it is given unless it says how large (C# twin).

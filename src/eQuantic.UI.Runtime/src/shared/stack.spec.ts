@@ -1,6 +1,17 @@
 import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
-import { Box, BoxStyle, Drawing, Positioned, Stack, VectorDrawing, VectorPaint, VectorShape } from './vocabulary';
+import {
+  Box,
+  BoxStyle,
+  Drawing,
+  Positioned,
+  ScrollView,
+  Stack,
+  VectorDrawing,
+  VectorPaint,
+  VectorShape,
+  VisualNode,
+} from './vocabulary';
 import { SizeValue } from './value-types';
 
 describe('Stack (spec A3) client lowering', () => {
@@ -18,13 +29,8 @@ describe('Stack (spec A3) client lowering', () => {
     // invisible target — which is what a CLOSED Drawer did to the compact shell's own menu button.
     expect(effectiveStyle(node.children[0])).toContain(
       'align-items: center; display: flex; grid-area: 1 / 1; height: 100%; justify-content: center; ' +
-        'min-height: 0; min-width: 0; pointer-events: none; width: 100%',
+        'pointer-events: none; width: 100%',
     );
-    // …and min-0 is load-bearing, not decoration: a grid item's automatic minimum size is its
-    // min-content size, so a layer holding a horizontal scroller would size the track to the
-    // widest line in the file and the stack would swell past the box that contains it. The SAME
-    // pair StackRealizerTests pins on the C# side.
-    expect(effectiveStyle(node.children[0])).toContain('min-width: 0');
     // Spec A3: paint order IS child order — each cell carries its DEPTH, so a child with a filter
     // (which creates a stacking context) can't jump above the siblings drawn after it.
     expect(effectiveStyle(node.children[0])).toContain('z-index: 1');
@@ -80,5 +86,54 @@ describe('Stack (spec A3) client lowering', () => {
     const anchor = effectiveStyle(stack.render().children[0]);
     expect(anchor).toContain('right: 10%');
     expect(anchor).not.toContain('translate(');
+  });
+
+  it("carries a Positioned's key, bookmark and origin on its anchor (#940, the C# Decorate twin)", () => {
+    const positioned = new Positioned(new Box(new BoxStyle({ width: 16, height: 16 })), 0, -28);
+    positioned.bookmark = 'request';
+    positioned.key = 'request-card';
+    (positioned as unknown as { origin: string }).origin = 'Landing.cs:42';
+    const stack = new Stack();
+    stack.add(positioned);
+
+    const anchor = stack.render().children[0];
+    expect(anchor.attributes['id']).toBe('request');
+    expect(anchor.key).toBe('request-card');
+    expect(anchor.attributes['data-eq-origin']).toBe('Landing.cs:42');
+    // The SAME declarations StackRealizerTests pins on the C# side (hydration parity).
+    expect(effectiveStyle(anchor)).toContain('position: absolute; right: -28px; scroll-margin-top');
+    expect(effectiveStyle(anchor)).toContain('top: 0; z-index: 1');
+  });
+
+  // A grid item's automatic minimum size is its min-content size, so a layer holding a horizontal
+  // scroller would size the track to the widest line in the file and the stack would swell past
+  // the box that contains it. The SAME axes StackRealizerTests pins on the C# side.
+  it('caps a layer only on an axis it fills, or a scroller hugs (#698)', () => {
+    const cell = (layer: VisualNode): string => {
+      const stack = new Stack();
+      stack.add(layer);
+      return effectiveStyle(stack.render().children[0]);
+    };
+    const wide = (): Box => new Box(new BoxStyle({ width: 4000 }));
+
+    const fillsAcross = cell(new ScrollView(wide(), 'horizontal', { width: SizeValue.fill }));
+    expect(fillsAcross).toContain('min-width: 0');
+    expect(fillsAcross).toContain('min-height: 0');
+
+    const hugging = cell(new ScrollView(wide(), 'horizontal'));
+    expect(hugging).toContain('min-width: 0');
+    expect(hugging).toContain('min-height: 0');
+
+    const fillingBox = cell(new Box(new BoxStyle({ width: SizeValue.fill, height: 20 })));
+    expect(fillingBox).toContain('min-width: 0');
+    expect(fillingBox).not.toContain('min-height');
+
+    const fixedBox = cell(new Box(new BoxStyle({ width: 44, height: 24 })));
+    expect(fixedBox).not.toContain('min-width');
+    expect(fixedBox).not.toContain('min-height');
+
+    const fixedScroller = cell(new ScrollView(wide(), 'horizontal', { width: 300, height: 20 }));
+    expect(fixedScroller).not.toContain('min-width');
+    expect(fixedScroller).not.toContain('min-height');
   });
 });
