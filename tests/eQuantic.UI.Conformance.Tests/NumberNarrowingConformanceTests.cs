@@ -120,6 +120,46 @@ public class NumberNarrowingConformanceTests
     /// <c>(byte)1e12</c> is 255: the whole part wrapped modulo 2^32 where the value was past an int (#1015).
     /// </summary>
     [SkippableTheory]
+    // A date has its overload, which names the target.
+    [InlineData("try { return Convert.ToInt32(DateTime.MinValue); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("try { return Convert.ToByte(DateTime.MinValue); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("object o = TimeSpan.Zero; try { return Convert.ToInt32(o); } catch (InvalidCastException e) { return e.Message; }")]
+    // An enum C# boxed for the call converts by its value, through every target.
+    [InlineData("return Convert.ToDouble(Tone.Warm) + \"|\" + Convert.ToSingle(Tone.Warm) + \"|\" + (int)Convert.ToChar(Tone.Warm) + \"|\" + Convert.ToBoolean(Tone.Warm) + \"|\" + Convert.ToBoolean(Tone.None);")]
+    // A Nullable's type is still in sight, and a null is what the object overload answers.
+    [InlineData("Tone? t = Tone.Warm; Tone? n = null; return Convert.ToBoolean(t) + \"|\" + Convert.ToBoolean(n) + \"|\" + Convert.ToDouble(t) + \"|\" + Convert.ToDouble(n) + \"|\" + (int)Convert.ToChar(t) + \"|\" + (int)Convert.ToChar(n);")]
+    [InlineData("char? c = '5'; char? n = null; return Convert.ToInt32(c) + \"|\" + Convert.ToInt32(n) + \"|\" + Convert.ToChar(c) + \"|\" + (int)Convert.ToChar(n) + \"|\" + Convert.ToInt64(c).ToString();")]
+    [InlineData("char? c = 'A'; try { return Convert.ToDouble(c); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("char? c = 'A'; try { return Convert.ToBoolean(c); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("double? d = 1e10; try { return Convert.ToInt16(d); } " + Catch)]
+    [InlineData("int? i = 300; try { return Convert.ToByte(i); } " + Catch)]
+    [InlineData("bool? b = true; decimal? m = 2.5m; float? f = 2.5f; long? l = 7; return Convert.ToInt32(b) + \"|\" + Convert.ToInt32(m) + \"|\" + Convert.ToInt32(f) + \"|\" + Convert.ToInt32(l);")]
+    // A long held as object goes to a single at once, as one typed as long does.
+    [InlineData("object o = 1152921573326323713L; return ((long)Convert.ToSingle(o)).ToString();")]
+    public void AConversion_ReadsTheTypeInSight(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public enum Tone { None, Warm }");
+    }
+
+    [SkippableTheory]
+    // A constant the compiler folded, each width.
+    [InlineData("return unchecked((int)1e12) + \"|\" + unchecked((byte)1e12) + \"|\" + unchecked((short)1e12) + \"|\" + unchecked((uint)-1.0);")]
+    [InlineData("return ((int)unchecked((char)1e12)) + \"|\" + ((int)unchecked((char)-1.5)) + \"|\" + ((int)(char)65.7);")]
+    [InlineData("return unchecked((long)1e30).ToString() + \"|\" + unchecked((ulong)-1.0).ToString();")]
+    // A checked cast into an enum throws past its underlying type.
+    [InlineData("double d = 1e12; try { return checked((Tone)d).ToString(); } " + Catch)]
+    [InlineData("double d = 300; try { return checked((Small)d).ToString(); } " + Catch)]
+    [InlineData("int i = 300; try { return checked((Small)i).ToString(); } " + Catch)]
+    [InlineData("long l = 1L << 40; try { return checked((Tone)l).ToString(); } " + Catch)]
+    [InlineData("double d = 1.9; int i = 1; long l = 1; return checked((Tone)d) + \"|\" + checked((Small)i) + \"|\" + checked((Tone)l);")]
+    public void ACastInAContext_AnswersAsDotNetDoes(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public enum Tone { None, Warm } public enum Small : byte { None, One }");
+    }
+
+    [SkippableTheory]
     [InlineData("double d = 1e12; return (int)d + \"|\" + (uint)d + \"|\" + ((long)d).ToString() + \"|\" + ((ulong)d).ToString();")]
     [InlineData("double d = -1e12; return (int)d + \"|\" + (uint)d + \"|\" + ((long)d).ToString() + \"|\" + ((ulong)d).ToString();")]
     [InlineData("double d = double.NaN; return (int)d + \"|\" + (uint)d + \"|\" + ((long)d).ToString() + \"|\" + ((ulong)d).ToString() + \"|\" + (byte)d + \"|\" + (short)d;")]

@@ -11,11 +11,12 @@
  * overflow names the target where a double's narrow width names an Int32.
  */
 import { boolConvert } from './boolean-text';
-import { DateTime } from './datetime';
+import { DateTime, timeTypeOf } from './datetime';
 import { Decimal } from './decimal';
 import { round } from './dotnet-math';
 import { exception } from './exceptions';
 import { intConvert, realConvert, type IntegerType, type LongType, type RealType } from './number-parse';
+import { singleFromLong } from './overflow';
 
 type NarrowType = Exclude<IntegerType, LongType>;
 
@@ -73,10 +74,8 @@ function refused(value: object, to: keyof typeof NAMED): Error {
   if (value instanceof DateTime) {
     return exception('System.InvalidCastException', `Invalid cast from 'DateTime' to '${NAMED[to]}'.`);
   }
-  return exception(
-    'System.InvalidCastException',
-    `Unable to cast object of type '${value.constructor?.name ?? 'Object'}' to type 'System.IConvertible'.`,
-  );
+  const name = timeTypeOf(value) ?? value.constructor?.name ?? 'Object';
+  return exception('System.InvalidCastException', `Unable to cast object of type '${name}' to type 'System.IConvertible'.`);
 }
 
 /** An integer inside its type's range, held as the type is, or .NET's overflow. */
@@ -149,6 +148,7 @@ export function integerFromObject(value: unknown, type: IntegerType, invariant =
 export function realFromObject(value: unknown, type: RealType, invariant = false): number {
   if (value == null) return 0;
   if (typeof value === 'string') return realConvert(value, type, invariant);
+  if (typeof value === 'bigint' && type === 'single') return singleFromLong(value);
   let number: number;
   if (typeof value === 'boolean') number = value ? 1 : 0;
   else if (typeof value === 'number') number = value;

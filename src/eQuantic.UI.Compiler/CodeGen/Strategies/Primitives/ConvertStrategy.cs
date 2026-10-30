@@ -80,12 +80,12 @@ public class ConvertStrategy : IExpressionIrStrategy
                 : context.Converter.ConvertIr(providerExpr);
             var reads = ReadsText(invocation, argExpr, context);
             if (reads) context.UsedHelpers.Add(Eq.Import);
-            var boxedEnum = EnumOf(argExpr, context);
+            var source = Source(invocation, argExpr, context);
             JsExpr Of(JsExpr value) => reads
                 ? JsExpr.Template($"{Eq.BoolConvert}({{0}})", [value])
-                : boxedEnum is not null && !context.SemanticHelper.GetType(argExpr).IsNullableValue()
-                    ? JsExpr.Template("(({0}) !== 0)", [Types.EnumShape.ValueOf(boxedEnum, value, context)])
-                    : ToBoolean(value, context.SemanticHelper.GetType(argExpr), context);
+                : Lifted(value, argExpr, "false", held => source is INamedTypeSymbol { TypeKind: TypeKind.Enum } written
+                    ? JsExpr.Template("(({0}) !== 0)", [Types.EnumShape.ValueOf(written, held, context)])
+                    : ToBoolean(held, source, context), context);
             if (provider is null) return Of(context.Converter.ConvertIr(argExpr));
             // Both arguments in the order they are WRITTEN, which a named argument may reverse
             // (`Convert.ToBoolean(provider: P(), value: V())` runs P first), then the conversion of
@@ -133,17 +133,26 @@ public class ConvertStrategy : IExpressionIrStrategy
         return JsExpr.Opaque(context.Converter.ConvertExpression(argExpr));
     }
 
-    /// <summary>The enum a value is written as, a nullable one's included: C# boxes it for the <c>object</c>
-    /// overload, and only here is its type still known. A member is held as its key, no number.</summary>
-    private static INamedTypeSymbol? EnumOf(ExpressionSyntax value, ConversionContext context) =>
-        context.SemanticHelper.GetType(value).UnwrapNullable() as INamedTypeSymbol is { TypeKind: TypeKind.Enum } type ? type : null;
+    /// <summary>
+    /// The type whose rule converts a value: the overload C# bound, or what the value holds where C# boxed
+    /// it for the <c>object</c> overload and its type is still in sight, an enum, held as its key and no
+    /// number, and a <c>Nullable</c>'s value. Only those two: anything else boxed has no overload of its own
+    /// to tell it from an <c>object</c>.
+    /// </summary>
+    private static ITypeSymbol? Source(InvocationExpressionSyntax invocation, ExpressionSyntax value, ConversionContext context)
+    {
+        var written = context.SemanticHelper.GetType(value);
+        if (written.IsNullableValue() || written.UnwrapNullable() is { TypeKind: TypeKind.Enum }) return written.UnwrapNullable();
+        return context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [var first, ..] } ? first.Type : written;
+    }
 
-    /// <summary>The type of the value the overload C# bound takes, or the argument's where no model
-    /// can say. It is <c>object</c> for a nullable and an enum, which have no overload of their own.</summary>
-    private static ITypeSymbol? Source(InvocationExpressionSyntax invocation, ExpressionSyntax value, ConversionContext context) =>
-        context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [var first, ..] }
-            ? first.Type
-            : context.SemanticHelper.GetType(value);
+    /// <summary>A conversion of a value a <c>Nullable</c> may hold: <paramref name="zero"/> for a null, what the
+    /// <c>object</c> overload it binds answers, and the conversion of its value otherwise.</summary>
+    private static JsExpr Lifted(JsExpr converted, ExpressionSyntax value, string zero, Func<JsExpr, JsExpr> convert,
+        ConversionContext context) =>
+        context.SemanticHelper.GetType(value).IsNullableValue()
+            ? JsExpr.Template($"({{0}} ?? {zero})", [NullableLift.Unary(converted, convert, context)])
+            : convert(converted);
 
     /// <summary>Whether a call reads an <c>object</c> in the invariant culture, which only a text it holds
     /// when the call runs can ask of it.</summary>
@@ -174,34 +183,33 @@ public class ConvertStrategy : IExpressionIrStrategy
         string tag, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        var converted = context.Converter.ConvertIr(value);
         var source = Source(invocation, value, context);
         var quoted = JsExpr.Literal($"'{tag}'");
         JsExpr Call(string helper, JsExpr of) => JsExpr.Call(JsExpr.Identifier(helper), of, quoted);
-        if (EnumOf(value, context) is { } written)
+        JsExpr Of(JsExpr held)
         {
-            JsExpr Number(JsExpr held) => Call(Eq.IntegerFrom, Types.EnumShape.ValueOf(written, held, context));
-            if (!context.SemanticHelper.GetType(value).IsNullableValue()) return Number(converted);
-            return JsExpr.Template(tag is "long" or "ulong" ? "({0} ?? 0n)" : "({0} ?? 0)", [NullableLift.Unary(converted, Number, context)]);
+            if (source is INamedTypeSymbol { TypeKind: TypeKind.Enum } written)
+                return Call(Eq.IntegerFrom, Types.EnumShape.ValueOf(written, held, context));
+            switch (source?.SpecialType)
+            {
+                case SpecialType.System_Double or SpecialType.System_Single:
+                    return Call(Eq.IntegerFromDouble, held);
+                case SpecialType.System_Decimal:
+                    return Call(Eq.IntegerFromDecimal, held);
+                case SpecialType.System_Char:
+                    return Call(Eq.IntegerFrom, JsExpr.Template("{0}.charCodeAt(0)", [held]));
+                case SpecialType.System_Boolean:
+                    return tag is "long" or "ulong" ? JsExpr.Template("({0} ? 1n : 0n)", [held]) : JsExpr.Template("({0} ? 1 : 0)", [held]);
+                case SpecialType.System_DateTime:
+                    return InvalidCast(held, "DateTime", context.SemanticHelper.GetType(invocation)?.Name ?? "Int32", context);
+            }
+            if (source is { } integer && integer.IsIntegral())
+                return IntegerWidth.Of(integer) == IntegerWidth.Of(context.SemanticHelper.GetType(invocation)) ? held : Call(Eq.IntegerFrom, held);
+            return ObjectReadsInvariant(invocation, value, provider, context)
+                ? JsExpr.Call(JsExpr.Identifier(Eq.IntegerFromObject), held, quoted, JsExpr.Literal("true"))
+                : Call(Eq.IntegerFromObject, held);
         }
-        switch (source?.SpecialType)
-        {
-            case SpecialType.System_Double or SpecialType.System_Single:
-                return Call(Eq.IntegerFromDouble, converted);
-            case SpecialType.System_Decimal:
-                return Call(Eq.IntegerFromDecimal, converted);
-            case SpecialType.System_Char:
-                return Call(Eq.IntegerFrom, JsExpr.Template("{0}.charCodeAt(0)", [converted]));
-            case SpecialType.System_Boolean:
-                return tag is "long" or "ulong" ? JsExpr.Template("({0} ? 1n : 0n)", [converted]) : JsExpr.Template("({0} ? 1 : 0)", [converted]);
-            case SpecialType.System_DateTime:
-                return InvalidCast(converted, "DateTime", source.Name, context);
-        }
-        if (source is { } integer && integer.IsIntegral())
-            return IntegerWidth.Of(integer) == IntegerWidth.Of(context.SemanticHelper.GetType(invocation)) ? converted : Call(Eq.IntegerFrom, converted);
-        return ObjectReadsInvariant(invocation, value, provider, context)
-            ? JsExpr.Call(JsExpr.Identifier(Eq.IntegerFromObject), converted, quoted, JsExpr.Literal("true"))
-            : Call(Eq.IntegerFromObject, converted);
+        return Lifted(context.Converter.ConvertIr(value), value, tag is "long" or "ulong" ? "0n" : "0", Of, context);
     }
 
     /// <summary>
@@ -212,28 +220,33 @@ public class ConvertStrategy : IExpressionIrStrategy
     private static JsExpr ToReal(InvocationExpressionSyntax invocation, ExpressionSyntax value, ExpressionSyntax? provider,
         string tag, ConversionContext context)
     {
-        var converted = context.Converter.ConvertIr(value);
         var source = Source(invocation, value, context);
         var target = tag == "single" ? "Single" : "Double";
-        switch (source?.SpecialType)
+        JsExpr Of(JsExpr held)
         {
-            case SpecialType.System_Char:
-                return InvalidCast(converted, "Char", target, context);
-            case SpecialType.System_DateTime:
-                return InvalidCast(converted, "DateTime", target, context);
-            case SpecialType.System_Int64 or SpecialType.System_UInt64 when tag == "single":
+            // A single, as every float this side produces (SinglePrecision).
+            JsExpr Real(JsExpr number) => JsExpr.Template(tag == "single" ? "Math.fround(Number({0}))" : "Number({0})", [number]);
+            if (source is INamedTypeSymbol { TypeKind: TypeKind.Enum } written) return Real(Types.EnumShape.ValueOf(written, held, context));
+            switch (source?.SpecialType)
+            {
+                case SpecialType.System_Char:
+                    return InvalidCast(held, "Char", target, context);
+                case SpecialType.System_DateTime:
+                    return InvalidCast(held, "DateTime", target, context);
+                case SpecialType.System_Int64 or SpecialType.System_UInt64 when tag == "single":
+                    context.UsedHelpers.Add(Eq.Import);
+                    return JsExpr.Call(JsExpr.Identifier(Eq.SingleFromLong), held);
+            }
+            if (source is null or { SpecialType: SpecialType.System_Object } or { TypeKind: TypeKind.TypeParameter or TypeKind.Dynamic })
+            {
                 context.UsedHelpers.Add(Eq.Import);
-                return JsExpr.Call(JsExpr.Identifier(Eq.SingleFromLong), converted);
+                return ObjectReadsInvariant(invocation, value, provider, context)
+                    ? JsExpr.Call(JsExpr.Identifier(Eq.RealFromObject), held, JsExpr.Literal($"'{tag}'"), JsExpr.Literal("true"))
+                    : JsExpr.Call(JsExpr.Identifier(Eq.RealFromObject), held, JsExpr.Literal($"'{tag}'"));
+            }
+            return Real(held);
         }
-        if (source is null or { SpecialType: SpecialType.System_Object } or { TypeKind: TypeKind.TypeParameter or TypeKind.Dynamic })
-        {
-            context.UsedHelpers.Add(Eq.Import);
-            return ObjectReadsInvariant(invocation, value, provider, context)
-                ? JsExpr.Call(JsExpr.Identifier(Eq.RealFromObject), converted, JsExpr.Literal($"'{tag}'"), JsExpr.Literal("true"))
-                : JsExpr.Call(JsExpr.Identifier(Eq.RealFromObject), converted, JsExpr.Literal($"'{tag}'"));
-        }
-        // A single, as every float this side produces (SinglePrecision).
-        return JsExpr.Template(tag == "single" ? "Math.fround(Number({0}))" : "Number({0})", [converted]);
+        return Lifted(context.Converter.ConvertIr(value), value, "0", Of, context);
     }
 
     /// <summary>
@@ -244,21 +257,29 @@ public class ConvertStrategy : IExpressionIrStrategy
     /// </summary>
     private static JsExpr ToChar(InvocationExpressionSyntax invocation, ExpressionSyntax value, ConversionContext context)
     {
-        var converted = context.Converter.ConvertIr(value);
         var source = Source(invocation, value, context);
-        switch (source?.SpecialType)
+        JsExpr Of(JsExpr held)
         {
-            case SpecialType.System_Char:
-                return converted;
-            case SpecialType.System_String:
+            if (source is INamedTypeSymbol { TypeKind: TypeKind.Enum } written)
+            {
                 context.UsedHelpers.Add(Eq.Import);
-                return JsExpr.Call(JsExpr.Identifier(Eq.CharFromText), converted);
-            case SpecialType.System_Boolean or SpecialType.System_Double or SpecialType.System_Single
-                or SpecialType.System_Decimal or SpecialType.System_DateTime:
-                return InvalidCast(converted, source.Name, "Char", context);
+                return JsExpr.Call(JsExpr.Identifier(Eq.CharFrom), Types.EnumShape.ValueOf(written, held, context));
+            }
+            switch (source?.SpecialType)
+            {
+                case SpecialType.System_Char:
+                    return held;
+                case SpecialType.System_String:
+                    context.UsedHelpers.Add(Eq.Import);
+                    return JsExpr.Call(JsExpr.Identifier(Eq.CharFromText), held);
+                case SpecialType.System_Boolean or SpecialType.System_Double or SpecialType.System_Single
+                    or SpecialType.System_Decimal or SpecialType.System_DateTime:
+                    return InvalidCast(held, source.Name, "Char", context);
+            }
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(source is { } integer && integer.IsIntegral() ? Eq.CharFrom : Eq.CharFromObject), held);
         }
-        context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Call(JsExpr.Identifier(source is { } integer && integer.IsIntegral() ? Eq.CharFrom : Eq.CharFromObject), converted);
+        return Lifted(context.Converter.ConvertIr(value), value, "'\\0'", Of, context);
     }
 
     /// <summary>
