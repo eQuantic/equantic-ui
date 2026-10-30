@@ -8,13 +8,17 @@ namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
 /// Every node type of the vocabulary that declares a size of its own is read as SIZED by the flex
-/// pass's main-axis classifier, <c>MeasureVisitor.MainSizeKind</c>. That answer decides whether a
-/// Flexible's child keeps its size inside the slot, as the web keeps it, or is pinned to the slot.
+/// pass's classifier, <c>MeasureVisitor.DeclaredSizeKind</c>, on each axis it declares one. On the
+/// main axis that answer decides whether a Flexible's child keeps its size inside the slot, as the
+/// web keeps it, or is pinned to the slot; on the cross axis, whether a line that stretches may
+/// override the child's size, which CSS never does to an explicit one.
 /// <para>
 /// The classifier is a list of arms, and a list goes incomplete without a word: a camera preview, a
-/// stack, a scroller, a canvas and a web frame all declared a width it never read, so a 320-wide
-/// preview in a share of 300 was drawn at 300 where the web keeps 320. So the node types are taken
-/// from the ASSEMBLY, never listed here: a node type that declares a width or a height, as a
+/// stack, a scroller, a canvas and a web frame all declared a width the main axis never read, so a
+/// 320-wide preview in a share of 300 was drawn at 300 where the web keeps 320. The cross axis had a
+/// list of its own that missed the same five, so a 20-tall one was stretched to its row's 100 where
+/// a Box kept 20 (#744); it is gone, and both axes ask this one. So the node types are taken from the
+/// ASSEMBLY, never listed here: a node type that declares a width or a height, as a
 /// <see cref="SizeValue"/> of its own, through a style it carries, or as a number its constructor
 /// demands, is asked about, and the next one cannot be missed silently.
 /// </para>
@@ -23,9 +27,9 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// classifier as it stood before, which is how it was shown to fail there.
 /// </para>
 /// </summary>
-public class MainSizeKindCoverageTests
+public class DeclaredSizeKindCoverageTests
 {
-    /// <summary>Each node type that declares a main size, with the axis it declares it on.</summary>
+    /// <summary>Each node type that declares a size, with each axis it declares one on.</summary>
     public static IEnumerable<object[]> SizedNodes() =>
         typeof(VisualNode).Assembly.GetExportedTypes()
             .Where(t => t is { IsAbstract: false, IsPublic: true } && typeof(VisualNode).IsAssignableFrom(t))
@@ -55,21 +59,21 @@ public class MainSizeKindCoverageTests
     /// </summary>
     [Theory]
     [MemberData(nameof(SizedNodes))]
-    public void ADeclaredMainSize_IsReadAsSized(string typeName, bool horizontal)
+    public void ADeclaredSize_IsReadAsSized(string typeName, bool horizontal)
     {
         var type = typeof(VisualNode).Assembly.GetExportedTypes().Single(t => t.Name == typeName);
         var axis = horizontal ? "width" : "height";
 
         if (Declaration(type, horizontal)!.Value.BySizeValue)
         {
-            MainSizeKind(Declared(type, horizontal, 320), horizontal).Should()
+            DeclaredSizeKind(Declared(type, horizontal, 320), horizontal).Should()
                 .Be(SizeKind.Fixed, $"a {typeName} with a fixed {axis} declares that {axis}");
-            MainSizeKind(Declared(type, horizontal, SizeValue.Fill), horizontal).Should()
+            DeclaredSizeKind(Declared(type, horizontal, SizeValue.Fill), horizontal).Should()
                 .Be(SizeKind.Fill, $"a {typeName} that fills declares no size of its own");
         }
         else
         {
-            MainSizeKind(Declared(type, horizontal, 320), horizontal).Should()
+            DeclaredSizeKind(Declared(type, horizontal, 320), horizontal).Should()
                 .Be(SizeKind.Fixed, $"a {typeName}'s constructor demands its {axis}");
         }
     }
@@ -94,7 +98,7 @@ public class MainSizeKindCoverageTests
     /// </summary>
     [Theory]
     [MemberData(nameof(PassThroughNodes))]
-    public void ADeclaredMainSize_IsReadThroughANodeThatTakesItsChildsSize(string typeName)
+    public void ADeclaredSize_IsReadThroughANodeThatTakesItsChildsSize(string typeName)
     {
         var type = typeof(VisualNode).Assembly.GetExportedTypes().Single(t => t.Name == typeName);
         var declared = Declared(typeof(Box), horizontal: true, 320);
@@ -102,7 +106,7 @@ public class MainSizeKindCoverageTests
         outer.Adopt(new LayoutNode(declared));
 
         SizedBy(outer).Source.Should().BeSameAs(declared, $"a {typeName} takes the size of what it holds");
-        MainSizeKind(SizedBy(outer).Source, horizontal: true).Should().Be(SizeKind.Fixed);
+        DeclaredSizeKind(SizedBy(outer).Source, horizontal: true).Should().Be(SizeKind.Fixed);
     }
 
     /// <summary>
@@ -118,10 +122,10 @@ public class MainSizeKindCoverageTests
             new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance));
 
         SizedBy(measured).Source.Should().BeSameAs(arm);
-        MainSizeKind(SizedBy(measured).Source, horizontal: true).Should().Be(SizeKind.Fixed);
+        DeclaredSizeKind(SizedBy(measured).Source, horizontal: true).Should().Be(SizeKind.Fixed);
     }
 
-    /// <summary>Where a node type declares its main size: a member of its own named for the axis (or
+    /// <summary>Where a node type declares its size on an axis: a member of its own named for the axis (or
     /// <c>Size</c>, for a square one), or a style it carries that declares it.</summary>
     private static (PropertyInfo Member, PropertyInfo? Style, bool BySizeValue)? Declaration(Type type, bool horizontal)
     {
@@ -192,12 +196,12 @@ public class MainSizeKindCoverageTests
         return (LayoutNode)method.Invoke(null, [measured])!;
     }
 
-    private static SizeKind MainSizeKind(VisualNode node, bool horizontal)
+    private static SizeKind DeclaredSizeKind(VisualNode node, bool horizontal)
     {
         var visitor = typeof(LayoutEngine).Assembly.GetType("eQuantic.UI.Native.Framework.MeasureVisitor", throwOnError: true)!;
-        var method = visitor.GetMethod("MainSizeKind",
+        var method = visitor.GetMethod("DeclaredSizeKind",
                          BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance)
-                     ?? throw new InvalidOperationException("MeasureVisitor.MainSizeKind is gone; point this test at what replaced it.");
+                     ?? throw new InvalidOperationException("MeasureVisitor.DeclaredSizeKind is gone; point this test at what replaced it.");
         var target = method.IsStatic ? null : RuntimeHelpers.GetUninitializedObject(visitor);
         return (SizeKind)method.Invoke(target, [node, horizontal])!;
     }

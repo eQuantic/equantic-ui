@@ -661,7 +661,7 @@ internal sealed partial class MeasureVisitor
             for (var k = c; k < c + span; k++) cellW += widths[k];
             var child = Measure(node, constraints.ForChild(cellW, maxH), ctx, children.At(at, i));
             // A Fill-width child pins to the cell (the realizer paints the full extent).
-            if (CrossSizeKind(node, horizontal: false) == SizeKind.Fill || WidthKind(node) == SizeKind.Fill)
+            if (DeclaredSizeKind(SizedBy(child).Source, horizontal: true) == SizeKind.Fill)
                 child.Bounds = child.Bounds with { Width = cellW };
             laid[i] = child;
             rowHeights[r] = MathF.Max(rowHeights[r], child.Bounds.Height);
