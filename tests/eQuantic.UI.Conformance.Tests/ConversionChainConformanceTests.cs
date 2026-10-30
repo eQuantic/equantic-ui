@@ -70,6 +70,8 @@ public class ConversionChainConformanceTests
     [InlineData("(int a, int b) u = (1, 2); (int, int) v = u; v.Item1 = 9; return u.a + \"|\" + v.Item1;")] // 1|9
     // A conversion makes a new tuple, as .NET's copy is one.
     [InlineData("(int, int) u = (1, 2); (long, long) t = u; t.Item1 = 9L; return u.Item1 + \"|\" + t.Item1;")] // 1|9
+    // A checked context reaches the standard conversion beside an element's operator.
+    [InlineData("(Count, int) t = (new Count(300), 1); try { checked { (byte, int) w = ((byte, int))t; return w.Item1.ToString(); } } catch (OverflowException e) { return e.Message; }")]
     public void ATupleConvertedToOtherElementTypes_ConvertsEachElement(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

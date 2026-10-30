@@ -29,7 +29,8 @@ public class InlinedConstantStrategy : IConversionStrategy
     public bool CanConvert(SyntaxNode node, ConversionContext context) => node switch
     {
         MemberAccessExpressionSyntax =>
-            TryResolveConstant(node, context, out _) || TryResolveInlinable(node, context, out _, out _),
+            TryResolveConstant(node, context, out _) || NativeLimit(node, context) is not null
+            || TryResolveInlinable(node, context, out _, out _),
         IdentifierNameSyntax => TryResolveConstant(node, context, out _),
         _ => false,
     };
@@ -42,6 +43,8 @@ public class InlinedConstantStrategy : IConversionStrategy
         // would be "PackageStats is not defined" the moment the page renders).
         if (TryResolveConstant(node, context, out var field))
             return ConstantLiteral.Write(field.ConstantValue, field.Type, context)!;
+
+        if (NativeLimit(node, context) is { } limit) return limit;
 
         if (!TryResolveInlinable(node, context, out var initializer, out var glyphTypeName))
             return context.Converter.ConvertExpression(((MemberAccessExpressionSyntax)node).Expression);
@@ -122,6 +125,21 @@ public class InlinedConstantStrategy : IConversionStrategy
         // enum is that enum's representation, never the ordinal its value arrives as.
         return ConstantLiteral.Write(constant.ConstantValue, constant.Type) is null ? null : constant;
     }
+
+    /// <summary>A native integer's limits and size, which are no constants in C# since they depend on the
+    /// process, as the 64 bits it has on every target this SDK ships to (#649).</summary>
+    private static string? NativeLimit(SyntaxNode node, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(node) is { IsStatic: true, ContainingType.SpecialType: var type, Name: var name }
+            ? (type, name) switch
+            {
+                (SpecialType.System_IntPtr, "MaxValue") => "9223372036854775807n",
+                (SpecialType.System_IntPtr, "MinValue") => "(-9223372036854775808n)",
+                (SpecialType.System_UIntPtr, "MaxValue") => "18446744073709551615n",
+                (SpecialType.System_IntPtr or SpecialType.System_UIntPtr, "MinValue" or "Zero") => "0n",
+                (SpecialType.System_IntPtr or SpecialType.System_UIntPtr, "Size") => "8",
+                _ => null,
+            }
+            : null;
 
     /// <summary>The inlinable initializer for the accessed field, when this is an external constant
     /// of the write-once icon-glyph type with a reachable, side-effect-free value.</summary>

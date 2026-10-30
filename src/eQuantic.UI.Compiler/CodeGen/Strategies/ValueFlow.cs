@@ -195,8 +195,8 @@ public static class ValueFlow
             if (lifted) return UserDefinedOperators.Conversion(method, translated, true, context) ?? translated;
             // A tuple's element has no bound tree of its own to show the standard conversions beside the
             // operator, as an operator's operand has (Settle), so they are asked of the pair of types.
-            var operand = Beside(from, parameter.Type, translated, context);
-            return Beside(method.ReturnType, to, UserDefinedOperators.Conversion(method, operand, false, context) ?? operand, context);
+            var operand = Beside(from, parameter.Type, translated, isChecked, context);
+            return Beside(method.ReturnType, to, UserDefinedOperators.Conversion(method, operand, false, context) ?? operand, isChecked, context);
         }
 
         // A NULLABLE conversion converts the underlying value and lets null pass: `(int?)aDouble?`
@@ -240,10 +240,10 @@ public static class ValueFlow
 
     /// <summary>The standard conversion beside a user-defined one, between the two types it joins; the
     /// bound tree's own, where it shows one, joins equal types here and converts nothing.</summary>
-    private static JsExpr Beside(ITypeSymbol? from, ITypeSymbol? to, JsExpr value, ConversionContext context) =>
+    private static JsExpr Beside(ITypeSymbol? from, ITypeSymbol? to, JsExpr value, bool isChecked, ConversionContext context) =>
         from is not null && to is not null && !SymbolEqualityComparer.Default.Equals(from, to)
         && context.SemanticModel?.Compilation is CSharpCompilation compilation
-            ? Apply(compilation.ClassifyConversion(from, to), from, to, null, null, value, context)
+            ? Apply(compilation.ClassifyConversion(from, to), from, to, null, null, value, context, isChecked)
             : value;
 
     /// <summary>

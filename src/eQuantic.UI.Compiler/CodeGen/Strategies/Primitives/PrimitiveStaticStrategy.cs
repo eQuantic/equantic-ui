@@ -411,7 +411,19 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
             };
         }
 
-        if (home == SpecialType.System_Int64)
+        // A ulong is a BigInt too, which Math.max throws on. What it answers is the comparison's.
+        if (home is SpecialType.System_UInt64 or SpecialType.System_UIntPtr)
+        {
+            return name switch
+            {
+                "Max" when argCount == 2 => "({0} > {1} ? {0} : {1})",
+                "Min" when argCount == 2 => "({0} < {1} ? {0} : {1})",
+                "Clamp" when argCount == 3 => "({0} < {1} ? {1} : {0} > {2} ? {2} : {0})",
+                _ => null,
+            };
+        }
+
+        if (home is SpecialType.System_Int64 or SpecialType.System_IntPtr)
         {
             // A long IS a BigInt on this side, so the shared Math.* table cannot serve — BigInt
             // has no Math. Templates keep every argument single-evaluation; Sign answers a NUMBER

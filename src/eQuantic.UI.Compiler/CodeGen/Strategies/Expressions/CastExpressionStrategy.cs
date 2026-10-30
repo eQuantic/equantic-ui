@@ -105,7 +105,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             return ValueFlow.Apply(operation.GetConversion(), operation.Operand.Type, operation.Type,
                 operation.ConstantValue.HasValue ? operation.ConstantValue.Value : null,
                 operation.Operand.ConstantValue.HasValue ? operation.Operand.ConstantValue.Value : null,
-                operand, context, operation.IsChecked);
+                operand, context, operation.IsChecked || (operation.GetConversion().IsTupleConversion && ArithmeticContext.ChecksOverflow(cast, context)));
         }
 
         // A cast through a user-defined operator with a standard conversion beside it is no operation of

@@ -48,6 +48,16 @@ public class NativeIntegerConformanceTests
     // Equal to itself as a member of a record, and read from text.
     [InlineData("return (new Pair(1, 2) == new Pair(1, 2)) + \"|\" + new Pair(1, 2).Equals(new Pair(1, 3));")] // True|False
     [InlineData("nint n = nint.Parse(\"12\"); return (n + 1).ToString() + \"|\" + nint.TryParse(\"x\", out var m);")] // 13|False
+    // The limits, which are no constants, and the Math of a BigInt, a ulong's beside it.
+    [InlineData("return nint.MaxValue.ToString() + \"|\" + nint.MinValue + \"|\" + nuint.MaxValue + \"|\" + nuint.MinValue + \"|\" + nint.Size + \"|\" + nuint.Size;")]
+    [InlineData("return IntPtr.Zero.ToString() + \"|\" + UIntPtr.Zero + \"|\" + (nint.MinValue == long.MinValue);")]
+    [InlineData("nint a = nint.MaxValue; return unchecked(a + 1).ToString();")]
+    [InlineData("nint a = nint.MaxValue; try { return checked(a + 1).ToString(); } catch (OverflowException e) { return e.Message; }")]
+    [InlineData("nuint a = nuint.MaxValue; return unchecked(a + 1).ToString();")]
+    [InlineData("return Math.Max((nint)1, (nint)2).ToString() + \"|\" + Math.Min((nint)1, (nint)2) + \"|\" + Math.Abs((nint)(-3)) + \"|\" + Math.Sign((nint)(-3)) + \"|\" + Math.Clamp((nint)5, (nint)1, (nint)3);")]
+    [InlineData("return Math.Max((nuint)1, (nuint)2).ToString() + \"|\" + Math.Min((nuint)1, (nuint)2) + \"|\" + Math.Clamp((nuint)5, (nuint)1, (nuint)3);")]
+    [InlineData("return Math.Max(1UL, 2UL).ToString() + \"|\" + Math.Min(ulong.MaxValue, 2UL) + \"|\" + Math.Clamp(5UL, 1UL, 3UL);")]
+    [InlineData("nuint a = 5; nuint b = 7; ulong c = 9; return a.CompareTo(b) + \"|\" + b.CompareTo(a) + \"|\" + c.CompareTo(9UL);")]
     public void ANativeInteger_IsHeldAs64Bits(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
