@@ -4,7 +4,7 @@ Closes #394 and #1160, both sub-issues of Feature #849.
 
 A position in a sequence was written as text that read its parts as often as the text named them and checked nothing:
 
-- `a[^n]` over an array, a list or a string was `a[a.length - n]` as text, so its receiver was evaluated twice (`Get()[^1]` called `Get` twice, and a compound `Get()[^1] += 5` three times) and its offset was spliced bare (`a[^(i + 1)]` read `a[a.length - i + 1]`, past the end). The standalone `^n` value of the same issue is already refused (EQ1004) and stays so.
+- `a[^n]` over an array, a list or a string was `a[a.length - n]` as text, so its receiver was evaluated twice (`Get()[^1]`, and every write through it, called `Get` twice), a deconstruction's target and a null-conditional write were refused (EQ1004), and the standalone `^n` value of the same issue is already refused and stays so. The issue's other worry, an offset spliced bare, did not hold when measured: `a[^(i + 1)]` answers right on main, since the parentheses its author wrote survive the text.
 - `List<T>.Insert`, `RemoveAt`, `RemoveRange` and `GetRange` were a `splice` or a `slice` with each argument placed by its position in the call: `l.Insert(item: 9, index: 0)` inserted 0 at 9, `l.RemoveRange(count: 1, index: 0)` removed nothing, and `GetRange(i++, 2)` read `i` twice. A position .NET refuses was clamped to the array or counted from its end: `Insert(5, 9)` on a list of one appended, `RemoveAt(5)` removed nothing, `RemoveAt(-1)` removed the last element, and `GetRange(0, 5)` answered a list of one.
 
 ## What Changes

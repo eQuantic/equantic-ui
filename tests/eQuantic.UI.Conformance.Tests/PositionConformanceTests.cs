@@ -13,8 +13,10 @@ public class PositionConformanceTests
     /// <summary>
     /// <c>a[^n]</c> over an array, a list or a string evaluates its receiver once, then its offset, then
     /// the length, and its offset is one value whatever it is written as. It was text that named the
-    /// receiver twice, so <c>Get()[^1]</c> called <c>Get</c> twice, and spliced the offset bare, so
-    /// <c>a[^(i + 1)]</c> read <c>a[a.length - i + 1]</c> (#394).
+    /// receiver twice, so <c>Get()[^1]</c> and every write through it called <c>Get</c> twice, and a
+    /// deconstruction's target and a null-conditional write were refused (#394). An offset written as a
+    /// sum already answered right, since the parentheses its author wrote survived the text: those cases
+    /// are guards.
     /// </summary>
     [SkippableTheory]
     // A read, over an array, a list and a string, each made by a call that counts itself.

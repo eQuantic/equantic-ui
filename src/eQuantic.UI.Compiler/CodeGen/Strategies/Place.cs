@@ -273,8 +273,7 @@ internal sealed class Place
     /// A from-the-end key over an array, a list or a string, which JavaScript subscripts as it is:
     /// <c>a[^n]</c> is <c>a[a.length - n]</c>, read and written through the subscript, the receiver read
     /// once and the offset before the length, as C# reads them (#394). It was text that named the
-    /// receiver twice, so <c>Get()[^1]</c> called <c>Get</c> twice, and spliced the offset bare, so
-    /// <c>a[^(i + 1)]</c> read <c>a[a.length - i + 1]</c>.
+    /// receiver twice, so <c>Get()[^1]</c> and every write through it called <c>Get</c> twice.
     /// </summary>
     private static Place? Subscripted(ExpressionSyntax access, JsExpr receiver, PrefixUnaryExpressionSyntax hat,
         ConversionContext context) =>

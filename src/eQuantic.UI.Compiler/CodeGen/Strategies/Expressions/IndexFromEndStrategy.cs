@@ -8,9 +8,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// <summary>
 /// Strategy for Index from end expressions (hat operator) over an array, a list or a string, which are
 /// a JavaScript array or string on this side: <c>a[^n]</c> is <c>a[a.length - n]</c>, read and written
-/// as the <see cref="Place"/> it is, so its receiver is evaluated once and its offset is a part the
-/// writer parenthesizes (#394). It was text that named the receiver twice, so <c>Get()[^1]</c> called
-/// <c>Get</c> twice, and spliced the offset bare, so <c>a[^(i + 1)]</c> read <c>a[a.length - i + 1]</c>.
+/// as the <see cref="Place"/> it is, so its receiver is evaluated once (#394). It was text that named
+/// the receiver twice, so <c>Get()[^1]</c> and every write through it called <c>Get</c> twice, and a
+/// deconstruction's target was refused.
 /// <para>
 /// An indexer a twin carries is not here: <c>ring[^1]</c> over a type that counts its elements is its
 /// <c>item</c> at the count the bound tree names (<see cref="Place"/>), and a type that declares
