@@ -515,6 +515,21 @@ public class TransformedSurfaceTests
         released().Should().BeApproximately(40, 0.01f);
     }
 
+    /// <summary>A slop is the finger's: the same 16 on the screen arms a drag past a slop of 12 at any
+    /// size it is drawn, and 8 arms none, as the web measures it. In the surface's own space 16 was
+    /// only 8 at twice the size, and a surface drawn at a quarter armed on a tremor of 4.</summary>
+    [Theory]
+    [InlineData(2f, 8f)]
+    [InlineData(0.25f, 64f)]
+    public void ADragArms_ByTheDistanceOnTheScreen(float scale, float local)
+    {
+        var (past, _) = MountDrag(Transform2D.Scale(scale));
+        DragOffsetAfter(past, 300, 250, 316, 250).Should().BeApproximately(local, 0.01f, "past the slop it arms");
+
+        var (inside, _) = MountDrag(Transform2D.Scale(scale));
+        DragOffsetAfter(inside, 300, 250, 308, 250).Should().Be(0, "inside it, nothing has moved");
+    }
+
     /// <summary>A transform's result moves under a surface that follows the finger, so the gesture
     /// measures against the transform it pressed: a second move lands where the first ended.</summary>
     [Fact]

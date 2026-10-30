@@ -27,6 +27,11 @@ threshold, and a pan's positions, scroll offset and fling speed.
 - **WHEN** the drag drawn twice as large moves on to 80 on the screen
 - **THEN** its paint offset is 40, measured against where the gesture started
 
+#### Scenario: The slop stays the finger's
+
+- **WHEN** a drag is drawn at a scale of 2 or of 0.25, and the pointer moves 16 on the screen, or 8
+- **THEN** 16 arms it and 8 does not, past the same slop of 12 on the screen
+
 #### Scenario: A dismiss drawn twice as large
 
 - **WHEN** a `DragDismiss` is drawn at a scale of 2 and released just past its threshold on the screen

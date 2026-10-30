@@ -2095,9 +2095,8 @@ public sealed class PhotonHost
             var horizontal = drag.Node is Draggable { Axis: DragAxis.Horizontal };
             var at = InGestureSpace(drag.Space, x, y);
             var travel = horizontal ? at.X - drag.StartX : at.Y - drag.StartY;
-            var armed = drag.Node is Draggable
-                ? Math.Abs(travel) > Touch.PressCancelSlop
-                : travel > Touch.PressCancelSlop;
+            var slop = SlopIn(drag.Space, horizontal);
+            var armed = drag.Node is Draggable ? Math.Abs(travel) > slop : travel > slop;
 
             if (!drag.Active && armed)
             {
@@ -2139,7 +2138,7 @@ public sealed class PhotonHost
             var along = pan.Axis == ScrollAxis.Horizontal ? panAt.X : panAt.Y;
             var travelled = along - pan.Start;
 
-            if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+            if (!pan.Active && MathF.Abs(travelled) > SlopIn(pan.Space, pan.Axis == ScrollAxis.Horizontal))
             {
                 _pressed = null;
                 _pressedAt = null;
@@ -2730,6 +2729,17 @@ public sealed class PhotonHost
     /// </summary>
     private static Point InGestureSpace(Matrix2D? space, float x, float y) =>
         space is { } toLocal ? toLocal.Transform(new Point(x, y)) : new Point(x, y);
+
+    /// <summary>
+    /// The slop along a gesture's own axis, in its own space. A slop is the finger's, so it is the same
+    /// distance on the screen whatever a surface is drawn at, as the web measures it: read in the
+    /// surface's space it took twice the travel to arm at 2×, and a tremor armed one drawn small.
+    /// </summary>
+    private static float SlopIn(Matrix2D? space, bool horizontal) => space is { } toLocal
+        ? Touch.PressCancelSlop * (horizontal
+            ? MathF.Sqrt(toLocal.M11 * toLocal.M11 + toLocal.M21 * toLocal.M21)
+            : MathF.Sqrt(toLocal.M12 * toLocal.M12 + toLocal.M22 * toLocal.M22))
+        : Touch.PressCancelSlop;
 
     /// <summary>
     /// Where the gesture now IS, as the caller wants to hear it: measured from the rest it started
