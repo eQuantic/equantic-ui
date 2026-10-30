@@ -1,4 +1,4 @@
-- **2026-10-29 · The embedded bun is unpacked into the user's cache, under its zip's SHA-256**: every place
+- **2026-10-30 · The embedded bun is unpacked into the user's cache, under its zip's SHA-256**: every place
   that ran the bun unpacked it beside its zip, and only when no binary was there. From packages that was
   the NuGet package cache, so an app's first build failed against a cache restored read-only, baked into
   an image or shared on a volume ([#364](https://github.com/eQuantic/equantic-ui/issues/364)), and in a

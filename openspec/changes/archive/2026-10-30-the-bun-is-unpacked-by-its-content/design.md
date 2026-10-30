@@ -23,7 +23,7 @@ nothing to compare that could disagree with the folder.
 - **Keyed by content, not by package version.** A version names the package's bun, but the source tree
   has no version that moves with its zip (#932 is that case). The SHA-256 of the zip is right for both,
   and it makes the same zip in a package cache, in a source tree and in every worktree one folder. The
-  digest of 30 MB costs tens of milliseconds a build. `bun-toolchain.json` pins the same digests, so the
+  digest of 30 MB costs 14 ms a build, measured. `bun-toolchain.json` pins the same digests, so the
   folder of the host's bun is named by the value the pin already checks.
 - **The user's cache, never `obj/`.** An app's `obj` is a location the build owns too, but it would hold
   70 MB per project, per configuration, and lose it on every clean. The system's cache directory is where
@@ -32,7 +32,8 @@ nothing to compare that could disagree with the folder.
 - **Atomic by rename.** The program is unpacked into a sibling folder named `<digest>.partial-<guid>`,
   made executable there (the system's `chmod`, as `LinkDirectory` makes a link, since a zip carries no
   mode MSBuild applies), and renamed to `<digest>`. A rename that finds the folder there means another
-  build won with the same bytes. A folder whose program a hand removed is unpacked again.
+  build won with the same bytes, and a partial folder a stopped build left is swept once it is an hour
+  old. A folder whose program a hand removed is unpacked again.
 - **One owner for the source tree too.** The Server and the Runtime import one targets file that runs the
   same task, ordered by a `ProjectReference` to the tasks project and loaded in a task host that ends with
   the build, as `Sdk.targets` loads it beside a source tree. The harness calls `ProgramArchive` directly.
