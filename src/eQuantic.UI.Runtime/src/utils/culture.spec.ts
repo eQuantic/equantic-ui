@@ -128,6 +128,13 @@ describe('culture atom', () => {
       expect(fetched).toEqual(['/_equantic/strings/sv.json']);
     });
 
+    it("asks for a catalog by the name the build wrote, whatever the case a switcher wrote it in", async () => {
+      installCulture('pt-AO', 'pt-AO', {}, null, ['neutral', 'nb-NO']);
+      await setCulture('nb-no');
+
+      expect(fetched).toEqual(['/_equantic/strings/nb-NO.json']);
+    });
+
     it('asks for nothing when the app has no catalog at all, and keeps its strings', async () => {
       installCulture('pt-AO', 'pt-AO', { 'Strings/Hero.Title': 'kept' }, null, []);
       await setCulture('ko-KR');
