@@ -417,6 +417,12 @@ public class RecordTypeEmitter
             // reload carries a value's twin as its data while it leaves a class's object to its
             // initializer (dev/hot-reload-state.ts).
             sb.Append("static $record = true; ");
+            // A value from the wire is built through its primary constructor where it holds what the wire does not
+            // carry, a private field above all: its initializer may read the parameters, and equality compares it
+            // (hydrate.ts, #590).
+            if (type is RecordDeclarationSyntax { ParameterList.Parameters: { Count: > 0 } primary }
+                && type.Members.OfType<FieldDeclarationSyntax>().Any(field => !field.Modifiers.Any(SyntaxKind.StaticKeyword)))
+                sb.Append($"static $primary = [{string.Join(", ", primary.Select(parameter => $"'{parameter.Identifier.ValueText.ToCamelCase()}'"))}]; ");
             // Each interface typed Equals the type answers, to the method answering it: what a call through the
             // interface, a collection of the type and generic code ask, by the contract.
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol equatable
