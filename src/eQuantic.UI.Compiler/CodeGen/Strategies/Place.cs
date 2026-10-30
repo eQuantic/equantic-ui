@@ -91,7 +91,7 @@ internal sealed class Place
             return Entry(context.Converter.ConvertIr(access.Expression), access.ArgumentList.Arguments[0].Expression, context);
         if (Indexer.LoweredAt(access, context) is not null)
             return Indexed(access, access.ArgumentList, context.Converter.ConvertIr(access.Expression), context);
-        return IndexFromEndStrategy.HatOf(access, context) is { } hat
+        return IndexFromEndStrategy.FromTheEnd(access) is { } hat
             ? Subscripted(access, context.Converter.ConvertIr(access.Expression), hat, context)
             : null;
     }

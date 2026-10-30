@@ -45,10 +45,14 @@ public class IndexFromEndStrategy : IExpressionIrStrategy
     /// <see cref="DictionaryEntry"/>) and carries no indexer a twin or a list face lowers; null otherwise.
     /// </summary>
     internal static PrefixUnaryExpressionSyntax? HatOf(ElementAccessExpressionSyntax access, ConversionContext context) =>
-        access.ArgumentList.Arguments is [{ Expression: PrefixUnaryExpressionSyntax hat }]
-        && hat.IsKind(SyntaxKind.IndexExpression)
-        && DictionaryEntry.Of(access, context) is null
-        && Indexer.LoweredAt(access, context) is null
+        FromTheEnd(access) is { } hat && DictionaryEntry.Of(access, context) is null && Indexer.LoweredAt(access, context) is null
+            ? hat
+            : null;
+
+    /// <summary>The <c>^n</c> an access with one argument counted from the end is written with, by its
+    /// syntax alone, for a caller that has ruled out the dictionary and the indexer already.</summary>
+    internal static PrefixUnaryExpressionSyntax? FromTheEnd(ElementAccessExpressionSyntax access) =>
+        access.ArgumentList.Arguments is [{ Expression: PrefixUnaryExpressionSyntax hat }] && hat.IsKind(SyntaxKind.IndexExpression)
             ? hat
             : null;
 
