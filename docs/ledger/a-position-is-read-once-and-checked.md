@@ -1,4 +1,4 @@
-- **2026-10-29 · A position in a sequence is read once and checked as .NET checks it**: bugs under #849
+- **2026-10-30 · A position in a sequence is read once and checked as .NET checks it**: bugs under #849
   ([#394](https://github.com/eQuantic/equantic-ui/issues/394),
   [#1160](https://github.com/eQuantic/equantic-ui/issues/1160)). `a[^n]` over an array, a list or a string was
   text that named its receiver twice and spliced its offset bare, so `Get()[^1] += 5` called `Get` three times and
