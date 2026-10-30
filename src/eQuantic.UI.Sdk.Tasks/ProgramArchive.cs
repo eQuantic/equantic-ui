@@ -73,7 +73,7 @@ public static class ProgramArchive
         var folder = Path.Combine(cache, name, Digest(archive));
         var program = Path.Combine(folder, name);
         if (File.Exists(program)) return (program, false);
-        if (!RemoveEmptied(folder, program)) return (program, false);
+        RemoveEmptied(folder);
 
         var staging = folder + Partial + Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(staging);
@@ -87,17 +87,7 @@ public static class ProgramArchive
             }
             MakeExecutable(Path.Combine(staging, name));
 
-            try
-            {
-                Directory.Move(staging, folder);
-            }
-            catch (Exception e) when ((e is IOException or UnauthorizedAccessException) && File.Exists(program))
-            {
-                // Another build unpacked the same zip first, and its folder is the same bytes. Windows
-                // answers a rename onto a folder in use, or one a scanner holds, as access denied.
-                return (program, false);
-            }
-            return (program, true);
+            return (program, Publish(staging, folder, program));
         }
         finally
         {
@@ -106,25 +96,49 @@ public static class ProgramArchive
     }
 
     /// <summary>
-    /// Clears a folder of that name that holds no program, which only a hand can leave, or the rename
-    /// could never land, and answers false when another build's whole folder turned out to be there.
-    /// The delete is not recursive: the program is the folder's one file, so an empty folder is the only
-    /// kind that goes, and a folder another build renamed into place since the look before it stays.
+    /// Renames the unpacked folder into place, and answers whether this call is the one that did. A
+    /// program that is there is another build's, the same bytes. Otherwise the rename is asked again a few
+    /// times: on Windows a folder another build is taking away, or a file a scanner still holds, refuses
+    /// it for a moment, and only what stays in the way fails the build.
     /// </summary>
-    private static bool RemoveEmptied(string folder, string program)
+    private static bool Publish(string staging, string folder, string program)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                Directory.Move(staging, folder);
+                return true;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                if (File.Exists(program)) return false;
+                if (attempt == PublishAttempts) throw;
+                RemoveEmptied(folder);
+                Thread.Sleep(PublishPause);
+            }
+        }
+    }
+
+    private const int PublishAttempts = 10;
+
+    private static readonly TimeSpan PublishPause = TimeSpan.FromMilliseconds(50);
+
+    /// <summary>
+    /// Clears a folder of that name that holds no program, which only a hand can leave, or the rename
+    /// could never land. The delete is not recursive: the program is the folder's one file, so an empty
+    /// folder is the only kind that goes, and a whole one another build renamed into place stays. What it
+    /// could not remove the rename answers for.
+    /// </summary>
+    private static void RemoveEmptied(string folder)
     {
         try
         {
             if (Directory.Exists(folder)) Directory.Delete(folder);
-            return true;
         }
-        catch (DirectoryNotFoundException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return true; // Another build cleared it first.
-        }
-        catch (IOException) when (File.Exists(program))
-        {
-            return false;
+            // A folder with something in it, or one another build is taking away.
         }
     }
 
