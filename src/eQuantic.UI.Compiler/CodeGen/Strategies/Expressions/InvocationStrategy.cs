@@ -153,9 +153,10 @@ public class InvocationStrategy : IExpressionIrStrategy
             // `out` is not passed IN — it comes back in the result object. `ref` is read before it
             // is written, so it stays an argument as well as a field of the result.
             if (arg.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword)) continue;
-            // A `params` parameter is a REST parameter on the other side, so the two C# call forms
+            // A `params` parameter that is a REST parameter on the other side makes the two C# call forms
             // diverge: `Count("a", "b")` already lines up, and a collection handed whole,
-            // `Count(names)`, would arrive as ONE element, so it spreads (BoundArguments.Convert).
+            // `Count(names)`, would arrive as ONE element, so it spreads (BoundArguments.Convert). One that
+            // is the array it is takes the first form packed, below (BoundArguments.Packed).
             argsList.Add(arg.Expression is DeclarationExpressionSyntax declaration
                 ? JsExpr.Identifier(declaration.Designation.ToString().ToJsIdentifier())
                 : BoundArguments.Convert(arg, context));
@@ -178,7 +179,7 @@ public class InvocationStrategy : IExpressionIrStrategy
                 else argsList.Add(JsExpr.Opaque(ObjectCreationStrategy.DefaultLiteralFor(symbol.Parameters[i], context)));
             }
         }
-        var argIrs = argsList;
+        var argIrs = BoundArguments.Packed(invocation, argsList, symbol, context);
         // The same arguments as text, for the template branches that splice them.
         var args = string.Join(", ", argIrs.Select(a => JsExprWriter.WriteIn(a, JsPrecedence.Assignment)));
 
