@@ -20,7 +20,7 @@ import type { EventHandler, HtmlNode } from '../core/types';
 import { CanvasPointer } from './canvas-pointer';
 import { browserPastesOn, ClipboardRefused, CodeSurfaceClipboard } from './code-surface-clipboard';
 // Leaf helpers — see css-values for why they are not defined here.
-import { hex, modifiersOf, num, tokenValue } from './css-values';
+import { floatText, hex, modifiersOf, num, tokenValue } from './css-values';
 export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
@@ -203,26 +203,7 @@ function sideWidths(width: number, sides: number): string {
 
 export function px(dp: number): string {
   if (dp === 0) return '0';
-  return `${hundredths(Math.fround(dp))}px`;
-}
-
-/**
- * A float as C#'s `ToString("0.##")` writes it, which the server's `TokenCss.Px` does and the atomic
- * class is named from: its seven significant digits, those rounded half away from zero to two decimals,
- * no trailing zero, and the sign kept on a zero. The double the float widens to rounds elsewhere:
- * `toFixed` read 1.005f as 1.00499999523… and wrote 1, where the server writes 1.01, so the two sides
- * minted different classes (#729). Past seven digits .NET's own rounding shows: 16777216f is 16777220.
- */
-function hundredths(value: number): string {
-  if (Number.isInteger(value) && Math.abs(value) < 1e7) return String(value);
-  const [mantissa, exponent] = Math.abs(value).toExponential(6).split('e');
-  const digits = BigInt(mantissa.replace('.', ''));
-  const shift = Number(exponent) - 4;
-  const scale = 10n ** BigInt(Math.abs(shift));
-  const scaled = shift >= 0 ? digits * scale : (digits + scale / 2n) / scale;
-  const text = scaled.toString().padStart(3, '0');
-  const fraction = text.slice(-2).replace(/0+$/, '');
-  return `${value < 0 ? '-' : ''}${text.slice(0, -2)}${fraction === '' ? '' : `.${fraction}`}`;
+  return `${floatText(Math.fround(dp), 2)}px`;
 }
 
 
