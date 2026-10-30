@@ -433,7 +433,7 @@ public static class StringConversion
     /// pt-BR page where the server wrote <c>1,5</c> (#965). A type of the app's behind one writes its own
     /// text, through the formatter, as behind an <c>object</c>.
     /// </summary>
-    private static bool HoldsAnyValue(ITypeSymbol type) =>
+    private static bool HoldsAnyValue(ITypeSymbol? type) =>
         type is { SpecialType: SpecialType.System_Object } or { TypeKind: TypeKind.Dynamic or TypeKind.TypeParameter or TypeKind.Interface };
 
     /// <summary>
