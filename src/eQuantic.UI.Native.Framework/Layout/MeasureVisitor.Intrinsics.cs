@@ -9,8 +9,9 @@ namespace eQuantic.UI.Native.Framework;
 /// They are here rather than spread through the families because MEASURING said so, and the first
 /// measurement was wrong in a way worth recording: taken before the flex pass became its own file,
 /// it reported that none of the fifteen crossed. Re-run against the files as they actually stand,
-/// TWO do — <c>CrossSizeKind</c> from Containers and Flex, <c>ResolveSelf</c> from Containers and
-/// the doors. (S4 found exactly two crossing helpers as well, and kept them on its class file.)
+/// TWO do — <c>DeclaredSizeKind</c> from Containers and Flex (it was <c>CrossSizeKind</c> then),
+/// <c>ResolveSelf</c> from Containers and the doors. (S4 found exactly two crossing helpers as well,
+/// and kept them on its class file.)
 /// </para>
 /// <para>
 /// Thirteen of fifteen having a single caller is still not a placement: filing each beside it would
@@ -48,8 +49,8 @@ internal sealed partial class MeasureVisitor
         // A TRANSPARENT wrapper's floor IS its child's, and the three that are not floor at zero:
         // a scroller scrolls instead of growing, an Overlay takes no space in the flow, a
         // Positioned is a contract with a Stack. Which is which is stated ONCE, in
-        // `LayoutTransparency` — this used to be a hand-kept list of five that disagreed with
-        // CrossSizeKind's hand-kept list of three (#225).
+        // `LayoutTransparency` — this used to be a hand-kept list of five that disagreed with the
+        // cross-axis classifier's hand-kept list of three (#225).
         SingleChildNode wrapper =>
             wrapper.IsLayoutTransparent() ? MinContentWidth(wrapper.Child, element?.ChildAt(0), ctx) : 0,
         // What the component's element BUILT, as measure reads it: intrinsic sizing used to build
@@ -92,16 +93,18 @@ internal sealed partial class MeasureVisitor
 
     /// <summary>
     /// Whether a flex item gives up width when the line overflows. CSS shrinks every item by
-    /// default; what it never shrinks is a size the AUTHOR pinned — so a Fixed extent, a Spacer
-    /// and a weighted Flexible (which is sized from leftover, not from content) all stay put.
+    /// default; what it never shrinks is a size the AUTHOR pinned — so a Fixed extent and a Spacer
+    /// stay put.
     /// </summary>
     private bool Shrinkable(VisualNode child) => child switch
     {
         Text => false,                       // already asked, above
         Spacer => false,
-        // A weight of ZERO took no leftover (#680): it is an item at its basis, or at its own size,
-        // and it gives space back by its own Shrink, as `flex: 0 1 540px` does in CSS.
-        Flexible flexible => flexible is { Flex: 0, Shrink: > 0 },
+        // A Flexible gives space back from its START by its own Shrink, whatever its weight, as
+        // `flex: 1 1 540px` and `flex: 0 1 540px` both do in CSS: a zero weight from its basis or its
+        // content (#680), a weighted one from its basis, and a weighted one without a basis starts
+        // from nothing, so it has nothing to give.
+        Flexible flexible => flexible.Shrink > 0,
         Box box => box.Style.Width.Kind != SizeKind.Fixed,
         FlexNode flex => flex.Width.Kind != SizeKind.Fixed,
         // NO WRAPPER ARM, and that is measured rather than left out. #225 assumed four readers
@@ -121,6 +124,35 @@ internal sealed partial class MeasureVisitor
         // arm made the wrapped one disagree with its child, which is the opposite of transparency.
         _ => true,
     };
+
+    /// <summary>
+    /// What an item of a single-line column may shrink to, or null when it keeps the height it
+    /// measured. That height is its min-content height (<c>min-height: auto</c>) unless the web
+    /// writes the minimum itself: <c>min-height: 0</c> (or the box's own <c>MinHeight</c>) on a box or
+    /// a flex container that fills the column, and on a scroller or a table viewport, which take the
+    /// room they are given. A fixed-height one is a size re-measuring cannot move (#1186), and a fixed
+    /// width is the web's <c>flex-shrink: 0</c>. Its padding and border are never given back, so they
+    /// are part of the floor, and <c>Insets</c> says what to leave out of the size it is asked by.
+    /// Asked of what the item measured to, through whatever adds no box on the web: a component, which
+    /// is what it builds, and the wrappers that lower to their child or to <c>display: contents</c>.
+    /// </summary>
+    private static (float Floor, float Insets)? ColumnFloor(LayoutNode item)
+    {
+        var node = item;
+        while (node.Source is UiComponent or InView or InFlow or Presence or Shortcut or Simulated
+               && node.Children.Count > 0)
+            node = node.Children[0];
+        return node.Source switch
+        {
+            Box { Style.Height.Kind: SizeKind.Fill, Style.Width.Kind: not SizeKind.Fixed } box =>
+                (MathF.Max(box.Style.MinHeight, InsetsOf(box.Style).Vertical), InsetsOf(box.Style).Vertical),
+            FlexNode { Height.Kind: SizeKind.Fill, Width.Kind: not SizeKind.Fixed } flex =>
+                (flex.Padding.Vertical, flex.Padding.Vertical),
+            ScrollView { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => (0, 0),
+            TableViewport { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => (0, 0),
+            _ => null,
+        };
+    }
 
     /// <summary>
     /// The text an item ultimately IS, seen through layout-transparent wrappers — the FOURTH reader
@@ -182,58 +214,27 @@ internal sealed partial class MeasureVisitor
         return (x, y);
     }
 
-    private SizeKind WidthKind(VisualNode node) => node switch
-    {
-        Box box => box.Style.Width.Kind,
-        FlexNode flex => flex.Width.Kind,
-        Grid grid => grid.Width.Kind,
-        Drawing drawing => drawing.Width.Kind,
-        _ => SizeKind.Hug,
-    };
-
     // ---- helpers ----------------------------------------------------------------------------------
 
-    /// <summary>The child's declared size KIND on the flex cross axis (wrappers look through to their
-    /// content; components can't be known without building — treated as Hug, i.e. stretchable).</summary>
-    private SizeKind CrossSizeKind(VisualNode node, bool horizontal) => node switch
-    {
-        Box box => (horizontal ? box.Style.Height : box.Style.Width).Kind,
-        FlexNode flex => (horizontal ? flex.Height : flex.Width).Kind,
-
-        // Always-explicit nodes: their constructors demand a size — stretch must never override.
-        Image => SizeKind.Fixed,
-        Icon => SizeKind.Fixed,
-        Vector => SizeKind.Fixed,
-        // A drawing's height always follows from its width, so only its width can stretch.
-        Drawing drawing => horizontal ? SizeKind.Fixed : drawing.Width.Kind,
-        Spinner => SizeKind.Fixed,
-        Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
-        Anchored anchored => CrossSizeKind(anchored.Anchor, horizontal),
-        // The same statement the floor reads, so the two can no longer drift: a transparent wrapper
-        // delegates, and one that carries its own geometry hugs.
-        SingleChildNode wrapper => wrapper.IsLayoutTransparent()
-            ? CrossSizeKind(wrapper.Child, horizontal)
-            : SizeKind.Hug,
-        _ => SizeKind.Hug,
-    };
-
     /// <summary>
-    /// The size KIND a node declares along the flex MAIN axis (its width in a row, its height in a
-    /// column), for every node type of the vocabulary that declares one: a <see cref="SizeValue"/> it
-    /// carries (a box's style, a flex container, a grid, a stack, a scroller, a canvas, a web frame,
-    /// a drawing's width), or a size its constructor demands (an image, an icon, a vector, a spinner,
-    /// a camera preview, a drawing's height, which follows from its width). Anything else declares
-    /// nothing of its own, which reads as Hug. It is asked of the
+    /// The size KIND a node declares along an axis (its width when <paramref name="horizontal"/>,
+    /// its height otherwise), for every node type of the vocabulary that declares one: a
+    /// <see cref="SizeValue"/> it carries (a box's style, a flex container, a grid, a stack, a
+    /// scroller, a canvas, a web frame, a drawing's width), or a size its constructor demands (an
+    /// image, an icon, a vector, a spinner, a camera preview, a drawing's height, which follows from
+    /// its width). Anything else declares nothing of its own, which reads as Hug. It is asked of the
     /// node a child MEASURED to (<see cref="SizedBy"/>), never of the child as written.
     /// <para>
-    /// It is a list of arms, and a list is how a camera preview went unread when this asked
-    /// <see cref="CrossSizeKind"/> the cross-axis question instead, which still misses five of the
-    /// fourteen. So it does not stand alone: <c>MainSizeKindCoverageTests</c> enumerates the
-    /// vocabulary's node types by reflection and fails on any that declares a size of its own this
-    /// does not read.
+    /// ONE classifier for both axes: a line asks it of its main axis, whether a Flexible's child keeps
+    /// its size in the slot, and of its cross axis, whether a stretch may override the child. The
+    /// cross axis had a hand-kept list of its own, and it missed five of the fourteen node types, so
+    /// a fixed-height Stack, Canvas, CameraPreview, ScrollView or WebFrame was stretched where a Box
+    /// kept its height (#744); the main axis's list had missed a camera preview the same way. A list
+    /// does not stand alone: <c>DeclaredSizeKindCoverageTests</c> enumerates the vocabulary's node
+    /// types by reflection and fails on any that declares a size of its own this does not read.
     /// </para>
     /// </summary>
-    internal static SizeKind MainSizeKind(VisualNode node, bool horizontal) => node switch
+    internal static SizeKind DeclaredSizeKind(VisualNode node, bool horizontal) => node switch
     {
         Box box => (horizontal ? box.Style.Width : box.Style.Height).Kind,
         FlexNode flex => (horizontal ? flex.Width : flex.Height).Kind,
@@ -256,20 +257,25 @@ internal sealed partial class MeasureVisitor
 
     /// <summary>
     /// The node whose declared size a measured child IS: the child, or, through a node that takes
-    /// its one child's size (a transparent wrapper, an <see cref="Anchored"/>), the node inside it.
+    /// its child's size (a transparent wrapper, an <see cref="Anchored"/>, a component, which is what
+    /// it builds), the node inside it. That is the FIRST one: a <see cref="CodeSurface"/> holds its
+    /// options and its notes after the child that sizes it, and they take no part in its size.
     /// <para>
-    /// It walks the MEASURED tree, so the size classifiers are asked of what was laid out rather
-    /// than of what was written. That is what makes an AdaptiveNode need no answer of its own: it
+    /// It walks the MEASURED tree, so the size classifier is asked of what was laid out rather than
+    /// of what was written. That is what makes an AdaptiveNode need no answer of its own: it
     /// measures to the arm its window resolves and is never in that tree, so a child that declares
     /// its size through an arm keeps it, where asking the node as written read nothing and pinned
-    /// the arm to the item.
+    /// the arm to the item. A component is the same case: the web lowers it to what it builds, so a
+    /// component that builds a box 20 tall keeps 20 in a row that stretches, where asking the
+    /// component read nothing and stretched it.
     /// </para>
     /// </summary>
     internal static LayoutNode SizedBy(LayoutNode measured)
     {
         var node = measured;
-        while (node.Children.Count == 1
-               && (node.Source is Anchored || node.Source is SingleChildNode wrapper && wrapper.IsLayoutTransparent()))
+        while (node.Children.Count > 0
+               && (node.Source is Anchored or UiComponent
+                   || node.Source is SingleChildNode wrapper && wrapper.IsLayoutTransparent()))
             node = node.Children[0];
         return node;
     }
@@ -277,8 +283,8 @@ internal sealed partial class MeasureVisitor
     /// <summary>
     /// A Flexible's ITEM around its measured child, the one shape the single-line slot and the
     /// wrapping pass both build. The item takes the extent its line gave it. The child keeps a main
-    /// size its node declares (<see cref="MainSizeKind"/> reads it as fixed or window-relative, of
-    /// the node the child measured to),
+    /// size its node declares (<see cref="DeclaredSizeKind"/> reads it as fixed or window-relative,
+    /// of the node the child measured to),
     /// wider than the item or narrower, as the web keeps such a child inside the flex item and lets
     /// it overflow: a 400 box in an item of 300 is still 400, and in an item of 540 still 400. Any
     /// other child is pinned to the item: an auto or Fill child measured to it already, and a
@@ -288,7 +294,7 @@ internal sealed partial class MeasureVisitor
     /// </summary>
     private static LayoutNode FlexItem(Flexible flexible, LayoutNode child, float main, bool horizontal, LayoutContext ctx)
     {
-        if (MainSizeKind(SizedBy(child).Source, horizontal) is not (SizeKind.Fixed or SizeKind.WindowMinus))
+        if (DeclaredSizeKind(SizedBy(child).Source, horizontal) is not (SizeKind.Fixed or SizeKind.WindowMinus))
             child.Bounds = horizontal ? child.Bounds with { Width = main } : child.Bounds with { Height = main };
         var item = ctx.Node(flexible, horizontal ? child.Bounds with { Width = main } : child.Bounds with { Height = main });
         item.Adopt(child);
@@ -300,7 +306,7 @@ internal sealed partial class MeasureVisitor
     /// keeps whatever the container gives it. A <see cref="ScrollView"/>'s width is one: the web
     /// realizer writes it <c>max-width: 100%</c> beside its width, so in a 300 item a 400-wide
     /// scroller is 300 and a 100-wide one stays 100 (measured in Chrome 154). Its height is not
-    /// capped there. Asked, like <see cref="MainSizeKind"/>, of the node a child measured to.
+    /// capped there. Asked, like <see cref="DeclaredSizeKind"/>, of the node a child measured to.
     /// </summary>
     internal static bool MainSizeIsACeiling(VisualNode node, bool horizontal) => node is ScrollView && horizontal;
 
