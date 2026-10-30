@@ -232,10 +232,14 @@ internal static class ElementEquality
     /// <c>c.Equals(c)</c> was refused (Copilot's third review of #977). Each member the comparison may reach is asked in
     /// turn, and the first refusal is the one told.
     /// </summary>
-    internal static bool Refuses(ITypeSymbol? compared, bool equatable, SyntaxNode at, ConversionContext context)
+    internal static bool Refuses(ITypeSymbol? compared, bool equatable, SyntaxNode at, ConversionContext context) =>
+        Refuses(compared, equatable, at, context, new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default));
+
+    private static bool Refuses(ITypeSymbol? compared, bool equatable, SyntaxNode at, ConversionContext context,
+        HashSet<ITypeSymbol> visited)
     {
         var value = compared.UnwrapNullable() ?? compared;
-        if (value is null) return false;
+        if (value is null || !visited.Add(value)) return false;
         // A value of several parts compares each with its own type's comparer.
         var parts = value switch
         {
@@ -245,12 +249,17 @@ internal static class ElementEquality
                 when pair.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic" => [key, held],
             _ => null,
         };
-        if (parts is not null) return parts.Select(part => Refuses(part, true, at, context)).ToList().Contains(true);
-        return EqualitiesReached(value, equatable, context).Any(member => member.ReportIfHostOnly(at, context, value));
+        if (parts is not null) return parts.Select(part => Refuses(part, true, at, context, visited)).ToList().Contains(true);
+        if (EqualitiesReached(value, equatable, context).Any(member => member.ReportIfHostOnly(at, context, value))) return true;
+        // A record's synthesized Equals, and a struct's that none overrides, compare each member the same way.
+        return value is INamedTypeSymbol { IsValueType: true } or INamedTypeSymbol { IsRecord: true }
+            && value.Locations.Any(location => location.IsInSource)
+            && value.GetMembers().OfType<IFieldSymbol>().Where(field => !field.IsStatic)
+                .Select(field => Refuses(field.Type, true, at, context, visited)).ToList().Contains(true);
     }
 
     /// <summary>The runtime's <c>KeyEquality</c> for a comparison a call makes, as <see cref="Of(ITypeSymbol?)"/>
-    /// writes it, with what it reaches refused (<see cref="Refuses"/>).</summary>
+    /// writes it, with what it reaches refused.</summary>
     internal static string? Of(ITypeSymbol? type, SyntaxNode at, ConversionContext context)
     {
         Refuses(type, true, at, context);

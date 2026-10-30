@@ -44,6 +44,8 @@ const overs = new WeakMap<Function, Function>();
  * delegates is true here and false in .NET. The entry lives as long as its target does.
  */
 export function boundDelegate<T extends Function>(target: object, method: T): T {
+  // A value the browser holds as a primitive is no key, and carries no identity to compare by.
+  if (typeof target !== 'object' && typeof target !== 'function') return method.bind(target) as T;
   let methods = bounds.get(target);
   if (methods === undefined) bounds.set(target, (methods = new Map()));
   let bound = methods.get(method);

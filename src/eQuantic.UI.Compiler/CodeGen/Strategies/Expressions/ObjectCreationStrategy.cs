@@ -52,7 +52,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// A type argument that is a type parameter is known only at run time, and the value goes unmarked.
     /// </summary>
     internal static string? ClosureOf(ITypeSymbol? type) =>
-        type is INamedTypeSymbol { IsGenericType: true } named
+        type is INamedTypeSymbol { IsGenericType: true, IsTupleType: false } named
         && (named.IsRecord || named.TypeKind == TypeKind.Struct)
         && named.Locations.Any(location => location.IsInSource)
         && !named.TypeArguments.Any(ContainsTypeParameter)
