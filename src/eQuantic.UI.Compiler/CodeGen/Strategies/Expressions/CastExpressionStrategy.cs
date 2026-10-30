@@ -108,10 +108,16 @@ public class CastExpressionStrategy : IExpressionIrStrategy
                 operand, context, operation.IsChecked);
         }
 
+        // A cast through a user-defined operator with a standard conversion beside it is no operation of
+        // its own: the bound tree holds the two conversions around the operand, where ValueFlow settles
+        // them, and asks nothing of the cast (`(long)new Count(5)` over an operator to an int, #970).
+        var inner = context.Converter.ConvertIr(cast.Expression);
+        if (context.SemanticHelper.GetOperation(cast.Expression)?.Parent is IConversionOperation { IsImplicit: true })
+            return inner;
+
         // No bound tree (a rewritten node, a model-less world): the SPELLED type decides, with the
         // same masks (IntegerWidth) over a truncation — the operand's type is unknowable here, so
         // the truncation stays even for sources that would not need it.
-        var inner = context.Converter.ConvertIr(cast.Expression);
         var text = JsExprWriter.WriteIn(inner, JsPrecedence.Call);
         return cast.Type.ValueText() switch
         {

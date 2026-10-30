@@ -58,7 +58,17 @@ public static class ValueFlow
         // would only make the generated code harder to read.
         if (BothOperandsAreChars(conversion)) return translated;
 
-        return Convert(conversion, node, translated, context);
+        // A user-defined conversion and the standard one beside it are two conversions in the bound tree,
+        // one inside the other and both on this node: `long l = new Count(5)` is the operator to an int and
+        // then the int to a long, and `Ticks t = 5` the int to a long and then the operator. The one right
+        // around the node was all this applied, so the other was lost (#970).
+        var settled = Convert(conversion, node, translated, context);
+        while (conversion.Parent is IConversionOperation { IsImplicit: true } outer && ReferenceEquals(outer.Operand, conversion))
+        {
+            conversion = outer;
+            settled = Convert(conversion, node, settled, context);
+        }
+        return settled;
     }
 
     /// <summary>Whether this conversion is one side of a comparison whose BOTH sides are chars.</summary>
@@ -179,12 +189,15 @@ public static class ValueFlow
         // conversion's C# Conversion is IsUserDefined with IsNullable false and no IsLifted, the lifted form
         // living only in its internal BestUserDefinedConversionAnalysis.
         if (kind.IsUserDefined)
-            return kind.MethodSymbol is { } method
-                && UserDefinedOperators.Conversion(method, translated,
-                    from.IsNullableValue() && to.IsNullableValue()
-                        && !method.Parameters.Any(parameter => parameter.Type.IsNullableValue()), context) is { } call
-                ? call
-                : translated;
+        {
+            if (kind.MethodSymbol is not { Parameters: [var parameter] } method) return translated;
+            var lifted = from.IsNullableValue() && to.IsNullableValue() && !parameter.Type.IsNullableValue();
+            if (lifted) return UserDefinedOperators.Conversion(method, translated, true, context) ?? translated;
+            // A tuple's element has no bound tree of its own to show the standard conversions beside the
+            // operator, as an operator's operand has (Settle), so they are asked of the pair of types.
+            var operand = Beside(from, parameter.Type, translated, context);
+            return Beside(method.ReturnType, to, UserDefinedOperators.Conversion(method, operand, false, context) ?? operand, context);
+        }
 
         // A NULLABLE conversion converts the underlying value and lets null pass: `(int?)aDouble?`
         // is null for a null, the numeric narrowing otherwise. The bound tree names only the
@@ -210,6 +223,8 @@ public static class ValueFlow
 
         if (kind.IsNumeric) return Numeric(from, to, translated, operandConstant, isChecked, context);
 
+        if (kind.IsTupleConversion) return Numeric(from, to, translated, null, isChecked, context);
+
         if (kind.IsEnumeration && to is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
         {
             // Only the literal 0 converts implicitly to an enum: the member that is 0, by name.
@@ -222,6 +237,14 @@ public static class ValueFlow
         // interpolated strings, tuples: the value is already what JavaScript needs.
         return translated;
     }
+
+    /// <summary>The standard conversion beside a user-defined one, between the two types it joins; the
+    /// bound tree's own, where it shows one, joins equal types here and converts nothing.</summary>
+    private static JsExpr Beside(ITypeSymbol? from, ITypeSymbol? to, JsExpr value, ConversionContext context) =>
+        from is not null && to is not null && !SymbolEqualityComparer.Default.Equals(from, to)
+        && context.SemanticModel?.Compilation is CSharpCompilation compilation
+            ? Apply(compilation.ClassifyConversion(from, to), from, to, null, null, value, context)
+            : value;
 
     /// <summary>
     /// Whether a conversion UNWRAPS a nullable value: C#'s explicit nullable conversion from a <c>T?</c> into
@@ -255,6 +278,9 @@ public static class ValueFlow
         // below a decimal went through its double and back, keeping 15 digits (`decimal? m =
         // 1234567890.123456789012m` was 1234567890.12346), and a char through its code unit.
         if (from is not null && SymbolEqualityComparer.Default.Equals(from, to)) return translated;
+
+        if (from is INamedTypeSymbol { IsTupleType: true } tuple && to is INamedTypeSymbol { IsTupleType: true } target)
+            return TupleElements(tuple, target, translated, isChecked, context);
 
         var value = translated;
         var fromSpecial = from?.SpecialType ?? SpecialType.None;
@@ -301,6 +327,33 @@ public static class ValueFlow
         return fromSpecial is SpecialType.System_Int64 or SpecialType.System_UInt64
             ? FromLong(fromSpecial, to, value, isChecked, context)
             : FromNumber(fromSpecial, to, value, isChecked, context);
+    }
+
+    /// <summary>
+    /// A tuple into a tuple of other element types: each element converted as C# converts it, at an
+    /// assignment, an argument and a return alike, the value read once (#911). It passed through as it
+    /// was, so a <c>(long, long)</c> made from a <c>(int, int)</c> held numbers, and arithmetic on its
+    /// elements threw for mixing them with a BigInt. Roslyn keeps the elements' conversions to itself, so
+    /// each is classified again from the pair of types. A tuple literal never gets here: it converts its
+    /// elements itself.
+    /// </summary>
+    private static JsExpr TupleElements(INamedTypeSymbol from, INamedTypeSymbol to, JsExpr value, bool isChecked,
+        ConversionContext context)
+    {
+        if (context.SemanticModel?.Compilation is not CSharpCompilation compilation) return value;
+        var (sources, targets) = (from.TupleElements, to.TupleElements);
+        if (sources.Length != targets.Length) return value;
+        var converts = false;
+        var elements = new List<string>(sources.Length);
+        for (var i = 0; i < sources.Length; i++)
+        {
+            var element = JsExpr.Callish($"{{0}}[{i}]");
+            var converted = Apply(compilation.ClassifyConversion(sources[i].Type, targets[i].Type), sources[i].Type, targets[i].Type,
+                null, null, element, context, isChecked);
+            converts |= !ReferenceEquals(converted, element);
+            elements.Add(JsExprWriter.Write(converted));
+        }
+        return converts ? JsExpr.Template($"[{string.Join(", ", elements)}]", [value]) : value;
     }
 
     /// <summary>A BigInt on its way to another representation: a plain number for the double
