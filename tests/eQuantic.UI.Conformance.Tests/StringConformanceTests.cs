@@ -12,12 +12,12 @@ public class StringConformanceTests
     [InlineData("\"Hello\".ToLower()")]
     [InlineData("\"Hello\".Substring(1)")]
     [InlineData("\"Hello\".Substring(1, 3)")]
-    [InlineData("\"Hello\".IndexOf(\"l\")")]
-    [InlineData("\"Hello\".IndexOf(\"z\")")]            // not found -> -1
+    [InlineData("\"Hello\".IndexOf(\"l\", StringComparison.Ordinal)")]
+    [InlineData("\"Hello\".IndexOf(\"z\", StringComparison.Ordinal)")]            // not found -> -1
     [InlineData("\"Hello\".Replace(\"l\", \"L\")")]
     [InlineData("\"Hello\".Contains(\"ell\")")]
-    [InlineData("\"Hello\".StartsWith(\"He\")")]
-    [InlineData("\"Hello\".EndsWith(\"lo\")")]
+    [InlineData("\"Hello\".StartsWith(\"He\", StringComparison.Ordinal)")]
+    [InlineData("\"Hello\".EndsWith(\"lo\", StringComparison.Ordinal)")]
     [InlineData("\"  hi  \".Trim()")]
     [InlineData("\"a,b,c\".Split(',')")]                // -> ["a","b","c"]
     [InlineData("(\"Hello\" + \" \" + \"World\")")]

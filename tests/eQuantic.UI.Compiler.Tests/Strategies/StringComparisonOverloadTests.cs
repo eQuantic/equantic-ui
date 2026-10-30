@@ -94,6 +94,7 @@ public class StringComparisonOverloadTests
     [InlineData("var r = a.LastIndexOf(b)")]
     [InlineData("var r = a.LastIndexOf(b, 1)")]
     [InlineData("var r = a.LastIndexOf(b, 1, 2)")]
+    [InlineData("Func<string, bool> r = a.StartsWith")]
     public void ASearchWithNoComparison_IsRefused(string code) =>
         TestHelper.DiagnosticsFor(code).Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("pass StringComparison.Ordinal"));
 
