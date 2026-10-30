@@ -498,10 +498,15 @@ public class RecordTypeEmitter
             // property's name, read through the property, as System.Text.Json writes the property:
             // JSON.stringify writes an object's own properties, so a server action received `$name`
             // and bound nothing. A derived record inherits it.
-            if (members.Any(member => member.Store != member.Js))
+            // And it writes only what the serializer writes, where it holds more (JsonContract, #745).
+            var written = ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol contract ? JsonContract.Members(contract) : null;
+            if (written is not null || members.Any(member => member.Store != member.Js))
+            {
+                var json = written is null ? $"{Eq.Json}(this)" : $"{Eq.Json}(this, {written})";
                 sb.Append(tsTypeDeclarations
-                    ? $"toJSON(): Record<string, unknown> {{ return {Eq.Json}(this); }} "
-                    : $"toJSON() {{ return {Eq.Json}(this); }} ");
+                    ? $"toJSON(): Record<string, unknown> {{ return {json}; }} "
+                    : $"toJSON() {{ return {json}; }} ");
+            }
         }
 
         // User-declared methods — a STATIC one keeps its modifier: a record's factory
