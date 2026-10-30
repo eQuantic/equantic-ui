@@ -138,6 +138,29 @@ public class ProgramArchiveTests
     }
 
     [Fact]
+    public void APartialFolderAnInterruptedBuildLeft_IsSweptOnceItIsOld()
+    {
+        var root = Directory.CreateTempSubdirectory("eq-unpack-").FullName;
+        try
+        {
+            var cache = Path.Combine(root, "cache");
+            var archive = Zip(Path.Combine(root, "tools"), "tool", "x");
+            var abandoned = Directory.CreateDirectory(Path.Combine(cache, "tool", "0123.partial-old")).FullName;
+            Directory.SetLastWriteTimeUtc(abandoned, DateTime.UtcNow.AddHours(-2));
+            var running = Directory.CreateDirectory(Path.Combine(cache, "tool", "4567.partial-now")).FullName;
+
+            var (program, _) = ProgramArchive.Unpack(archive, cache);
+
+            Directory.EnumerateFileSystemEntries(Path.Combine(cache, "tool")).Should().BeEquivalentTo(
+                [Path.GetDirectoryName(program)!, running], "an hour-old partial folder belongs to no running build, a new one may");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void AZipWithoutItsProgram_IsRefused_AndLeavesNothing()
     {
         var root = Directory.CreateTempSubdirectory("eq-unpack-").FullName;
@@ -192,7 +215,11 @@ public class ProgramArchiveTests
         else if (OperatingSystem.IsMacOS())
             cache.Should().Be(Path.Combine(Environment.GetEnvironmentVariable("HOME")!, "Library", "Caches", "eQuantic"));
         else
-            cache.Should().EndWith(Path.Combine("", "eQuantic")).And.NotContain(".nuget");
+        {
+            var xdg = Environment.GetEnvironmentVariable("XDG_CACHE_HOME");
+            var root = string.IsNullOrEmpty(xdg) ? Path.Combine(Environment.GetEnvironmentVariable("HOME")!, ".cache") : xdg;
+            cache.Should().Be(Path.Combine(root, "eQuantic"));
+        }
     }
 
     /// <summary>

@@ -87,7 +87,8 @@ public static class ProgramArchive
             }
         }
 
-        var staging = folder + ".partial-" + Guid.NewGuid().ToString("N");
+        SweepAbandoned(Path.Combine(cache, name));
+        var staging = folder + Partial + Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(staging);
         try
         {
@@ -103,16 +104,45 @@ public static class ProgramArchive
             {
                 Directory.Move(staging, folder);
             }
-            catch (IOException) when (File.Exists(program))
+            catch (Exception e) when ((e is IOException or UnauthorizedAccessException) && File.Exists(program))
             {
-                // Another build unpacked the same zip first, and its folder is the same bytes.
+                // Another build unpacked the same zip first, and its folder is the same bytes. Windows
+                // answers a rename onto a folder in use, or one a scanner holds, as access denied.
                 return (program, false);
             }
             return (program, true);
         }
         finally
         {
-            if (Directory.Exists(staging)) Directory.Delete(staging, recursive: true);
+            TryDelete(staging);
+        }
+    }
+
+    /// <summary>What names a folder being unpacked, before its rename.</summary>
+    private const string Partial = ".partial-";
+
+    /// <summary>
+    /// The partial folders a build left when it was stopped mid-unpack, 70 MB each: one older than an
+    /// hour belongs to no build that is still running.
+    /// </summary>
+    private static void SweepAbandoned(string programFolder)
+    {
+        if (!Directory.Exists(programFolder)) return;
+        foreach (var partial in Directory.EnumerateDirectories(programFolder, "*" + Partial + "*"))
+            if (DateTime.UtcNow - Directory.GetLastWriteTimeUtc(partial) > TimeSpan.FromHours(1))
+                TryDelete(partial);
+    }
+
+    /// <summary>Removes <paramref name="folder"/> if it can: what is left is swept by a later build.</summary>
+    private static void TryDelete(string folder)
+    {
+        try
+        {
+            if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // A file a scanner still holds on Windows: never the reason a build that has its program fails.
         }
     }
 
