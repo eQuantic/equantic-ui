@@ -198,6 +198,36 @@ public class FlexLineResolutionTests
         node.Bounds.Height.Should().Be(node.Children[1].Children[0].Bounds.Height, "and the line is as tall as what it holds");
     }
 
+    /// <summary>A lone weighted item takes the line it was measured against, so a nest of wrapping
+    /// rows measures its leaf once: measuring again at every level doubled it, 1,024 times at ten.</summary>
+    [Fact]
+    public void ANestOfWrappingRows_MeasuresItsLeafOnce()
+    {
+        VisualNode nest = new Text("leaf", TypeRole.BodyM);
+        for (var level = 0; level < 10; level++)
+        {
+            var row = new Row(gap: 0) { Wrap = true, Width = SizeValue.Fill };
+            row.Add(new Flexible(nest, flex: 1));
+            nest = row;
+        }
+        var measurer = new CountingMeasurer();
+
+        LayoutEngine.Layout(nest, 400, 300, new LayoutContext(PhotonTheme.Instance, measurer));
+
+        measurer.Count.Should().Be(1);
+    }
+
+    private sealed class CountingMeasurer : ITextMeasurer
+    {
+        public int Count { get; private set; }
+
+        public TextMeasurement Measure(string text, TypeStyle style, float typeScale, float maxWidth, int maxLines)
+        {
+            Count++;
+            return ApproximateTextMeasurer.Instance.Measure(text, style, typeScale, maxWidth, maxLines);
+        }
+    }
+
     // ---- #747: a single-line column takes its overflow back ---------------------------------------
 
     /// <summary>

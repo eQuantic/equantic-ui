@@ -680,7 +680,11 @@ internal sealed partial class MeasureVisitor
                         size = MathF.Max(size, horizontal ? MinContentWidth(sources[i], positions[i], ctx) : 0);
                     }
 
-                    if (fromNothing[i] || MathF.Abs(size - hypothetical[i]) > 0.01f)
+                    // What it was measured against: an item that starts from nothing was measured
+                    // against the whole line. Only a size that differs from that is measured again:
+                    // a lone weighted item takes the whole line, and measuring it twice at every
+                    // level of a nest of wrapping rows cost a leaf 1,024 measures at ten levels.
+                    if (MathF.Abs(size - (fromNothing[i] ? mainAvail : hypothetical[i])) > 0.01f)
                     {
                         // Measured again inside the size it resolved to, so text re-wraps there. The
                         // item built below OCCUPIES that size, even when its content is shorter:
@@ -692,8 +696,8 @@ internal sealed partial class MeasureVisitor
                         measured[i] = Measure(child, constraints.ForChild(horizontal ? size : crossMax - padCross,
                             horizontal ? crossMax - padCross : size) with { WidthIsACeiling = MainSizeIsACeiling(SizedBy(measured[i]).Source, horizontal) },
                             ctx, ItemChild(positions[i], sources[i]));
-                        resolved[i] = size;
                     }
+                    resolved[i] = size;
 
                     resolvedMain += size + (i > line.Start ? flex.Gap : 0);
                     resolvedCross = MathF.Max(resolvedCross,
