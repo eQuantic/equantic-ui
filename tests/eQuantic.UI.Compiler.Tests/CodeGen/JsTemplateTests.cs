@@ -14,6 +14,24 @@ public class JsTemplateTests
     private static JsExpr Call(string text) => JsExpr.Callish(text);
     private static string Write(JsExpr e) => JsExprWriter.Write(e);
 
+    /// <summary>A part that awaits is an argument of the arrow the writer binds with, never inside it,
+    /// which is no async function: a twin's <c>Get()[^1] = await F()</c> and an array's alike.</summary>
+    [Fact]
+    public void APartThatAwaits_IsBoundOutsideTheArrow()
+    {
+        var call = JsExpr.Callish("get()");
+        Write(JsExpr.Template("({0}[{0}.length - 1] = {1})", call, JsExpr.Callish("await f()")))
+            .Should().Be("(($0, $1) => ($0[$0.length - 1] = $1))(get(), await f())");
+    }
+
+    /// <summary>With nothing bound there is no arrow, and the await stays where it is written.</summary>
+    [Fact]
+    public void APartThatAwaits_StaysInPlace_WhereNothingIsBound()
+    {
+        Write(JsExpr.Template("{0}.m({1})", JsExpr.Identifier("x"), JsExpr.Callish("await f()")))
+            .Should().Be("x.m(await f())");
+    }
+
     [Fact]
     public void APartUsedOnce_IsSubstituted()
     {

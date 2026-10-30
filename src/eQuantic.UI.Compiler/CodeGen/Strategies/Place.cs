@@ -133,6 +133,20 @@ internal sealed class Place
         return new(_kind, held, held.Count, [.. _keys.Select((_, i) => Hole(i + 1))], false, _names, _context);
     }
 
+    /// <summary>
+    /// What an <c>out</c> or a <c>ref</c> argument writes back through when the write comes after the
+    /// call: the one value a computed place evaluates to, the receiver and the position, taken before the
+    /// call. <see cref="ThroughHeld"/> writes the place over it.
+    /// </summary>
+    public static JsExpr? HeldFor(ExpressionSyntax target, ConversionContext context) =>
+        target is ElementAccessExpressionSyntax access && IndexFromEndStrategy.HatOf(access, context) is not null
+            && Of(access, context) is { _computed: true } place
+            ? place.Evaluated[0]
+            : null;
+
+    /// <summary>The place a value of <see cref="HeldFor"/> names, as template text over its hole.</summary>
+    public static string ThroughHeld(string hole) => $"{hole}[0][{hole}[1]]";
+
     /// <summary>The read.</summary>
     public JsExpr Read() => Template(ReadText(_keys), _parts);
 

@@ -46,6 +46,15 @@ public class PositionConformanceTests
     [InlineData("int[] none = null; int[] some = { 4, 5 }; return (none?[^1] ?? -1) + \"|\" + (some?[^1] ?? -1);")]                                     // -1|5
     // A null-conditional write from the end writes behind the guard, its receiver made once.
     [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } int[] none = null; Get()?[^1] = 9; none?[^1] = 7; return string.Join(\",\", arr) + \"|\" + calls;")] // 1,9|1
+    // An out argument is held before the call, and written back through the place, not its read.
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } void Set(out int v) { v = 9; } Set(out Get()[^1]); return string.Join(\",\", arr) + \"|\" + calls;")] // 1,9|1
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } var ok = int.TryParse(\"7\", out Get()[^1]); return ok + \"|\" + string.Join(\",\", arr) + \"|\" + calls;")] // True|1,7|1
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } var ok = int.TryParse(\"x\", out Get()[^2]); return ok + \"|\" + string.Join(\",\", arr) + \"|\" + calls;")] // False|0,2|1
+    [InlineData("int[] arr = { 1, 2 }; void Twice(ref int v) { v *= 2; } Twice(ref arr[^1]); return string.Join(\",\", arr);")] // 1,4
+    // An await stays in the async function around the access, never in an arrow of the writer's.
+    [InlineData("int[] arr = { 1, 2, 3 }; int[] Get() => arr; async Task<int> Offset() { await Task.Yield(); return 2; } return Get()[^(await Offset())].ToString();")] // 2
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } async Task<int> F() { await Task.Yield(); return 9; } Get()[^1] = await F(); return string.Join(\",\", arr) + \"|\" + calls;")] // 1,9|1
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } async Task<int> F() { await Task.Yield(); return 9; } Get()[^1] += await F(); return string.Join(\",\", arr) + \"|\" + calls;")] // 1,11|1
     public void AnElementCountedFromTheEnd_ReadsItsReceiverOnce(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

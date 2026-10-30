@@ -171,6 +171,14 @@ public static class JsExprWriter
         // A plain name read twice, once the parts that run first are known.
         for (var i = 0; i < parts.Count; i++)
             bound[i] |= uses[i] > 1 && !IsFixed(parts[i]) && Reassignable(i, parts, holes, bound);
+        // A part that suspends cannot run inside the arrow the writer binds with, which is no async
+        // function and would change the template's answer to a Promise if it were: it is bound as well,
+        // an argument of the arrow, where `await` belongs to the function around the template.
+        if (bound.Any(isBound => isBound))
+        {
+            for (var i = 0; i < parts.Count; i++)
+                bound[i] |= !IsFixed(parts[i]) && Suspends(parts[i]);
+        }
         var last = Array.LastIndexOf(bound, true);
         // A bound part runs FIRST, as the arrow's argument, and a name left inline is read later,
         // in the body, after whatever that part did. C# had read the name before it: a key whose
@@ -224,6 +232,12 @@ public static class JsExprWriter
         return new JsWrittenBuilder().Add($"(({names}) => ").Add(body.Done()).Add(")(")
             .AddJoined(", ", indexes.Select(i => Written(parts[i]))).Add(")").Done();
     }
+
+    /// <summary>Whether a part awaits. A part may hold text a strategy spliced, so it is asked of what
+    /// the part writes: a string that says the word only binds what needed no binding.</summary>
+    private static bool Suspends(JsExpr part) => AwaitWord.IsMatch(Write(part));
+
+    private static readonly Regex AwaitWord = new(@"\bawait\b", RegexOptions.Compiled);
 
     /// <summary>
     /// The name part <paramref name="index"/> is bound to: <c>$0</c> for the first, unless a function
