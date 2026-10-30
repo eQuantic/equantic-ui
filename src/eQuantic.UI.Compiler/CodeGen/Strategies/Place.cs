@@ -138,11 +138,14 @@ internal sealed class Place
     /// call: the one value a computed place evaluates to, the receiver and the position, taken before the
     /// call. <see cref="ThroughHeld"/> writes the place over it.
     /// </summary>
-    public static JsExpr? HeldFor(ExpressionSyntax target, ConversionContext context) =>
-        target is ElementAccessExpressionSyntax access && IndexFromEndStrategy.HatOf(access, context) is not null
+    public static JsExpr? HeldFor(ExpressionSyntax target, ConversionContext context)
+    {
+        while (target is ParenthesizedExpressionSyntax parenthesized) target = parenthesized.Expression;
+        return target is ElementAccessExpressionSyntax access && IndexFromEndStrategy.HatOf(access, context) is not null
             && Of(access, context) is { _computed: true } place
             ? place.Evaluated[0]
             : null;
+    }
 
     /// <summary>The place a value of <see cref="HeldFor"/> names, as template text over its hole.</summary>
     public static string ThroughHeld(string hole) => $"{hole}[0][{hole}[1]]";

@@ -21,7 +21,7 @@ public class JsTemplateTests
     {
         var call = JsExpr.Callish("get()");
         Write(JsExpr.Template("({0}[{0}.length - 1] = {1})", call, JsExpr.Callish("await f()")))
-            .Should().Be("(await (async ($0) => ($0[$0.length - 1] = await f()))(get()))");
+            .Should().Be("(await (async ($0) => [($0[$0.length - 1] = await f())])(get()))[0]");
     }
 
     /// <summary>The word in a string and an await of a function the part defines suspend nothing here,
@@ -30,10 +30,22 @@ public class JsTemplateTests
     [InlineData("say('await me')")]
     [InlineData("run(async () => await f())")]
     [InlineData("x.await")]
+    [InlineData("`await ${x}`")]
+    [InlineData("`${run(async () => await f())}`")]
     public void APartThatDoesNotSuspendItsFunction_LeavesTheArrowSynchronous(string part)
     {
         Write(JsExpr.Template("({0}[{0}.length - 1] = {1})", JsExpr.Callish("get()"), JsExpr.Callish(part)))
             .Should().StartWith("(($0) => ");
+    }
+
+    /// <summary>An interpolation's hole runs where it stands, whatever the literal around it says.</summary>
+    [Theory]
+    [InlineData("`v${await f()}`")]
+    [InlineData("`${a}${{ b: await f() }.b}`")]
+    public void AHoleOfATemplateLiteralThatAwaits_MakesTheBindingArrowAsync(string part)
+    {
+        Write(JsExpr.Template("({0}[{0}.length - 1] = {1})", JsExpr.Callish("get()"), JsExpr.Callish(part)))
+            .Should().StartWith("(await (async ($0) => [");
     }
 
     /// <summary>With nothing bound there is no arrow, and the await stays where it is written.</summary>

@@ -89,7 +89,7 @@ public class InvocationStrategy : IExpressionIrStrategy
                     ? symbol.Parameters[index].Name.ToJsIdentifier()
                     : $"$out{index}";
             var held = Place.HeldFor(argument.Expression, context);
-            if (held is not null && !NothingRunsBefore(invocation, index))
+            if (held is not null && !HeldInItsPlace(invocation, index, context))
             {
                 context.Unhandled(argument, "out or ref argument counted from the end, after an argument or a receiver that "
                     + "runs code: its element is taken before the call. Assign the element after the call");
@@ -99,19 +99,29 @@ public class InvocationStrategy : IExpressionIrStrategy
         return result;
     }
 
-    /// <summary>Whether what C# evaluates ahead of the argument at <paramref name="index"/>, the call's
-    /// receiver and the arguments written before it, is only reads of names, so holding the argument's
-    /// element before the call takes it where C# takes it.</summary>
-    private static bool NothingRunsBefore(InvocationExpressionSyntax invocation, int index)
+    /// <summary>
+    /// Whether holding the element of the argument at <paramref name="index"/> before the call takes it
+    /// where C# takes it, after the call's receiver and the arguments written before it. It does when
+    /// those run no code, and when the element's own receiver and offset run none either or nothing they
+    /// run can reach them: a name read ahead of a call could be changed by it. A property runs code.
+    /// </summary>
+    private static bool HeldInItsPlace(InvocationExpressionSyntax invocation, int index, ConversionContext context)
     {
-        static bool Reads(ExpressionSyntax expression) => expression switch
+        bool Reads(ExpressionSyntax expression) => expression switch
         {
-            IdentifierNameSyntax or ThisExpressionSyntax or BaseExpressionSyntax or LiteralExpressionSyntax => true,
-            MemberAccessExpressionSyntax member => Reads(member.Expression),
+            ThisExpressionSyntax or BaseExpressionSyntax or LiteralExpressionSyntax => true,
+            IdentifierNameSyntax name => context.SemanticHelper.GetSymbol(name) is not IPropertySymbol,
+            MemberAccessExpressionSyntax member => context.SemanticHelper.GetSymbol(member) is not IPropertySymbol && Reads(member.Expression),
+            PrefixUnaryExpressionSyntax hat when hat.IsKind(SyntaxKind.IndexExpression) => Reads(hat.Operand),
+            ElementAccessExpressionSyntax { ArgumentList.Arguments: [var key] } access => Reads(access.Expression) && Reads(key.Expression),
+            ParenthesizedExpressionSyntax parenthesized => Reads(parenthesized.Expression),
             _ => false,
         };
-        return (invocation.Expression is not MemberAccessExpressionSyntax call || Reads(call.Expression))
-            && invocation.ArgumentList.Arguments.Take(index).All(argument => Reads(argument.Expression));
+        static bool Fixed(ExpressionSyntax expression) => expression is ThisExpressionSyntax or BaseExpressionSyntax or LiteralExpressionSyntax;
+
+        var before = invocation.ArgumentList.Arguments.Take(index).Select(argument => argument.Expression).ToList();
+        if (invocation.Expression is MemberAccessExpressionSyntax call) before.Insert(0, call.Expression);
+        return before.All(Reads) && (Reads(invocation.ArgumentList.Arguments[index].Expression) || before.All(Fixed));
     }
 
     private JsExpr ConvertCall(InvocationExpressionSyntax invocation, ConversionContext context)

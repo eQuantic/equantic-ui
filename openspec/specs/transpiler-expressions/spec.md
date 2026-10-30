@@ -812,6 +812,11 @@ one value whatever expression it is written as.
 - **WHEN** `Get()[^1] ??= await F()` runs over an element that is not null
 - **THEN** `F` does not run, as in .NET, and `Get()[^1] += await F()` reads the element before the await
 
+#### Scenario: A Task read beside an await
+
+- **WHEN** `var t = Get()[^(await Offset())]` reads a `Task` from an array
+- **THEN** `t` is that Task, as in .NET, unawaited
+
 #### Scenario: An out target after code
 
 - **WHEN** `Put(Swap(), out a[^1])` is built, `Swap` assigning another array to `a`

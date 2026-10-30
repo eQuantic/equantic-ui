@@ -222,12 +222,21 @@ public static class JsExprWriter
         // own callbacks fell to TS7006 (Copilot's third review of #661).
         var names = string.Join(", ", indexes.Select(i => named[i]));
         // A part left inline that suspends runs inside this arrow, so the arrow is async and the template
-        // awaits it. Binding the part instead would run it before the template: a `??=`'s value would run
-        // when nothing is written, and a compound would read its target after the await.
+        // awaits it (Awaited). Binding the part instead would run it before the template: a `??=`'s value
+        // would run when nothing is written, and a compound would read its target after the await.
         var suspends = Enumerable.Range(0, parts.Count).Any(i => !bound[i] && Suspends(parts[i]));
-        return new JsWrittenBuilder().Add(suspends ? "(await (async " : "(").Add($"({names}) => ").Add(body.Done()).Add(")(")
-            .AddJoined(", ", indexes.Select(i => Written(parts[i]))).Add(suspends ? "))" : ")").Done();
+        return new JsWrittenBuilder().Add(suspends ? "(await (async " : "(").Add($"({names}) => ").Add(suspends ? "[" : "")
+            .Add(body.Done()).Add(suspends ? "])(" : ")(")
+            .AddJoined(", ", indexes.Select(i => Written(parts[i]))).Add(suspends ? "))[0]" : ")").Done();
     }
+
+    /// <summary>
+    /// An <paramref name="arrow"/> called where it is written, whose body suspends: async, and awaited by
+    /// the code around it, which is the only way a body keeps its place and its order in an expression.
+    /// The arrow answers its value in an array, since an async function adopts a Promise it answers: a
+    /// <c>Task</c> read from an array would come back as its result, waited for, where C# only reads it.
+    /// </summary>
+    internal static string Awaited(string arrow, string arguments) => $"(await (async {arrow})({arguments}))[0]";
 
     /// <summary>
     /// Whether a part suspends the function it is written in: an <c>await</c> of its own, read from what
@@ -237,11 +246,71 @@ public static class JsExprWriter
     internal static bool Suspends(JsExpr part)
     {
         var text = Write(part);
-        var awaits = AwaitWord.Matches(text);
-        if (awaits.Count == 0) return false;
-        var reached = new bool[awaits.Count];
-        var inside = InsideAFunction(text, awaits, reached);
-        return Enumerable.Range(0, awaits.Count).Any(i => reached[i] && !inside[i]);
+        if (!text.Contains("await", StringComparison.Ordinal)) return false;
+        var code = Executable(text);
+        var awaits = AwaitWord.Matches(code);
+        return InsideAFunction(code, awaits).Any(inside => !inside);
+    }
+
+    /// <summary>The text with what no engine runs blanked in place: a string, and a template literal but
+    /// for the expressions in its <c>${…}</c>, which run where they stand.</summary>
+    private static string Executable(string text)
+    {
+        var kept = text.ToCharArray();
+        var braces = 0;
+        var holes = new Stack<int>();
+
+        // Blanks a template literal's text from `from`, and answers where it stopped: its closing
+        // backtick, or the brace of the next hole it opens.
+        int LiteralText(int from)
+        {
+            var at = from + 1;
+            for (; at < text.Length; at++)
+            {
+                if (text[at] == '\\')
+                {
+                    at++;
+                }
+                else if (text[at] == '`')
+                {
+                    break;
+                }
+                else if (text[at] == '$' && at + 1 < text.Length && text[at + 1] == '{')
+                {
+                    at++;
+                    holes.Push(braces);
+                    break;
+                }
+            }
+            Array.Fill(kept, ' ', from, Math.Min(at, text.Length - 1) - from + 1);
+            return at;
+        }
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            switch (text[i])
+            {
+                case '\'' or '"':
+                    var end = ClosingQuote(text, i);
+                    Array.Fill(kept, ' ', i, end - i + 1);
+                    i = end;
+                    break;
+                case '`':
+                    i = LiteralText(i);
+                    break;
+                case '{':
+                    braces++;
+                    break;
+                case '}' when holes.Count > 0 && holes.Peek() == braces:
+                    holes.Pop();
+                    i = LiteralText(i);
+                    break;
+                case '}':
+                    braces--;
+                    break;
+            }
+        }
+        return new string(kept);
     }
 
     private static readonly Regex AwaitWord = new(@"(?<![\w$.])await\b", RegexOptions.Compiled);
@@ -283,10 +352,9 @@ public static class JsExprWriter
     /// For each hole, whether it sits inside a function the template itself defines, an arrow's body
     /// or a <c>function</c>'s, where its part runs once per call: <c>Intersect</c> wrote its second
     /// sequence inside the filter's arrow, so a call there ran once per element where C# made it once
-    /// (#657). A string is skipped, and a hole is not a brace. <paramref name="reached"/>, when given, says
-    /// which holes the walk met, which a hole inside a string is not.
+    /// (#657). A string is skipped, and a hole is not a brace.
     /// </summary>
-    private static bool[] InsideAFunction(string text, MatchCollection holes, bool[]? reached = null)
+    private static bool[] InsideAFunction(string text, MatchCollection holes)
     {
         var inside = new bool[holes.Count];
         var holeAt = new Dictionary<int, int>();
@@ -304,7 +372,6 @@ public static class JsExprWriter
             if (holeAt.TryGetValue(i, out var hole))
             {
                 inside[hole] = expressionBodies.Count > 0 || brackets.Contains(true);
-                if (reached is not null) reached[hole] = true;
                 i += holes[hole].Length - 1;
                 continue;
             }

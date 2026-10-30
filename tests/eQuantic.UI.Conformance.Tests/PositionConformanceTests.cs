@@ -62,11 +62,25 @@ public class PositionConformanceTests
     // A null-conditional write that awaits skips its value for a null receiver.
     [InlineData("var asked = 0; int[] arr = { 1, 2 }; int[] Get() => arr; async Task<int> F() { asked++; await Task.Yield(); return 9; } Get()?[^1] = await F(); return string.Join(\",\", arr) + \"|\" + asked;")] // 1,9|1
     [InlineData("var asked = 0; int[] none = null; int[] Get() => none; async Task<int> F() { asked++; await Task.Yield(); return 9; } Get()?[^1] = await F(); return asked.ToString();")] // 0
+    // A Task read from an array stays that Task, where an async function would have adopted it.
+    [InlineData("Task<int>[] tasks = { Task.FromResult(5) }; Task<int>[] Get() => tasks; async Task<int> Offset() { await Task.Yield(); return 1; } var t = Get()[^(await Offset())]; return object.ReferenceEquals(t, tasks[0]) + \"|\" + (await t);")] // True|5
+    // An await in a hole of an interpolation runs in the method around it, a null-conditional write's too.
+    [InlineData("string[] arr = { \"a\" }; string[] Get() => arr; async Task<int> F() { await Task.Yield(); return 9; } Get()[^1] = $\"v{await F()}\"; return arr[0];")] // v9
+    [InlineData("string[] arr = { \"a\" }; string[] Get() => arr; async Task<int> F() { await Task.Yield(); return 9; } Get()?[^1] = $\"v{await F()}\"; return arr[0];")] // v9
+    // A chain of null-conditionals guards each level, and skips the value for a null at any of them.
+    [InlineData("var asked = 0; var h = new Holder(new[] { 1, 2 }); async Task<int> F() { asked++; await Task.Yield(); return 9; } h?.Items?[^1] = await F(); return string.Join(\",\", h.Items) + \"|\" + asked;")] // 1,9|1
+    [InlineData("var asked = 0; Holder none = null; async Task<int> F() { asked++; await Task.Yield(); return 9; } none?.Items?[^1] = await F(); return asked.ToString();")] // 0
+    [InlineData("var asked = 0; var h = new Holder(null); async Task<int> F() { asked++; await Task.Yield(); return 9; } h?.Items?[^1] = await F(); return asked.ToString();")] // 0
+    // A target in parentheses is the same target.
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } void Set(out int v) { v = 9; } Set(out (Get()[^1])); return string.Join(\",\", arr) + \"|\" + calls;")] // 1,9|1
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } var ok = int.TryParse(\"7\", out (Get()[^1])); return ok + \"|\" + string.Join(\",\", arr) + \"|\" + calls;")] // True|1,7|1
     public void AnElementCountedFromTheEnd_ReadsItsReceiverOnce(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
-        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Holder);
     }
+
+    private const string Holder = "public record Holder(int[] Items);";
 
     /// <summary>
     /// An <c>out</c> target counted from the end is taken before the call, which is C#'s place for it only
@@ -76,10 +90,13 @@ public class PositionConformanceTests
     [SkippableTheory]
     [InlineData("int[] a = { 1 }; int[] b = { 2 }; int Swap() { a = b; return 0; } void Put(int x, out int v) { v = 9; } Put(Swap(), out a[^1]); return a[0].ToString();")]
     [InlineData("int[] a = { 1 }; string Say() => \"x\"; void Put(string x, out int v) { v = 9; } Put(Say(), out a[^1]); return a[0].ToString();")]
+    // A target that runs code could change what an argument ahead of it read, and a property runs code.
+    [InlineData("int x = 1; int[] a = { 0 }; int[] Get() { x = 2; return a; } void Put(int v, out int r) { r = v; } Put(x, out Get()[^1]); return a[0].ToString();")]
+    [InlineData("var h = new Holder(new[] { 1 }); int[] a = { 0 }; void Put(int[] v, out int r) { r = 1; } Put(h.Items, out a[^1]); return a[0].ToString();")]
     public void AnOutTargetFromTheEndAfterCode_IsRefused(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
-        ConformanceRunner.AssertStatementsRefusedByTheBuild(statements, "EQ1004");
+        ConformanceRunner.AssertStatementsRefusedByTheBuild(statements, "EQ1004", Holder);
     }
 
     /// <summary>
