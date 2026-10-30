@@ -82,8 +82,8 @@ public sealed class Flexible : SingleChildNode
     /// (the web writes it <c>min-width: 0</c> in a row, <c>min-height: 0</c> in a column), so in a
     /// single line it shrinks past its child's min-content on both targets, and a child with a fixed
     /// size overflows it. The other items Photon shrinks keep their min-content floor, which in a
-    /// column is the height they measure, and so, for now, does a Flexible in a wrapping row, where
-    /// the web lets it go past (see <see cref="FlexNode.Wrap"/>).
+    /// column is the height they measure unless they fill it, and so, for now, does a Flexible in a
+    /// wrapping row, where the web lets it go past (see <see cref="FlexNode.Wrap"/>).
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The shrink is negative.</exception>
     public int Shrink

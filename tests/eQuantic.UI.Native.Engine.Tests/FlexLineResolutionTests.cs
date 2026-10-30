@@ -1,3 +1,4 @@
+using eQuantic.UI.Code;
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Framework;
@@ -172,6 +173,31 @@ public class FlexLineResolutionTests
         scroller.Children[0].Children[0].Bounds.Width.Should().BeApproximately(600, 0.5f);
     }
 
+    /// <summary>
+    /// An item that starts from nothing was measured against the whole line, so it is measured again
+    /// where the line leaves it, even when that is nothing: in a wrapping row of 100, after a fixed
+    /// 100, a Flexible around text is 0 wide in Chrome, its text one word to a line, and the line takes
+    /// that height. Left at its first measure, the item kept one line of text in no width and the row
+    /// was too short for it. The text fits the row on one line on purpose: one that already wraps at
+    /// 100 is as tall either way, and could not show it.
+    /// </summary>
+    [Fact]
+    public void AWrappingRow_MeasuresAnItemThatStartsFromNothing_WhereTheLineLeavesIt()
+    {
+        var text = () => new Text("hi there", TypeRole.BodyM);
+        var oneLine = Layout(text()).Bounds.Height;
+        var row = new Row(gap: 0) { Wrap = true, Width = 100 };
+        row.Add(FixedBox(100));
+        row.Add(new Flexible(text(), flex: 1));
+
+        var node = Layout(row);
+
+        node.Children[1].Bounds.X.Should().BeApproximately(100, 0.5f, "both sit on one line");
+        node.Children[1].Bounds.Width.Should().Be(0);
+        node.Children[1].Children[0].Bounds.Height.Should().BeGreaterThan(oneLine, "its text wraps in the width it got");
+        node.Bounds.Height.Should().Be(node.Children[1].Children[0].Bounds.Height, "and the line is as tall as what it holds");
+    }
+
     // ---- #747: a single-line column takes its overflow back ---------------------------------------
 
     /// <summary>
@@ -207,6 +233,55 @@ public class FlexLineResolutionTests
 
         node.Children[0].Bounds.Height.Should().BeApproximately(100, 0.5f);
         node.Children[1].Bounds.Height.Should().BeApproximately(300, 0.5f);
+    }
+
+    /// <summary>What fills a column (the web writes it <c>min-height: 0</c>), or a scroller, which
+    /// takes the room it is given, shrinks together with a Flexible: 400 and 540 share an overflow
+    /// of 540 by their sizes, 170.21 | 229.79 in Chrome 152. Keeping its 400 pushed the Flexible's
+    /// whole basis out.</summary>
+    public static TheoryData<string> ColumnItemsThatGiveHeightBack() =>
+        new() { "Box", "Row", "ScrollView", "HuggingScrollView" };
+
+    [Theory]
+    [MemberData(nameof(ColumnItemsThatGiveHeightBack))]
+    public void AColumn_SharesItsOverflow_WithWhatFillsIt(string type)
+    {
+        VisualNode first = type switch
+        {
+            "Box" => new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }),
+            "Row" => new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill },
+            "ScrollView" => new ScrollView(FixedBox(200, 900)) { Height = SizeValue.Fill },
+            _ => new ScrollView(FixedBox(200, 900)),
+        };
+
+        var node = Layout(ColumnOf(first));
+
+        node.Children[0].Bounds.Height.Should().BeApproximately(170.21f, 0.01f);
+        node.Children[1].Bounds.Y.Should().BeApproximately(170.21f, 0.01f);
+        node.Children[1].Bounds.Height.Should().BeApproximately(229.79f, 0.01f);
+    }
+
+    /// <summary>The box's own minimum is the web's <c>min-height</c>, so it stops there and the
+    /// Flexible gives the rest (300 | 100 in Chrome 152). A fixed WIDTH is the web's
+    /// <c>flex-shrink: 0</c>, so that box gives nothing however it fills (400 | 0).</summary>
+    [Fact]
+    public void AColumn_StopsAtAFloorTheWebWrites_AndTakesNothingFromARigidItem()
+    {
+        var floored = Layout(ColumnOf(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill, MinHeight = 300 })));
+        floored.Children[0].Bounds.Height.Should().BeApproximately(300, 0.01f);
+        floored.Children[1].Bounds.Height.Should().BeApproximately(100, 0.01f);
+
+        var rigid = Layout(ColumnOf(new Box(new BoxStyle { Width = 200, Height = SizeValue.Fill })));
+        rigid.Children[0].Bounds.Height.Should().BeApproximately(400, 0.01f);
+        rigid.Children[1].Bounds.Height.Should().BeApproximately(0, 0.01f);
+    }
+
+    private static Column ColumnOf(VisualNode first)
+    {
+        var column = new Column(gap: 0) { Height = 400, Width = 200 };
+        column.Add(first);
+        column.Add(new Flexible(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }), flex: 0, basis: 540));
+        return column;
     }
 
     // ---- #744: a line that stretches keeps an explicit cross size ---------------------------------
@@ -259,6 +334,22 @@ public class FlexLineResolutionTests
     {
         var row = new Row(gap: 0, cross: CrossAlign.Stretch) { Width = 400, Height = 100 };
         row.Add(new Builds(FixedBox(40, 20)));
+
+        var frame = PhotonRealizer.Realize(row, 400, 100, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder());
+
+        frame.Root.Children[0].Bounds.Height.Should().Be(20);
+    }
+
+    /// <summary>A code surface is as tall as its code, with its notes open or not: they hang off it
+    /// and take no part in its size, so a note opening does not let the row stretch it to 100.</summary>
+    [Fact]
+    public void AStretchingRow_KeepsTheHeightOfACodeSurfaceWithANoteOpen()
+    {
+        var row = new Row(gap: 0, cross: CrossAlign.Stretch) { Width = 400, Height = 100 };
+        row.Add(new CodeSurface(FixedBox(40, 20), new CodeEditorController("code"))
+        {
+            Notes = [new Positioned(FixedBox(40, 60), top: 0, start: 0)],
+        });
 
         var frame = PhotonRealizer.Realize(row, 400, 100, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder());
 

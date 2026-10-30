@@ -288,9 +288,8 @@ internal sealed partial class MeasureVisitor
                 // the others have to give, which is what makes a hugging button keep its word while
                 // the stretchy one beside it absorbs the overflow. In a column that floor is the
                 // height the item measured, which is its min-content height (`min-height: auto`),
-                // so there it gives nothing (a scroller is the web's exception, `min-height: 0`, and
-                // Photon does not shrink a scroller of a fixed size on either axis yet, #1186). A
-                // Flexible is written `flex: <weight> <shrink> <basis>;
+                // so there it gives nothing, unless the web writes its minimum itself (see
+                // ColumnFloor). A Flexible is written `flex: <weight> <shrink> <basis>;
                 // min-width: 0` (`min-height: 0` in a column), so its floor is zero, a child wider
                 // than the item no longer holds it up (the web lets the child overflow it), and it
                 // is asked by its shrink times its start, as CSS scales a shrink factor: `shrink: 3`
@@ -310,6 +309,13 @@ internal sealed partial class MeasureVisitor
                     {
                         floors[i] = MathF.Min(mains[i], MinContentWidth(children[i], children.At(at, i), ctx));
                         weights[i] = mains[i] - floors[i];
+                    }
+                    else if (ColumnFloor(children[i]) is { } floor)
+                    {
+                        // Asked by its size, as CSS scales it, and stopped at its floor by the loop
+                        // below: 400 at a floor of 300 gives 100 beside a 540 that gives the rest.
+                        floors[i] = MathF.Min(mains[i], floor);
+                        weights[i] = mains[i];
                     }
                     else
                     {
@@ -407,9 +413,10 @@ internal sealed partial class MeasureVisitor
 
             if (children[i] is Flexible flexible)
             {
-                // A zero weight was laid out at its start in pass 1; it is laid again only while an
-                // animation still gives it a share.
-                if (!Deferred(i) && share <= 0) continue;
+                // An item already laid out, a zero weight at its start or one an overflow shrank, is
+                // laid again only while it has a share to add: measured twice for nothing, a nest
+                // of overflowing lines would cost twice as much at every level.
+                if (laid[i] is not null && share <= 0) continue;
                 // The flexible slot IS its start plus its share on the main axis (the child fills it).
                 mains[i] += share;
                 laid[i] = Slot(flexible, i, mains[i]);
@@ -557,6 +564,9 @@ internal sealed partial class MeasureVisitor
         var measured = new List<LayoutNode>(children.Count);
         var sources = new List<VisualNode>(children.Count);
         var hypothetical = new List<float>(children.Count);
+        // Whether an item starts from nothing while it was measured against the whole line: it is
+        // measured again where its line leaves it, wherever that is.
+        var fromNothing = new List<bool>(children.Count);
         var grow = new List<int>(children.Count);
         var shrink = new List<int>(children.Count);
         // Where each item stands, kept beside it for every later measure of it. Neither the count
@@ -587,8 +597,10 @@ internal sealed partial class MeasureVisitor
             measured.Add(node);
             positions.Add(itemAt);
             sources.Add(source);
+            var startsFromNothing = basis <= 0 && flexible is { Flex: > 0 } && float.IsFinite(mainAvail);
+            fromNothing.Add(startsFromNothing);
             hypothetical.Add(basis > 0 ? basis
-                : flexible is { Flex: > 0 } && float.IsFinite(mainAvail) ? 0
+                : startsFromNothing ? 0
                 : horizontal ? node.Bounds.Width : node.Bounds.Height);
             grow.Add(flexible?.Flex ?? 0);
             shrink.Add(flexible?.Shrink ?? 0);
@@ -643,15 +655,17 @@ internal sealed partial class MeasureVisitor
                 var slack = mainAvail - line.Main;
                 var totalGrow = 0;
                 var scaledShrink = 0f;
+                var measuredElsewhere = false;
                 for (var i = line.Start; i < line.Start + line.Count; i++)
                 {
                     totalGrow += grow[i];
                     scaledShrink += shrink[i] * hypothetical[i];
+                    measuredElsewhere |= fromNothing[i];
                 }
 
                 var growing = slack > 0.01f && totalGrow > 0;
                 var shrinking = slack < -0.01f && scaledShrink > 0;
-                if (!growing && !shrinking) continue;
+                if (!growing && !shrinking && !measuredElsewhere) continue;
 
                 var resolvedMain = 0f;
                 var resolvedCross = 0f;
@@ -666,7 +680,7 @@ internal sealed partial class MeasureVisitor
                         size = MathF.Max(size, horizontal ? MinContentWidth(sources[i], positions[i], ctx) : 0);
                     }
 
-                    if (MathF.Abs(size - hypothetical[i]) > 0.01f)
+                    if (fromNothing[i] || MathF.Abs(size - hypothetical[i]) > 0.01f)
                     {
                         // Measured again inside the size it resolved to, so text re-wraps there. The
                         // item built below OCCUPIES that size, even when its content is shorter:

@@ -124,8 +124,10 @@ In a line that overflows, a `Flexible` of weight zero SHALL give space back on P
 as nothing, whatever the min-content of what it holds; in proportion to its shrink times its size;
 and together with the other items that shrink, whether it holds text or not. A share that would
 carry it below nothing SHALL stop there, and what it could not give SHALL be shared among the
-others. In a single-line column the other items SHALL keep the height they measured, which is their
-min-content height, and text SHALL NOT be cut.
+others. In a single-line column an item the web writes a minimum for SHALL shrink as far as that
+minimum, by its size: a box or a flex container that fills the column and declares no fixed width, and
+a scroller or a table viewport whose height is not fixed. Any other item SHALL keep the height it
+measured, which is its min-content height, and text SHALL NOT be cut.
 
 #### Scenario: Past its child's min-content
 
@@ -156,6 +158,16 @@ min-content height, and text SHALL NOT be cut.
 
 - **WHEN** a column 400 tall holds a box that hugs a box 100 tall, and `Flexible(box, flex: 0, basis: 540)`
 - **THEN** the hugging box keeps its 100 and the zero weight is 300 tall
+
+#### Scenario: A column beside what fills it
+
+- **WHEN** a column 400 tall holds a box whose width and height are Fill, a row that fills it, or a `ScrollView` around 900 of content that fills it or hugs, and `Flexible(pane, flex: 0, basis: 540)`
+- **THEN** they are 170.21 and 229.79 tall on Photon, as in Chrome
+
+#### Scenario: A column stops at the minimum the web writes
+
+- **WHEN** the first item is a box that fills, with a `MinHeight` of 300, or a box that fills the column's height at a fixed width of 200
+- **THEN** the first is 300 and 100 tall, and the second 400 and 0, because a fixed width is the web's `flex-shrink: 0`
 
 ### Requirement: A Flexible's slot sizes the item, and a fixed child keeps its own size
 
@@ -286,6 +298,11 @@ take its child's size, as a single line gives it.
 - **WHEN** the same row has a gap of 10
 - **THEN** both sit on one line, each 495 wide, the second at x 505
 
+#### Scenario: A line that leaves the item nothing
+
+- **WHEN** a wrapping row 100 wide holds a box fixed at 100 and `Flexible(Text("hello big world"), flex: 1)`
+- **THEN** both sit on one line, the Flexible 0 wide and its text wrapped in that width, and the line as tall as the text
+
 #### Scenario: On an unbounded axis
 
 - **WHEN** a wrapping row inside a horizontal `ScrollView` holds `Flexible(box 600 wide, flex: 1)`
@@ -306,6 +323,11 @@ the main axis reads, of the node the child measured to, which is what a componen
 
 - **WHEN** the same row, in a window 800 tall, holds a box whose height is `WindowMinus(750)`
 - **THEN** the box is 50 tall on Photon, not the row's 100
+
+#### Scenario: A code surface with a note open
+
+- **WHEN** the same row holds a `CodeSurface` around a box 20 tall with a note open
+- **THEN** the surface is 20 tall on Photon, as without the note
 
 #### Scenario: A web frame on Photon
 

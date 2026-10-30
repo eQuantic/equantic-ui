@@ -126,6 +126,24 @@ internal sealed partial class MeasureVisitor
     };
 
     /// <summary>
+    /// What an item of a single-line column may shrink to, or null when it keeps the height it
+    /// measured. That height is its min-content height (<c>min-height: auto</c>) unless the web
+    /// writes the minimum itself: <c>min-height: 0</c> (or the box's own <c>MinHeight</c>) on a box or
+    /// a flex container that fills the column, and on a scroller or a table viewport, which take the
+    /// room they are given. A fixed-height one is a size re-measuring cannot move (#1186). Asked after
+    /// <see cref="Shrinkable"/>, which keeps out what declares a fixed width, the web's
+    /// <c>flex-shrink: 0</c>.
+    /// </summary>
+    private static float? ColumnFloor(VisualNode child) => child switch
+    {
+        Box { Style.Height.Kind: SizeKind.Fill } box => box.Style.MinHeight,
+        FlexNode { Height.Kind: SizeKind.Fill } => 0,
+        ScrollView { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => 0,
+        TableViewport { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => 0,
+        _ => null,
+    };
+
+    /// <summary>
     /// The text an item ultimately IS, seen through layout-transparent wrappers — the FOURTH reader
     /// of the same statement, and the one whose absence made the other three's disagreement
     /// invisible.
@@ -228,8 +246,9 @@ internal sealed partial class MeasureVisitor
 
     /// <summary>
     /// The node whose declared size a measured child IS: the child, or, through a node that takes
-    /// its one child's size (a transparent wrapper, an <see cref="Anchored"/>, a component, which is
-    /// what it builds), the node inside it.
+    /// its child's size (a transparent wrapper, an <see cref="Anchored"/>, a component, which is what
+    /// it builds), the node inside it. That is the FIRST one: a <see cref="CodeSurface"/> holds its
+    /// options and its notes after the child that sizes it, and they take no part in its size.
     /// <para>
     /// It walks the MEASURED tree, so the size classifier is asked of what was laid out rather than
     /// of what was written. That is what makes an AdaptiveNode need no answer of its own: it
@@ -243,7 +262,7 @@ internal sealed partial class MeasureVisitor
     internal static LayoutNode SizedBy(LayoutNode measured)
     {
         var node = measured;
-        while (node.Children.Count == 1
+        while (node.Children.Count > 0
                && (node.Source is Anchored or UiComponent
                    || node.Source is SingleChildNode wrapper && wrapper.IsLayoutTransparent()))
             node = node.Children[0];
