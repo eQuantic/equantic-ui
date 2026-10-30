@@ -135,6 +135,8 @@ import {
   textGroup,
   tupleText,
   tupleTextGroup,
+  pairText,
+  pairTextGroup,
 } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
@@ -214,7 +216,14 @@ import { liftArith, liftCmp, liftUnary, unwrap } from './utils/nullable';
 import { equals, equalsGroup, equalsInstance } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidOf, guidParse, guidTryParse } from './utils/guid';
-import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource, delay as taskDelay } from './utils/cancellation';
+import {
+  CancellationToken,
+  CancellationTokenRegistration,
+  CancellationTokenSource,
+  delay as taskDelay,
+  fromCanceled as taskFromCanceled,
+  fromException as taskFromException,
+} from './utils/cancellation';
 import {
   bases as exceptionBases,
   create as createException,
@@ -490,6 +499,8 @@ export const $eq = {
     /** A value tuple's text, `(1, a)`, and its `ToString` method group. */
     tuple: tupleText,
     tupleGroup: tupleTextGroup,
+    pair: pairText,
+    pairGroup: pairTextGroup,
     /** The `ToString` method group of a value whose text its type writes, an enum's or a type's name. */
     group: textGroup,
     stringFormat,
@@ -680,7 +691,7 @@ export const $eq = {
     linked: CancellationTokenSource.createLinkedTokenSource,
   },
   /** `Task.Delay(delay, cancellationToken)`, which ends as cancelled when its token is (utils/cancellation). */
-  task: { delay: taskDelay },
+  task: { delay: taskDelay, fromException: taskFromException, fromCanceled: taskFromCanceled },
   /**
    * .NET exceptions: one built from its type and the types it derives from (`new T(…)`), one of a
    * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`

@@ -220,6 +220,14 @@ public static class Eq
     /// <summary>The method group <c>value.ToString</c> of a value tuple: a delegate writing
     /// <see cref="TupleText"/> of the value it was made with.</summary>
     public const string TupleTextGroup = "$eq.text.tupleGroup";
+
+    /// <summary><c>KeyValuePair.ToString</c> (<c>utils/format.ts</c>): <c>[key, value]</c>, each half as its
+    /// type writes it.</summary>
+    public const string PairText = "$eq.text.pair";
+
+    /// <summary>The delegate of a <c>KeyValuePair</c>'s <c>ToString</c> method group, the
+    /// <see cref="PairText"/> of the value it was made with.</summary>
+    public const string PairTextGroup = "$eq.text.pairGroup";
     /// <summary>The method group <c>value.ToString</c> of a value whose text its type writes with no group of
     /// its own (an enum's member name, a type's name): a delegate writing the function handed second of the
     /// value it was made with.</summary>
@@ -284,6 +292,13 @@ public static class Eq
     /// <summary><c>Task.Delay(delay, cancellationToken)</c> (<c>utils/cancellation.ts</c>): a <c>TimeSpan</c>
     /// or milliseconds, refused as .NET refuses them, and ended as cancelled by its token.</summary>
     public const string TaskDelay = "$eq.task.delay";
+
+    /// <summary><c>Task.FromException</c> (<c>utils/cancellation.ts</c>): a task that ended faulted.</summary>
+    public const string TaskFromException = "$eq.task.fromException";
+
+    /// <summary><c>Task.FromCanceled</c> (<c>utils/cancellation.ts</c>): a task that ended canceled by a
+    /// token that was, refused as .NET refuses one that was not.</summary>
+    public const string TaskFromCanceled = "$eq.task.fromCanceled";
 
     /// <summary><c>CancellationToken.None</c>, which is also <c>default(CancellationToken)</c>.</summary>
     public const string CancellationNone = "$eq.cancellation.none";
