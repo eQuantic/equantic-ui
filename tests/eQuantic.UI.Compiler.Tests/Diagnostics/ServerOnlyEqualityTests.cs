@@ -96,6 +96,27 @@ public class ServerOnlyEqualityTests
         { "object Run(Kept a, Kept b)", "EqualityComparer<Kept>.Default.Equals(a, b)", "'Kept.Equals' is HOST ONLY" },
         { "object Run(KeptRecord? a, KeptRecord? b)", "a.Equals(b)", "'KeptRecord.Equals' is HOST ONLY" },
         { "object Run(KeptRecord a, KeptRecord b)", "EqualityComparer<KeptRecord>.Default.Equals(a, b)", "'KeptRecord.Equals' is HOST ONLY" },
+        // A collection's comparer asks the same equality (#980).
+        { "object Run(Vaulted c)", "new HashSet<Vaulted> { c }.Contains(c)", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(Vaulted c)", "new Dictionary<Vaulted, int> { [c] = 1 }.ContainsKey(c)", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(List<Vaulted> l, Vaulted c)", "l.Contains(c)", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(List<Vaulted> l, Vaulted c)", "l.IndexOf(c)", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(List<Vaulted> l, Vaulted c)", "l.Remove(c)", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(Vaulted[] l, Vaulted c)", "Array.IndexOf(l, c)", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(Dictionary<int, Vaulted> d, Vaulted c)", "d.ContainsValue(c)", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(Vaulted c)", "new HashSet<TypedKept>()", "'TypedKept.Equals' is HOST ONLY" },
+        { "object Run(Vaulted c)", "new HashSet<Kept>()", "'Kept.Equals' is HOST ONLY" },
+        // A value of several parts, each compared with its own type's comparer.
+        { "object Run(Vaulted c)", "(c, 1).Equals((c, 1))", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(Vaulted c)", "EqualityComparer<(Vaulted, int)>.Default.Equals((c, 1), (c, 1))", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(Vaulted c)", "new { C = c }.Equals(new { C = c })", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(KeyValuePair<Vaulted, int> p)", "EqualityComparer<KeyValuePair<Vaulted, int>>.Default.Equals(p, p)", "'Vaulted.Equals' is HOST ONLY" },
+        { "object Run(HashSet<Vaulted> l)", "new List<(Vaulted, int)>().Contains((null, 1))", "'Vaulted.Equals' is HOST ONLY" },
+        // An instance call through a contract, which the invocation's fence never sees.
+        { "object Run(Open x)", "x.Equals(x)", "'object.Equals' may reach 'Closed.Equals', marked [ServerOnly]" },
+        { "object Run(object o)", "o.Equals(o)", "'object.Equals' may reach " },
+        { "bool Run<T>(T a, T b)", "a.Equals(b)", "'object.Equals' may reach " },
+        { "object Run(TypedKept t)", "((IEquatable<TypedKept>)t).Equals(t)", "'System.IEquatable<TypedKept>.Equals' may reach 'TypedKept.Equals'" },
     };
 
     [Theory]
