@@ -9,7 +9,7 @@
 
 ## 3. Against the real thing
 
-- [x] 3.1 A sample in a browser. Verify: `samples/SharedLibrary` switches to English with no 404 in the network log, and an action called from a `pt-BR` page with an English browser answers in Portuguese
+- [x] 3.1 A sample in a browser. Verify: `samples/DefaultUIDashboard` at `/i18n` in `pt-BR` switches to English with one request for `neutral.json`, no `en.json` and no console error, and `/form` in `pt-BR` with an `en` cookie posts its action to `/api/_equantic/actions?culture=pt-BR&ui-culture=pt-BR`
 
 ## 4. Documentation
 
