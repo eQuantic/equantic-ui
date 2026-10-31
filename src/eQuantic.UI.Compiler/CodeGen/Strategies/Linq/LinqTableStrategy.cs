@@ -35,7 +35,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
         // being dropped. A ToDictionary of three arguments no model binds has no shape of its own: its
         // third is a comparer, which nothing can judge without a model, and ConvertIr refuses it.
         var shaped = Shaped(name.Identifier.ValueText, invocation, context).Count;
-        if (Template(name.Identifier.ValueText, shaped) is null
+        if (Template(name.Identifier.ValueText, shaped) is null && Lazy(name.Identifier.ValueText, shaped) is null
             && !IsToDictionaryWithAComparer(name.Identifier.ValueText, shaped)
             && name.Identifier.ValueText != "ToHashSet") return false;
 
@@ -61,6 +61,17 @@ public class LinqTableStrategy : IExpressionIrStrategy
         foreach (var comparer in KeyComparers(name.Identifier.ValueText, invocation, context))
             if (comparer.RefusesAsUntranslatable(name.Identifier.ValueText, context)) return JsExpr.Opaque(invocation.ToString());
         var shaped = Shaped(name.Identifier.ValueText, invocation, context);
+
+        // A deferred operator reads its source one element at a time, when it is walked (#685): the source
+        // is handed over as it is, and the runtime walks it, a list through its version.
+        if (Lazy(name.Identifier.ValueText, shaped.Count) is { } lazy)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var parts = new[] { LinqSource.Lazy(receiverSyntax, context) }
+                .Concat(shaped.Select(argument => LinqSource.LazyArgument(argument, invocation, context)))
+                .ToArray();
+            return JsExpr.Template(BindNamedArguments(lazy, shaped, invocation, context), parts);
+        }
 
         var receiver = LinqSource.Ir(receiverSyntax, context);
         var args = shaped
@@ -247,6 +258,28 @@ public class LinqTableStrategy : IExpressionIrStrategy
         return JsExpr.Call(JsExpr.Identifier(Eq.HashSet), JsExpr.Literal(ElementEquality.Of(element, invocation, context) ?? "false"),
             context.Converter.ConvertIr(receiver));
     }
+
+    /// <summary>
+    /// The operators the runtime runs as .NET runs them (<c>utils/query.ts</c>): each checks its arguments
+    /// when it is called and reads its source one element at a time when it is walked, each element only
+    /// after the callback before it returned (#685). The answering ones stop at the element that answers.
+    /// </summary>
+    internal static string? Lazy(string name, int count) => (name, count) switch
+    {
+        ("Where", 1) => $"{Eq.Query}.where({{0}}, {{1}})",
+        ("Select", 1) => $"{Eq.Query}.select({{0}}, {{1}})",
+        ("SelectMany", 1) => $"{Eq.Query}.selectMany({{0}}, {{1}})",
+        ("SelectMany", 2) => $"{Eq.Query}.selectMany({{0}}, {{1}}, {{2}})",
+        ("Concat", 1) => $"{Eq.Query}.concat({{0}}, {{1}})",
+        ("Append", 1) => $"{Eq.Query}.append({{0}}, {{1}})",
+        ("Prepend", 1) => $"{Eq.Query}.prepend({{0}}, {{1}})",
+        ("TakeWhile", 1) => $"{Eq.Query}.takeWhile({{0}}, {{1}})",
+        ("SkipWhile", 1) => $"{Eq.Query}.skipWhile({{0}}, {{1}})",
+        ("Any", 0) => $"{Eq.Query}.any({{0}})",
+        ("Any", 1) => $"{Eq.Query}.any({{0}}, {{1}})",
+        ("All", 1) => $"{Eq.Query}.all({{0}}, {{1}})",
+        _ => null,
+    };
 
     private static string? Template(string name, int argCount) => (name, argCount) switch
     {

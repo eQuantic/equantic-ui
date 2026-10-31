@@ -41,6 +41,31 @@ internal static class LinqSource
             : JsExpr.Call(JsExpr.Identifier(Eq.LinqSeq), converted, JsExpr.Literal(JsStringLiteral.Quote(parameter)));
     }
 
+    /// <summary>
+    /// The source of an operator the runtime walks itself (<c>utils/query.ts</c>, #685), handed over as it
+    /// is: the runtime reads it one element at a time, a list through its version, a string by its chars.
+    /// What the walk cannot enumerate is refused here, as it is where the source is read.
+    /// </summary>
+    internal static JsExpr Lazy(ExpressionSyntax source, ConversionContext context)
+    {
+        var before = context.Diagnostics.Count;
+        var converted = context.Converter.ConvertIr(source);
+        if (!IsArray(source, context) && context.Diagnostics.Count == before)
+            IterableTwin.FenceEnumeration(context.SemanticHelper.GetType(source), source, context);
+        return converted;
+    }
+
+    /// <summary>An argument of an operator the runtime walks: a sequence as it is (<see cref="Lazy"/>), and
+    /// any other argument as <see cref="Argument"/> converts it.</summary>
+    internal static JsExpr LazyArgument(ArgumentSyntax argument, InvocationExpressionSyntax invocation, ConversionContext context) =>
+        context.SemanticHelper.GetOperation(invocation) is Microsoft.CodeAnalysis.Operations.IInvocationOperation call
+        && LinqArguments.Written(argument, invocation, context) is var written
+        && call.Arguments.FirstOrDefault(bound => bound.Syntax == written)?.Parameter is { } bound
+        && bound.OriginalDefinition.Type is INamedTypeSymbol parameter
+        && IsSequence(parameter)
+            ? Lazy(argument.Expression, context)
+            : context.Converter.ConvertIr(argument.Expression);
+
     /// <summary>The name of the parameter a receiver binds to: the extension's own first parameter.</summary>
     private static string? ReceiverParameter(ExpressionSyntax source, ConversionContext context) =>
         source.Parent is MemberAccessExpressionSyntax access && access.Expression == source
@@ -121,10 +146,12 @@ internal static class LinqSource
     }
 
     /// <summary>A LINQ operator's own result, an array here, since every operator reads its source
-    /// through <see cref="Ir"/>: every operator but AsEnumerable, which hands its source back.</summary>
+    /// through <see cref="Ir"/>: every operator but AsEnumerable, which hands its source back, and the ones
+    /// the runtime runs lazily (<see cref="LinqTableStrategy.Lazy"/>), which answer a query.</summary>
     private static bool IsOperatorResult(ExpressionSyntax source, ConversionContext context) =>
-        source is InvocationExpressionSyntax
+        source is InvocationExpressionSyntax invocation
         && context.SemanticHelper.GetSymbol(source) is IMethodSymbol { Name: not "AsEnumerable" } method
         && context.SemanticHelper.IsLinqExtension(method.ContainingType)
-        && method.ReturnType is INamedTypeSymbol { Name: "IEnumerable" or "IOrderedEnumerable" };
+        && method.ReturnType is INamedTypeSymbol { Name: "IEnumerable" or "IOrderedEnumerable" }
+        && LinqTableStrategy.Lazy(method.Name, method.ReducedFrom is not null ? method.Parameters.Length : method.Parameters.Length - 1) is null;
 }
