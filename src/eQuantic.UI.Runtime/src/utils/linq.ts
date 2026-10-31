@@ -19,6 +19,7 @@ import { exception } from './exceptions';
 import { sameBy } from './key-equality';
 import { comparerOf, type Ordering } from './ordering';
 import { checked } from './overflow';
+import { Query } from './query';
 import { readAsACollection } from './sorted';
 
 /**
@@ -429,6 +430,8 @@ export function seq<T>(source: Iterable<T> | string, parameter = 'source'): T[] 
   if (typeof source === 'string') return source.split('') as unknown as T[];
   // A null source is .NET's ArgumentNullException, every LINQ operator's first check.
   if (source == null) throw nullArgument(parameter);
+  // A query walked to its end, pushed: its own iterator is a generator per stage.
+  if (source instanceof Query) return source.toArray();
   // Array.from reads an object that is not iterable as an EMPTY array: a value that crossed as a plain
   // object where C# holds a sequence would count nothing, in silence. It says so instead.
   if (typeof (source as { [Symbol.iterator]?: unknown })[Symbol.iterator] !== 'function') {

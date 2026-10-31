@@ -20,30 +20,23 @@ public class OfTypeStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var source = LinqSource.Text(memberAccess.Expression, context);
-
         // Extract the generic type argument if available
-        if (memberAccess.Name is GenericNameSyntax genericName)
+        if (memberAccess.Name is GenericNameSyntax genericName
+            && genericName.TypeArgumentList.Arguments.FirstOrDefault() is { } typeArg)
         {
-            var typeArg = genericName.TypeArgumentList.Arguments.FirstOrDefault();
-            if (typeArg != null)
-            {
-                var typeName = typeArg.ValueText();
+            var typeName = typeArg.ValueText();
 
-                // For primitive types, use typeof
-                if (IsPrimitiveType(typeName))
-                {
-                    var jsType = MapToJsType(typeName);
-                    return $"{source}.filter(($x) => typeof $x === '{jsType}')";
-                }
+            // For primitive types, use typeof; for reference types, use instanceof
+            var test = IsPrimitiveType(typeName) ? $"typeof $x === '{MapToJsType(typeName)}'" : $"$x instanceof {typeName}";
 
-                // For reference types, use instanceof
-                return $"{source}.filter(($x) => $x instanceof {typeName})";
-            }
+            // The filter runs when the query is walked, over the source as it is then (#685).
+            return Ir.JsExprWriter.Write(Ir.JsExpr.Template(
+                LinqSource.Defer($"{{0}}.filter(($x) => {test})", memberAccess.Expression, context),
+                [LinqSource.Lazy(memberAccess.Expression, context)]));
         }
 
         // Fallback: just return source (no filtering)
-        return source;
+        return LinqSource.Text(memberAccess.Expression, context);
     }
 
     private bool IsPrimitiveType(string typeName)

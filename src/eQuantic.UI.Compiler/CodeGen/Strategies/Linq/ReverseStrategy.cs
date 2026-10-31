@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -43,10 +44,9 @@ public class ReverseStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
 
-        var caller = LinqSource.Text(memberAccess.Expression, context);
-
-        // Use spread to create a copy before reversing (JS reverse mutates in place)
-        return $"[...{caller}].reverse()";
+        // A copy reversed (JS reverse mutates in place), made when the query is walked (#685).
+        return JsExprWriter.Write(JsExpr.Template(LinqSource.Defer("[...{0}].reverse()", memberAccess.Expression, context),
+            [LinqSource.Lazy(memberAccess.Expression, context)]));
     }
 
     public int Priority => 10;

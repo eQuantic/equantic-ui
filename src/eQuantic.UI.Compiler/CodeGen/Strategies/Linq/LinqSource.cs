@@ -74,7 +74,33 @@ internal static class LinqSource
         && context.SemanticHelper.GetSymbol(source) is IMethodSymbol method
         && context.SemanticHelper.IsLinqExtension(method.ContainingType)
         && (LinqTableStrategy.Lazy(method.Name, method.ReducedFrom is not null ? method.Parameters.Length : method.Parameters.Length - 1) is not null
-            || LinqTableStrategy.Deferred(method.Name));
+            || Deferred(method.Name));
+
+    /// <summary>
+    /// The deferred operators the runtime has no walk of its own for: run when their query is walked
+    /// (<see cref="Defer"/>), the source read then, as .NET runs them, rather than when they are called
+    /// (#685). Their other arguments are evaluated when they are called, as C# evaluates them.
+    /// </summary>
+    internal static bool Deferred(string name) => name is "Union" or "Intersect" or "Except" or "DistinctBy" or "Chunk"
+        or "Join" or "GroupJoin" or "SkipLast" or "TakeLast" or "ExceptBy" or "IntersectBy" or "UnionBy"
+        or "Order" or "OrderDescending" or "OrderBy" or "OrderByDescending" or "ThenBy" or "ThenByDescending"
+        or "Distinct" or "GroupBy" or "Reverse" or "OfType" or "DefaultIfEmpty" or "Zip";
+
+    /// <summary>
+    /// <paramref name="template"/>, whose <c>{0}</c> is the source, run when its query is walked: wrapped in
+    /// <c>$eq.query.defer</c>, which refuses a null source when the operator is called, by the name its
+    /// receiver binds to, and reads it into a new array each time the query is walked, for the template to
+    /// answer from (#685). The source goes in as <see cref="Lazy"/> reads it, and every other part is
+    /// evaluated when the operator is called, as C# evaluates an argument: the writer binds a part a
+    /// function of the template reads.
+    /// </summary>
+    internal static string Defer(string template, ExpressionSyntax source, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        var parameter = context.TypeAnnotations ? "$src: any" : "$src";
+        var name = ReceiverParameter(source, context) is { } bound and not "source" ? $", {JsStringLiteral.Quote(bound)}" : "";
+        return $"{Eq.Query}.defer(({parameter}) => {template.Replace("{0}", "$src")}, {{0}}{name})";
+    }
 
     /// <summary>The name of the parameter a receiver binds to: the extension's own first parameter.</summary>
     private static string? ReceiverParameter(ExpressionSyntax source, ConversionContext context) =>
@@ -150,19 +176,20 @@ internal static class LinqSource
             && (definition.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic"
                 && definition.Name is "List" or "IList" or "IReadOnlyList"
                 || definition.ContainingNamespace?.ToDisplayString() == "System.Linq"
-                && definition.Name is "IOrderedEnumerable" or "IGrouping"))
+                && definition.Name is "IGrouping"))
             return true;
         return IsOperatorResult(source, context);
     }
 
     /// <summary>A LINQ operator's own result, an array here, since every operator reads its source
     /// through <see cref="Ir"/>: every operator but AsEnumerable, which hands its source back, and the ones
-    /// the runtime runs lazily (<see cref="LinqTableStrategy.Lazy"/>), which answer a query.</summary>
+    /// the runtime walks itself (<see cref="LinqTableStrategy.Lazy"/>) or runs when walked
+    /// (<see cref="Deferred"/>), which answer a query.</summary>
     private static bool IsOperatorResult(ExpressionSyntax source, ConversionContext context) =>
         source is InvocationExpressionSyntax invocation
         && context.SemanticHelper.GetSymbol(source) is IMethodSymbol { Name: not "AsEnumerable" } method
         && context.SemanticHelper.IsLinqExtension(method.ContainingType)
         && method.ReturnType is INamedTypeSymbol { Name: "IEnumerable" or "IOrderedEnumerable" }
         && LinqTableStrategy.Lazy(method.Name, method.ReducedFrom is not null ? method.Parameters.Length : method.Parameters.Length - 1) is null
-        && !LinqTableStrategy.Deferred(method.Name);
+        && !Deferred(method.Name);
 }

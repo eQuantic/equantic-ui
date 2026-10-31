@@ -56,7 +56,8 @@ public class DistinctStrategy : IExpressionIrStrategy
             if (comparer.RefusesAsUntranslatable("Distinct", context)) return JsExpr.Opaque(invocation.ToString());
         }
 
-        var source = LinqSource.Ir(memberAccess.Expression, context);
+        // The set is made when the query is walked, from the source as it is then (#685).
+        var source = LinqSource.Lazy(memberAccess.Expression, context);
 
         // An element is found as its type's default comparer finds it (ElementEquality): a record, a struct,
         // a decimal and a date by value, an anonymous object and a tuple by their members, an array they
@@ -68,12 +69,12 @@ public class DistinctStrategy : IExpressionIrStrategy
         if (ElementEquality.Of(elementType, node, context) is { } equality)
         {
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Template($"[...{Eq.HashSet}({equality}, {{0}})]", [source]);
+            return JsExpr.Template(LinqSource.Defer($"[...{Eq.HashSet}({equality}, {{0}})]", memberAccess.Expression, context), [source]);
         }
 
         // A type compared by identity, which a Set compares as .NET does, a NaN equal to itself included
         // (SameValueZero).
-        return JsExpr.Template("[...new Set({0})]", [source]);
+        return JsExpr.Template(LinqSource.Defer("[...new Set({0})]", memberAccess.Expression, context), [source]);
     }
 
     public int Priority => 10;
