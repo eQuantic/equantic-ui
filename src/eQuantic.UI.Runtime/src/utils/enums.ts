@@ -1,4 +1,5 @@
 import { exception } from './exceptions';
+import { heldIn } from './marks';
 
 /**
  * An enum as .NET reads it, from the shape the compiler writes at each call: an enum has no object of
@@ -87,6 +88,8 @@ export function hold(value: EnumValue, shape: EnumShape): string | EnumValue {
  * width, `F` the set flags whether or not the enum is a flags one, and `G` (or none) the rest.
  */
 export function text(held: unknown, shape: EnumShape, format?: string | null): string {
+  // A member boxed for a call whose lowering prints it by its type is the member it holds.
+  held = heldIn(held);
   if (held == null) return '';
   // A string no member's key matches crossed with another spelling: it reads as itself, not NaN.
   if (typeof held === 'string' && !keys(shape).includes(held)) return held;

@@ -23,6 +23,7 @@ import {
 } from './enums';
 import { exception } from './exceptions';
 import { hash } from './hash';
+import { BOXED } from './marks';
 import { single } from './real-text';
 
 /** The type name a boxed float carries, .NET's own. */
@@ -38,6 +39,11 @@ export class Boxed {
     /** The enum's shape, which writes its text and gives its number; none for a float. */
     readonly shape?: EnumShape,
   ) {}
+
+  /** The tag a module below the box reads it by (`utils/marks.ts`). */
+  get [BOXED](): boolean {
+    return true;
+  }
 
   /** `Equals(object)`: a box of the same type holding the same value; a float's NaN equal to itself, as .NET's. */
   equals(other: unknown): boolean {
@@ -114,7 +120,8 @@ function memberOf(given: Boxed, shape: EnumShape, name: string): string | EnumVa
  * underlying type gives the member with its number, as the runtime unboxes it; any other box is refused, and
  * what is not a box goes to the enum's own unboxing, which takes a number and refuses the rest.
  */
-export function unboxEnum(given: unknown, shape: EnumShape, name: string): string | EnumValue {
+export function unboxEnum(given: unknown, shape: EnumShape, name: string, nullable = false): string | EnumValue | null {
+  if (nullable && given == null) return null;
   return given instanceof Boxed ? memberOf(given, shape, name) : unboxNumber(given, shape, name);
 }
 
