@@ -46,6 +46,13 @@ public class LazyQueryConformanceTests
     // The operators the runtime has no walk for read their source when they are walked.
     [InlineData("var l = new List<int> { 1, 2 }; var q = l.Union(new[] { 5 }); l.Add(3); return string.Join(\",\", q) + \"|\" + string.Join(\",\", l.Except(new[] { 1 })) + \"|\" + string.Join(\",\", l.TakeLast(2)) + \"|\" + string.Join(\",\", l.SkipLast(1));")]
     [InlineData("var l = new List<int> { 1, 2, 3 }; var q = l.Chunk(2); l.Add(4); return string.Join(\";\", q.Select(c => string.Join(\",\", c)));")]
+    // An operator that answers from a query stops where .NET's stops.
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var f = l.Select(x => { log += x; return x * 10; }).First(); var g = l.Where(x => { log += \"w\" + x; return x > 1; }).First(x => x > 2); return log + \"|\" + f + g;")]
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var f = l.Where(x => { log += x; return x > 5; }).FirstOrDefault(); var g = l.Select(x => { log += x; return x; }).FirstOrDefault(x => x == 2); return log + \"|\" + f + g;")]
+    [InlineData("var l = new List<int> { 1 }; try { return l.Where(x => x > 5).First().ToString(); } catch (InvalidOperationException e) { return e.Message; }")]
+    [InlineData("var l = new List<int> { 1 }; try { return l.Where(x => x > 0).First(x => x > 5).ToString(); } catch (InvalidOperationException e) { return e.Message; }")]
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var e = l.Where(x => { log += x; return true; }).ElementAt(1); var d = l.Where(x => true).ElementAtOrDefault(7); return log + \"|\" + e + d;")]
+    [InlineData("var l = new List<int> { 1 }; try { return l.Where(x => true).ElementAt(3).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")]
     public void AQuery_RunsAsDotNetsIteratorsRun(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

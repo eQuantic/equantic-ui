@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -21,8 +22,20 @@ public class ElementAtStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var caller = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
+
+        // Over a query the runtime walks lazily, the walk stops at the element (#685).
+        if (args.Count == 1 && LinqSource.IsQuery(memberAccess.Expression, context))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var query = JsExprWriter.Write(LinqSource.Lazy(memberAccess.Expression, context));
+            var at = context.Converter.ConvertExpression(args[0].Expression);
+            return memberAccess.Name.Identifier.ValueText != "ElementAtOrDefault"
+                ? $"{Eq.Query}.elementAt({query}, {at})"
+                : $"{Eq.Query}.elementAt({query}, {at}, {{ value: {DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context)} }})";
+        }
+
+        var caller = LinqSource.Text(memberAccess.Expression, context);
 
         if (args.Count == 1)
         {
