@@ -253,6 +253,7 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
         Box box => (box.Style.Width.Kind == SizeKind.Fill, box.Style.Height.Kind == SizeKind.Fill),
         FlexNode flex => (flex.Width.Kind == SizeKind.Fill, flex.Height.Kind == SizeKind.Fill),
         Stack stack => (stack.Width.Kind == SizeKind.Fill, stack.Height.Kind == SizeKind.Fill),
+        ScrollView scroll => (scroll.Width.Kind == SizeKind.Fill, scroll.Height.Kind == SizeKind.Fill),
         // A table viewport's hug is a fill: it takes the room it is given unless it says how large.
         TableViewport table => (table.Width.Kind is not (SizeKind.Fixed or SizeKind.WindowMinus),
             table.Height.Kind is not (SizeKind.Fixed or SizeKind.WindowMinus)),

@@ -2821,11 +2821,17 @@ function lowerLayer(
   // through the store, so the instance that builds here is the instance that stays.
   const child = resolveStackChild(raw, context, path);
   if (!child) return null;
+  // A component the stack expanded is decorated as the funnel decorates one, on the element of what
+  // it built, after that node's own (C# twin, #940).
+  const asComponent = (lowered: HtmlNode | null): HtmlNode | null =>
+    raw === child ? lowered : decorate(raw, lowered);
   if (child.nodeKind === 'adaptive') {
     // Checked AFTER the component is resolved, because a component may build one: the arms are
     // then the layers of the stack the component stands in.
-    return placeChild(child, path, (arm, armPath) =>
-      lowerLayer(arm, depth, context, armPath, cellJustify, cellAlign),
+    return asComponent(
+      placeChild(child, path, (arm, armPath) =>
+        lowerLayer(arm, depth, context, armPath, cellJustify, cellAlign),
+      ),
     );
   }
   if (child.nodeKind === 'positioned') {
@@ -2847,7 +2853,7 @@ function lowerLayer(
       (has(positioned.start, positioned.startFraction) && has(positioned.end, positioned.endFraction) && !filling.width) ||
       (has(positioned.top, positioned.topFraction) && has(positioned.bottom, positioned.bottomFraction) && !filling.height);
     const shifted = shift(positioned.shiftX ?? 0, positioned.shiftY ?? 0);
-    return element(
+    const anchor = element(
       'div',
       {
         position: 'absolute',
@@ -2866,9 +2872,13 @@ function lowerLayer(
           : lowered,
       ],
     );
+    // The ANCHOR is the Positioned's element, so it carries what the funnel writes on every node's
+    // element: its key, its bookmark and its origin (C# twin, #940).
+    return asComponent(decorate(positioned, anchor));
   }
-  const lowered = lowerNode(child, context, null, path);
+  const lowered = asComponent(lowerNode(child, context, null, path));
   if (!lowered) return null;
+  const caps = cappedByTheStack(child);
   // The cell IS the stack's available space (native MeasureStack contract): stretched to the grid
   // cell, aligning its child via flex — Fill children cover, hug children anchor.
   return element(
@@ -2880,11 +2890,12 @@ function lowerLayer(
       'align-items': cellAlign,
       width: '100%',
       height: '100%',
-      // …and may not grow PAST it: a grid item's automatic minimum size is min-content, so a layer
-      // holding a scroller would size the track to the scroller's CONTENT and swell the stack to
-      // the widest line in the file.
-      'min-width': '0',
-      'min-height': '0',
+      // …and may not grow PAST it, on an axis the stack caps its layer: a grid item's automatic
+      // minimum size is min-content, so a layer holding a scroller would size the track to the
+      // scroller's CONTENT and swell the stack to the widest line in the file. On any other axis the
+      // layer's size counts toward the stack's own minimum, as it does natively (C# twin, #698).
+      'min-width': caps.width ? '0' : undefined,
+      'min-height': caps.height ? '0' : undefined,
       // Spec A3 (C# twin): paint order IS child order — a child with backdrop-filter/filter/opacity
       // creates a stacking context that CSS would otherwise paint above every plain sibling drawn
       // after it (a blurred scrim covering its own dialog).
@@ -2899,6 +2910,77 @@ function lowerLayer(
     },
     [lowered],
   );
+}
+
+/**
+ * The axes a Stack caps a layer on (C# `CappedByTheStack`): one its child fills, one a scroller hugs,
+ * since a scroller is as wide as the smaller of its content and the room it has, and either axis of
+ * a layer that holds a scroller further down, whose content would size the track the same way.
+ */
+function cappedByTheStack(child: VisualNodeValue): { width: boolean; height: boolean } {
+  const filling = fills(child);
+  if (child.nodeKind === 'scrollView') {
+    const scroller = child as ScrollViewNode;
+    const hugs = (size: { kind?: string } | null | undefined) => (size?.kind ?? 'hug') === 'hug';
+    return {
+      width: filling.width || hugs(scroller.width),
+      height: filling.height || hugs(scroller.height),
+    };
+  }
+  // A size the layer fixed bounds the track already, and counts toward the stack's minimum.
+  const fixed = fixedSize(child);
+  return holdsAScroller(child) ? { width: !fixed.width, height: !fixed.height } : filling;
+}
+
+/** Whether a layer declares a fixed size on each axis, through what takes its child's size (C# `FixedSize`). */
+function fixedSize(node: VisualNodeValue): { width: boolean; height: boolean } {
+  const { nodeKind, child, style, width, height } = node as VisualNodeValue & {
+    child?: VisualNodeValue | null;
+    style?: { width?: { kind?: string }; height?: { kind?: string } };
+    width?: { kind?: string };
+    height?: { kind?: string };
+  };
+  switch (nodeKind) {
+    case 'box':
+      return { width: style?.width?.kind === 'fixed', height: style?.height?.kind === 'fixed' };
+    case 'row':
+    case 'column':
+      return { width: width?.kind === 'fixed', height: height?.kind === 'fixed' };
+    case 'overlay':
+    case 'positioned':
+    case 'tableViewCell':
+    case 'scrollView':
+      return { width: false, height: false };
+    default:
+      return child ? fixedSize(child) : { width: false, height: false };
+  }
+}
+
+/**
+ * Whether a scroller stands in this layer, down through what takes its children's size (C#
+ * `HoldsAScroller`). What a component builds is its own: a stack resolves the layer's component, and
+ * the ones further down have not built yet, on either side.
+ */
+function holdsAScroller(node: VisualNodeValue): boolean {
+  const { nodeKind, child, children } = node as VisualNodeValue & {
+    child?: VisualNodeValue | null;
+    children?: VisualNodeValue[];
+  };
+  switch (nodeKind) {
+    case 'scrollView':
+    case 'tableViewport':
+      return true;
+    case 'row':
+    case 'column':
+      return (children ?? []).some(holdsAScroller);
+    // A wrapper with geometry of its own: the C# `IsLayoutTransparent` exceptions.
+    case 'overlay':
+    case 'positioned':
+    case 'tableViewCell':
+      return false;
+    default:
+      return child ? holdsAScroller(child) : false;
+  }
 }
 
 function textLeaf(content: string): HtmlNode {
@@ -3563,6 +3645,10 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
     case 'stack': {
       const stack = node as StackNode;
       return { width: stack.width?.kind === 'fill', height: stack.height?.kind === 'fill' };
+    }
+    case 'scrollView': {
+      const scroll = node as ScrollViewNode;
+      return { width: scroll.width?.kind === 'fill', height: scroll.height?.kind === 'fill' };
     }
     case 'tableViewport': {
       // A table viewport's hug is a fill: it takes the room it is given unless it says how large (C# twin).
