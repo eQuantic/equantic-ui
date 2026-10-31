@@ -1,4 +1,4 @@
-- **2026-10-30 · A number narrowed to an integer answers .NET's value**: bugs under #849
+- **2026-10-31 · A number narrowed to an integer answers .NET's value**: bugs under #849
   ([#401](https://github.com/eQuantic/equantic-ui/issues/401),
   [#1015](https://github.com/eQuantic/equantic-ui/issues/1015)). `Convert.ToInt32` and its siblings of anything
   but text were `$eq.math.round`, with no range, no BigInt, a decimal handed back and a char read as a number;
