@@ -274,3 +274,40 @@ export function defer<S, R>(build: (source: S[]) => Iterable<R>, source: Iterabl
   const from = checked(source, parameter);
   return new Query(() => build(Array.from(walk(from, parameter)))[Symbol.iterator]());
 }
+
+/**
+ * `First()` and `First(predicate)` over a query: the walk stops at the first element that answers, so a
+ * callback upstream runs only as far as that, and an empty walk throws .NET's InvalidOperationException.
+ */
+export function first<T>(source: Iterable<T> | string, predicate?: (item: T) => boolean): T {
+  const from = checked(source);
+  if (predicate === null) throw nullArgument('predicate');
+  for (const item of walk(from)) if (predicate === undefined || predicate(item)) return item;
+  throw exception(
+    'System.InvalidOperationException',
+    predicate === undefined ? 'Sequence contains no elements' : 'Sequence contains no matching element',
+  );
+}
+
+/** `FirstOrDefault()` and `FirstOrDefault(predicate)` over a query, the element type's default for none. */
+export function firstOrDefault<T>(source: Iterable<T> | string, predicate: ((item: T) => boolean) | undefined, fallback: T): T {
+  const from = checked(source);
+  if (predicate === null) throw nullArgument('predicate');
+  for (const item of walk(from)) if (predicate === undefined || predicate(item)) return item;
+  return fallback;
+}
+
+/**
+ * `ElementAt(index)` and `ElementAtOrDefault(index)` over a query: the walk stops at the element, and an
+ * index outside the sequence throws .NET's ArgumentOutOfRangeException, or answers the default.
+ */
+export function elementAt<T>(source: Iterable<T> | string, index: number, fallback?: { value: T }): T {
+  const from = checked(source);
+  if (index >= 0) {
+    let at = 0;
+    for (const item of walk(from)) if (at++ === index) return item;
+  }
+  if (fallback !== undefined) return fallback.value;
+  // An index outside a walked sequence is .NET's generic out-of-range, which a list's own indexer words otherwise.
+  throw exception('System.ArgumentOutOfRangeException', "Specified argument was out of the range of valid values. (Parameter 'index')");
+}

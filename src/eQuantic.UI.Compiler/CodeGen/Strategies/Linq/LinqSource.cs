@@ -66,6 +66,16 @@ internal static class LinqSource
             ? Lazy(argument.Expression, context)
             : context.Converter.ConvertIr(argument.Expression);
 
+    /// <summary>Whether <paramref name="source"/> is a query the runtime walks lazily: the result of an operator
+    /// <see cref="LinqTableStrategy"/> hands to <c>$eq.query</c> (#685). An operator that answers from it walks
+    /// it too, and stops where .NET's stops, where reading it as an array ran every callback upstream first.</summary>
+    internal static bool IsQuery(ExpressionSyntax source, ConversionContext context) =>
+        source is InvocationExpressionSyntax
+        && context.SemanticHelper.GetSymbol(source) is IMethodSymbol method
+        && context.SemanticHelper.IsLinqExtension(method.ContainingType)
+        && (LinqTableStrategy.Lazy(method.Name, method.ReducedFrom is not null ? method.Parameters.Length : method.Parameters.Length - 1) is not null
+            || LinqTableStrategy.Deferred(method.Name));
+
     /// <summary>The name of the parameter a receiver binds to: the extension's own first parameter.</summary>
     private static string? ReceiverParameter(ExpressionSyntax source, ConversionContext context) =>
         source.Parent is MemberAccessExpressionSyntax access && access.Expression == source
