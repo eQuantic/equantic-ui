@@ -98,10 +98,11 @@ public class LocalDeclarationStrategy : IStatementStrategy
                     && collection.Name == "List"
                     && SimpleItemName(inner.TypeArguments[0], context) is { } innerName)
                     return $": {ArrayOf(ArrayOf(innerName))}";
-                // A GENERIC item (KeyValuePair<,>) has no TS name to annotate with — its bare C# name
-                // names nothing over there. Inference from the initializer is right. A tuple has one
-                // (see SimpleItemName).
-                if (SimpleItemName(item, context) is not { } itemName) return "";
+                // A GENERIC item (KeyValuePair<,>, Task<T>) has no TS name to annotate with — its bare C#
+                // name names nothing over there. A tuple has one (see SimpleItemName). A list of one is
+                // `any[]`: an empty `[]` evolved its type through `push`, and a list is added to through
+                // the runtime's `listAdd`, which moves its version (#863) and evolves nothing.
+                if (SimpleItemName(item, context) is not { } itemName) return collection.Name == "List" ? ": any[]" : "";
                 return collection.Name == "HashSet" ? $": Set<{itemName}>" : $": {ArrayOf(itemName)}";
             }
 
