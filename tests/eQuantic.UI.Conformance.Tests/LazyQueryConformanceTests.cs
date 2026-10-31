@@ -46,6 +46,21 @@ public class LazyQueryConformanceTests
     // The operators the runtime has no walk for read their source when they are walked.
     [InlineData("var l = new List<int> { 1, 2 }; var q = l.Union(new[] { 5 }); l.Add(3); return string.Join(\",\", q) + \"|\" + string.Join(\",\", l.Except(new[] { 1 })) + \"|\" + string.Join(\",\", l.TakeLast(2)) + \"|\" + string.Join(\",\", l.SkipLast(1));")]
     [InlineData("var l = new List<int> { 1, 2, 3 }; var q = l.Chunk(2); l.Add(4); return string.Join(\";\", q.Select(c => string.Join(\",\", c)));")]
+    // And so do the ones with a strategy of their own: an ordering, a set, a grouping, a reversal, a type
+    // test, a filler and a zip read the source as it is when they are walked.
+    [InlineData("var l = new List<int> { 3, 1 }; var q = l.OrderBy(x => x); var d = l.OrderByDescending(x => x).ThenBy(x => -x); var o = l.Order(); l.Add(2); return string.Join(\",\", q) + \"|\" + string.Join(\",\", d) + \"|\" + string.Join(\",\", o) + \"|\" + q.Count() + q.First() + q.ToList().Count;")]
+    [InlineData("var calls = 0; var l = new List<int> { 2, 1 }; var q = l.OrderBy(x => { calls++; return x; }); var before = calls; var r = q.ToList(); return before + \"|\" + (calls > 0) + \"|\" + string.Join(\",\", r);")]
+    [InlineData("var l = new List<int> { 1, 1, 2 }; var q = l.Distinct(); l.Add(9); l.Add(2); return string.Join(\",\", q) + \"|\" + q.Count();")]
+    [InlineData("var l = new List<int> { 1, 2 }; var q = l.GroupBy(x => x % 2); l.Add(3); return string.Join(\";\", q.Select(g => g.Key + \":\" + string.Join(\",\", g))) + \"|\" + string.Join(\",\", l.GroupBy(x => x % 2, (k, g) => k + g.Count()));")]
+    [InlineData("var l = new List<int> { 1, 2 }; var q = l.AsEnumerable().Reverse(); l.Add(3); return string.Join(\",\", q);")]
+    [InlineData("var l = new List<object> { 1, \"a\" }; var q = l.OfType<int>(); var s = l.OfType<string>(); l.Add(2); l.Add(\"b\"); return string.Join(\",\", q) + \"|\" + string.Join(\",\", s);")]
+    [InlineData("var l = new List<int>(); var n = 7; var q = l.DefaultIfEmpty(n); n = 5; var a = string.Join(\",\", q); l.Add(1); return a + \"|\" + string.Join(\",\", q);")]
+    [InlineData("var a = new List<int> { 1, 2 }; var b = new List<string> { \"x\", \"y\", \"z\" }; var q = a.Zip(b, (n, s) => s + n); var t = a.Zip(b); a.Add(3); return string.Join(\",\", q) + \"|\" + string.Join(\",\", t.Select(p => p.First + p.Second));")]
+    // A null source is refused when the operator is called, by the name its receiver binds to.
+    [InlineData("List<int> none = null; try { var q = none.Union(new[] { 1 }); return \"made\"; } catch (ArgumentNullException e) { return e.Message; }")]
+    [InlineData("List<int> none = null; try { var q = none.Zip(new[] { 1 }); return \"made\"; } catch (ArgumentNullException e) { return e.Message; }")]
+    [InlineData("List<int> none = null; try { var q = none.OrderBy(x => x); return \"made\"; } catch (ArgumentNullException e) { return e.Message; }")]
+    [InlineData("List<int> none = null; try { var q = none.GroupBy(x => x); return \"made\"; } catch (ArgumentNullException e) { return e.Message; }")]
     // An operator that answers from a query stops where .NET's stops.
     [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var f = l.Select(x => { log += x; return x * 10; }).First(); var g = l.Where(x => { log += \"w\" + x; return x > 1; }).First(x => x > 2); return log + \"|\" + f + g;")]
     [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var f = l.Where(x => { log += x; return x > 5; }).FirstOrDefault(); var g = l.Select(x => { log += x; return x; }).FirstOrDefault(x => x == 2); return log + \"|\" + f + g;")]
@@ -56,6 +71,12 @@ public class LazyQueryConformanceTests
     [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var c = l.Select(x => { log += x; return x; }).Contains(2); return log + \"|\" + c;")]
     [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var s = l.Where(x => { log += x; return x == 2; }).Single(); var t = l.Select(x => { log += x; return x; }).Last(); return log + \"|\" + s + t;")]
     [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var n = l.Select(x => { log += x; return x; }).Count(); return log + \"|\" + n;")]
+    // A query read to its end or to an answer is walked by pushing, in the same steps.
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2 }; var r = l.SelectMany(x => { log += x; return new[] { x, x * 10 }; }).Take(3).ToList(); return log + \"|\" + string.Join(\",\", r);")]
+    [InlineData("var log = \"\"; var a = new List<int> { 1 }; var b = new List<int> { 2 }; var r = a.Concat(b.Select(x => { log += x; return x; })).Take(1).ToList(); return log + \"|\" + string.Join(\",\", r);")]
+    [InlineData("var l = new List<int> { 1, 2, 3 }; try { var r = l.Where(x => { if (x == 1) l.Add(9); return true; }).ToList(); return r.Count.ToString(); } catch (InvalidOperationException e) { return e.Message; }")]
+    [InlineData("var l = new List<int> { 1, 2, 3 }; return string.Join(\",\", l.Prepend(0).Append(9).Skip(1).Take(2).ToList()) + \"|\" + string.Join(\",\", l.SkipWhile((x, i) => i < 1).ToList()) + \"|\" + \"abc\".Where(c => c != 'b').Count() + \"|\" + string.Join(\",\", l.Distinct().ToList()) + string.Join(\",\", l.OrderBy(x => -x).Take(2).ToList());")]
+    [InlineData("var h = new HashSet<int> { 1 }; var d = new Dictionary<int, int>(); var q = new Queue<int>(); return h.Any() + \"|\" + d.Any() + \"|\" + q.Any() + \"|\" + h.Concat(h).Any() + \"|\" + h.Append(2).ToList().Count;")]
     // A projection of a list reads one element alone, as .NET's does.
     [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var e = l.Select(x => { log += x; return x; }).ElementAt(2); var f = l.Select(x => { log += x; return x; }).Last(x => x < 3); var g = l.Select(x => { log += x; return x; }).LastOrDefault(); return log + \"|\" + e + f + g;")]
     [InlineData("var l = new List<int>(); try { return l.Select(x => x).Last().ToString(); } catch (InvalidOperationException e) { return e.Message + \"|\" + l.Select(x => x).LastOrDefault() + l.Select(x => x).FirstOrDefault(); }")]

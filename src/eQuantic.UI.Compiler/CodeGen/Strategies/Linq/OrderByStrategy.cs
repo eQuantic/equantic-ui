@@ -64,8 +64,9 @@ public class OrderByStrategy : IExpressionIrStrategy
 
         // Through the one place every operator reads its source: a string spread by code point, and
         // it was spread here, where .NET sorts its chars.
-        var src = LinqSource.Ir(source, context);
-        if (keys.Count == 0) return JsExpr.Template("[...{0}].sort()", [src]);
+        // The sort runs when the query is walked, over the source as it is then (#685).
+        var src = LinqSource.Lazy(source, context);
+        if (keys.Count == 0) return JsExpr.Template(LinqSource.Defer("[...{0}].sort()", source, context), [src]);
 
         // The key selector is typed through the comparator's own parameter, which the sorted array
         // types. Alone in `const $k = (filler) => …` nothing gave the lambda a type, and the
@@ -83,7 +84,7 @@ public class OrderByStrategy : IExpressionIrStrategy
 
         // {0} is the source and {1}… the key selectors, in the order C# evaluates them: the writer
         // binds a selector that is not a lambda, which the comparator would otherwise run each time.
-        return JsExpr.Template($"[...{{0}}].sort(($a, $b) => {{ {body} }})",
+        return JsExpr.Template(LinqSource.Defer($"[...{{0}}].sort(($a, $b) => {{ {body} }})", source, context),
             [src, .. keys.Select(key => key.Selector)]);
     }
 

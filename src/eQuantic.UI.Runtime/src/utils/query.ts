@@ -8,9 +8,19 @@
  * A {@link Query} is what a deferred operator answers. It is iterable, so a `foreach`, a spread, another
  * operator and every helper that takes a sequence walk it, and it writes itself to JSON as the array of
  * its elements, as System.Text.Json writes an `IEnumerable<T>`.
+ *
+ * Each operator walks two ways, by the same steps: pulled, by a generator, for a `foreach` and every
+ * consumer that takes an iterator, and pushed ({@link Query.each}), each element handed down the chain to
+ * a consumer that reads to the end or to an answer: `ToList`, `Count`, `Any`, `First` and the others. A
+ * generator per stage cost a chain five to nine times what the array methods cost (measured); a push
+ * costs a call per element and stage.
  */
+import { count as collectionCount, LinkedList, Queue, Stack } from './collections';
+import { Dictionary } from './dictionary';
 import { exception } from './exceptions';
-import { listWalk } from './list-version';
+import { HashSet } from './hash-set';
+import { listEach, listWalk } from './list-version';
+import { SortedMap, SortedSet } from './sorted';
 import { isFixedSize } from './view';
 
 /** .NET's refusal of a null argument, by the parameter's name. */
@@ -18,16 +28,21 @@ function nullArgument(parameter: string): Error {
   return exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
 }
 
+/** One step of a pushed walk: an element handed to its consumer, which answers whether the walk goes on. */
+export type Sink<T> = (item: T) => boolean;
+
 /** A sequence a deferred operator answers: walked each time it is enumerated, as .NET's iterators are. */
 export class Query<T> implements Iterable<T> {
   /**
    * @param open the walk, started anew each time the query is enumerated.
+   * @param each the same walk pushed: each element handed to the sink until it answers false.
    * @param count how many elements it holds where that is known without walking it, as .NET's
    * iterators answer `GetCount(onlyIfCheap: true)`: a projection of a list counts the list and calls
    * no selector.
    */
   constructor(
     private readonly open: () => Iterator<T>,
+    readonly each: (sink: Sink<T>) => void,
     readonly count?: () => number | undefined,
     /** The element at an index where it is read without walking, as .NET's iterators over a list answer
      *  `TryGetElementAt`, `TryGetFirst` and `TryGetLast`: a projection of a list runs its selector on that
@@ -39,9 +54,19 @@ export class Query<T> implements Iterable<T> {
     return this.open();
   }
 
+  /** Its elements in a new array, the query walked once, pushed. */
+  toArray(): T[] {
+    const items: T[] = [];
+    this.each((item) => {
+      items.push(item);
+      return true;
+    });
+    return items;
+  }
+
   /** The array of its elements, as System.Text.Json writes an `IEnumerable<T>`. */
   toJSON(): T[] {
-    return Array.from(this);
+    return this.toArray();
   }
 }
 
@@ -61,6 +86,42 @@ export function walk<T>(source: Iterable<T> | string | null | undefined, paramet
 }
 
 /**
+ * {@link walk} pushed: each element of a source handed to `sink` until it answers false, in the same order
+ * and with the same checks, a query by its own push and a list through its version.
+ */
+export function eachOf<T>(source: Iterable<T> | string | null | undefined, sink: Sink<T>, parameter = 'source'): void {
+  if (source instanceof Query) {
+    source.each(sink);
+    return;
+  }
+  if (source == null) throw nullArgument(parameter);
+  if (typeof source === 'string' || (Array.isArray(source) && isFixedSize(source))) {
+    const items = source as ArrayLike<T>;
+    for (let index = 0; index < items.length; index++) if (!sink(items[index])) return;
+    return;
+  }
+  if (Array.isArray(source)) {
+    listEach(source as T[], sink);
+    return;
+  }
+  for (const item of walk(source, parameter)) if (!sink(item)) return;
+}
+
+/** The elements of a source in a new array, pushed. */
+function arrayOf<T>(source: Iterable<T> | string, parameter = 'source'): T[] {
+  const items: T[] = [];
+  eachOf(
+    source,
+    (item) => {
+      items.push(item);
+      return true;
+    },
+    parameter,
+  );
+  return items;
+}
+
+/**
  * How many elements a source holds where that is known without walking it, as .NET reads it: a list's
  * or an array's length, and a query's own cheap count; undefined for anything that would have to be
  * walked.
@@ -68,6 +129,31 @@ export function walk<T>(source: Iterable<T> | string | null | undefined, paramet
 export function cheapCount(source: unknown): number | undefined {
   if (Array.isArray(source)) return source.length;
   if (source instanceof Query) return source.count?.();
+  return undefined;
+}
+
+/**
+ * How many elements a source holds where .NET's `TryGetNonEnumeratedCount` knows it: what
+ * {@link cheapCount} knows, and an `ICollection<T>`'s `Count`, which the runtime's dictionary, set,
+ * sorted set and its views, sorted dictionary, queue, stack and linked list answer, and a JavaScript `Set`
+ * or `Map` its size. `Any()` and the counts of `Concat`, `Append` and `Prepend` ask it, as .NET's do: a
+ * sorted set's view counts itself again when asked, and its `ExceptWith` reads that count.
+ */
+function nonEnumeratedCount(source: unknown): number | undefined {
+  const cheap = cheapCount(source);
+  if (cheap !== undefined) return cheap;
+  if (source instanceof Set || source instanceof Map) return source.size;
+  if (
+    source instanceof HashSet ||
+    source instanceof Dictionary ||
+    source instanceof SortedSet ||
+    source instanceof SortedMap ||
+    source instanceof Queue ||
+    source instanceof Stack ||
+    source instanceof LinkedList
+  ) {
+    return collectionCount(source);
+  }
   return undefined;
 }
 
@@ -96,10 +182,16 @@ function required<F>(callback: F | null | undefined, parameter: string): F {
 export function where<T>(source: Iterable<T> | string, predicate: (item: T, index: number) => boolean): Query<T> {
   const from = checked(source);
   const test = required(predicate, 'predicate');
-  return new Query(function* () {
-    let index = 0;
-    for (const item of walk(from)) if (test(item, index++)) yield item;
-  });
+  return new Query(
+    function* () {
+      let index = 0;
+      for (const item of walk(from)) if (test(item, index++)) yield item;
+    },
+    (sink) => {
+      let index = 0;
+      eachOf(from, (item) => !test(item, index++) || sink(item));
+    },
+  );
 }
 
 /** `Select(selector)`, the index overload included. */
@@ -111,6 +203,10 @@ export function select<T, R>(source: Iterable<T> | string, selector: (item: T, i
     function* () {
       let index = 0;
       for (const item of walk(from)) yield project(item, index++);
+    },
+    (sink) => {
+      let index = 0;
+      eachOf(from, (item) => sink(project(item, index++)));
     },
     () => cheapCount(from),
     read === undefined
@@ -131,14 +227,28 @@ export function selectMany<T, C, R = C>(
   const from = checked(source);
   const many = required(collectionSelector, 'collectionSelector');
   if (resultSelector === null) throw nullArgument('resultSelector');
-  return new Query(function* () {
-    let index = 0;
-    for (const item of walk(from)) {
-      for (const inner of walk(many(item, index++), 'collection')) {
-        yield resultSelector === undefined ? (inner as unknown as R) : resultSelector(item, inner);
+  return new Query(
+    function* () {
+      let index = 0;
+      for (const item of walk(from)) {
+        for (const inner of walk(many(item, index++), 'collection')) {
+          yield resultSelector === undefined ? (inner as unknown as R) : resultSelector(item, inner);
+        }
       }
-    }
-  });
+    },
+    (sink) => {
+      let index = 0;
+      eachOf(from, (item) => {
+        let going = true;
+        eachOf(
+          many(item, index++),
+          (inner) => (going = sink(resultSelector === undefined ? (inner as unknown as R) : resultSelector(item, inner))),
+          'collection',
+        );
+        return going;
+      });
+    },
+  );
 }
 
 /** `Concat(second)`. */
@@ -150,9 +260,14 @@ export function concat<T>(first: Iterable<T> | string, second: Iterable<T> | str
       yield* walk(a, 'first');
       yield* walk(b, 'second');
     },
+    (sink) => {
+      let going = true;
+      eachOf(a, (item) => (going = sink(item)), 'first');
+      if (going) eachOf(b, sink, 'second');
+    },
     () => {
-      const first = cheapCount(a);
-      const second = cheapCount(b);
+      const first = nonEnumeratedCount(a);
+      const second = nonEnumeratedCount(b);
       return first === undefined || second === undefined ? undefined : first + second;
     },
   );
@@ -166,8 +281,13 @@ export function append<T>(source: Iterable<T> | string, element: T): Query<T> {
       yield* walk(from);
       yield element;
     },
+    (sink) => {
+      let going = true;
+      eachOf(from, (item) => (going = sink(item)));
+      if (going) sink(element);
+    },
     () => {
-      const count = cheapCount(from);
+      const count = nonEnumeratedCount(from);
       return count === undefined ? undefined : count + 1;
     },
   );
@@ -181,8 +301,11 @@ export function prepend<T>(source: Iterable<T> | string, element: T): Query<T> {
       yield element;
       yield* walk(from);
     },
+    (sink) => {
+      if (sink(element)) eachOf(from, sink);
+    },
     () => {
-      const count = cheapCount(from);
+      const count = nonEnumeratedCount(from);
       return count === undefined ? undefined : count + 1;
     },
   );
@@ -192,28 +315,45 @@ export function prepend<T>(source: Iterable<T> | string, element: T): Query<T> {
 export function takeWhile<T>(source: Iterable<T> | string, predicate: (item: T, index: number) => boolean): Query<T> {
   const from = checked(source);
   const test = required(predicate, 'predicate');
-  return new Query(function* () {
-    let index = 0;
-    for (const item of walk(from)) {
-      if (!test(item, index++)) return;
-      yield item;
-    }
-  });
+  return new Query(
+    function* () {
+      let index = 0;
+      for (const item of walk(from)) {
+        if (!test(item, index++)) return;
+        yield item;
+      }
+    },
+    (sink) => {
+      let index = 0;
+      eachOf(from, (item) => test(item, index++) && sink(item));
+    },
+  );
 }
 
 /** `SkipWhile(predicate)`, the index overload included. */
 export function skipWhile<T>(source: Iterable<T> | string, predicate: (item: T, index: number) => boolean): Query<T> {
   const from = checked(source);
   const test = required(predicate, 'predicate');
-  return new Query(function* () {
-    let index = 0;
-    let skipping = true;
-    for (const item of walk(from)) {
-      if (skipping && test(item, index++)) continue;
-      skipping = false;
-      yield item;
-    }
-  });
+  return new Query(
+    function* () {
+      let index = 0;
+      let skipping = true;
+      for (const item of walk(from)) {
+        if (skipping && test(item, index++)) continue;
+        skipping = false;
+        yield item;
+      }
+    },
+    (sink) => {
+      let index = 0;
+      let skipping = true;
+      eachOf(from, (item) => {
+        if (skipping && test(item, index++)) return true;
+        skipping = false;
+        return sink(item);
+      });
+    },
+  );
 }
 
 /** `AsEnumerable()`: the source itself, as .NET answers it. */
@@ -230,19 +370,21 @@ export function any<T>(source: Iterable<T> | string, predicate?: (item: T) => bo
   if (predicate === null) throw nullArgument('predicate');
   // Without a predicate, a count known without walking answers, and no selector upstream runs.
   if (predicate === undefined) {
-    const count = cheapCount(from);
+    const count = nonEnumeratedCount(from);
     if (count !== undefined) return count !== 0;
   }
-  for (const item of walk(from)) if (predicate === undefined || predicate(item)) return true;
-  return false;
+  let found = false;
+  eachOf(from, (item) => !(found = predicate === undefined || predicate(item)));
+  return found;
 }
 
 /** `All(predicate)`: the walk stops at the first element that fails. */
 export function all<T>(source: Iterable<T> | string, predicate: (item: T) => boolean): boolean {
   const from = checked(source);
   const test = required(predicate, 'predicate');
-  for (const item of walk(from)) if (!test(item)) return false;
-  return true;
+  let holds = true;
+  eachOf(from, (item) => (holds = test(item)));
+  return holds;
 }
 
 /** `Skip(count)`: a negative count skips nothing, as .NET's does, where a slice counted it from the end. */
@@ -258,6 +400,16 @@ export function skip<T>(source: Iterable<T> | string, count: number): Query<T> {
         }
         yield item;
       }
+    },
+    (sink) => {
+      let left = count;
+      eachOf(from, (item) => {
+        if (left > 0) {
+          left--;
+          return true;
+        }
+        return sink(item);
+      });
     },
     () => {
       const total = cheapCount(from);
@@ -278,6 +430,11 @@ export function take<T>(source: Iterable<T> | string, count: number): Query<T> {
         if (--left === 0) return;
       }
     },
+    (sink) => {
+      if (count <= 0) return;
+      let left = count;
+      eachOf(from, (item) => sink(item) && --left > 0);
+    },
     () => {
       const total = cheapCount(from);
       return total === undefined ? undefined : Math.min(total, Math.max(0, count));
@@ -292,7 +449,12 @@ export function take<T>(source: Iterable<T> | string, count: number): Query<T> {
  */
 export function defer<S, R>(build: (source: S[]) => Iterable<R>, source: Iterable<S> | string, parameter = 'source'): Query<R> {
   const from = checked(source, parameter);
-  return new Query(() => build(Array.from(walk(from, parameter)))[Symbol.iterator]());
+  return new Query(
+    () => build(arrayOf(from, parameter))[Symbol.iterator](),
+    (sink) => {
+      for (const item of build(arrayOf(from, parameter))) if (!sink(item)) return;
+    },
+  );
 }
 
 /**
@@ -307,7 +469,8 @@ export function first<T>(source: Iterable<T> | string, predicate?: (item: T) => 
     if (found !== undefined) return found.value;
     if (cheapCount(from) === 0) throw exception('System.InvalidOperationException', 'Sequence contains no elements');
   }
-  for (const item of walk(from)) if (predicate === undefined || predicate(item)) return item;
+  const found = firstOf(from, predicate);
+  if (found !== undefined) return found.value;
   throw exception(
     'System.InvalidOperationException',
     predicate === undefined ? 'Sequence contains no elements' : 'Sequence contains no matching element',
@@ -323,8 +486,19 @@ export function firstOrDefault<T>(source: Iterable<T> | string, predicate: ((ite
     if (found !== undefined) return found.value;
     if (cheapCount(from) === 0) return fallback;
   }
-  for (const item of walk(from)) if (predicate === undefined || predicate(item)) return item;
-  return fallback;
+  const found = firstOf(from, predicate);
+  return found === undefined ? fallback : found.value;
+}
+
+/** The first element that answers, the walk stopped there; undefined for none. */
+function firstOf<T>(source: Iterable<T> | string, predicate: ((item: T) => boolean) | undefined): { value: T } | undefined {
+  let found: { value: T } | undefined;
+  eachOf(source, (item) => {
+    if (predicate !== undefined && !predicate(item)) return true;
+    found = { value: item };
+    return false;
+  });
+  return found;
 }
 
 /**
@@ -339,7 +513,13 @@ export function elementAt<T>(source: Iterable<T> | string, index: number, fallba
     if (found !== undefined) return found.value;
   } else if (index >= 0) {
     let at = 0;
-    for (const item of walk(from)) if (at++ === index) return item;
+    let found: { value: T } | undefined;
+    eachOf(from, (item) => {
+      if (at++ !== index) return true;
+      found = { value: item };
+      return false;
+    });
+    if (found !== undefined) return found.value;
   }
   if (fallback !== undefined) return fallback.value;
   // An index outside a walked sequence is .NET's generic out-of-range, which a list's own indexer words otherwise.
@@ -364,7 +544,10 @@ export function last<T>(source: Iterable<T> | string, predicate?: (item: T) => b
     }
   }
   let found: { value: T } | undefined;
-  for (const item of walk(from)) if (predicate === undefined || predicate(item)) found = { value: item };
+  eachOf(from, (item) => {
+    if (predicate === undefined || predicate(item)) found = { value: item };
+    return true;
+  });
   if (found !== undefined) return found.value;
   if (fallback !== undefined) return fallback.value;
   throw exception(
