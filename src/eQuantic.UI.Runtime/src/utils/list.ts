@@ -22,6 +22,7 @@
  */
 import { exception, receiver } from './exceptions';
 import { sameBy, type KeyEquality } from './key-equality';
+import { changed } from './list-version';
 import { refuseAResize } from './view';
 import { binarySearchIn, introSort, type SortOrder } from './sort';
 import { readAsACollection } from './sorted';
@@ -150,18 +151,21 @@ export function comparerOrder<T>(
 export function listSort<T>(list: T[], how: SortOrder<T>, index?: number, count?: number): void {
   if (index === undefined || count === undefined) {
     introSort(list, 0, list.length, how);
+    changed(list);
     return;
   }
   if (index < 0) throw outOfRange('index', NON_NEGATIVE);
   if (count < 0) throw outOfRange('count', NON_NEGATIVE);
   if (list.length - index < count) throw exception('System.ArgumentException', INVALID_OFF_LEN);
   introSort(list, index, count, how);
+  changed(list);
 }
 
 /** `List<T>.Sort(Comparison<T>)`. */
 export function listSortBy<T>(list: T[], comparison: ((a: T, b: T) => number) | null, name: string): void {
   if (comparison == null) throw argumentNull('comparison');
   introSort(list, 0, list.length, { compare: comparison, kind: 'comparer', name });
+  changed(list);
 }
 
 /** `Array.Sort(array)`, `Sort(array, IComparer<T>)` and `Sort(array, int index, int length, IComparer<T>)`. */
@@ -194,12 +198,14 @@ export function arraySortBy<T>(array: T[] | null, comparison: ((a: T, b: T) => n
 export function listReverse<T>(list: T[], index?: number, count?: number): void {
   if (index === undefined || count === undefined) {
     list.reverse();
+    changed(list);
     return;
   }
   if (index < 0) throw outOfRange('index', NON_NEGATIVE);
   if (count < 0) throw outOfRange('count', NON_NEGATIVE);
   if (list.length - index < count) throw exception('System.ArgumentException', INVALID_OFF_LEN);
   reverseRange(list, index, count);
+  changed(list);
 }
 
 /** `Array.Reverse(array)` and `Reverse(array, int index, int length)`, in place, a null array refused. */
@@ -428,6 +434,7 @@ export function addRange<T>(list: T[], collection: Iterable<T> | string | null):
   receiver(list);
   const items = rangeOf(collection);
   for (let i = 0, count = items.length; i < count; i++) list.push(items[i]);
+  if (items.length > 0) changed(list);
 }
 
 /**
@@ -449,6 +456,7 @@ export function insertRange<T>(list: T[], index: number, collection: Iterable<T>
   const tail = list.splice(index);
   for (let i = 0, count = items.length; i < count; i++) list.push(items[i]);
   for (let i = 0, count = tail.length; i < count; i++) list.push(tail[i]);
+  changed(list);
 }
 
 // ---- Insert, RemoveAt, RemoveRange, GetRange ----------------------------------------------------
@@ -470,6 +478,7 @@ export function insert<T>(list: T[] | { insert(index: number, item: T): void }, 
   }
   if (index < 0 || index > list.length) throw outOfRange('index', INSERT_INDEX);
   list.splice(index, 0, item);
+  changed(list);
 }
 
 /**
@@ -486,6 +495,7 @@ export function removeAt<T>(list: T[] | { removeAt(index: number): void }, index
   }
   if (index < 0 || index >= list.length) throw outOfRange('index', INDEX_LESS);
   list.splice(index, 1);
+  changed(list);
 }
 
 /** The range `List<T>.RemoveRange` and `GetRange` take, checked as .NET checks it, in its order. */
@@ -503,7 +513,10 @@ function requireRange(list: readonly unknown[], index: number, count: number): v
 export function removeRange<T>(list: T[], index: number, count: number): void {
   receiver(list);
   requireRange(list, index, count);
-  if (count > 0) list.splice(index, count);
+  if (count > 0) {
+    list.splice(index, count);
+    changed(list);
+  }
 }
 
 /**
@@ -535,6 +548,7 @@ export function removeAll<T>(list: T[], match: ((item: T) => boolean) | null): n
     if (current < size) list[free++] = list[current++];
   }
   list.length = free;
+  changed(list);
   return size - free;
 }
 

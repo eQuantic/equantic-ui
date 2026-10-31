@@ -39,7 +39,7 @@ public class ForEachVariableStatementStrategy : IStatementStrategy
             foreachStmt.AwaitKeyword.Value == null && context.SemanticHelper.ForEachInfo(foreachStmt) is { } info
             && IterableTwin.ForEachSource(info, sourceType, source, context.UsedHelpers) is { } bound
                 ? bound
-                : source);
+                : ForEachStatementStrategy.Walked(source, sourceType, context));
 
         var body = context.Converter.ConvertStatementIr(foreachStmt.Statement);
         var loopType = foreachStmt.AwaitKeyword.Value != null ? "for await" : "for";

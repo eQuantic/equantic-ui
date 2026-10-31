@@ -9,6 +9,7 @@ import {
 import { closing, closingLike, sameClosure } from './utils/closing';
 import { boundDelegate, combineDelegate, delegateOver, removeDelegate } from './utils/delegates';
 import { fixedSize, isReadOnly } from './utils/view';
+import { listAdd, listClear, listForEach, listSet, listWalk } from './utils/list-version';
 import { hydrate } from './utils/hydrate';
 import { twinJson } from './utils/twin-json';
 import { long } from './utils/long';
@@ -570,6 +571,12 @@ export const $eq = {
     addRange,
     insertRange,
     /** `List<T>.Insert`, `RemoveAt`, `RemoveRange` and `GetRange`, each position checked as .NET checks it (#1160). */
+    /** A `List<T>`'s version, moved by every change and compared at every step of a walk (#863). */
+    listWalk,
+    listAdd,
+    listClear,
+    listSet,
+    listForEach,
     listInsert,
     listRemoveAt,
     listRemoveRange,
