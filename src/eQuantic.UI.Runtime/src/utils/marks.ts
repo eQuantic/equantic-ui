@@ -35,3 +35,17 @@ export function anonymousObject<T extends object>(value: T): T {
 export function isAnonymous(value: unknown): boolean {
   return typeof value === 'object' && value !== null && anonymous.has(value);
 }
+
+/**
+ * The tag a box carries (`utils/box.ts`), read where a module the box itself imports meets one: an enum's text
+ * handed a member that was boxed for a call whose lowering prints it by its type (`StringBuilder.Append(object)`,
+ * a `Console.WriteLine(object)`), which is the member's text either way.
+ */
+export const BOXED = Symbol('eq.boxed');
+
+/** The value a box holds, or the value itself where it is no box. */
+export function heldIn(value: unknown): unknown {
+  return typeof value === 'object' && value !== null && (value as { [BOXED]?: boolean })[BOXED] === true
+    ? (value as { value: unknown }).value
+    : value;
+}

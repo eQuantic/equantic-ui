@@ -49,7 +49,8 @@ describe('an enum as .NET reads it', () => {
   it('refuses a boxed value of another kind, as GetName and IsDefined over an object do', () => {
     expect(() => name(true, rank, 'object')).toThrow('The value passed in must be an enum base');
     expect(() => name('Mid', rank, 'object')).toThrow('The value passed in must be an enum base');
-    expect(name('mid', rank, 'object')).toBe('Mid');
+    // A member held as object is a box (`utils/box.ts`): a string of its key is a string, refused as .NET refuses one.
+    expect(() => name('mid', rank, 'object')).toThrow('The value passed in must be an enum base');
     expect(() => isDefined(true, rank, 'object')).toThrow('Unknown enum type.');
     expect(() => isDefined(1.5, rank, 'object')).toThrow('Unknown enum type.');
   });
@@ -72,7 +73,8 @@ describe('an enum as .NET reads it', () => {
     expect(isDefined(2, rank, 'number')).toBe(false);
     expect(isDefined('Mid', rank, 'name')).toBe(true);
     expect(isDefined('mid', rank, 'name')).toBe(false);
-    expect(isDefined('mid', rank, 'object')).toBe(true);
+    // A string held as object is a name, matched as it is written: a member held so is a box (`utils/box.ts`).
+    expect(isDefined('mid', rank, 'object')).toBe(false);
     expect(isDefined('Mid', rank, 'object')).toBe(true);
     expect(isDefined(5, rank, 'object')).toBe(true);
     expect(isDefined('Gone', rank, 'object')).toBe(false);

@@ -41,6 +41,20 @@ internal static class Boxing
     internal static bool IsABox(ITypeSymbol? type) =>
         type?.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType;
 
+    /// <summary>
+    /// Whether a boxing is an argument a call's own lowering reads by the value's type, which the box would hide
+    /// from it: <c>Convert</c>'s <c>object</c> overloads, which read an enum and a nullable as they are written, and
+    /// <c>CompareTo(object)</c>, which compares a member by its value. What they answer was already .NET's.
+    /// </summary>
+    internal static bool ReadThrough(IConversionOperation conversion) =>
+        conversion.Parent is IArgumentOperation { Parent: IInvocationOperation { TargetMethod: var method } }
+        && (method.ContainingType.ToDisplayString() == "System.Convert" || method.Name == "CompareTo");
+
+    /// <summary>Whether a conversion is an argument of <c>object</c>'s statics (<c>Equals</c>, <c>ReferenceEquals</c>),
+    /// which compare a list by the type it had before the conversion: a mark would change nothing there.</summary>
+    internal static bool PassesThrough(IConversionOperation conversion) =>
+        conversion.Parent is IArgumentOperation { Parent: IInvocationOperation { TargetMethod: { IsStatic: true, ContainingType.SpecialType: SpecialType.System_Object } } };
+
     /// <summary><c>$eq.box(value, type[, shape])</c>: the boxing of an enum member or a float.</summary>
     internal static JsExpr Box(ITypeSymbol type, JsExpr value, ConversionContext context)
     {
@@ -64,10 +78,12 @@ internal static class Boxing
         if (underlying is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
         {
             context.UsedHelpers.Add(Eq.Import);
-            var member = JsExpr.Call(JsExpr.Identifier(Eq.EnumUnbox), nullable ? JsExpr.Identifier("$v") : value,
-                JsExpr.Literal(EnumShape.Of(enumType)), JsExpr.Literal(JsStringLiteral.Quote(NameOf(enumType))));
+            var shape = JsExpr.Literal(EnumShape.Of(enumType));
+            var name = JsExpr.Literal(JsStringLiteral.Quote(NameOf(enumType)));
             // A nullable target lets null through, and unboxes a value.
-            return nullable ? JsExpr.Template($"(($v) => $v == null ? null : {JsExprWriter.Write(member)})({{0}})", [value]) : member;
+            return nullable
+                ? JsExpr.Call(JsExpr.Identifier(Eq.EnumUnbox), value, shape, name, JsExpr.Literal("true"))
+                : JsExpr.Call(JsExpr.Identifier(Eq.EnumUnbox), value, shape, name);
         }
         if (underlying?.SpecialType is not (SpecialType.System_Boolean or SpecialType.System_Char or SpecialType.System_SByte
             or SpecialType.System_Byte or SpecialType.System_Int16 or SpecialType.System_UInt16 or SpecialType.System_Int32

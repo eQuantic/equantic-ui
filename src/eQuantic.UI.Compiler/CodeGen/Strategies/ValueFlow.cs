@@ -128,6 +128,11 @@ public static class ValueFlow
             && SinglePrecision.HoldsExactly(conversion.Operand))
             return translated;
 
+        // A boxing a call's own lowering reads through, by the value's type (Boxing.ReadThrough), is left to it,
+        // and so is a list that only passes through object's statics, which compare it by its type.
+        if (conversion.GetConversion().IsBoxing && Boxing.ReadThrough(conversion)) return translated;
+        if (conversion.GetConversion().IsReference && Boxing.PassesThrough(conversion)) return translated;
+
         return Apply(conversion.GetConversion(), conversion.Operand.Type, conversion.Type,
             conversion.ConstantValue.HasValue ? conversion.ConstantValue.Value : null,
             conversion.Operand.ConstantValue.HasValue ? conversion.Operand.ConstantValue.Value : null,

@@ -145,7 +145,9 @@ export class FormatNumber {
 export function asNumber(
   value: number | null | undefined,
   kind: NumberKind,
-): FormatNumber | null | undefined {
+): FormatNumber | Boxed | null | undefined {
+  // A boxed float carries its own kind, which the formatter reads from the box.
+  if ((value as unknown) instanceof Boxed) return value as unknown as Boxed;
   return value == null ? value : new FormatNumber(value, kind);
 }
 
