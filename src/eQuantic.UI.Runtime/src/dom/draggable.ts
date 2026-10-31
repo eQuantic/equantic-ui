@@ -31,11 +31,16 @@ export function resetDraggableController(): void {
   document.removeEventListener('pointerdown', onPointerDown);
 }
 
-/** The scale the surface's own `transform` draws it at along an axis, 1 when it has none. */
+/**
+ * The scale the surface's own `transform` draws it at along an axis, 1 when it has none. A browser
+ * reports a transform with any 3D part (a `translateZ` layer hint) as `matrix3d`, whose first two
+ * columns hold the same four numbers a `matrix` does.
+ */
 function ownScale(surface: HTMLElement, horizontal: boolean): number {
-  const matrix = /^matrix\(([^)]+)\)$/.exec(getComputedStyle(surface).transform);
+  const matrix = /^matrix(3d)?\(([^)]+)\)$/.exec(getComputedStyle(surface).transform);
   if (!matrix) return 1;
-  const [a, b, c, d] = matrix[1].split(',').map(Number);
+  const values = matrix[2].split(',').map(Number);
+  const [a, b, c, d] = matrix[1] ? [values[0], values[1], values[4], values[5]] : values;
   return (horizontal ? Math.hypot(a, b) : Math.hypot(c, d)) || 1;
 }
 

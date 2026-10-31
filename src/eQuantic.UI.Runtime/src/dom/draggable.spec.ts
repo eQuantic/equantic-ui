@@ -139,6 +139,23 @@ describe('draggable controller', () => {
     expect(released).toEqual([0.35]);
   });
 
+  it('reads the scale out of a 3D transform too', () => {
+    surface.style.transform = 'matrix3d(0.5, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)';
+    surface.getBoundingClientRect = () => ({ width: 100, height: 20, left: 0, top: 0 }) as DOMRect;
+    Object.defineProperty(surface, 'offsetWidth', { value: 200 });
+    surface.setAttribute('data-eq-drag-normalized', '1');
+    surface.setAttribute('data-eq-drag-min', '0');
+    surface.setAttribute('data-eq-drag-max', '1');
+    surface.setAttribute('data-eq-drag-rest', '0.25');
+
+    down(100, 100);
+    move(120, 100);
+
+    expect(surface.style.getPropertyValue('translate')).toBe('70px');
+    up(120, 100);
+    expect(released).toEqual([0.35]);
+  });
+
   it('reports a fraction of its own extent when the gesture is normalized', () => {
     // A slider's track is fluid: the component cannot know its pixel width, and the DOM can.
     surface.getBoundingClientRect = () => ({ width: 200, height: 40, left: 0, top: 0 }) as DOMRect;
