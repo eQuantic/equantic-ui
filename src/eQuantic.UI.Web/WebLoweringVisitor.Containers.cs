@@ -96,7 +96,7 @@ internal sealed partial class WebLoweringVisitor
             // are then the layers of the stack the component stands in.
             var arms = Place(child, arm => LowerLayer(stack, arm, depth));
             if (unmeasured && arms is not null) MarkUnmeasured(arms);
-            return arms;
+            return Decorate(raw, child, arms);
         }
 
         if (child is Positioned positioned)
@@ -153,10 +153,11 @@ internal sealed partial class WebLoweringVisitor
             // what the funnel writes on every node's element: its key, its bookmark and its origin.
             // The stack builds it without dispatching the Positioned, so nothing wrote them, and a
             // link to the Positioned's bookmark, or a rule on its id, found nothing (#940).
-            return Decorate(positioned, anchor);
+            return Decorate(raw, child, Decorate(positioned, anchor));
         }
 
-        var content = Lower(child, horizontalAxis: null);
+        // What the component built is the component's element too, as the funnel decorates it.
+        var content = Decorate(raw, child, Lower(child, horizontalAxis: null));
         if (content is null) return null;
         if (unmeasured) MarkUnmeasured(content);
         var (capsWidth, capsHeight) = CappedByTheStack(child);
@@ -209,10 +210,31 @@ internal sealed partial class WebLoweringVisitor
     private (bool Width, bool Height) CappedByTheStack(VisualNode child)
     {
         var (width, height) = Fills(child);
-        return child is ScrollView scroller
-            ? (width || scroller.Width.Kind == SizeKind.Hug, height || scroller.Height.Kind == SizeKind.Hug)
-            : HoldsAScroller(child) ? (true, true) : (width, height);
+        if (child is ScrollView scroller)
+            return (width || scroller.Width.Kind == SizeKind.Hug, height || scroller.Height.Kind == SizeKind.Hug);
+        // A size the layer fixed bounds the track already, and counts toward the stack's minimum: a
+        // scroller inside a box 44 wide swells nothing past 44.
+        var (fixedWidth, fixedHeight) = FixedSize(child);
+        return HoldsAScroller(child) ? (!fixedWidth, !fixedHeight) : (width, height);
     }
+
+    /// <summary>Whether a layer declares a fixed size on each axis, seen through what takes its
+    /// child's size (TS twin: <c>fixedSize</c>).</summary>
+    private static (bool Width, bool Height) FixedSize(VisualNode node) => node switch
+    {
+        Box box => (box.Style.Width.Kind == SizeKind.Fixed, box.Style.Height.Kind == SizeKind.Fixed),
+        FlexNode flex => (flex.Width.Kind == SizeKind.Fixed, flex.Height.Kind == SizeKind.Fixed),
+        SingleChildNode wrapper when wrapper.IsLayoutTransparent() => FixedSize(wrapper.Child),
+        _ => (false, false),
+    };
+
+    /// <summary>
+    /// A node a stack expanded itself from a component <paramref name="raw"/>, decorated as the funnel
+    /// decorates a component: its key, bookmark and origin on the element of what it built, after that
+    /// node's own. A stack never dispatches the component, so they were dropped (#940).
+    /// </summary>
+    private HtmlElement? Decorate(VisualNode raw, VisualNode resolved, HtmlElement? lowered) =>
+        ReferenceEquals(raw, resolved) ? lowered : Decorate(raw, lowered);
 
     /// <summary>Whether a scroller stands in this layer, down through what takes its children's size
     /// (TS twin: <c>holdsAScroller</c>). What a component builds is its own: a stack resolves the

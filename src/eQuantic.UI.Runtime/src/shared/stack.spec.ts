@@ -144,5 +144,22 @@ describe('Stack (spec A3) client lowering', () => {
     const holding = cell(new Pressable(new Box(new BoxStyle({}), column), () => {}));
     expect(holding).toContain('min-width: 0');
     expect(holding).toContain('min-height: 0');
+
+    // …and a size the layer fixed bounds the track already, so it keeps counting.
+    const fixedHolder = cell(new Box(new BoxStyle({ width: 44 }), column));
+    expect(fixedHolder).not.toContain('min-width');
+    expect(fixedHolder).toContain('min-height: 0');
+  });
+
+  it('keeps the bookmark of a component it expands itself (#940, the C# twin)', () => {
+    const builds = (built: VisualNode, bookmark: string): VisualNode =>
+      ({ nodeKind: 'component', bookmark, build: () => built }) as unknown as VisualNode;
+    const stack = new Stack();
+    stack.add(builds(new Positioned(new Box(new BoxStyle({ width: 16, height: 16 })), 0, 0), 'corner'));
+    stack.add(builds(new Box(new BoxStyle({ width: 16, height: 16 })), 'layer'));
+
+    const node = stack.render();
+    expect(node.children[0].attributes['id']).toBe('corner');
+    expect(node.children[1].children[0].attributes['id']).toBe('layer');
   });
 });

@@ -67,6 +67,30 @@ public class StackRealizerTests
         cell.Should().Contain("min-height: 0");
     }
 
+    private sealed class Builds(VisualNode built) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => built;
+    }
+
+    /// <summary>A component a stack expands itself keeps its key, bookmark and origin, on the element
+    /// of what it built, as the funnel writes them on any other component's (#940).
+    /// CROSS-PIN: stack.spec.ts asserts the same on the twin.</summary>
+    [Fact]
+    public void AComponentAStackExpands_KeepsItsBookmark()
+    {
+        var stack = new Stack();
+        stack.Add(new Builds(new Positioned(new Primitives.Box(new BoxStyle { Width = 16, Height = 16 }), top: 0, end: 0))
+        {
+            Bookmark = "corner",
+        });
+        stack.Add(new Builds(new Primitives.Box(new BoxStyle { Width = 16, Height = 16 })) { Bookmark = "layer" });
+
+        var lowered = WebRealizer.Lower(stack, PhotonTheme.Instance);
+
+        ((HtmlElement)lowered.Children[0]).Id.Should().Be("corner");
+        ((HtmlElement)((HtmlElement)lowered.Children[1]).Children[0]).Id.Should().Be("layer");
+    }
+
     private static string CellOf(VisualNode layer)
     {
         var stack = new Stack();
@@ -106,6 +130,10 @@ public class StackRealizerTests
         column.Add(new ScrollView(new Primitives.Box(new BoxStyle { Width = 4000 }), ScrollAxis.Horizontal));
         var holding = CellOf(new Pressable(new Primitives.Box(new BoxStyle(), column), () => { }));
         holding.Should().Contain("min-width: 0").And.Contain("min-height: 0");
+
+        // …and a size the layer fixed bounds the track already, so it keeps counting.
+        var fixedHolder = CellOf(new Primitives.Box(new BoxStyle { Width = 44 }, column));
+        fixedHolder.Should().NotContain("min-width").And.Contain("min-height: 0");
     }
 
     /// <summary>

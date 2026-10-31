@@ -133,6 +133,11 @@ line cannot squeeze a hugging stack below its content.
 - **WHEN** a `Stack` that fills a box 482 wide holds a hugging `Column` around a horizontal `ScrollView` over 4000 of content
 - **THEN** the stack is 482 wide and the cell is written `min-width: 0` and `min-height: 0`
 
+#### Scenario: A fixed layer that holds a scroller
+
+- **WHEN** a `Stack` holds a box 44 wide around a column that holds a horizontal `ScrollView`
+- **THEN** its cell is written `min-height: 0` and no `min-width`, the box's own width bounding the track
+
 #### Scenario: A layer of a fixed size
 
 - **WHEN** a `Stack` holds a box 44 wide and 24 tall, or a `ScrollView` 300 wide and 20 tall
@@ -153,3 +158,8 @@ on every other node's element, on the server and in the twin alike.
 
 - **WHEN** a `Stack` holds `new Positioned(child, top: 0, end: -28) { Bookmark = "request", Key = "request-card", Origin = "Landing.cs:42" }`
 - **THEN** its anchor has the id `request`, the key `request-card`, the attribute `data-eq-origin="Landing.cs:42"` and a `scroll-margin-top`, on both sides of hydration
+
+#### Scenario: A component the stack expands
+
+- **WHEN** a `Stack` holds a component that builds a `Positioned`, or one that builds a box, each with a `Bookmark`
+- **THEN** the anchor, or the box's element, has that id, on both sides of hydration

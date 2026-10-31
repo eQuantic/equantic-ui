@@ -2821,11 +2821,17 @@ function lowerLayer(
   // through the store, so the instance that builds here is the instance that stays.
   const child = resolveStackChild(raw, context, path);
   if (!child) return null;
+  // A component the stack expanded is decorated as the funnel decorates one, on the element of what
+  // it built, after that node's own (C# twin, #940).
+  const asComponent = (lowered: HtmlNode | null): HtmlNode | null =>
+    raw === child ? lowered : decorate(raw, lowered);
   if (child.nodeKind === 'adaptive') {
     // Checked AFTER the component is resolved, because a component may build one: the arms are
     // then the layers of the stack the component stands in.
-    return placeChild(child, path, (arm, armPath) =>
-      lowerLayer(arm, depth, context, armPath, cellJustify, cellAlign),
+    return asComponent(
+      placeChild(child, path, (arm, armPath) =>
+        lowerLayer(arm, depth, context, armPath, cellJustify, cellAlign),
+      ),
     );
   }
   if (child.nodeKind === 'positioned') {
@@ -2868,9 +2874,9 @@ function lowerLayer(
     );
     // The ANCHOR is the Positioned's element, so it carries what the funnel writes on every node's
     // element: its key, its bookmark and its origin (C# twin, #940).
-    return decorate(positioned, anchor);
+    return asComponent(decorate(positioned, anchor));
   }
-  const lowered = lowerNode(child, context, null, path);
+  const lowered = asComponent(lowerNode(child, context, null, path));
   if (!lowered) return null;
   const caps = cappedByTheStack(child);
   // The cell IS the stack's available space (native MeasureStack contract): stretched to the grid
@@ -2921,7 +2927,33 @@ function cappedByTheStack(child: VisualNodeValue): { width: boolean; height: boo
       height: filling.height || hugs(scroller.height),
     };
   }
-  return holdsAScroller(child) ? { width: true, height: true } : filling;
+  // A size the layer fixed bounds the track already, and counts toward the stack's minimum.
+  const fixed = fixedSize(child);
+  return holdsAScroller(child) ? { width: !fixed.width, height: !fixed.height } : filling;
+}
+
+/** Whether a layer declares a fixed size on each axis, through what takes its child's size (C# `FixedSize`). */
+function fixedSize(node: VisualNodeValue): { width: boolean; height: boolean } {
+  const { nodeKind, child, style, width, height } = node as VisualNodeValue & {
+    child?: VisualNodeValue | null;
+    style?: { width?: { kind?: string }; height?: { kind?: string } };
+    width?: { kind?: string };
+    height?: { kind?: string };
+  };
+  switch (nodeKind) {
+    case 'box':
+      return { width: style?.width?.kind === 'fixed', height: style?.height?.kind === 'fixed' };
+    case 'row':
+    case 'column':
+      return { width: width?.kind === 'fixed', height: height?.kind === 'fixed' };
+    case 'overlay':
+    case 'positioned':
+    case 'tableViewCell':
+    case 'scrollView':
+      return { width: false, height: false };
+    default:
+      return child ? fixedSize(child) : { width: false, height: false };
+  }
 }
 
 /**
