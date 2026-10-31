@@ -15,10 +15,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// <c>Remove</c> and <c>CopyTo</c>. They were an array's <c>push</c> and <c>splice</c>, which none of those has.
 /// </para>
 /// <para>
-/// A member is the array's own method only where the two answer alike: <c>Add</c> is <c>push</c>,
-/// <c>FindAll</c> <c>filter</c>, <c>Exists</c> <c>some</c>, <c>TrueForAll</c> <c>every</c>,
-/// <c>ForEach</c> <c>forEach</c>, and <c>IndexOf</c> <c>indexOf</c> for an element compared by identity
-/// that no NaN can be. Everything else goes through the runtime (<c>utils/list.ts</c>), which answers
+/// A member is the array's own method only where the two answer alike: <c>FindAll</c> is <c>filter</c>,
+/// <c>Exists</c> <c>some</c>, <c>TrueForAll</c> <c>every</c>, and <c>IndexOf</c> <c>indexOf</c> for an
+/// element compared by identity that no NaN can be. A change of the list moves its version, which a walk
+/// over it compares, so <c>Add</c>, <c>Clear</c> and <c>ForEach</c> go through the runtime too (#863). Everything else goes through the runtime (<c>utils/list.ts</c>), which answers
 /// as .NET does (#488, #425): <c>Sort</c> by .NET's introspective sort and the comparer it is handed,
 /// where <c>sort()</c> compared the elements' text; <c>BinarySearch</c> with the complement of the
 /// insertion point; <c>IndexOf</c>, <c>LastIndexOf</c> and <c>Remove</c> by the element type's equality
@@ -34,7 +34,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// argument in its parameter's place, where the text placed it by its position in the call (#1160).
 /// </para>
 /// <para>
-/// A call of the array's own method is IR, so a lambda passed to it (<c>ForEach</c>, <c>Exists</c>…)
+/// A call of the array's own method is IR, so a lambda passed to it (<c>Exists</c>, <c>FindAll</c>…)
 /// reaches the statement writer as an arrow whose block maps line by line (#384). Every call names its
 /// arguments by the parameter each fills (<see cref="ParameterTemplate"/>).
 /// </para>
@@ -108,6 +108,14 @@ public class ListMethodStrategy : IExpressionIrStrategy
             .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToList();
 
+        // A change that moves the list's version, and a walk that compares it (#863), as IR, so a lambda
+        // passed to ForEach maps line by line.
+        if (methodName is "Add" or "ForEach" && argsIr.Count == 1)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(methodName == "Add" ? Eq.ListAdd : Eq.ListForEach), [callerIr, .. argsIr]);
+        }
+
         // A call of the array's own method, as IR, so a lambda passed to it reaches the statement
         // writer as an arrow whose block maps line by line (#384).
         if (ArrayMethod(methodName) is { } own)
@@ -130,7 +138,7 @@ public class ListMethodStrategy : IExpressionIrStrategy
             "RemoveAt" when args.Count > 0 => Helper(context, $"{Eq.ListRemoveAt}({caller}, {args[0]})"),
             "RemoveRange" when args.Count > 1 => Helper(context, $"{Eq.ListRemoveRange}({caller}, {args[0]}, {args[1]})"),
             "RemoveAll" when args.Count > 0 => Helper(context, $"{Eq.ListRemoveAll}({caller}, {args[0]})"),
-            "Clear" => $"{caller}.splice(0)",
+            "Clear" => Helper(context, $"{Eq.ListClear}({caller})"),
             "GetRange" when args.Count > 1 => Helper(context, $"{Eq.ListGetRange}({caller}, {args[0]}, {args[1]})"),
             // No model to say which overload, element type or comparer a call is: the shapes that
             // need one have none to take.
@@ -149,16 +157,16 @@ public class ListMethodStrategy : IExpressionIrStrategy
             || name.StartsWith("System.Collections.Generic.ICollection<"));
 
     /// <summary>
-    /// An <c>Add</c> this strategy lowers, as every call to it lowers: a list's is the array's <c>push</c>,
-    /// and <c>ICollection&lt;T&gt;</c>'s asks the runtime, which adds as the collection the interface holds
+    /// An <c>Add</c> this strategy lowers, as every call to it lowers: a list's appends and moves the list's
+    /// version (#863), and <c>ICollection&lt;T&gt;</c>'s asks the runtime, which adds as the collection the interface holds
     /// when the call runs adds (#593). An object initializer's element applied to a collection a member
     /// holds is a call to it.
     /// </summary>
     internal static JsExpr Add(IMethodSymbol? add, JsExpr list, IReadOnlyList<JsExpr> items, ConversionContext context)
     {
-        if (add?.ContainingType is not { } declaring || !IsCollectionInterface(declaring)) return Method(list, "push", items);
         context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Call(JsExpr.Identifier(Eq.CollectionAdd), [list, .. items]);
+        var helper = add?.ContainingType is { } declaring && IsCollectionInterface(declaring) ? Eq.CollectionAdd : Eq.ListAdd;
+        return JsExpr.Call(JsExpr.Identifier(helper), [list, .. items]);
     }
 
     /// <summary>Whether <paramref name="type"/> is <c>ICollection&lt;T&gt;</c>, the face a set, a linked
@@ -178,6 +186,16 @@ public class ListMethodStrategy : IExpressionIrStrategy
                 context.UsedHelpers.Add(Eq.Import);
                 return ParameterTemplate.Call(name == "Add" ? $"{Eq.CollectionAdd}({{0}}, {{1}})" : $"{Eq.CollectionClear}({{0}})",
                     list, invocation, method, context);
+            // A change that moves the list's version, which a walk over it compares (#863).
+            case "Add" when count == 1:
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call($"{Eq.ListAdd}({{0}}, {{1}})", list, invocation, method, context);
+            case "Clear" when count == 0:
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call($"{Eq.ListClear}({{0}})", list, invocation, method, context);
+            case "ForEach" when count == 1:
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call($"{Eq.ListForEach}({{0}}, {{1}})", list, invocation, method, context);
             case "IndexOf" or "LastIndexOf":
             {
                 var equality = ElementEquality.Of(element, invocation, context);
@@ -308,7 +326,6 @@ public class ListMethodStrategy : IExpressionIrStrategy
     /// <summary>The array method a List method is, where the call is the same call.</summary>
     private static string? ArrayMethod(string name) => name switch
     {
-        "Add" => "push",
         "IndexOf" => "indexOf",
         "LastIndexOf" => "lastIndexOf",
         "FindIndex" => "findIndex",
@@ -316,7 +333,6 @@ public class ListMethodStrategy : IExpressionIrStrategy
         "FindAll" => "filter",
         "Exists" => "some",
         "TrueForAll" => "every",
-        "ForEach" => "forEach",
         _ => null,
     };
 

@@ -46,9 +46,13 @@ internal sealed class Place
         /// receiver, whichever list the face holds.</summary>
         Face,
 
-        /// <summary>An array's, a list's or a string's counted from the end, through JavaScript's own
-        /// subscript, which is what each of them is on this side.</summary>
+        /// <summary>An array's or a string's counted from the end, through JavaScript's own subscript,
+        /// which is what each of them is on this side.</summary>
         Subscript,
+
+        /// <summary>A <c>List&lt;T&gt;</c>'s, read through the subscript and written through the runtime's
+        /// <c>listSet</c>, which checks the index and moves the list's version, as .NET's indexer does (#863).</summary>
+        ListElement,
     }
 
     private readonly Kind _kind;
@@ -92,10 +96,17 @@ internal sealed class Place
             return Entry(context.Converter.ConvertIr(access.Expression), access.ArgumentList.Arguments[0].Expression, context);
         if (Indexer.LoweredAt(access, context) is not null)
             return Indexed(access, access.ArgumentList, context.Converter.ConvertIr(access.Expression), context);
-        return IndexFromEndStrategy.FromTheEnd(access) is { } hat
-            ? Subscripted(access, context.Converter.ConvertIr(access.Expression), hat, context)
-            : null;
+        if (IndexFromEndStrategy.FromTheEnd(access) is { } hat)
+            return Subscripted(access, context.Converter.ConvertIr(access.Expression), hat, IsAList(access.Expression, context), context);
+        if (!IsAList(access.Expression, context) || access.ArgumentList.Arguments is not [{ Expression: var key }]) return null;
+        context.UsedHelpers.Add(Eq.Import);
+        return new Place(Kind.ListElement, [context.Converter.ConvertIr(access.Expression), context.Converter.ConvertIr(key)],
+            evaluated: 2, ["{1}"], computed: false, (Indexer.Get, Indexer.Set), context);
     }
+
+    /// <summary>Whether <paramref name="receiver"/> is a <c>List&lt;T&gt;</c>, whose writes move its version.</summary>
+    private static bool IsAList(ExpressionSyntax receiver, ConversionContext context) =>
+        context.SemanticHelper.GetType(receiver)?.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
 
     /// <summary>The place an element named without its receiver is, the writer holding the
     /// <paramref name="receiver"/>: a null-conditional's binding (<c>a?[k] = v</c>, over its guarded
@@ -109,7 +120,9 @@ internal sealed class Place
         if (Indexer.LoweredAt(target, context) is not null) return Indexed(target, arguments, receiver, context);
         // An initializer's `[^1] = v` is fenced before it gets here (EQ2008): only `a?[^1]` is left.
         return arguments.Arguments is [{ Expression: PrefixUnaryExpressionSyntax hat }] && hat.IsKind(SyntaxKind.IndexExpression)
-            ? Subscripted(target, receiver, hat, context)
+            ? Subscripted(target, receiver, hat,
+                target.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>() is { } conditional && IsAList(conditional.Expression, context),
+                context)
             : null;
     }
 
@@ -181,7 +194,7 @@ internal sealed class Place
     {
         Kind.Entry => DictionaryEntry.Read("{0}", keys[0]),
         Kind.Face => $"{Eq.ListItem}({string.Join(", ", keys.Prepend("{0}"))})",
-        Kind.Subscript => $"{{0}}[{keys[0]}]",
+        Kind.Subscript or Kind.ListElement => $"{{0}}[{keys[0]}]",
         _ => $"{{0}}.{_names.Get}({string.Join(", ", keys)})",
     };
 
@@ -190,6 +203,7 @@ internal sealed class Place
         Kind.Entry => DictionaryEntry.Write("{0}", keys[0], value),
         Kind.Face => $"{Eq.ListSetItem}({string.Join(", ", keys.Prepend("{0}").Append(value))})",
         Kind.Subscript => $"({{0}}[{keys[0]}] = {value})",
+        Kind.ListElement => $"{Eq.ListSet}({{0}}, {keys[0]}, {value})",
         _ => $"{{0}}.{_names.Set}({string.Join(", ", keys.Append(value))})",
     };
 
@@ -292,10 +306,13 @@ internal sealed class Place
     /// once and the offset before the length, as C# reads them (#394). It was text that named the
     /// receiver twice, so <c>Get()[^1]</c> and every write through it called <c>Get</c> twice.
     /// </summary>
-    private static Place? Subscripted(ExpressionSyntax access, JsExpr receiver, PrefixUnaryExpressionSyntax hat,
-        ConversionContext context) =>
-        CountedBack(Kind.Subscript, receiver, context.Converter.ConvertIr(hat.Operand), "{0}.length",
+    private static Place? Subscripted(ExpressionSyntax access, JsExpr receiver, PrefixUnaryExpressionSyntax hat, bool list,
+        ConversionContext context)
+    {
+        if (list) context.UsedHelpers.Add(Eq.Import);
+        return CountedBack(list ? Kind.ListElement : Kind.Subscript, receiver, context.Converter.ConvertIr(hat.Operand), "{0}.length",
             (Indexer.Get, Indexer.Set), access, context);
+    }
 
     /// <summary>
     /// The place of a key counted back from <paramref name="counted"/>, the count's text over the receiver's
