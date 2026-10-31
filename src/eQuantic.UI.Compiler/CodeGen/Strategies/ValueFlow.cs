@@ -152,6 +152,13 @@ public static class ValueFlow
         if (convertedConstant is not null && Constant(convertedConstant, to) is { } folded)
             return folded;
 
+        // A VALUE HELD AS OBJECT keeps the type the browser cannot read from it (Boxing): an enum member and a float
+        // are boxed with it, an unboxing asks the box, and a list or an array is marked as compared by reference
+        // (#552, #768, #954).
+        if (kind.IsBoxing && Boxing.Carries(from) && Boxing.IsABox(to)) return Boxing.Box(from!, translated, context);
+        if (kind.IsUnboxing && Boxing.Unbox(to, translated, context) is { } unboxed) return unboxed;
+        if (kind.IsReference && Boxing.IsMarked(from, to)) return Boxing.Mark(translated, context);
+
         // A cast of a floating constant the COMPILER folded is the compiler's value, which is no run-time
         // conversion's: `unchecked((int)1e12)` is 0 where the same cast of a variable saturates (#1015).
         if (convertedConstant is not null && operandConstant is double or float && IntegerWidth.Of(to) is not null)

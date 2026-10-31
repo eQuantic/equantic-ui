@@ -66,8 +66,13 @@ function valueOf(held: unknown, shape: EnumShape): EnumValue {
   return wide(shape) && /^[+-]?\d+$/.test(String(held).trim()) ? BigInt(String(held).trim()) : Number(held);
 }
 
+/** The value .NET holds for what the browser holds, at the underlying type's width, for a box that reads its number (`utils/box.ts`). */
+export function numberOf(held: unknown, shape: EnumShape): EnumValue {
+  return valueOf(held, shape);
+}
+
 /** What the browser holds for a value: the first member with it, or the value no member names. */
-function hold(value: EnumValue, shape: EnumShape): string | EnumValue {
+export function hold(value: EnumValue, shape: EnumShape): string | EnumValue {
   const held = atWidth(value, shape);
   if (shape.flags) return held;
   const at = shape.values.indexOf(held);
@@ -195,11 +200,11 @@ function byValue(shape: EnumShape): number[] {
  */
 export function name(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'object'): string | null {
   if (given == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'value')");
-  // An object must hold the enum or an integer, as .NET's GetName(Type, object) requires: a boxed
-  // member is its key here, and a string, a bool or a fraction is refused in .NET's words, where a
+  // An object must hold the enum or an integer, as .NET's GetName(Type, object) requires: a boxed member
+  // arrives unboxed (`utils/box.ts`), and a string, a bool or a fraction is refused in .NET's words, where a
   // 64-bit enum's BigInt of a fraction threw a RangeError.
   const integral = typeof given === 'bigint' || (typeof given === 'number' && Number.isInteger(given));
-  if (as === 'object' && !integral && !(typeof given === 'string' && keys(shape).includes(given)))
+  if (as === 'object' && !integral)
     throw exception(
       'System.ArgumentException',
       "The value passed in must be an enum base or an underlying type for an enum, such as an Int32. (Parameter 'value')",
@@ -230,7 +235,9 @@ export function values(shape: EnumShape): (string | EnumValue)[] {
 export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'name' | 'object'): boolean {
   if (given == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'value')");
   if (as === 'object') {
-    if (typeof given === 'string') return shape.names.includes(given) || keys(shape).includes(given);
+    // A string is a name, matched as it is written: a member held as `object` is boxed (`utils/box.ts`), so a
+    // string spelled as its key is a string here as in .NET, and `IsDefined(typeof(Status), "pending")` is false.
+    if (typeof given === 'string') return shape.names.includes(given);
     // An integral number of the underlying type, as .NET requires; a bool, a fraction or any other
     // object is a type .NET refuses with "Unknown enum type.". A 64-bit integer is a BigInt here and
     // any narrower one a number, so a 64-bit enum given an int, or another given a long, is the other
@@ -252,24 +259,22 @@ export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number
 }
 
 /** The underlying type's full name, from its width and its sign. */
-function underlying(shape: EnumShape): string {
+export function underlying(shape: EnumShape): string {
   const signed = { 2: 'SByte', 4: 'Int16', 8: 'Int32', 16: 'Int64' }[shape.digits] ?? 'Int32';
   const unsigned = { 2: 'Byte', 4: 'UInt16', 8: 'UInt32', 16: 'UInt64' }[shape.digits] ?? 'UInt32';
   return `System.${shape.unsigned ? unsigned : signed}`;
 }
 
 /**
- * A cast from `object` to the enum, an unboxing: a boxed member is held as its key, and a boxed number
- * of the underlying type is the member with that value, as the runtime unboxes one. A null and anything
- * else are refused as .NET refuses them: `(Status)(object)"Pending"` passed the text through. A boxed
- * string spelled as a member's key cannot be told from the member, both being that string here. A
- * 64-bit integer is a BigInt here and any narrower one a number: a 64-bit enum unboxes the first and a
- * narrower one the second, as .NET unboxes only the underlying type (`(Huge)(object)1` is refused).
+ * A cast from `object` to the enum, an unboxing of what is not a box (`utils/box.ts` takes a box first): a
+ * boxed number of the underlying type is the member with that value, as the runtime unboxes one. A 64-bit
+ * integer is a BigInt here and any narrower one a number: a 64-bit enum unboxes the first and a narrower one
+ * the second, as .NET unboxes only the underlying type (`(Huge)(object)1` is refused). A null and anything
+ * else are refused as .NET refuses them, a string included, which a member held as `object` never is.
  */
 export function unbox(given: unknown, shape: EnumShape, name: string): string | EnumValue {
   if (given == null) throw exception('System.NullReferenceException', 'Object reference not set to an instance of an object.');
   if (typeof given === (wide(shape) ? 'bigint' : 'number')) return hold(given as EnumValue, shape);
-  if (typeof given === 'string' && keys(shape).includes(given)) return given;
   const type =
     typeof given === 'string'
       ? 'System.String'
