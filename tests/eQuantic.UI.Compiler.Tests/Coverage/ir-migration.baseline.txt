@@ -44,13 +44,11 @@ SequenceEqualStrategy
 ServiceProviderStrategy
 SingleStrategy
 SizeOfExpressionStrategy
-SkipStrategy
 StackAllocArrayCreationStrategy
 StringBuilderStrategy
 StringMethodStrategy
 StringStaticStrategy
 SwitchExpressionStrategy
-TakeStrategy
 TaskMethodStrategy
 TimeSpanStrategy
 ToStringStrategy

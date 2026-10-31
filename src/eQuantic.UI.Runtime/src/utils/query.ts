@@ -224,3 +224,53 @@ export function all<T>(source: Iterable<T> | string, predicate: (item: T) => boo
   for (const item of walk(from)) if (!test(item)) return false;
   return true;
 }
+
+/** `Skip(count)`: a negative count skips nothing, as .NET's does, where a slice counted it from the end. */
+export function skip<T>(source: Iterable<T> | string, count: number): Query<T> {
+  const from = checked(source);
+  return new Query(
+    function* () {
+      let left = count;
+      for (const item of walk(from)) {
+        if (left > 0) {
+          left--;
+          continue;
+        }
+        yield item;
+      }
+    },
+    () => {
+      const total = cheapCount(from);
+      return total === undefined ? undefined : Math.max(0, total - Math.max(0, count));
+    },
+  );
+}
+
+/** `Take(count)`: the walk stops once it has the count, and a negative count takes nothing. */
+export function take<T>(source: Iterable<T> | string, count: number): Query<T> {
+  const from = checked(source);
+  return new Query(
+    function* () {
+      if (count <= 0) return;
+      let left = count;
+      for (const item of walk(from)) {
+        yield item;
+        if (--left === 0) return;
+      }
+    },
+    () => {
+      const total = cheapCount(from);
+      return total === undefined ? undefined : Math.min(total, Math.max(0, count));
+    },
+  );
+}
+
+/**
+ * An operator the runtime has no walk of its own for, run when its query is walked rather than when it is
+ * called, as .NET runs a deferred operator: `build` reads the source, as an array, once per walk. Its
+ * other arguments were evaluated when it was called, as C# evaluates them.
+ */
+export function defer<S, R>(build: (source: S[]) => Iterable<R>, source: Iterable<S> | string, parameter = 'source'): Query<R> {
+  const from = checked(source, parameter);
+  return new Query(() => build(Array.from(walk(from, parameter)))[Symbol.iterator]());
+}
