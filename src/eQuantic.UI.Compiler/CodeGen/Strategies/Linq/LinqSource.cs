@@ -153,5 +153,6 @@ internal static class LinqSource
         && context.SemanticHelper.GetSymbol(source) is IMethodSymbol { Name: not "AsEnumerable" } method
         && context.SemanticHelper.IsLinqExtension(method.ContainingType)
         && method.ReturnType is INamedTypeSymbol { Name: "IEnumerable" or "IOrderedEnumerable" }
-        && LinqTableStrategy.Lazy(method.Name, method.ReducedFrom is not null ? method.Parameters.Length : method.Parameters.Length - 1) is null;
+        && LinqTableStrategy.Lazy(method.Name, method.ReducedFrom is not null ? method.Parameters.Length : method.Parameters.Length - 1) is null
+        && !LinqTableStrategy.Deferred(method.Name);
 }

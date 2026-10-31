@@ -39,6 +39,13 @@ public class LazyQueryConformanceTests
     [InlineData("var s = \"abc\"; return string.Join(\",\", s.Where(c => c != 'b').Select(c => (int)c));")]
     [InlineData("var l = new List<int> { 1, 2 }; return string.Join(\",\", l.Append(3).Prepend(0).SelectMany(x => new[] { x, x }));")]
     [InlineData("var l = new List<int> { 1, 2, 3, 1 }; return string.Join(\",\", l.SkipWhile(x => x < 2)) + \"|\" + string.Join(\",\", l.Where((x, i) => i % 2 == 0)) + \"|\" + string.Join(\",\", l.Select((x, i) => x * i));")]
+    // Skip and Take walk as .NET's do: Take stops once it has its count, a negative count is none.
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3, 4 }; var t = l.Select(x => { log += x; return x; }).Take(2).ToList(); return log + \"|\" + string.Join(\",\", t);")]
+    [InlineData("var l = new List<int> { 1, 2, 3 }; return string.Join(\",\", l.Skip(-1)) + \"|\" + string.Join(\",\", l.Take(-1)) + \"|\" + string.Join(\",\", l.Skip(1).Take(1)) + \"|\" + l.Skip(5).Count();")]
+    [InlineData("var l = new List<int> { 1, 2 }; var q = l.Skip(1); l.Add(3); return string.Join(\",\", q);")]
+    // The operators the runtime has no walk for read their source when they are walked.
+    [InlineData("var l = new List<int> { 1, 2 }; var q = l.Union(new[] { 5 }); l.Add(3); return string.Join(\",\", q) + \"|\" + string.Join(\",\", l.Except(new[] { 1 })) + \"|\" + string.Join(\",\", l.TakeLast(2)) + \"|\" + string.Join(\",\", l.SkipLast(1));")]
+    [InlineData("var l = new List<int> { 1, 2, 3 }; var q = l.Chunk(2); l.Add(4); return string.Join(\";\", q.Select(c => string.Join(\",\", c)));")]
     public void AQuery_RunsAsDotNetsIteratorsRun(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

@@ -51,3 +51,13 @@ const eQuantic.UI.Compiler.CodeGen.Eq.ListClear = "$eq.collections.listClear" ->
 const eQuantic.UI.Compiler.CodeGen.Eq.ListSet = "$eq.collections.listSet" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListForEach = "$eq.collections.listForEach" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Query = "$eq.query" -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.SkipStrategy
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.SkipStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.SkipStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.SkipStrategy.Priority.get -> int
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.SkipStrategy.SkipStrategy() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.TakeStrategy
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.TakeStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.TakeStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.TakeStrategy.Priority.get -> int
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.TakeStrategy.TakeStrategy() -> void

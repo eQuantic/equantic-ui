@@ -319,8 +319,6 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<SingleStrategy>();
         _strategyRegistry.Register<CountStrategy>();
         _strategyRegistry.Register<OrderByStrategy>();
-        _strategyRegistry.Register<SkipStrategy>();
-        _strategyRegistry.Register<TakeStrategy>();
         _strategyRegistry.Register<DistinctStrategy>();
         _strategyRegistry.Register<ContainsStrategy>();
         _strategyRegistry.Register<SumStrategy>();

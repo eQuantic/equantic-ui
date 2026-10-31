@@ -73,7 +73,9 @@ public class LinqTableStrategy : IExpressionIrStrategy
             return JsExpr.Template(BindNamedArguments(lazy, shaped, invocation, context), parts);
         }
 
-        var receiver = LinqSource.Ir(receiverSyntax, context);
+        // A deferred operator's source is read when its query is walked, so it is handed as it is (below).
+        var deferred = Deferred(name.Identifier.ValueText);
+        var receiver = deferred ? LinqSource.Lazy(receiverSyntax, context) : LinqSource.Ir(receiverSyntax, context);
         var args = shaped
             .Select(a => LinqSource.Argument(a, invocation, context))
             .ToArray();
@@ -107,6 +109,15 @@ public class LinqTableStrategy : IExpressionIrStrategy
         if (name.Identifier.ValueText == "ToLookup" && context.TypeAnnotations)
             template = template.Replace("($groups, $item)", "($groups: any[], $item)");
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
+
+        // A deferred operator runs when its query is walked: the source handed as it is and read as an
+        // array then, the arguments evaluated now, as C# evaluates them (#685).
+        if (deferred)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var source = context.TypeAnnotations ? "$src: any" : "$src";
+            template = $"{Eq.Query}.defer(({source}) => {template.Replace("{0}", "$src")}, {{0}})";
+        }
 
         // {0} is the receiver; {1}… the arguments. The writer binds whatever is reused.
         return JsExpr.Template(BindNamedArguments(template, shaped, invocation, context),
@@ -278,8 +289,18 @@ public class LinqTableStrategy : IExpressionIrStrategy
         ("Any", 0) => $"{Eq.Query}.any({{0}})",
         ("Any", 1) => $"{Eq.Query}.any({{0}}, {{1}})",
         ("All", 1) => $"{Eq.Query}.all({{0}}, {{1}})",
+        ("Skip", 1) => $"{Eq.Query}.skip({{0}}, {{1}})",
+        ("Take", 1) => $"{Eq.Query}.take({{0}}, {{1}})",
         _ => null,
     };
+
+    /// <summary>
+    /// The deferred operators of the table the runtime has no walk of its own for: run when their query is
+    /// walked (<c>$eq.query.defer</c>), the source read then, as .NET runs them, rather than when they are
+    /// called. Their other arguments are evaluated when they are called, as C# evaluates them.
+    /// </summary>
+    internal static bool Deferred(string name) => name is "Union" or "Intersect" or "Except" or "DistinctBy" or "Chunk"
+        or "Join" or "GroupJoin" or "SkipLast" or "TakeLast" or "ExceptBy" or "IntersectBy" or "UnionBy";
 
     private static string? Template(string name, int argCount) => (name, argCount) switch
     {
