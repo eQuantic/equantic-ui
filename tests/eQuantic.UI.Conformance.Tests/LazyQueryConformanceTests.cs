@@ -53,6 +53,12 @@ public class LazyQueryConformanceTests
     [InlineData("var l = new List<int> { 1 }; try { return l.Where(x => x > 0).First(x => x > 5).ToString(); } catch (InvalidOperationException e) { return e.Message; }")]
     [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var e = l.Where(x => { log += x; return true; }).ElementAt(1); var d = l.Where(x => true).ElementAtOrDefault(7); return log + \"|\" + e + d;")]
     [InlineData("var l = new List<int> { 1 }; try { return l.Where(x => true).ElementAt(3).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")]
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var c = l.Select(x => { log += x; return x; }).Contains(2); return log + \"|\" + c;")]
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var s = l.Where(x => { log += x; return x == 2; }).Single(); var t = l.Select(x => { log += x; return x; }).Last(); return log + \"|\" + s + t;")]
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var n = l.Select(x => { log += x; return x; }).Count(); return log + \"|\" + n;")]
+    // A projection of a list reads one element alone, as .NET's does.
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var e = l.Select(x => { log += x; return x; }).ElementAt(2); var f = l.Select(x => { log += x; return x; }).Last(x => x < 3); var g = l.Select(x => { log += x; return x; }).LastOrDefault(); return log + \"|\" + e + f + g;")]
+    [InlineData("var l = new List<int>(); try { return l.Select(x => x).Last().ToString(); } catch (InvalidOperationException e) { return e.Message + \"|\" + l.Select(x => x).LastOrDefault() + l.Select(x => x).FirstOrDefault(); }")]
     public void AQuery_RunsAsDotNetsIteratorsRun(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
