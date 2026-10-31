@@ -28,6 +28,7 @@
  */
 import { checksItsReference, equals, SELF } from './equals';
 import { valueTwinOf } from './hash';
+import { isAnonymous, isReference } from './marks';
 
 /** A comparison two values are found equal by. */
 export type Equality = (a: unknown, b: unknown) => boolean;
@@ -56,11 +57,11 @@ export function sameItem(item: unknown, value: unknown): boolean {
  * Equals checks the type first: a tuple never equals an anonymous object, and an anonymous object
  * equals only one of the same members in the same order, never a record with the same members.
  *
- * A tuple is an array here, and so are a `List<T>` and a `T[]`, which .NET compares by reference. Held
- * as `object`, nothing tells them apart, so all three compare by their elements, the tuple's answer: a
- * tuple held as `object` is found in a set, a dictionary and `Distinct` as .NET finds it. Where the
- * compiler still sees the static type (a list, an array, a class that does not override `Equals`), it
- * compares by reference before it gets here (#909).
+ * A tuple is an array here, and so are a `List<T>` and a `T[]`, which .NET compares by reference. A list
+ * and an array are marked where they go into `object` (`utils/marks.ts`, #954) and compare by reference
+ * here; a tuple compares by its elements, so one held as `object` is found in a set, a dictionary and
+ * `Distinct` as .NET finds it. Where the compiler still sees the static type (a list, an array, a class
+ * that does not override `Equals`), it compares by reference before it gets here (#909).
  */
 export function sameKey(a: unknown, b: unknown): boolean {
   if (sameItem(a, b)) return true;
@@ -70,6 +71,9 @@ export function sameKey(a: unknown, b: unknown): boolean {
   // holding two equal points were unequal (Copilot's second review of #947).
   const twin = valueTwinIn(a);
   if (twin !== undefined) return valueTwinIn(b) === twin && equals(a, b);
+  // A list or an array that went into `object` is found by reference, and an anonymous object only among its
+  // own kind (#742, #954).
+  if (isReference(a) || isReference(b) || isAnonymous(a) !== isAnonymous(b)) return false;
   if (!isPlainValue(a) || !isPlainValue(b)) return false;
   if (Array.isArray(a) || Array.isArray(b)) {
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;

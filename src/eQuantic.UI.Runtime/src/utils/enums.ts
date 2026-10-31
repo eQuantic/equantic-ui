@@ -45,8 +45,27 @@ function valueOf(held: unknown, shape: EnumShape): number {
   return at < 0 ? Number(held) : shape.values[at];
 }
 
+/** The value .NET holds for what the browser holds, for a box that reads its number (`utils/box.ts`). */
+export function numberOf(held: unknown, shape: EnumShape): number {
+  return valueOf(held, shape);
+}
+
+/** The full name of the enum's underlying type, from its width and sign. */
+export function underlyingName(shape: EnumShape): string {
+  switch (shape.digits) {
+    case 2:
+      return shape.unsigned ? 'System.Byte' : 'System.SByte';
+    case 4:
+      return shape.unsigned ? 'System.UInt16' : 'System.Int16';
+    case 16:
+      return shape.unsigned ? 'System.UInt64' : 'System.Int64';
+    default:
+      return shape.unsigned ? 'System.UInt32' : 'System.Int32';
+  }
+}
+
 /** What the browser holds for a value: the first member with it, or the number no member names. */
-function hold(value: number, shape: EnumShape): string | number {
+export function hold(value: number, shape: EnumShape): string | number {
   if (shape.flags) return value;
   const at = shape.values.indexOf(value);
   return at < 0 ? value : keys(shape)[at];
@@ -173,9 +192,9 @@ function byValue(shape: EnumShape): number[] {
  */
 export function name(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'object'): string | null {
   if (given == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'value')");
-  // An object must hold the enum or a number, as .NET's GetName(Type, object) requires: a boxed
-  // member is its key here, and a string or a bool of any other kind is refused in .NET's words.
-  if (as === 'object' && typeof given !== 'number' && typeof given !== 'bigint' && !(typeof given === 'string' && keys(shape).includes(given)))
+  // An object must hold the enum or a number, as .NET's GetName(Type, object) requires: a boxed member
+  // arrives unboxed (`utils/box.ts`), and a string or a bool is refused in .NET's words.
+  if (as === 'object' && typeof given !== 'number' && typeof given !== 'bigint')
     throw exception(
       'System.ArgumentException',
       "The value passed in must be an enum base or an underlying type for an enum, such as an Int32. (Parameter 'value')",
@@ -203,7 +222,9 @@ export function values(shape: EnumShape): (string | number)[] {
 export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'name' | 'object'): boolean {
   if (given == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'value')");
   if (as === 'object') {
-    if (typeof given === 'string') return shape.names.includes(given) || keys(shape).includes(given);
+    // A string is a name, matched as it is written: a member held as `object` is boxed (`utils/box.ts`), so a
+    // string spelled as its key is a string here as in .NET, and `IsDefined(typeof(Status), "pending")` is false.
+    if (typeof given === 'string') return shape.names.includes(given);
     // An integral number of the underlying type, as .NET requires; a bool, a fraction or any other
     // object is a type .NET refuses with "Unknown enum type.".
     if ((typeof given !== 'number' || !Number.isInteger(given)) && typeof given !== 'bigint')
@@ -216,15 +237,13 @@ export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number
 }
 
 /**
- * A cast from `object` to the enum, an unboxing: a boxed member is held as its key, and a boxed number
- * of the underlying type is the member with that value, as the runtime unboxes one. A null and anything
- * else are refused as .NET refuses them: `(Status)(object)"Pending"` passed the text through. A boxed
- * string spelled as a member's key cannot be told from the member, both being that string here.
+ * A cast from `object` to the enum, an unboxing of what is not a box (`utils/box.ts` takes a box first): a
+ * boxed number of the underlying type is the member with that value, as the runtime unboxes one. A null and
+ * anything else are refused as .NET refuses them, a string included, which a member held as `object` never is.
  */
 export function unbox(given: unknown, shape: EnumShape, name: string): string | number {
   if (given == null) throw exception('System.NullReferenceException', 'Object reference not set to an instance of an object.');
   if (typeof given === 'number') return hold(given, shape);
-  if (typeof given === 'string' && keys(shape).includes(given)) return given;
   const type = typeof given === 'string' ? 'System.String' : typeof given === 'boolean' ? 'System.Boolean' : 'System.Object';
   throw exception('System.InvalidCastException', `Unable to cast object of type '${type}' to type '${name}'.`);
 }

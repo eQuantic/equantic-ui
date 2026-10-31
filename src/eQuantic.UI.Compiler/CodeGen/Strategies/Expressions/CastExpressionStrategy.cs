@@ -86,7 +86,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             {
                 context.UsedHelpers.Add(Eq.Import);
                 return JsExpr.Call(JsExpr.Identifier(Eq.EnumUnbox), operandIr,
-                    JsExpr.Literal(Types.EnumShape.Of(enumTarget)), JsExpr.Literal(JsStringLiteral.Quote(enumTarget.Name)));
+                    JsExpr.Literal(Types.EnumShape.Of(enumTarget)), JsExpr.Literal(JsStringLiteral.Quote(Boxing.NameOf(enumTarget))));
             }
             // Another enum's value: its own table gives the number, and this one's gives the key.
             if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum)

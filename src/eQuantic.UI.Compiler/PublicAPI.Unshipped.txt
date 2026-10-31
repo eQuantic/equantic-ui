@@ -45,3 +45,8 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.CollectionIsReadOnlyStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.Priority.get -> int
+const eQuantic.UI.Compiler.CodeGen.Eq.Anonymous = "$eq.anonymous" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Box = "$eq.box" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.IsBox = "$eq.isBox" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Reference = "$eq.reference" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Unbox = "$eq.unbox" -> string!

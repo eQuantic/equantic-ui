@@ -124,6 +124,9 @@ public static class PatternConverter
         var text = DecimalConstant(label, context) is { } exact
             ? ConstantLiteral.Write(exact, null, context)!
             : context.Converter.ConvertExpression(constant);
+        // Compared with a value held as object, the member or the float is boxed as that value is (Boxing).
+        if (Strategies.Boxing.BoxedConstant(value) is { } boxed)
+            text = JsExprWriter.Write(Strategies.Boxing.Box(boxed, JsExpr.Literal(text), context));
         return ConstantTest(access, text, value, context);
     }
 
@@ -152,8 +155,10 @@ public static class PatternConverter
                 bindings.Add((v.Identifier.ValueText.ToJsIdentifier(), access));
                 break;
 
-            case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d }:
-                bindings.Add((d.Identifier.ValueText.ToJsIdentifier(), access));
+            // A box's value is what binds, where the test met a value boxed into object (Boxing).
+            case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d } declaration:
+                bindings.Add((d.Identifier.ValueText.ToJsIdentifier(),
+                    Strategies.Boxing.TestsABox(declaration.Type, context) ? $"{access}.value" : access));
                 break;
 
             case RecursivePatternSyntax recursive:
@@ -328,6 +333,9 @@ public static class PatternConverter
         // A type the platform represents by a value of its own, read off the SYMBOL: the spelling
         // missed `Int32` and `System.Int64`, and asked a long, which is a BigInt here, whether it was
         // a number, so `o is long` was false for every long.
+        // An enum or a float tested over a value held as object is asked of its box (Boxing): its key was a string
+        // and its number a double, so `o is Tone` was any value and `o is string` a member (#552, #954).
+        if (Strategies.Boxing.TestsABox(typeSyntax, context)) return Strategies.Boxing.IsBox(typeSyntax, access, context);
         if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol known && ScalarCheck(known, access, context) is { } scalar)
             return scalar;
         switch (typeSyntax.ValueText())
@@ -408,6 +416,12 @@ public static class PatternConverter
                 context.UsedHelpers.Add(Eq.Import);
                 return $"{Eq.Equals}({access}, {constant})";
             }
+        }
+        // A member or a float compared with a value held as object is a box compared with a box (Boxing).
+        if (Strategies.Boxing.BoxedConstant(value) is not null)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.Equals}({access}, {constant})";
         }
         return $"{access} === {constant}";
     }
