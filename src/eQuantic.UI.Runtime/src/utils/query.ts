@@ -29,6 +29,10 @@ export class Query<T> implements Iterable<T> {
   constructor(
     private readonly open: () => Iterator<T>,
     readonly count?: () => number | undefined,
+    /** The element at an index where it is read without walking, as .NET's iterators over a list answer
+     *  `TryGetElementAt`, `TryGetFirst` and `TryGetLast`: a projection of a list runs its selector on that
+     *  element alone. Undefined where the query has no such access. */
+    readonly at?: (index: number) => { value: T } | undefined,
   ) {}
 
   [Symbol.iterator](): Iterator<T> {
@@ -67,6 +71,15 @@ export function cheapCount(source: unknown): number | undefined {
   return undefined;
 }
 
+/** The element at an index of a source read without walking it: a list's, an array's and a query's own. */
+function randomAccess<T>(source: unknown): ((index: number) => { value: T } | undefined) | undefined {
+  if (Array.isArray(source)) {
+    return (index) => (index >= 0 && index < source.length ? { value: source[index] as T } : undefined);
+  }
+  if (source instanceof Query) return source.at as ((index: number) => { value: T } | undefined) | undefined;
+  return undefined;
+}
+
 /** A source checked now, walked later: what every deferred operator holds. */
 function checked<T>(source: Iterable<T> | string | null | undefined, parameter = 'source'): Iterable<T> | string {
   if (source == null) throw nullArgument(parameter);
@@ -93,12 +106,19 @@ export function where<T>(source: Iterable<T> | string, predicate: (item: T, inde
 export function select<T, R>(source: Iterable<T> | string, selector: (item: T, index: number) => R): Query<R> {
   const from = checked(source);
   const project = required(selector, 'selector');
+  const read = randomAccess<T>(from);
   return new Query(
     function* () {
       let index = 0;
       for (const item of walk(from)) yield project(item, index++);
     },
     () => cheapCount(from),
+    read === undefined
+      ? undefined
+      : (index) => {
+          const found = read(index);
+          return found === undefined ? undefined : { value: project(found.value, index) };
+        },
   );
 }
 
@@ -282,6 +302,11 @@ export function defer<S, R>(build: (source: S[]) => Iterable<R>, source: Iterabl
 export function first<T>(source: Iterable<T> | string, predicate?: (item: T) => boolean): T {
   const from = checked(source);
   if (predicate === null) throw nullArgument('predicate');
+  if (predicate === undefined) {
+    const found = randomAccess<T>(from)?.(0);
+    if (found !== undefined) return found.value;
+    if (cheapCount(from) === 0) throw exception('System.InvalidOperationException', 'Sequence contains no elements');
+  }
   for (const item of walk(from)) if (predicate === undefined || predicate(item)) return item;
   throw exception(
     'System.InvalidOperationException',
@@ -293,6 +318,11 @@ export function first<T>(source: Iterable<T> | string, predicate?: (item: T) => 
 export function firstOrDefault<T>(source: Iterable<T> | string, predicate: ((item: T) => boolean) | undefined, fallback: T): T {
   const from = checked(source);
   if (predicate === null) throw nullArgument('predicate');
+  if (predicate === undefined) {
+    const found = randomAccess<T>(from)?.(0);
+    if (found !== undefined) return found.value;
+    if (cheapCount(from) === 0) return fallback;
+  }
   for (const item of walk(from)) if (predicate === undefined || predicate(item)) return item;
   return fallback;
 }
@@ -303,11 +333,42 @@ export function firstOrDefault<T>(source: Iterable<T> | string, predicate: ((ite
  */
 export function elementAt<T>(source: Iterable<T> | string, index: number, fallback?: { value: T }): T {
   const from = checked(source);
-  if (index >= 0) {
+  const read = randomAccess<T>(from);
+  if (read !== undefined) {
+    const found = read(index);
+    if (found !== undefined) return found.value;
+  } else if (index >= 0) {
     let at = 0;
     for (const item of walk(from)) if (at++ === index) return item;
   }
   if (fallback !== undefined) return fallback.value;
   // An index outside a walked sequence is .NET's generic out-of-range, which a list's own indexer words otherwise.
   throw exception('System.ArgumentOutOfRangeException', "Specified argument was out of the range of valid values. (Parameter 'index')");
+}
+
+/**
+ * `Last()` and `Last(predicate)` over a query: a projection of a list reads its last element alone, as
+ * .NET's `TryGetLast` does, and anything else is walked whole, the last element that answers kept.
+ */
+export function last<T>(source: Iterable<T> | string, predicate?: (item: T) => boolean, fallback?: { value: T }): T {
+  const from = checked(source);
+  if (predicate === null) throw nullArgument('predicate');
+  if (predicate === undefined) {
+    const count = cheapCount(from);
+    const read = randomAccess<T>(from);
+    if (count !== undefined && read !== undefined) {
+      const found = count > 0 ? read(count - 1) : undefined;
+      if (found !== undefined) return found.value;
+      if (fallback !== undefined) return fallback.value;
+      throw exception('System.InvalidOperationException', 'Sequence contains no elements');
+    }
+  }
+  let found: { value: T } | undefined;
+  for (const item of walk(from)) if (predicate === undefined || predicate(item)) found = { value: item };
+  if (found !== undefined) return found.value;
+  if (fallback !== undefined) return fallback.value;
+  throw exception(
+    'System.InvalidOperationException',
+    predicate === undefined ? 'Sequence contains no elements' : 'Sequence contains no matching element',
+  );
 }
