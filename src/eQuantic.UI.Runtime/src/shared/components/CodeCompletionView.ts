@@ -46,7 +46,7 @@ export class CodeCompletionView {
         let style = CodeCompletionView.documentationStyle(metrics);
         let lines = 0;
         for (const paragraph of $eq.text.split(CodeCompletionView.shown(documentation), '\n')) {
-            lines += Math.max(1, (Math.trunc(Math.ceil(Math.fround(context.measureText(paragraph, style) / room))) | 0));
+            lines += Math.max(1, $eq.num.saturate(Math.ceil(Math.fround(context.measureText(paragraph, style) / room))));
             if (lines >= CodeCompletionView.documentationLines) return CodeCompletionView.documentationLines;
         }
         return lines;
@@ -74,13 +74,13 @@ export class CodeCompletionView {
             if (CodeCompletionView.heightOf(metrics, wanted) <= above) up = true; else {
                 up = above > below;
                 let room = Math.fround((up ? above : below) - CodeCompletionView.heightOf(metrics, 0));
-                rows = Math.max(1, Math.min(wanted, (Math.trunc(Math.floor(Math.fround(room / metrics.lineHeight))) | 0)));
+                rows = Math.max(1, Math.min(wanted, $eq.num.saturate(Math.floor(Math.fround(room / metrics.lineHeight)))));
             }
         }
         let lines = documentation;
         if (shown) {
             let spare = Math.fround(Math.fround((up ? above : below) - CodeCompletionView.heightOf(metrics, rows)) - CodeCompletionView.documentationChrome);
-            lines = Math.max(0, Math.min(lines, (Math.trunc(Math.floor(Math.fround(spare / documentationLine))) | 0)));
+            lines = Math.max(0, Math.min(lines, $eq.num.saturate(Math.floor(Math.fround(spare / documentationLine)))));
         }
         let x = Math.fround(word.x - CodeCompletionView.labelInset(metrics));
         if (viewWidth > 0) x = Math.min(x, Math.fround(Math.fround(viewLeft + viewWidth) - width));
@@ -92,7 +92,7 @@ export class CodeCompletionView {
     static build(context: BuildContext, completion: CodeCompletion, metrics: CodeBlock$CodeMetrics, top: number, rows: number, width: number, above: boolean, documentation: string | null, documentationLines: number, pick: (int: number) => void) {
         let theme = context.theme;
         let items = completion.items;
-        let columns = (Math.trunc(Math.floor(Math.fround(Math.fround(width - CodeCompletionView.widthOf(metrics, 0)) / metrics.columnWidth))) | 0);
+        let columns = $eq.num.saturate(Math.floor(Math.fround(Math.fround(width - CodeCompletionView.widthOf(metrics, 0)) / metrics.columnWidth)));
         let page = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         for (let i = top; i < top + rows && i < $eq.collections.count(items); i++) {
             let index = i;

@@ -32,27 +32,7 @@ Char.IsSurrogatePair(String,Int32) s  type  the (string, index) overloads read t
 Char.IsSymbol(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
 Char.IsUpper(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
 Char.IsWhiteSpace(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
-Convert.ToBoolean(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToBoolean(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToByte(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToByte(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToChar(String) value  type  Convert.ToChar of a string is String.fromCharCode of it (#401)
-Convert.ToChar(String,IFormatProvider) value  type  Convert.ToChar of a string is String.fromCharCode of it (#401)
-Convert.ToInt16(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToInt16(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToInt32(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToInt32(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToInt64(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToInt64(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToSByte(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToSByte(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToSByte(String,IFormatProvider) value  type  Convert.ToSByte of a string reads a null as 0, where .NET 10 refuses it for this overload alone (#401)
-Convert.ToUInt16(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToUInt16(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToUInt32(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToUInt32(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToUInt64(Object) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToUInt64(Object,IFormatProvider) value  value  Convert of an object is lowered to a rounding ($eq.math.round) or a comparison of it, which reads a null otherwise than .NET (#401)
 Enumerable.Aggregate(IEnumerable<TSource>,Func<TSource,TSource,TSource>) func  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Aggregate(IEnumerable<TSource>,Func<TSource,TSource,TSource>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Aggregate(IEnumerable<TSource>,TAccumulate,Func<TAccumulate,TSource,TAccumulate>) func  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision

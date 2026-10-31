@@ -56,7 +56,7 @@ export class CodeGoToView {
 
     static list(theme: any, metrics: CodeBlock$CodeMetrics, goTo: CodeGoTo, width: number, top: number, pick: (int: number) => void) {
         let entries = goTo.entries;
-        let columns = (Math.trunc(Math.floor(Math.fround(Math.fround(Math.fround(Math.fround(width - Math.fround(2 * 8)) - metrics.lineHeight) - 4) / metrics.columnWidth))) | 0);
+        let columns = $eq.num.saturate(Math.floor(Math.fround(Math.fround(Math.fround(Math.fround(width - Math.fround(2 * 8)) - metrics.lineHeight) - 4) / metrics.columnWidth)));
         let page = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let heading = CodeGoToView.lists(goTo.mode) ? CodeGoToView.title(goTo, $eq.collections.count(entries)) : SdkStrings.symbolsCount($eq.collections.count(entries));
         page.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(8, 4) }), new Text(heading, 'labelSmall', theme.textMuted, 1)));

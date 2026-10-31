@@ -487,7 +487,7 @@ export class CodeEditorController {
         let origin = this._grid.origin.y;
         let lineHeight = this._grid.cell.height;
         if (lineHeight <= 0) return;
-        let topRow = (Math.trunc(Math.floor(Math.fround(Math.max(0, Math.fround(this._view.y - origin)) / lineHeight))) | 0);
+        let topRow = $eq.num.saturate(Math.floor(Math.fround(Math.max(0, Math.fround(this._view.y - origin)) / lineHeight)));
         let within = Math.fround(Math.fround(this._view.y - origin) - Math.fround(Math.fround(topRow) * lineHeight));
         let line = before?.lineAtRow(topRow) ?? Math.min(topRow, this._document.lineCount - 1);
         let row = this._grid.rows?.rowOf(line) ?? line;
@@ -564,7 +564,7 @@ export class CodeEditorController {
     characterAt(point: Point) {
         let rows = this.grid.rows?.rowCount ?? this._document.lineCount;
         if (point.x < this.grid.origin.x || point.y < this.grid.origin.y) return null;
-        let row = (Math.trunc(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height))) | 0);
+        let row = $eq.num.saturate(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height)));
         if (row >= rows) return null;
         let map: any; 
         if ((map = this.grid.rows) != null && map.rowAt(row).kind !== 'line') return null;
@@ -991,7 +991,7 @@ export class CodeEditorController {
     onPlaceholder(point: Point) {
         let rows: any; 
         if (!((rows = this.grid.rows) != null)) return false;
-        let row = (Math.trunc(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height))) | 0);
+        let row = $eq.num.saturate(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height)));
         return row >= 0 && row < rows.rowCount && rows.rowAt(row).kind === 'placeholder';
     }
 

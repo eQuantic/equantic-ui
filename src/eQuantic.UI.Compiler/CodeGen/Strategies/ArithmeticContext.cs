@@ -27,6 +27,21 @@ public readonly record struct ArithmeticContext(bool IsChecked, bool ExplicitUnc
         return new ArithmeticContext(isChecked, ExplicitlyUnchecked(node));
     }
 
+    /// <summary>
+    /// Whether a conversion the bound tree holds no such bit for sits in a checked context: an enum's, whose
+    /// <see cref="IConversionOperation.IsChecked"/> is false in <c>checked((Tone)d)</c> too, measured. The
+    /// nearest enclosing construct decides, and the compilation's own setting where there is none.
+    /// </summary>
+    internal static bool ChecksOverflow(SyntaxNode node, ConversionContext context)
+    {
+        for (var current = node.Parent; current is not null and not MemberDeclarationSyntax; current = current.Parent)
+        {
+            if (current is CheckedExpressionSyntax expression) return expression.IsKind(SyntaxKind.CheckedExpression);
+            if (current is CheckedStatementSyntax statement) return statement.IsKind(SyntaxKind.CheckedStatement);
+        }
+        return context.SemanticModel?.Compilation.Options.CheckOverflow == true;
+    }
+
     /// <summary>The nearest enclosing checked/unchecked construct decides; none means the default.</summary>
     private static bool ExplicitlyUnchecked(SyntaxNode node)
     {

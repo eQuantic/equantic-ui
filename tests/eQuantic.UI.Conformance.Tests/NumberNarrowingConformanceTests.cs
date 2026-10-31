@@ -1,0 +1,193 @@
+using eQuantic.UI.Conformance.Tests.Infrastructure;
+using Xunit;
+
+namespace eQuantic.UI.Conformance.Tests;
+
+/// <summary>
+/// A number narrowed to an integer answers .NET's value: <c>Convert.To&lt;integer&gt;</c> rounds half to
+/// even and checks the target's range, in .NET's words (#401), and an explicit cast of a double or a
+/// float saturates, the narrow widths taking the low bits of the saturated int (#1015).
+/// </summary>
+public class NumberNarrowingConformanceTests
+{
+    private const string Catch = "catch (OverflowException e) { return e.Message; }";
+
+    /// <summary>
+    /// <c>Convert.To&lt;integer&gt;</c> of what is not text rounds as .NET's overload rounds and checks its
+    /// range in .NET's words, which differ by overload (#401): it was <c>$eq.math.round</c> for every
+    /// source and target, with no range, no BigInt, a decimal handed back and a char read as a number.
+    /// </summary>
+    [SkippableTheory]
+    // The rows of #401.
+    [InlineData("try { return Convert.ToInt32(1e10); } " + Catch)]
+    [InlineData("try { return Convert.ToInt32(double.NaN); } " + Catch)]
+    [InlineData("try { return Convert.ToByte(300); } " + Catch)]
+    [InlineData("try { return Convert.ToByte(-1); } " + Catch)]
+    [InlineData("try { return Convert.ToUInt32(-0.6); } " + Catch)]
+    [InlineData("try { return Convert.ToInt32(9999999999L); } " + Catch)]
+    [InlineData("return (Convert.ToInt64(2.5) + 1L).ToString();")]                                  // 3
+    [InlineData("return Convert.ToInt32(2.5m) + \"|\" + Convert.ToInt32(3.5m);")]                   // 2|4
+    [InlineData("return Convert.ToInt32('A') + \"|\" + Convert.ToByte('A') + \"|\" + Convert.ToInt64('A');")] // 65|65|65
+    // The edges of each width, after .NET's rounding.
+    [InlineData("return Convert.ToInt32(2147483647.49) + \"|\" + Convert.ToInt32(-2147483648.5);")]
+    [InlineData("try { return Convert.ToInt32(2147483647.5); } " + Catch)]
+    [InlineData("try { return Convert.ToInt32(-2147483648.51); } " + Catch)]
+    [InlineData("return Convert.ToByte(-0.5) + \"|\" + Convert.ToUInt32(-0.4) + \"|\" + Convert.ToUInt64(-0.5).ToString();")] // 0|0|0
+    [InlineData("try { return Convert.ToByte(255.5); } " + Catch)]
+    [InlineData("try { return Convert.ToSByte(127.5); } " + Catch)]
+    [InlineData("try { return Convert.ToInt16(32767.5); } " + Catch)]
+    [InlineData("try { return Convert.ToUInt16(65535.5); } " + Catch)]
+    [InlineData("try { return Convert.ToUInt32(4294967295.5); } " + Catch)]
+    // A narrow width goes through ToInt32(double), whose words these are.
+    [InlineData("try { return Convert.ToInt16(1e10); } " + Catch)]
+    // ToInt64 and ToUInt64 of a double are a checked cast, in its words.
+    [InlineData("try { return Convert.ToInt64(9.3e18).ToString(); } " + Catch)]
+    [InlineData("try { return Convert.ToUInt64(-0.6).ToString(); } " + Catch)]
+    [InlineData("try { return Convert.ToUInt64(2e19).ToString(); } " + Catch)]
+    [InlineData("return Convert.ToUInt64(1.8e19).ToString() + \"|\" + Convert.ToInt64(-9223372036854775808.0);")]
+    // An integer of another width.
+    [InlineData("try { return Convert.ToUInt64(-1).ToString(); } " + Catch)]
+    [InlineData("try { return Convert.ToUInt32(-1L); } " + Catch)]
+    [InlineData("try { return Convert.ToInt64(ulong.MaxValue).ToString(); } " + Catch)]
+    [InlineData("try { return Convert.ToInt16(40000); } " + Catch)]
+    // A decimal: decimal.Round, then the range.
+    [InlineData("try { return Convert.ToByte(255.5m); } " + Catch)]
+    [InlineData("try { return Convert.ToInt64(1e28m).ToString(); } " + Catch)]
+    [InlineData("try { return Convert.ToUInt64(-0.6m).ToString(); } " + Catch)]
+    [InlineData("return Convert.ToUInt64(-0.5m).ToString();")]                                     // 0
+    // A char and a bool.
+    [InlineData("try { return Convert.ToByte('\\u0100'); } " + Catch)]
+    [InlineData("try { return Convert.ToSByte('\\u0080'); } " + Catch)]
+    [InlineData("return Convert.ToInt32(true) + \"|\" + Convert.ToByte(false) + \"|\" + Convert.ToInt64(true);")] // 1|0|1
+    // An object is read by what it holds.
+    [InlineData("object o = null; return Convert.ToInt32(o);")]
+    [InlineData("object o = \"12\"; return Convert.ToInt32(o);")]
+    [InlineData("object o = 2.5; return Convert.ToInt32(o);")]
+    [InlineData("object o = 3L; return Convert.ToInt32(o);")]
+    [InlineData("object o = true; return Convert.ToInt32(o);")]
+    [InlineData("object o = 2.5m; return Convert.ToInt32(o);")]
+    [InlineData("object o = 1e10; try { return Convert.ToInt32(o); } " + Catch)]
+    [InlineData("object o = \"1,5\"; try { return Convert.ToInt32(o, System.Globalization.CultureInfo.InvariantCulture); } catch (FormatException e) { return e.Message; }")]
+    [InlineData("object o = \"1,5\"; return Convert.ToDouble(o, System.Globalization.CultureInfo.InvariantCulture);")]
+    [InlineData("object o = DateTime.MinValue; try { return Convert.ToInt32(o); } catch (InvalidCastException e) { return e.Message; }")]
+    // Convert.ToBoolean of an object, from #401's comment.
+    [InlineData("object o = null; return Convert.ToBoolean(o);")]
+    [InlineData("object o = \"abc\"; try { return Convert.ToBoolean(o); } catch (FormatException e) { return e.Message; }")]
+    [InlineData("object o = \"True\"; return Convert.ToBoolean(o);")]
+    [InlineData("object o = 1; object z = 0.0; return Convert.ToBoolean(o) + \"|\" + Convert.ToBoolean(z);")]
+    public void ConvertToAnInteger_RoundsAndChecksAsDotNetDoes(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// The rest of <c>Convert</c>'s numbers: a nullable and an enum, which C# boxes for the <c>object</c>
+    /// overload, <c>ToDouble</c> and <c>ToSingle</c> of what has a number or has none, and <c>ToChar</c>,
+    /// which read a text as a zero and wrapped an integer past its range.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("int? none = null; int? some = 5; return Convert.ToInt32(none) + \"|\" + Convert.ToInt32(some) + \"|\" + Convert.ToBoolean(none) + \"|\" + Convert.ToBoolean(some);")] // 0|5|False|True
+    [InlineData("return Convert.ToInt32(Tone.Warm) + \"|\" + Convert.ToByte(Tone.Warm) + \"|\" + Convert.ToInt64(Tone.Warm).ToString();")] // 3|3|3
+    [InlineData("Tone? none = null; Tone? some = Tone.Warm; return Convert.ToInt32(none) + \"|\" + Convert.ToInt32(some) + \"|\" + Convert.ToInt64(some).ToString() + \"|\" + Convert.ToInt64(none).ToString();")] // 0|3|3|0
+    [InlineData("return Convert.ToBoolean(Tone.Warm) + \"|\" + Convert.ToBoolean((Tone)0);")] // True|False
+    [InlineData("return Convert.ToBoolean(1.5f) + \"|\" + Convert.ToBoolean((byte)0) + \"|\" + Convert.ToBoolean(0L) + \"|\" + Convert.ToBoolean(double.NaN);")] // True|False|False|True
+    [InlineData("return Convert.ToChar(\"A\", System.Globalization.CultureInfo.InvariantCulture).ToString();")] // A
+    [InlineData("return Convert.ToDouble(true) + \"|\" + Convert.ToDouble(2.5m) + \"|\" + Convert.ToSingle(2.5m) + \"|\" + Convert.ToDouble(3L);")] // 1|2.5|2.5|3
+    [InlineData("object o = 2.5m; object b = true; object t = \"2.5\"; object n = null; return Convert.ToDouble(o) + \"|\" + Convert.ToDouble(b) + \"|\" + Convert.ToSingle(t) + \"|\" + Convert.ToDouble(n);")] // 2.5|1|2.5|0
+    [InlineData("try { return Convert.ToDouble('A'); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("try { return Convert.ToSingle(DateTime.MinValue); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("return Convert.ToChar(65).ToString() + Convert.ToChar('B') + Convert.ToChar(\"C\") + Convert.ToChar(68L);")] // ABCD
+    [InlineData("try { return Convert.ToChar(-1); } " + Catch)]
+    [InlineData("try { return Convert.ToChar(70000); } " + Catch)]
+    [InlineData("try { return Convert.ToChar(65.0); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("try { return Convert.ToChar(true); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("try { return Convert.ToChar(1m); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("try { return Convert.ToChar(\"AB\"); } catch (FormatException e) { return e.Message; }")]
+    [InlineData("string none = null; try { return Convert.ToChar(none); } catch (ArgumentNullException e) { return e.Message; }")]
+    [InlineData("object o = 65; object t = \"A\"; object n = null; return Convert.ToChar(o).ToString() + Convert.ToChar(t) + (int)Convert.ToChar(n);")] // AA0
+    [InlineData("object o = \"AB\"; try { return Convert.ToChar(o); } catch (FormatException e) { return e.Message; }")]
+    [InlineData("object o = 2.5; try { return Convert.ToChar(o); } catch (InvalidCastException e) { return e.Message; }")]
+    public void ConvertOfANullableAnEnumOrAChar_AnswersAsDotNetDoes(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "enum Tone { Cold = 1, Warm = 3 }");
+    }
+
+    /// <summary>
+    /// An explicit cast of a double or a float saturates, as .NET 9 and later cast on every platform, and
+    /// the widths under an int take the low bits of the saturated int, so <c>(byte)300.0</c> is 44 and
+    /// <c>(byte)1e12</c> is 255: the whole part wrapped modulo 2^32 where the value was past an int (#1015).
+    /// </summary>
+    [SkippableTheory]
+    // A date has its overload, which names the target.
+    [InlineData("try { return Convert.ToInt32(DateTime.MinValue); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("try { return Convert.ToByte(DateTime.MinValue); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("object o = TimeSpan.Zero; try { return Convert.ToInt32(o); } catch (InvalidCastException e) { return e.Message; }")]
+    // An enum C# boxed for the call converts by its value, through every target.
+    [InlineData("return Convert.ToDouble(Tone.Warm) + \"|\" + Convert.ToSingle(Tone.Warm) + \"|\" + (int)Convert.ToChar(Tone.Warm) + \"|\" + Convert.ToBoolean(Tone.Warm) + \"|\" + Convert.ToBoolean(Tone.None);")]
+    // A Nullable's type is still in sight, and a null is what the object overload answers.
+    [InlineData("Tone? t = Tone.Warm; Tone? n = null; return Convert.ToBoolean(t) + \"|\" + Convert.ToBoolean(n) + \"|\" + Convert.ToDouble(t) + \"|\" + Convert.ToDouble(n) + \"|\" + (int)Convert.ToChar(t) + \"|\" + (int)Convert.ToChar(n);")]
+    [InlineData("char? c = '5'; char? n = null; return Convert.ToInt32(c) + \"|\" + Convert.ToInt32(n) + \"|\" + Convert.ToChar(c) + \"|\" + (int)Convert.ToChar(n) + \"|\" + Convert.ToInt64(c).ToString();")]
+    [InlineData("char? c = 'A'; try { return Convert.ToDouble(c); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("char? c = 'A'; try { return Convert.ToBoolean(c); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("double? d = 1e10; try { return Convert.ToInt16(d); } " + Catch)]
+    [InlineData("int? i = 300; try { return Convert.ToByte(i); } " + Catch)]
+    [InlineData("bool? b = true; decimal? m = 2.5m; float? f = 2.5f; long? l = 7; return Convert.ToInt32(b) + \"|\" + Convert.ToInt32(m) + \"|\" + Convert.ToInt32(f) + \"|\" + Convert.ToInt32(l);")]
+    // A long held as object goes to a single at once, as one typed as long does.
+    [InlineData("object o = 1152921573326323713L; return ((long)Convert.ToSingle(o)).ToString();")]
+    public void AConversion_ReadsTheTypeInSight(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public enum Tone { None, Warm }");
+    }
+
+    [SkippableTheory]
+    // A constant the compiler folded, each width.
+    [InlineData("return unchecked((int)1e12) + \"|\" + unchecked((byte)1e12) + \"|\" + unchecked((short)1e12) + \"|\" + unchecked((uint)-1.0);")]
+    [InlineData("return ((int)unchecked((char)1e12)) + \"|\" + ((int)unchecked((char)-1.5)) + \"|\" + ((int)(char)65.7);")]
+    [InlineData("return unchecked((long)1e30).ToString() + \"|\" + unchecked((ulong)-1.0).ToString();")]
+    // A checked cast into an enum throws past its underlying type.
+    [InlineData("double d = 1e12; try { return checked((Tone)d).ToString(); } " + Catch)]
+    [InlineData("double d = 300; try { return checked((Small)d).ToString(); } " + Catch)]
+    [InlineData("int i = 300; try { return checked((Small)i).ToString(); } " + Catch)]
+    [InlineData("long l = 1L << 40; try { return checked((Tone)l).ToString(); } " + Catch)]
+    [InlineData("double d = 1.9; int i = 1; long l = 1; return checked((Tone)d) + \"|\" + checked((Small)i) + \"|\" + checked((Tone)l);")]
+    public void ACastInAContext_AnswersAsDotNetDoes(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public enum Tone { None, Warm } public enum Small : byte { None, One }");
+    }
+
+    [SkippableTheory]
+    [InlineData("double d = 1e12; return (int)d + \"|\" + (uint)d + \"|\" + ((long)d).ToString() + \"|\" + ((ulong)d).ToString();")]
+    [InlineData("double d = -1e12; return (int)d + \"|\" + (uint)d + \"|\" + ((long)d).ToString() + \"|\" + ((ulong)d).ToString();")]
+    [InlineData("double d = double.NaN; return (int)d + \"|\" + (uint)d + \"|\" + ((long)d).ToString() + \"|\" + ((ulong)d).ToString() + \"|\" + (byte)d + \"|\" + (short)d;")]
+    [InlineData("double d = double.PositiveInfinity; return (int)d + \"|\" + (uint)d + \"|\" + ((long)d).ToString() + \"|\" + ((ulong)d).ToString() + \"|\" + (byte)d + \"|\" + (sbyte)d + \"|\" + (short)d + \"|\" + (ushort)d;")]
+    [InlineData("double d = double.NegativeInfinity; return (int)d + \"|\" + (uint)d + \"|\" + ((long)d).ToString() + \"|\" + ((ulong)d).ToString() + \"|\" + (byte)d + \"|\" + (sbyte)d + \"|\" + (short)d + \"|\" + (ushort)d;")]
+    // A narrow width takes the low bits of the saturated int.
+    [InlineData("double d = 300; return (byte)d + \"|\" + (sbyte)d + \"|\" + (short)d + \"|\" + (ushort)d;")]
+    [InlineData("double d = -1; return (byte)d + \"|\" + (sbyte)d + \"|\" + (short)d + \"|\" + (ushort)d + \"|\" + (uint)d + \"|\" + ((ulong)d).ToString();")]
+    [InlineData("double d = 1e12; return (byte)d + \"|\" + (sbyte)d + \"|\" + (short)d + \"|\" + (ushort)d + \"|\" + (int)(char)d;")]
+    [InlineData("double d = 70000; return (short)d + \"|\" + (ushort)d + \"|\" + (int)(char)d;")]
+    // The edges of the wide ones.
+    [InlineData("double d = 4294967296; return (uint)d + \"|\" + (int)d;")]
+    [InlineData("double d = 9.3e18; return ((long)d).ToString() + \"|\" + ((ulong)d).ToString();")]
+    [InlineData("double d = 2e19; return ((long)d).ToString() + \"|\" + ((ulong)d).ToString();")]
+    // A float, a nullable and a fraction.
+    [InlineData("float f = 1e12f; return (int)f + \"|\" + (byte)f + \"|\" + ((long)f).ToString();")]
+    [InlineData("float f = float.NaN; return (int)f + \"|\" + ((ulong)f).ToString();")]
+    [InlineData("double? d = 1e12; int? i = (int?)d; return i.ToString();")]
+    [InlineData("double d = -0.9; return ((int)d).ToString() + \"|\" + (byte)d + \"|\" + ((long)d).ToString();")]
+    // A checked cast still throws.
+    [InlineData("double d = 1e12; try { return checked((int)d); } " + Catch)]
+    // A constant the compiler folds, a long's and an int's.
+    [InlineData("return unchecked((int)1e12) + \"|\" + unchecked((long)1e30).ToString();")]
+    // An enum over a byte, which a cast of a double reaches as the width does.
+    [InlineData("double d = 1e12; return (int)(Level)d;")]
+    public void ACastOfADouble_SaturatesAsDotNetDoes(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "enum Level : byte { Low = 1 }");
+    }
+}

@@ -41,7 +41,7 @@ src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/OrderByStrategy.cs  2  not look
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/SumStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/NullableLift.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/BclSurfaceTailStrategy.cs  3  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/ConvertStrategy.cs  4  arguments only
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/ConvertStrategy.cs  2  arguments only
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/NumberMethodStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/PrimitiveStaticStrategy.cs  1  arguments only
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs  1  not looked at yet

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checked, intDiv, intRem, longDiv, longRem, mapGet, mapSet } from './overflow';
+import { checked, intDiv, intRem, longDiv, longRem, mapGet, mapSet, saturate, saturateLong, saturateUnsigned } from './overflow';
 import { single } from './real-text';
 import { sortedDictionary } from './sorted';
 import { dictionary } from './dictionary';
@@ -110,5 +110,28 @@ describe('mapGet / mapSet — a runtime map entry, read and written as .NET does
     const m = sortedDictionary<string | null, number>();
     expect(() => mapSet(m, null, 1)).toThrow("Value cannot be null. (Parameter 'key')");
     expect(m.size).toBe(0);
+  });
+});
+
+describe('an explicit cast of a double, which saturates as .NET 9 and later do (#1015)', () => {
+  it('holds an int at its ends, and a NaN at 0', () => {
+    expect(saturate(1e12)).toBe(2147483647);
+    expect(saturate(-1e12)).toBe(-2147483648);
+    expect(saturate(Number.NaN)).toBe(0);
+    expect(Object.is(saturate(-0.9), 0)).toBe(true);
+  });
+
+  it('holds a uint at its own ends', () => {
+    expect(saturateUnsigned(-1)).toBe(0);
+    expect(saturateUnsigned(4294967296)).toBe(4294967295);
+    expect(saturateUnsigned(Number.NaN)).toBe(0);
+  });
+
+  it('holds a long and a ulong at theirs, as BigInts', () => {
+    expect(saturateLong(1e20)).toBe(9223372036854775807n);
+    expect(saturateLong(-1e20)).toBe(-9223372036854775808n);
+    expect(saturateLong(1e20, true)).toBe(18446744073709551615n);
+    expect(saturateLong(-1, true)).toBe(0n);
+    expect(saturateLong(Number.NaN)).toBe(0n);
   });
 });

@@ -323,7 +323,7 @@ export class CodeGoTo {
         let typed: any; 
         if (!((typed = CodeGoTo.parseInt($eq.text.trim(parts[0]))) != null)) return;
         let count = this._editor.document.lineCount;
-        let line = (Math.trunc(Math.min(Math.max(1, typed >= 0 ? typed : count + 1 + typed), count)) | 0);
+        let line = $eq.num.saturate(Math.min(Math.max(1, typed >= 0 ? typed : count + 1 + typed), count));
         let cells = this._editor.cellsOf(line - 1);
         let columns = cells.width + 1;
         let column: any; 
@@ -332,7 +332,7 @@ export class CodeGoTo {
             this._lineTarget = new CodePosition(line - 1, 0);
             return;
         }
-        let visible = (Math.trunc(Math.min(Math.max(1, column >= 0 ? column : columns + column), columns)) | 0);
+        let visible = $eq.num.saturate(Math.min(Math.max(1, column >= 0 ? column : columns + column), columns));
         this._line = new CodeGoToLine(line, visible, true, columns);
         this._lineTarget = new CodePosition(line - 1, cells.columnAt(Math.fround(visible - 1)));
     }

@@ -27,3 +27,15 @@ const eQuantic.UI.Compiler.CodeGen.Eq.ListRemoveRange = "$eq.collections.listRem
 const eQuantic.UI.Compiler.CodeGen.Eq.ListGetRange = "$eq.collections.listGetRange" -> string!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.IndexFromEndStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.IndexFromEndStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+const eQuantic.UI.Compiler.CodeGen.Eq.IntegerFrom = "$eq.num.integerFrom" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.IntegerFromDouble = "$eq.num.integerFromDouble" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.IntegerFromDecimal = "$eq.num.integerFromDecimal" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.IntegerFromObject = "$eq.num.integerFromObject" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.RealFromObject = "$eq.num.realFromObject" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CharFrom = "$eq.num.charFrom" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CharFromText = "$eq.num.charFromText" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CharFromObject = "$eq.num.charFromObject" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.BoolFromObject = "$eq.bool.fromObject" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Saturate = "$eq.num.saturate" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.SaturateUnsigned = "$eq.num.saturateUnsigned" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.SaturateLong = "$eq.num.saturateLong" -> string!
