@@ -9,6 +9,7 @@ import {
 import { fixedSize, isReadOnly } from './utils/view';
 import { boundDelegate, combineDelegate, delegateOver, removeDelegate } from './utils/delegates';
 import { listAdd, listClear, listForEach, listSet, listWalk } from './utils/list-version';
+import * as query from './utils/query';
 import { hydrate } from './utils/hydrate';
 import { twinJson } from './utils/twin-json';
 import { long } from './utils/long';
@@ -348,6 +349,9 @@ export const $eq = {
    * the overloads a sibling's lowering mistook: Average by its element type, FirstOrDefault,
    * LastOrDefault and SingleOrDefault with a default value, SequenceEqual by the default equality, and
    * Zip's tuples. */
+  /** LINQ's operators as .NET runs them, each reading its source one element at a time when it is
+   * walked (#685) — see utils/query. */
+  query,
   linq: {
     average,
     enumerable,

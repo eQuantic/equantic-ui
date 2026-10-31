@@ -31,3 +31,4 @@ const eQuantic.UI.Compiler.CodeGen.Eq.ListAdd = "$eq.collections.listAdd" -> str
 const eQuantic.UI.Compiler.CodeGen.Eq.ListClear = "$eq.collections.listClear" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListSet = "$eq.collections.listSet" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListForEach = "$eq.collections.listForEach" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Query = "$eq.query" -> string!

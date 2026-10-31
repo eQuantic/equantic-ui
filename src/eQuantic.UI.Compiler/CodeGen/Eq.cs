@@ -523,6 +523,9 @@ public static class Eq
     public const string ListAddRange = "$eq.collections.addRange";
     /// <summary><c>List&lt;T&gt;.InsertRange</c>: as <see cref="ListAddRange"/>, the index checked as .NET checks it.</summary>
     public const string ListInsertRange = "$eq.collections.insertRange";
+    /// <summary>LINQ's operators as .NET runs them (<c>utils/query.ts</c>): each checks its arguments when it is
+    /// called and reads its source one element at a time when it is walked (#685).</summary>
+    public const string Query = "$eq.query";
     /// <summary>A walk over a <c>List&lt;T&gt;</c> that compares the list's version at every step, as .NET's
     /// enumerator does (#863).</summary>
     public const string ListWalk = "$eq.collections.listWalk";
