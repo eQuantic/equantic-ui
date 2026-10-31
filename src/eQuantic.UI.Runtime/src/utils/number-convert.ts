@@ -88,6 +88,7 @@ function ranged(value: bigint, type: IntegerType): number | bigint {
 /** `Convert.To<type>` of an integer of another width. */
 export function integerFrom(value: number | bigint, type: LongType): bigint;
 export function integerFrom(value: number | bigint, type: NarrowType): number;
+export function integerFrom(value: number | bigint, type: IntegerType): number | bigint;
 export function integerFrom(value: number | bigint, type: IntegerType): number | bigint {
   return ranged(BigInt(value), type);
 }
@@ -98,6 +99,7 @@ export function integerFrom(value: number | bigint, type: IntegerType): number |
  */
 export function integerFromDouble(value: number, type: LongType): bigint;
 export function integerFromDouble(value: number, type: NarrowType): number;
+export function integerFromDouble(value: number, type: IntegerType): number | bigint;
 export function integerFromDouble(value: number, type: IntegerType): number | bigint {
   if (type === 'long' || type === 'ulong') {
     const rounded = round(value);
@@ -120,6 +122,7 @@ export function integerFromDouble(value: number, type: IntegerType): number | bi
 /** `Convert.To<type>` of a decimal: `decimal.Round`, then the range. */
 export function integerFromDecimal(value: Decimal, type: LongType): bigint;
 export function integerFromDecimal(value: Decimal, type: NarrowType): number;
+export function integerFromDecimal(value: Decimal, type: IntegerType): number | bigint;
 export function integerFromDecimal(value: Decimal, type: IntegerType): number | bigint {
   const rounded = value.round();
   return ranged(rounded.mantissa / 10n ** BigInt(rounded.scale), type);
@@ -131,16 +134,17 @@ export function integerFromDecimal(value: Decimal, type: IntegerType): number | 
  */
 export function integerFromObject(value: unknown, type: LongType, invariant?: boolean): bigint;
 export function integerFromObject(value: unknown, type: NarrowType, invariant?: boolean): number;
+export function integerFromObject(value: unknown, type: IntegerType, invariant?: boolean): number | bigint;
 export function integerFromObject(value: unknown, type: IntegerType, invariant = false): number | bigint {
   const zero = type === 'long' || type === 'ulong' ? 0n : 0;
   if (value == null) return zero;
-  if (typeof value === 'string') return intConvert(value, type as NarrowType, invariant);
+  if (typeof value === 'string') return intConvert(value, type, invariant);
   if (typeof value === 'boolean') return ranged(value ? 1n : 0n, type);
   if (typeof value === 'bigint') return ranged(value, type);
   if (typeof value === 'number') {
-    return Number.isInteger(value) ? ranged(BigInt(value), type) : integerFromDouble(value, type as NarrowType);
+    return Number.isInteger(value) ? ranged(BigInt(value), type) : integerFromDouble(value, type);
   }
-  if (value instanceof Decimal) return integerFromDecimal(value, type as NarrowType);
+  if (value instanceof Decimal) return integerFromDecimal(value, type);
   throw refused(value as object, type);
 }
 

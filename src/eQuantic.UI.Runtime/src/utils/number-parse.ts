@@ -254,6 +254,7 @@ export function intConvert(
   type: Exclude<IntegerType, LongType>,
   invariant?: boolean,
 ): number;
+export function intConvert(text: string | null | undefined, type: IntegerType, invariant?: boolean): number | bigint;
 export function intConvert(
   text: string | null | undefined,
   type: IntegerType,
