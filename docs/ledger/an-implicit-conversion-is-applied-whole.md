@@ -1,4 +1,4 @@
-- **2026-10-31 · An implicit conversion is applied whole, and a native integer is 64 bits**: bugs under #849
+- **2026-11-03 · An implicit conversion is applied whole, and a native integer is 64 bits**: bugs under #849
   ([#649](https://github.com/eQuantic/equantic-ui/issues/649),
   [#911](https://github.com/eQuantic/equantic-ui/issues/911),
   [#970](https://github.com/eQuantic/equantic-ui/issues/970)). A user-defined conversion and the standard one beside
