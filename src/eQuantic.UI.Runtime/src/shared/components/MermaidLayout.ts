@@ -290,7 +290,7 @@ export class MermaidLayout {
     }
 
     static whole(v: number) {
-        return (Math.trunc((v < 0 ? Math.fround(v - 0.5) : Math.fround(v + 0.5))) | 0);
+        return $eq.num.saturate((v < 0 ? Math.fround(v - 0.5) : Math.fround(v + 0.5)));
     }
 
     static min4(a: number, b: number, c: number, d: number) {
