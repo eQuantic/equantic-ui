@@ -67,6 +67,24 @@ public class DrawingInputTests
     }
 
     [Fact]
+    public void APressIsTestedInTheDrawingsOwnBox_WhereverItIsLaidOut()
+    {
+        // Laid out 40dp in from the window's corner: the path is on the artwork's grid, and the press
+        // is taken there from the drawing's box, not from the window's origin.
+        var map = new Map();
+        var inset = new Column { Padding = EdgeInsets.All(40) };
+        inset.Add(map.Draw());
+        var host = new PhotonHost(inset, PhotonTheme.Instance, ThemeMode.Light, 280, 280);
+        host.RenderFrame(new DisplayListBuilder());
+
+        Tap(host, 40 + 40, 40 + 40);
+        Tap(host, 40 + 160, 40 + 160);
+        Tap(host, 20, 20);
+
+        map.Pressed.Should().Equal("Porto", "Matosinhos");
+    }
+
+    [Fact]
     public void AReleaseOnAnotherShapeOfTheSameDrawingCancelsThePress()
     {
         var map = new Map();
