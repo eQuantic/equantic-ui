@@ -61,4 +61,20 @@ public sealed class ServerActionBySymbolTests
 
         compiled.Should().ContainSingle(spelling).Which.TypeScript.Should().Contain($"'{id}'").And.NotContain("exists");
     }
+
+    [Theory]
+    [InlineData("a partial method's definition")]
+    [InlineData("the plain spelling")]
+    public void AServerAction_IsOneAction_WhereNoModelAnswers(string spelling)
+    {
+        // A parser no compilation stands behind reads the attributes as written. A partial method's
+        // halves are one method there too: the half with the body was read alone, so it carried no mark
+        // and crossed with its body, beside the stub its definition made (secondary review of #1209).
+        var action = (string)Spellings().Single(row => (string)row[0] == spelling)[1];
+
+        var component = new Parser.ComponentParser().ParseSource(Page(action)).Single();
+
+        component.ServerActions.Should().ContainSingle(spelling).Which.MethodName.Should().Be("Archived");
+        component.Methods.Should().NotContain(method => method.Name == "Archived", "the body stays on the server");
+    }
 }

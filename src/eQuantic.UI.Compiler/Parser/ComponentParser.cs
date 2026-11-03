@@ -415,7 +415,8 @@ public class ComponentParser
         foreach (var method in methods)
         {
             // A partial method is one action, stubbed from the half with the body.
-            if (SymbolOf(method, model) is { PartialImplementationPart: not null }) continue;
+            if (SymbolOf(method, model) is { } symbol ? symbol.PartialImplementationPart is not null : DefinesAPartBesideIt(method))
+                continue;
 
             var serverActionAttr = ServerActionMark(method, model);
 
@@ -607,8 +608,27 @@ public class ComponentParser
         if (method.AttributeLists.Count == 0 && !method.Modifiers.Any(SyntaxKind.PartialKeyword)) return null;
         return SymbolOf(method, model) is { } symbol
             ? PlainClassModule.ServerActionMark(symbol)?.ApplicationSyntaxReference?.GetSyntax() as AttributeSyntax
-            : method.AttributeLists.SelectMany(list => list.Attributes).FirstOrDefault(attribute => attribute.IsNamed("ServerAction"));
+            : PartsOf(method).SelectMany(part => part.AttributeLists).SelectMany(list => list.Attributes)
+                .FirstOrDefault(attribute => attribute.IsNamed("ServerAction"));
     }
+
+    /// <summary>
+    /// The declarations of <paramref name="method"/> as they are written, where no model answers: a partial
+    /// method's halves in its type's declaration, whose attributes C# merges, and the method alone otherwise.
+    /// The half with the body was read on its own, so a mark on the definition left the body crossing beside
+    /// the stub the definition made (secondary review of #1209).
+    /// </summary>
+    private static IEnumerable<MethodDeclarationSyntax> PartsOf(MethodDeclarationSyntax method) =>
+        method.Modifiers.Any(SyntaxKind.PartialKeyword) && method.Parent is TypeDeclarationSyntax type
+            ? type.Members.OfType<MethodDeclarationSyntax>().Where(part => part.Identifier.ValueText == method.Identifier.ValueText
+                && part.Modifiers.Any(SyntaxKind.PartialKeyword)
+                && part.ParameterList.Parameters.Count == method.ParameterList.Parameters.Count)
+            : [method];
+
+    /// <summary>Whether <paramref name="method"/> is a partial method's definition whose other half, the one
+    /// with the body, is written beside it: the action is that half's, as the model says it is.</summary>
+    private static bool DefinesAPartBesideIt(MethodDeclarationSyntax method) =>
+        method is { Body: null, ExpressionBody: null } && PartsOf(method).Any(part => part.Body is not null || part.ExpressionBody is not null);
 
     private void ParseMethods(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
