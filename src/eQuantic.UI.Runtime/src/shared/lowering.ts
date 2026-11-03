@@ -3894,6 +3894,9 @@ function lowerPressable(
 /** Whether a lowered subtree already carries an interactive ELEMENT — see {@link lowerPressable}. */
 function wrapsAnInteractive(node: HtmlNode): boolean {
   if (node.tag === 'button' || node.tag === 'a') return true;
+  // A control that is not a button element and says it is one (C# twin): an input shape of a
+  // drawing (#674), or a pressable that already yielded.
+  if (node.attributes?.['role'] === 'button') return true;
   return (node.children ?? []).some(wrapsAnInteractive);
 }
 

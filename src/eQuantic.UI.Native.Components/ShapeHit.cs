@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Native.Components;
@@ -18,12 +19,25 @@ internal readonly record struct ShapeHit(IReadOnlyList<VectorSegment> Segments, 
     // fraction of a dp of its curve at sixteen, and a press is a finger, not a pixel.
     private const int ChordsPerCubic = 16;
 
+    // Each path read once, not every frame: Photon builds every frame, and a map's paths, its press
+    // test and its semantics would each parse every concelho again. Keyed by the string itself, which
+    // an app's data keeps from one frame to the next, and let go with it.
+    private static readonly ConditionalWeakTable<string, Parsed> Paths = new();
+
+    private sealed record Parsed(IReadOnlyList<VectorSegment> Segments, float MinX, float MinY, float MaxX, float MaxY);
+
+    private static Parsed Read(string path) => Paths.GetValue(path, data =>
+    {
+        var (minX, minY, maxX, maxY) = VectorPath.Bounds(data);
+        return new Parsed(VectorPath.Parse(data), minX, minY, maxX, maxY);
+    });
+
     /// <summary>The test for the <paramref name="index"/>th shape of <paramref name="drawing"/>,
     /// laid out in <paramref name="box"/>.</summary>
     public static ShapeHit For(Drawing drawing, int index, Rect box)
     {
         var shape = drawing.Artwork.Shapes[index];
-        return new ShapeHit(VectorPath.Parse(shape.Path), shape.EvenOdd, ToArtworkOf(drawing.Artwork, box));
+        return new ShapeHit(Read(shape.Path).Segments, shape.EvenOdd, ToArtworkOf(drawing.Artwork, box));
     }
 
     /// <summary>
@@ -33,7 +47,7 @@ internal readonly record struct ShapeHit(IReadOnlyList<VectorSegment> Segments, 
     /// </summary>
     public static Rect BoundsOf(VectorDrawing artwork, VectorShape shape, Rect box)
     {
-        var (minX, minY, maxX, maxY) = VectorPath.Bounds(shape.Path);
+        var (_, minX, minY, maxX, maxY) = Read(shape.Path);
         var unitX = artwork.Width > 0 ? box.Width / artwork.Width : 1;
         var unitY = artwork.Height > 0 ? box.Height / artwork.Height : 1;
         return new Rect(

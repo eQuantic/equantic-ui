@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Drawing, StyleDiff, VectorDrawing, VectorPaint, VectorShape } from './vocabulary';
+import { Drawing, Pressable, StyleDiff, VectorDrawing, VectorPaint, VectorShape } from './vocabulary';
 import type { HtmlNode } from '../core/types';
 
 /**
@@ -51,6 +51,22 @@ describe('a drawing whose shapes are inputs', () => {
     expect(line.attributes['role']).toBeUndefined();
     expect(line.attributes['tabindex']).toBeUndefined();
     expect(Object.keys(line.events)).toEqual([]);
+  });
+
+  it('makes a pressable around it yield, as it yields to a button inside it', () => {
+    const drawing = new Drawing(
+      new VectorDrawing(0, 0, 100, 100, [
+        new VectorShape('M0 0 L100 0 L0 100 Z', VectorPaint.none, undefined, undefined, undefined, undefined, {
+          onPressed: () => {},
+        }),
+      ]),
+      200,
+    );
+
+    const outer = new Pressable(drawing, () => {}).render() as HtmlNode;
+
+    expect(outer.tag, 'a button may not hold the shapes that are buttons').toBe('span');
+    expect(outer.attributes['role']).toBe('button');
   });
 
   it('refuses a hover a path cannot draw, in the words C# uses', () => {

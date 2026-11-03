@@ -235,7 +235,9 @@ public static class ThemeStylesheet
         // its neighbours: the keyboard's focus strokes its own outline, 2px of the focus colour whatever
         // the drawing is scaled to, as Photon strokes it.
         css.AppendLine(".eq-shape { outline: none; }");
-        css.AppendLine(".eq-shape:focus-visible { stroke: var(--eq-color-focus); stroke-width: 2px; "
+        // The class twice: a hover's own stroke is an atomic `:hover` rule of the same weight, and the
+        // ring is drawn over the hover, as Photon draws it.
+        css.AppendLine(".eq-shape.eq-shape:focus-visible { stroke: var(--eq-color-focus); stroke-width: 2px; "
             + "vector-effect: non-scaling-stroke; }");
 
         // HIT SLOP (spec §08). `Touch.MinTarget`'s own doc promised it — "visuals may be smaller, the
