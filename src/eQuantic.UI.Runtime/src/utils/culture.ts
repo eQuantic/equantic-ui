@@ -191,6 +191,12 @@ const warned = new Set<string>();
  * fetched. A second switch back is instant and silent. */
 const catalogs = new Map<string, Record<string, string>>();
 
+/** The catalogs the build wrote, as the server listed them for the page (`neutral` among them), or
+ * null where no server said. A culture with no catalog of its own was asked for one and answered
+ * 404 before its parents or `neutral` were tried (#825). Keyed by the name in lower case, as .NET
+ * takes a culture's name in any case and the file is written in the canonical one. */
+let writtenCatalogs: ReadonlyMap<string, string> | null = null;
+
 /** Format data already in memory, by FORMAT culture name. */
 const formats = new Map<string, CultureFormat>();
 
@@ -255,6 +261,7 @@ export function installCulture(
   format: string,
   strings: Record<string, string>,
   formatData?: CultureFormat | null,
+  written?: readonly string[],
 ): void {
   active = { ui, format };
   activeStrings = strings;
@@ -262,6 +269,7 @@ export function installCulture(
   warned.clear();
   if (ui.length > 0) catalogs.set(ui, strings);
   if (format.length > 0 && formatData) formats.set(format, formatData);
+  if (written !== undefined) writtenCatalogs = new Map(written.map((name) => [name.toLowerCase(), name]));
 
   // The DOCUMENT's language, not just the catalog's. The server stamps `<html lang>` on the page
   // it renders and a no-reload switch left it behind, so the page said `lang="en"` while every
@@ -279,8 +287,10 @@ export function setCultureInvalidator(onChanged: () => void): void {
   invalidate = onChanged;
 }
 
+/** Registers where a catalog comes from, for a host with its own transport; with none, it is the
+ * build's own files again. */
 export function setCultureCatalogLoader(
-  loader: (culture: string) => Promise<Record<string, string> | null>,
+  loader: (culture: string) => Promise<Record<string, string> | null> = defaultLoader,
 ): void {
   loadCatalog = loader;
 }
@@ -300,9 +310,9 @@ export function setCultureFormatLoader(
  *
  * The catalog PICK mirrors the server's exactly (exact culture → parents → neutral): the files are
  * emitted with the .NET fallback chain already flattened (D12), so this walk only chooses a FILE
- * and the lookup itself stays flat. A culture whose catalog cannot be found keeps the strings it
- * has and still switches NAMES — formats follow immediately, and the strings degrade to the
- * neutral values rather than to keys. The FORMAT culture's data comes from the server, beside the
+ * and the lookup itself stays flat, and it asks for no file the build did not write. A culture
+ * whose catalog cannot be found keeps the strings it has and still switches NAMES — formats follow
+ * immediately, and the strings degrade to the neutral values rather than to keys. The FORMAT culture's data comes from the server, beside the
  * catalog, so a number reads after a switch as the server will write it on the next request.
  */
 export async function setCulture(ui: string, format?: string): Promise<void> {
@@ -319,10 +329,19 @@ async function catalogFor(ui: string): Promise<Record<string, string> | undefine
   const known = catalogs.get(ui);
   if (known !== undefined) return known;
   for (const candidate of [...parentChain(ui), 'neutral']) {
-    const loaded = await loadCatalog(candidate);
+    const name = catalogToAskFor(candidate);
+    if (name === null) continue;
+    const loaded = await loadCatalog(name);
     if (loaded !== null) return loaded;
   }
   return undefined;
+}
+
+/** The catalog to ask for `culture`, by the name the build wrote it under, or null when it wrote
+ * none. The list speaks for the build's own files: a host with a loader of its own answers for itself. */
+function catalogToAskFor(culture: string): string | null {
+  if (loadCatalog !== defaultLoader || writtenCatalogs === null) return culture;
+  return writtenCatalogs.get(culture.toLowerCase()) ?? null;
 }
 
 /** The format culture's data, from memory or from the server, or null when neither has it. */
