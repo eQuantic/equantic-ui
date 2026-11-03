@@ -366,7 +366,7 @@ public sealed class PhotonHost
             _focusVisible ? _focusedId : 0, _textAt, caretIndex, CaretVisible,
             selection.Start, selection.End, density: Density,
             markedText: _marked, composing: _composing,
-            hoveredAt: _hoverAt,
+            hoveredAt: _hoverAt, hoveredPart: _hoveredPart,
             nodePool: RecycleFrames ? _nodePool : null,
             windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame, rebuildAll: rebuildAll, log: Log);
         if (_lift != 0) builder.Pop();
@@ -452,11 +452,22 @@ public sealed class PhotonHost
     /// by then. The node itself does not survive a Build; its position does, for as long as the same
     /// control stands there, and a control that took its place is not the one pressed.</summary>
     private Element? _pressedAt;
+
+    /// <summary>The id of the region the held press began on: its position's, or the shape's for an input
+    /// shape of a drawing, since every shape of one drawing shares its position (#674).</summary>
+    private int _pressedId;
     private VisualNode? _hovered;
     /// <summary>The hover CHAIN — every region under the pointer, topmost first, tracked by position
     /// (the press's rebuild-surviving rule) with the node kept for the Hoverable callbacks. CSS
     /// :hover matches every ancestor, and the native pointer answers the same question.</summary>
     private readonly List<Element> _hoverAt = new();
+
+    /// <summary>The input shape of a drawing under the pointer, by its id, or zero: where a press
+    /// would land, which is the shape whose Hover is drawn (#674).</summary>
+    private int _hoveredPart;
+
+    /// <summary>The input shape of a drawing the pointer is over, by its id, or zero.</summary>
+    public int HoveredPart => _hoveredPart;
     private readonly List<VisualNode> _hoverNodes = new();
     private readonly TransitionClock _transitions = new();
     private readonly ScrollClock _scrolls = new();
@@ -879,7 +890,7 @@ public sealed class PhotonHost
 
     private bool IsFocused(HitRegion region) =>
         _focusedId != 0
-            ? region.Element.Id == _focusedId
+            ? region.Id == _focusedId
             : _focused is not null && ReferenceEquals(region.Node, _focused);
 
     /// <summary>Puts the focus on a stop's id and its position.</summary>
@@ -899,11 +910,13 @@ public sealed class PhotonHost
     /// <summary>Gives focus to a specific region — what a pointer press does, so that releasing over
     /// a control and then pressing Enter goes on working on the control the user just touched.
     /// <paramref name="at"/> is the control's position (a <see cref="HitRegion.Element"/>), which the
-    /// focus follows across rebuilds; without one it holds the node, for a frame that never rebuilds.</summary>
-    public void Focus(Pressable node, Element? at = null, bool visible = true)
+    /// focus follows across rebuilds; without one it holds the node, for a frame that never rebuilds.
+    /// <paramref name="id"/> is the region's own (<see cref="HitRegion.Id"/>) where it is not its
+    /// position's: an input shape of a drawing.</summary>
+    public void Focus(Pressable node, Element? at = null, bool visible = true, int? id = null)
     {
         _focused = node;
-        _focusedId = at?.Id ?? 0;
+        _focusedId = id ?? at?.Id ?? 0;
         _focusedAt = at;
         _focusVisible = visible;
         NeedsRender = true;
@@ -1858,7 +1871,7 @@ public sealed class PhotonHost
         for (var i = 0; i < regions.Count; i++)
         {
             var region = regions[i];
-            if (region.Element.Id != id || region.Node.Disabled) continue;
+            if (region.Id != id || region.Node.Disabled) continue;
             region.Node.OnPressed?.Invoke();
             NeedsRender = true;
             return true;
@@ -2167,6 +2180,7 @@ public sealed class PhotonHost
         // so their moves end HERE instead of latching whatever box they happened to cross last.
         if (kind != PointerKind.Mouse) return;
         if (!_held) HoverCode(new Point(x, y));
+        HoverShape(new Point(x, y));
 
         // The CHAIN of regions under the pointer, topmost first — CSS :hover matches every
         // ancestor, so a button inside a hover-opened panel hovers BOTH (the web twin's answer).
@@ -2405,6 +2419,11 @@ public sealed class PhotonHost
     {
         _pointerAt = null;
         LeaveCode(except: null);
+        if (_hoveredPart != 0)
+        {
+            _hoveredPart = 0;
+            NeedsRender = true;
+        }
         if (_hoveredCanvas is { } leaving)
         {
             _hoveredCanvas = null;
@@ -2420,6 +2439,21 @@ public sealed class PhotonHost
         _hovered = null;
         _hoverAt.Clear();
         _hoverNodes.Clear();
+        NeedsRender = true;
+    }
+
+    /// <summary>
+    /// Follows the input shape of a drawing under the pointer: the one a press there would land on, so a
+    /// shape drawn under another control, or a point inside its box and outside its path, hovers
+    /// nothing. A change repaints, since the shape draws its own Hover (#674).
+    /// </summary>
+    private void HoverShape(Point point)
+    {
+        var regions = _lastFrame?.HitRegions;
+        var at = regions is null ? -1 : HitAt(regions, point);
+        var part = at >= 0 && regions![at].Shape is not null ? regions[at].Id : 0;
+        if (part == _hoveredPart) return;
+        _hoveredPart = part;
         NeedsRender = true;
     }
 
@@ -2528,6 +2562,7 @@ public sealed class PhotonHost
             }
             _pressed = region.Node;
             _pressedAt = region.Element;
+            _pressedId = region.Id;
             // Pressing a control takes focus off whatever had it — including a field being edited,
             // whose caret must not go on blinking somewhere the user is no longer looking. Unless
             // it may not take the keyboard (Pressable.CanRequestFocus): a row of the list a code
@@ -2537,7 +2572,7 @@ public sealed class PhotonHost
                 EndEditing();
                 // Focused, but not RINGED: pressing Enter after clicking a button goes on working,
                 // and the click leaves no ring behind it.
-                Focus(region.Node, region.Element, visible: false);
+                Focus(region.Node, region.Element, visible: false, id: region.Id);
             }
             NeedsRender = true;
             return true;
@@ -2869,7 +2904,7 @@ public sealed class PhotonHost
             // and failed for every press that outlived its frame — which is every real one, because
             // showing the pressed state repaints and the next Build hands back new nodes; matching
             // on its path ran whatever control had taken the place.
-            if (!IsTheSamePressable(region, pressed, pressedAt)) continue;
+            if (!IsTheSamePressable(region, pressed, pressedAt, _pressedId)) continue;
             if (!Covers(regions, i, region.Bounds, point)) return false; // canceled by releasing outside
             region.Node.OnPressed?.Invoke();
             return true;
@@ -2881,10 +2916,11 @@ public sealed class PhotonHost
     /// control for as long as it stands there, as the paint walk decides it
     /// (<see cref="PressScope.IsPressed"/>). The node alone answers only for a press the host tracks
     /// no position for: an app can keep one node and hand it to two pages, so a page replaced by the
-    /// other shows the same node at a position nobody pressed.</summary>
-    private static bool IsTheSamePressable(HitRegion region, Pressable pressed, Element? pressedAt) =>
+    /// other shows the same node at a position nobody pressed. The id tells apart the input shapes of
+    /// one drawing, which share its position (#674).</summary>
+    private static bool IsTheSamePressable(HitRegion region, Pressable pressed, Element? pressedAt, int pressedId) =>
         pressedAt is not null
-            ? ReferenceEquals(region.Element, pressedAt)
+            ? ReferenceEquals(region.Element, pressedAt) && region.Id == pressedId
             : ReferenceEquals(region.Node, pressed);
 
     /// <summary>A tap that no pressable claimed: the TOPMOST link region under the point navigates
@@ -2994,8 +3030,16 @@ public sealed class PhotonHost
     private bool Covers(object regions, int index, Rect box, Point point, bool drawn = false)
     {
         if (!box.Contains(point)) return false;
-        if (TransformedAt(regions, index) is not { } region) return true;
-        return (drawn ? region.LocalDrawn : region.Local).Contains(region.Inverse.Transform(point));
+        var local = point;
+        if (TransformedAt(regions, index) is { } region)
+        {
+            local = region.Inverse.Transform(point);
+            if (!(drawn ? region.LocalDrawn : region.Local).Contains(local)) return false;
+        }
+        // An input shape of a drawing is pressed where its path is, by its fill rule: its box holds
+        // its neighbours' corners (#674). Tested in the space the drawing was laid out in.
+        return regions is not IReadOnlyList<HitRegion> hits || hits[index].Shape is not { } shape
+            || shape.Contains(local);
     }
 
     /// <summary>

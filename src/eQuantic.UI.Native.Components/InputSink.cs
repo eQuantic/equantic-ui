@@ -122,7 +122,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         var placed = region with { Bounds = Place(region.Bounds), Drawn = Place(region.Drawn) };
         if (!suppressFocusStops && !region.Node.Disabled && region.Node.OnPressed is not null
             && region.Node.CanRequestFocus)
-            AddStop(new FocusStop(region.Element.Id, region.Element, region.Node, null, placed.Bounds), region.Bounds);
+            AddStop(new FocusStop(region.Id, region.Element, region.Node, null, placed.Bounds), region.Bounds);
         if (!Visible(placed.Bounds)) return;
         Note(regions.Hits, regions.Hits.Count, region.Bounds, region.Drawn);
         regions.Hits.Add(Clipped(placed));
