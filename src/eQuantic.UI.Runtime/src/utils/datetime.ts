@@ -880,6 +880,14 @@ function calendarTicksOf(ticks: bigint | number): bigint {
   return value;
 }
 
+/** The .NET name of a time this side holds as its own class and that converts to nothing, or null for any other value. */
+export function timeTypeOf(value: unknown): string | null {
+  if (value instanceof DateOnly) return 'System.DateOnly';
+  if (value instanceof TimeOnly) return 'System.TimeOnly';
+  if (value instanceof TimeSpan) return 'System.TimeSpan';
+  return value instanceof DateTimeOffset ? 'System.DateTimeOffset' : null;
+}
+
 export const dateTime: DateTimeFactory = {
   // In the order .NET checks them: the millisecond, the kind, the date, the time, and the
   // microsecond, which its constructor adds to what the shorter one built.
@@ -916,21 +924,9 @@ export const dateTime: DateTimeFactory = {
     if (value === null || value === undefined) return dateTime.minValue();
     if (typeof value === 'string') return parseDateTime(value, invariant);
     if (value instanceof DateTime) return value;
-    const time =
-      value instanceof DateOnly
-        ? 'DateOnly'
-        : value instanceof TimeOnly
-          ? 'TimeOnly'
-          : value instanceof TimeSpan
-            ? 'TimeSpan'
-            : value instanceof DateTimeOffset
-              ? 'DateTimeOffset'
-              : null;
+    const time = timeTypeOf(value);
     if (time !== null) {
-      throw exception(
-        'System.InvalidCastException',
-        `Unable to cast object of type 'System.${time}' to type 'System.IConvertible'.`,
-      );
+      throw exception('System.InvalidCastException', `Unable to cast object of type '${time}' to type 'System.IConvertible'.`);
     }
     const held =
       typeof value === 'boolean'

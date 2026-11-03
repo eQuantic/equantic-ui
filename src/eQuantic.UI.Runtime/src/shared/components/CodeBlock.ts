@@ -428,8 +428,8 @@ export class CodeBlock extends StatelessComponent {
         if (viewportHeight <= 0 || lineHeight <= 0) return [0, lineCount - 1];
         offset = Math.min(offset, Math.max(0, Math.fround(Math.fround(Math.fround(lineCount) * lineHeight) - viewportHeight)));
         let margin = 8;
-        let first = Math.max(0, (Math.trunc(Math.floor(Math.fround(offset / lineHeight))) | 0) - margin);
-        let visible = (Math.trunc(Math.ceil(Math.fround(viewportHeight / lineHeight))) | 0) + margin * 2;
+        let first = Math.max(0, $eq.num.saturate(Math.floor(Math.fround(offset / lineHeight))) - margin);
+        let visible = $eq.num.saturate(Math.ceil(Math.fround(viewportHeight / lineHeight))) + margin * 2;
         return [first, Math.min(lineCount - 1, first + visible)];
     }
 
