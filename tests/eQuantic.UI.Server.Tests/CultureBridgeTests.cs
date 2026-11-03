@@ -81,6 +81,34 @@ public class CultureBridgeTests
     }
 
     /// <summary>
+    /// The page names the catalogs the build wrote, so a switch to a language with none of its own asks
+    /// for <c>neutral</c> and nothing else (#825). English in an app whose neutral strings are English
+    /// asked for <c>en.json</c>, a 404, on the way to <c>neutral.json</c>.
+    /// </summary>
+    [Fact]
+    public async Task ThePageNamesTheCatalogsTheBuildWrote()
+    {
+        var (app, client, _) = await StartAppAsync();
+        await using var _1 = app;
+
+        var html = await (await GetWithLanguage(client, "pt-BR")).Content.ReadAsStringAsync();
+
+        CultureData(html).GetProperty("catalogs").EnumerateArray().Select(name => name.GetString())
+            .Should().Equal("neutral", "pt-BR");
+    }
+
+    [Fact]
+    public async Task AnAppWithNoCatalog_NamesNone()
+    {
+        var (app, client, _) = await StartAppAsync(withCatalogs: false);
+        await using var _1 = app;
+
+        var html = await (await GetWithLanguage(client, "pt-BR")).Content.ReadAsStringAsync();
+
+        CultureData(html).GetProperty("catalogs").GetArrayLength().Should().Be(0);
+    }
+
+    /// <summary>
     /// The FORMAT culture travels on every page, catalog or not (#471): an app with no resx was
     /// handed no culture at all, so the browser formatted in its host's locale while the server
     /// formatted in the request's, and the SSR markup and the hydrated page printed one number two

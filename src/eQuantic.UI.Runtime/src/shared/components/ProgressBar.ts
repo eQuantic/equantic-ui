@@ -54,7 +54,7 @@ export class ProgressBar extends StatefulComponent {
             let animate = !this._snapNext;
             this._snapNext = false;
             let clamped = Math.min(Math.max(value, 0), 1);
-            let filledWeight = (Math.trunc($eq.math.roundSingle(Math.fround(clamped * 1000))) | 0);
+            let filledWeight = $eq.num.saturate($eq.math.roundSingle(Math.fround(clamped * 1000)));
             let track = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: height, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')) });
             if (filledWeight > 0) {
                 track.add(new Flexible(new Box(new BoxStyle({ height: height, background: theme.colors(this.variant).base, cornerRadius: new CornerRadii(theme.shape('full')) })), filledWeight, 0, 1, { animateChanges: animate }));
