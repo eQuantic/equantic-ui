@@ -58,6 +58,12 @@ public class NativeIntegerConformanceTests
     [InlineData("return Math.Max((nuint)1, (nuint)2).ToString() + \"|\" + Math.Min((nuint)1, (nuint)2) + \"|\" + Math.Clamp((nuint)5, (nuint)1, (nuint)3);")]
     [InlineData("return Math.Max(1UL, 2UL).ToString() + \"|\" + Math.Min(ulong.MaxValue, 2UL) + \"|\" + Math.Clamp(5UL, 1UL, 3UL);")]
     [InlineData("nuint a = 5; nuint b = 7; ulong c = 9; return a.CompareTo(b) + \"|\" + b.CompareTo(a) + \"|\" + c.CompareTo(9UL);")]
+    [InlineData("nuint a = 5; nuint b = 5; ulong c = 7; return a.Equals(b) + \"|\" + c.Equals(7UL) + \"|\" + a.Equals((nuint)6);")] // True|True|False
+    // The bit surface of an unsigned one, which no sign changes.
+    [InlineData("return ulong.PopCount(255UL) + \"|\" + ulong.IsPow2(64UL) + \"|\" + nuint.LeadingZeroCount((nuint)1) + \"|\" + ulong.TrailingZeroCount(8UL) + \"|\" + ulong.Log2(1024UL) + \"|\" + ulong.IsEvenInteger(ulong.MaxValue);")] // 8|True|63|3|10|False
+    [InlineData("var (q, r) = Math.DivRem(ulong.MaxValue, 10UL); var (nq, nr) = Math.DivRem((nuint)7, (nuint)2); return q + \"|\" + r + \"|\" + nq + \"|\" + nr;")]
+    // An array sized by a native integer or a long has that many elements.
+    [InlineData("nint n = 3; var a = new int[n]; var b = new long[2L]; var h = new Holder[n]; return a.Length + \"|\" + b.Length + \"|\" + h.Length + \"|\" + h[2].N;")] // 3|2|3|0
     public void ANativeInteger_IsHeldAs64Bits(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

@@ -6,5 +6,6 @@
   `long l = new Count(5)` kept a number; it applies each now, inner first, and asks the pair of types for the
   standard conversions a tuple's element has no tree to show. A tuple converted to wider elements passed its array
   through; each element converts now. An `nint` was a number or a BigInt by where it came from; it is a BigInt,
-  64 bits wide as on every target the SDK ships to. Proved by the conformance suite on both sides. Proposed and
+  64 bits wide as on every target the SDK ships to, so an array it sizes, or a `long` sizes, takes its number, and a
+  `ulong`'s math and bit members answer as a `long`'s do. Proved by the conformance suite on both sides. Proposed and
   archived through OpenSpec (`transpiler-expressions`).
