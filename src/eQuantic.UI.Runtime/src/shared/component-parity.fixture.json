@@ -33660,5 +33660,66 @@
         }
       ]
     }
+  ],
+  "drawing-with-input-shapes": [
+    {
+      "tag": "svg",
+      "attrs": {
+        "class": "eq-16go7cf eq-16x7aca eq-1uxs8ty",
+        "fill": "none",
+        "preserveAspectRatio": "none",
+        "role": "group",
+        "viewBox": "0 0 100 100"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "path",
+          "attrs": {
+            "aria-label": "Porto",
+            "aria-pressed": "true",
+            "class": "eq-16b9owy eq-19ho0rm eq-1imlfss eq-1kq9y11 eq-gr7cq7 eq-shape eq-x0paz7",
+            "d": "M0 0 L100 0 L0 100 Z",
+            "fill": "#111827",
+            "role": "button",
+            "tabindex": "0"
+          },
+          "events": [
+            "click",
+            "keydown"
+          ],
+          "children": []
+        },
+        {
+          "tag": "path",
+          "attrs": {
+            "aria-label": "Matosinhos",
+            "class": "eq-1imlfss eq-1kq9y11 eq-shape",
+            "d": "M100 0 L100 100 L0 100 Z",
+            "fill": "currentColor",
+            "role": "button",
+            "tabindex": "0"
+          },
+          "events": [
+            "click",
+            "keydown"
+          ],
+          "children": []
+        },
+        {
+          "tag": "path",
+          "attrs": {
+            "d": "M0 0 L100 100",
+            "fill": "none",
+            "stroke": "currentColor",
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round",
+            "stroke-width": "1"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
   ]
 }

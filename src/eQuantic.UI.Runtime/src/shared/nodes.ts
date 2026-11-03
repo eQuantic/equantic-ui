@@ -1078,6 +1078,14 @@ export interface VectorShapeValue {
   strokeWidth: number;
   evenOdd: boolean;
   opacity: number;
+  /** What assistive tech announces for the shape (#674). */
+  label?: string | null;
+  /** A press inside the path, or Enter or Space while focused; absent keeps the shape a picture. */
+  onPressed?: (() => void) | null;
+  /** The toggle state, announced as pressed or not. */
+  selected?: boolean | null;
+  /** The paint under the pointer: fill (`background`), stroke (`borderColor`, `borderWidth`), opacity. */
+  hover?: StyleDiffValue | null;
 }
 
 /** Mirrors `VectorDrawing`: what a `.svg` FILE became, read once at build time. */

@@ -26,6 +26,7 @@ import {
   BoxStyle,
   Column,
   Draggable,
+  Drawing,
   Flexible,
   GridPattern,
   GridTrack,
@@ -49,6 +50,9 @@ import {
   Text,
   TextRun,
   TransitionSpec,
+  VectorDrawing,
+  VectorPaint,
+  VectorShape,
 } from './vocabulary';
 import { SizeValue, StyleChannels, TableRange, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
@@ -534,6 +538,31 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         new Text('above', 'bodyM', photonTheme.textPrimary),
         new AdaptiveNode(Spacer.fixed(24), null, Spacer.fixed(64), { expandedFrom: 980 }),
         new Text('below', 'bodyM', photonTheme.textPrimary),
+      ),
+    ),
+    // C# twin: a drawing whose shapes are inputs (#674).
+    'drawing-with-input-shapes': still(
+      new Drawing(
+        new VectorDrawing(0, 0, 100, 100, [
+          new VectorShape('M0 0 L100 0 L0 100 Z', VectorPaint.solid({ r: 17, g: 24, b: 39, a: 255 }), undefined, undefined,
+            undefined, undefined, {
+              label: 'Porto',
+              onPressed: () => {},
+              selected: true,
+              hover: new StyleDiff({
+                background: photonTheme.surfaceSubtle,
+                borderColor: photonTheme.border,
+                borderWidth: 2,
+                opacity: 0.9,
+              }),
+            }),
+          new VectorShape('M100 0 L100 100 L0 100 Z', VectorPaint.inherit, undefined, undefined, undefined, undefined, {
+            label: 'Matosinhos',
+            onPressed: () => {},
+          }),
+          new VectorShape('M0 0 L100 100', VectorPaint.none, VectorPaint.inherit, 1),
+        ]),
+        200,
       ),
     ),
     'adaptive-positioned-in-stack': still(
