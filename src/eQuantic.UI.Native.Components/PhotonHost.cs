@@ -480,7 +480,7 @@ public sealed class PhotonHost
     /// next view drawn at its place.
     /// </summary>
     private (Element Element, ScrollAxis Axis, float MaxOffset, float Start, float FromOffset,
-        float LastAt, float LastTimeMs, float Velocity, bool Active)? _pan;
+        float LastAt, float LastTimeMs, float Velocity, bool Active, Matrix2D? Space)? _pan;
 
     /// <summary>
     /// A press a table viewport's scroll took. On a scrollbar it is the scroll's from the start
@@ -514,8 +514,9 @@ public sealed class PhotonHost
     /// the pointer travels past the slop (which cancels the pressable press), resolved on release.</summary>
     // The armed gesture surface. `Node` is a DragDismiss or a Draggable — the rules live on it, so
     // the host only tracks where the finger started and whether the slop has been passed. `Element`
-    // is its position, which keeps the drag.
-    private (Element Element, VisualNode Node, float StartX, float StartY, float Extent, bool Active)? _drag;
+    // is its position, which keeps the drag. Its start and its extent are in the surface's own space
+    // (see InGestureSpace), and `Space` is what takes a point there.
+    private (Element Element, VisualNode Node, float StartX, float StartY, float Extent, bool Active, Matrix2D? Space)? _drag;
 
     /// <summary>The clock of the last rendered frame — glide-backs anchor to it on release.</summary>
     private float _lastTimeMs;
@@ -2105,10 +2106,10 @@ public sealed class PhotonHost
             // The travel that COUNTS is the one along the gesture's own axis: a sideways swipe must
             // not arm on a vertical scroll, and a sheet must not arm on a sideways one.
             var horizontal = drag.Node is Draggable { Axis: DragAxis.Horizontal };
-            var travel = horizontal ? x - drag.StartX : y - drag.StartY;
-            var armed = drag.Node is Draggable
-                ? Math.Abs(travel) > Touch.PressCancelSlop
-                : travel > Touch.PressCancelSlop;
+            var at = InGestureSpace(drag.Space, x, y);
+            var travel = horizontal ? at.X - drag.StartX : at.Y - drag.StartY;
+            var slop = SlopIn(drag.Space, horizontal);
+            var armed = drag.Node is Draggable ? Math.Abs(travel) > slop : travel > slop;
 
             if (!drag.Active && armed)
             {
@@ -2146,10 +2147,11 @@ public sealed class PhotonHost
         // is what makes a surface feel attached to the hand rather than chased by it.
         if (_pan is { } pan)
         {
-            var along = pan.Axis == ScrollAxis.Horizontal ? x : y;
+            var panAt = InGestureSpace(pan.Space, x, y);
+            var along = pan.Axis == ScrollAxis.Horizontal ? panAt.X : panAt.Y;
             var travelled = along - pan.Start;
 
-            if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+            if (!pan.Active && MathF.Abs(travelled) > SlopIn(pan.Space, pan.Axis == ScrollAxis.Horizontal))
             {
                 _pressed = null;
                 _pressedAt = null;
@@ -2505,10 +2507,15 @@ public sealed class PhotonHost
         for (var i = dragRegions.Count - 1; i >= 0; i--)
         {
             if (!Covers(dragRegions, i, dragRegions[i].Bounds, point)) continue;
-            // The surface's own extent along the axis — what a NORMALIZED gesture divides by.
+            // The surface's own extent along the axis — what a NORMALIZED gesture divides by, in
+            // the space it was laid out in, as everything else this gesture measures is: the box a
+            // transform drew it in is another size, and turned, another axis.
             var horizontalSurface = dragRegions[i].Node is Draggable { Axis: DragAxis.Horizontal };
-            var extent = horizontalSurface ? dragRegions[i].Bounds.Width : dragRegions[i].Bounds.Height;
-            _drag = (dragRegions[i].Element, dragRegions[i].Node, x, y, extent, false);
+            var turned = TransformedAt(dragRegions, i);
+            var own = turned?.Local ?? dragRegions[i].Bounds;
+            var from = InGestureSpace(turned?.Inverse, x, y);
+            _drag = (dragRegions[i].Element, dragRegions[i].Node, from.X, from.Y,
+                horizontalSurface ? own.Width : own.Height, false, turned?.Inverse);
             break;
         }
 
@@ -2522,9 +2529,11 @@ public sealed class PhotonHost
             {
                 var region = scrollRegions[i];
                 if (!Covers(scrollRegions, i, region.Bounds, point) || region.MaxOffset <= 0) continue;
-                var along = region.Axis == ScrollAxis.Horizontal ? x : y;
+                var space = TransformedAt(scrollRegions, i)?.Inverse;
+                var from = InGestureSpace(space, x, y);
+                var along = region.Axis == ScrollAxis.Horizontal ? from.X : from.Y;
                 _pan = (region.Element, region.Axis, region.MaxOffset, along,
-                    ScrollClock.OffsetOf(region.Element) ?? region.Fallback, along, _lastTimeMs, 0, false);
+                    ScrollClock.OffsetOf(region.Element) ?? region.Fallback, along, _lastTimeMs, 0, false, space);
                 break;
             }
         }
@@ -2745,6 +2754,29 @@ public sealed class PhotonHost
     }
 
     /// <summary>
+    /// A point of a captured gesture in the space its surface was laid out in, which is the space of
+    /// everything the gesture writes: a drag's offset and its normalized travel, a scroll offset and
+    /// a fling's speed. Read on the screen, a 40dp drag of a surface drawn twice as large stored 40dp
+    /// and so moved it 80, and a track turned a quarter heard no travel along the line it is drawn on
+    /// (#734). <paramref name="space"/> is the one the press found and stays for the whole gesture: a
+    /// surface that follows the finger moves that transform's result under it, and it has to measure
+    /// against where it started.
+    /// </summary>
+    private static Point InGestureSpace(Matrix2D? space, float x, float y) =>
+        space is { } toLocal ? toLocal.Transform(new Point(x, y)) : new Point(x, y);
+
+    /// <summary>
+    /// The slop along a gesture's own axis, in its own space. A slop is the finger's, so it is the same
+    /// distance on the screen whatever a surface is drawn at, as the web measures it: read in the
+    /// surface's space it took twice the travel to arm at 2×, and a tremor armed one drawn small.
+    /// </summary>
+    private static float SlopIn(Matrix2D? space, bool horizontal) => space is { } toLocal
+        ? Touch.PressCancelSlop * (horizontal
+            ? MathF.Sqrt(toLocal.M11 * toLocal.M11 + toLocal.M21 * toLocal.M21)
+            : MathF.Sqrt(toLocal.M12 * toLocal.M12 + toLocal.M22 * toLocal.M22))
+        : Touch.PressCancelSlop;
+
+    /// <summary>
     /// Where the gesture now IS, as the caller wants to hear it: measured from the rest it started
     /// at — a row already open reports where it ends up, not how far this one drag went — in dp, or
     /// as a fraction of the surface's own extent.
@@ -2851,7 +2883,8 @@ public sealed class PhotonHost
             if (drag.Node is Draggable draggable)
             {
                 var horizontal = draggable.Axis == DragAxis.Horizontal;
-                var raw = horizontal ? x - drag.StartX : y - drag.StartY;
+                var at = InGestureSpace(drag.Space, x, y);
+                var raw = horizontal ? at.X - drag.StartX : at.Y - drag.StartY;
                 var travel = Math.Clamp(Report(draggable, raw, drag.Extent),
                     draggable.Min, draggable.Max);
                 _drags.Release(drag.Element, _lastTimeMs,
@@ -2862,7 +2895,7 @@ public sealed class PhotonHost
             }
 
             var dismiss = (DragDismiss)drag.Node;
-            var dy = y - drag.StartY;
+            var dy = InGestureSpace(drag.Space, x, y).Y - drag.StartY;
             if (dy >= DragDismiss.ThresholdDp)
             {
                 _drags.Drop(drag.Element);

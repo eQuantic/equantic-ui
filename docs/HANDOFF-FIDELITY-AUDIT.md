@@ -145,7 +145,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2693-2704  _pan = null;
+  PhotonHost.cs:2702-2713  _pan = null;
           if (_drag is null)
           {
               var scrollRegions = _lastFrame.ScrollRegions;
@@ -729,7 +729,7 @@ the pill's 40 down.
 
   ```
   src/eQuantic.UI.Runtime/src/dom/draggable.ts:18  const SLOP = 12; // Touch.PressCancelSlop — cross-pinned with the C# host
-  draggable.ts:65  if (!active && Math.abs(raw) > SLOP) {
+  draggable.ts:85  if (!active && Math.abs(raw) > SLOP) {
   Slider.cs:137          VisualNode surface = Disabled ? row : new Draggable(row)
   ```
 
@@ -811,7 +811,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Stepper.cs`
 - **Handoff**: The value group is one stop: ↑/→ increment, ↓/← decrement, Home/End clamp; the −/+ buttons are also plain stops.
-- **Code**: the −/+ buttons are plain stops as specified, but the value group is not a stop at all and no arrow key does anything: with no Adjustable in the tree (Stepper.cs:67) there is no keydown handler, and the value cell is a plain Box, not a Pressable (line 62), so it is not focusable. Home/End are unimplemented framework-wide in any case (lowering.ts:3286-3291, PhotonHost.cs:3132).
+- **Code**: the −/+ buttons are plain stops as specified, but the value group is not a stop at all and no arrow key does anything: with no Adjustable in the tree (Stepper.cs:67) there is no keydown handler, and the value cell is a plain Box, not a Pressable (line 62), so it is not focusable. Home/End are unimplemented framework-wide in any case (lowering.ts:3286-3291, PhotonHost.cs:3208).
 - **Evidence**:
 
   ```
@@ -863,7 +863,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/PullToRefresh.cs`
 - **Handoff**: Desktop surfaces an explicit refresh control (toolbar IconButton or menu item) + ⌘R/F5. The refresh action must be reachable as a real control — the gesture is never the only path (§10).
-- **Code**: The component exposes only the drag gesture; nothing in Build emits a control, and there is no shortcut registration (PullToRefresh.cs:32-65). On a pointer target there is no way to refresh at all — the web Draggable controller arms on pointermove past a 12dp slop and never on wheel (src/eQuantic.UI.Runtime/src/dom/draggable.ts:49).
+- **Code**: The component exposes only the drag gesture; nothing in Build emits a control, and there is no shortcut registration (PullToRefresh.cs:32-65). On a pointer target there is no way to refresh at all — the web Draggable controller arms on pointermove past a 12dp slop and never on wheel (src/eQuantic.UI.Runtime/src/dom/draggable.ts:85).
 - **Evidence**:
 
   ```
@@ -897,7 +897,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SwipeableRow.cs`
 - **Handoff**: Full swipe > 60% width commits the outer action — pane stretches to full width first (Fast).
-- **Code**: Travel is hard-clamped at one action width, so a swipe past 60% of the row is impossible: the Draggable's Min is -96 (SwipeableRow.cs:81) and the web controller clamps to it (src/eQuantic.UI.Runtime/src/dom/draggable.ts:47). Release can only ever mean open-or-closed (line 91) — there is no commit branch and no pane stretch.
+- **Code**: Travel is hard-clamped at one action width, so a swipe past 60% of the row is impossible: the Draggable's Min is -96 (SwipeableRow.cs:81) and the web controller clamps to it (src/eQuantic.UI.Runtime/src/dom/draggable.ts:80). Release can only ever mean open-or-closed (line 91) — there is no commit branch and no pane stretch.
 - **Evidence**:
 
   ```
@@ -1183,7 +1183,7 @@ the pill's 40 down.
 
   ```
   Tokens.cs:214  public const float PressCancelSlop = 12;
-  PhotonHost.cs:2152  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+  PhotonHost.cs:2154  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
   ```
 
 ### A6 ScrollView · missing-feature · **unverified**
@@ -1225,12 +1225,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/PhotonHost.cs`
 - **Handoff**: Focused region: ↑/↓ line · PgUp/PgDn viewport · Home/End extremes. Space stays with the focused control, not the scroll.
-- **Code**: No key ever moves a scroll region in the Photon host. The only writers into ScrollClock are the wheel entry point ScrollBy(x, y, delta) (PhotonHost.cs:1857), the pointer pan (1374), the fling on release (1836) and focus-driven ScrollIntoView (399). The "Home"/"End"/"ArrowUp"/"ArrowDown" cases at PhotonHost.cs:1348-1353 belong to the text-entry caret, not to a focused scroll region, and PageUp/PageDown appear nowhere outside the code editor's keymap. On web the div is not focusable either (no tabindex), so keyboard scrolling depends entirely on browser defaults.
+- **Code**: No key ever moves a scroll region in the Photon host. The only writers into ScrollClock are the wheel entry point ScrollBy(x, y, delta) (PhotonHost.cs:1859), the pointer pan (1374), the fling on release (1836) and focus-driven ScrollIntoView (399). The "Home"/"End"/"ArrowUp"/"ArrowDown" cases at PhotonHost.cs:1350-1355 belong to the text-entry caret, not to a focused scroll region, and PageUp/PageDown appear nowhere outside the code editor's keymap. On web the div is not focusable either (no tabindex), so keyboard scrolling depends entirely on browser defaults.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2248  public bool ScrollBy(float x, float y, float delta)
-  PhotonHost.cs:1698-1701  case "Home" or "ArrowUp":
+  PhotonHost.cs:2250  public bool ScrollBy(float x, float y, float delta)
+  PhotonHost.cs:1699-1702  case "Home" or "ArrowUp":
                   MoveCaret(0, selecting);
                   return true;
               case "End" or "ArrowDown":
@@ -1775,7 +1775,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Keys: ... Enter commits single-line
-- **Code**: TextInput exposes no submit hook and never sets TextEntry.OnSubmit when it builds the entry (TextInput.cs:100-114 sets Placeholder/Label/Description/Invalid/Disabled/Obscure/Autofocus/OnFocusChanged only), so Enter has nothing to commit to. The plumbing exists on both targets and goes unused: TextEntry.OnSubmit (src/eQuantic.UI.Primitives/Nodes/TextEntry.cs), the web keydown (lowering.ts:1163-1168) and the native Enter case (src/eQuantic.UI.Native.Components/PhotonHost.cs:1679-1685). SearchField wires it (SearchField.cs:44); TextInput does not.
+- **Code**: TextInput exposes no submit hook and never sets TextEntry.OnSubmit when it builds the entry (TextInput.cs:100-114 sets Placeholder/Label/Description/Invalid/Disabled/Obscure/Autofocus/OnFocusChanged only), so Enter has nothing to commit to. The plumbing exists on both targets and goes unused: TextEntry.OnSubmit (src/eQuantic.UI.Primitives/Nodes/TextEntry.cs), the web keydown (lowering.ts:1163-1168) and the native Enter case (src/eQuantic.UI.Native.Components/PhotonHost.cs:1681-1687). SearchField wires it (SearchField.cs:44); TextInput does not.
 - **Evidence**:
 
   ```
@@ -1786,7 +1786,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Keys: ... Esc drops focus, never the value.
-- **Code**: Honoured on native (src/eQuantic.UI.Native.Components/PhotonHost.cs:1687-1689 `case "Escape": EndEditing(); return true;`) but absent on web: lowerTextEntry's only keydown handler is created when onSubmit is set and matches Enter alone. Since TextInput sets no onSubmit at all, a web TextInput has no keydown handler whatsoever and Escape does nothing.
+- **Code**: Honoured on native (src/eQuantic.UI.Native.Components/PhotonHost.cs:1689-1691 `case "Escape": EndEditing(); return true;`) but absent on web: lowerTextEntry's only keydown handler is created when onSubmit is set and matches Enter alone. Since TextInput sets no onSubmit at all, a web TextInput has no keydown handler whatsoever and Escape does nothing.
 - **Evidence**:
 
   ```
@@ -1808,7 +1808,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SearchField.cs`
 - **Handoff**: Esc clears the query first; a second Esc blurs · Enter submits · ↓ moves into the suggestion list where present.
-- **Code**: The two-step Escape is implemented nowhere. SearchField wires only OnSubmit (SearchField.cs:44); the web entry has no Escape branch (src/eQuantic.UI.Runtime/src/shared/lowering.ts:1165-1167 matches 'Enter' only), and native Escape blurs immediately on the FIRST press without clearing (src/eQuantic.UI.Native.Components/PhotonHost.cs:1687-1689) — the opposite order to the spec. Enter→onSubmit is correct.
+- **Code**: The two-step Escape is implemented nowhere. SearchField wires only OnSubmit (SearchField.cs:44); the web entry has no Escape branch (src/eQuantic.UI.Runtime/src/shared/lowering.ts:1165-1167 matches 'Enter' only), and native Escape blurs immediately on the FIRST press without clearing (src/eQuantic.UI.Native.Components/PhotonHost.cs:1689-1691) — the opposite order to the spec. Enter→onSubmit is correct.
 - **Evidence**:
 
   ```
@@ -2304,12 +2304,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SegmentedControl.cs`
 - **Handoff**: ONE tab stop, roving: ←/→ move AND select (wraps) · Home/End.
-- **Code**: the one Tab stop and the wrapping arrows are correct (SegmentedControl.cs:109-113), but Home/End are handled on no target: the Adjustable keydown recognises only the four arrow keys on the web (lowering.ts:3286-3291), only the same four on native (PhotonHost.cs:3132), and the SSR realizer emits no key handler at all (WebLoweringVisitor.Interaction.cs:121-166 LowerAdjustable).
+- **Code**: the one Tab stop and the wrapping arrows are correct (SegmentedControl.cs:109-113), but Home/End are handled on no target: the Adjustable keydown recognises only the four arrow keys on the web (lowering.ts:3286-3291), only the same four on native (PhotonHost.cs:3208), and the SSR realizer emits no key handler at all (WebLoweringVisitor.Interaction.cs:121-166 LowerAdjustable).
 - **Evidence**:
 
   ```
   lowering.ts:4282-4299  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3358  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3391  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -2330,12 +2330,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: ←/↓ −1 step · →/↑ +1 · PgUp/PgDn ±10% · Home/End min/max.
-- **Code**: the four arrows are wired correctly (the web lowering even splits ↑/↓ by role so a slider's up increases), but PgUp/PgDn and Home/End are handled nowhere — the web keydown returns early on any other key (lowering.ts:3291) and PhotonHost.cs:3132 gates on the same four names.
+- **Code**: the four arrows are wired correctly (the web lowering even splits ↑/↓ by role so a slider's up increases), but PgUp/PgDn and Home/End are handled nowhere — the web keydown returns early on any other key (lowering.ts:3291) and PhotonHost.cs:3208 gates on the same four names.
 - **Evidence**:
 
   ```
   lowering.ts:4282-4299  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3358  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3391  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2414,7 +2414,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/PullToRefresh.cs`
 - **Handoff**: Pull maps with 0.5 asymptotic resistance
-- **Code**: The Draggable follows the finger 1:1 and is simply clamped between 0 and Threshold (PullToRefresh.cs:56-58); the web controller confirms the mapping is linear — `const at = rest + raw; return Math.min(max, Math.max(min, at));` (src/eQuantic.UI.Runtime/src/dom/draggable.ts:46-47). There is no resistance term and no property to express one.
+- **Code**: The Draggable follows the finger 1:1 and is simply clamped between 0 and Threshold (PullToRefresh.cs:56-58); the web controller confirms the mapping is linear — `const at = rest + raw; return Math.min(max, Math.max(min, at));` (src/eQuantic.UI.Runtime/src/dom/draggable.ts:79-80). There is no resistance term and no property to express one.
 - **Evidence**:
 
   ```
@@ -2493,7 +2493,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SwipeableRow.cs`
 - **Handoff**: Mouse drags don’t swipe — on pointer the row’s actions surface via right-click context menu (the C3 presentation) plus the row’s own visible affordances.
-- **Code**: Build emits only Box > Stack > (Positioned action + Draggable surface) (SwipeableRow.cs:76-86) — no Anchored/menu node and no context-menu hook. On pointer the web Draggable controller arms on plain pointermove past the slop (src/eQuantic.UI.Runtime/src/dom/draggable.ts:49), so a mouse drag DOES swipe the row, which the handoff forbids.
+- **Code**: Build emits only Box > Stack > (Positioned action + Draggable surface) (SwipeableRow.cs:76-86) — no Anchored/menu node and no context-menu hook. On pointer the web Draggable controller arms on plain pointermove past the slop (src/eQuantic.UI.Runtime/src/dom/draggable.ts:85), so a mouse drag DOES swipe the row, which the handoff forbids.
 - **Evidence**:
 
   ```
@@ -2887,7 +2887,7 @@ the pill's 40 down.
 
   ```
   PhotonHost.cs:365  _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
-  PhotonHost.cs:2169  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
+  PhotonHost.cs:2171  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
                       NeedsRender = true;
   ```
 
@@ -3271,7 +3271,7 @@ the pill's 40 down.
   Switch.cs:12 — `/// Fence: the slide/crossfade motion between the two ends joins the animation system.`
   WebLoweringVisitor.Interaction.cs:825  var glide = $"translate {Motion.BaseMs}ms";
   lowering.ts:1333  const glide = `translate ${Motion.baseMs}ms`;
-  draggable.ts:136  function handBack(surface: HTMLElement): void {
+  draggable.ts:156  function handBack(surface: HTMLElement): void {
   ```
 
 ### B13 RadioGroup · documented-deviation · **unverified**
@@ -3537,7 +3537,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SwipeableRow.cs`
 - **Handoff**: Release snaps to n×72 or closed (… by position + velocity).
-- **Code**: The snap decision is position-only — Draggable.OnReleased hands over a single offset float (src/eQuantic.UI.Primitives/Nodes/Draggable.cs) and the web controller reports only `travelOf(ev)` with no velocity (src/eQuantic.UI.Runtime/src/dom/draggable.ts:91). A slow drag to 40% and a fast flick to 40% behave identically. (The handoff brackets the velocity SPRING as REQUEST; the velocity term of the snap decision is separate.)
+- **Code**: The snap decision is position-only — Draggable.OnReleased hands over a single offset float (src/eQuantic.UI.Primitives/Nodes/Draggable.cs) and the web controller reports only `travelOf(ev)` with no velocity (src/eQuantic.UI.Runtime/src/dom/draggable.ts:131). A slow drag to 40% and a fast flick to 40% behave identically. (The handoff brackets the velocity SPRING as REQUEST; the velocity term of the snap decision is separate.)
 - **Evidence**:
 
   ```
