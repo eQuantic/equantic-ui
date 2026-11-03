@@ -135,7 +135,7 @@ public class InlinedConstantStrategy : IConversionStrategy
                 (SpecialType.System_IntPtr, "MaxValue") => "9223372036854775807n",
                 (SpecialType.System_IntPtr, "MinValue") => "(-9223372036854775808n)",
                 (SpecialType.System_UIntPtr, "MaxValue") => "18446744073709551615n",
-                (SpecialType.System_IntPtr or SpecialType.System_UIntPtr, "MinValue" or "Zero") => "0n",
+                (SpecialType.System_UIntPtr, "MinValue") or (SpecialType.System_IntPtr or SpecialType.System_UIntPtr, "Zero") => "0n",
                 (SpecialType.System_IntPtr or SpecialType.System_UIntPtr, "Size") => "8",
                 _ => null,
             }
