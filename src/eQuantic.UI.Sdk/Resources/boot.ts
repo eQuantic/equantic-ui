@@ -201,6 +201,8 @@ export async function boot(): Promise<void> {
         name?: string;
         formatName?: string;
         strings?: Record<string, string>;
+        // The catalogs the build wrote, so a switch asks for no file that is not there (#825).
+        catalogs?: string[];
         // How the format culture writes a number and a date, and what its calendar is called, from
         // .NET's own NumberFormatInfo and DateTimeFormatInfo. Shipped rather than derived: the
         // server's ICU and the browser's do not always agree (ar-EG abbreviates Sunday with the
@@ -215,6 +217,7 @@ export async function boot(): Promise<void> {
         cultureData.formatName ?? cultureData.name ?? '',
         cultureData.strings ?? {},
         cultureData.format,
+        cultureData.catalogs,
       );
     }
 
