@@ -55,6 +55,9 @@ import {
   intRem,
   longDiv,
   longRem,
+  saturate,
+  saturateLong,
+  saturateUnsigned,
   singleFromLong,
   substring,
 } from './utils/overflow';
@@ -66,6 +69,17 @@ import {
   toHexString,
   toHexStringLower,
 } from './utils/convert-encoding';
+import {
+  booleanFromObject,
+  charFrom,
+  charFromObject,
+  charFromText,
+  integerFrom,
+  integerFromDecimal,
+  integerFromDouble,
+  integerFromObject,
+  realFromObject,
+} from './utils/number-convert';
 import {
   intConvert,
   intParse,
@@ -396,8 +410,21 @@ export const $eq = {
     realParse,
     realTryParse,
     realConvert,
+    /** `Convert.To<number>` of what is not text, as .NET converts it (#401). */
+    integerFrom,
+    integerFromDouble,
+    integerFromDecimal,
+    integerFromObject,
+    realFromObject,
+    charFrom,
+    charFromText,
+    charFromObject,
     long,
     checked,
+    /** An explicit cast of a double or a float to an integer, which saturates (#1015). */
+    saturate,
+    saturateUnsigned,
+    saturateLong,
     divRem,
     divRemLong,
     intDiv,
@@ -594,7 +621,7 @@ export const $eq = {
     pair,
   },
   /** `bool.Parse`, `bool.TryParse` and `Convert.ToBoolean(string)`, as .NET reads the text. */
-  bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert },
+  bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert, fromObject: booleanFromObject },
   /** `Convert.ToBase64String`, `ToBase64CharArray`, `ToHexString` and `ToHexStringLower`, as .NET
    * encodes the bytes (#716). */
   convert: { toBase64String, toBase64CharArray, toHexString, toHexStringLower },
