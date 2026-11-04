@@ -114,7 +114,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             {
                 context.SemanticHelper.TryGetConstantValue(binary.Right, out var count);
                 return IntegerWidth.LongShift(op, leftIr, rightIr, count,
-                    shifted.UnwrapNullable()?.SpecialType == SpecialType.System_UInt64, context);
+                    IntegerWidth.Of(shifted.UnwrapNullable()) is { Unsigned: true }, context);
             }
             var longResult = JsExpr.Binary(leftIr, jsOp, rightIr);
             // A 64-bit result settles like any fixed-width one: checked throws, an explicit
@@ -382,7 +382,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         if (op is "<<" or ">>" or ">>>" && result.IsLong())
         {
             context.SemanticHelper.TryGetConstantValue(binary.Right, out var count);
-            return IntegerWidth.LongShift(op, a, b, count, result?.SpecialType == SpecialType.System_UInt64, context);
+            return IntegerWidth.LongShift(op, a, b, count, IntegerWidth.Of(result) is { Unsigned: true }, context);
         }
         if (op is "&" or "|" or "^" or ">>" or ">>>" && IntegerWidth.Of(result) is { } bits)
             return IntegerWidth.Bitwise(op, a, b, bits);
@@ -595,7 +595,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         type.UnwrapNullable()?.SpecialType is SpecialType.System_Double or SpecialType.System_Single
             or SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16 or SpecialType.System_Byte
             or SpecialType.System_SByte or SpecialType.System_UInt16 or SpecialType.System_UInt32
-            or SpecialType.System_UInt64 or SpecialType.System_Char;
+            or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr or SpecialType.System_Char;
 
     /// <summary>A char operand's CODE UNIT: constant literals fold to the number, expressions
     /// read charCodeAt(0). The parentheses keep a compound operand intact.</summary>

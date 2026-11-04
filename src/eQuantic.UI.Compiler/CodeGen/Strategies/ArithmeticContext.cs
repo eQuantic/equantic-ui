@@ -28,8 +28,8 @@ public readonly record struct ArithmeticContext(bool IsChecked, bool ExplicitUnc
     }
 
     /// <summary>
-    /// Whether a conversion the bound tree holds no such bit for sits in a checked context: an enum's, whose
-    /// <see cref="IConversionOperation.IsChecked"/> is false in <c>checked((Tone)d)</c> too, measured. The
+    /// Whether a conversion the bound tree holds no such bit for sits in a checked context: an enum's and a
+    /// tuple's, whose <see cref="IConversionOperation.IsChecked"/> is false in <c>checked((Tone)d)</c> too, measured. The
     /// nearest enclosing construct decides, and the compilation's own setting where there is none.
     /// </summary>
     internal static bool ChecksOverflow(SyntaxNode node, ConversionContext context)

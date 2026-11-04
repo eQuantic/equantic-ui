@@ -134,7 +134,7 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
         {
             SpecialType.System_String or SpecialType.System_Char => "string",
             SpecialType.System_Boolean => "boolean",
-            SpecialType.System_Int64 or SpecialType.System_UInt64 => "bigint",
+            SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr => "bigint",
             SpecialType.System_Decimal => Decimal(context),
             SpecialType.System_Int32 or SpecialType.System_UInt32 or SpecialType.System_Double
                 or SpecialType.System_Single or SpecialType.System_Int16 or SpecialType.System_UInt16

@@ -12,6 +12,20 @@ namespace eQuantic.UI.Compiler.Tests.Diagnostics;
 /// </summary>
 public class PlatformMemberReadTests
 {
+    /// <summary>A refused static call is told once, at the call, whichever spelling names the type: the
+    /// keyword also reported EQ1001 for itself, as an expression with no strategy (#953).</summary>
+    [Theory]
+    [InlineData("var s = string.IsInterned(\"a\")", "string.IsInterned")]
+    [InlineData("var s = String.IsInterned(\"a\")", "string.IsInterned")]
+    [InlineData("var s = string.Copy(\"a\")", "string.Copy")]
+    [InlineData("var s = String.Copy(\"a\")", "string.Copy")]
+    public void ARefusedStaticCall_IsToldOnce_WhicheverSpellingNamesTheType(string code, string member)
+    {
+        var refused = TestHelper.DiagnosticsFor(code).Should().ContainSingle().Which;
+        refused.Code.Should().Be("EQ2004");
+        refused.Message.Should().StartWith($"'{member}' has no JavaScript translation");
+    }
+
     /// <summary>A chain is refused once, at the first member nothing carries, and the message names it.</summary>
     [Theory]
     [InlineData("var n = System.Globalization.CultureInfo.CurrentCulture.Name", "System.Globalization.CultureInfo.CurrentCulture")]
