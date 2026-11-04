@@ -122,17 +122,12 @@ internal sealed class UploadProtocol
             return;
         }
 
-        if (!UploadPolicies.Accepts(policy, name))
+        // The policy's own rule, in the words the page already showed when it asked first: a format it
+        // does not name, then a size past its largest.
+        if (policy.RefusalOf(name, context.UploadLength) is { } refusal)
         {
-            context.FailRequest(HttpStatusCode.UnsupportedMediaType,
-                $"Only {UploadPolicies.Formats(policy)} files are accepted here.");
-            return;
-        }
-
-        if (context.UploadLength > policy.MaxSize)
-        {
-            context.FailRequest(HttpStatusCode.RequestEntityTooLarge,
-                $"The file is larger than the {policy.MaxSize} bytes accepted here.");
+            context.FailRequest(policy.Accepts(name) ? HttpStatusCode.RequestEntityTooLarge : HttpStatusCode.UnsupportedMediaType,
+                refusal);
             return;
         }
 
