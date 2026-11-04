@@ -59,6 +59,18 @@ development overlay would have shown:
    machine, so the page is served over plain http from a name that is not localhost, and `CreateAsync`
    answers `Unavailable`.
 
+### `uploads.spec.ts`
+
+The sample's `/uploads` page sends files through `FileUpload` to the real upload endpoint (#1215):
+
+1. **A file of three parts reaches the Server Action whole**: 20 MB go as one creation and three parts at
+   their offsets, and the Server Action answers the exact length and SHA-256 of what it read.
+2. **A file the policy does not accept is refused in its row**: `setup.exe` shows the policy's reason and
+   nothing reaches the endpoint.
+3. **The server's own refusal reaches the row in its words**: a creation answered 413 shows its body.
+
+`E2E_PORT` runs the server on another port, beside another checkout's.
+
 ## Estrutura
 
 ```
@@ -66,6 +78,7 @@ tests/e2e/
 ├── playwright.config.ts    # Configuração do Playwright
 ├── tests/
 │   ├── passkeys.spec.ts       # Passkeys through IPasskeys (#1017)
+│   ├── uploads.spec.ts        # Uploads through FileUpload (#1215)
 │   └── ssr-hydration.spec.ts  # Testes de SSR/hidratação
 └── package.json
 ```
