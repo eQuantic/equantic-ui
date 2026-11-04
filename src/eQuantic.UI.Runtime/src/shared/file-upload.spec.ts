@@ -113,7 +113,7 @@ describe('FileUpload', () => {
     const uploads = new HeldUploads();
     const arrived: UploadedFile[] = [];
     const container = await mount(
-      new FileUpload(models, (uploaded) => arrived.push(uploaded)),
+      new FileUpload(models, (uploaded: UploadedFile) => arrived.push(uploaded)),
       new Picker([file('bracket.stl', 2048), file('lid.obj', 10)]),
       uploads,
     );
