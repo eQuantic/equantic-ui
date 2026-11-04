@@ -105,13 +105,19 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             return ValueFlow.Apply(operation.GetConversion(), operation.Operand.Type, operation.Type,
                 operation.ConstantValue.HasValue ? operation.ConstantValue.Value : null,
                 operation.Operand.ConstantValue.HasValue ? operation.Operand.ConstantValue.Value : null,
-                operand, context, operation.IsChecked);
+                operand, context, operation.IsChecked || (operation.GetConversion().IsTupleConversion && ArithmeticContext.ChecksOverflow(cast, context)));
         }
+
+        // A cast through a user-defined operator with a standard conversion beside it is no operation of
+        // its own: the bound tree holds the two conversions around the operand, where ValueFlow settles
+        // them, and asks nothing of the cast (`(long)new Count(5)` over an operator to an int, #970).
+        var inner = context.Converter.ConvertIr(cast.Expression);
+        if (context.SemanticHelper.GetOperation(cast.Expression)?.Parent is IConversionOperation { IsImplicit: true })
+            return inner;
 
         // No bound tree (a rewritten node, a model-less world): the SPELLED type decides, with the
         // same masks (IntegerWidth) over a truncation — the operand's type is unknowable here, so
         // the truncation stays even for sources that would not need it.
-        var inner = context.Converter.ConvertIr(cast.Expression);
         var text = JsExprWriter.WriteIn(inner, JsPrecedence.Call);
         return cast.Type.ValueText() switch
         {
@@ -141,7 +147,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     private static bool IsIntegral(ITypeSymbol? type) => type?.SpecialType is
         SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16 or
         SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_UInt16 or
-        SpecialType.System_UInt32 or SpecialType.System_UInt64;
+        SpecialType.System_UInt32 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr;
 
     /// <summary>
     /// A number brought into an enum's underlying type, as C#'s explicit conversion brings it:

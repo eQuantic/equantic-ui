@@ -89,7 +89,7 @@ public static class DefaultValue
                 or SpecialType.System_Int32 or SpecialType.System_UInt32
                 or SpecialType.System_Single or SpecialType.System_Double:
                 return "0";
-            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+            case SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr:
                 return $"{Eq.Long}(0)";
             case SpecialType.System_Decimal:
                 return $"{Eq.Dec}(0)";

@@ -36,9 +36,9 @@ internal static class ConstantLiteral
     public static string? Write(object? value, ITypeSymbol? type)
     {
         if (value is null) return "null";
-        // A native-sized integer is a plain number here, whichever box its constant arrived in.
+        // A native-sized integer is a BigInt here, as a long is, whichever box its constant arrived in.
         if (type?.SpecialType is SpecialType.System_IntPtr or SpecialType.System_UIntPtr)
-            return System.Convert.ToString(value, CultureInfo.InvariantCulture);
+            return System.Convert.ToString(value, CultureInfo.InvariantCulture) + "n";
         if (type.UnwrapNullable() is { TypeKind: TypeKind.Enum } enumType)
             return EnumValue(value, enumType);
 
