@@ -92,7 +92,7 @@ internal sealed class UploadProtocol
         var record = await _store.FindAsync(context.FileId);
         if (record is null)
             context.FailRequest(HttpStatusCode.NotFound, "There is no upload with this id: it was never made, or it expired.");
-        else if (record.Owner != UploadOwner.Of(context.HttpContext))
+        else if (!UploadOwner.Owns(context.HttpContext, record.Owner))
             context.FailRequest(HttpStatusCode.Forbidden, "This upload belongs to someone else.");
     }
 

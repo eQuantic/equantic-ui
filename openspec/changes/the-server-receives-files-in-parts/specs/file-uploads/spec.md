@@ -35,7 +35,7 @@ A creation SHALL name its policy, its file and its type in its metadata (`policy
 
 ### Requirement: An upload is its owner's alone
 
-The owner of an upload SHALL be the signed-in person, by `ClaimTypes.NameIdentifier` or else `sub`, or else the browser, by a random id the server writes into the `eq-uploads` cookie (HttpOnly, SameSite=Lax, Secure over HTTPS, path `/`, with the uploads' expiry as its lifetime, written again by each upload the browser starts). Only the owner SHALL continue an upload, ask for its offset, delete it or receive it in a Server Action, and another request SHALL be answered 403 without changing it. The server SHALL keep each upload's record beside its bytes, so the same holds after a restart.
+The owner of an upload SHALL be the signed-in person, by `ClaimTypes.NameIdentifier` or else `sub`, or else the browser, by a random id the server writes into the `eq-uploads` cookie (HttpOnly, SameSite=Lax, Secure over HTTPS, path `/`, with the uploads' expiry as its lifetime, written again by each upload the browser starts). A request SHALL speak for the owner as the signed-in person or as the browser whose cookie started the upload, so a visitor who signs in goes on with it in the same browser. Only the owner SHALL continue an upload, ask for its offset, delete it or receive it in a Server Action, and another request SHALL be answered 403 without changing it. The server SHALL keep each upload's record beside its bytes, so the same holds after a restart.
 
 #### Scenario: Another browser
 
@@ -46,6 +46,11 @@ The owner of an upload SHALL be the signed-in person, by `ClaimTypes.NameIdentif
 
 - **WHEN** a server is stopped with an upload half sent, and a new server starts over the same folder
 - **THEN** a stranger's HEAD is answered 403, and the owner's cookie continues the upload and receives it whole
+
+#### Scenario: A visitor signs in halfway
+
+- **WHEN** a visitor sends 60 of 100 bytes and then, signed in, the same browser sends the rest and calls the action
+- **THEN** the upload continues and the action receives it whole, while the same person signed in on another browser is answered 403
 
 ### Requirement: A Server Action receives an uploaded file
 

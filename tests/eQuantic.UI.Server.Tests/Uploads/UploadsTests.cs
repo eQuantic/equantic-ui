@@ -137,6 +137,28 @@ public sealed class UploadsTests : IDisposable
     }
 
     [Fact]
+    public async Task AVisitorWhoSignsIn_GoesOnWithTheUploadTheyStarted()
+    {
+        await using var app = await UploadsApp.StartAsync(_folder);
+        var content = Content(100);
+        var visitor = app.Browser();
+        var location = await visitor.UploadAsync(content, "model.stl", "models", partSize: 60, sendUpTo: 60);
+
+        // The same browser, signed in now: it carries the visitor's cookie and a sign-in.
+        var signedIn = app.Browser(user: "carol");
+        signedIn.Cookie = visitor.Cookie;
+        using (var patch = await signedIn.PatchAsync(location, 60, content[60..]))
+            patch.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var (status, answer) = await signedIn.InvokeAsync("Receive", Argument(location));
+        status.Should().Be(HttpStatusCode.OK, answer);
+        answer.Should().EndWith(Convert.ToBase64String(content));
+
+        // The sign-in alone, in another browser, is not the browser that started it.
+        var elsewhere = app.Browser(user: "carol");
+        using (var head = await elsewhere.HeadAsync(location)) head.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task AFileLargerThanItsPolicy_IsRefused_413()
     {
         await using var app = await UploadsApp.StartAsync(_folder);

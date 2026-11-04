@@ -30,7 +30,7 @@ internal static class UploadBinding
         if (record is null || record.Expires <= now)
             throw new UploadNotBoundException(StatusCodes.Status404NotFound,
                 "There is no upload with this id: it was never made, or it expired.");
-        if (record.Owner != UploadOwner.Of(context))
+        if (!UploadOwner.Owns(context, record.Owner))
             throw new UploadNotBoundException(StatusCodes.Status403Forbidden, "This upload belongs to someone else.");
         if (!await store.IsCompleteAsync(record, context.RequestAborted))
             throw new UploadNotBoundException(StatusCodes.Status409Conflict, "The upload is not finished yet.");

@@ -32,9 +32,11 @@ internal static class UploadOwner
     public static string? Of(HttpContext context)
     {
         if (UserId(context.User) is { } user) return UserPrefix + user;
-        if (context.Items[MadeVisitor] is string made) return VisitorPrefix + made;
-        return VisitorId(context.Request) is { } visitor ? VisitorPrefix + visitor : null;
+        return VisitorOf(context) is { } visitor ? VisitorPrefix + visitor : null;
     }
+
+    private static string? VisitorOf(HttpContext context) =>
+        context.Items[MadeVisitor] as string ?? VisitorId(context.Request);
 
     /// <summary>
     /// The owner the request speaks for, making a visitor id when it has neither a sign-in nor the
@@ -49,6 +51,16 @@ internal static class UploadOwner
     }
 
     /// <summary>Whether <paramref name="owner"/> is a signed-in person rather than a browser.</summary>
+    /// <summary>
+    /// Whether the request speaks for an upload's owner: as the signed-in person, or as the browser
+    /// that started it, whose cookie it still carries. Both count, because a person who uploads and
+    /// then signs in to go on (choose a file, then sign in to order) is the same person in the same
+    /// browser, and the upload they started must not become someone else's.
+    /// </summary>
+    public static bool Owns(HttpContext context, string owner) =>
+        (UserId(context.User) is { } user && owner == UserPrefix + user)
+        || (VisitorOf(context) is { } visitor && owner == VisitorPrefix + visitor);
+
     public static bool IsSignedIn(string owner) => owner.StartsWith(UserPrefix, StringComparison.Ordinal);
 
     /// <summary>Writes the visitor's cookie, for <paramref name="lifetime"/> from now; a signed-in owner

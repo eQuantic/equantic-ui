@@ -20,6 +20,6 @@ Flutter has no server and no upload of its own: `file_picker` hands the app the 
 ## Risks / Trade-offs
 
 - One instance: a balancer that sends the parts of one upload to two instances refuses the second instance's parts until the store is shared (a later change, with a backplane for the records).
-- A person who signs in during an upload loses it to their visitor id, since the owner changes. The page starts it again.
+- A person who signs in during an upload keeps it: the request owns an upload as the signed-in person OR as the browser whose cookie started it, so signing in after choosing a file goes on with the same upload. A person who signs in on another browser reaches only what they uploaded signed in.
 - The PATCH bodies are held to Kestrel's own request limit (30 MB by default), so the client sends parts below it; slice C chooses the part size.
 - A request from an origin the app allows for its actions may upload too, and a page on another domain also needs the app's CORS policy to expose the tus headers, which this slice does not configure.
