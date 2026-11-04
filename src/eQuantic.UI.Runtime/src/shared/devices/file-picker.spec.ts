@@ -43,7 +43,7 @@ describe('WebFilePicker', () => {
     expect(picked.map((file) => file.name)).toEqual(['bracket.stl', 'lid.stl']);
     expect(picked[0]).toBeInstanceOf(PickedFile);
     expect(picked[0].mimeType).toBe('model/stl');
-    expect(picked[0].size).toBe(3);
+    expect(picked[0].size).toBe(3n);
     expect(Array.from(await picked[1].readAllBytesAsync())).toEqual([4, 5]);
   });
 

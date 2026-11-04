@@ -18,11 +18,12 @@ export class PickedFile {
 
   readonly name: string;
   readonly mimeType: string;
-  readonly size: number;
+  /** A C# `long`, which the runtime holds as a bigint, so arithmetic a page writes on it stays exact. */
+  readonly size: bigint;
   /** The browser's handle to the content, which an upload reads a part at a time. */
   readonly content: Blob;
 
-  constructor(name: string, mimeType: string, size: number, content: Blob) {
+  constructor(name: string, mimeType: string, size: bigint, content: Blob) {
     this.name = name;
     this.mimeType = mimeType || PickedFile.unknownMimeType;
     this.size = size;
@@ -31,7 +32,7 @@ export class PickedFile {
 
   /** The twin of what a native realization does with its picker's answer. */
   static fromFile(file: File): PickedFile {
-    return new PickedFile(file.name, file.type, file.size, file);
+    return new PickedFile(file.name, file.type, BigInt(file.size), file);
   }
 
   async readAllBytesAsync(cancellationToken?: CancellationToken | null): Promise<Uint8Array> {
