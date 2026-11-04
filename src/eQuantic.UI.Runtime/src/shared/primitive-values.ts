@@ -37,6 +37,22 @@ export class ImageData {
   }
 }
 
+/**
+ * The C# `FileFilter` — one entry of a picker's format list: the label a person reads and the
+ * extensions it stands for, without the dot. C# takes the extensions as `params`, and eqc passes each
+ * one as an argument of its own, so they are gathered here as C# gathers them.
+ */
+export class FileFilter {
+  readonly extensions: readonly string[];
+
+  constructor(
+    readonly label: string,
+    ...extensions: string[]
+  ) {
+    this.extensions = extensions;
+  }
+}
+
 /** The C# `GeoLocation` — one position fix, with how much to trust it. */
 export class GeoLocation {
   constructor(
@@ -181,22 +197,6 @@ export class ServerTopicRefusal {
   constructor(topic: string | null = null, reason = 'forbidden') {
     this.topic = topic as string;
     this.reason = reason;
-  }
-}
-
-/**
- * The C# `FileFilter` — one entry of a picker's format list: the label a person reads and the
- * extensions it stands for, without the dot. C# takes the extensions as `params`, and eqc passes each
- * one as an argument of its own, so they are gathered here as C# gathers them.
- */
-export class FileFilter {
-  readonly extensions: readonly string[];
-
-  constructor(
-    readonly label: string,
-    ...extensions: string[]
-  ) {
-    this.extensions = extensions;
   }
 }
 
