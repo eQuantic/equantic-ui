@@ -32,6 +32,7 @@ export {
   TableViewCell,
   TableSpans,
   Hoverable,
+  DropTarget,
   Flexible,
   Spacer,
   Stack,
@@ -120,6 +121,7 @@ export { GridPattern, InFlow, InView, RadialGradient, Simulated } from './vocabu
 export { VisualNodeExtensions } from './visual-node-extensions';
 // The Primitives VALUE types a page can name — same implicit promise, see primitive-values.ts.
 export {
+  FileFilter,
   GeoLocation,
   ImageData,
   MotionReading,
@@ -133,6 +135,8 @@ export {
   SpringSpec,
   WindowSizeClasses,
 } from './primitive-values';
+// A file a person chose, which a page names in the handler a picker or a drop area calls.
+export { PickedFile } from './picked-file';
 export {
   Space,
   Radius,

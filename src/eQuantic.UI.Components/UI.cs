@@ -748,4 +748,14 @@ public static class UI
             Selected = selected,
             Current = current,
         };
+
+    /// <summary>
+    /// An area a person drops files onto: <paramref name="onDropped"/> hands over what landed, and
+    /// <paramref name="onDragOverChanged"/> says when files are carried over it, so the caller can
+    /// paint the invitation. Put a button that asks an <c>IFilePicker</c> beside it: dropping is a
+    /// pointer's gesture, and the button is what a keyboard reaches.
+    /// </summary>
+    public static DropTarget DropTarget(VisualNode child, Action<IReadOnlyList<PickedFile>> onDropped,
+        Action<bool>? onDragOverChanged = null, bool enabled = true) =>
+        new DropTarget(child, onDropped) { OnDragOverChanged = onDragOverChanged, Enabled = enabled };
 }

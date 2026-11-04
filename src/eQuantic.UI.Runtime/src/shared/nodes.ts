@@ -1,4 +1,5 @@
 import type { FontFamily, Point, Rect, Size } from './value-types';
+import type { PickedFile } from './picked-file';
 /**
  * The SHARED abstract vocabulary on the client (docs/SHARED-COMPONENTS-PLAN.md) — the JS shapes of
  * `eQuantic.UI.Primitives` nodes as the transpiler emits them (camelCase properties, enums as
@@ -446,6 +447,16 @@ export interface TextRunValue {
    * instead of between words.
    */
   destination?: string | null;
+}
+
+/** Wire shape of the C# `DropTarget` — an area a person drops files onto. */
+export interface DropTargetNode extends VisualNodeValue {
+  nodeKind: 'dropTarget';
+  child: VisualNodeValue;
+  onDropped?: (files: PickedFile[]) => void;
+  /** true while files are carried over the area, false when they leave or land. */
+  onDragOverChanged?: ((over: boolean) => void) | null;
+  enabled?: boolean;
 }
 
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */

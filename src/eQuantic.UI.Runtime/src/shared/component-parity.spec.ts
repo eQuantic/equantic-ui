@@ -27,6 +27,7 @@ import {
   Column,
   Draggable,
   Drawing,
+  DropTarget,
   Flexible,
   GridPattern,
   GridTrack,
@@ -293,6 +294,10 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         () => {},
         { axis: 'horizontal', min: -80, max: 0, restOffset: -80 },
       ),
+    ),
+    'drop-target': still(new DropTarget(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })), () => {})),
+    'drop-target-disabled': still(
+      new DropTarget(new Box(new BoxStyle({ height: 40 })), () => {}, { enabled: false }),
     ),
     'pinned-scrolled': still(
       new Pinned(new Box(new BoxStyle({ height: 40 })), 0, {

@@ -25,6 +25,7 @@ export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
 import { installDraggableController } from '../dom/draggable';
+import { dropHandlers, installDropGuard } from '../dom/file-drop';
 import { MOUNTED_HOOK, clickWithEvent } from '../dom/reconciler';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -93,6 +94,7 @@ import type {
   PositionedNode,
   PressableNode,
   HoverableNode,
+  DropTargetNode,
   InFlowNode,
   InViewNode,
   SimulatedNode,
@@ -467,6 +469,8 @@ function lowerNodeKind(
       return lowerNavigable(node as unknown as NavigableNode, context, path);
     case 'hoverable':
       return lowerHoverable(node as unknown as HoverableNode, context, path);
+    case 'dropTarget':
+      return lowerDropTarget(node as unknown as DropTargetNode, context, path);
     case 'simulated':
       return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
     case 'inFlow':
@@ -3656,6 +3660,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
       return asSize(value.style?.maxWidth);
     case 'pressable':
     case 'hoverable':
+    case 'dropTarget':
     case 'adjustable':
     case 'progress':
     case 'liveRegion':
@@ -3717,6 +3722,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return { width: false, height: false };
     case 'hoverable':
       return fills((node as HoverableNode).child);
+    case 'dropTarget':
+      return fills((node as DropTargetNode).child);
     case 'simulated':
       return fills((node as SimulatedNode).child);
     case 'inFlow':
@@ -4969,4 +4976,27 @@ function showCursorAfterRender(rest: CodeRest): void {
   };
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(show);
   if (typeof setTimeout === 'function') setTimeout(show, 48);
+}
+
+/**
+ * A drop area (the C# LowerDropTarget twin): the same layout-transparent div as a Hoverable, marked
+ * `data-eq-drop`, whose drag handlers read the files (dom/file-drop.ts). Lowering one also arms the
+ * document's guard, so a file that misses every area is refused rather than opened over the page.
+ */
+function lowerDropTarget(node: DropTargetNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    'max-width': sizeValue(cap),
+    'pointer-events': 'auto',
+    height: fill.height ? '100%' : undefined,
+  });
+  const enabled = node.enabled !== false;
+  host.attributes['data-eq-drop'] = enabled ? 'on' : 'off';
+  Object.assign(host.events, dropHandlers(node.onDropped, node.onDragOverChanged, enabled));
+  installDropGuard();
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
 }

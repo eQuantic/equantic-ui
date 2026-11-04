@@ -10,8 +10,9 @@
 
 export type NodeKind =
   'adaptive' | 'adjustable' | 'anchored' | 'box' | 'cameraPreview' | 'canvas' | 'codeSurface'
-  | 'column' | 'dragDismiss' | 'draggable' | 'drawing' | 'flexible' | 'grid' | 'hoverable' | 'icon'
-  | 'image' | 'inFlow' | 'inView' | 'link' | 'liveRegion' | 'loopMotion' | 'navigable' | 'overlay'
-  | 'pinned' | 'positioned' | 'presence' | 'pressable' | 'progress' | 'row' | 'safeArea'
-  | 'scrollView' | 'sheetSurface' | 'shortcut' | 'simulated' | 'spacer' | 'spinner' | 'stack'
-  | 'tableViewCell' | 'tableViewport' | 'text' | 'textEntry' | 'vector' | 'webFrame' | 'component';
+  | 'column' | 'dragDismiss' | 'draggable' | 'drawing' | 'dropTarget' | 'flexible' | 'grid'
+  | 'hoverable' | 'icon' | 'image' | 'inFlow' | 'inView' | 'link' | 'liveRegion' | 'loopMotion'
+  | 'navigable' | 'overlay' | 'pinned' | 'positioned' | 'presence' | 'pressable' | 'progress'
+  | 'row' | 'safeArea' | 'scrollView' | 'sheetSurface' | 'shortcut' | 'simulated' | 'spacer'
+  | 'spinner' | 'stack' | 'tableViewCell' | 'tableViewport' | 'text' | 'textEntry' | 'vector'
+  | 'webFrame' | 'component';
