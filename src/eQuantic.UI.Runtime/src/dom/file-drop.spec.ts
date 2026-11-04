@@ -114,10 +114,12 @@ describe('a drop area', () => {
     const inner = area();
     outer.host.append(inner.host);
 
+    inner.label.dispatchEvent(drag('dragenter', 'files'));
     inner.label.dispatchEvent(drag('drop', 'files', [file('bracket.stl')]));
 
-    expect(inner.log).toEqual([['bracket.stl']]);
-    expect(outer.log).toEqual([]);
+    expect(inner.log).toEqual([true, false, ['bracket.stl']]);
+    // The bubbled enter lit the outer area too, and the drop is the only end it gets.
+    expect(outer.log).toEqual([true, false]);
   });
 });
 

@@ -74,14 +74,16 @@ export function dropHandlers(
 
   const drop = (event: Event): void => {
     if (!carriesFiles(event)) return;
+    // The innermost area takes the files, and an area around it must not take them a second time. It
+    // still HEARS the drop, which is the only end its "over" gets: the bubbled enter lit it too, and
+    // a browser sends no leave after a drop.
+    const taken = event.defaultPrevented;
     event.preventDefault();
-    // The innermost area takes the files; an area around it must not take them a second time.
-    event.stopPropagation();
     const area = event.currentTarget as Element;
     const wasOver = drags.get(area)?.over === true;
     drags.delete(area);
     if (wasOver) onDragOverChanged?.(false);
-    if (!enabled || !onDropped) return;
+    if (taken || !enabled || !onDropped) return;
     const files = Array.from((event as DragEvent).dataTransfer?.files ?? []).map((file) => PickedFile.fromFile(file));
     if (files.length > 0) onDropped(files);
   };

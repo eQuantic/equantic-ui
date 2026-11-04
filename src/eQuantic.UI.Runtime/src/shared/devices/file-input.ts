@@ -39,6 +39,7 @@ export function chooseFiles(options: FileInputOptions): Promise<File[]> {
       if (settled) return;
       settled = true;
       registration?.dispose();
+      window.removeEventListener('focus', refocused);
       input.remove();
       resolve(files);
     };
@@ -46,10 +47,12 @@ export function chooseFiles(options: FileInputOptions): Promise<File[]> {
 
     input.addEventListener('change', () => finish(Array.from(input.files ?? [])));
     // CANCEL is not reliably reported: 'cancel' is recent and absent in older Safari, so the window
-    // regaining focus is the fallback. A frame of delay lets a real 'change' win the race, since
-    // focus comes back before the change event fires.
+    // regaining focus is the fallback. Focus comes back BEFORE the change event, and a large choice
+    // or one on a network drive can take a while to become a file list, so the fallback waits a
+    // second and then takes whatever the input holds: a late choice is still the person's choice.
     input.addEventListener('cancel', () => finish([]));
-    window.addEventListener('focus', () => setTimeout(() => finish([]), 300), { once: true });
+    const refocused = () => setTimeout(() => finish(Array.from(input.files ?? [])), 1000);
+    window.addEventListener('focus', refocused, { once: true });
 
     input.click();
   });
