@@ -357,6 +357,8 @@ export {
   ServerTopic,
   ServerTopicRefusal,
   SpringSpec,
+  UploadedFile,
+  UploadPolicy,
   WindowSizeClasses,
 } from './shared/primitive-values';
 export { PickedFile } from './shared/picked-file';

@@ -14,6 +14,7 @@
 
 import { exception } from '../utils/exceptions';
 import { hashesByValue } from '../utils/hash';
+import { isWhiteSpace } from '../utils/white-space';
 import type { HydrationSpec } from '../utils/hydrate';
 import type { CurveValue } from './nodes';
 import type { PasskeyOutcomeValue } from './enums.generated';
@@ -34,8 +35,11 @@ export class ImageData {
   }
 }
 
-/** The C# `FileFilter` — one entry in a picker's format list: the label a person reads and the
- * extensions it stands for, without the dot. */
+/**
+ * The C# `FileFilter` — one entry of a picker's format list: the label a person reads and the
+ * extensions it stands for, without the dot. C# takes the extensions as `params`, and eqc passes each
+ * one as an argument of its own, so they are gathered here as C# gathers them.
+ */
 export class FileFilter {
   readonly extensions: readonly string[];
 
@@ -194,11 +198,78 @@ export class ServerTopicRefusal {
   }
 }
 
+/** `ArgumentNullException.ThrowIfNull`, as a C# constructor refuses a null. */
+function refuseNull(value: unknown, parameter: string): void {
+  if (value == null)
+    throw exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
+}
+
+/**
+ * The C# `UploadPolicy` — a kind of file the app takes from a person: its name, the formats it
+ * accepts (empty for any file) and the largest file it takes, a `long` and so a BigInt here. The page
+ * reads it to say what it accepts; the server holds every upload to it. It is a declaration rather than
+ * a value, a class in C#, so two policies are equal when they are the same object.
+ */
+export class UploadPolicy {
+  constructor(
+    readonly name: string,
+    readonly filters: readonly FileFilter[],
+    readonly maxSize: bigint,
+    readonly requireSignedIn = false,
+  ) {
+    // As the C# constructor refuses them, in its order.
+    refuseNull(name, 'name');
+    if ([...name].every(isWhiteSpace))
+      throw exception(
+        'System.ArgumentException',
+        "The value cannot be an empty string or composed entirely of whitespace. (Parameter 'name')",
+      );
+    refuseNull(filters, 'filters');
+    if (maxSize <= 0n)
+      throw exception(
+        'System.ArgumentOutOfRangeException',
+        `maxSize ('${maxSize}') must be a non-negative and non-zero value. (Parameter 'maxSize')\nActual value was ${maxSize}.`,
+      );
+  }
+}
+
+/**
+ * The C# `UploadedFile` — a file a person uploaded, as the page knows it: the id the server gave the
+ * upload, its name, type, size (a `long`, a BigInt here) and the name of its policy. A Server Action
+ * that takes one is handed the id, and the server answers the rest from its own record. Reading the
+ * content and deleting it are the server's (`[ServerOnly]`), so this twin has neither.
+ */
+export class UploadedFile {
+  constructor(
+    readonly id: string,
+    readonly name: string,
+    readonly mimeType: string,
+    readonly size: bigint,
+    readonly policy: string,
+  ) {
+    // As the C# constructor refuses them, in its order.
+    refuseNull(id, 'id');
+    if ([...id].every(isWhiteSpace))
+      throw exception(
+        'System.ArgumentException',
+        "The value cannot be an empty string or composed entirely of whitespace. (Parameter 'id')",
+      );
+    refuseNull(name, 'name');
+    refuseNull(mimeType, 'mimeType');
+    if (size < 0n)
+      throw exception(
+        'System.ArgumentOutOfRangeException',
+        `size ('${size}') must be a non-negative value. (Parameter 'size')\nActual value was ${size}.`,
+      );
+    refuseNull(policy, 'policy');
+  }
+}
+
 /** The twins of the vocabulary's records and structs: each hashes by its members, as `equals`
  * compares it (`ValueTwinHashTests` holds this list to the C#). */
 hashesByValue(
-  ImageData,
   FileFilter,
+  ImageData,
   GeoLocation,
   MotionVector,
   MotionReading,

@@ -133,6 +133,8 @@ export {
   ServerTopic,
   ServerTopicRefusal,
   SpringSpec,
+  UploadedFile,
+  UploadPolicy,
   WindowSizeClasses,
 } from './primitive-values';
 // A file a person chose, which a page names in the handler a picker or a drop area calls.
