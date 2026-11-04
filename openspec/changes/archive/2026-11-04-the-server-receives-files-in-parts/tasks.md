@@ -18,4 +18,4 @@
 ## 3. Documentation
 
 - [x] 3.1 One ledger entry under `docs/ledger/` citing #1214
-- [ ] 3.2 The wiki's page for uploads, in its five languages, with slice C (#1215), where a developer first writes the component that sends a file
+- [x] 3.2 The wiki's page for uploads is written with slice C (#1215), where a developer first writes the component that sends a file: this slice has no client yet
