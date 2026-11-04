@@ -75,7 +75,8 @@ class Picker {
   }
 }
 
-function mount(component: FileUpload, picker: Picker | null, uploads: HeldUploads | null) {
+/** Mounts the area and waits for the build its mount asks for: the first one draws it as the server did. */
+async function mount(component: FileUpload, picker: Picker | null, uploads: HeldUploads | null) {
   resetServiceProvider();
   configureServices((services) => {
     if (picker) services.registerInstance('IFilePicker', picker);
@@ -84,6 +85,7 @@ function mount(component: FileUpload, picker: Picker | null, uploads: HeldUpload
   const container = document.createElement('div');
   document.body.appendChild(container);
   component.mount(container);
+  await nextFrame();
   return container;
 }
 
@@ -98,7 +100,7 @@ describe('FileUpload', () => {
 
   it('says what the policy accepts, and asks the picker for its formats', async () => {
     const picker = new Picker([]);
-    const container = mount(new FileUpload(models, () => {}), picker, new HeldUploads());
+    const container = await mount(new FileUpload(models, () => {}), picker, new HeldUploads());
 
     expect(container.textContent).toContain('Drop files here, or choose them');
     expect(container.textContent).toContain('STL, OBJ, up to 250 MB');
@@ -110,7 +112,7 @@ describe('FileUpload', () => {
   it('shows a row per file with its progress, and hands the page each arrival once', async () => {
     const uploads = new HeldUploads();
     const arrived: UploadedFile[] = [];
-    const container = mount(
+    const container = await mount(
       new FileUpload(models, (uploaded) => arrived.push(uploaded)),
       new Picker([file('bracket.stl', 2048), file('lid.obj', 10)]),
       uploads,
@@ -141,7 +143,7 @@ describe('FileUpload', () => {
 
   it('refuses in the row, in the policy words, a file it does not accept', async () => {
     const uploads = new HeldUploads();
-    const container = mount(new FileUpload(models, () => {}), new Picker([file('setup.exe', 4)]), uploads);
+    const container = await mount(new FileUpload(models, () => {}), new Picker([file('setup.exe', 4)]), uploads);
 
     choose(container).click();
     await nextFrame();
@@ -155,7 +157,7 @@ describe('FileUpload', () => {
 
   it('takes one file when it is not multiple', async () => {
     const uploads = new HeldUploads();
-    const container = mount(
+    const container = await mount(
       new FileUpload(models, () => {}, false),
       new Picker([file('bracket.stl', 1), file('lid.obj', 1)]),
       uploads,
@@ -167,18 +169,34 @@ describe('FileUpload', () => {
     expect(uploads.started.map((upload) => upload.file.name)).toEqual(['bracket.stl']);
   });
 
-  it('draws the same area, disabled, where there is nothing to send with', () => {
-    const container = mount(new FileUpload(models, () => {}), new Picker([]), null);
+  it('draws the same area, disabled, where there is nothing to send with', async () => {
+    const container = await mount(new FileUpload(models, () => {}), new Picker([]), null);
 
     expect(container.textContent).toContain('Drop files here, or choose them');
     expect(choose(container).disabled).toBe(true);
     expect(container.querySelector('[data-eq-drop]')?.getAttribute('data-eq-drop')).toBe('off');
   });
 
+  it("draws its first build as the server's, and enables itself once it is mounted", async () => {
+    resetServiceProvider();
+    configureServices((services) => {
+      services.registerInstance('IFilePicker', new Picker([]));
+      services.registerInstance('IUploads', new HeldUploads());
+    });
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    new FileUpload(models, () => {}).mount(container);
+
+    // Hydration adopts the server's markup as it is, so the first build must be that markup.
+    expect(choose(container).disabled).toBe(true);
+    await nextFrame();
+    expect(choose(container).disabled).toBe(false);
+  });
+
   it('pauses what is still on its way when it leaves the screen', async () => {
     const uploads = new HeldUploads();
     const component = new FileUpload(models, () => {});
-    const container = mount(component, new Picker([file('bracket.stl', 10)]), uploads);
+    const container = await mount(component, new Picker([file('bracket.stl', 10)]), uploads);
     choose(container).click();
     await nextFrame();
 

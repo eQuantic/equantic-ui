@@ -38,6 +38,9 @@ public sealed class FileUpload : StatefulComponent
     private bool _over;
     private string _announcement = "";
 
+    /// <summary>Whether this instance is in a live tree, where a press and a drop can be answered.</summary>
+    private bool _live;
+
     /// <summary>An upload area.</summary>
     /// <param name="policy">What the files are sent under: one of the policies the app's server accepts.
     /// The picker offers its formats, and the area refuses what it does not accept.</param>
@@ -77,6 +80,13 @@ public sealed class FileUpload : StatefulComponent
         if (next is FileUpload fresh) _config = fresh;
     }
 
+    /// <summary>
+    /// The area is drawn able to send only from here. Its first build is the same as the server's, which
+    /// had nothing to send with, because hydration adopts the server's markup as it finds it rather than
+    /// drawing the first build over it: an area enabled in that build would stay disabled on screen.
+    /// </summary>
+    protected override void OnMount() => SetState(() => _live = true);
+
     protected override void OnUnmount()
     {
         foreach (var subscription in _subscriptions) subscription.Dispose();
@@ -91,7 +101,7 @@ public sealed class FileUpload : StatefulComponent
         var config = _config;
         var picker = context.GetService<IFilePicker>();
         var uploads = context.GetService<IUploads>();
-        var enabled = picker is { IsAvailable: true } && uploads is { IsAvailable: true };
+        var enabled = _live && picker is { IsAvailable: true } && uploads is { IsAvailable: true };
 
         var invitation = new Column(gap: Space.S2, cross: CrossAlign.Center);
         invitation.Add(new Text(config.Label ?? (config.Multiple ? SdkStrings.UploadDropHere : SdkStrings.UploadDropOneHere),

@@ -8,6 +8,7 @@ export class FileUpload extends StatefulComponent {
     _reported: Upload[] = [];
     _over: boolean = false;
     _announcement: string = '';
+    _live: boolean = false;
     declare policy: UploadPolicy;
     declare onCompleted: (uploadedFile: UploadedFile) => void;
     declare multiple: boolean;
@@ -36,7 +37,7 @@ export class FileUpload extends StatefulComponent {
         let config = this._config;
         let picker = context.getService('IFilePicker');
         let uploads = context.getService('IUploads');
-        let enabled = (picker != null && picker.isAvailable === true) && (uploads != null && uploads.isAvailable === true);
+        let enabled = this._live && (picker != null && picker.isAvailable === true) && (uploads != null && uploads.isAvailable === true);
         let invitation = new Column(8, 'start', 'center');
         invitation.add(new Text(config.label ?? (config.multiple ? SdkStrings.uploadDropHere : SdkStrings.uploadDropOneHere), 'label', theme.textPrimary, 2, 'center'));
         invitation.add(new Text(config.hint ?? FileUpload.accepted(config.policy), 'caption', theme.textSecondary, 2, 'center'));
@@ -52,6 +53,10 @@ export class FileUpload extends StatefulComponent {
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if ((next instanceof FileUpload && (fresh = next, true))) this._config = fresh;
+    }
+
+    onMount() {
+        return this.setState(() => this._live = true);
     }
 
     onUnmount() {
