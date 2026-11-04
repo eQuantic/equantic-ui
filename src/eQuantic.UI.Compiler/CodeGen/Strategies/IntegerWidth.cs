@@ -26,8 +26,9 @@ public static class IntegerWidth
         SpecialType.System_UInt16 => (16, true),
         SpecialType.System_Int32 => (32, false),
         SpecialType.System_UInt32 => (32, true),
-        SpecialType.System_Int64 => (64, false),
-        SpecialType.System_UInt64 => (64, true),
+        // A native integer is 64 bits wide on every target this SDK ships to, the server included (#649).
+        SpecialType.System_Int64 or SpecialType.System_IntPtr => (64, false),
+        SpecialType.System_UInt64 or SpecialType.System_UIntPtr => (64, true),
         _ => null,
     };
 

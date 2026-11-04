@@ -139,6 +139,8 @@ public class NullableStrategy : IConversionStrategy
                 return "0";
             case SpecialType.System_Int64:
             case SpecialType.System_UInt64:
+            case SpecialType.System_IntPtr:
+            case SpecialType.System_UIntPtr:
                 context.UsedHelpers.Add(Eq.Import);
                 return $"{Eq.Long}(0)"; // BigInt 0n (JSON-serialized as a string by the runtime)
             case SpecialType.System_Decimal:

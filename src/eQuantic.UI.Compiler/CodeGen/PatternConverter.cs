@@ -429,7 +429,7 @@ public static class PatternConverter
                 return $"typeof {access} === 'string' && {access}.length === 1";
             case SpecialType.System_Boolean:
                 return $"typeof {access} === 'boolean'";
-            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+            case SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr:
                 return $"typeof {access} === 'bigint'";
             case SpecialType.System_Int32 or SpecialType.System_Int16 or SpecialType.System_SByte
                 or SpecialType.System_Byte or SpecialType.System_UInt16 or SpecialType.System_UInt32:
