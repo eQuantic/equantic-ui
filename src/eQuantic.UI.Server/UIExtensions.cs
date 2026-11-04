@@ -103,6 +103,8 @@ public static class UIExtensions
             .ValidateOnStart();
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IValidateOptions<ServerActionsOptions>, ServerActionsOptionsValidator>());
+        // The same origins, for every other endpoint a page sends to: the uploads ask it (#1214).
+        services.TryAddSingleton<AllowedRequestOrigins>();
         services.AddSingleton<IServerActionRegistry>(sp =>
         {
             var registry = new ServerActionRegistry();

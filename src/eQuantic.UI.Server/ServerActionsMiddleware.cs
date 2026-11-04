@@ -203,7 +203,7 @@ public class ServerActionsMiddleware
             var component = ActivatorUtilities.CreateInstance(context.RequestServices, descriptor.ComponentType);
 
             // Deserialize and validate arguments
-            var args = DeserializeArguments(request.Arguments, descriptor.ParameterTypes);
+            var args = await DeserializeArgumentsAsync(context, request.Arguments, descriptor.ParameterTypes);
 
             // Invoke the method
             object? result;
@@ -228,6 +228,14 @@ public class ServerActionsMiddleware
             // EqJson serializes Int64/UInt64 as strings (the eQuantic long wire protocol) so values
             // beyond 2^53 survive into the client BigInt-backed `long` runtime.
             await context.Response.WriteAsJsonAsync(new { success = true, result }, Json.EqJson.Options);
+        }
+        catch (UploadNotBoundException ex)
+        {
+            // The page named an upload it may not receive, or one not finished: the action never ran, and
+            // the reason is one the page shows.
+            _logger.LogWarning("Server Action {ActionId} refused its file: {Reason}", actionId, ex.Message);
+            context.Response.StatusCode = ex.StatusCode;
+            await WriteErrorResponse(context, ex.Message);
         }
         catch (Exception ex)
         {
@@ -274,7 +282,7 @@ public class ServerActionsMiddleware
         return env?.EnvironmentName == "Development";
     }
 
-    private object?[] DeserializeArguments(JsonElement[]? arguments, Type[] parameterTypes)
+    private async Task<object?[]> DeserializeArgumentsAsync(HttpContext context, JsonElement[]? arguments, Type[] parameterTypes)
     {
         if (arguments == null || arguments.Length == 0)
             return Array.Empty<object?>();
@@ -292,6 +300,14 @@ public class ServerActionsMiddleware
         for (int i = 0; i < Math.Min(arguments.Length, parameterTypes.Length); i++)
         {
             var paramType = parameterTypes[i];
+
+            // A file the person uploaded: the argument names it, and the server binds its own record of
+            // it, for its owner alone.
+            if (paramType == typeof(Primitives.UploadedFile))
+            {
+                result[i] = await UploadBinding.BindAsync(context, arguments[i]);
+                continue;
+            }
 
             // Validate that we're not deserializing to dangerous types
             if (!IsAllowedType(paramType))
