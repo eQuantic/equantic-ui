@@ -431,5 +431,90 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("UnfoldLines", Culture)!; }
         }
+
+        internal static string UploadDropHere
+        {
+            get { return ResourceManager.GetString("UploadDropHere", Culture)!; }
+        }
+
+        internal static string UploadDropOneHere
+        {
+            get { return ResourceManager.GetString("UploadDropOneHere", Culture)!; }
+        }
+
+        internal static string UploadChooseFiles
+        {
+            get { return ResourceManager.GetString("UploadChooseFiles", Culture)!; }
+        }
+
+        internal static string UploadChooseFile
+        {
+            get { return ResourceManager.GetString("UploadChooseFile", Culture)!; }
+        }
+
+        internal static string UploadAccepts
+        {
+            get { return ResourceManager.GetString("UploadAccepts", Culture)!; }
+        }
+
+        internal static string UploadAcceptsAny
+        {
+            get { return ResourceManager.GetString("UploadAcceptsAny", Culture)!; }
+        }
+
+        internal static string UploadWaiting
+        {
+            get { return ResourceManager.GetString("UploadWaiting", Culture)!; }
+        }
+
+        internal static string UploadSending
+        {
+            get { return ResourceManager.GetString("UploadSending", Culture)!; }
+        }
+
+        internal static string UploadPaused
+        {
+            get { return ResourceManager.GetString("UploadPaused", Culture)!; }
+        }
+
+        internal static string UploadCompleted
+        {
+            get { return ResourceManager.GetString("UploadCompleted", Culture)!; }
+        }
+
+        internal static string UploadCancelled
+        {
+            get { return ResourceManager.GetString("UploadCancelled", Culture)!; }
+        }
+
+        internal static string UploadPause
+        {
+            get { return ResourceManager.GetString("UploadPause", Culture)!; }
+        }
+
+        internal static string UploadResume
+        {
+            get { return ResourceManager.GetString("UploadResume", Culture)!; }
+        }
+
+        internal static string UploadCancel
+        {
+            get { return ResourceManager.GetString("UploadCancel", Culture)!; }
+        }
+
+        internal static string UploadProgress
+        {
+            get { return ResourceManager.GetString("UploadProgress", Culture)!; }
+        }
+
+        internal static string UploadAnnounceCompleted
+        {
+            get { return ResourceManager.GetString("UploadAnnounceCompleted", Culture)!; }
+        }
+
+        internal static string UploadAnnounceFailed
+        {
+            get { return ResourceManager.GetString("UploadAnnounceFailed", Culture)!; }
+        }
 }
 }

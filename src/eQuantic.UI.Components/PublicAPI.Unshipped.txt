@@ -106,3 +106,35 @@ override eQuantic.UI.Components.CookieConsent.AdoptConfig(eQuantic.UI.Primitives
 *REMOVED*eQuantic.UI.Components.CodeBlock.MinHeight.get -> float
 *REMOVED*eQuantic.UI.Components.CodeBlock.MinHeight.init -> void
 static eQuantic.UI.Components.UI.DropTarget(eQuantic.UI.Primitives.VisualNode! child, System.Action<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.PickedFile!>!>! onDropped, System.Action<bool>? onDragOverChanged = null, bool enabled = true) -> eQuantic.UI.Primitives.DropTarget!
+eQuantic.UI.Components.FileUpload
+eQuantic.UI.Components.FileUpload.FileUpload(eQuantic.UI.Primitives.UploadPolicy! policy, System.Action<eQuantic.UI.Primitives.UploadedFile!>! onCompleted, bool multiple = true, string? label = null, string? hint = null) -> void
+eQuantic.UI.Components.FileUpload.Hint.get -> string?
+eQuantic.UI.Components.FileUpload.Hint.init -> void
+eQuantic.UI.Components.FileUpload.Label.get -> string?
+eQuantic.UI.Components.FileUpload.Label.init -> void
+eQuantic.UI.Components.FileUpload.Multiple.get -> bool
+eQuantic.UI.Components.FileUpload.Multiple.init -> void
+eQuantic.UI.Components.FileUpload.OnCompleted.get -> System.Action<eQuantic.UI.Primitives.UploadedFile!>!
+eQuantic.UI.Components.FileUpload.OnCompleted.init -> void
+eQuantic.UI.Components.FileUpload.Policy.get -> eQuantic.UI.Primitives.UploadPolicy!
+eQuantic.UI.Components.FileUpload.Policy.init -> void
+override eQuantic.UI.Components.FileUpload.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.FileUpload.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+static eQuantic.UI.Components.SdkStrings.UploadAccepts(string! formats, string! size) -> string!
+static eQuantic.UI.Components.SdkStrings.UploadAcceptsAny(string! size) -> string!
+static eQuantic.UI.Components.SdkStrings.UploadAnnounceCompleted(string! fileName) -> string!
+static eQuantic.UI.Components.SdkStrings.UploadAnnounceFailed(string! fileName, string! reason) -> string!
+static eQuantic.UI.Components.SdkStrings.UploadCancel.get -> string!
+static eQuantic.UI.Components.SdkStrings.UploadCancelled.get -> string!
+static eQuantic.UI.Components.SdkStrings.UploadChooseFile.get -> string!
+static eQuantic.UI.Components.SdkStrings.UploadChooseFiles.get -> string!
+static eQuantic.UI.Components.SdkStrings.UploadCompleted.get -> string!
+static eQuantic.UI.Components.SdkStrings.UploadDropHere.get -> string!
+static eQuantic.UI.Components.SdkStrings.UploadDropOneHere.get -> string!
+static eQuantic.UI.Components.SdkStrings.UploadPause.get -> string!
+static eQuantic.UI.Components.SdkStrings.UploadPaused.get -> string!
+static eQuantic.UI.Components.SdkStrings.UploadProgress(string! fileName) -> string!
+static eQuantic.UI.Components.SdkStrings.UploadResume.get -> string!
+static eQuantic.UI.Components.SdkStrings.UploadSending(string! sent, string! size) -> string!
+static eQuantic.UI.Components.SdkStrings.UploadWaiting.get -> string!
+static eQuantic.UI.Components.UI.FileUpload(eQuantic.UI.Primitives.UploadPolicy! policy, System.Action<eQuantic.UI.Primitives.UploadedFile!>! onCompleted, bool multiple = true, string? label = null, string? hint = null) -> eQuantic.UI.Components.FileUpload!
