@@ -205,6 +205,10 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Hoverable node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
+    // A drop area is layout-transparent too: the child owns every visual.
+    public LayoutNode Visit(DropTarget node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
     // A simulated state changes only what is DRAWN, so it takes no space of its own.
     public LayoutNode Visit(Simulated node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);

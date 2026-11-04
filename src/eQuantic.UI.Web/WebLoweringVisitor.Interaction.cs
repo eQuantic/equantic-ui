@@ -427,6 +427,7 @@ internal sealed partial class WebLoweringVisitor
         Box box => box.Style.MaxWidth,
         Pressable pressable => CapsAt(pressable.Child),
         Hoverable hoverable => CapsAt(hoverable.Child),
+        DropTarget target => CapsAt(target.Child),
         Adjustable adjustable => CapsAt(adjustable.Child),
         Progress progress => CapsAt(progress.Child),
         LiveRegion live => CapsAt(live.Child),
@@ -866,5 +867,38 @@ internal sealed partial class WebLoweringVisitor
                 DragDismiss.ThresholdDp.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
         return child;
+    }
+
+    /// <summary>
+    /// A drop area (<see cref="DropTarget"/>): the same layout-transparent div as a
+    /// <see cref="Hoverable"/>, marked so the runtime knows what it is. The drag events are the
+    /// browser's alone, so the server declares them and runs none, and the client twin
+    /// (<c>lowerDropTarget</c>) attaches the handlers that read the files.
+    /// </summary>
+    private HtmlElement LowerDropTarget(DropTarget target)
+    {
+        var fills = Fills(target.Child);
+        var cap = CapsAt(target.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : null,
+                MaxWidth = Size(cap),
+                // The area is a target, and says so because `none` inherits from any transparent
+                // row above it.
+                PointerEvents = "auto",
+                Height = fills.Height ? "100%" : null,
+            },
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["data-eq-drop"] = target.Enabled ? "on" : "off",
+            },
+        };
+        foreach (var drag in (ReadOnlySpan<string>)["dragenter", "dragover", "dragleave", "drop"])
+            element.CustomEvents[drag] = ClientDispatches;
+        if (Lower(target.Child, horizontalAxis: null) is { } child)
+            element.Children.Add(child);
+        return element;
     }
 }

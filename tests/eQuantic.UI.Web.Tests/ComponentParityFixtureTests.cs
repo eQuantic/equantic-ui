@@ -95,6 +95,10 @@ public class ComponentParityFixtureTests
             Transition = new TransitionSpec(StyleChannels.Colors),
             Hover = new StyleDiff { Transform = Transform2D.Translate(0, -2) },
         }), _ => { }) { Axis = DragAxis.Horizontal, Min = -80, Max = 0, RestOffset = -80 }, NoPresses),
+        // A drop area over a box that fills across: the same transparent div on both producers, the
+        // fill passed through, and the four drag events declared by the server and attached by the client.
+        ("drop-target", new DropTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),
+        ("drop-target-disabled", new DropTarget(new Box(new BoxStyle { Height = 40 }), _ => { }) { Enabled = false }, NoPresses),
         // A pinned header's scrolled diff with every member (#506), through the builder a box's
         // states use, over the header's base, whose border is its bottom edge.
         ("pinned-scrolled", new Pinned(new Box(new BoxStyle { Height = 40 }))
