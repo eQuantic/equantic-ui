@@ -25,6 +25,11 @@ public class UploadVocabularyConformanceTests
     [InlineData("try { _ = new UploadPolicy(\" \", [], 1); return \"built\"; } catch (System.ArgumentException e) { return e.Message; }")]
     [InlineData("try { _ = new UploadPolicy(null!, [], 1); return \"built\"; } catch (System.ArgumentNullException e) { return e.Message; }")]
     [InlineData("try { _ = new UploadPolicy(\"models\", null!, 1); return \"built\"; } catch (System.ArgumentNullException e) { return e.Message; }")]
+    // ---- the policy's own rule, which the page asks before it sends and the server asks again ----
+    [InlineData("var archives = new UploadPolicy(\"archives\", [new FileFilter(\"Archives\", \".tar.gz\", \"ZIP\")], 10); return archives.Accepts(\"backup.TAR.GZ\") + \"|\" + archives.Accepts(\"backup.gz\") + \"|\" + archives.Accepts(\"photos.zip\") + \"|\" + archives.Accepts(\"zip\");")]
+    [InlineData("var models = new UploadPolicy(\"models\", [new FileFilter(\"3D models\", \"stl\", \"obj\"), new FileFilter(\"Again\", \"STL\", \"\")], 10); return models.RefusalOf(\"setup.exe\", 1) + \"|\" + models.RefusalOf(\"part.stl\", 11) + \"|\" + (models.RefusalOf(\"part.obj\", 10) ?? \"accepted\");")]
+    [InlineData("var any = new UploadPolicy(\"any\", [], 3_000_000_000); return any.Accepts(\"anything\") + \"|\" + any.RefusalOf(\"a\", 3_000_000_001) + \"|\" + (any.RefusalOf(\"a\", 3_000_000_000) ?? \"accepted\");")]
+    [InlineData("try { _ = new UploadPolicy(\"models\", [], 1).Accepts(null!); return \"accepted\"; } catch (System.ArgumentNullException e) { return e.Message; }")]
     // ---- an uploaded file as the page holds it ----
     [InlineData("var file = new UploadedFile(\"0123456789abcdef0123456789abcdef\", \"bracket.stl\", \"model/stl\", 3_000_000_000, \"models\"); return file.Id + \"|\" + file.Name + \"|\" + file.MimeType + \"|\" + (file.Size * 2) + \"|\" + file.Policy;")]
     [InlineData("try { _ = new UploadedFile(\"id\", \"a.stl\", \"model/stl\", -1, \"models\"); return \"built\"; } catch (System.ArgumentOutOfRangeException e) { return e.Message; }")]
