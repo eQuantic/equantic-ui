@@ -89,15 +89,10 @@ const NO_TWIN_OWED = new Set([
   // deep link is the address bar and the router already owns it. Nothing in a page bundle can
   // construct one or be handed one — the capability is not registered on this target at all.
   'DeepLinkRelay',
-  // The format list `IFileDialogs` takes, and that capability is desktop-only for a reason of its
-  // own: a phone's picker answers with a security-scoped URL and not a path. A component that
-  // reaches for a file dialog is a desktop component, so its web twin has nothing to ask.
-  //
-  // The one shape that would change this answer: a SHARED component constructing a FileFilter in
-  // code that also transpiles. Then it owes a twin, because the failure would land at module load
-  // (an undefined class takes the page down) rather than at capability resolution (one feature
-  // reports itself absent). None does today.
-  'FileFilter',
+  // `FileFilter` used to be named here, as the format list of a desktop-only capability. An
+  // `UploadPolicy` holds its formats as FileFilters, and a policy is declared in code both sides read
+  // (#1214), so a page module constructs one: it has a twin now, which is the shape this entry said
+  // would change its answer.
 ]);
 
 describe('Primitives ⇄ runtime export parity', () => {

@@ -184,3 +184,18 @@ eQuantic.UI.Primitives.VectorShape.OnPressed.get -> System.Action?
 eQuantic.UI.Primitives.VectorShape.OnPressed.init -> void
 eQuantic.UI.Primitives.VectorShape.Selected.get -> bool?
 eQuantic.UI.Primitives.VectorShape.Selected.init -> void
+eQuantic.UI.Primitives.UploadPolicy
+eQuantic.UI.Primitives.UploadPolicy.Filters.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>!
+eQuantic.UI.Primitives.UploadPolicy.MaxSize.get -> long
+eQuantic.UI.Primitives.UploadPolicy.Name.get -> string!
+eQuantic.UI.Primitives.UploadPolicy.RequireSignedIn.get -> bool
+eQuantic.UI.Primitives.UploadPolicy.UploadPolicy(string! name, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>! filters, long maxSize, bool requireSignedIn = false) -> void
+eQuantic.UI.Primitives.UploadedFile
+eQuantic.UI.Primitives.UploadedFile.Id.get -> string!
+eQuantic.UI.Primitives.UploadedFile.MimeType.get -> string!
+eQuantic.UI.Primitives.UploadedFile.Name.get -> string!
+eQuantic.UI.Primitives.UploadedFile.Policy.get -> string!
+eQuantic.UI.Primitives.UploadedFile.Size.get -> long
+eQuantic.UI.Primitives.UploadedFile.UploadedFile(string! id, string! name, string! mimeType, long size, string! policy) -> void
+virtual eQuantic.UI.Primitives.UploadedFile.Delete(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+virtual eQuantic.UI.Primitives.UploadedFile.OpenRead(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.IO.Stream!>!

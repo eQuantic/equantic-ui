@@ -344,6 +344,7 @@ export { registerDeviceCapabilities } from './shared/devices/register';
 export { UiDispatcher } from './shared/devices/ui-dispatcher';
 export { RouteValues } from './shared/route-values';
 export {
+  FileFilter,
   GeoLocation,
   ImageData,
   MotionReading,
@@ -355,6 +356,8 @@ export {
   ServerTopic,
   ServerTopicRefusal,
   SpringSpec,
+  UploadedFile,
+  UploadPolicy,
   WindowSizeClasses,
 } from './shared/primitive-values';
 export { WebPhotoLibrary } from './shared/devices/photo-library';

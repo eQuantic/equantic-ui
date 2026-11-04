@@ -120,6 +120,7 @@ export { GridPattern, InFlow, InView, RadialGradient, Simulated } from './vocabu
 export { VisualNodeExtensions } from './visual-node-extensions';
 // The Primitives VALUE types a page can name — same implicit promise, see primitive-values.ts.
 export {
+  FileFilter,
   GeoLocation,
   ImageData,
   MotionReading,
@@ -131,6 +132,8 @@ export {
   ServerTopic,
   ServerTopicRefusal,
   SpringSpec,
+  UploadedFile,
+  UploadPolicy,
   WindowSizeClasses,
 } from './primitive-values';
 export {

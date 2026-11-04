@@ -205,6 +205,8 @@
   "TypeStyle",
   "UiComponent",
   "UiDispatcher",
+  "UploadPolicy",
+  "UploadedFile",
   "VariantColors",
   "Vector",
   "VectorDrawing",
