@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -35,9 +34,7 @@ public class ServerActionsMiddleware
     private readonly IServerActionAuthorizationService _authorizationService;
     private readonly ILogger<ServerActionsMiddleware> _logger;
     private readonly HashSet<Assembly> _allowedAssemblies;
-    // Volatile: a reloaded configuration replaces the allow-list on its own thread while requests read it.
-    private volatile ServerActionOrigins _origins;
-    private readonly object _originsGate = new();
+    private readonly AllowedRequestOrigins _origins;
 
     private const string ActionsPath = "/api/_equantic/actions";
 
@@ -65,18 +62,8 @@ public class ServerActionsMiddleware
         // application's own (scanned) assemblies or an explicitly opted-in assembly.
         _allowedAssemblies = new HashSet<Assembly>(options.AssembliesToScan);
         _allowedAssemblies.UnionWith(options.AllowedDeserializationAssemblies);
-        // A reloaded appsettings.json changes the allowed origins without a restart. Subscribed BEFORE
-        // the first read, so a reload between the two is heard, and each refresh reads the latest value
-        // under one lock, so two refreshes racing cannot leave the older list in place.
-        actions.OnChange(_ => RefreshOrigins(actions));
-        RefreshOrigins(actions);
-    }
-
-    [MemberNotNull(nameof(_origins))]
-    private void RefreshOrigins(IOptionsMonitor<ServerActionsOptions> actions)
-    {
-        lock (_originsGate)
-            _origins = new ServerActionOrigins(actions.CurrentValue.AllowedOrigins);
+        // A reloaded appsettings.json changes the allowed origins without a restart.
+        _origins = new AllowedRequestOrigins(actions);
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -97,8 +84,8 @@ public class ServerActionsMiddleware
         {
             _logger.LogWarning(
                 "Server Action request refused - it came from another site: Origin {Origin}, Sec-Fetch-Site {FetchSite}",
-                ForLog(context.Request.Headers.Origin.ToString()),
-                ForLog(context.Request.Headers["Sec-Fetch-Site"].ToString()));
+                AllowedRequestOrigins.ForLog(context.Request.Headers.Origin.ToString()),
+                AllowedRequestOrigins.ForLog(context.Request.Headers["Sec-Fetch-Site"].ToString()));
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             await WriteErrorResponse(context, "A request from another site cannot call a Server Action.");
             return;
@@ -275,13 +262,6 @@ public class ServerActionsMiddleware
             .Replace("\\", "")
             .Trim();
     }
-
-    /// <summary>
-    /// A header as a log line takes it. The request writes it, so a CR or an LF in it would otherwise
-    /// start a line of its own in a plain-text log.
-    /// </summary>
-    private static string ForLog(string value) =>
-        value.Replace("\r", string.Empty).Replace("\n", string.Empty);
 
     private static async Task WriteErrorResponse(HttpContext context, string error)
     {
