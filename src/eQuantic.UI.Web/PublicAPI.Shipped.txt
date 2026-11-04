@@ -1,8 +1,10 @@
 #nullable enable
 abstract eQuantic.UI.Web.HtmlElement.Render() -> eQuantic.UI.Web.HtmlNode!
+const eQuantic.UI.Web.FaceSink.ElementId = "eq-faces" -> string!
 const eQuantic.UI.Web.GradientSink.ContainerId = "eq-vectors" -> string!
 const eQuantic.UI.Web.TokenCss.MonoFallback = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" -> string!
 const eQuantic.UI.Web.TokenCss.MonoStack = "var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)" -> string!
+const eQuantic.UI.Web.TokenCss.SansFallback = "system-ui, -apple-system, sans-serif" -> string!
 const eQuantic.UI.Web.TokenCss.SansStack = "var(--eq-font-family, system-ui, -apple-system, sans-serif)" -> string!
 eQuantic.UI.Web.AdaptiveGates
 eQuantic.UI.Web.AlignItem
@@ -47,6 +49,11 @@ eQuantic.UI.Web.DynamicElement.InnerText.get -> string?
 eQuantic.UI.Web.DynamicElement.InnerText.set -> void
 eQuantic.UI.Web.DynamicElement.TagName.get -> string!
 eQuantic.UI.Web.DynamicElement.TagName.set -> void
+eQuantic.UI.Web.FaceSink
+eQuantic.UI.Web.FaceSink.Add(eQuantic.UI.Primitives.FontFamily! family) -> void
+eQuantic.UI.Web.FaceSink.FaceSink() -> void
+eQuantic.UI.Web.FaceSink.Families.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FontFamily!>!
+eQuantic.UI.Web.FaceSink.IsEmpty.get -> bool
 eQuantic.UI.Web.FlexDirection
 eQuantic.UI.Web.FlexDirection.Column = 1 -> eQuantic.UI.Web.FlexDirection
 eQuantic.UI.Web.FlexDirection.ColumnReverse = 3 -> eQuantic.UI.Web.FlexDirection
@@ -56,6 +63,7 @@ eQuantic.UI.Web.FlexWrap
 eQuantic.UI.Web.FlexWrap.NoWrap = 0 -> eQuantic.UI.Web.FlexWrap
 eQuantic.UI.Web.FlexWrap.Wrap = 1 -> eQuantic.UI.Web.FlexWrap
 eQuantic.UI.Web.FlexWrap.WrapReverse = 2 -> eQuantic.UI.Web.FlexWrap
+eQuantic.UI.Web.FontFaceRules
 eQuantic.UI.Web.GradientSink
 eQuantic.UI.Web.GradientSink.Add(string! id, eQuantic.UI.Primitives.VectorPaint paint) -> void
 eQuantic.UI.Web.GradientSink.Container() -> eQuantic.UI.Web.HtmlElement!
@@ -677,7 +685,6 @@ eQuantic.UI.Web.MouseEventArgs.PageY.get -> double
 eQuantic.UI.Web.MouseEventArgs.PageY.init -> void
 eQuantic.UI.Web.MouseEventArgs.ShiftKey.get -> bool
 eQuantic.UI.Web.MouseEventArgs.ShiftKey.init -> void
-eQuantic.UI.Web.PhotonCssGenerator
 eQuantic.UI.Web.Position
 eQuantic.UI.Web.Position.Absolute = 2 -> eQuantic.UI.Web.Position
 eQuantic.UI.Web.Position.Fixed = 3 -> eQuantic.UI.Web.Position
@@ -732,6 +739,7 @@ eQuantic.UI.Web.TextAlign.Left = 0 -> eQuantic.UI.Web.TextAlign
 eQuantic.UI.Web.TextAlign.Right = 1 -> eQuantic.UI.Web.TextAlign
 eQuantic.UI.Web.TextAlign.Start = 4 -> eQuantic.UI.Web.TextAlign
 eQuantic.UI.Web.ThemeBridge
+eQuantic.UI.Web.ThemeStylesheet
 eQuantic.UI.Web.ThemeVarMap
 eQuantic.UI.Web.ThemeVarMap.Rewrite(string! value) -> string!
 eQuantic.UI.Web.ThemeVarMap.ThemeVarMap() -> void
@@ -760,6 +768,11 @@ static eQuantic.UI.Web.ComponentExpansionScope.WhatLoaded(eQuantic.UI.Primitives
 static eQuantic.UI.Web.ComponentIdentity.Key(System.Type! type, int ordinal) -> string!
 static eQuantic.UI.Web.ComponentIdentity.Of(System.Type! type) -> string!
 static eQuantic.UI.Web.CultureFormatBridge.SerializeJson(System.Globalization.CultureInfo! culture) -> string!
+static eQuantic.UI.Web.FaceSink.Ambient.get -> eQuantic.UI.Web.FaceSink?
+static eQuantic.UI.Web.FaceSink.Ambient.set -> void
+static eQuantic.UI.Web.FontFaceRules.ContentType(string! resource) -> string!
+static eQuantic.UI.Web.FontFaceRules.Format(eQuantic.UI.Primitives.FontFile! file) -> string!
+static eQuantic.UI.Web.FontFaceRules.Write(System.Collections.Generic.IEnumerable<(eQuantic.UI.Primitives.FontFamily! Family, eQuantic.UI.Primitives.FontFile! File, string! Url)>! faces) -> string!
 static eQuantic.UI.Web.GradientSink.Ambient.get -> eQuantic.UI.Web.GradientSink?
 static eQuantic.UI.Web.GradientSink.Ambient.set -> void
 static eQuantic.UI.Web.HtmlNode.Text(string! content) -> eQuantic.UI.Web.HtmlNode!
@@ -769,7 +782,6 @@ static eQuantic.UI.Web.HtmlRenderer.RenderToString(eQuantic.UI.Web.IComponent! c
 static eQuantic.UI.Web.IconRegistry.Path(eQuantic.UI.Primitives.Icons glyph) -> string!
 static eQuantic.UI.Web.LoadedComponentState.operator !=(eQuantic.UI.Web.LoadedComponentState? left, eQuantic.UI.Web.LoadedComponentState? right) -> bool
 static eQuantic.UI.Web.LoadedComponentState.operator ==(eQuantic.UI.Web.LoadedComponentState? left, eQuantic.UI.Web.LoadedComponentState? right) -> bool
-static eQuantic.UI.Web.PhotonCssGenerator.Generate(eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? mode = null) -> string!
 static eQuantic.UI.Web.RenderContext.LinkPolicy.get -> System.Func<string!, string!>?
 static eQuantic.UI.Web.RenderContext.ResolveDestination(string! destination) -> string!
 static eQuantic.UI.Web.RenderContext.SetLinkPolicy(System.Func<string!, string!>? policy) -> void
@@ -783,6 +795,7 @@ static eQuantic.UI.Web.Styling.ClassBuilder.implicit operator string!(eQuantic.U
 static eQuantic.UI.Web.Styling.ClassBuilderExtensions.JoinClasses(params string?[]! classes) -> string!
 static eQuantic.UI.Web.Styling.ClassBuilderExtensions.WhenClass(bool condition, string? className, string? fallback = null) -> string?
 static eQuantic.UI.Web.ThemeBridge.SerializeJson(eQuantic.UI.Primitives.IAppTheme! theme) -> string!
+static eQuantic.UI.Web.ThemeStylesheet.Generate(eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? mode = null) -> string!
 static eQuantic.UI.Web.ThemeVarMap.For(eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Web.ThemeVarMap!
 static eQuantic.UI.Web.TokenCss.Bezier(eQuantic.UI.Primitives.Curve curve) -> string!
 static eQuantic.UI.Web.TokenCss.Cursor(eQuantic.UI.Primitives.PointerCursor cursor) -> string!

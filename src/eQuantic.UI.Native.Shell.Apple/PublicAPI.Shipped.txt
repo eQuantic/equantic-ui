@@ -128,6 +128,7 @@
 [EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, double arg1) -> void
 [EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, eQuantic.UI.Native.Shell.Apple.CGRect rect) -> void
 [EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, eQuantic.UI.Native.Shell.Apple.CGSize size) -> void
+[EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, eQuantic.UI.Native.Shell.Apple.NSRange range) -> void
 [EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, long arg1, nint arg2, nint arg3) -> void
 [EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, nint arg1) -> void
 [EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, nint arg1, eQuantic.UI.Native.Shell.Apple.NSRange range) -> void
