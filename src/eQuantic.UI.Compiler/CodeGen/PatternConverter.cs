@@ -377,6 +377,16 @@ public static class PatternConverter
                 return $"{access} instanceof {named.IntroduceTwin(context)}";
         }
 
+        // A package's type has no module and no twin, so nothing in the browser can say a value is one:
+        // the test below answered true for any value, and `as` handed the value back (#951).
+        if (context.SemanticHelper.GetSymbol(typeSyntax) is ITypeSymbol package && package.IsPackages())
+        {
+            context.Report(typeSyntax, ConversionSeverity.Error, "EQ2004",
+                $"A type test of '{package.ToDisplayString()}' has no JavaScript translation: {package.PackageReason()}. "
+                + TwinlessTypeExtensions.PackageRemedy);
+            return "false";
+        }
+
         return $"{access} != null";
     }
 

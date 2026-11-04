@@ -410,13 +410,16 @@ public class ComponentParser
     private void ParseServerActions(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
         var methods = classDecl.DescendantNodes().OfType<MethodDeclarationSyntax>();
-        
+        var model = TryGetSemanticModel(classDecl.SyntaxTree);
+
         foreach (var method in methods)
         {
-            var serverActionAttr = method.AttributeLists
-                .SelectMany(al => al.Attributes)
-                .FirstOrDefault(a => a.Name.ValueText() == "ServerAction" || a.Name.ValueText() == "ServerActionAttribute");
-            
+            // A partial method is one action, stubbed from the half with the body.
+            if (SymbolOf(method, model) is { } symbol ? symbol.PartialImplementationPart is not null : DefinesAPartBesideIt(method))
+                continue;
+
+            var serverActionAttr = ServerActionMark(method, model);
+
             if (serverActionAttr != null)
             {
                 string actionName = method.Identifier.ValueText;
@@ -555,7 +558,7 @@ public class ComponentParser
         MethodDeclarationSyntax or OperatorDeclarationSyntax or ConversionOperatorDeclarationSyntax =>
             IsServerOnlyMethod((BaseMethodDeclarationSyntax)node, model),
         BlockSyntax or ArrowExpressionClauseSyntax => inAComponent
-            && node.Parent is MethodDeclarationSyntax action && IsServerAction(action),
+            && node.Parent is MethodDeclarationSyntax action && IsServerAction(action, model),
         _ => false,
     };
 
@@ -576,19 +579,56 @@ public class ComponentParser
     private static bool IsServerOnlyMethod(BaseMethodDeclarationSyntax method, SemanticModel? model)
     {
         if (method.AttributeLists.Count == 0 && !method.Modifiers.Any(SyntaxKind.PartialKeyword)) return false;
-        var own = model is null ? null
-            : ReferenceEquals(model.SyntaxTree, method.SyntaxTree) ? model
-            : model.Compilation.ModelOf(method.SyntaxTree);
-        return own?.GetDeclaredSymbol(method) is IMethodSymbol symbol
+        return SymbolOf(method, model) is { } symbol
             ? PlainClassModule.IsServerOnly(symbol)
             : PlainClassModule.IsServerOnlyDeclaration(method);
     }
 
+    /// <summary>The method's symbol, from a model of its own tree, or null where none holds it.</summary>
+    private static IMethodSymbol? SymbolOf(BaseMethodDeclarationSyntax method, SemanticModel? model)
+    {
+        var own = model is null ? null
+            : ReferenceEquals(model.SyntaxTree, method.SyntaxTree) ? model
+            : model.Compilation.ModelOf(method.SyntaxTree);
+        return own?.GetDeclaredSymbol(method) as IMethodSymbol;
+    }
+
     /// <summary>A method a component runs on the server and calls from the browser: its twin is a stub
-    /// written from its SIGNATURE, and its body never crosses.</summary>
-    internal static bool IsServerAction(MethodDeclarationSyntax method) =>
-        method.AttributeLists.SelectMany(list => list.Attributes)
-            .Any(attribute => attribute.IsNamed("ServerAction"));
+    /// written from its SIGNATURE, and its body never crosses. Asked of its SYMBOL as
+    /// <see cref="IsServerOnlyMethod"/> is, so the alias C# accepts and the defining half of a partial
+    /// method mark it too: read off the attribute lists by name, a method marked through
+    /// <c>using Rpc = eQuantic.UI.Primitives.ServerActionAttribute;</c> crossed with its body and got no
+    /// stub (#1148).</summary>
+    internal static bool IsServerAction(MethodDeclarationSyntax method, SemanticModel? model) =>
+        ServerActionMark(method, model) is not null;
+
+    /// <summary>The attribute that makes <paramref name="method"/> a Server Action, as it is written, or null.</summary>
+    private static AttributeSyntax? ServerActionMark(MethodDeclarationSyntax method, SemanticModel? model)
+    {
+        if (method.AttributeLists.Count == 0 && !method.Modifiers.Any(SyntaxKind.PartialKeyword)) return null;
+        return SymbolOf(method, model) is { } symbol
+            ? PlainClassModule.ServerActionMark(symbol)?.ApplicationSyntaxReference?.GetSyntax() as AttributeSyntax
+            : PartsOf(method).SelectMany(part => part.AttributeLists).SelectMany(list => list.Attributes)
+                .FirstOrDefault(attribute => attribute.IsNamed("ServerAction"));
+    }
+
+    /// <summary>
+    /// The declarations of <paramref name="method"/> as they are written, where no model answers: a partial
+    /// method's halves in its type's declaration, whose attributes C# merges, and the method alone otherwise.
+    /// The half with the body was read on its own, so a mark on the definition left the body crossing beside
+    /// the stub the definition made (secondary review of #1209).
+    /// </summary>
+    private static IEnumerable<MethodDeclarationSyntax> PartsOf(MethodDeclarationSyntax method) =>
+        method.Modifiers.Any(SyntaxKind.PartialKeyword) && method.Parent is TypeDeclarationSyntax type
+            ? type.Members.OfType<MethodDeclarationSyntax>().Where(part => part.Identifier.ValueText == method.Identifier.ValueText
+                && part.Modifiers.Any(SyntaxKind.PartialKeyword)
+                && part.ParameterList.Parameters.Count == method.ParameterList.Parameters.Count)
+            : [method];
+
+    /// <summary>Whether <paramref name="method"/> is a partial method's definition whose other half, the one
+    /// with the body, is written beside it: the action is that half's, as the model says it is.</summary>
+    private static bool DefinesAPartBesideIt(MethodDeclarationSyntax method) =>
+        method is { Body: null, ExpressionBody: null } && PartsOf(method).Any(part => part.Body is not null || part.ExpressionBody is not null);
 
     private void ParseMethods(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
@@ -629,7 +669,7 @@ public class ComponentParser
             // A [ServerAction] body runs on the SERVER; the client twin is the RPC stub the
             // emitter writes from definition.ServerActions. Transpiling the body here shipped
             // server code (DbContexts, Stopwatches, the compiler itself) into the browser.
-            if (IsServerAction(method)) continue;
+            if (IsServerAction(method, model)) continue;
 
             var methodName = method.Identifier.ValueText;
             if (methodName == "CreateState") continue;

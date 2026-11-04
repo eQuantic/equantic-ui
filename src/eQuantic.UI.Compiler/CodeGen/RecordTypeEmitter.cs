@@ -294,6 +294,7 @@ public class RecordTypeEmitter
         var name = type.TwinTypeName();
         var printedName = type.Identifier.ValueText;
         _startsInitialization = TypeInitializer.HasStaticConstructor(type) ? name : null;
+        TwinOwnMembers.RefuseKeptOnTheServer(type, ModelFor(type), _converter);
         var members = type.ValueMembers(ModelFor(type));
         var (baseName, clause) = BaseInfo(type);
 
