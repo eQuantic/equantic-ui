@@ -175,3 +175,12 @@ eQuantic.UI.Primitives.FontWeight.Light = 300 -> eQuantic.UI.Primitives.FontWeig
 eQuantic.UI.Primitives.FontWeight.Thin = 100 -> eQuantic.UI.Primitives.FontWeight
 eQuantic.UI.Primitives.ScrollView.FillViewport.get -> bool
 eQuantic.UI.Primitives.ScrollView.FillViewport.init -> void
+eQuantic.UI.Primitives.VectorShape.Hover.get -> eQuantic.UI.Primitives.StyleDiff?
+eQuantic.UI.Primitives.VectorShape.Hover.init -> void
+eQuantic.UI.Primitives.VectorShape.IsInput.get -> bool
+eQuantic.UI.Primitives.VectorShape.Label.get -> string?
+eQuantic.UI.Primitives.VectorShape.Label.init -> void
+eQuantic.UI.Primitives.VectorShape.OnPressed.get -> System.Action?
+eQuantic.UI.Primitives.VectorShape.OnPressed.init -> void
+eQuantic.UI.Primitives.VectorShape.Selected.get -> bool?
+eQuantic.UI.Primitives.VectorShape.Selected.init -> void

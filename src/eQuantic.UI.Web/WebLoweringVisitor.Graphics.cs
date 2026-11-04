@@ -204,8 +204,12 @@ internal sealed partial class WebLoweringVisitor
             ["preserveAspectRatio"] = "none",
             ["fill"] = "none",
         };
+        // A drawing whose shapes are inputs is a GROUP of controls, never hidden: aria-hidden would take
+        // every concelho out of the reader's reach with the picture (#674).
+        var hasInputs = drawing.Artwork.Shapes.Any(shape => shape.IsInput);
+        if (hasInputs) svg.RawAttributes["role"] = "group";
         if (drawing.Label is { } label) svg.RawAttributes["aria-label"] = label;
-        else svg.RawAttributes["aria-hidden"] = "true";
+        else if (!hasInputs) svg.RawAttributes["aria-hidden"] = "true";
 
         // Every run the artwork paints with, declared once and referenced by the shapes. The id is
         // the hash of the gradient ITSELF, so two shapes sharing a run share a def.
@@ -251,9 +255,46 @@ internal sealed partial class WebLoweringVisitor
             if (shape.EvenOdd) attributes["fill-rule"] = "evenodd";
             if (shape.Opacity < 1) attributes["opacity"] = TokenCss.Number(shape.Opacity);
             path.RawAttributes = attributes;
+            if (shape.IsInput) MakeInput(path, shape);
             svg.Children.Add(path);
         }
         return svg;
+    }
+
+    /// <summary>
+    /// An input shape (#674): a button the browser tests by its path, a Tab stop that Enter and Space
+    /// press, named by its label and stating its toggle state as pressed-ness, as a
+    /// <see cref="Pressable"/> does. The pointer is taken inside the path whatever it is painted with
+    /// (<c>visibleFill</c>), which is Photon's <c>Path.contains</c>; <c>eq-shape</c> is the class the
+    /// theme's focus ring strokes the outline by; the hover is the shape's own diff under
+    /// <c>:hover</c>, through the members a path has.
+    /// </summary>
+    private static void MakeInput(RealizedElement path, VectorShape shape)
+    {
+        path.ClassName = "eq-shape";
+        path.Style = new HtmlStyle { Cursor = "pointer", PointerEvents = "visibleFill" };
+        path.Role = "button";
+        path.TabIndex = 0;
+        path.AriaLabel = shape.Label;
+        if (shape.Selected is { } selected) path.AriaPressed = selected ? "true" : "false";
+        path.OnClick = shape.OnPressed;
+        path.OnKeyDown = key =>
+        {
+            if (key.Key is "Enter" or " ") shape.OnPressed?.Invoke();
+        };
+        if (shape.Hover is { } hover)
+            foreach (var (property, value) in ShapeHoverDeclarations(hover))
+                path.PseudoDeclarations.Add((":hover", property, value));
+    }
+
+    /// <summary>A shape's hover as declarations, in this order on both producers: its fill, its stroke's
+    /// colour and width, and its opacity — the members of a <see cref="StyleDiff"/> a path has.</summary>
+    private static IEnumerable<(string Property, string Value)> ShapeHoverDeclarations(StyleDiff hover)
+    {
+        if (hover.Background is { } fill) yield return ("fill", TokenCss.Value(fill));
+        if (hover.BorderColor is { } stroke) yield return ("stroke", TokenCss.Value(stroke));
+        if (hover.BorderWidth is { } width) yield return ("stroke-width", TokenCss.Number(width));
+        if (hover.Opacity is { } opacity) yield return ("opacity", TokenCss.Number(opacity));
     }
 
 

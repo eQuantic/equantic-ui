@@ -1826,7 +1826,7 @@ export class VectorPaint {
   }
 }
 
-/** Mirror of the C# `VectorShape`. */
+/** Mirror of the C# `VectorShape`: a picture, and with `onPressed` an input as well (#674). */
 export class VectorShape {
   path: string;
   fill: VectorPaint;
@@ -1834,6 +1834,14 @@ export class VectorShape {
   strokeWidth: number;
   evenOdd: boolean;
   opacity: number;
+  /** What assistive tech announces for the shape (C# `VectorShape.Label`). */
+  label: string | null;
+  /** Called on a press inside the path, or Enter or Space while focused; null keeps it a picture. */
+  onPressed: (() => void) | null;
+  /** The toggle state announced as pressed or not; null states none. */
+  selected: boolean | null;
+  /** The paint under the pointer: its fill, its stroke and its opacity. */
+  hover: StyleDiff | null;
 
   constructor(
     path: string,
@@ -1850,7 +1858,26 @@ export class VectorShape {
     this.strokeWidth = strokeWidth;
     this.evenOdd = evenOdd;
     this.opacity = opacity;
+    this.label = null;
+    this.onPressed = null;
+    this.selected = null;
+    this.hover = null;
     if (config) Object.assign(this, config);
+    // The C# `Hover` init's refusal, word for word, so a diff a path cannot apply fails the same way
+    // on both targets.
+    // Read back through its declared type: the null above is what the narrowing saw, not the config.
+    const diff = this.hover as StyleDiff | null;
+    if (diff && (diff.elevation != null || diff.gradient != null || diff.backdropBlur != null
+      || diff.transform != null || diff.shadows != null))
+      throw new RangeError(
+        "A shape's hover can change its fill (Background), its stroke (BorderColor, BorderWidth) "
+        + 'and its opacity, and nothing else: a path has no elevation, gradient layer, backdrop, '
+        + 'transform or shadow list.');
+  }
+
+  /** Whether the shape takes a press, and with it the focus and the hover (C# `IsInput`). */
+  get isInput(): boolean {
+    return this.onPressed != null;
   }
 }
 

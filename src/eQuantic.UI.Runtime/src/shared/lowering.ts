@@ -62,6 +62,7 @@ import type {
   DrawingNode,
   VectorGradientValue,
   VectorPaintValue,
+  VectorShapeValue,
   CornerRadiiValue,
   CurveValue,
   EdgeInsetsValue,
@@ -2685,8 +2686,11 @@ function lowerDrawing(node: DrawingNode): HtmlNode {
     preserveAspectRatio: 'none',
     fill: 'none',
   };
+  // A drawing whose shapes are inputs is a GROUP of controls, never hidden (C# twin, #674).
+  const hasInputs = (artwork.shapes ?? []).some((shape) => shape.onPressed != null);
+  if (hasInputs) attributes['role'] = 'group';
   if (node.label) attributes['aria-label'] = node.label;
-  else attributes['aria-hidden'] = 'true';
+  else if (!hasInputs) attributes['aria-hidden'] = 'true';
 
   const paint = (value: VectorPaintValue): string =>
     value.kind === 'inherit'
@@ -2749,10 +2753,49 @@ function lowerDrawing(node: DrawingNode): HtmlNode {
         }
         if (shape.evenOdd) shapeAttributes['fill-rule'] = 'evenodd';
         if (shape.opacity < 1) shapeAttributes['opacity'] = num(shape.opacity);
-        return { tag: 'path', attributes: shapeAttributes, events: {}, children: [] };
+        const path: HtmlNode = { tag: 'path', attributes: shapeAttributes, events: {}, children: [] };
+        if (shape.onPressed != null) makeShapeInput(path, shape);
+        return path;
       }),
     ],
   };
+}
+
+/**
+ * Mirror of the C# `MakeInput` (#674): an input shape is a button the browser tests by its path
+ * (`visibleFill`, Photon's `Path.contains`), a Tab stop Enter and Space press, named by its label and
+ * stating its toggle state as pressed-ness; `eq-shape` is the class the theme's focus ring strokes, and
+ * the hover is the shape's own diff under `:hover`, through the members a path has.
+ */
+function makeShapeInput(path: HtmlNode, shape: VectorShapeValue): void {
+  Object.assign(path.attributes, atomicAttrs({ 'pointer-events': 'visibleFill', cursor: 'pointer' }, 'eq-shape'));
+  path.attributes['role'] = 'button';
+  path.attributes['tabindex'] = '0';
+  if (shape.label) path.attributes['aria-label'] = shape.label;
+  if (shape.selected != null) path.attributes['aria-pressed'] = shape.selected ? 'true' : 'false';
+  const pressed = shape.onPressed!;
+  path.events['click'] = (() => pressed()) as unknown as EventHandler;
+  // A path is not a button, so the browser presses it on no key of its own: Enter and Space do here,
+  // and Space scrolls the page no more than it does on a button.
+  path.events['keydown'] = ((event: KeyboardEvent) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    pressed();
+  }) as unknown as EventHandler;
+  if (shape.hover) {
+    const classes = atomizePseudo(':hover', shapeHoverEntries(shape.hover));
+    if (classes) path.attributes['class'] = `${path.attributes['class']} ${classes}`;
+  }
+}
+
+/** The C# `ShapeHoverDeclarations`, in its order: fill, stroke colour and width, opacity. */
+function shapeHoverEntries(hover: StyleDiffValue): Record<string, string | undefined> {
+  const entries: Record<string, string | undefined> = {};
+  if (hover.background) entries['fill'] = tokenValue(hover.background);
+  if (hover.borderColor) entries['stroke'] = tokenValue(hover.borderColor);
+  if (hover.borderWidth != null) entries['stroke-width'] = num(hover.borderWidth);
+  if (hover.opacity != null) entries['opacity'] = num(hover.opacity);
+  return entries;
 }
 
 /** Spec A3 mirror of the C# WebRealizer: single-cell grid stack + absolute Positioned anchors. */
@@ -3851,6 +3894,9 @@ function lowerPressable(
 /** Whether a lowered subtree already carries an interactive ELEMENT — see {@link lowerPressable}. */
 function wrapsAnInteractive(node: HtmlNode): boolean {
   if (node.tag === 'button' || node.tag === 'a') return true;
+  // A control that is not a button element and says it is one (C# twin): an input shape of a
+  // drawing (#674), or a pressable that already yielded.
+  if (node.attributes?.['role'] === 'button') return true;
   return (node.children ?? []).some(wrapsAnInteractive);
 }
 

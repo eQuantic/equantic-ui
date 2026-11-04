@@ -282,6 +282,24 @@ public class ComponentParityFixtureTests
             new AdaptiveNode(Spacer.Fixed(24), null, Spacer.Fixed(64)) { ExpandedFrom = 980 },
             new Text("below", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
         ("adaptive-positioned-in-stack", AdaptiveCorner(), NoPresses),
+        // A drawing whose shapes are inputs (#674): two concelhos, one picked and with a hover in every
+        // member a path has, beside a line that stays a picture. Hydration adopts each path by its
+        // role, its state and its classes, the hover's among them.
+        ("drawing-with-input-shapes", new Drawing(new VectorDrawing(0, 0, 100, 100,
+        [
+            new VectorShape("M0 0 L100 0 L0 100 Z", VectorPaint.Solid(new Color(17, 24, 39, 255)))
+            {
+                Label = "Porto",
+                OnPressed = () => { },
+                Selected = true,
+                Hover = new StyleDiff
+                {
+                    Background = Theme.SurfaceSubtle, BorderColor = Theme.Border, BorderWidth = 2, Opacity = 0.9f,
+                },
+            },
+            new VectorShape("M100 0 L100 100 L0 100 Z", VectorPaint.Inherit) { Label = "Matosinhos", OnPressed = () => { } },
+            new VectorShape("M0 0 L100 100", VectorPaint.None, VectorPaint.Inherit, 1),
+        ]), 200), NoPresses),
     ];
 
     /// <summary>

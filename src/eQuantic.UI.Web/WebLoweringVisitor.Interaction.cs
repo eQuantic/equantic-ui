@@ -456,6 +456,9 @@ internal sealed partial class WebLoweringVisitor
     private bool WrapsAnInteractive(IComponent node) =>
         node is RealizedElement element
         && (element.Tag is "button" or "a" or "input" or "select" or "textarea"
+            // A control that is not a button element and says it is one: an input shape of a drawing
+            // (#674), or a pressable that already yielded.
+            || element.Role == "button"
             || element.Children.Any(WrapsAnInteractive));
 
     private HtmlElement LowerPressable(Pressable pressable)
