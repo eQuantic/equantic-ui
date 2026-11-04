@@ -15,6 +15,8 @@
 import { exception } from '../utils/exceptions';
 import { hashesByValue } from '../utils/hash';
 import { isWhiteSpace } from '../utils/white-space';
+import { endsWith } from '../utils/string-search';
+import { ordinalIgnoreCase } from '../utils/string-statics';
 import type { HydrationSpec } from '../utils/hydrate';
 import type { CurveValue } from './nodes';
 import type { PasskeyOutcomeValue } from './enums.generated';
@@ -231,6 +233,54 @@ export class UploadPolicy {
         `maxSize ('${maxSize}') must be a non-negative and non-zero value. (Parameter 'maxSize')\nActual value was ${maxSize}.`,
       );
   }
+
+  /**
+   * Whether the policy accepts a file of this name: any file without filters, otherwise one whose name
+   * ENDS in one of its extensions, compared without case, a leading dot in a filter read as absent. The
+   * C# `Accepts`, which the server asks too.
+   */
+  accepts(fileName: string): boolean {
+    refuseNull(fileName, 'fileName');
+    if (this.filters.length === 0) return true;
+    for (const filter of this.filters)
+      for (const extension of filter.extensions) {
+        const bare = trimDots(extension);
+        if (bare.length > 0 && endsWith(fileName, '.' + bare, 'ordinalIgnoreCase')) return true;
+      }
+    return false;
+  }
+
+  /**
+   * Why the policy refuses a file of this name and size, in the words the server answers with, or null
+   * when it accepts it: a format it does not name first, then a size past its largest. The C#
+   * `RefusalOf`.
+   */
+  refusalOf(fileName: string, size: bigint): string | null {
+    if (!this.accepts(fileName)) return `Only ${this.formats()} files are accepted here.`;
+    if (size > this.maxSize) return `The file is larger than the ${this.maxSize} bytes accepted here.`;
+    return null;
+  }
+
+  /** The extensions the policy accepts, as a refusal names them: `.stl, .obj`. */
+  private formats(): string {
+    const formats: string[] = [];
+    for (const filter of this.filters)
+      for (const extension of filter.extensions) {
+        const dotted = '.' + trimDots(extension);
+        const seen = formats.some(
+          (format) => ordinalIgnoreCase(format, 0, format.length, dotted, 0, dotted.length) === 0,
+        );
+        if (!seen) formats.push(dotted);
+      }
+    return formats.join(', ');
+  }
+}
+
+/** `string.TrimStart('.')`. */
+function trimDots(text: string): string {
+  let start = 0;
+  while (start < text.length && text[start] === '.') start++;
+  return text.slice(start);
 }
 
 /**
