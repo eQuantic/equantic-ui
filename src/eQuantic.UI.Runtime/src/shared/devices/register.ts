@@ -8,6 +8,7 @@ import { WebNetworkStatus } from './network-status';
 import { WebPasskeys } from './passkeys';
 import { WebPhotoLibrary } from './photo-library';
 import { WebFilePicker } from './file-picker';
+import { WebUploads } from './uploads';
 import { WebTextClipboard } from './text-clipboard';
 import { WebCultureController } from './culture-controller';
 import { WebAnalytics } from './analytics';
@@ -32,6 +33,9 @@ export function registerDeviceCapabilities(): void {
   services.registerSingleton('IPhotoLibrary', () => new WebPhotoLibrary());
   // Any file, through the same input the photo library opens, answered as PickedFiles.
   services.registerSingleton('IFilePicker', () => new WebFilePicker());
+  // What a page does with the files it was handed: sends them to its own server, in parts it can
+  // resume, under a policy the server accepts.
+  services.registerSingleton('IUploads', () => new WebUploads());
   // Registered even though it reports itself unavailable: a page that takes one must RECEIVE one,
   // or it fails to construct instead of showing the fallback it already knows how to show.
   services.registerSingleton('IBiometrics', () => new WebBiometrics());

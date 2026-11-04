@@ -758,4 +758,13 @@ public static class UI
     public static DropTarget DropTarget(VisualNode child, Action<IReadOnlyList<PickedFile>> onDropped,
         Action<bool>? onDragOverChanged = null, bool enabled = true) =>
         new DropTarget(child, onDropped) { OnDragOverChanged = onDragOverChanged, Enabled = enabled };
+
+    /// <summary>
+    /// A whole file upload: an area files are dropped on, a button that asks for them, and a row for each
+    /// with its progress and its controls, each file sent under <paramref name="policy"/> and handed to
+    /// <paramref name="onCompleted"/> once it arrived.
+    /// </summary>
+    public static FileUpload FileUpload(UploadPolicy policy, Action<UploadedFile> onCompleted, bool multiple = true,
+        string? label = null, string? hint = null) =>
+        new FileUpload(policy, onCompleted, multiple, label, hint);
 }

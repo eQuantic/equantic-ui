@@ -139,6 +139,8 @@ export {
 } from './primitive-values';
 // A file a person chose, which a page names in the handler a picker or a drop area calls.
 export { PickedFile } from './picked-file';
+// A file on its way to the server, which a page names when it holds one to show its progress.
+export { Upload } from './upload';
 export {
   Space,
   Radius,

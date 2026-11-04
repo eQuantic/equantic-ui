@@ -362,6 +362,7 @@ export {
   WindowSizeClasses,
 } from './shared/primitive-values';
 export { PickedFile } from './shared/picked-file';
+export { Upload } from './shared/upload';
 export { WebPhotoLibrary } from './shared/devices/photo-library';
 export { WebFilePicker } from './shared/devices/file-picker';
 export { WebBiometrics } from './shared/devices/biometrics';

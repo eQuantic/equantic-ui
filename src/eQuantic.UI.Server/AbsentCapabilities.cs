@@ -168,6 +168,45 @@ internal static class AbsentCapabilities
         public IDisposable OnConnectionChanged(Action<ServerConnection> onChanged) => NoSubscription.Instance;
     }
 
+    /// <summary>
+    /// No browser to send from: server rendering draws the page before any file was chosen, so a page
+    /// asks <see cref="IUploads.IsAvailable"/> and draws its area disabled here, and the browser's own
+    /// capability takes over when the page runs there. A page that starts one anyway is answered with an
+    /// upload that has already failed, saying so, rather than a throw that would fail the render.
+    /// </summary>
+    internal sealed class Uploads : IUploads
+    {
+        public bool IsAvailable => false;
+
+        public Upload Start(PickedFile file, UploadPolicy policy) => new UnsentUpload(file, policy);
+    }
+
+    /// <summary>The upload a target with nothing to send through answers: failed, and nothing more.</summary>
+    private sealed class UnsentUpload(PickedFile file, UploadPolicy policy) : Upload(file, policy)
+    {
+        public override UploadState State => UploadState.Failed;
+
+        public override long Sent => 0;
+
+        public override string? Error => "This page cannot upload a file until it runs in the browser.";
+
+        public override UploadedFile? Result => null;
+
+        public override void Pause()
+        {
+        }
+
+        public override void Resume()
+        {
+        }
+
+        public override void Cancel()
+        {
+        }
+
+        public override IDisposable Subscribe(Action<Upload> onChanged) => NoSubscription.Instance;
+    }
+
     /// <summary>Nothing will ever be delivered, so unsubscribing has nothing to undo.</summary>
     private sealed class NoSubscription : IDisposable
     {

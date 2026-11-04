@@ -128,6 +128,7 @@ export { EmptyState } from './EmptyState';
 export { EntryLines } from './EntryLines';
 export { FieldError } from './FieldError';
 export { FieldRule } from './FieldRule';
+export { FileUpload } from './FileUpload';
 export { FormController } from './FormController';
 export { FormField } from './FormField';
 export { FormInput } from './FormInput';

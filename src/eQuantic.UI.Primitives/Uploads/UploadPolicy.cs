@@ -53,4 +53,61 @@ public sealed class UploadPolicy
 
     /// <summary>Whether only a signed-in person may upload under the policy.</summary>
     public bool RequireSignedIn { get; }
+
+    /// <summary>
+    /// Whether the policy accepts a file named <paramref name="fileName"/>: any file when it has no
+    /// filters, otherwise one whose name ends in one of its extensions, compared without regard to case.
+    /// The END of the name is compared, not the text after its last dot, so an extension of two parts
+    /// (<c>tar.gz</c>) matches as written. A leading dot in a filter is read as absent, as
+    /// <see cref="FileFilter"/> states extensions without it.
+    /// </summary>
+    public bool Accepts(string fileName)
+    {
+        ArgumentNullException.ThrowIfNull(fileName);
+        if (Filters.Count == 0) return true;
+        foreach (var filter in Filters)
+        {
+            foreach (var extension in filter.Extensions)
+            {
+                var bare = extension.TrimStart('.');
+                if (bare.Length > 0 && fileName.EndsWith("." + bare, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Why the policy refuses a file named <paramref name="fileName"/> of <paramref name="size"/> bytes,
+    /// in the words the server answers with, or null when it accepts it. The page asks before it sends a
+    /// byte, and the server answers the same words when it is asked anyway: a format the policy does not
+    /// name first ("Only .stl, .obj files are accepted here."), then a size past its largest ("The file
+    /// is larger than the 10 bytes accepted here.").
+    /// </summary>
+    public string? RefusalOf(string fileName, long size)
+    {
+        if (!Accepts(fileName)) return $"Only {Formats()} files are accepted here.";
+        if (size > MaxSize) return $"The file is larger than the {MaxSize} bytes accepted here.";
+        return null;
+    }
+
+    /// <summary>The extensions the policy accepts, as a refusal names them: <c>.stl, .obj</c>.</summary>
+    private string Formats()
+    {
+        var formats = new List<string>();
+        foreach (var filter in Filters)
+        {
+            foreach (var extension in filter.Extensions)
+            {
+                var dotted = "." + extension.TrimStart('.');
+                var seen = false;
+                foreach (var format in formats)
+                    if (string.Equals(format, dotted, StringComparison.OrdinalIgnoreCase)) seen = true;
+                if (!seen) formats.Add(dotted);
+            }
+        }
+
+        return string.Join(", ", formats);
+    }
 }

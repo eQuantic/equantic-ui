@@ -465,4 +465,66 @@ public class WikiClaimsCompile
             SetState(() => _status = $"{file.Name}: {text.Split('\n').Length} rows");
         }
     }
+
+    // Uploads.md (#1215): the policy the page and the server both read, a page that takes files with
+    // FileUpload and receives them in its Server Action, and a component drawn over IUploads.
+    private static class Uploads
+    {
+        public static readonly UploadPolicy Models = new("models",
+            filters: [new FileFilter("3D models", "stl", "obj", "3mf")],
+            maxSize: 250 * 1024 * 1024);
+    }
+
+    [Page("/models")]
+    private sealed class ModelsScreen : Primitives.StatefulComponent
+    {
+        private string _saved = "";
+
+        [ServerAction]
+        public async Task<string> SaveModel(UploadedFile model)
+        {
+            await using var content = await model.OpenRead();
+            // … store it where the app keeps its data …
+            await model.Delete();
+            return model.Name;
+        }
+
+        public override VisualNode Build(ComponentContext context) =>
+            Column(gap: Space.S4, children: [
+                FileUpload(Uploads.Models, onCompleted: model => _ = Save(model)),
+                Text(_saved, TypeRole.BodyM),
+            ]);
+
+        private async Task Save(UploadedFile model)
+        {
+            var name = await SaveModel(model);
+            SetState(() => _saved = $"Saved {name}");
+        }
+    }
+
+    private sealed class ModelButton(IFilePicker? picker, IUploads? uploads) : Primitives.StatefulComponent
+    {
+        private Upload? _upload;
+        private IDisposable? _changes;
+
+        protected override void OnUnmount() => _changes?.Dispose();
+
+        public override VisualNode Build(ComponentContext context) => _upload switch
+        {
+            null => Button("Send a model", onPressed: () => _ = Choose()),
+            { State: UploadState.Failed } failed => Text(failed.Error ?? "", TypeRole.BodyM),
+            { State: UploadState.Completed } => Text("Sent", TypeRole.BodyM),
+            var sending => ProgressBar((float)sending.Sent / sending.Size, label: "Sending the model"),
+        };
+
+        private async Task Choose()
+        {
+            if (picker is null || uploads is null) return;
+            if (await picker.PickFileAsync(Uploads.Models.Filters) is not { } file) return;
+            var upload = uploads.Start(file, Uploads.Models);
+            _changes?.Dispose();
+            _changes = upload.Subscribe(_ => SetState(() => { }));
+            SetState(() => _upload = upload);
+        }
+    }
 }
