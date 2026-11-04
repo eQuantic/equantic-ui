@@ -57,6 +57,8 @@ internal sealed class ChildSlots : IVisualNodeVisitor<WindowSizeClass, NodeSlots
 
     public NodeSlots Visit(Drawing node, WindowSizeClass state) => NodeSlots.None;
 
+    public NodeSlots Visit(DropTarget node, WindowSizeClass state) => NodeSlots.One(node.Child);
+
     public NodeSlots Visit(Flexible node, WindowSizeClass state) => NodeSlots.One(node.Child);
 
     public NodeSlots Visit(Grid node, WindowSizeClass state) => NodeSlots.Listed(node.Children);

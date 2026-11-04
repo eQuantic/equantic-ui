@@ -25,6 +25,7 @@ import type {
   TypeStyleValue,
 } from './nodes';
 import { CanvasPointer } from './canvas-pointer';
+import type { PickedFile } from './picked-file';
 export { CanvasPointer };
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
@@ -955,6 +956,24 @@ export class Hoverable extends VisualNode {
     super();
     this.child = child;
     this.onChanged = onChanged;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `DropTarget` — an area a person drops files onto. */
+export class DropTarget extends VisualNode {
+  readonly nodeKind = 'dropTarget';
+  child: VisualChild;
+  onDropped: (files: PickedFile[]) => void;
+  /** true while files are carried over the area, false when they leave or land. */
+  onDragOverChanged: ((over: boolean) => void) | null = null;
+  /** A disabled area takes nothing, and says so. */
+  enabled = true;
+
+  constructor(child: VisualChild, onDropped: (files: PickedFile[]) => void, config?: EqConfig) {
+    super();
+    this.child = child;
+    this.onDropped = onDropped;
     if (config) Object.assign(this, config);
   }
 }

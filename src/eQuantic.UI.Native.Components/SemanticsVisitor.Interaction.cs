@@ -283,6 +283,9 @@ internal sealed partial class SemanticsVisitor
     public bool Visit(Hoverable node, LayoutNode laidOut) => Wraps;
 
     /// <inheritdoc cref="Wraps"/>
+    public bool Visit(DropTarget node, LayoutNode laidOut) => Wraps;
+
+    /// <inheritdoc cref="Wraps"/>
     public bool Visit(InFlow node, LayoutNode laidOut) => Wraps;
 
     /// <inheritdoc cref="Wraps"/>

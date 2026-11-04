@@ -32,6 +32,7 @@ export {
   TableViewCell,
   TableSpans,
   Hoverable,
+  DropTarget,
   Flexible,
   Spacer,
   Stack,
@@ -136,6 +137,8 @@ export {
   UploadPolicy,
   WindowSizeClasses,
 } from './primitive-values';
+// A file a person chose, which a page names in the handler a picker or a drop area calls.
+export { PickedFile } from './picked-file';
 export {
   Space,
   Radius,

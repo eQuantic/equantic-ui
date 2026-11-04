@@ -150,7 +150,7 @@ public class ClosedHierarchyTests
     public void TheScanActuallySeesTheVocabulary()
     {
         EveryNodeType().Count(t => !t.IsAbstract && t.Assembly == typeof(VisualNode).Assembly)
-            .Should().Be(43, "the vocabulary is 43 concrete nodes, and IVisualNodeVisitor has a "
+            .Should().Be(44, "the vocabulary is 44 concrete nodes, and IVisualNodeVisitor has a "
                 + "method for each — if this number moved, the interface moved with it or the "
                 + "compiler would have said so");
 

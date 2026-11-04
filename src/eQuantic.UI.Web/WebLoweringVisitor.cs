@@ -172,6 +172,8 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
 
     public HtmlElement? Visit(Hoverable hoverable, bool? horizontalAxis) => LowerHoverable(hoverable);
 
+    public HtmlElement? Visit(DropTarget target, bool? horizontalAxis) => LowerDropTarget(target);
+
     public HtmlElement? Visit(Adjustable adjustable, bool? horizontalAxis) => LowerAdjustable(adjustable);
 
     public HtmlElement? Visit(Progress progress, bool? horizontalAxis) => LowerProgress(progress);
@@ -261,6 +263,7 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
         Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
         Pressable pressable => Fills(pressable.Child),
         Hoverable hoverable => Fills(hoverable.Child),
+        DropTarget target => Fills(target.Child),
         Adjustable adjustable => Fills(adjustable.Child),
         Progress progress => Fills(progress.Child),
         LiveRegion live => Fills(live.Child),

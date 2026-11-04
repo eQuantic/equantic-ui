@@ -89,10 +89,6 @@ const NO_TWIN_OWED = new Set([
   // deep link is the address bar and the router already owns it. Nothing in a page bundle can
   // construct one or be handed one — the capability is not registered on this target at all.
   'DeepLinkRelay',
-  // `FileFilter` used to be named here, as the format list of a desktop-only capability. An
-  // `UploadPolicy` holds its formats as FileFilters, and a policy is declared in code both sides read
-  // (#1214), so a page module constructs one: it has a twin now, which is the shape this entry said
-  // would change its answer.
 ]);
 
 describe('Primitives ⇄ runtime export parity', () => {

@@ -25,6 +25,8 @@ internal abstract partial class EmailWalk
 
     public Nothing Visit(Hoverable node, Nothing state) => Refuse(node);
 
+    public Nothing Visit(DropTarget node, Nothing state) => Refuse(node);
+
     public Nothing Visit(InFlow node, Nothing state) => Refuse(node);
 
     public Nothing Visit(InView node, Nothing state) => Refuse(node);
