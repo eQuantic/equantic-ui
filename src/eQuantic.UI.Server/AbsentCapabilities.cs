@@ -71,6 +71,21 @@ internal static class AbsentCapabilities
             new((IReadOnlyList<ImageData>)Array.Empty<ImageData>());
     }
 
+    /// <summary>No person to ask: the server render chooses nothing, which a page already draws as
+    /// "nothing chosen yet".</summary>
+    internal sealed class FilePicker : IFilePicker
+    {
+        public bool IsAvailable => false;
+
+        public ValueTask<PickedFile?> PickFileAsync(IReadOnlyList<FileFilter>? filters = null,
+            CancellationToken cancellationToken = default) =>
+            new((PickedFile?)null);
+
+        public ValueTask<IReadOnlyList<PickedFile>> PickFilesAsync(IReadOnlyList<FileFilter>? filters = null,
+            CancellationToken cancellationToken = default) =>
+            new((IReadOnlyList<PickedFile>)Array.Empty<PickedFile>());
+    }
+
     internal sealed class Camera : ICamera
     {
         public bool IsAvailable => false;

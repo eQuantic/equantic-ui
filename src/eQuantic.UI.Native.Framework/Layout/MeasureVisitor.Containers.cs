@@ -572,6 +572,7 @@ internal sealed partial class MeasureVisitor
         Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
         Pressable pressable => FillsOf(pressable.Child),
         Hoverable hoverable => FillsOf(hoverable.Child),
+        DropTarget target => FillsOf(target.Child),
         Adjustable adjustable => FillsOf(adjustable.Child),
         Progress progress => FillsOf(progress.Child),
         LiveRegion live => FillsOf(live.Child),

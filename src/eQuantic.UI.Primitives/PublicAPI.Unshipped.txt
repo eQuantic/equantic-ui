@@ -184,3 +184,26 @@ eQuantic.UI.Primitives.VectorShape.OnPressed.get -> System.Action?
 eQuantic.UI.Primitives.VectorShape.OnPressed.init -> void
 eQuantic.UI.Primitives.VectorShape.Selected.get -> bool?
 eQuantic.UI.Primitives.VectorShape.Selected.init -> void
+eQuantic.UI.Primitives.IFilePicker
+eQuantic.UI.Primitives.IFilePicker.IsAvailable.get -> bool
+eQuantic.UI.Primitives.IFilePicker.PickFileAsync(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>? filters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.PickedFile?>
+eQuantic.UI.Primitives.IFilePicker.PickFilesAsync(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>? filters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.PickedFile!>!>
+eQuantic.UI.Primitives.PickedFile
+eQuantic.UI.Primitives.PickedFile.PickedFile(string! name, string! mimeType, long size) -> void
+const eQuantic.UI.Primitives.PickedFile.UnknownMimeType = "application/octet-stream" -> string!
+eQuantic.UI.Primitives.PickedFile.Name.get -> string!
+eQuantic.UI.Primitives.PickedFile.MimeType.get -> string!
+eQuantic.UI.Primitives.PickedFile.Size.get -> long
+abstract eQuantic.UI.Primitives.PickedFile.ReadAllBytesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<byte[]!>
+abstract eQuantic.UI.Primitives.PickedFile.ReadAllTextAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<string!>
+eQuantic.UI.Primitives.DropTarget
+override eQuantic.UI.Primitives.DropTarget.NodeKind.get -> string!
+eQuantic.UI.Primitives.DropTarget.DropTarget(eQuantic.UI.Primitives.VisualNode! child, System.Action<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.PickedFile!>!>! onDropped) -> void
+eQuantic.UI.Primitives.DropTarget.OnDropped.get -> System.Action<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.PickedFile!>!>!
+eQuantic.UI.Primitives.DropTarget.OnDropped.init -> void
+eQuantic.UI.Primitives.DropTarget.OnDragOverChanged.get -> System.Action<bool>?
+eQuantic.UI.Primitives.DropTarget.OnDragOverChanged.init -> void
+eQuantic.UI.Primitives.DropTarget.Enabled.get -> bool
+eQuantic.UI.Primitives.DropTarget.Enabled.init -> void
+override sealed eQuantic.UI.Primitives.DropTarget.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.DropTarget! node, TState state) -> TResult

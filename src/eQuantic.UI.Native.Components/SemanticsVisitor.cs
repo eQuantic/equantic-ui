@@ -68,8 +68,8 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     /// geometry, and geometry announces nothing — the children inside it do.</summary>
     private const bool PureLayout = Descend;
 
-    /// <summary>Pure behaviour: a Shortcut, a Hoverable or a Simulated wraps a child without being
-    /// anything itself. What a screen reader lands on is what is inside.</summary>
+    /// <summary>Pure behaviour: a Shortcut, a Hoverable, a DropTarget or a Simulated wraps a child
+    /// without being anything itself. What a screen reader lands on is what is inside.</summary>
     private const bool Wraps = Descend;
 
     /// <summary>Decorative BY AGREEMENT, and this is where that agreement is written down. The web

@@ -7,6 +7,8 @@
  * else, which is the same guarantee the modern phone pickers give.
  */
 
+import { chooseFiles } from './file-input';
+
 /** Encoded bytes as the device produced them — the C# `ImageData`, in its transpiled shape. */
 export interface PickedImage {
   bytes: Uint8Array;
@@ -38,42 +40,9 @@ export class WebPhotoLibrary {
   async pickImagesAsync(limit = 0): Promise<PickedImage[]> {
     if (!this.isAvailable) return [];
 
-    const files = await this.chooseFiles(limit !== 1);
+    const files = await chooseFiles({ accept: 'image/*', multiple: limit !== 1 });
     const chosen = limit > 0 ? files.slice(0, limit) : files;
     return Promise.all(chosen.map((file) => this.read(file)));
-  }
-
-  /**
-   * A file input, clicked. It has to be IN the document for Safari to open the sheet at all, and it
-   * has to be removed afterwards or a page that picks often grows a pile of dead inputs.
-   */
-  private chooseFiles(multiple: boolean): Promise<File[]> {
-    return new Promise((resolve) => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.multiple = multiple;
-      input.style.position = 'fixed';
-      input.style.left = '-10000px';
-      document.body.appendChild(input);
-
-      let settled = false;
-      const finish = (files: File[]) => {
-        if (settled) return;
-        settled = true;
-        input.remove();
-        resolve(files);
-      };
-
-      input.addEventListener('change', () => finish(Array.from(input.files ?? [])));
-      // CANCEL is not reliably reported: 'cancel' is recent and absent in older Safari, so the
-      // window regaining focus is the fallback. A frame of delay lets a real 'change' win the race —
-      // focus comes back before the change event fires.
-      input.addEventListener('cancel', () => finish([]));
-      window.addEventListener('focus', () => setTimeout(() => finish([]), 300), { once: true });
-
-      input.click();
-    });
   }
 
   private async read(file: File): Promise<PickedImage> {

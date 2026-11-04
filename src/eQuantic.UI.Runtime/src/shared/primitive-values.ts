@@ -34,6 +34,19 @@ export class ImageData {
   }
 }
 
+/** The C# `FileFilter` — one entry in a picker's format list: the label a person reads and the
+ * extensions it stands for, without the dot. */
+export class FileFilter {
+  readonly extensions: readonly string[];
+
+  constructor(
+    readonly label: string,
+    ...extensions: string[]
+  ) {
+    this.extensions = extensions;
+  }
+}
+
 /** The C# `GeoLocation` — one position fix, with how much to trust it. */
 export class GeoLocation {
   constructor(
@@ -185,6 +198,7 @@ export class ServerTopicRefusal {
  * compares it (`ValueTwinHashTests` holds this list to the C#). */
 hashesByValue(
   ImageData,
+  FileFilter,
   GeoLocation,
   MotionVector,
   MotionReading,

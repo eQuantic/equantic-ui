@@ -720,6 +720,56 @@
       "children": []
     }
   ],
+  "drop-target": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-akjizx eq-g7fowl",
+        "data-eq-drop": "on"
+      },
+      "events": [
+        "dragenter",
+        "dragleave",
+        "dragover",
+        "drop"
+      ],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "drop-target-disabled": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-g7fowl",
+        "data-eq-drop": "off"
+      },
+      "events": [
+        "dragenter",
+        "dragleave",
+        "dragover",
+        "drop"
+      ],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
   "pinned-scrolled": [
     {
       "tag": "div",

@@ -105,3 +105,4 @@ static eQuantic.UI.Components.SdkStrings.UnfoldLines(int from, int to) -> string
 override eQuantic.UI.Components.CookieConsent.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
 *REMOVED*eQuantic.UI.Components.CodeBlock.MinHeight.get -> float
 *REMOVED*eQuantic.UI.Components.CodeBlock.MinHeight.init -> void
+static eQuantic.UI.Components.UI.DropTarget(eQuantic.UI.Primitives.VisualNode! child, System.Action<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.PickedFile!>!>! onDropped, System.Action<bool>? onDragOverChanged = null, bool enabled = true) -> eQuantic.UI.Primitives.DropTarget!

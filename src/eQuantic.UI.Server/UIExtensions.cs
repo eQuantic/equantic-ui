@@ -156,6 +156,7 @@ public static class UIExtensions
         services.TryAddSingleton<eQuantic.UI.Primitives.ISecretStore, AbsentCapabilities.Storage>();
         services.TryAddSingleton<eQuantic.UI.Primitives.ITextClipboard, AbsentCapabilities.Clipboard>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IPhotoLibrary, AbsentCapabilities.PhotoLibrary>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.IFilePicker, AbsentCapabilities.FilePicker>();
         services.TryAddSingleton<eQuantic.UI.Primitives.ICamera, AbsentCapabilities.Camera>();
         services.TryAddSingleton<eQuantic.UI.Primitives.ILocation, AbsentCapabilities.Location>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IMotionSensor, AbsentCapabilities.MotionSensor>();

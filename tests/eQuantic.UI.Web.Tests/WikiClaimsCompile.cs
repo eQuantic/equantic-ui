@@ -436,4 +436,33 @@ public class WikiClaimsCompile
                 Text(_said, TypeRole.BodyM),
             ]);
     }
+
+    // Capabilities.md, "Choosing files" (#1213): a picker beside a drop area, both answering PickedFiles.
+    private sealed class ImportCard(IFilePicker? picker) : Primitives.StatefulComponent
+    {
+        private static readonly FileFilter[] Sheets = [new FileFilter("Spreadsheets", "csv")];
+        private bool _over;
+        private string _status = "Nothing imported yet";
+
+        public override VisualNode Build(ComponentContext context) =>
+            DropTarget(
+                Column(gap: Space.S3, children: [
+                    Text(_over ? "Release to import" : _status, TypeRole.BodyM),
+                    Button("Choose a file", onPressed: Choose),
+                ]),
+                onDropped: files => _ = Import(files[0]),
+                onDragOverChanged: over => SetState(() => _over = over));
+
+        private async void Choose()
+        {
+            if (picker is not null && await picker.PickFileAsync(Sheets) is { } file)
+                await Import(file);
+        }
+
+        private async Task Import(PickedFile file)
+        {
+            var text = await file.ReadAllTextAsync();
+            SetState(() => _status = $"{file.Name}: {text.Split('\n').Length} rows");
+        }
+    }
 }
