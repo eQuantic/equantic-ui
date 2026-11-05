@@ -33,7 +33,7 @@ public class WikiImplementationsTests(ITestOutputHelper output)
 {
     /// <summary>A fenced C# block, its body and where it starts.</summary>
     private static readonly Regex Block = new(
-        @"(?ms)^[ \t]*```(?:csharp|cs|c\#)[ \t]*\r?\n(?<code>.*?)^[ \t]*```[ \t]*$", RegexOptions.Compiled);
+        @"(?ms)^[ \t]*```(?:csharp|cs|c\#)(?:[ \t][^\r\n]*)?\r?\n(?<code>.*?)^[ \t]*```[ \t]*$", RegexOptions.Compiled);
 
     /// <summary>
     /// A type the way a reader writes it: no namespace, generic arguments named, keywords for the
@@ -51,6 +51,19 @@ public class WikiImplementationsTests(ITestOutputHelper output)
     private static readonly CSharpParseOptions Parse = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
 
     private static readonly Lazy<CSharpCompilation> Sdk = new(Compile);
+
+    /// <summary>
+    /// What the compiler says of a NAME it could not take: not found (CS0246, CS0234), the wrong number of
+    /// type arguments (CS0305, CS0308), or inaccessible (CS0122). The type's other errors land on the same
+    /// span, a member the fragment left out (CS0535) among them, and say nothing about the name.
+    /// </summary>
+    private static readonly HashSet<string> NameErrors = ["CS0246", "CS0234", "CS0305", "CS0308", "CS0122"];
+
+    /// <summary>The projects under <c>src/</c>, by name, each of which builds the assembly it is named for.</summary>
+    private static readonly Lazy<HashSet<string>> SdkAssemblies = new(() =>
+        Directory.EnumerateFiles(Path.Combine(RepositoryRoot(), "src"), "*.csproj", SearchOption.AllDirectories)
+            .Select(path => Path.GetFileNameWithoutExtension(path))
+            .ToHashSet(StringComparer.Ordinal));
 
     /// <summary>A public interface a source file declares, by its name.</summary>
     private static readonly Regex Interface = new(@"\bpublic\s+(?:partial\s+)?interface\s+(?<name>I[A-Z]\w*)", RegexOptions.Compiled);
@@ -109,7 +122,8 @@ public class WikiImplementationsTests(ITestOutputHelper output)
         if (WikiClone.Absent()) return;
 
         var copies = WikiClone.Copies("DesignSystem");
-        copies.Select(copy => copy.Language).Should().Contain("English");
+        // Named rather than discovered, as every docs guard names them: a rename that lost one fails here.
+        copies.Select(copy => copy.Language).Should().Contain(["English", "pt-BR"]);
         foreach (var (language, path) in copies)
         {
             var text = File.ReadAllText(path);
@@ -144,6 +158,9 @@ public class WikiImplementationsTests(ITestOutputHelper output)
     [InlineData("an interface src/ declares in an assembly the test host does not carry",
         "class Backend : IRenderBackend { public void Draw() { } }",
         "Backend implements IRenderBackend, which src/ declares and this guard cannot resolve")]
+    [InlineData("an SDK interface written without its type argument",
+        "class Assets : IComponentAssetProvider { }",
+        "Assets implements IComponentAssetProvider, which src/ declares and this guard cannot resolve")]
     public void ADriftedSignature_IsAnOffence(string kind, string code, string offence)
     {
         var offences = new List<string>();
@@ -197,18 +214,27 @@ public class WikiImplementationsTests(ITestOutputHelper output)
             // three more lived in eQuantic.UI.Server, which this project did not reference.
             // Read from the base list as written: the compiler takes an unbound FIRST name for the base
             // class, so it is never among the type's interfaces.
-            foreach (var unbound in declaration.BaseList!.Types
-                         .Select(written => model.GetTypeInfo(written.Type).Type)
-                         .OfType<IErrorTypeSymbol>()
-                         .Where(error => !error.CandidateSymbols.Any() && SdkInterfaces.Value.Contains(error.Name)))
-                offences.Add($"{Where(page, line, declaration)}: {type.Name} implements {unbound.Name}, which src/ declares "
-                    + "and this guard cannot resolve: reference the project that declares it from eQuantic.UI.Web.Tests");
+            // A name written with the wrong number of type arguments binds to the interface with an
+            // error beside it, so the compiler's own diagnostic on the name is what says so.
+            var unbound = declaration.BaseList!.Types
+                .Select(written => model.GetTypeInfo(written.Type).Type)
+                .Zip(declaration.BaseList.Types, (bound, written) => (bound, written))
+                .Where(pair => pair.bound is { } bound && SdkInterfaces.Value.Contains(bound.Name)
+                    && (pair.bound is IErrorTypeSymbol { CandidateReason: not CandidateReason.Ambiguous }
+                        || model.GetDiagnostics(NameOf(pair.written.Type).Span).Any(diagnostic => NameErrors.Contains(diagnostic.Id))))
+                .Select(pair => pair.bound!)
+                .ToList();
+            foreach (var name in unbound.Select(bound => bound.Name).Distinct(StringComparer.Ordinal))
+                offences.Add($"{Where(page, line, declaration)}: {type.Name} implements {name}, which src/ declares "
+                    + "and this guard cannot resolve: reference the project that declares it from eQuantic.UI.Web.Tests, "
+                    + "or write it with its type arguments");
 
             var interfaces = type.Interfaces
-                .SelectMany(candidate => candidate is IErrorTypeSymbol error
+                .SelectMany(candidate => candidate is IErrorTypeSymbol { CandidateReason: CandidateReason.Ambiguous } error
                     ? error.CandidateSymbols.OfType<INamedTypeSymbol>()
                     : [candidate])
                 .Where(candidate => candidate.TypeKind == TypeKind.Interface && IsSdk(candidate))
+                .Where(candidate => !unbound.Any(broken => broken.Name == candidate.Name))
                 .Where(candidate => only is null || candidate.Name == only)
                 .ToList();
             if (interfaces.Count == 0) continue;
@@ -218,7 +244,8 @@ public class WikiImplementationsTests(ITestOutputHelper output)
                 if (model.GetDeclaredSymbol(member) is not { IsStatic: false } declared) continue;
                 var name = declared.Name[(declared.Name.LastIndexOf('.') + 1)..];
                 var counterparts = interfaces
-                    .SelectMany(contract => contract.GetMembers(name).Select(counterpart => (contract, counterpart)))
+                    .SelectMany(contract => contract.AllInterfaces.Prepend(contract)
+                        .SelectMany(inherited => inherited.GetMembers(name).Select(counterpart => (contract: inherited, counterpart))))
                     .Where(pair => pair.counterpart is IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary } or IEventSymbol)
                     .ToList();
                 if (counterparts.Count == 0) continue;
@@ -235,6 +262,15 @@ public class WikiImplementationsTests(ITestOutputHelper output)
         return compared;
     }
 
+    /// <summary>The name a base is written with, without its type arguments: a type argument the
+    /// block cannot bind is the page's own type, not a name of the SDK's.</summary>
+    private static SyntaxNodeOrToken NameOf(TypeSyntax written) => written switch
+    {
+        GenericNameSyntax generic => generic.Identifier,
+        QualifiedNameSyntax { Right: GenericNameSyntax generic } => generic.Identifier,
+        _ => written,
+    };
+
     /// <summary>The page and the line of <paramref name="node"/> in it, or the page alone where the
     /// block's line is not known.</summary>
     private static string Where(string page, int line, SyntaxNode node) =>
@@ -248,7 +284,11 @@ public class WikiImplementationsTests(ITestOutputHelper output)
     private static string Signature(ISymbol symbol, MemberDeclarationSyntax? syntax) => symbol switch
     {
         IPropertySymbol property when property.IsIndexer =>
-            $"indexer {Type(property.Type, (syntax as IndexerDeclarationSyntax)?.Type)}",
+            $"indexer {Type(property.Type, (syntax as IndexerDeclarationSyntax)?.Type)}["
+            + string.Join(", ", property.Parameters.Select((parameter, index) =>
+                Modifier(parameter.RefKind)
+                + Type(parameter.Type, (syntax as IndexerDeclarationSyntax)?.ParameterList.Parameters[index].Type)))
+            + "]",
         IPropertySymbol property => $"property {Type(property.Type, (syntax as PropertyDeclarationSyntax)?.Type)}",
         IEventSymbol @event => $"event {Type(@event.Type, null)}",
         IMethodSymbol method => $"method {Type(method.ReturnType, (syntax as MethodDeclarationSyntax)?.ReturnType)}("
@@ -285,7 +325,10 @@ public class WikiImplementationsTests(ITestOutputHelper output)
 
     private static bool IsSdk(ISymbol symbol) => symbol.ContainingAssembly is { } assembly && IsSdk(assembly);
 
-    private static bool IsSdk(IAssemblySymbol assembly) => assembly.Name.StartsWith("eQuantic.UI", StringComparison.Ordinal);
+    /// <summary>An assembly of the SDK: an eQuantic.UI project under <c>src/</c>, which a test assembly
+    /// (this one is on the host's list too) is not, so a type a test declares never shadows the SDK's.</summary>
+    private static bool IsSdk(IAssemblySymbol assembly) =>
+        assembly.Name.StartsWith("eQuantic.UI", StringComparison.Ordinal) && SdkAssemblies.Value.Contains(assembly.Name);
 
     /// <summary>
     /// The compilation every block joins: the platform and every eQuantic.UI assembly this test host
