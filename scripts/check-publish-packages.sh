@@ -388,8 +388,92 @@ control "prints the key" \
   "the key reaches the client and no log" \
   's/^  \[ "\$status" -eq 0 \] && return 0$/  echo "key $NUGET_API_KEY"; [ "$status" -eq 0 ] \&\& return 0/'
 
+# --- the workflows that publish ----------------------------------------------------------------------
+
+# Every job that runs scripts/publish-packages.sh gets its key from nuget.org's trusted publishing,
+# for that run, and no workflow reads one from the secrets (#1224): a stored key expires, and
+# 0.2.0-preview.66's tag run met nuget.org's 403 on all 52 packages because it had. The login is
+# NuGet/login, its token needs `id-token: write`, and the policy for each workflow names the `nuget`
+# environment, so a job missing any of the three is refused a key on the day of a release.
+
+# jobs_running_the_script <workflow>: the jobs, each from its `  <id>:` line, whose steps run the
+# script. A line at the left margin ends a block, so `on:` and `permissions:` are no job's.
+jobs_running_the_script() {
+  awk '
+    function flush() { if (job != "" && runs) printf "%s", block; job = ""; block = ""; runs = 0 }
+    /^  [A-Za-z0-9_-]+:[[:space:]]*$/ { flush(); job = $0; block = $0 "\n"; next }
+    /^[^ #]/ { flush(); next }
+    job != "" { block = block $0 "\n"; if ($0 ~ /scripts\/publish-packages\.sh/) runs = 1 }
+    END { flush() }
+  ' "$1"
+}
+
+# workflow_permissions <workflow>: the top-level `permissions:` block, which a job without its own
+# inherits.
+workflow_permissions() {
+  awk '/^permissions:/ { on = 1; next } /^[^ #]/ { on = 0 } on' "$1"
+}
+
+# check_workflow <workflow> <name>: prints one line per broken promise, nothing when they hold.
+check_workflow() {
+  local file=$1 name=$2 jobs
+  jobs=$(jobs_running_the_script "$file")
+  if [ -z "$jobs" ]; then
+    echo "$name: no job runs scripts/publish-packages.sh, so nothing here publishes"
+    return
+  fi
+  if grep -q 'secrets\.NUGET_API_KEY' "$file"; then
+    echo "$name: reads a stored key, secrets.NUGET_API_KEY, which expires"
+  fi
+  case "$jobs" in *'uses: NuGet/login@'*) ;; *) echo "$name: the job that publishes does not log in with NuGet/login" ;; esac
+  case "$jobs" in *'NUGET_API_KEY: ${{ steps.'*) ;; *) echo "$name: the push does not take its key from the login step" ;; esac
+  case $'\n'"$jobs" in *$'\n    environment: nuget'$'\n'*) ;; *) echo "$name: the job that publishes does not run in the nuget environment" ;; esac
+  case "$jobs"$'\n'"$(workflow_permissions "$file")" in
+    *'id-token: write'*) ;;
+    *) echo "$name: neither the job nor the workflow grants id-token: write" ;;
+  esac
+}
+
+workflows="$root/.github/workflows"
+problems=$( { check_workflow "$workflows/ci.yml" ci.yml; check_workflow "$workflows/publish-release.yml" publish-release.yml; } )
+if [ -n "$problems" ]; then
+  echo "$problems" | sed 's/^/FAIL: /' >&2
+  failures=$((failures + $(echo "$problems" | wc -l)))
+else
+  echo "ok: both workflows that publish log in through trusted publishing and read no stored key"
+fi
+
+# workflow_control <what it breaks> <workflow> <the line that must fail> <sed expression>: the same
+# kind of control as the script's, over a broken copy of a workflow.
+workflow_control() {
+  local real_workflow="$workflows/$2" broken="$work/$2" found
+  sed -e "$4" "$real_workflow" > "$broken"
+  if cmp -s "$real_workflow" "$broken"; then
+    echo "FAIL: the control '$1' changed nothing: its edit no longer matches $2" >&2
+    failures=$((failures + 1))
+    return
+  fi
+  found=$(check_workflow "$broken" "$2")
+  case $'\n'"$found" in
+    *$'\n'"$2: $3"*) echo "ok: a $2 that $1 fails" ;;
+    *)
+      echo "FAIL: a $2 that $1 passes" >&2
+      failures=$((failures + 1))
+      ;;
+  esac
+}
+
+workflow_control "pushes with a stored key" ci.yml "reads a stored key" \
+  's/NUGET_API_KEY: \${{ steps\.nuget\.outputs\.NUGET_API_KEY }}/NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}/'
+workflow_control "never logs in" ci.yml "the job that publishes does not log in" \
+  's/uses: NuGet\/login@/uses: NuGet\/elsewhere@/'
+workflow_control "publishes outside the nuget environment" publish-release.yml "the job that publishes does not run in the nuget environment" \
+  's/^    environment: nuget$/    environment: release/'
+workflow_control "grants no OIDC token" publish-release.yml "neither the job nor the workflow grants id-token: write" \
+  's/^  id-token: write.*$/  id-token: none/'
+
 if [ "$failures" -gt 0 ]; then
   echo "check-publish-packages.sh: $failures failure(s)" >&2
   exit 1
 fi
-echo "check-publish-packages.sh: the script holds, and each control fails the case that guards it"
+echo "check-publish-packages.sh: the script and the workflows hold, and each control fails the case that guards it"

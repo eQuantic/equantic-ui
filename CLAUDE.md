@@ -843,6 +843,14 @@ the ids given in `-f packages="…"`), then writes the release page from the tag
 release by `scripts/check-publish-packages.sh`, which CI runs against a stub on every pull request
 (#759).
 
+**No key is stored (#1224).** Both workflows log in to nuget.org through trusted publishing: in
+the `nuget` environment, `NuGet/login` exchanges the run's OIDC token for a key that lives an hour,
+under a policy on nuget.org for each workflow file (owner `eQuantic`, packages `eQuantic.UI.*`).
+A stored key expired under `0.2.0-preview.66` and every push met a 403. A login that is refused
+means the policy and the workflow disagree, about the file's name, the environment or a package's
+id, and the fix is on nuget.org's Trusted Publishing page, never a key in the secrets:
+`check-publish-packages.sh` fails a pull request that brings one back.
+
 **The release's list of BREAKS is not written from memory — the build already has it.** Every
 project that ships an assembly declares its public surface in `PublicAPI.Shipped.txt`, and
 `Microsoft.CodeAnalysis.PublicApiAnalyzers` fails the build of any change that is not declared:
