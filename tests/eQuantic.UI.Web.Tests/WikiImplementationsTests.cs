@@ -31,9 +31,11 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class WikiImplementationsTests(ITestOutputHelper output)
 {
-    /// <summary>A fenced C# block, its body and where it starts.</summary>
+    /// <summary>A fenced C# block, its body and where it starts. A line may end in CRLF: the wiki is
+    /// checked out with Windows' line endings on the Windows leg, and a <c>$</c> stops only before
+    /// <c>\n</c>, so a fence closed by <c>```\r</c> was never closed there and the guard read nothing.</summary>
     private static readonly Regex Block = new(
-        @"(?ms)^[ \t]*```(?:csharp|cs|c\#)(?:[ \t][^\r\n]*)?\r?\n(?<code>.*?)^[ \t]*```[ \t]*$", RegexOptions.Compiled);
+        @"(?ms)^[ \t]*```(?:csharp|cs|c\#)(?:[ \t][^\r\n]*)?\r?\n(?<code>.*?)^[ \t]*```[ \t]*\r?$", RegexOptions.Compiled);
 
     /// <summary>
     /// A type the way a reader writes it: no namespace, generic arguments named, keywords for the
@@ -188,6 +190,18 @@ public class WikiImplementationsTests(ITestOutputHelper output)
         Read("Page.md", 1, code, offences);
 
         offences.Should().BeEmpty(kind);
+    }
+
+    /// <summary>A fence is read whatever ends its lines, and whatever follows its language.</summary>
+    [Theory]
+    [InlineData("\n", "")]
+    [InlineData("\r\n", "")]
+    [InlineData("\r\n", " title=\"Theme.cs\"")]
+    public void AFence_IsRead_WhateverEndsItsLines(string newline, string info)
+    {
+        var page = $"Text{newline}{newline}```csharp{info}{newline}class A {{ }}{newline}```{newline}{newline}More text{newline}";
+
+        Block.Matches(page).Should().ContainSingle().Which.Groups["code"].Value.Trim().Should().Be("class A { }");
     }
 
     /// <summary>
