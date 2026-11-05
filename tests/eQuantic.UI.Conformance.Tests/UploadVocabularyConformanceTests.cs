@@ -21,7 +21,6 @@ public class UploadVocabularyConformanceTests
     // ---- a filter is a record: a copy keeps what it holds ----
     [InlineData("var images = new FileFilter(\"Images\", \"png\", \"jpg\"); var copy = images with { Label = \"Pictures\" }; return copy.Label + string.Join(\",\", copy.Extensions);")]
     // ---- what the constructor refuses ----
-    [InlineData("try { _ = new UploadPolicy(\"models\", [], 0); return \"built\"; } catch (System.ArgumentOutOfRangeException e) { return e.Message; }")]
     [InlineData("try { _ = new UploadPolicy(\" \", [], 1); return \"built\"; } catch (System.ArgumentException e) { return e.Message; }")]
     [InlineData("try { _ = new UploadPolicy(null!, [], 1); return \"built\"; } catch (System.ArgumentNullException e) { return e.Message; }")]
     [InlineData("try { _ = new UploadPolicy(\"models\", null!, 1); return \"built\"; } catch (System.ArgumentNullException e) { return e.Message; }")]
@@ -32,12 +31,26 @@ public class UploadVocabularyConformanceTests
     [InlineData("try { _ = new UploadPolicy(\"models\", [], 1).Accepts(null!); return \"accepted\"; } catch (System.ArgumentNullException e) { return e.Message; }")]
     // ---- an uploaded file as the page holds it ----
     [InlineData("var file = new UploadedFile(\"0123456789abcdef0123456789abcdef\", \"bracket.stl\", \"model/stl\", 3_000_000_000, \"models\"); return file.Id + \"|\" + file.Name + \"|\" + file.MimeType + \"|\" + (file.Size * 2) + \"|\" + file.Policy;")]
-    [InlineData("try { _ = new UploadedFile(\"id\", \"a.stl\", \"model/stl\", -1, \"models\"); return \"built\"; } catch (System.ArgumentOutOfRangeException e) { return e.Message; }")]
     [InlineData("try { _ = new UploadedFile(\"\", \"a.stl\", \"model/stl\", 1, \"models\"); return \"built\"; } catch (System.ArgumentException e) { return e.Message; }")]
     [InlineData("try { _ = new UploadedFile(\"id\", \"a.stl\", null!, 1, \"models\"); return \"built\"; } catch (System.ArgumentNullException e) { return e.Message; }")]
     public void TheUploadVocabularyAnswersAsInDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// What the constructors refuse as out of range. .NET writes the actual value after
+    /// <c>Environment.NewLine</c>, which is <c>\r\n</c> on Windows, and the twin after the SDK's <c>\n</c>
+    /// everywhere; the release run of 0.2.0-preview.66 met it on its Windows runner (#1222).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("try { _ = new UploadPolicy(\"models\", [], 0); return \"built\"; } catch (System.ArgumentOutOfRangeException e) { return e.Message; }")]
+    [InlineData("try { _ = new UploadedFile(\"id\", \"a.stl\", \"model/stl\", -1, \"models\"); return \"built\"; } catch (System.ArgumentOutOfRangeException e) { return e.Message; }")]
+    public void WhatIsOutOfRangeIsRefusedAsInDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertVocabularyStatementsSameAsDotNetExceptTheHostsNewline(statements,
+            "an ArgumentOutOfRangeException writes its actual value after the host's newline");
     }
 }
