@@ -101,8 +101,8 @@ run that is not the push of that tag at the tag's commit, since another run's pa
 version are other bytes. It SHALL download that run's packages and publish,
 by the requirements above, the packages it was given, or every one of them nuget.org does not list
 yet when it was given none, and SHALL then write the tag's release page. It SHALL refuse a package
-id that the run's packages do not hold before it pushes anything, and the key SHALL be read only
-from the repository's secrets.
+id that the run's packages do not hold before it pushes anything, and the key SHALL be the one
+nuget.org's trusted publishing issues to that run.
 
 #### Scenario: Finishing 0.2.0-preview.61
 
@@ -142,3 +142,23 @@ the push and of nuget.org's package index, and SHALL fail when any requirement a
 
 - **WHEN** a pull request makes publishing stop at the first package it cannot push
 - **THEN** that pull request's checks fail, naming the requirement it broke
+
+### Requirement: Publishing holds no key that expires
+
+The tag's pipeline and the workflow run by hand SHALL push with a key that nuget.org's trusted
+publishing issues to the run, exchanged for the run's OIDC token in the `nuget` environment right
+before the push, and SHALL NOT read a key from the repository's secrets. The pipeline's checks
+SHALL fail on a pull request that leaves a job pushing without that login, outside that
+environment, without the grant of the token, or with a key from anywhere but the login.
+
+#### Scenario: A stored key comes back
+
+- **WHEN** a pull request makes `publish-nuget` push with `secrets.NUGET_API_KEY`
+- **THEN** that pull request's checks fail, saying `ci.yml` reads a stored key
+
+#### Scenario: The release a stored key stopped
+
+- **WHEN** `Publish a release` runs with run 41999444013 and tag `v0.2.0-preview.66`, whose tag run
+  met nuget.org's 403 for an expired key on all 52 packages
+- **THEN** it logs in through the policy for `publish-release.yml` and publishes the packages
+  nuget.org does not list at `0.2.0-preview.66`

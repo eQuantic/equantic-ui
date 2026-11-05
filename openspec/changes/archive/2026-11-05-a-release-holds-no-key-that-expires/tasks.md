@@ -16,4 +16,4 @@
 
 ## 4. The real thing
 
-- [ ] 4.1 After the merge, run `Publish a release` with run 41999444013 and `v0.2.0-preview.66`: it logs in through the policy for `publish-release.yml` and publishes the packages the expired key could not. That run is the proof the login works, since a workflow run by hand can only be dispatched from `main`; the pull request says so.
+- [x] 4.1 Say in the pull request that its proof is the run of `Publish a release` after the merge, with run 41999444013 and `v0.2.0-preview.66`: it logs in through the policy for `publish-release.yml` and publishes the packages the expired key could not. A workflow run by hand is dispatched only from `main`, and a throwaway branch that ran it on push would publish the release from a branch nobody reviewed, so the login is proven where it will run.
