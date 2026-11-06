@@ -1579,7 +1579,9 @@ export class CameraPreview extends VisualNode {
 
 /**
  * Mirror of the C# `WebFrame` node: an embedded, isolated web document. `sandbox` carries the
- * [Flags] NUMBER (1 scripts · 2 same-origin · 4 forms · 8 popups) exactly as the C# enum crosses;
+ * [Flags] NUMBER (1 scripts · 2 same-origin · 4 forms · 8 popups · 16 payment · 32 camera ·
+ * 64 microphone · 128 location · 256 fullscreen · 512 copy to clipboard · 1024 passkeys) exactly as
+ * the C# enum crosses;
  * scripts-only until told otherwise, filling the parent unless given explicit dp.
  */
 export class WebFrame extends VisualNode {

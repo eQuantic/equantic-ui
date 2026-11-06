@@ -110,6 +110,16 @@ public class WikiClaimsCompile
         _ = Grid([GridTrack.AutoFill(210)], gap: 10, width: SizeValue.Fill, children: [tooltip]);
     }
 
+    /// <summary>Components, "An embedded page: WebFrame" (#1228): a payment provider's checkout,
+    /// handed the payment so that it offers the device's wallet.</summary>
+    [Fact]
+    public void TheEmbeddedCheckout_Compiles()
+    {
+        _ = WebFrame(WebContent.Url("https://checkout.example.com/pay"), "Payment",
+            sandbox: WebSandbox.Scripts | WebSandbox.SameOrigin | WebSandbox.Forms | WebSandbox.Popups
+                | WebSandbox.Payment);
+    }
+
     /// <summary>TableView (#982): Excel's sheet behind a pinned header row and column, a mark, and a
     /// request that reveals the last row.</summary>
     [Fact]

@@ -1,0 +1,54 @@
+{
+  "0": {
+    "sandbox": "",
+    "allow": null
+  },
+  "1": {
+    "sandbox": "allow-scripts",
+    "allow": null
+  },
+  "2": {
+    "sandbox": "allow-same-origin",
+    "allow": null
+  },
+  "4": {
+    "sandbox": "allow-forms",
+    "allow": null
+  },
+  "8": {
+    "sandbox": "allow-popups",
+    "allow": null
+  },
+  "16": {
+    "sandbox": "",
+    "allow": "payment"
+  },
+  "32": {
+    "sandbox": "",
+    "allow": "camera"
+  },
+  "64": {
+    "sandbox": "",
+    "allow": "microphone"
+  },
+  "128": {
+    "sandbox": "",
+    "allow": "geolocation"
+  },
+  "256": {
+    "sandbox": "",
+    "allow": "fullscreen"
+  },
+  "512": {
+    "sandbox": "",
+    "allow": "clipboard-write"
+  },
+  "1024": {
+    "sandbox": "",
+    "allow": "publickey-credentials-get; publickey-credentials-create"
+  },
+  "2047": {
+    "sandbox": "allow-scripts allow-same-origin allow-forms allow-popups",
+    "allow": "payment; camera; microphone; geolocation; fullscreen; clipboard-write; publickey-credentials-get; publickey-credentials-create"
+  }
+}

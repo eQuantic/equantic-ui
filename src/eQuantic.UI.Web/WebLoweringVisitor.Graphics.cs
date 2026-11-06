@@ -379,28 +379,60 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
+    /// What a <see cref="WebSandbox"/> flag loosens of the frame's own isolation: its token in the
+    /// iframe's <c>sandbox</c>, in the order the flags are declared.
+    /// </summary>
+    private static readonly (WebSandbox Flag, string Token)[] SandboxTokens =
+    [
+        (WebSandbox.Scripts, "allow-scripts"),
+        (WebSandbox.SameOrigin, "allow-same-origin"),
+        (WebSandbox.Forms, "allow-forms"),
+        (WebSandbox.Popups, "allow-popups"),
+    ];
+
+    /// <summary>
+    /// What a <see cref="WebSandbox"/> flag hands the document of its page's: the features the iframe's
+    /// <c>allow</c> delegates to it (Permissions Policy), in the order the flags are declared. A passkey
+    /// is two features, signing in and creating one. <c>WebFrameRealizerTests</c> fails on a flag that
+    /// is in neither table.
+    /// </summary>
+    private static readonly (WebSandbox Flag, string Feature)[] DelegatedFeatures =
+    [
+        (WebSandbox.Payment, "payment"),
+        (WebSandbox.Camera, "camera"),
+        (WebSandbox.Microphone, "microphone"),
+        (WebSandbox.Location, "geolocation"),
+        (WebSandbox.Fullscreen, "fullscreen"),
+        (WebSandbox.CopyToClipboard, "clipboard-write"),
+        (WebSandbox.Passkeys, "publickey-credentials-get"),
+        (WebSandbox.Passkeys, "publickey-credentials-create"),
+    ];
+
+    /// <summary>
     /// A sandboxed <c>iframe</c>. <c>sandbox</c> is ALWAYS present — an empty value is the locked
-    /// frame, and each <see cref="WebSandbox"/> flag appends its <c>allow-</c> token. The border is
-    /// the frame's own 1990s default, so it goes.
+    /// frame, and each flag that loosens the isolation appends its <c>allow-</c> token. A flag that
+    /// hands the document something of the page's writes its feature into <c>allow</c>, which is
+    /// absent when there is none (#1228). The border is the frame's own 1990s default, so it goes.
     /// <para>
     /// The content is ONE attribute and no precedence: <see cref="WebContent"/> can only be an
     /// address or a document, so this reads which and writes it. It used to be an <c>if/else if</c>
     /// over two nullable strings, with the rule that inline won stated here in prose.
     /// </para>
+    /// <para>
+    /// The browser's half writes the same two attributes from the same flags (<c>lowering.ts</c>), and
+    /// <c>WebFrameRealizerTests</c> pins both against <c>web-frame-attributes.fixture.json</c>.
+    /// </para>
     /// </summary>
     private HtmlElement LowerWebFrame(WebFrame frame)
     {
-        var tokens = new List<string>(4);
-        if (frame.Sandbox.HasFlag(WebSandbox.Scripts)) tokens.Add("allow-scripts");
-        if (frame.Sandbox.HasFlag(WebSandbox.SameOrigin)) tokens.Add("allow-same-origin");
-        if (frame.Sandbox.HasFlag(WebSandbox.Forms)) tokens.Add("allow-forms");
-        if (frame.Sandbox.HasFlag(WebSandbox.Popups)) tokens.Add("allow-popups");
-
         var attributes = new Dictionary<string, string>
         {
-            ["sandbox"] = string.Join(' ', tokens),
+            ["sandbox"] = string.Join(' ', SandboxTokens.Where(entry => frame.Sandbox.HasFlag(entry.Flag)).Select(entry => entry.Token)),
             ["title"] = frame.Title,
         };
+        if (DelegatedFeatures.Where(entry => frame.Sandbox.HasFlag(entry.Flag)).Select(entry => entry.Feature).ToList()
+            is { Count: > 0 } features)
+            attributes["allow"] = string.Join("; ", features);
         if (frame.Content.Value is { Length: > 0 } content)
             attributes[frame.Content.IsInline ? "srcdoc" : "src"] = content;
 

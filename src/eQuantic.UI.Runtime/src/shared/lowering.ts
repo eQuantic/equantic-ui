@@ -2258,21 +2258,43 @@ function lowerCameraPreview(node: CameraPreviewNode): HtmlNode {
   };
 }
 
+/** What a WebSandbox flag loosens of the frame's isolation: its `sandbox` token, in declaration order. */
+const SANDBOX_TOKENS: ReadonlyArray<readonly [number, string]> = [
+  [1, 'allow-scripts'],
+  [2, 'allow-same-origin'],
+  [4, 'allow-forms'],
+  [8, 'allow-popups'],
+];
+
+/**
+ * What a WebSandbox flag hands the document of its page's: the features `allow` delegates to it
+ * (Permissions Policy), in declaration order. A passkey is two features, signing in and creating one.
+ */
+const DELEGATED_FEATURES: ReadonlyArray<readonly [number, string]> = [
+  [16, 'payment'],
+  [32, 'camera'],
+  [64, 'microphone'],
+  [128, 'geolocation'],
+  [256, 'fullscreen'],
+  [512, 'clipboard-write'],
+  [1024, 'publickey-credentials-get'],
+  [1024, 'publickey-credentials-create'],
+];
+
 /**
  * A sandboxed iframe (C# twin: WebRealizer.LowerWebFrame). `sandbox` is ALWAYS emitted — empty
- * means fully locked — with one `allow-` token per set flag. The border is the frame's own 1990s
- * default, so it goes.
+ * means fully locked — with one `allow-` token per flag that loosens the isolation, and a flag that
+ * hands the document something of the page's writes its feature into `allow`, which is absent when
+ * there is none (#1228). Both halves are pinned against web-frame-attributes.fixture.json, which the
+ * C# realizer writes. The border is the frame's own 1990s default, so it goes.
  *
  * The content is ONE attribute and no precedence: WebContent is an address or a document and never
  * both. This doc used to say "inline document wins over source", which is what the node's two
  * nullable strings needed and what the type now makes unrepresentable.
  */
 function lowerWebFrame(node: WebFrameNode): HtmlNode {
-  const tokens: string[] = [];
-  if (node.sandbox & 1) tokens.push('allow-scripts');
-  if (node.sandbox & 2) tokens.push('allow-same-origin');
-  if (node.sandbox & 4) tokens.push('allow-forms');
-  if (node.sandbox & 8) tokens.push('allow-popups');
+  const tokens = SANDBOX_TOKENS.filter(([flag]) => node.sandbox & flag).map(([, token]) => token);
+  const features = DELEGATED_FEATURES.filter(([flag]) => node.sandbox & flag).map(([, feature]) => feature);
 
   const radius = node.cornerRadius;
   const hasRadius =
@@ -2291,6 +2313,7 @@ function lowerWebFrame(node: WebFrameNode): HtmlNode {
     sandbox: tokens.join(' '),
     title: node.title ?? '',
   };
+  if (features.length > 0) attributes['allow'] = features.join('; ');
   // ONE attribute, no precedence: WebContent is an address or a document and never both.
   if (node.content?.value) attributes[node.content.isInline ? 'srcdoc' : 'src'] = node.content.value;
 
