@@ -11,8 +11,7 @@ The SDK's built-in strings SHALL be read from `SdkResources` and its culture cat
 own fallback, a culture before its parent and the neutral catalog last, on the server, on native and
 in the browser alike. The SDK SHALL ship a neutral `pt` catalog in European Portuguese beside its
 `pt-BR` one, so that every Portuguese culture but Brazil's reads Portuguese. Every catalog SHALL hold
-each key of the neutral catalog and no other, with the same placeholders, and a build of this
-repository SHALL fail when one does not.
+each key of the neutral catalog and no other, with the same placeholders, and this repository's test suite SHALL fail when one does not.
 
 #### Scenario: An app in European Portuguese
 
