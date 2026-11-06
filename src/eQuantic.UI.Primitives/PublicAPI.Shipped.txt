@@ -2341,8 +2341,15 @@ eQuantic.UI.Primitives.WebFrame.WebFrame(eQuantic.UI.Primitives.WebContent conte
 eQuantic.UI.Primitives.WebFrame.Width.get -> eQuantic.UI.Primitives.SizeValue
 eQuantic.UI.Primitives.WebFrame.Width.init -> void
 eQuantic.UI.Primitives.WebSandbox
+eQuantic.UI.Primitives.WebSandbox.Camera = 32 -> eQuantic.UI.Primitives.WebSandbox
+eQuantic.UI.Primitives.WebSandbox.CopyToClipboard = 512 -> eQuantic.UI.Primitives.WebSandbox
 eQuantic.UI.Primitives.WebSandbox.Forms = 4 -> eQuantic.UI.Primitives.WebSandbox
+eQuantic.UI.Primitives.WebSandbox.Fullscreen = 256 -> eQuantic.UI.Primitives.WebSandbox
+eQuantic.UI.Primitives.WebSandbox.Location = 128 -> eQuantic.UI.Primitives.WebSandbox
+eQuantic.UI.Primitives.WebSandbox.Microphone = 64 -> eQuantic.UI.Primitives.WebSandbox
 eQuantic.UI.Primitives.WebSandbox.None = 0 -> eQuantic.UI.Primitives.WebSandbox
+eQuantic.UI.Primitives.WebSandbox.Passkeys = 1024 -> eQuantic.UI.Primitives.WebSandbox
+eQuantic.UI.Primitives.WebSandbox.Payment = 16 -> eQuantic.UI.Primitives.WebSandbox
 eQuantic.UI.Primitives.WebSandbox.Popups = 8 -> eQuantic.UI.Primitives.WebSandbox
 eQuantic.UI.Primitives.WebSandbox.SameOrigin = 2 -> eQuantic.UI.Primitives.WebSandbox
 eQuantic.UI.Primitives.WebSandbox.Scripts = 1 -> eQuantic.UI.Primitives.WebSandbox

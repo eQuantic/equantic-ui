@@ -1,8 +1,1 @@
 #nullable enable
-eQuantic.UI.Primitives.WebSandbox.Camera = 32 -> eQuantic.UI.Primitives.WebSandbox
-eQuantic.UI.Primitives.WebSandbox.CopyToClipboard = 512 -> eQuantic.UI.Primitives.WebSandbox
-eQuantic.UI.Primitives.WebSandbox.Fullscreen = 256 -> eQuantic.UI.Primitives.WebSandbox
-eQuantic.UI.Primitives.WebSandbox.Location = 128 -> eQuantic.UI.Primitives.WebSandbox
-eQuantic.UI.Primitives.WebSandbox.Microphone = 64 -> eQuantic.UI.Primitives.WebSandbox
-eQuantic.UI.Primitives.WebSandbox.Passkeys = 1024 -> eQuantic.UI.Primitives.WebSandbox
-eQuantic.UI.Primitives.WebSandbox.Payment = 16 -> eQuantic.UI.Primitives.WebSandbox
