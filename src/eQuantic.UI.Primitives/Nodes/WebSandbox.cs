@@ -13,7 +13,9 @@ namespace eQuantic.UI.Primitives;
 /// </para>
 /// <para>
 /// A capability handed over is still the person's to grant: a document given the camera asks for it
-/// as the page would, and the person may refuse. Handing it over is what lets the document ask at all.
+/// as the page would, and the person may refuse. Handing it over is what lets the document ask at all,
+/// and the page can only hand over what it has: a <c>Permissions-Policy</c> the host or a proxy in
+/// front of it sends that denies the page a capability denies it to every frame on it.
 /// </para>
 /// </summary>
 [Flags]
@@ -37,7 +39,8 @@ public enum WebSandbox
     Popups = 8,
 
     /// <summary>The document may take a payment through the device's wallet (Apple Pay, Google Pay):
-    /// a checkout embedded from a payment provider offers them only when it is handed this.</summary>
+    /// a checkout embedded from a payment provider offers them only when it is handed this, and with
+    /// <see cref="SameOrigin"/>, since a document without its origin is refused the payment.</summary>
     Payment = 16,
 
     /// <summary>The document may ask for the camera.</summary>
@@ -56,6 +59,6 @@ public enum WebSandbox
     CopyToClipboard = 512,
 
     /// <summary>The document may sign in with a passkey, and create one, as <see cref="IPasskeys"/>
-    /// does for the page.</summary>
+    /// does for the page. With <see cref="SameOrigin"/>, since a passkey belongs to an origin.</summary>
     Passkeys = 1024,
 }
