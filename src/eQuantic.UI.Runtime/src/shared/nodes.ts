@@ -950,7 +950,9 @@ export interface CameraPreviewNode extends VisualNodeValue {
 
 /**
  * An embedded, isolated web document (C# twin: `WebFrame`). `sandbox` crosses as the [Flags]
- * NUMBER — bit 1 scripts, 2 same-origin, 4 forms, 8 popups — and the lowering spells the tokens.
+ * NUMBER — 1 scripts, 2 same-origin, 4 forms, 8 popups loosen the isolation; 16 payment, 32 camera,
+ * 64 microphone, 128 location, 256 fullscreen, 512 copy to clipboard, 1024 passkeys hand the document
+ * something of the page's — and the lowering spells `sandbox` and `allow`.
  */
 export interface WebFrameNode extends VisualNodeValue {
   nodeKind: 'webFrame';
