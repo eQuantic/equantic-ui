@@ -4091,6 +4091,53 @@ record of a release, the wiki's Upgrading page is the distillate.
   the build refuses in client code. Proved by real tus requests through the real endpoint, each owner, limit and
   sweep rule failing with its check taken out, and by the conformance suite for the three runtime twins.
   Proposed through OpenSpec (`file-uploads`).
+- **2026-11-05 · 0.2.0-preview.66 released** from `0b00fc32`: a page that takes files with no
+  JavaScript, in parts that survive a dropped connection, read by a Server Action as a stream (#1212),
+  a theme that ships its own faces in nine weights and Google Fonts fetched by the build, the
+  spreadsheet on the two-axis viewport selecting and editing as Excel does, and the code editor's
+  folding, navigation, snippets and every caret, 53 pull requests in all. It is the first release
+  through nuget.org's trusted publishing (#1224): the tag's run met an expired key on all 52
+  packages, `Publish a release` pushed 49 of them from that run's artifact once the policies were in
+  place, and the last three once the eQuantic organization co-owned them as it owns the rest. An app
+  outside the repository restored the packages it uses cold from nuget.org and took a 20 × 30 × 40 mm
+  STL through its upload page end to end
+  *([v0.2.0-preview.66](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.66))*.
+- **2026-11-05 · A release reaches nuget.org with no key that expires**: the tag run of
+  `0.2.0-preview.66` passed every job and then met nuget.org's 403 for an expired key on all 52
+  packages, since nuget.org now caps a key's life at weeks. Both workflows that publish log in
+  through nuget.org's trusted publishing instead, in the `nuget` environment, with a key that lives
+  an hour, and `scripts/check-publish-packages.sh` fails a pull request that brings a stored key
+  back ([#1224](https://github.com/eQuantic/equantic-ui/issues/1224)). Proposed and archived
+  through OpenSpec (`openspec/specs/release-publishing`).
+- **2026-11-05 · A wiki snippet implements an SDK interface as the interface is**: the DesignSystem
+  page's "The document is the theme's" went on writing `public string? TextFamily => "…"` in all five
+  languages after `TextFamily` became a `FontFamily?` in 0.2.0-preview.66, because the snippet was
+  never transcribed into `WikiClaimsCompile`, the only thing that compiled the wiki. The page writes a
+  `FontFamily` now, and `WikiImplementationsTests` compiles every C# block of every page and language
+  against the SDK's assemblies and compares each member a type writes over an SDK interface with the
+  interface's own, 160 members in 40 pages, with no transcription. It failed on the wiki's master
+  naming the five copies and their lines. `eQuantic.UI.Web.Tests` references `eQuantic.UI.Server`,
+  without which 35 snippets over the server's contracts went unread, and an SDK interface the guard
+  cannot resolve fails it ([#1226](https://github.com/eQuantic/equantic-ui/issues/1226)). Proposed and
+  archived through OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-06 · An embedded document is handed what its page may use**: a `WebFrame` could loosen
+  its isolation (script, origin, forms, new windows) and hand the document nothing of its page's, so
+  a payment provider's checkout framed by myartwork3d offered the card and never Apple Pay or Google
+  Pay, which a browser refuses a cross-origin frame without `allow="payment"`. `WebSandbox` names
+  `Payment`, `Camera`, `Microphone`, `Location`, `Fullscreen`, `CopyToClipboard` and `Passkeys`, and
+  both halves of the web target write them into the iframe's `allow`, pinned against one fixture the
+  server's half writes and the browser's reads. The wiki's Components page documents `WebFrame` in
+  all five languages ([#1228](https://github.com/eQuantic/equantic-ui/issues/1228)). Proposed and
+  archived through OpenSpec (`openspec/specs/embedded-documents`, a new spec).
+- **2026-11-06 · A Portuguese app outside Brazil reads the SDK in Portuguese**: the SDK's strings had
+  catalogs for English, `es` and `pt-BR`, and .NET walks `pt-PT`, `pt-AO` and every Portuguese
+  culture but Brazil's through `pt`, never through `pt-BR`, so an app in `pt-PT` read every built-in
+  text of the components in English ("Choose files" on myartwork3d's upload page). The SDK ships a
+  neutral `pt` catalog in European Portuguese, all 98 keys, which a build writes as `strings/pt.json`
+  and the server and the browser reach by the walk they already did. `SdkStringsLocalizationTests`
+  fails on a catalog that lacks a key, carries one the neutral catalog does not or differs in a
+  placeholder ([#1221](https://github.com/eQuantic/equantic-ui/issues/1221)). Proposed and archived
+  through OpenSpec (`openspec/specs/sdk-strings`, a new spec).
 
 ## Retired documents
 
