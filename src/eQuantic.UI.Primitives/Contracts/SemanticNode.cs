@@ -270,6 +270,11 @@ public enum SemanticCheck : byte
 /// The rows and columns a <see cref="SemanticRole.Table"/> or a <see cref="SemanticRole.Grid"/> covers in
 /// all, from its first row and column, not the ones a window built. Null for everything else.
 /// </param>
+/// <param name="Obscured">
+/// A <see cref="SemanticRole.TextField"/> that draws dots, a password's. Its <paramref name="Value"/>
+/// is the same dots, one per character, so no bridge can hand the text to a screen reader, and this
+/// says what the platform's own field says: Android's <c>password</c> flag, AppKit's secure text field.
+/// </param>
 [ServerOnly]
 public readonly record struct SemanticNode(
     SemanticRole Role,
@@ -286,4 +291,5 @@ public readonly record struct SemanticNode(
     LiveRegionUrgency? Live = null,
     RangeValue? Range = null,
     TableRange? Place = null,
-    TableRange? Extent = null);
+    TableRange? Extent = null,
+    bool Obscured = false);

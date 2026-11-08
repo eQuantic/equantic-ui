@@ -99,7 +99,7 @@ internal static class PhotonAccessibility
             SendVoid(element, Sel("setAccessibilityRole:"), NSString(native.AppKit));
             // The second word, for a role AppKit names with two: a tab is AXRadioButton until its
             // subrole says AXTabButton, which is what VoiceOver reads as "tab" (#338).
-            if (native.AppKitSubrole is { } subrole)
+            if ((node.Obscured ? "AXSecureTextField" : native.AppKitSubrole) is { } subrole)
                 SendVoid(element, Sel("setAccessibilitySubrole:"), NSString(subrole));
             SendVoid(element, Sel("setAccessibilityLabel:"), NSString(node.Label));
             if (node.Value is { } value)

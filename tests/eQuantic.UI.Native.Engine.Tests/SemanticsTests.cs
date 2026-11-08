@@ -341,4 +341,32 @@ public class SemanticsTests
         host.Semantics().Should().NotContain(s => s.Role == SemanticRole.Slider,
             "a set of choices is not a position on a range");
     }
+
+    private static IReadOnlyList<SemanticNode> SemanticsOf(VisualNode root)
+    {
+        var host = new PhotonHost(root, PhotonTheme.Instance, ThemeMode.Light, 400, 300);
+        host.RenderFrame(new DisplayListBuilder());
+        return host.Semantics();
+    }
+
+    /// <summary>
+    /// A password's text never reaches the tree: every bridge hands the value it finds to a screen
+    /// reader, so it finds the dots the field draws, one per character as the eye counts them, an
+    /// emoji being one, and the node says it is obscured, which the platforms' own flags read (#817).
+    /// </summary>
+    [Fact]
+    public void AnObscuredField_HoldsDotsInTheTree_AndSaysSo()
+    {
+        var obscured = SemanticsOf(new TextEntry("hunter2😀", _ => { }) { Label = "Password", Obscure = true })
+            .Single(n => n.Role == SemanticRole.TextField);
+
+        obscured.Value.Should().Be("••••••••");
+        obscured.Obscured.Should().BeTrue();
+
+        var plain = SemanticsOf(new TextEntry("hunter2", _ => { }) { Label = "Name" })
+            .Single(n => n.Role == SemanticRole.TextField);
+
+        plain.Value.Should().Be("hunter2");
+        plain.Obscured.Should().BeFalse();
+    }
 }

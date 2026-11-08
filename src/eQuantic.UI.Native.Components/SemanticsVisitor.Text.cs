@@ -32,11 +32,15 @@ internal sealed partial class SemanticsVisitor
 
     /// <summary>
     /// The explicit Label names the field; the placeholder is only the fallback name (visually it
-    /// vanishes under text). The VALUE is what the field holds.
+    /// vanishes under text). The VALUE is what the field holds, and an obscured field holds dots here
+    /// as it does on screen: the text never reaches the tree, so no bridge can hand it to a reader.
+    /// One dot per character as the eye counts them, what the platform's own secure field exposes.
     /// </summary>
     public bool Visit(TextEntry node, LayoutNode laidOut) =>
         Announce(new(SemanticRole.TextField, IdOf(laidOut), laidOut.Bounds,
-            node.Label ?? node.Placeholder ?? "", node.Value, node.Disabled));
+            node.Label ?? node.Placeholder ?? "",
+            node.Obscure ? new string('•', new System.Globalization.StringInfo(node.Value).LengthInTextElements) : node.Value,
+            node.Disabled, Obscured: node.Obscure));
 
     /// <summary>A multiline editable code surface — a text area to a screen reader.</summary>
     public bool Visit(CodeSurface node, LayoutNode laidOut)

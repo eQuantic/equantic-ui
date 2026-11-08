@@ -125,6 +125,7 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         info.SetBoundsInScreen(ScreenBounds(node));
         info.Enabled = !node.Disabled;
         info.VisibleToUser = true;
+        info.Password = node.Obscured;
 
         // A field's TEXT is what it holds and its HINT is what it is for; everything else says what
         // it is through the description. Setting both on one node would silence the text — the
