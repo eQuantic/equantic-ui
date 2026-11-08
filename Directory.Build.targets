@@ -175,7 +175,8 @@
     </Target>
 
     <!--
-      A PACKAGE'S README IS THE REPOSITORY'S, WITH ITS PICTURES' ADDRESSES WRITTEN OUT (#880).
+      A PACKAGE'S README IS THE REPOSITORY'S, WITH ITS PICTURES' ADDRESSES WRITTEN OUT (#880), AND A HEAD
+      NUGET.ORG CAN DRAW (#882).
 
       README.md names a picture by its path in the repository, `assets/readme/<file>`, so GitHub
       draws it on every branch, in a fork, and in the pull request that takes it again. nuget.org
@@ -189,6 +190,11 @@
       badge's address as a space. A task written here is compiled when a project first packs, 0.3
       seconds a process, and holds no file of the tree.
 
+      nuget.org shows a readme's HTML as text, and README.md opens with HTML, for the head GitHub
+      centres: every package's page opened with tags. So the head is replaced, up to the comment that
+      ends it, by assets/package-head.md, the same head in Markdown. ReadmeCapturesTests holds
+      the two to the same links and pictures.
+
       ReadmeCapturesTests runs the target and compares what it wrote with README.md, byte for
       byte but for the addresses, and scripts/check-package-readme.cs reads the readme inside
       every package CI packs.
@@ -196,6 +202,7 @@
     <UsingTask TaskName="AddressReadmePictures" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
         <ParameterGroup>
             <Readme ParameterType="System.String" Required="true" />
+            <Head ParameterType="System.String" Required="true" />
             <Pictures ParameterType="System.String" Required="true" />
             <Address ParameterType="System.String" Required="true" />
             <Destination ParameterType="System.String" Required="true" />
@@ -203,7 +210,10 @@
         <Task>
             <Using Namespace="System.IO" />
             <Code Type="Fragment" Language="cs"><![CDATA[
-                var text = File.ReadAllText(Readme).Replace("](" + Pictures, "](" + Address);
+                const string HeadEnds = "<!-- end of the page's head -->";
+                var readme = File.ReadAllText(Readme);
+                var body = readme.Substring(readme.IndexOf(HeadEnds, System.StringComparison.Ordinal) + HeadEnds.Length);
+                var text = (File.ReadAllText(Head).TrimEnd() + body).Replace("](" + Pictures, "](" + Address);
                 if (!File.Exists(Destination) || File.ReadAllText(Destination) != text)
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(Destination)));
@@ -220,6 +230,7 @@
     <Target Name="WritePackageReadme" BeforeTargets="_GetPackageFiles">
         <AddressReadmePictures
             Readme="$(MSBuildThisFileDirectory)README.md"
+            Head="$(MSBuildThisFileDirectory)assets/package-head.md"
             Pictures="assets/readme/"
             Address="$(RepositoryUrl.Replace('https://github.com/', 'https://raw.githubusercontent.com/'))/v$(PackageVersion)/assets/readme/"
             Destination="$(EqPackageReadme)" />

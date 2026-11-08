@@ -132,7 +132,9 @@ public class ReadmeCapturesTests
                 "-nologo", "-v:m", "-t:WritePackageReadme",
                 "-p:Version=9.9.9-probe", $"-p:EqPackageReadme={written}");
 
-            var expected = File.ReadAllText(Path.Combine(root, "README.md")).Replace(
+            var readme = File.ReadAllText(Path.Combine(root, "README.md"));
+            var expected = (File.ReadAllText(Path.Combine(root, "assets", "package-head.md")).TrimEnd()
+                + readme[(readme.IndexOf(HeadEnds, StringComparison.Ordinal) + HeadEnds.Length)..]).Replace(
                 "](assets/readme/",
                 "](https://raw.githubusercontent.com/eQuantic/equantic-ui/v9.9.9-probe/assets/readme/");
 
@@ -145,6 +147,32 @@ public class ReadmeCapturesTests
         {
             Directory.Delete(scratch, recursive: true);
         }
+    }
+
+    /// <summary>What ends the head GitHub draws, which a package's readme replaces.</summary>
+    private const string HeadEnds = "<!-- end of the page's head -->";
+
+    /// <summary>
+    /// nuget.org shows a readme's HTML as text, so a package's page opened with tags (#882). Its head is
+    /// Markdown, a file of its own beside the HTML one GitHub centres, and neither may say what the other
+    /// does not: the same links, the same pictures, the same title and the same sentences.
+    /// </summary>
+    [Fact]
+    public void APackagesHead_DrawsWithNoHtml_AndSaysWhatTheReadmesHeadSays()
+    {
+        var root = SdkProbe.RepoRoot();
+        var readme = File.ReadAllText(Path.Combine(root, "README.md"));
+        var html = readme[..readme.IndexOf(HeadEnds, StringComparison.Ordinal)];
+        var markdown = File.ReadAllText(Path.Combine(root, "assets", "package-head.md"));
+
+        markdown.Should().NotContain("<", "nuget.org shows a tag as text");
+        static string[] Addresses(string text, string pattern) =>
+            [.. Regex.Matches(text, pattern).Select(match => match.Groups[1].Value).Order(StringComparer.Ordinal)];
+        Addresses(markdown, @"\]\(([^)]+)\)").Should().Equal(
+            Addresses(html, "(?:href|src)=\"([^\"]+)\""), "the two heads hold the same links and pictures");
+        static string Text(string text) => Regex.Replace(
+            Regex.Replace(text, @"!\[[^\]]*\]\([^)]*\)|<[^>]+>|\[|\]\([^)]*\)|\*\*|^# |•", " ", RegexOptions.Multiline), @"\s+", " ").Trim();
+        Text(markdown).Should().Be(Text(html), "the two heads say the same words");
     }
 
     [Fact]
