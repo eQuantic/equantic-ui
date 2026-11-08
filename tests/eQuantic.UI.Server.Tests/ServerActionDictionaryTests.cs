@@ -61,7 +61,7 @@ public class ServerActionDictionaryTests
         // Registered as an app's actions are, by the scan, so the descriptor is the one the scan builds.
         var registry = new ServerActionRegistry();
         registry.ScanAssembly(typeof(ServerActionDictionaryTests).Assembly);
-        registry.GetAction($"{nameof(ServerActionDictionaryTests)}${nameof(OrderActions)}/{method}").Should().NotBeNull();
+        registry.GetAction($"{TwinName.OfType(typeof(OrderActions))}/{method}").Should().NotBeNull();
 
         var root = new ServiceCollection().BuildServiceProvider(validateScopes: true);
         var middleware = new ServerActionsMiddleware(
