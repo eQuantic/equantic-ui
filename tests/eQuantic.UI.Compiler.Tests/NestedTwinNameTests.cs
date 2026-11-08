@@ -48,6 +48,26 @@ public class NestedTwinNameTests
         results.Single(result => result.ComponentName == "function$").TypeScript.Should().Contain("export class function$ ");
     }
 
+    /// <summary>Compiled alone, as the playground compiles, a component that names a class of its own
+    /// file named like a reserved word imports no twin of it from the runtime: the file's own types were
+    /// known by their C# names, and <c>function$</c> was taken for the vocabulary's (found by the review
+    /// of #934).</summary>
+    [Fact]
+    public void AloneAComponentNamingARenamedClassOfItsFile_ImportsItFromNoRuntime()
+    {
+        var page = new ComponentCompiler().CompileSource("""
+            using eQuantic.UI.Primitives;
+            public class function { public static string S = "x"; }
+            public sealed class Page : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(function.S, TypeRole.BodyM);
+            }
+            """, "Probe.cs").Single(result => result.ComponentName == "Page");
+
+        page.TypeScript.Should().Contain("function$.s")
+            .And.NotMatchRegex(@"import \{[^}]*function\$[^}]*\} from ""@equantic/runtime""");
+    }
+
     /// <summary>A class of the app's named <c>Math</c> is imported and called as its twin, so .NET's
     /// <c>Math</c> beside it is the global's (#890): the module imported the class as <c>Math</c>, and
     /// <c>System.Math.Max</c> called the class.</summary>

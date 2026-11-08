@@ -116,10 +116,11 @@ public static class TypeSymbolExtensions
     /// other type, whose name a reference keeps.</summary>
     internal static string? RenamedTwin(this INamedTypeSymbol type) =>
         type is { TypeKind: TypeKind.Class or TypeKind.Struct }
+        // The name first, which answers for nearly every top-level type without reading its symbol.
+        && (type.ContainingType is not null || eQuantic.UI.JsNames.Untaken(type.Name) != type.Name)
         && (type.Locations.Any(location => location.IsInSource)
             || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty))
-        && type.TwinTypeName() is var twin && twin != type.Name
-            ? twin
+            ? type.TwinTypeName()
             : null;
 
     /// <summary>

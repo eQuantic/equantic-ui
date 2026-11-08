@@ -866,8 +866,13 @@ public class ComponentParser
         // Standalone or not, the emitter needs the source's own universe: every type DECLARED in
         // this tree. Without a semantic model it is the only ground truth left — a referenced name
         // outside this set cannot be user code, so it must be the runtime vocabulary.
+        // By its twin's name too, which is the name a reference writes and imports (`Cart$Item`,
+        // `function$`): a twin of the tree's own taken for the vocabulary was imported from the runtime.
         foreach (var declared in classDecl.SyntaxTree.GetRoot().DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
+        {
             definition.DeclaredInSource.Add(declared.Identifier.ValueText);
+            definition.DeclaredInSource.Add(declared.TwinTypeName());
+        }
 
         var model = TryGetSemanticModel(classDecl.SyntaxTree);
         if (model == null) return;
