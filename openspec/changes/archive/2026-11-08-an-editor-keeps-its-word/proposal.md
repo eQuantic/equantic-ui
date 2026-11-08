@@ -34,4 +34,4 @@ public surface moves.
 ## Impact
 
 - `src/eQuantic.UI.Code/Intelligence/CodeCompletion.cs` and `Document/CodeEdit.cs`, write-once, so both
-  targets take them.
+  targets take them; the runtime's transpiled `CodeCompletion.ts` and `CodeEdit.ts` are regenerated.
