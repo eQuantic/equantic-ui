@@ -43,6 +43,14 @@ public sealed class AppBuildOptions
     public string? ProjectsFile { get; init; }
 
     /// <summary>
+    /// What the C# compiler compiled, as the SDK writes it from what MSBuild evaluated: for the app and for
+    /// each project it references, its <c>Compile</c> items and its <c>DefineConstants</c>
+    /// (<see cref="ProjectSources.ReadAll"/>, #828). Null walks each project's directory and parses with no
+    /// symbol, which a host with no MSBuild behind it (a test, a design tool) still does.
+    /// </summary>
+    public string? SourcesFile { get; init; }
+
+    /// <summary>
     /// The app's assets file (<c>$(ProjectAssetsFile)</c>), where NuGet's restore wrote which project
     /// references which. The projects are compiled in that order, each against the ones it reaches:
     /// the assemblies cannot give it, since a constant read from another project leaves no reference
@@ -78,7 +86,7 @@ public sealed class AppBuildOptions
     private static readonly HashSet<string> ValueOptions = new(StringComparer.Ordinal)
     {
         "--refs", "--ref-sources", "--generated", "--projects", "--project-assets", "--assembly-name", "--bun",
-        "--source-maps",
+        "--source-maps", "--sources",
     };
 
     /// <summary>
@@ -158,6 +166,10 @@ public sealed class AppBuildOptions
             // --project-assets <file>: the app's assets file, where restore wrote which project
             // references which, the order the projects are compiled in (#887).
             ProjectAssetsFile = Value("--project-assets")?.Trim(),
+            // --sources <file>: what csc compiled for the app and each project it references, their
+            // Compile items and their DefineConstants (#828), so eqc reads the files and the #if branches
+            // the build did, not every file under a directory with no symbol defined.
+            SourcesFile = Value("--sources")?.Trim(),
             // --assembly-name <name>: the app's assembly name as its project evaluates it, which a
             // project file may set apart from its own name, and which a referenced project's
             // InternalsVisibleTo names.

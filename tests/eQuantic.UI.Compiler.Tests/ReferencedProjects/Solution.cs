@@ -70,6 +70,15 @@ internal sealed class Solution : IDisposable
         public Compilation? Compilation { get; set; }
         public string? Assembly { get; set; }
 
+        /// <summary>Its <c>DefineConstants</c>, as its project file and its target framework set them.</summary>
+        public string Symbols { get; set; } = "";
+
+        /// <summary>Files of its directory its project file removes (<c>&lt;Compile Remove&gt;</c>).</summary>
+        public HashSet<string> Removed { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>Files from outside its directory its project file links (<c>&lt;Compile Include Link&gt;</c>).</summary>
+        public List<string> Linked { get; } = [];
+
         /// <summary>The reference assembly MSBuild writes beside it under <c>obj</c>: its metadata
         /// with no method body and no private member, which is what the SDK hands the build.</summary>
         public string? ReferenceAssembly { get; set; }
@@ -136,6 +145,44 @@ internal sealed class Solution : IDisposable
         return this;
     }
 
+    /// <summary>The symbols a project defines (<c>DefineConstants</c>), which its C# is compiled with.</summary>
+    public Solution Defines(string project, string symbols)
+    {
+        _projects.Single(candidate => candidate.Name == project).Symbols = symbols;
+        return this;
+    }
+
+    /// <summary>A file of a project's directory its project file removes from its compile.</summary>
+    public Solution Removes(string project, string relativePath)
+    {
+        _projects.Single(candidate => candidate.Name == project).Removed.Add(Path.GetFullPath(FileOf(project, relativePath)));
+        return this;
+    }
+
+    /// <summary>A file outside a project's directory, written there and linked into its compile.</summary>
+    public Solution Links(string project, string pathFromRoot, string text)
+    {
+        var path = Path.Combine(_root, pathFromRoot);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, text);
+        _projects.Single(candidate => candidate.Name == project).Linked.Add(Path.GetFullPath(path));
+        return this;
+    }
+
+    /// <summary>The C# files a project compiles, as MSBuild evaluates its Compile items: its directory's
+    /// but for <c>bin</c> and what it removes, then what it links, its generated usings among them.</summary>
+    private List<string> Compiled(Project project)
+    {
+        var directory = DirectoryOf(project.Name);
+        return Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories)
+            .Where(file => !file.StartsWith(Path.Combine(directory, "bin") + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            .Select(Path.GetFullPath)
+            .Where(file => !project.Removed.Contains(file))
+            .Order(StringComparer.Ordinal)
+            .Concat(project.Linked)
+            .ToList();
+    }
+
     /// <summary>Writes, or writes over, one file of a project.</summary>
     public Solution Write(string project, string relativePath, string text)
     {
@@ -161,8 +208,11 @@ internal sealed class Solution : IDisposable
     /// <param name="graph">The references the assets file says each project makes, by project name,
     /// in place of the ones the solution declares: a graph that leaves an edge out is how a test shows
     /// the build follows the graph and nothing else.</param>
+    /// <param name="handSources">True hands the build what each project compiled, its Compile items and its
+    /// symbols, as the SDK does since #828; false lets it walk each directory, as every build before.</param>
     public Built Build(bool handProjects = true, string? bun = null, Func<IDisposable>? whileEqcRuns = null,
-        bool handAssemblyName = true, bool handGraph = true, IReadOnlyDictionary<string, string[]>? graph = null)
+        bool handAssemblyName = true, bool handGraph = true, IReadOnlyDictionary<string, string[]>? graph = null,
+        bool handSources = true)
     {
         foreach (var project in _projects) Compile(project);
 
@@ -179,6 +229,15 @@ internal sealed class Solution : IDisposable
             new[] { library.ReferenceAssembly!, ProjectFileOf(library.Name) }));
         var assetsFile = Path.Combine(DirectoryOf(app.Name), "obj", "project.assets.json");
         WriteAssets(assetsFile, app, graph);
+        // What each project compiled, the app's section first, as the SDK writes it (#828).
+        var sourcesFile = Path.Combine(obj, "equantic.sources.txt");
+        File.WriteAllLines(sourcesFile, new[] { app }.Concat(libraries.Where(library => !library.IsPackage))
+            .SelectMany(project => new[]
+                {
+                    (project.IsApp ? "app: " : "project: ") + ProjectFileOf(project.Name),
+                    "symbols: " + project.Symbols,
+                }
+                .Concat(Compiled(project))));
 
         var output = new StringWriter();
         var errors = new StringWriter();
@@ -193,6 +252,7 @@ internal sealed class Solution : IDisposable
             ProjectsFile = handProjects && libraries.Any(library => !library.IsPackage) ? projectsFile : null,
             ProjectAssetsFile = handProjects && handGraph ? assetsFile : null,
             AssemblyName = handAssemblyName ? app.AssemblyName : null,
+            SourcesFile = handSources ? sourcesFile : null,
             BunPath = bun,
             // One reference per assembly for the whole test process (#481).
             ReferenceReader = TestReferences.Of,
@@ -210,10 +270,10 @@ internal sealed class Solution : IDisposable
     private void Compile(Project project)
     {
         var directory = DirectoryOf(project.Name);
-        var trees = Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories)
-            .Where(file => !file.StartsWith(Path.Combine(directory, "bin") + Path.DirectorySeparatorChar, StringComparison.Ordinal))
-            .Order(StringComparer.Ordinal)
-            .Select(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file), ParseDefaults.Options, path: file));
+        var options = ParseDefaults.Options.WithPreprocessorSymbols(
+            project.Symbols.Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        var trees = Compiled(project)
+            .Select(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file), options, path: file));
         var references = Framework.Value.Select(path => TestReferences.Of(path))
             .Concat(Reached(project).Select(reference => reference.Compilation!.ToMetadataReference()));
         var compilation = CSharpCompilation.Create(project.AssemblyName, trees, references,

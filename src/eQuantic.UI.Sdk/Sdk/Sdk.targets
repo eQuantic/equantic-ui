@@ -298,7 +298,7 @@
         project reached a shell (#836): it is a target of its own so a test runs it as it ships.
     -->
     <Target Name="_EQuanticCompilerInputs"
-        DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences;GenerateGlobalUsings"
+        DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences;AddImplicitDefineConstants;GenerateGlobalUsings"
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <PropertyGroup>
             <!-- Standard components source files are packaged in eQuantic.UI.Components package -->
@@ -410,6 +410,47 @@
             <_EqcProject Include="@(_EqcReferencedProject)"
                 Condition="!Exists('%(RootDir)%(Directory)EQuanticIconPack.marker') And ('$(_EqSdkSourceRoot)' == '' Or !$([System.String]::Copy('%(FullPath)').StartsWith('$(_EqSdkSourceRoot)')))" />
         </ItemGroup>
+
+        <!--
+            WHAT THE C# COMPILER COMPILED (#828, #1003): for the app and for each project above, its
+            Compile items and its DefineConstants, the implicit ones of the target framework among them.
+            eqc walked each directory and parsed with no symbol: a file a project removes became a module,
+            a file it links from outside its directory was never read, `#if DEBUG` took the branch neither
+            configuration builds, and a Release build after a Debug one read both configurations' global
+            usings. The app's are at hand here. A referenced project's are its own, so it is asked, with
+            the global properties the ProjectReference protocol hands it and a file imported for that
+            question alone (EQuanticProjectSources.targets): nothing else of it runs. Asked only of the
+            projects eqc compiles from source, keyed by the path the protocol knows them by.
+        -->
+        <PropertyGroup>
+            <_EqcSourcesFile>$(MSBuildProjectDirectory)/$(IntermediateOutputPath)equantic.sources.txt</_EqcSourcesFile>
+        </PropertyGroup>
+        <ItemGroup>
+            <_EqcSourcesLine Remove="@(_EqcSourcesLine)" />
+            <_EqcAppCompile Remove="@(_EqcAppCompile)" />
+            <_EqcAppCompile Include="@(Compile)" Condition="'%(Compile.Extension)' == '.cs'" />
+            <_EqcSourcesLine Include="app" Value="app: $(MSBuildProjectFullPath)" />
+            <_EqcSourcesLine Include="app-symbols" Value="symbols: $(DefineConstants)" />
+            <_EqcSourcesLine Include="@(_EqcAppCompile)">
+                <Value>%(_EqcAppCompile.FullPath)</Value>
+            </_EqcSourcesLine>
+            <_EqcReferenceByPath Remove="@(_EqcReferenceByPath)" />
+            <_EqcReferenceByPath Include="@(_MSBuildProjectReferenceExistent->'%(FullPath)')" />
+            <_EqcReferenceNotCompiled Remove="@(_EqcReferenceNotCompiled)" />
+            <_EqcReferenceNotCompiled Include="@(_EqcReferenceByPath)" Exclude="@(_EqcProject)" />
+            <_EqcSourcesProject Remove="@(_EqcSourcesProject)" />
+            <_EqcSourcesProject Include="@(_EqcReferenceByPath)" Exclude="@(_EqcReferenceNotCompiled)" />
+        </ItemGroup>
+        <MSBuild Projects="@(_EqcSourcesProject)"
+            Targets="EQuanticProjectSources"
+            Properties="%(_EqcSourcesProject.SetConfiguration);%(_EqcSourcesProject.SetPlatform);%(_EqcSourcesProject.SetTargetFramework);CustomAfterMicrosoftCommonTargets=$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'Sdk', 'EQuanticProjectSources.targets'))"
+            RemoveProperties="%(_EqcSourcesProject.GlobalPropertiesToRemove)"
+            Condition="'@(_EqcSourcesProject)' != ''">
+            <Output TaskParameter="TargetOutputs" ItemName="_EqcSourcesLine" />
+        </MSBuild>
+        <WriteLinesToFile File="$(_EqcSourcesFile)"
+            Lines="@(_EqcSourcesLine->'%(Value)')"
+            Overwrite="true" WriteOnlyWhenDifferent="true" />
     </Target>
 
     <!--
@@ -459,6 +500,9 @@
                  project's InternalsVisibleTo opens its internal types to this name and to no other. -->
             <_EqcArgument Include="assembly-name" Value="--assembly-name" Condition="'$(AssemblyName)' != ''" />
             <_EqcArgument Include="assembly-name-value" Value="$(AssemblyName)" Condition="'$(AssemblyName)' != ''" />
+            <!-- What the C# compiler compiled, for the app and each project above (#828). -->
+            <_EqcArgument Include="sources-list" Value="--sources" Condition="'$(_EqcSourcesFile)' != ''" />
+            <_EqcArgument Include="sources-list-file" Value="$(_EqcSourcesFile)" Condition="'$(_EqcSourcesFile)' != ''" />
             <_EqcArgument Include="ref-sources" Value="--ref-sources" Condition="'@(_EqcRefSourceFinal)' != ''" />
             <_EqcArgument Include="ref-sources-file" Value="$(_EqcRefSourcesFile)" Condition="'@(_EqcRefSourceFinal)' != ''" />
             <!-- The generated tree for THIS configuration. eqc cannot infer it: a project built Debug

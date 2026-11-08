@@ -90,6 +90,18 @@ public class SemanticModelProvider
             ?? ParseDefaults.Options;
 
     /// <summary>
+    /// The options the file at <paramref name="path"/> is parsed with: those of the tree it replaces in
+    /// the compilation, the app's or a referenced project's, and <see cref="JoinOptions"/> for a file
+    /// neither holds. A project's symbols are its own, so a file of a library under
+    /// <c>#if NET8_0_OR_GREATER</c> takes the branch its project built, not the app's (#828).
+    /// </summary>
+    public CSharpParseOptions OptionsFor(string? path) =>
+        (string.IsNullOrEmpty(path) ? null
+            : _projectCompilation?.SyntaxTrees.FirstOrDefault(tree => AreSameFile(tree.FilePath, path))?.Options
+              ?? ReferencedTree(path)?.Tree.Options) as CSharpParseOptions
+        ?? JoinOptions;
+
+    /// <summary>
     /// The BCL, and — when the host happens to have them loaded — the framework assemblies a
     /// snippet might mention.
     /// <para>
