@@ -338,22 +338,33 @@ public sealed class CodeCompletion
     }
 
     /// <summary>
-    /// Asks again every provider whose answer was incomplete, once the word is not the one that provider
-    /// was asked for LAST: the word of its answer, or of a request of its still out. Each provider keeps
-    /// its own word, so a slow provider's answer for a word left behind is asked again, whoever was asked
-    /// last. And a request still out for another word is replaced even when the answer in hand is for
-    /// the word typed (a letter typed, then backspaced): it would land over that answer, with what it
-    /// offers for the other word. The rest keep their answers.
+    /// Asks again every provider whose answer no longer holds for the word typed, once the word is not
+    /// the one that provider was asked for LAST: the word of its answer, or of a request of its still
+    /// out. Each provider keeps its own word, so a slow provider's answer for a word left behind is
+    /// asked again, whoever was asked last. And a request still out for another word is replaced even
+    /// when the answer in hand is for the word typed (a letter typed, then backspaced): it would land
+    /// over that answer, with what it offers for the other word.
+    /// <para>
+    /// An incomplete answer holds for its own word only. A complete one holds for every word that
+    /// EXTENDS the one it was asked for, which is all LSP's <c>isIncomplete: false</c> promises: a word
+    /// taken back past it is another question, an entry for <c>Co</c> being no part of an answer for
+    /// <c>Col</c>, and it is asked as a person asking, as VS Code does when the caret moves left (#1016).
+    /// The rest keep their answers.
+    /// </para>
     /// </summary>
     private void AskAgainIfIncomplete()
     {
         var word = Word();
         var incomplete = new List<ICodeCompletionProvider>();
+        var outrun = new List<ICodeCompletionProvider>();
         foreach (var answer in _answers)
         {
-            if (answer.IsIncomplete && LastAskedWord(answer.Provider) != word) incomplete.Add(answer.Provider);
+            if (LastAskedWord(answer.Provider) == word) continue;
+            if (answer.IsIncomplete) incomplete.Add(answer.Provider);
+            else if (!word.StartsWith(answer.AskedWord, StringComparison.Ordinal)) outrun.Add(answer.Provider);
         }
         if (incomplete.Count > 0) Ask(CodeCompletionTrigger.Incomplete, null, incomplete, announce: false);
+        if (outrun.Count > 0) Ask(CodeCompletionTrigger.Invoked, null, outrun, announce: false);
     }
 
     /// <summary>The word <paramref name="provider"/> was asked for last: that of its newest request,

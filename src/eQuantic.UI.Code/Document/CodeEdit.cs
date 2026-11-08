@@ -43,13 +43,26 @@ public sealed record CodeEdit(
     /// text goes to the start of the replacement and an end inside it to its end, so a range whose text
     /// was rewritten covers the rewrite, and one whose text was deleted is empty where the text was. A
     /// range never grows at its edges: text inserted where it starts or where it ends is not in it, and
-    /// an empty range stays with the text after it.
+    /// an empty range stays with the text after it, unless what is inserted there begins with a line
+    /// break: that writes a line below, and the empty range stays at the end of its own, as a problem
+    /// at a missing semicolon does when Enter is pressed there, or when a line moves past it (#1059).
     /// </summary>
     public CodeRange Carry(CodeRange range)
     {
+        if (range.IsEmpty && Range.IsEmpty && range.Start == Range.Start && WritesALineBelow) return range;
         var start = CarryStart(range.Start);
         var end = CarryEnd(range.End);
         return new CodeRange(start, end < start ? start : end);
+    }
+
+    /// <summary>Whether what this edit inserts begins with a line break.</summary>
+    private bool WritesALineBelow
+    {
+        get
+        {
+            var lines = CodeDocument.FromText(InsertedText).Lines;
+            return lines.Count > 1 && lines[0].Length == 0;
+        }
     }
 
     /// <summary>

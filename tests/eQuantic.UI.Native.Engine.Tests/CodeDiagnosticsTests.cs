@@ -526,4 +526,36 @@ public class CodeDiagnosticsTests : IDisposable
 
         editor.HandleKey("F8", KeyModifiers.None, KeyboardConvention.Standard, null).Should().BeFalse();
     }
+
+    /// <summary>
+    /// The issue's steps: a problem of no width at the end of the last line, and ⌥↑ on it. A move writes
+    /// the passed line at the start of the line after the block, and at the document's end no line
+    /// follows, so it was written at the very place the problem held, and took it along (#1059).
+    /// </summary>
+    [Fact]
+    public void AProblemOfNoWidthAtTheDocumentsEnd_StaysOnTheLineMoved()
+    {
+        var editor = Editor("alpha\nbeta");
+        editor.Selection = new CodeRange(new CodePosition(1, 4));
+        editor.Diagnostics.Report([Error(1, 4, 4)]);
+
+        Press(editor, "ArrowUp", KeyModifiers.Alt);
+
+        editor.Document.Text.Should().Be("beta\nalpha");
+        editor.Diagnostics.Items.Single().Range.Should().Be(At(0, 4, 4));
+    }
+
+    /// <summary>The same rule for a person typing: Enter at a missing semicolon writes the next line
+    /// below it, and the problem stays where the semicolon is missing.</summary>
+    [Fact]
+    public void AProblemOfNoWidth_StaysWhereEnterWasPressed()
+    {
+        var editor = Editor("alpha\nbeta");
+        editor.Selection = new CodeRange(new CodePosition(0, 5));
+        editor.Diagnostics.Report([Error(0, 5, 5)]);
+
+        Press(editor, "Enter");
+
+        editor.Diagnostics.Items.Single().Range.Should().Be(At(0, 5, 5));
+    }
 }

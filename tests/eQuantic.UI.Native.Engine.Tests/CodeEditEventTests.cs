@@ -71,6 +71,25 @@ public class CodeEditEventTests
     private static CodeEdit Edit(CodeRange range, string removed, string inserted) =>
         new(range, removed, inserted, new CodeRange(range.Start), new CodeRange(range.Start), false);
 
+    /// <summary>A line written below an empty range leaves it at the end of its own line, where a
+    /// problem at a missing semicolon belongs: Enter there, or a line moved past the document's end,
+    /// wrote the passed line at the very place the problem held (#1059).</summary>
+    [Fact]
+    public void AnEmptyRange_StaysInFrontOfALineWrittenBelowIt()
+    {
+        foreach (var inserted in new[] { "\n", "\nalpha", "\r\nalpha" })
+            Edit(new CodeRange(P(1, 4)), "", inserted).Carry(new CodeRange(P(1, 4))).Should().Be(new CodeRange(P(1, 4)));
+    }
+
+    /// <summary>Anything else inserted at it pushes it on, as it always has: it stays with the text
+    /// after it.</summary>
+    [Fact]
+    public void AnEmptyRange_GoesPastTextInsertedAtIt()
+    {
+        Edit(new CodeRange(P(1, 4)), "", "ab").Carry(new CodeRange(P(1, 4))).Should().Be(new CodeRange(P(1, 6)));
+        Edit(new CodeRange(P(1, 4)), "", "ab\ncd").Carry(new CodeRange(P(1, 4))).Should().Be(new CodeRange(P(2, 2)));
+    }
+
     [Fact]
     public void ARangeAfterAnEditOnALaterLine_KeepsItsColumns()
     {

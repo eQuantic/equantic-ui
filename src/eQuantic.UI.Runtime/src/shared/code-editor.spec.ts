@@ -2428,3 +2428,89 @@ describe('the keys an app binds', () => {
     expect([selection.start.line, selection.start.column, selection.end.line, selection.end.column]).toEqual([0, 0, 1, 5]);
   });
 });
+
+/**
+ * The engine's answer and its marks, as the browser runs them (C# twins: CodeCompletionTests,
+ * CodeDiagnosticsTests and CodeEditEventTests, #1016 and #1059).
+ */
+describe('an answer and a mark hold only as far as they stand', () => {
+  const at = (line: number, column: number) => new CodePosition(line, column);
+
+  /** A provider that answers at once with its items, complete, and says what it was asked. */
+  async function offering(...labels: string[]) {
+    const { CodeCompletionItem } = await import('./components/CodeCompletionItem');
+    const { CodeCompletionList } = await import('./components/CodeCompletionList');
+    const items = labels.map((label) => new CodeCompletionItem(label));
+    const asked: { trigger: string }[] = [];
+    return {
+      items,
+      asked,
+      completeAsync: (_document: unknown, _position: unknown, context: { trigger: string }) => {
+        asked.push({ trigger: context.trigger });
+        return Promise.resolve(new CodeCompletionList(items.slice(), false));
+      },
+      resolveAsync: (item: unknown) => Promise.resolve(item),
+      triggerCharacters: [],
+    };
+  }
+
+  /** The providers answer through a promise, as a language server does. */
+  const answered = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('asks a complete answer again when the word goes back past it', async () => {
+    const { CodeCompletionItem } = await import('./components/CodeCompletionItem');
+    const server = await offering('Column');
+    const { editor, lowered } = surfaceFor('Col');
+    editor.completion.providers.push(server);
+    editor.selection = new CodeRange(at(0, 3));
+    editor.completion.invoke();
+    await answered();
+
+    server.items.push(new CodeCompletionItem('Count'));
+    press(lowered, 'Backspace');
+    await answered();
+
+    expect(server.asked.map((question) => question.trigger)).toEqual(['invoked', 'invoked']);
+    expect(editor.completion.items.map((match) => match.item.label)).toContain('Count');
+  });
+
+  it('does not ask again back at the word it was asked for', async () => {
+    const server = await offering('Column');
+    const { editor, lowered } = surfaceFor('Co');
+    editor.completion.providers.push(server);
+    editor.selection = new CodeRange(at(0, 2));
+    editor.completion.invoke();
+    await answered();
+
+    type(lowered, 'l');
+    press(lowered, 'Backspace');
+    await answered();
+
+    expect(server.asked).toHaveLength(1);
+  });
+
+  it('keeps a problem of no width on the line ⌥↑ moves past the end of the document', async () => {
+    const { CodeDiagnostic } = await import('./components/CodeDiagnostic');
+    const { editor, lowered } = surfaceFor('alpha\nbeta');
+    editor.selection = new CodeRange(at(1, 4));
+    editor.diagnostics.report([new CodeDiagnostic(new CodeRange(at(1, 4), at(1, 4)), 'missing ;')]);
+
+    press(lowered, 'ArrowUp', { alt: true });
+
+    expect(editor.document.text).toBe('beta\nalpha');
+    const range = editor.diagnostics.items[0].range;
+    expect([range.start.line, range.start.column, range.end.line, range.end.column]).toEqual([0, 4, 0, 4]);
+  });
+
+  it('keeps a problem of no width where Enter was pressed', async () => {
+    const { CodeDiagnostic } = await import('./components/CodeDiagnostic');
+    const { editor, lowered } = surfaceFor('alpha\nbeta');
+    editor.selection = new CodeRange(at(0, 5));
+    editor.diagnostics.report([new CodeDiagnostic(new CodeRange(at(0, 5), at(0, 5)), 'missing ;')]);
+
+    press(lowered, 'Enter');
+
+    const range = editor.diagnostics.items[0].range;
+    expect([range.start.line, range.start.column, range.end.line, range.end.column]).toEqual([0, 5, 0, 5]);
+  });
+});

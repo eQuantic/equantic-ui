@@ -546,6 +546,38 @@ public class CodeCompletionTests : IDisposable
         Labels(editor).Should().Equal("Colossus", "Column");
     }
 
+    /// <summary>A complete answer promises the words that extend the one it was asked for and no
+    /// other: an entry for <c>Co</c> is no part of an answer for <c>Col</c>, so a word taken back
+    /// past it is asked again, as a person asks, as VS Code does when the caret moves left (#1016).</summary>
+    [Fact]
+    public void ACompleteAnswer_IsAskedAgain_WhenTheWordGoesBackPastIt()
+    {
+        var server = Offering("Column");
+        var editor = Editor("Col", server);
+        editor.Completion.Invoke();
+
+        server.Items.Add(new CodeCompletionItem("Count"));
+        Key(editor, "Backspace");
+
+        server.Asked.Should().HaveCount(2);
+        server.Asked[1].Context.Trigger.Should().Be(CodeCompletionTrigger.Invoked);
+        Labels(editor).Should().Contain("Count");
+    }
+
+    /// <summary>Back to the word it was asked for is no question: the answer holds for that word.</summary>
+    [Fact]
+    public void ACompleteAnswer_IsNotAskedAgain_BackAtItsOwnWord()
+    {
+        var server = Offering("Column");
+        var editor = Editor("Co", server);
+        editor.Completion.Invoke();
+
+        Type(editor, "l");
+        Key(editor, "Backspace");
+
+        server.Asked.Should().ContainSingle();
+    }
+
     [Fact]
     public void AnAnswerOffTheUiThread_IsPostedToIt()
     {
