@@ -2,9 +2,10 @@
 
 ### Requirement: A call evaluates its arguments in the order they are written
 
-A call SHALL evaluate its arguments in the order they are written and pass each to the parameter it
-binds, whichever path places them: an app's method, a vocabulary type's constructor and a twin's. An
-`out` argument SHALL shift none of the arguments after it.
+A call in a statement or a concise body SHALL evaluate its arguments in the order they are written and
+pass each to the parameter it binds, whichever path places them: an app's method, a vocabulary type's
+constructor and a twin's. A name an argument written after it changes SHALL be read where it is written.
+An `out` argument SHALL shift none of the arguments after it.
 
 #### Scenario: Named arguments out of order
 
@@ -15,3 +16,8 @@ binds, whichever path places them: an app's method, a vocabulary type's construc
 
 - **WHEN** `Try(out var found, b: 7)` runs, with `a` defaulting to 1
 - **THEN** `found` holds what `a = 1, b = 7` make, as in .NET
+
+#### Scenario: A name an argument written after it changes
+
+- **WHEN** `var i = 1; Pair(b: i, a: ++i)` runs
+- **THEN** the call answers `2,1`, as in .NET
