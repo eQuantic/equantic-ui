@@ -202,28 +202,34 @@ internal sealed class BoundArguments
     {
         JsExpr Placed(int at, Func<int, JsExpr> read) => slots[at].Written is var index and >= 0 ? read(index) : slots[at].Own!;
         var order = slots.Where(slot => slot.Written >= 0).Select(slot => slot.Written).ToList();
-        static bool Inert(JsExpr part) => (part is JsSpread spread ? spread.Operand : part) is JsLiteral or JsIdentifier;
-        if (slots.Count == 0 || order.SequenceEqual(order.Order()) || written.All(Inert) || !context.Temporaries.CanBind)
+        static JsExpr Value(JsExpr part) => part is JsSpread spread ? spread.Operand : part;
+        static bool Inert(JsExpr part) => Value(part) is JsLiteral or JsIdentifier;
+        var lastEffect = order.Where(index => !Inert(written[index])).DefaultIfEmpty(-1).Max();
+        if (slots.Count == 0 || order.SequenceEqual(order.Order()) || lastEffect < 0 || !context.Temporaries.CanBind)
             return slots.Select((_, at) => Placed(at, index => written[index])).ToList();
 
+        // What is passed is read where it stands, after every temporary was assigned, so a temporary holds
+        // what does anything and a name an argument written after it may change: `Pair(b: i, a: ++i)` passed
+        // the incremented i twice. A literal changes under nothing, and an argument no slot passes (an `out`
+        // one, a dependency the twin resolves itself) is not run here, as it never was.
+        var passes = order.ToHashSet();
         var temporaries = new string?[written.Count];
         var assignments = new List<JsExpr>();
         for (var index = 0; index < written.Count; index++)
         {
-            if (Inert(written[index])) continue;
+            if (!passes.Contains(index) || Value(written[index]) is JsLiteral
+                || Inert(written[index]) && index > lastEffect) continue;
             var name = context.Temporaries.Fresh();
             context.Temporaries.Bind(name);
             temporaries[index] = name;
-            var value = written[index] is JsSpread spread ? spread.Operand : written[index];
-            assignments.Add(JsExpr.Binary(JsExpr.Identifier(name), "=", value));
+            assignments.Add(JsExpr.Binary(JsExpr.Identifier(name), "=", Value(written[index])));
         }
         JsExpr Read(int index) => temporaries[index] is { } name
             ? written[index] is JsSpread ? JsExpr.Spread(JsExpr.Identifier(name)) : JsExpr.Identifier(name)
             : written[index];
         var passed = slots.Select((_, at) => Placed(at, Read)).ToList();
         // A spread cannot stand in a sequence: what it is spread from is read there, and spread where it stands.
-        var first = passed[0] is JsSpread firstSpread ? firstSpread.Operand : passed[0];
-        var sequence = JsExpr.Group(assignments.Append(first).Aggregate((before, next) => JsExpr.Binary(before, ",", next)));
+        var sequence = JsExpr.Group(assignments.Append(Value(passed[0])).Aggregate((before, next) => JsExpr.Binary(before, ",", next)));
         passed[0] = passed[0] is JsSpread ? JsExpr.Spread(sequence) : sequence;
         return passed;
     }

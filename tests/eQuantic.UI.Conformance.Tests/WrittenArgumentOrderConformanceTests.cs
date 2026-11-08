@@ -45,6 +45,10 @@ public class WrittenArgumentOrderConformanceTests
             "Calls.Try(out var found, b: 7); return found;"),
         ("an out argument, then two named ones out of order",
             "Seq.Seen = \"\"; Calls.Try(out var found, b: Seq.Int(7), a: Seq.Int(4)); return found + \"|\" + Seq.Seen;"),
+        ("a name an argument written after it changes",
+            "var i = 1; return Calls.Pair(b: i, a: ++i);"),
+        ("a name an argument written after it changes, past an out argument",
+            "var i = 1; Calls.Try(out var found, b: i, a: ++i); return found;"),
         ("a vocabulary record with a twin of its own, built with named arguments out of order",
             "Seq.Seen = \"\"; var style = new TypeStyle(LineHeight: Seq.F(24), Size: Seq.F(16), Weight: FontWeight.Bold, Tracking: 0, MaxScale: Seq.F(2)); "
             + "return style.Size + \",\" + style.LineHeight + \",\" + style.MaxScale + \"|\" + Seq.Seen;"),
