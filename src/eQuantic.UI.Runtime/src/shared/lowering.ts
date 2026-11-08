@@ -410,7 +410,7 @@ function lowerNodeKind(
     case 'sheetSurface':
       return lowerSheetSurface(node as unknown as SheetSurfaceNode, context, horizontalAxis, path);
     case 'scrollView':
-      return lowerScrollView(node as ScrollViewNode, context, path);
+      return lowerScrollView(node as ScrollViewNode, context, horizontalAxis, path);
     case 'tableViewport':
       return lowerTableViewport(node as unknown as TableViewportNode, context, path);
     case 'tableViewCell':
@@ -2168,7 +2168,12 @@ function fillsViewport(lowered: HtmlNode | null, horizontal: boolean): HtmlNode 
 }
 
 /** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
-function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: string): HtmlNode {
+function lowerScrollView(
+  node: ScrollViewNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode {
   const horizontal = node.axis === 'horizontal';
   const children: HtmlNode[] = [];
   // Content that fills the viewport is the item of the scroller's flex line, and so is each ARM of an
@@ -2196,6 +2201,12 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
       'min-width': '0',
       'min-height': '0',
       'max-width': '100%',
+      // A size the app fixed on the line's axis is not squeezed (C# twin, #1186).
+      'flex-shrink':
+        (horizontalAxis === true && node.width?.kind === 'fixed') ||
+        (horizontalAxis === false && node.height?.kind === 'fixed')
+          ? '0'
+          : undefined,
       'overflow-y': horizontal ? 'hidden' : 'auto',
       'overflow-x': node.axis === 'vertical' ? 'hidden' : 'auto',
       // The offset is the app's and the reader's, never the browser's guess: scroll anchoring moved

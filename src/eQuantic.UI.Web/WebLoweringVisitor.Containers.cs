@@ -588,7 +588,7 @@ internal sealed partial class WebLoweringVisitor
     /// (the browser owns physics, momentum and the scrollbar); the cross axis stays hidden so content
     /// never leaks. The programmatic Offset is a native-side concept (browser scroll state lives in
     /// the DOM).</summary>
-    private HtmlElement LowerScrollView(ScrollView scroll)
+    private HtmlElement LowerScrollView(ScrollView scroll, bool? horizontalAxis)
     {
         var element = new RealizedElement("div")
         {
@@ -613,6 +613,11 @@ internal sealed partial class WebLoweringVisitor
                 MinWidth = "0",
                 MinHeight = "0",
                 MaxWidth = "100%",
+                // That lets a line squeeze it, and a size the app fixed on the line's axis is not
+                // squeezed: fixed is fixed, on both targets (see Rigid, #1186). On the other axis the
+                // line has nothing to take, and a hugging scroller still gives way.
+                FlexShrink = (horizontalAxis is true && scroll.Width.Kind == SizeKind.Fixed)
+                    || (horizontalAxis is false && scroll.Height.Kind == SizeKind.Fixed) ? "0" : null,
                 // The offset is the app's and the reader's, never the browser's guess. Scroll
                 // anchoring moved it whenever a windowed list swapped the rows above what was on
                 // screen, and a match the code editor's find had brought into view slid back out.

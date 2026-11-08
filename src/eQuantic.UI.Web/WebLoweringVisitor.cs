@@ -129,7 +129,7 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
 
     public HtmlElement? Visit(Anchored anchored, bool? horizontalAxis) => LowerAnchored(anchored);
 
-    public HtmlElement? Visit(ScrollView scroll, bool? horizontalAxis) => LowerScrollView(scroll);
+    public HtmlElement? Visit(ScrollView scroll, bool? horizontalAxis) => LowerScrollView(scroll, horizontalAxis);
 
     public HtmlElement? Visit(Overlay overlay, bool? horizontalAxis) => LowerOverlay(overlay);
 

@@ -225,8 +225,10 @@ internal sealed partial class MeasureVisitor
             var childMaxW = horizontal ? mainAvail : crossAvail;
             var childMaxH = horizontal ? crossAvail : mainAvail;
             var (csW, csH) = CrossStretch(children[i]);
+            // A scroller's declared width is a ceiling on a line too: the web's `max-width: 100%` is
+            // of the line, on either axis, wherever the scroller stands in it.
             var child = MeasureChild(children[i], childMaxW, childMaxH, children.At(i),
-                stretchW: csW, stretchH: csH);
+                stretchW: csW, stretchH: csH, ceiling: true);
             laid[i] = child;
             mains[i] = horizontal ? child.Bounds.Width : child.Bounds.Height;
             rigidSum += mains[i];

@@ -107,6 +107,7 @@ internal sealed partial class MeasureVisitor
         Flexible flexible => flexible.Shrink > 0,
         Box box => box.Style.Width.Kind != SizeKind.Fixed,
         FlexNode flex => flex.Width.Kind != SizeKind.Fixed,
+        ScrollView scroll => scroll.Width.Kind != SizeKind.Fixed,
         // NO WRAPPER ARM, and that is measured rather than left out. #225 assumed four readers
         // needed the transparency statement; this is the one that does not, twice over.
         //
