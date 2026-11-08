@@ -23,9 +23,9 @@ public sealed class SheetEdit
     public float OldSize { get; init; }
     public float NewSize { get; init; }
 
-    /// <summary>Where the selection stood when the edit happened / after it — undo restores the
-    /// cursor to where the user was, which is half of what makes undo feel safe. Settable because
-    /// a paste only knows its landing rectangle after walking the grid.</summary>
-    public SheetRange SelectionBefore { get; set; }
-    public SheetRange SelectionAfter { get; set; }
+    /// <summary>Where the selection stood when the edit happened / after it, every range and the active cell —
+    /// undo restores the cursor to where the user was, which is half of what makes undo feel safe. Settable
+    /// because a paste only knows its landing rectangle after walking the grid.</summary>
+    public SheetSelection SelectionBefore { get; set; }
+    public SheetSelection SelectionAfter { get; set; }
 }

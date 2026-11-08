@@ -249,4 +249,45 @@ public class SheetRangesTests
         sheet.Selection.Should().Be(Range("B2", "B3"));
         sheet.ActiveCell.Should().Be(Cell("B2"));
     }
+
+    /// <summary>
+    /// An undo and a redo of a step taken over several ranges give every range back, with the same active range
+    /// and active cell, as Excel's do (#1100). An edit recorded the active range alone, and an undo cleared the
+    /// others and put the active cell on that range's anchor. The active cell is walked off the anchor first, so
+    /// a restore that only takes the anchor fails as well.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AnUndoAndARedoOfAStepOverSeveralRanges_GiveEveryRangeBack(bool fill)
+    {
+        var sheet = new SheetController();
+        foreach (var a1 in new[] { "B2", "D4", "D5" }) sheet.Document.SetCell(Cell(a1), "x");
+        sheet.Selection = Range("B2");
+        Press(sheet, "D4", KeyModifiers.Command);
+        ISheetSurfaceModel model = sheet;
+        model.HandlePointer(PointerPhase.Down, CenterOf(4, 3), KeyModifiers.Shift, 1, PointerKind.Mouse);
+        model.HandlePointer(PointerPhase.Up, CenterOf(4, 3), KeyModifiers.Shift, 1, PointerKind.Mouse);
+        Key(sheet, "Enter");
+        var before = (Ranges: sheet.Ranges.ToList(), Active: sheet.ActiveCell);
+        before.Ranges.Should().Equal(Range("B2"), Range("D4", "D5"));
+        before.Active.Should().NotBe(sheet.Selection.Anchor, "Enter walked the active cell inside the range");
+
+        if (fill)
+        {
+            sheet.HandleText("y");
+            Key(sheet, "Enter", KeyModifiers.Command);
+        }
+        else Key(sheet, "Delete");
+        var after = (Ranges: sheet.Ranges.ToList(), Active: sheet.ActiveCell);
+
+        sheet.Undo().Should().BeTrue();
+        foreach (var a1 in new[] { "B2", "D4", "D5" }) sheet.Document.GetCell(Cell(a1)).Should().Be("x");
+        sheet.Ranges.Should().Equal(before.Ranges, "every range the step was taken over is selected again");
+        sheet.ActiveCell.Should().Be(before.Active);
+
+        sheet.Redo().Should().BeTrue();
+        sheet.Ranges.Should().Equal(after.Ranges);
+        sheet.ActiveCell.Should().Be(after.Active);
+    }
 }

@@ -300,4 +300,41 @@ describe('SheetController (transpiled twin)', () => {
     expect(scroll.offset).toEqual(stopped);
     expect(sheet.follow()).toBe(false);
   });
+
+  it('an undo and a redo of a step over several ranges give every range back, and the active cell (#1100)', () => {
+    // The twin of SheetRangesTests.AnUndoAndARedoOfAStepOverSeveralRanges_GiveEveryRangeBack.
+    const SHIFT = 1;
+    const COMMAND = 4;
+    const at = (row: number, col: number) => new Point(col * 96 + 48, row * 28 + 14);
+    const press = (sheet: SheetController, row: number, col: number, modifiers: number) => {
+      sheet.handlePointer('down', at(row, col), modifiers, 1, 'mouse');
+      sheet.handlePointer('up', at(row, col), modifiers, 1, 'mouse');
+    };
+    for (const fill of [false, true]) {
+      const sheet = new SheetController(100, 26);
+      for (const cell of [new CellRef(1, 1), new CellRef(3, 3), new CellRef(4, 3)]) sheet.document.setCell(cell, 'x');
+      sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(1, 1));
+      press(sheet, 3, 3, COMMAND);
+      press(sheet, 4, 3, SHIFT);
+      sheet.handleKey('Enter', 0, 'standard', null);
+      const before = { ranges: [...sheet.ranges], active: sheet.activeCell };
+      expect(before.ranges).toEqual([new SheetRange(new CellRef(1, 1), new CellRef(1, 1)),
+        new SheetRange(new CellRef(3, 3), new CellRef(4, 3))]);
+      expect(before.active).not.toEqual(sheet.selection.anchor);
+
+      if (fill) {
+        sheet.handleText('y');
+        sheet.handleKey('Enter', COMMAND, 'standard', null);
+      } else sheet.handleKey('Delete', 0, 'standard', null);
+      const after = { ranges: [...sheet.ranges], active: sheet.activeCell };
+
+      expect(sheet.undo()).toBe(true);
+      expect(sheet.document.getCell(new CellRef(4, 3))).toBe('x');
+      expect([...sheet.ranges]).toEqual(before.ranges);
+      expect(sheet.activeCell).toEqual(before.active);
+      expect(sheet.redo()).toBe(true);
+      expect([...sheet.ranges]).toEqual(after.ranges);
+      expect(sheet.activeCell).toEqual(after.active);
+    }
+  });
 });

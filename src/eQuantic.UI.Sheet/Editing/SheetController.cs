@@ -770,8 +770,8 @@ public sealed class SheetController : ISheetSurfaceModel
             Kind = SheetEditKind.SetCells,
             Before = new List<SheetCellSnapshot> { new(cell, old) },
             After = new List<SheetCellSnapshot> { new(cell, value) },
-            SelectionBefore = _selection,
-            SelectionAfter = _selection,
+            SelectionBefore = Standing(),
+            SelectionAfter = Standing(),
         };
         Document.SetCell(cell, value);
         Commit(edit);
@@ -791,8 +791,8 @@ public sealed class SheetController : ISheetSurfaceModel
         var edit = new SheetEdit
         {
             Kind = SheetEditKind.SetCells,
-            SelectionBefore = _selection,
-            SelectionAfter = _selection,
+            SelectionBefore = Standing(),
+            SelectionAfter = Standing(),
         };
         foreach (var range in Ranges)
         {
@@ -819,7 +819,7 @@ public sealed class SheetController : ISheetSurfaceModel
     public void Insert(SheetAxis axis, int at, int count = 1)
     {
         if (count < 1) return;
-        var selectionBefore = _selection;
+        var selectionBefore = Standing();
         if (axis == SheetAxis.Rows) Document.ShiftRows(at, count);
         else Document.ShiftCols(at, count);
         Commit(new SheetEdit
@@ -828,14 +828,14 @@ public sealed class SheetController : ISheetSurfaceModel
             At = at,
             Count = count,
             SelectionBefore = selectionBefore,
-            SelectionAfter = _selection,
+            SelectionAfter = Standing(),
         });
     }
 
     public void Delete(SheetAxis axis, int at, int count = 1)
     {
         if (count < 1) return;
-        var selectionBefore = _selection;
+        var selectionBefore = Standing();
         var removed = axis == SheetAxis.Rows ? Document.ShiftRows(at, -count) : Document.ShiftCols(at, -count);
         // Re-clamped into the smaller grid, every range.
         for (var i = 0; i < _others.Count; i++)
@@ -848,7 +848,7 @@ public sealed class SheetController : ISheetSurfaceModel
             Count = count,
             Removed = removed,
             SelectionBefore = selectionBefore,
-            SelectionAfter = _selection,
+            SelectionAfter = Standing(),
         });
     }
 
@@ -864,8 +864,8 @@ public sealed class SheetController : ISheetSurfaceModel
             At = index,
             OldSize = old,
             NewSize = axis == SheetAxis.Rows ? Document.RowHeight(index) : Document.ColWidth(index),
-            SelectionBefore = _selection,
-            SelectionAfter = _selection,
+            SelectionBefore = Standing(),
+            SelectionAfter = Standing(),
         });
     }
 
@@ -907,7 +907,7 @@ public sealed class SheetController : ISheetSurfaceModel
         var edit = new SheetEdit
         {
             Kind = SheetEditKind.SetCells,
-            SelectionBefore = _selection,
+            SelectionBefore = Standing(),
         };
         for (var r = 0; r < grid.Count; r++)
         {
@@ -928,7 +928,7 @@ public sealed class SheetController : ISheetSurfaceModel
             Document.Clamp(new CellRef(origin.Row + grid.Count - 1, origin.Col + maxCols - 1)));
         Reveal();
         if (edit.Before.Count == 0) return false;
-        edit.SelectionAfter = _selection;
+        edit.SelectionAfter = Standing();
         Commit(edit);
         return true;
     }
@@ -992,7 +992,7 @@ public sealed class SheetController : ISheetSurfaceModel
         FillSource = null;
         FillTarget = null;
         if (source is null || target is null) return false;
-        var selectionBefore = _selection;
+        var selectionBefore = Standing();
         _others.Clear();
         _selection = new SheetRange(
             new CellRef(Math.Min(source.Value.TopRow, target.Value.TopRow),
@@ -1014,12 +1014,12 @@ public sealed class SheetController : ISheetSurfaceModel
     /// The fill ENGINE the handle and ⌘D/⌘R share: the source block tiles across the target as one
     /// undo step. Wrap-around indexing keeps the pattern in phase in all four directions.
     /// </summary>
-    public bool Fill(SheetRange source, SheetRange target, SheetRange? selectionBefore = null)
+    public bool Fill(SheetRange source, SheetRange target, SheetSelection? selectionBefore = null)
     {
         var edit = new SheetEdit
         {
             Kind = SheetEditKind.SetCells,
-            SelectionBefore = selectionBefore ?? _selection,
+            SelectionBefore = selectionBefore ?? Standing(),
         };
         var sourceRows = source.BottomRow - source.TopRow + 1;
         var sourceCols = source.RightCol - source.LeftCol + 1;
@@ -1041,7 +1041,7 @@ public sealed class SheetController : ISheetSurfaceModel
             }
         }
         if (edit.Before.Count == 0) return false;
-        edit.SelectionAfter = _selection;
+        edit.SelectionAfter = Standing();
         Commit(edit);
         Reveal();
         return true;
@@ -1742,9 +1742,7 @@ public sealed class SheetController : ISheetSurfaceModel
         var edit = History.PopUndo();
         if (edit is null) return false;
         Apply(edit, forward: false);
-        _others.Clear();
-        _selection = edit.SelectionBefore;
-        _active = _selection.Anchor;
+        Restore(edit.SelectionBefore);
         Reveal();
         Changed?.Invoke(edit);
         return true;
@@ -1755,12 +1753,25 @@ public sealed class SheetController : ISheetSurfaceModel
         var edit = History.PopRedo();
         if (edit is null) return false;
         Apply(edit, forward: true);
-        _others.Clear();
-        _selection = edit.SelectionAfter;
-        _active = _selection.Anchor;
+        Restore(edit.SelectionAfter);
         Reveal();
         Changed?.Invoke(edit);
         return true;
+    }
+
+    /// <summary>Where the selection stands now, for an edit to record.</summary>
+    private SheetSelection Standing() => new(Ranges, _active);
+
+    /// <summary>The selection an edit recorded stands again: every range, the active one last, and the active cell
+    /// where it was. An undo set the active range alone, with the active cell at its anchor, so a step taken over
+    /// several ranges gave back their cells and one of them (#1100).</summary>
+    private void Restore(SheetSelection selection)
+    {
+        _others.Clear();
+        var last = selection.Ranges.Count - 1;
+        for (var i = 0; i < last; i++) _others.Add(selection.Ranges[i]);
+        _selection = selection.Ranges[last];
+        _active = selection.Active;
     }
 
     private void Apply(SheetEdit edit, bool forward)
