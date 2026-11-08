@@ -415,6 +415,7 @@ SemanticRole.Grid = 23
 SemanticRole.Cell = 24
 SemanticRole.ColumnHeader = 25
 SemanticRole.RowHeader = 26
+SemanticRole.EditableComboBox = 27
 ServerConnectionState.Disconnected = 0
 ServerConnectionState.Connecting = 1
 ServerConnectionState.Connected = 2
