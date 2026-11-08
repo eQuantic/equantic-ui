@@ -237,7 +237,10 @@ internal sealed class Solution : IDisposable
                     (project.IsApp ? "app: " : "project: ") + ProjectFileOf(project.Name),
                     "symbols: " + project.Symbols,
                 }
-                .Concat(Compiled(project))));
+                // What the build generated under obj is compiled and is no source of the project's own.
+                .Concat(Compiled(project).Select(file =>
+                    file.StartsWith(Path.Combine(DirectoryOf(project.Name), "obj") + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+                        ? "compiled: " + file : file))));
 
         var output = new StringWriter();
         var errors = new StringWriter();

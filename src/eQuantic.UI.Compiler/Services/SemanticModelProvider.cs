@@ -29,6 +29,7 @@ public class SemanticModelProvider
     {
         _projectCompilation = projectCompilation;
         _referencedTrees = null;
+        _appTrees = null;
     }
 
     /// <summary>
@@ -38,6 +39,9 @@ public class SemanticModelProvider
     /// that project's own global usings and internal types (#624).
     /// </summary>
     private Dictionary<string, (Compilation Compilation, SyntaxTree Tree)>? _referencedTrees;
+
+    /// <summary>The app's trees by their full paths, built once, for <see cref="OptionsFor"/>.</summary>
+    private Dictionary<string, SyntaxTree>? _appTrees;
 
     private (Compilation Compilation, SyntaxTree Tree)? ReferencedTree(string? path)
     {
@@ -66,6 +70,7 @@ public class SemanticModelProvider
     {
         _projectCompilation = null;
         _referencedTrees = null;
+        _appTrees = null;
     }
 
     /// <summary>
@@ -95,11 +100,19 @@ public class SemanticModelProvider
     /// neither holds. A project's symbols are its own, so a file of a library under
     /// <c>#if NET8_0_OR_GREATER</c> takes the branch its project built, not the app's (#828).
     /// </summary>
-    public CSharpParseOptions OptionsFor(string? path) =>
-        (string.IsNullOrEmpty(path) ? null
-            : _projectCompilation?.SyntaxTrees.FirstOrDefault(tree => AreSameFile(tree.FilePath, path))?.Options
-              ?? ReferencedTree(path)?.Tree.Options) as CSharpParseOptions
-        ?? JoinOptions;
+    public CSharpParseOptions OptionsFor(string? path)
+    {
+        if (string.IsNullOrEmpty(path) || _projectCompilation is null) return JoinOptions;
+        if (_appTrees is null)
+        {
+            _appTrees = new(StringComparer.OrdinalIgnoreCase);
+            foreach (var tree in _projectCompilation.SyntaxTrees)
+                if (!string.IsNullOrEmpty(tree.FilePath)) _appTrees.TryAdd(FullPath(tree.FilePath), tree);
+        }
+        return (_appTrees.TryGetValue(FullPath(path), out var own) ? own.Options
+                : ReferencedTree(path)?.Tree.Options) as CSharpParseOptions
+            ?? JoinOptions;
+    }
 
     /// <summary>
     /// The BCL, and — when the host happens to have them loaded — the framework assemblies a

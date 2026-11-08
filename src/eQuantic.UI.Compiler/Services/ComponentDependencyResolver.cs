@@ -113,7 +113,7 @@ public class ComponentDependencyResolver
             first = false;
             if (isProject && projectSources is not null)
             {
-                foreach (var file in projectSources.Files) AnalyzeFile(file, projectSources.ParseOptions);
+                foreach (var file in projectSources.OwnFiles) AnalyzeFile(file, projectSources.ParseOptions);
                 foreach (var file in ProjectCompilationHelper.GetCompilerGeneratedFiles(directory, GeneratedDirectory))
                     AnalyzeFile(file, projectSources.ParseOptions);
                 continue;

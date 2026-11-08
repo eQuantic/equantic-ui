@@ -18,10 +18,17 @@
           Returns="@(_EqProjectSourcesLine)">
     <ItemGroup>
       <_EqProjectCompile Include="@(Compile)" Condition="'%(Compile.Extension)' == '.cs'" />
+      <!-- Its own source, and what it compiles that is not: generated under obj, or handed by a package. -->
+      <_EqProjectOwn Include="@(_EqProjectCompile)"
+          Condition="'%(_EqProjectCompile.NuGetPackageId)' == '' And !$([System.String]::Copy('%(_EqProjectCompile.FullPath)').StartsWith('$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)'))'))" />
+      <_EqProjectCompiledOnly Include="@(_EqProjectCompile)" Exclude="@(_EqProjectOwn)" />
       <_EqProjectSourcesLine Include="project" Value="project: $(MSBuildProjectFullPath)" />
       <_EqProjectSourcesLine Include="symbols" Value="symbols: $(DefineConstants)" />
-      <_EqProjectSourcesLine Include="@(_EqProjectCompile)">
-        <Value>%(_EqProjectCompile.FullPath)</Value>
+      <_EqProjectSourcesLine Include="@(_EqProjectOwn)">
+        <Value>%(_EqProjectOwn.FullPath)</Value>
+      </_EqProjectSourcesLine>
+      <_EqProjectSourcesLine Include="@(_EqProjectCompiledOnly)">
+        <Value>compiled: %(_EqProjectCompiledOnly.FullPath)</Value>
       </_EqProjectSourcesLine>
     </ItemGroup>
   </Target>

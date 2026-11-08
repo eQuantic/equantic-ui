@@ -119,4 +119,21 @@ public sealed class WhatCSharpCompiledTests
         built.Failed.Should().BeFalse(built.Errors);
         built.Module("Flags").Should().Contain("return 'neither';");
     }
+
+    [Fact]
+    public void AFileTheBuildGeneratedUnderObj_IsCompiled_AndIsNoModule()
+    {
+        // What a package or a build step writes under obj (a version class, a polyfill) is compiled, so a page
+        // may read it, and it is never a module of the app's: the walk never entered obj (found in review of
+        // #828). One a browser cannot run would fail the build as a module.
+        using var solution = App(("Screens/Home.cs", Page("ThisAssembly.Version")))
+            .Write("App", Path.Combine("obj", "Debug", "net10.0", "App.Version.cs"),
+                "namespace App;\n\ninternal static class ThisAssembly\n{\n    public const string Version = \"1.2.3\";\n"
+                + "    public static string Stamp() => System.IO.File.ReadAllText(\"stamp.txt\");\n}\n");
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("ThisAssembly").Should().BeNull("a file the build generated is no module of the app's");
+        built.Module("Home").Should().Contain("'1.2.3'", "a constant of it is read as its value");
+    }
 }

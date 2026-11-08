@@ -44,7 +44,9 @@ internal static class ProjectCompilations
         CSharpParseOptions appOptions, out IReadOnlyDictionary<ReferencedProject, Compilation> built)
     {
         var sources = projects.ToDictionary(project => project, project => project.SourceFiles());
-        var compiled = projects.Where(project => sources[project].Any(IsItsOwnSource)).ToList();
+        var compiled = projects.Where(project => project.Sources is { } listed
+            ? listed.OwnFiles.Count > 0
+            : sources[project].Any(IsItsOwnSource)).ToList();
 
         // The assemblies of the projects compiled here are not loaded: a type read from both its
         // compilation and its assembly is two types of one name, and every use of it ambiguous.

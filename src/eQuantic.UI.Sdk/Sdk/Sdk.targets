@@ -429,10 +429,21 @@
             <_EqcSourcesLine Remove="@(_EqcSourcesLine)" />
             <_EqcAppCompile Remove="@(_EqcAppCompile)" />
             <_EqcAppCompile Include="@(Compile)" Condition="'%(Compile.Extension)' == '.cs'" />
+            <!-- The app's own source is what eqc writes modules for: what its folder holds outside obj, and
+                 what it links from outside. What its build generated under obj and C# a package hands it are
+                 compiled and never a module of the app, as the walk, which entered neither, had it. -->
+            <_EqcAppOwn Remove="@(_EqcAppOwn)" />
+            <_EqcAppOwn Include="@(_EqcAppCompile)"
+                Condition="'%(_EqcAppCompile.NuGetPackageId)' == '' And !$([System.String]::Copy('%(_EqcAppCompile.FullPath)').StartsWith('$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)'))'))" />
+            <_EqcAppCompiledOnly Remove="@(_EqcAppCompiledOnly)" />
+            <_EqcAppCompiledOnly Include="@(_EqcAppCompile)" Exclude="@(_EqcAppOwn)" />
             <_EqcSourcesLine Include="app" Value="app: $(MSBuildProjectFullPath)" />
             <_EqcSourcesLine Include="app-symbols" Value="symbols: $(DefineConstants)" />
-            <_EqcSourcesLine Include="@(_EqcAppCompile)">
-                <Value>%(_EqcAppCompile.FullPath)</Value>
+            <_EqcSourcesLine Include="@(_EqcAppOwn)">
+                <Value>%(_EqcAppOwn.FullPath)</Value>
+            </_EqcSourcesLine>
+            <_EqcSourcesLine Include="@(_EqcAppCompiledOnly)">
+                <Value>compiled: %(_EqcAppCompiledOnly.FullPath)</Value>
             </_EqcSourcesLine>
             <_EqcReferenceByPath Remove="@(_EqcReferenceByPath)" />
             <_EqcReferenceByPath Include="@(_MSBuildProjectReferenceExistent->'%(FullPath)')" />
@@ -444,7 +455,7 @@
         <MSBuild Projects="@(_EqcSourcesProject)"
             Targets="EQuanticProjectSources"
             Properties="%(_EqcSourcesProject.SetConfiguration);%(_EqcSourcesProject.SetPlatform);%(_EqcSourcesProject.SetTargetFramework);CustomAfterMicrosoftCommonTargets=$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'Sdk', 'EQuanticProjectSources.targets'))"
-            RemoveProperties="%(_EqcSourcesProject.GlobalPropertiesToRemove)"
+            RemoveProperties="%(_EqcSourcesProject.GlobalPropertiesToRemove);$(_GlobalPropertiesToRemoveFromProjectReferences)"
             Condition="'@(_EqcSourcesProject)' != ''">
             <Output TaskParameter="TargetOutputs" ItemName="_EqcSourcesLine" />
         </MSBuild>

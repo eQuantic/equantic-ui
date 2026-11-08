@@ -403,7 +403,7 @@ public sealed class AppBuild
             // GetFiles filtered by the SHAPE of the path — obj/ and bin/ skipped "unless the path
             // contains /generated/" — so a Release build transpiled obj/Debug's factory surface too.
             var compileUnits = ProjectCompilationHelper
-                .GetCompilationUnits(sourceDirs, _options.GeneratedDirectory, _appSources?.Files)
+                .GetCompilationUnits(sourceDirs, _options.GeneratedDirectory, _appSources?.OwnFiles)
                 .GroupBy(unit => unit.Directory);
 
             // What the written modules import of the projects the app references, still to be

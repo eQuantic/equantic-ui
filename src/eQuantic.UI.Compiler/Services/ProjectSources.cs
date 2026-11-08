@@ -11,10 +11,12 @@ namespace eQuantic.UI.Compiler.Services;
 /// </summary>
 internal sealed class ProjectSources
 {
-    private ProjectSources(string projectFile, IReadOnlyList<string> files, IReadOnlyList<string> symbols)
+    private ProjectSources(string projectFile, IReadOnlyList<string> files, IReadOnlyList<string> ownFiles,
+        IReadOnlyList<string> symbols)
     {
         ProjectFile = projectFile;
         Files = files;
+        OwnFiles = ownFiles;
         Symbols = symbols;
         ParseOptions = ParseDefaults.Options.WithPreprocessorSymbols(symbols);
         _files = new HashSet<string>(files, StringComparer.Ordinal);
@@ -28,6 +30,12 @@ internal sealed class ProjectSources
     /// <summary>The C# files the project compiled, by their full paths, in the order MSBuild listed them:
     /// its generated global usings among them, and a file it links from outside its directory.</summary>
     public IReadOnlyList<string> Files { get; }
+
+    /// <summary>The project's own source among <see cref="Files"/>: what its directory holds outside <c>obj</c>,
+    /// and what it links from outside. A file its build generated under <c>obj</c> and C# a package hands it
+    /// are compiled and never written as a module of the app, which is what the walk, that entered neither,
+    /// always did.</summary>
+    public IReadOnlyList<string> OwnFiles { get; }
 
     /// <summary>The preprocessor symbols the project defined (<c>DEBUG</c>, <c>NET10_0_OR_GREATER</c>…).</summary>
     public IReadOnlyList<string> Symbols { get; }
@@ -53,12 +61,19 @@ internal sealed class ProjectSources
     /// <summary>The line after a header: the project's <c>DefineConstants</c>, as it evaluates them.</summary>
     internal const string SymbolsHeader = "symbols: ";
 
+    /// <summary>What opens the line of a file the project compiles that is not its own source: one its build
+    /// generated under <c>obj</c>, or one a package hands it.</summary>
+    internal const string CompiledOnly = "compiled: ";
+
     /// <summary>
     /// The sections a <c>--sources</c> file holds, as the SDK writes it: for the app and for each project it
     /// references, a header naming the project file (<c>app: </c> or <c>project: </c>), then its symbols
     /// (<c>symbols: </c> and the <c>DefineConstants</c>, a line kept even when they are empty), then the full
-    /// path of each C# file it compiled, one a line. A file handed that does not hold is never read as fewer
-    /// projects: it throws, and the build stops on it (EQ0001), as a projects list does.
+    /// path of each C# file it compiled, one a line, after <c>compiled: </c> where it is not the project's own
+    /// source. A file handed that does not hold is never read as fewer projects: it throws, and the build
+    /// stops on it (EQ0001), as a projects list does. A listed file that is not on disk is passed over: a
+    /// target that writes it before the C# compiler runs has not run when the compile target is run alone, as
+    /// hot reload runs it.
     /// </summary>
     /// <returns>The app's sources, and the referenced projects' by their project files' full paths.</returns>
     public static (ProjectSources? App, IReadOnlyDictionary<string, ProjectSources> Projects) ReadAll(string? sourcesFile)
@@ -83,17 +98,19 @@ internal sealed class ProjectSources
             var symbols = SymbolsOf(lines[at + 1][SymbolsHeader.Length..]);
 
             var files = new List<string>();
+            var own = new List<string>();
             for (at += 2; at < lines.Length && !lines[at].StartsWith(AppHeader, StringComparison.Ordinal)
                     && !lines[at].StartsWith(ProjectHeader, StringComparison.Ordinal); at++)
             {
                 if (lines[at].Length == 0) continue;
-                var file = Path.GetFullPath(lines[at]);
-                if (!File.Exists(file))
-                    throw new FileNotFoundException($"'{projectFile}' compiles a file that is not there: '{file}'", file);
-                if (!files.Contains(file, StringComparer.Ordinal)) files.Add(file);
+                var compiledOnly = lines[at].StartsWith(CompiledOnly, StringComparison.Ordinal);
+                var file = Path.GetFullPath(compiledOnly ? lines[at][CompiledOnly.Length..] : lines[at]);
+                if (!File.Exists(file) || files.Contains(file, StringComparer.Ordinal)) continue;
+                files.Add(file);
+                if (!compiledOnly) own.Add(file);
             }
 
-            var sources = new ProjectSources(projectFile, files, symbols);
+            var sources = new ProjectSources(projectFile, files, own, symbols);
             if (isApp)
             {
                 if (app is not null) throw new InvalidDataException($"the list of sources names two apps: '{sourcesFile}'");
