@@ -23,6 +23,8 @@ public class ResponseCompressionTests
         var modules = Directory.CreateDirectory(Path.Combine(webRoot, "_equantic")).FullName;
         var module = string.Concat(Enumerable.Repeat("export const page = 'home';\n", 400));
         File.WriteAllText(Path.Combine(modules, "HomePage.js"), module);
+        File.WriteAllText(Path.Combine(webRoot, "answer.json"), "[" + string.Join(",", Enumerable.Repeat("\"secret\"", 400)) + "]");
+        File.WriteAllText(Path.Combine(webRoot, "page.html"), "<p>" + string.Concat(Enumerable.Repeat("secret ", 400)) + "</p>");
 
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { WebRootPath = webRoot });
         builder.WebHost.UseTestServer();
@@ -94,5 +96,24 @@ public class ResponseCompressionTests
 
         response.Content.Headers.ContentEncoding.Should().BeEmpty();
         (await response.Content.ReadAsStringAsync()).Should().Be(module);
+    }
+
+    /// <summary>
+    /// What answers one user is not compressed: a page's HTML and a JSON answer may hold a secret beside text
+    /// the request put there, which compressed over HTTPS is the shape BREACH reads through the response's
+    /// length (found by the review of #1002). Only what every user receives alike is.
+    /// </summary>
+    [Theory]
+    [InlineData("/page.html")]
+    [InlineData("/answer.json")]
+    public async Task WhatAnswersOneUser_IsNotCompressed(string path)
+    {
+        var (app, client, _) = await StartAppAsync();
+        await using var _1 = app;
+
+        var response = await Get(client, path, "br");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentEncoding.Should().BeEmpty();
     }
 }
