@@ -26,6 +26,11 @@ width SHALL be a ceiling at the line's width wherever it stands in the line, as 
 - **WHEN** a column 400 tall holds a box fixed at 100 and a `ScrollView` 540 tall
 - **THEN** the scroller keeps 540, on Photon and in Chrome
 
+#### Scenario: Fixed across a column, free down it
+
+- **WHEN** a column 400 tall holds a box fixed at 100 and a `ScrollView` 540 wide with no height of its own, around 800 of content
+- **THEN** the scroller is 300 tall, on Photon and in Chrome
+
 #### Scenario: A fixed width in a column
 
 - **WHEN** a column 200 wide holds a horizontal `ScrollView` 540 wide

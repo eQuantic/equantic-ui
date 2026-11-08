@@ -73,4 +73,19 @@ public class FixedScrollerInALineTests
 
         Laid(column).Children[0].Bounds.Width.Should().Be(200);
     }
+
+    /// <summary>Fixed across a column is not fixed down it: the web writes `flex-shrink: 0` only on the
+    /// line's axis, so a scroller 540 wide with no height of its own shrinks to what the column leaves
+    /// it, 300 in Chrome 152, as a hugging one does.</summary>
+    [Fact]
+    public void AFixedWidthInAColumn_StillShrinksDownIt()
+    {
+        var column = new Column(gap: 0) { Width = 600, Height = 400 };
+        column.Add(Sized(600, 100));
+        column.Add(new ScrollView(Sized(540, 800)) { Width = 540 });
+
+        var node = Laid(column);
+
+        node.Children[1].Bounds.Height.Should().Be(300);
+    }
 }

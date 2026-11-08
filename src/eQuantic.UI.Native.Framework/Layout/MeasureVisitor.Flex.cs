@@ -302,7 +302,7 @@ internal sealed partial class MeasureVisitor
                 var yielding = 0f;
                 for (var i = 0; i < children.Count; i++)
                 {
-                    if (!Shrinkable(children[i])) continue;
+                    if (!Shrinkable(children[i], horizontal)) continue;
                     if (children[i] is Flexible flexible)
                     {
                         weights[i] = flexible.Shrink * mains[i];
