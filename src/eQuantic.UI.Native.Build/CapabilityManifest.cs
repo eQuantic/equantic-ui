@@ -56,19 +56,25 @@ public static class CapabilityManifest
             .ToArray();
         var facts = BundleManifest.Read(assemblyPath);
         var schemes = BundleManifest.Schemes(facts);
-        // What the app stated on builder.Bundle, but for what only a Mac reads, which the build names
-        // rather than dropping it without a word (#878). A permission's sentence is the capability's.
-        var stated = facts
-            .Where(fact => fact.Kind != BundleManifest.ValueKind.UrlScheme && !BundleManifest.OnlyAMacReads(fact.Key))
-            .Where(fact => keys.All(key => key.Key != fact.Key))
-            .ToArray();
-        foreach (var fact in facts.Where(fact => BundleManifest.OnlyAMacReads(fact.Key)))
-            say?.Invoke($"eqicon: {fact.Key} is a fact a Mac reads, and is left out of this phone's manifest");
         // The schemes the app may ASK about. An iPhone answers canOpenURL only for what is listed
         // here, so the list is what the app's policy hands over beyond the web: what it opened with
         // builder.Workspace.Opens…, and its own.
         var asked = OpenedSchemes.Read(assemblyPath).Union(schemes, StringComparer.Ordinal)
             .Order(StringComparer.Ordinal).ToArray();
+        // The keys this file writes from what the app declared, which a fact stated under one of them
+        // does not write again, as the Mac's Info.plist does not: a plist with a key twice is an error
+        // nowhere, it is whichever the reader reaches last. A permission's sentence is the capability's.
+        var written = new HashSet<string>(keys.Select(key => key.Key!), StringComparer.Ordinal);
+        if (schemes.Length > 0) written.Add("CFBundleURLTypes");
+        if (asked.Length > 0) written.Add("LSApplicationQueriesSchemes");
+        // What the app stated on builder.Bundle, but for what only a Mac reads, which the build names
+        // rather than dropping it without a word (#878).
+        var stated = facts
+            .Where(fact => fact.Kind != BundleManifest.ValueKind.UrlScheme && !BundleManifest.OnlyAMacReads(fact.Key))
+            .Where(fact => !written.Contains(fact.Key))
+            .ToArray();
+        foreach (var fact in facts.Where(fact => BundleManifest.OnlyAMacReads(fact.Key)))
+            say?.Invoke($"eqicon: {fact.Key} is a fact a Mac reads, and is left out of this phone's manifest");
 
         if (keys.Length == 0 && asked.Length == 0 && stated.Length == 0)
         {

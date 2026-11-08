@@ -74,6 +74,49 @@ public class PhonePartialManifestTests
         }
     }
 
+    /// <summary>
+    /// A fact stated under a key this file writes from what the app declared is not written a second time:
+    /// a plist with a key twice is an error nowhere, and the reader takes whichever it reaches last (found by
+    /// the review of #878). The Mac's Info.plist keeps the same rule.
+    /// </summary>
+    [Fact]
+    public void AFactUnderAKeyTheManifestWrites_IsNotWrittenTwice()
+    {
+        var directory = Scratch();
+        try
+        {
+            Directory.CreateDirectory(directory);
+            var assembly = Path.Combine(directory, "App.dll");
+            var compilation = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create("App",
+                [Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText("""
+                    #pragma warning disable EQX0001
+                    using eQuantic.UI.Native.Hosting;
+                    [assembly: PhotonBundleKey("", "acme", PhotonBundleValueKind.UrlScheme)]
+                    [assembly: PhotonBundleKey("LSApplicationQueriesSchemes", "stated", PhotonBundleValueKind.Text)]
+                    [assembly: PhotonBundleKey("CFBundleURLTypes", "stated", PhotonBundleValueKind.Text)]
+                    [assembly: PhotonBundleKey("NSHumanReadableCopyright", "Acme", PhotonBundleValueKind.Text)]
+                    """)],
+                ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
+                    .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                    .Select(path => (Microsoft.CodeAnalysis.MetadataReference)TestReferences.Of(path))
+                    .Append(TestReferences.Of(typeof(eQuantic.UI.Native.Hosting.PhotonBundleKeyAttribute).Assembly.Location)),
+                new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary));
+            using (var output = File.Create(assembly)) compilation.Emit(output).Success.Should().BeTrue();
+            var plist = Path.Combine(directory, "Capabilities.plist");
+
+            CapabilityManifest.Write(assembly, plist).Should().BeTrue();
+
+            var written = File.ReadAllText(plist);
+            System.Text.RegularExpressions.Regex.Matches(written, "<key>LSApplicationQueriesSchemes</key>").Should().ContainSingle();
+            System.Text.RegularExpressions.Regex.Matches(written, "<key>CFBundleURLTypes</key>").Should().ContainSingle();
+            written.Should().NotContain("<string>stated</string>").And.Contain("<key>NSHumanReadableCopyright</key>");
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void WithNoIdentifier_TheUrlTypeIsWrittenWithoutAName()
     {
