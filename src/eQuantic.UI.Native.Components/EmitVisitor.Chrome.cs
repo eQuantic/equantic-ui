@@ -126,6 +126,9 @@ internal sealed partial class EmitVisitor
         EmitChrome(s.Node.Bounds, fill, style.CornerRadius,
             borderColor, borderWidth, s.Theme, s.Mode, s.Builder,
             style.Gradient, style.Pattern, style.Glow, style.BorderSides);
+        if (style.InsetHighlight is { } highlight)
+            EmitInsetHighlight(s.Node.Bounds, style.CornerRadius, borderWidth, style.BorderSides,
+                highlight.Resolve(s.Mode), s.Builder);
 
         // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
         // following the control's own radius — the first Box under the focused Pressable
@@ -135,6 +138,29 @@ internal sealed partial class EmitVisitor
             s.Press.PendingFocusRing = false;
             FocusRing(s, s.Node.Bounds, box.Style.CornerRadius);
         }
+    }
+
+    /// <summary>
+    /// The inner top highlight (<see cref="BoxStyle.InsetHighlight"/>, the design's glossy <c>inset 0 1px 0</c>), as
+    /// its documentation says: a hairline one point tall along the top of the padding box, over the fill and inside
+    /// the border, clipped to the padding box's corners. The web writes it as an inset box-shadow, which also follows
+    /// the top corners' arcs down for a point of height; a fill under a clip says the edge, and the arcs' slivers are
+    /// where the two part. Until #1036 no native code read the member, and a box that set it was glossy in a browser
+    /// and flat on Photon.
+    /// </summary>
+    private static void EmitInsetHighlight(Rect bounds, CornerRadii radius, float borderWidth, BorderSides sides,
+        Color ink, DisplayListBuilder builder)
+    {
+        if (ink.A == 0 || bounds.IsEmpty) return;
+        float Inset(BorderSides edge) => borderWidth > 0 && sides.HasFlag(edge) ? borderWidth : 0;
+        var top = Inset(BorderSides.Top);
+        var start = Inset(BorderSides.Start);
+        var padding = new Rect(bounds.X + start, bounds.Y + top,
+            bounds.Width - start - Inset(BorderSides.End), bounds.Height - top - Inset(BorderSides.Bottom));
+        if (padding.Width <= 0 || padding.Height <= 0) return;
+        builder.PushClip(new RRect(padding, radius.Deflate(borderWidth > 0 && sides != BorderSides.None ? borderWidth : 0)));
+        builder.FillRect(new Rect(padding.X, padding.Y, padding.Width, MathF.Min(1, padding.Height)), Paint.Solid(ink));
+        builder.PopClip();
     }
 
     /// <summary>
