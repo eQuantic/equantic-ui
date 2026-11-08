@@ -45,6 +45,35 @@ public class PhonePartialManifestTests
         }
     }
 
+    /// <summary>
+    /// A fact stated on <c>builder.Bundle</c> reached the Mac and stopped there (#878): an iPhone's
+    /// manifest read the schemes and nothing else, so <c>builder.Bundle.Key(...)</c> built green and the
+    /// key was not in the app. A fact only a Mac reads stays out, and the build names it. This assembly
+    /// states a copyright, a display name and two of the Mac's facts (see <c>MacAppPackagingTests</c>).
+    /// </summary>
+    [Fact]
+    public void AFactAnIPhoneReads_ReachesTheManifest_AndOneOnlyAMacReadsIsNamed()
+    {
+        var directory = Scratch();
+        try
+        {
+            var plist = Path.Combine(directory, "Capabilities.plist");
+            var said = new List<string>();
+
+            CapabilityManifest.Write(Declaring, plist, say: said.Add).Should().BeTrue();
+
+            var written = File.ReadAllText(plist);
+            written.Should().Contain("<key>NSHumanReadableCopyright</key>").And.Contain("<key>CFBundleDisplayName</key>");
+            written.Should().NotContain("LSUIElement").And.NotContain("LSMinimumSystemVersion");
+            said.Should().ContainSingle(line => line.Contains("LSUIElement"), "the build says so once, by name");
+            said.Should().ContainSingle(line => line.Contains("LSMinimumSystemVersion"));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void WithNoIdentifier_TheUrlTypeIsWrittenWithoutAName()
     {

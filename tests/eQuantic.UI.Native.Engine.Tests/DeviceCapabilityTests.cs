@@ -147,8 +147,8 @@ public class CapabilityDeclarationTests
     public void TheGeneralFormReachesWhatTheNamedOnesDoNot()
     {
         var capabilities = new eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder();
-        capabilities.Use(DeviceCapability.Contacts, "Find the people you already pay.");
+        capabilities.Use(DeviceCapability.Motion, "Shake to undo a payment.");
 
-        capabilities.Declared.Should().ContainKey(DeviceCapability.Contacts);
+        capabilities.Declared.Should().ContainKey(DeviceCapability.Motion);
     }
 }

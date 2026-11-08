@@ -117,7 +117,7 @@ than pick for you, eqc asks.
 request's culture in C# and the invariant one in the browser; since #1087 the browser reads the
 page's culture there, as .NET reads the current one.
 
-## EQ3001–EQ3007 — the Photon app generator
+## EQ3001–EQ3008 — the Photon app generator
 
 | Code | Meaning |
 |---|---|
@@ -128,6 +128,7 @@ page's culture there, as .NET reads the current one.
 | `EQ3005` | A bundle fact must be constant — the Info.plist is written at build time, so an argument built at run time never reaches the app's manifest. Either argument counts, and whatever the method takes: a string, a bool, an `AppCategory`. |
 | `EQ3006` | A Photon app writes its own entry point. The SDK generates one from `CreateApp`, so an app that kept its `Main` (or its top-level statements) has two — which the compiler reports as `CS0017` against a generated file the app has never seen. Delete the app's: whatever it did first belongs in `CreateApp`, which is the only half Android runs. |
 | `EQ3007` | A scheme a phone app opens must be a constant. A phone answers `CanOpen` only for the schemes its manifest lists (`LSApplicationQueriesSchemes` on iOS, `queries` on Android), and the manifest is written at build time, so a scheme passed to `builder.Workspace.Opens(…)` or to `OpenUrlPolicy.Allowing(…)` that is built at run time would open its links and still be told nothing opens them. Reported only where a manifest is written: a desktop app reads the line at run time alone. |
+| `EQ3008` | No API of the SDK uses this capability yet (`Microphone`, `PhotoLibraryAdd`, `Contacts`, `Notifications`). App Review and Google Play both reject an app that asks for a permission it does not use, so the declaration is refused rather than written into the manifest. Remove it until the API lands. |
 
 ## EQ3101–EQ3105 — the source generators
 

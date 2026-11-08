@@ -40,6 +40,21 @@ internal static class CapabilityDeclarations
         + "const string.",
         "eQuantic.UI", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
+    internal static readonly DiagnosticDescriptor NoApiUsesIt = new(
+        "EQ3008", "No API uses this capability",
+        "No API of the SDK uses {0} yet, and App Review and Google Play both reject an app that asks for a "
+        + "permission it does not use. Remove the declaration until the API lands.",
+        "eQuantic.UI", DiagnosticSeverity.Error, isEnabledByDefault: true);
+
+    /// <summary>
+    /// The capabilities the enum names and no contract realizes on any target (#779). Their members stay,
+    /// since an enum is append-only (<c>EnumValueAbiTests</c>), and each goes from here with the API that
+    /// uses it, which also says what it asks of each platform: <c>PhotoLibraryAdd</c> asked for
+    /// <c>WRITE_EXTERNAL_STORAGE</c>, which has no effect from Android 11.
+    /// </summary>
+    internal static bool HasNoRealization(string capability) =>
+        capability is "Microphone" or "PhotoLibraryAdd" or "Contacts" or "Notifications";
+
     /// <summary>Whether a syntax node is worth looking at — cheap, and runs on every keystroke.</summary>
     internal static bool MightDeclare(SyntaxNode node) =>
         BuilderCall.MethodName(node) is { } name && name.StartsWith("Use", System.StringComparison.Ordinal);
@@ -82,30 +97,23 @@ internal static class CapabilityDeclarations
     internal static string? AppleKey(string capability) => capability switch
     {
         "Camera" => "NSCameraUsageDescription",
-        "Microphone" => "NSMicrophoneUsageDescription",
         "PhotoLibrary" => "NSPhotoLibraryUsageDescription",
-        "PhotoLibraryAdd" => "NSPhotoLibraryAddUsageDescription",
         "Location" => "NSLocationWhenInUseUsageDescription",
         "Motion" => "NSMotionUsageDescription",
         "Biometrics" => "NSFaceIDUsageDescription",
-        "Contacts" => "NSContactsUsageDescription",
-        _ => null,   // Notifications is a runtime prompt on Apple platforms, not a manifest key.
+        _ => null,
     };
 
     /// <summary>The permissions Android reads. Some capabilities are several.</summary>
     internal static IEnumerable<string> AndroidPermissions(string capability) => capability switch
     {
         "Camera" => new[] { "android.permission.CAMERA" },
-        "Microphone" => new[] { "android.permission.RECORD_AUDIO" },
         // Android 13 split the media permissions by type; the old one still covers 12 and below.
         "PhotoLibrary" => new[] { "android.permission.READ_MEDIA_IMAGES" },
-        "PhotoLibraryAdd" => new[] { "android.permission.WRITE_EXTERNAL_STORAGE" },
         "Location" => new[] { "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION" },
         "Motion" => new[] { "android.permission.HIGH_SAMPLING_RATE_SENSORS" },
         "Biometrics" => new[] { "android.permission.USE_BIOMETRIC" },
         "NetworkStatus" => new[] { "android.permission.ACCESS_NETWORK_STATE" },
-        "Contacts" => new[] { "android.permission.READ_CONTACTS" },
-        "Notifications" => new[] { "android.permission.POST_NOTIFICATIONS" },
         _ => Enumerable.Empty<string>(),
     };
 }

@@ -60,7 +60,7 @@ if (args.Length > 0 && args[0] == "capabilities")
     }
 
     if (!File.Exists(appAssembly)) return 0;      // nothing built yet; the build will come back
-    var wrote = CapabilityManifest.Write(appAssembly, plist, Arg("--id"));
+    var wrote = CapabilityManifest.Write(appAssembly, plist, Arg("--id"), Console.WriteLine);
     Console.WriteLine(wrote
         ? $"eqicon: wrote {plist}"
         : "eqicon: no device capabilities or URL schemes declared");

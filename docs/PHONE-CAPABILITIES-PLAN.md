@@ -26,7 +26,8 @@ On `main` at `2006921`: twelve device contracts exist; the iOS shell realizes ei
 shell seven. Android has no `ICamera`; neither phone realizes `ITextClipboard` or `IDeepLinks`;
 `IWorkspace` and `IFileDialogs` are desktop-only by their own contracts. Four declarations
 (`UseContacts`, `UseNotifications`, `UseMicrophone`, `UsePhotoLibraryAdd`) write a permission no
-API uses. Nothing has run on a physical device. Since then the Android shell realizes `ICamera`
+API uses, and those four are refused now until their APIs land
+([#779](https://github.com/eQuantic/equantic-ui/issues/779)). Nothing has run on a physical device. Since then the Android shell realizes `ICamera`
 ([#775](https://github.com/eQuantic/equantic-ui/issues/775)), both phones realize `IDeepLinks`
 ([#777](https://github.com/eQuantic/equantic-ui/issues/777)), and every shell opens a link through
 `IUrlLauncher`, which took the link methods out of the desktop-only `IWorkspace`

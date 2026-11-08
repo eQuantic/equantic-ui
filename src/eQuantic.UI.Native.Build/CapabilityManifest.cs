@@ -35,6 +35,11 @@ public static class CapabilityManifest
     /// the same <c>builder.Workspace.Opens…</c> lines the policy is built from, with the app's own.
     /// </para>
     /// <para>
+    /// And the rest of what the app stated on <c>builder.Bundle</c>, an iPhone's keys and whatever Apple
+    /// adds next, but for the facts only a Mac reads (<see cref="BundleManifest.OnlyAMacReads"/>), which
+    /// <paramref name="say"/> is told by name.
+    /// </para>
+    /// <para>
     /// With nothing declared the file is REMOVED, not merely left unwritten: the SDK merges it
     /// whenever it exists, so one left by an earlier build would go on asking for a permission, or
     /// answering a scheme, the app has since stopped declaring. And it is written only when what it
@@ -42,21 +47,30 @@ public static class CapabilityManifest
     /// a file touched on every build would cost every build that work.
     /// </para>
     /// </summary>
-    public static bool Write(string assemblyPath, string plistPath, string? identifier = null)
+    public static bool Write(string assemblyPath, string plistPath, string? identifier = null, Action<string>? say = null)
     {
         var declared = Read(assemblyPath);
         var keys = declared
             .Select(pair => (Key: AppleKey(pair.Capability), pair.Reason))
             .Where(entry => entry.Key is not null)
             .ToArray();
-        var schemes = BundleManifest.Schemes(BundleManifest.Read(assemblyPath));
+        var facts = BundleManifest.Read(assemblyPath);
+        var schemes = BundleManifest.Schemes(facts);
+        // What the app stated on builder.Bundle, but for what only a Mac reads, which the build names
+        // rather than dropping it without a word (#878). A permission's sentence is the capability's.
+        var stated = facts
+            .Where(fact => fact.Kind != BundleManifest.ValueKind.UrlScheme && !BundleManifest.OnlyAMacReads(fact.Key))
+            .Where(fact => keys.All(key => key.Key != fact.Key))
+            .ToArray();
+        foreach (var fact in facts.Where(fact => BundleManifest.OnlyAMacReads(fact.Key)))
+            say?.Invoke($"eqicon: {fact.Key} is a fact a Mac reads, and is left out of this phone's manifest");
         // The schemes the app may ASK about. An iPhone answers canOpenURL only for what is listed
         // here, so the list is what the app's policy hands over beyond the web: what it opened with
         // builder.Workspace.Opens…, and its own.
         var asked = OpenedSchemes.Read(assemblyPath).Union(schemes, StringComparer.Ordinal)
             .Order(StringComparer.Ordinal).ToArray();
 
-        if (keys.Length == 0 && asked.Length == 0)
+        if (keys.Length == 0 && asked.Length == 0 && stated.Length == 0)
         {
             // Asked of the file: Delete answers a missing DIRECTORY with an exception, and a
             // first build has not made it yet.
@@ -67,6 +81,11 @@ public static class CapabilityManifest
         var document = PropertyListWriter.Document(plist =>
         {
             foreach (var (key, reason) in keys) plist.String(key!, reason);
+            foreach (var fact in stated)
+            {
+                if (fact.Kind == BundleManifest.ValueKind.Flag) plist.Bool(fact.Key, fact.Value == "true");
+                else plist.String(fact.Key, fact.Value);
+            }
             BundleManifest.WriteUrlTypes(plist, identifier, schemes);
             if (asked.Length > 0) plist.StringArray("LSApplicationQueriesSchemes", asked);
         });
@@ -127,13 +146,10 @@ public static class CapabilityManifest
     public static string? AppleKey(string capability) => capability switch
     {
         "Camera" => "NSCameraUsageDescription",
-        "Microphone" => "NSMicrophoneUsageDescription",
         "PhotoLibrary" => "NSPhotoLibraryUsageDescription",
-        "PhotoLibraryAdd" => "NSPhotoLibraryAddUsageDescription",
         "Location" => "NSLocationWhenInUseUsageDescription",
         "Motion" => "NSMotionUsageDescription",
         "Biometrics" => "NSFaceIDUsageDescription",
-        "Contacts" => "NSContactsUsageDescription",
-        _ => null,   // Notifications is a runtime prompt on Apple platforms, not a manifest key.
+        _ => null,
     };
 }

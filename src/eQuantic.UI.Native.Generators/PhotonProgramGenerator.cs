@@ -325,6 +325,12 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
                     CapabilityDeclarations.ReasonMustBeConstant, declaration.Location, declaration.Capability));
                 continue;
             }
+            if (CapabilityDeclarations.HasNoRealization(declaration.Capability))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    CapabilityDeclarations.NoApiUsesIt, declaration.Location, declaration.Capability));
+                continue;
+            }
             declared[declaration.Capability] = declaration;
         }
 

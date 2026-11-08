@@ -1,1 +1,5 @@
 #nullable enable
+*REMOVED*[EQX0001]eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UseContacts(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+*REMOVED*[EQX0001]eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UseMicrophone(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+*REMOVED*[EQX0001]eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UseNotifications(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+*REMOVED*[EQX0001]eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UsePhotoLibraryAdd(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!

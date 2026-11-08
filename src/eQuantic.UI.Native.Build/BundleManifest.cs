@@ -38,6 +38,14 @@ public static class BundleManifest
     /// <summary>One declared fact.</summary>
     public readonly record struct Fact(string Key, string Value, ValueKind Kind);
 
+    /// <summary>
+    /// Whether <paramref name="key"/> is one only a Mac reads: what <c>builder.Bundle</c> writes for
+    /// <c>MinimumSystemVersion</c>, <c>Agent</c> and <c>Category</c>. An iPhone's minimum comes from
+    /// <c>SupportedOSPlatformVersion</c>, and it has no menu bar to stay out of (#878).
+    /// </summary>
+    public static bool OnlyAMacReads(string key) =>
+        key is "LSMinimumSystemVersion" or "LSUIElement" or "LSApplicationCategoryType";
+
     /// <summary>The URL schemes among the facts, in the order they were declared.</summary>
     public static string[] Schemes(IEnumerable<Fact> facts) =>
         [.. facts.Where(fact => fact.Kind == ValueKind.UrlScheme).Select(fact => fact.Value)];

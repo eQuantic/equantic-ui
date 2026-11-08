@@ -33,14 +33,8 @@ public sealed class PhotonCapabilitiesBuilder
     /// <summary>Taking a photo or recording video.</summary>
     public PhotonCapabilitiesBuilder UseCamera(string reason) => Use(DeviceCapability.Camera, reason);
 
-    /// <summary>Recording sound.</summary>
-    public PhotonCapabilitiesBuilder UseMicrophone(string reason) => Use(DeviceCapability.Microphone, reason);
-
     /// <summary>Reading the pictures the user already has.</summary>
     public PhotonCapabilitiesBuilder UsePhotoLibrary(string reason) => Use(DeviceCapability.PhotoLibrary, reason);
-
-    /// <summary>Saving into the user's pictures.</summary>
-    public PhotonCapabilitiesBuilder UsePhotoLibraryAdd(string reason) => Use(DeviceCapability.PhotoLibraryAdd, reason);
 
     /// <summary>Where the device is.</summary>
     public PhotonCapabilitiesBuilder UseLocation(string reason) => Use(DeviceCapability.Location, reason);
@@ -56,15 +50,10 @@ public sealed class PhotonCapabilitiesBuilder
     /// that demanded a sentence nobody will read teaches people to write filler.</summary>
     public PhotonCapabilitiesBuilder UseNetworkStatus() => Use(DeviceCapability.NetworkStatus, "");
 
-    /// <summary>Reading the contact list.</summary>
-    public PhotonCapabilitiesBuilder UseContacts(string reason) => Use(DeviceCapability.Contacts, reason);
-
-    /// <summary>Sending notifications.</summary>
-    public PhotonCapabilitiesBuilder UseNotifications(string reason) => Use(DeviceCapability.Notifications, reason);
-
     /// <summary>
-    /// The general form, for a capability this builder has no named method for yet. The named ones
-    /// exist because they are discoverable — a developer finds `UseCamera` by typing `Use`.
+    /// The general form. The named ones exist because they are discoverable — a developer finds
+    /// `UseCamera` by typing `Use`. The build refuses a capability no API of the SDK uses yet (EQ3008):
+    /// App Review and Google Play both reject an app that asks for a permission it does not use.
     /// </summary>
     public PhotonCapabilitiesBuilder Use(DeviceCapability capability, string reason)
     {
