@@ -692,7 +692,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
         if (symbol is not { } ctor) return converted;
 
-        var places = BoundArguments.InPlaces(args, converted, ctor);
+        var places = BoundArguments.InPlaces(args, ctor);
 
         // A dependency slot is not filled with a default — it is REMOVED, because the parameter
         // it stood in front of is gone from the emitted signature too.
@@ -701,13 +701,14 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             .ToList();
 
         var lastSet = keep.FindLastIndex(i => places[i] != null);
-        var ordered = new List<JsExpr>();
+        var slots = new List<(int Written, JsExpr? Own)>();
         for (var k = 0; k <= lastSet; k++)
         {
-            if (places[keep[k]] is { } supplied) ordered.AddRange(supplied);
-            else ordered.Add(DefaultOf(ctor.Parameters[keep[k]], context));
+            if (places[keep[k]] is { } supplied) slots.AddRange(supplied.Select(index => (index, (JsExpr?)null)));
+            else slots.Add((-1, DefaultOf(ctor.Parameters[keep[k]], context)));
         }
-        return ordered;
+        // Each argument is evaluated in the order it is written, as C# evaluates it (#1071).
+        return BoundArguments.PassedAsWritten(converted, slots, context);
     }
 
     /// <summary>
@@ -934,9 +935,11 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         var converted = list.Arguments.Select(argument => BoundArguments.Convert(argument, context)).ToList();
         if (ctor is null || !list.Arguments.Any(argument => argument.NameColon != null)) return converted;
 
-        var places = BoundArguments.InPlaces(list.Arguments, converted, ctor);
+        var places = BoundArguments.InPlaces(list.Arguments, ctor);
         var last = Array.FindLastIndex(places, place => place != null);
-        return places.Take(last + 1).SelectMany(place => place ?? [Undefined]).ToList();
+        // Each argument is evaluated in the order it is written, as C# evaluates it (#1071).
+        return BoundArguments.PassedAsWritten(converted, places.Take(last + 1)
+            .SelectMany(place => place?.Select(index => (index, (JsExpr?)null)) ?? [(-1, Undefined)]).ToList(), context);
     }
 
     private JsExpr ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)
