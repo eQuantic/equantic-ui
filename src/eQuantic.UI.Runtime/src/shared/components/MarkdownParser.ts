@@ -19,7 +19,7 @@ export class MarkdownParser {
                     body.push(lines[i]);
                     i++;
                 }
-                let $n0: any; 
+                let $n0: MarkdownBlock; 
                 blocks.push(($n0 = new MarkdownBlock(), $n0.kind = 'code', $n0.lang = lang.length === 0 ? 'text' : lang, $n0.raw = $eq.text.join('\n', body), $n0));
                 continue;
             }
@@ -41,30 +41,30 @@ export class MarkdownParser {
                         unique = id + '-' + $eq.text.format(n, null, undefined, undefined, 'int32');
                     }
                     $eq.collections.setAdd(usedIds, unique);
-                    let $n1: any; 
+                    let $n1: MarkdownBlock; 
                     blocks.push(($n1 = new MarkdownBlock(), $n1.kind = 'heading', $n1.level = level > 4 ? 4 : level, $n1.text = MarkdownParser.strip(text), $n1.runs = MarkdownParser.inline(text), $n1.id = unique, $n1));
                     continue;
                 }
             }
             if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
-                let $n2: any; 
+                let $n2: MarkdownBlock; 
                 blocks.push(($n2 = new MarkdownBlock(), $n2.kind = 'rule', $n2));
                 continue;
             }
             if ($eq.text.startsWith(trimmed, '|', 'ordinal') && i + 1 < lines.length && MarkdownParser.isAlignmentRow(lines[i + 1])) {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
-                let $n3: any; 
+                let $n3: MarkdownBlock; 
                 let table = ($n3 = new MarkdownBlock(), $n3.kind = 'table', $n3);
                 for (const cell of MarkdownParser.splitRow(trimmed)) {
-                    let $n4: any; 
+                    let $n4: MarkdownCell; 
                     table.head.push(($n4 = new MarkdownCell(), $n4.runs = MarkdownParser.inline(cell), $n4));
                 }
                 i += 2;
                 while (i < lines.length && $eq.text.startsWith($eq.text.trim(lines[i]), '|', 'ordinal')) {
                     let row = new MarkdownRow();
                     for (const cell of MarkdownParser.splitRow($eq.text.trim(lines[i]))) {
-                        let $n5: any; 
+                        let $n5: MarkdownCell; 
                         row.cells.push(($n5 = new MarkdownCell(), $n5.runs = MarkdownParser.inline(cell), $n5));
                     }
                     table.rows.push(row);
@@ -84,14 +84,14 @@ export class MarkdownParser {
                     i++;
                 }
                 i--;
-                let $n6: any; 
+                let $n6: MarkdownBlock; 
                 blocks.push(($n6 = new MarkdownBlock(), $n6.kind = 'quote', $n6.runs = MarkdownParser.inline($eq.text.trim(quoted)), $n6));
                 continue;
             }
             let bullet = MarkdownParser.bulletOf(line);
             if (bullet != null) {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
-                let $n7: any; 
+                let $n7: MarkdownBlock; 
                 let list = ($n7 = new MarkdownBlock(), $n7.kind = 'list', $n7);
                 while (i < lines.length) {
                     let mark = MarkdownParser.bulletOf(lines[i]);
@@ -105,7 +105,7 @@ export class MarkdownParser {
                         break;
                     }
                     let indent = lines[i].length - $eq.text.trimStart(lines[i]).length;
-                    let $n8: any; 
+                    let $n8: MarkdownListItem; 
                     list.items.push(($n8 = new MarkdownListItem(), $n8.runs = MarkdownParser.inline(mark.content), $n8.depth = indent >= 2 ? 1 : 0, $n8.marker = mark.marker, $n8));
                     i++;
                 }
@@ -133,7 +133,7 @@ export class MarkdownParser {
     static flushParagraph(paragraph: string, blocks: MarkdownBlock[]) {
         let joined = $eq.text.trim(paragraph);
         if (joined.length === 0) return '';
-        let $n9: any; 
+        let $n9: MarkdownBlock; 
         blocks.push(($n9 = new MarkdownBlock(), $n9.kind = 'paragraph', $n9.runs = MarkdownParser.inline(joined), $n9));
         return '';
     }
@@ -214,13 +214,13 @@ export class MarkdownParser {
     static bulletOf(line: string) {
         let t = $eq.text.trimStart(line);
         if ($eq.text.startsWith(t, '- ', 'ordinal') || $eq.text.startsWith(t, '* ', 'ordinal')) {
-            let $n10: any; 
+            let $n10: MarkdownBulletMatch; 
             return ($n10 = new MarkdownBulletMatch(), $n10.marker = '•', $n10.content = $eq.text.trim(t.slice(2)), $n10);
         }
         let digits = 0;
         while (digits < t.length && (/^\p{Nd}$/u.test(t[digits]))) digits++;
         if (digits > 0 && digits + 1 < t.length && t[digits] === '.' && t[digits + 1] === ' ') {
-            let $n11: any; 
+            let $n11: MarkdownBulletMatch; 
             return ($n11 = new MarkdownBulletMatch(), $n11.marker = t.slice(0, digits) + '.', $n11.content = $eq.text.trim(t.slice(digits + 2)), $n11);
         }
         return null;
@@ -237,7 +237,7 @@ export class MarkdownParser {
                 let end = $eq.text.indexOfChar(text, '`', i + 1);
                 if (end > i) {
                     buffer = MarkdownParser.flushText(runs, buffer);
-                    let $n12: any; 
+                    let $n12: MarkdownRun; 
                     runs.push(($n12 = new MarkdownRun(), $n12.text = text.slice(i + 1, end), $n12.code = true, $n12));
                     i = end + 1;
                     continue;
@@ -305,7 +305,7 @@ export class MarkdownParser {
 
     static flushText(runs: MarkdownRun[], buffer: string) {
         if (buffer.length > 0) {
-            let $n13: any; 
+            let $n13: MarkdownRun; 
             runs.push(($n13 = new MarkdownRun(), $n13.text = buffer, $n13));
         }
         return '';
@@ -316,14 +316,14 @@ export class MarkdownParser {
         if (close <= open || close + 1 >= text.length || text[close + 1] !== '(') return null;
         let hrefEnd = $eq.text.indexOfChar(text, ')', close + 2);
         if (hrefEnd <= close) return null;
-        let $n14: any; 
+        let $n14: MarkdownLinkMatch; 
         return ($n14 = new MarkdownLinkMatch(), $n14.label = text.slice(open + 1, close), $n14.href = text.slice(close + 2, hrefEnd), $n14.end = hrefEnd + 1, $n14);
     }
 
     static addLinkRuns(runs: MarkdownRun[], label: string, href: string) {
         let inner = MarkdownParser.inline(label);
         if (inner.length === 0) {
-            let $n15: any; 
+            let $n15: MarkdownRun; 
             runs.push(($n15 = new MarkdownRun(), $n15.text = label, $n15.href = href, $n15));
             return;
         }

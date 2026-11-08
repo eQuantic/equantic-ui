@@ -63,7 +63,19 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
         // this one dropped it, so the shape only broke where somebody wrote a local async helper.
         // A const bound to the arrow any lambda's block is (#384); a statement in the body with no
         // origin of its own belongs to the function.
-        return JsStatement.Const(name, JsExpr.ArrowBlock(parameters, body with { Origin = localFn }, context.Layout, context.Depth, isAsync));
+        return JsStatement.Const(name, JsExpr.ArrowBlock(parameters, body with { Origin = localFn }, context.Layout, context.Depth, isAsync, Returns(localFn, isAsync, context)));
+    }
+
+    /// <summary>
+    /// The return type C# declared, as the method's own annotation is: the parameters always said theirs,
+    /// and without this TypeScript inferred the DERIVED type a body returns, so a variable the function
+    /// initialized refused the sibling C# lets it take (#793). A named type alone, as a local's annotation:
+    /// an async function returns a promise of it, and what is not named keeps what TypeScript infers.
+    /// </summary>
+    private static string Returns(LocalFunctionStatementSyntax localFn, bool isAsync, ConversionContext context)
+    {
+        if (!context.TypeAnnotations || isAsync || localFn.ReturnType is NullableTypeSyntax) return "";
+        return TsNamedType.For(context.SemanticHelper.GetType(localFn.ReturnType), context) is { } name and not "any" ? $": {name}" : "";
     }
 
     /// <summary>

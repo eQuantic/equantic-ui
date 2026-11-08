@@ -299,13 +299,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
         if (declared is null || actual is null) return "";
         if (SymbolEqualityComparer.Default.Equals(declared, actual)) return "";
 
-        // Only NAMED vocabulary/user types annotate — primitives, generics and arrays keep their
-        // C# spellings, which are not TypeScript's, and inference is already right for them.
-        if (declared is not INamedTypeSymbol { IsGenericType: false, SpecialType: SpecialType.None } named)
-            return "";
-        // An interface, an exception and a delegate are named by what they cross as (TsStandIn):
-        // `IThing thing = new Thing()` declared an `IThing` no module defines.
-        var name = TsStandIn.For(named, context.UsedRuntimeTypes) ?? named.NestedTwinName() ?? named.Name;
+        if (TsNamedType.For(declared, context) is not { } name) return "";
         if (name == "any") return ": any";
         // `VisualNode?` crosses as the union it is — an annotation that rejects the null the C#
         // explicitly allowed would refuse `VisualNode? icon = selected ? new Icon(…) : null`.

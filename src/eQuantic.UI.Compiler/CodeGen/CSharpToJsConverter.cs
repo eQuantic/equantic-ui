@@ -747,7 +747,7 @@ public class CSharpToJsConverter
         new([
             JsStatement.Hoisted(
                 ExpressionVariableScanner.Declarations(expression, _context.TypeAnnotations)
-                    + ExpressionVariableScanner.Declarations(temporaries, _context.TypeAnnotations),
+                    + _context.Temporaries.Declarations(temporaries, _context.TypeAnnotations),
                 returns ? JsStatement.Return(converted) : JsStatement.Expression(converted)) with { Origin = expression },
         ]);
 
@@ -839,7 +839,7 @@ public class CSharpToJsConverter
             converted = Marked(converted);
             return bound.Count == 0
                 ? converted
-                : JsStatement.Hoisted(ExpressionVariableScanner.Declarations(bound, _context.TypeAnnotations), converted)
+                : JsStatement.Hoisted(_context.Temporaries.Declarations(bound, _context.TypeAnnotations), converted)
                     with { Origin = stmt };
         }
 
