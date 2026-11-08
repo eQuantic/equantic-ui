@@ -24,6 +24,12 @@ project's directory, with no symbol defined.
   its directory
 - **THEN** the removed file's class is no module, and the linked file's class is a module a page imports
 
+#### Scenario: A file the build generated under obj
+
+- **WHEN** the app's build generates a class under `obj` that a browser cannot run, and a page reads a
+  constant of it
+- **THEN** the page reads the constant's value, and the class is no module of the app
+
 #### Scenario: A Release build after a Debug one
 
 - **WHEN** both configurations' generated usings are under `obj` and a Release build runs
