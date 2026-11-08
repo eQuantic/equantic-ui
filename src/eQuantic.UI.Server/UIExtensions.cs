@@ -182,6 +182,10 @@ public static class UIExtensions
                 "image/svg+xml"
             });
         });
+        // The compression has to be applied as well as registered, and the developer writes nothing for it:
+        // it stands in front of the pipeline, so what the runtime's endpoint, the static files and a page
+        // answer all pass through it (#1002).
+        services.AddTransient<IStartupFilter, ResponseCompressionFirst>();
         services.Configure<BrotliCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
         services.Configure<GzipCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
 

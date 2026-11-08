@@ -27,15 +27,31 @@ public sealed class HotReloadService : IDisposable
     private volatile bool _disposed;
 
     public HotReloadService(string contentRoot)
-        : this(contentRoot, () => Process.Start(new ProcessStartInfo
+        : this(contentRoot, () => Process.Start(Rebuild(contentRoot)), TimeSpan.FromMinutes(2))
+    {
+    }
+
+    /// <summary>
+    /// The rebuild, under a build that leaves nothing running behind it. A worker node, an MSBuild server or
+    /// a compiler server that outlives it would keep its stdout and stderr open, and those streams do not
+    /// end while something holds them, which is how the Web suite hung until #971 measured it. Here that
+    /// would be the hot-reload loop.
+    /// </summary>
+    private static ProcessStartInfo Rebuild(string contentRoot)
+    {
+        var start = new ProcessStartInfo
         {
             FileName = "dotnet",
             Arguments = "msbuild -t:CompileEQuanticUI -v:q -nologo",
             WorkingDirectory = contentRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-        }), TimeSpan.FromMinutes(2))
-    {
+        };
+        start.Environment.Remove("MSBUILDENSURESTDOUTFORTASKPROCESSES");
+        start.Environment["MSBUILDDISABLENODEREUSE"] = "1";
+        start.Environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
+        start.Environment["UseSharedCompilation"] = "false";
+        return start;
     }
 
     /// <summary>The service with the rebuild it starts and how long it may take, which a test sets.</summary>
@@ -110,7 +126,16 @@ public sealed class HotReloadService : IDisposable
                 Console.WriteLine($"[eQuantic.HotReload] rebuilt in {started.Elapsed.TotalSeconds:F1}s — reloading browsers");
                 Broadcast("reload");
             }
-            else Console.WriteLine($"[eQuantic.HotReload] eqc rebuild failed:\n{stderr.Result}{stdout.Result}");
+            else
+            {
+                // What it said, within what is left of the limit: a stream ends when the last process
+                // holding it closes it, not when the rebuild exits, and an unbounded read held this loop.
+                var left = _limit - started.Elapsed;
+                var ended = Task.WhenAll(stdout, stderr).Wait(left > TimeSpan.Zero ? left : TimeSpan.Zero);
+                Console.WriteLine(ended
+                    ? $"[eQuantic.HotReload] eqc rebuild failed:\n{stderr.Result}{stdout.Result}"
+                    : "[eQuantic.HotReload] eqc rebuild failed, and something it started still holds its output");
+            }
         }
         catch (Exception ex)
         {

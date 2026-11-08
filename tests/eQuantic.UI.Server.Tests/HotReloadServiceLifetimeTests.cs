@@ -38,6 +38,24 @@ public class HotReloadServiceLifetimeTests
         process.Kill(entireProcessTree: true);
     }
 
+    /// <summary>
+    /// A rebuild that failed, and left something running that holds its output, cannot hold the loop: its
+    /// streams do not end at its exit, and the read on the failure path had no deadline (#997). The next
+    /// rebuild would never have started.
+    /// </summary>
+    [Fact]
+    public void AFailedRebuildThatLeavesItsOutputHeld_DoesNotHoldTheLoop()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        using var service = new HotReloadService(Path.GetTempPath(), () =>
+            ChildProcess.Started("sh", ["-c", "sleep 8 & exit 1"]), TimeSpan.FromSeconds(1));
+
+        var watch = Stopwatch.StartNew();
+        service.Rebuild();
+
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5), $"the read is held to what is left of the limit: {watch.Elapsed}");
+    }
+
     [Fact]
     public void ARebuildPastItsLimit_IsStopped_NotAbandoned()
     {
