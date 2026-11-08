@@ -454,7 +454,7 @@
         </ItemGroup>
         <MSBuild Projects="@(_EqcSourcesProject)"
             Targets="EQuanticProjectSources"
-            Properties="%(_EqcSourcesProject.SetConfiguration);%(_EqcSourcesProject.SetPlatform);%(_EqcSourcesProject.SetTargetFramework);CustomAfterMicrosoftCommonTargets=$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'Sdk', 'EQuanticProjectSources.targets'))"
+            Properties="%(_EqcSourcesProject.SetConfiguration);%(_EqcSourcesProject.SetPlatform);%(_EqcSourcesProject.SetTargetFramework);CustomAfterMicrosoftCommonTargets=$(MSBuildThisFileDirectory)EQuanticProjectSources.targets"
             RemoveProperties="%(_EqcSourcesProject.GlobalPropertiesToRemove);$(_GlobalPropertiesToRemoveFromProjectReferences)"
             Condition="'@(_EqcSourcesProject)' != ''">
             <Output TaskParameter="TargetOutputs" ItemName="_EqcSourcesLine" />
