@@ -708,7 +708,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             else slots.Add((-1, DefaultOf(ctor.Parameters[keep[k]], context)));
         }
         // Each argument is evaluated in the order it is written, as C# evaluates it (#1071).
-        return BoundArguments.PassedAsWritten(converted, slots, context);
+        return BoundArguments.PassedAsWritten(args, converted, slots, context);
     }
 
     /// <summary>
@@ -938,7 +938,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         var places = BoundArguments.InPlaces(list.Arguments, ctor);
         var last = Array.FindLastIndex(places, place => place != null);
         // Each argument is evaluated in the order it is written, as C# evaluates it (#1071).
-        return BoundArguments.PassedAsWritten(converted, places.Take(last + 1)
+        return BoundArguments.PassedAsWritten(list.Arguments, converted, places.Take(last + 1)
             .SelectMany(place => place?.Select(index => (index, (JsExpr?)null)) ?? [(-1, Undefined)]).ToList(), context);
     }
 

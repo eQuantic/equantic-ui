@@ -182,7 +182,7 @@ public class InvocationStrategy : IExpressionIrStrategy
                 if (places[i] is { } supplied) slots.AddRange(supplied.Select(index => (index, (JsExpr?)null)));
                 else slots.Add((-1, JsExpr.Opaque(ObjectCreationStrategy.DefaultLiteralFor(symbol.Parameters[i], context))));
             }
-            argsList = BoundArguments.PassedAsWritten(written, slots, context);
+            argsList = BoundArguments.PassedAsWritten(invocation.ArgumentList.Arguments, written, slots, context);
         }
         var argIrs = argsList;
         // The same arguments as text, for the template branches that splice them.

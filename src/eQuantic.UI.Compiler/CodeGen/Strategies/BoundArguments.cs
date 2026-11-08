@@ -191,34 +191,39 @@ internal sealed class BoundArguments
     /// browser. Where that order is not the written one and an argument does anything, each such argument
     /// is evaluated into a temporary, in the order written, ahead of the first one passed, and passed by it.
     /// Where nothing is open to declare one (a field's initializer, a constructor's base call), the
-    /// parameter order stands.
+    /// parameter order stands (#1201).
     /// </summary>
+    /// <param name="arguments">The call's written arguments, what each one is read from.</param>
     /// <param name="written">Each written argument converted, by its index in the list written.</param>
     /// <param name="slots">What the call passes, in parameter order: the index of the written argument a slot
     /// holds, or -1 with the slot's own value (a default).</param>
     /// <param name="context">Where the temporaries are declared.</param>
-    public static List<JsExpr> PassedAsWritten(IReadOnlyList<JsExpr> written, IReadOnlyList<(int Written, JsExpr? Own)> slots,
-        ConversionContext context)
+    public static List<JsExpr> PassedAsWritten(SeparatedSyntaxList<ArgumentSyntax> arguments, IReadOnlyList<JsExpr> written,
+        IReadOnlyList<(int Written, JsExpr? Own)> slots, ConversionContext context)
     {
         JsExpr Placed(int at, Func<int, JsExpr> read) => slots[at].Written is var index and >= 0 ? read(index) : slots[at].Own!;
-        var order = slots.Where(slot => slot.Written >= 0).Select(slot => slot.Written).ToList();
         static JsExpr Value(JsExpr part) => part is JsSpread spread ? spread.Operand : part;
-        static bool Inert(JsExpr part) => Value(part) is JsLiteral or JsIdentifier;
-        var lastEffect = order.Where(index => !Inert(written[index])).DefaultIfEmpty(-1).Max();
-        if (slots.Count == 0 || order.SequenceEqual(order.Order()) || lastEffect < 0 || !context.Temporaries.CanBind)
+        // Read from the C#, never from what it became: a constant may arrive as a member read or a negation
+        // (`top: Space.S2`, `end: -1`), and a lambda runs nothing until it is called. Neither runs nor
+        // changes, so where it is evaluated is no matter. A local or a parameter runs nothing either, but an
+        // argument written after it may change it: `Pair(b: i, a: ++i)` passed the incremented i twice.
+        bool Fixed(int index) => arguments[index].Expression is AnonymousFunctionExpressionSyntax
+            || context.SemanticHelper.TryGetConstantValue(arguments[index].Expression, out _);
+        bool Runs(int index) => !Fixed(index) && Value(written[index]) is not JsIdentifier;
+        var order = slots.Where(slot => slot.Written >= 0 && !Fixed(slot.Written)).Select(slot => slot.Written).ToList();
+        var lastRun = order.Where(Runs).DefaultIfEmpty(-1).Max();
+        if (order.SequenceEqual(order.Order()) || lastRun < 0 || !context.Temporaries.CanBind)
             return slots.Select((_, at) => Placed(at, index => written[index])).ToList();
 
         // What is passed is read where it stands, after every temporary was assigned, so a temporary holds
-        // what does anything and a name an argument written after it may change: `Pair(b: i, a: ++i)` passed
-        // the incremented i twice. A literal changes under nothing, and an argument no slot passes (an `out`
-        // one, a dependency the twin resolves itself) is not run here, as it never was.
-        var passes = order.ToHashSet();
+        // what runs and a name written before what runs. An argument no slot passes (an `out` one, a
+        // dependency the twin resolves itself) is not run here, as it never was.
+        var holds = order.Where(index => Runs(index) || index < lastRun).ToHashSet();
         var temporaries = new string?[written.Count];
         var assignments = new List<JsExpr>();
         for (var index = 0; index < written.Count; index++)
         {
-            if (!passes.Contains(index) || Value(written[index]) is JsLiteral
-                || Inert(written[index]) && index > lastEffect) continue;
+            if (!holds.Contains(index)) continue;
             var name = context.Temporaries.Fresh();
             context.Temporaries.Bind(name);
             temporaries[index] = name;
