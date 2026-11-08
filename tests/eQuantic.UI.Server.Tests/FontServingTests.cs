@@ -187,7 +187,8 @@ public class FontServingTests
         faces.Should().Contain("font-family: \"Probe Sans\"").And.NotContain("eQuantic Test Face", "the theme's stylesheet declares it");
         System.Text.RegularExpressions.Regex.Matches(faces, "@font-face").Should().HaveCount(1, "one file, named twice");
         var url = System.Text.RegularExpressions.Regex.Match(faces, "url\\(\"(?<url>[^\"]+)\"\\)").Groups["url"].Value;
-        url.Should().MatchRegex("^/_equantic/fonts/[0-9a-f]{16}\\.ttf$");
+        url.Should().MatchRegex("^/_equantic/fonts/[0-9a-f]{16}\\.ttf$",
+            "the file is the theme's stylesheet's too, so the page shares its URL and its cached copy");
         (await client.GetByteArrayAsync(url)).Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"));
     }
 
@@ -203,7 +204,8 @@ public class FontServingTests
         await using var rendering = await Serve(PhotonTheme.Instance);
         var page = await rendering.GetTestClient().GetStringAsync("/named-face-page");
         var url = System.Text.RegularExpressions.Regex.Match(Element(page, "eq-faces"), "url\\(\"(?<url>[^\"]+)\"\\)").Groups["url"].Value;
-        url.Should().NotBeEmpty();
+        url.Should().MatchRegex($"^/_equantic/fonts/{Assembly}/eQuantic\\.UI\\.Fonts/TestFace-Regular\\.ttf\\?v=[0-9a-f]{{16}}$",
+            "a face outside the stylesheet is served at its identity, its version beside it, which any instance reads (#1080)");
 
         await using var fresh = await Serve(PhotonTheme.Instance);
         var client = fresh.GetTestClient();
@@ -247,12 +249,12 @@ public class FontServingTests
 
     /// <summary>
     /// A page the browser builds asks for a face's file by its identity, since it does not know the hash
-    /// of its bytes, and is sent on to the content-addressed URL (#1056). Only a face an eQuantic build
-    /// embedded, in an assembly the app's deployment carries: anything else is a file the app never chose to
+    /// of its bytes, and is sent on to the URL the server writes for it, its identity with its version
+    /// (#1056, #1080). Only a face an eQuantic build embedded: anything else is a file the app never chose to
     /// publish.
     /// </summary>
     [Fact]
-    public async Task AFaceAskedForByItsIdentity_IsSentToItsContentAddressedUrl()
+    public async Task AFaceAskedForByItsIdentity_IsSentToItsVersionedUrl()
     {
         await using var app = await Serve(PhotonTheme.Instance);
         var client = app.GetTestClient();
@@ -262,8 +264,26 @@ public class FontServingTests
         response.StatusCode.Should().Be(HttpStatusCode.Redirect);
         response.Headers.CacheControl!.NoCache.Should().BeTrue("a new build's file is found under its new hash");
         var location = response.Headers.Location!.OriginalString;
-        location.Should().MatchRegex("^/_equantic/fonts/[0-9a-f]{16}\\.ttf$");
-        (await client.GetByteArrayAsync(location)).Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Italic.ttf"));
+        location.Should().MatchRegex($"^/_equantic/fonts/{Assembly}/eQuantic\\.UI\\.Fonts/TestFace-Italic\\.ttf\\?v=[0-9a-f]{{16}}$");
+        var served = await client.GetAsync(location);
+        served.Headers.CacheControl!.ToString().Should().Contain("immutable", "the version names these bytes for good");
+        (await served.Content.ReadAsByteArrayAsync()).Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Italic.ttf"));
+    }
+
+    /// <summary>
+    /// A version a new build replaced is sent on to the current one rather than answered with the new bytes
+    /// under the old name, which a browser would keep for a year (#1080).
+    /// </summary>
+    [Fact]
+    public async Task AFaceAskedForUnderAVersionItNoLongerHas_IsSentToItsCurrentOne()
+    {
+        await using var app = await Serve(PhotonTheme.Instance);
+        var client = app.GetTestClient();
+
+        var response = await client.GetAsync($"/_equantic/fonts/{Assembly}/eQuantic.UI.Fonts/TestFace-Italic.ttf?v=0000000000000000");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location!.OriginalString.Should().NotContain("v=0000000000000000");
     }
 
     /// <summary>
@@ -288,6 +308,7 @@ public class FontServingTests
 
     [Theory]
     [InlineData("Not.A.Loaded.Assembly/eQuantic.UI.Fonts/TestFace-Regular.ttf")]
+    [InlineData(Assembly + "%2C%20Version%3D1.0.0.0/eQuantic.UI.Fonts/TestFace-Regular.ttf")]
     [InlineData(Assembly + "/eQuantic.UI.Fonts/Nowhere.ttf")]
     [InlineData(Assembly + "/eQuantic.UI.Fonts/TestFace-Regular.txt")]
     [InlineData("System.Private.CoreLib/FxResources.System.Private.CoreLib.SR.resources")]

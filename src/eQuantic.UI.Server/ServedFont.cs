@@ -17,6 +17,10 @@ internal sealed record ServedFont(string Resource, string Name, byte[] Bytes, by
     /// <summary>Where a page fetches it.</summary>
     public string Url => "/_equantic/fonts/" + Name;
 
+    /// <summary>The hash of its bytes, without the extension: the version a URL that names the file by its
+    /// identity carries (<see cref="ServedFonts.VersionedUrl"/>).</summary>
+    public string Version => Path.GetFileNameWithoutExtension(Name);
+
     /// <summary>The media type it is served as.</summary>
     public string ContentType => FontFaceRules.ContentType(Resource);
 }

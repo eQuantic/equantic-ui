@@ -1154,7 +1154,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Layout/LayoutTypes.cs`
 - **Handoff**: RTL — Row mirrors automatically in RTL locales; reading/focus order stays = child order.
-- **Code**: No realizer mirrors. The native layout maps Start to X unconditionally (MeasureVisitor.Flex.cs:468 MeasureFlex, and Padding.Start→X at 891/927/1473), and the web shell emits lang but never dir (src/eQuantic.UI.Server/Templates/app-shell.html:2 with the culture at UIExtensions.cs:558), so an ar/he culture renders LTR there too. LayoutTypes.cs:5 documents the v1 limit for the insets, while Row's own doc (src/eQuantic.UI.Primitives/Nodes/Row.cs) still asserts mirroring happens.
+- **Code**: No realizer mirrors. The native layout maps Start to X unconditionally (MeasureVisitor.Flex.cs:468 MeasureFlex, and Padding.Start→X at 891/927/1473), and the web shell emits lang but never dir (src/eQuantic.UI.Server/Templates/app-shell.html:2 with the culture at UIExtensions.cs:556), so an ar/he culture renders LTR there too. LayoutTypes.cs:5 documents the v1 limit for the insets, while Row's own doc (src/eQuantic.UI.Primitives/Nodes/Row.cs) still asserts mirroring happens.
 - **Evidence**:
 
   ```

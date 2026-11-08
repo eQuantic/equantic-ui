@@ -375,8 +375,8 @@ public static class UIExtensions
             await context.Response.WriteAsync(document);
         });
 
-        // The faces the app ships (#1055), by the hash of their bytes: immutable, and only what the
-        // theme, the app's catalogs and its pages named, since a name is the only way in. Public as the
+        // The faces the theme's stylesheet ships (#1055), by the hash of their bytes: immutable, and only
+        // what the theme and the app's catalogs named, since a name is the only way in. Public as the
         // runtime is: a sign-in page under a fallback policy is set in them too.
         endpoints.MapGetAndHead("/_equantic/fonts/{name}", async context =>
         {
@@ -386,37 +386,35 @@ public static class UIExtensions
                 context.Response.StatusCode = 404;
                 return;
             }
-            // Compressed once when the set was read, and sent so to a browser that takes Brotli, which
-            // every current one does: the app's own response compression is not relied on, since no
-            // middleware of it runs unless the app adds one.
-            var brotli = context.Request.GetTypedHeaders().AcceptEncoding
-                .Any(encoding => encoding.Value.Equals("br", StringComparison.OrdinalIgnoreCase) && encoding.Quality is not 0);
-            var body = brotli ? font.Brotli : font.Bytes;
-            context.Response.ContentType = font.ContentType;
-            if (brotli) context.Response.Headers.ContentEncoding = "br";
-            context.Response.Headers.Vary = "Accept-Encoding";
-            context.Response.ContentLength = body.Length;
-            context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
-            await context.Response.Body.WriteAsync(body);
+            await WriteFont(context, font);
         }).AllowAnonymous();
 
-        // A face a page the browser builds names (#1056), asked for by its identity, an assembly and a
-        // resource, since the browser does not know the bytes' hash: sent on to the content-addressed URL,
-        // so every page shares one cached copy of a file. Only a face an eQuantic build embedded, in an
-        // assembly the app's deployment carries, or a file the theme serves (ServedFonts.Locate). The redirect itself is asked again every
-        // time, so a new build's file is found under its new hash.
-        endpoints.MapGetAndHead("/_equantic/fonts/{assembly}/{**resource}", context =>
+        // A face named by its identity, an assembly and a resource: the one a page declares outside the
+        // stylesheet, with the hash of its bytes beside them, is sent immutable, and any instance answers it
+        // by reading the file (#1080); one a page the browser builds asks for without the hash (#1056) is sent
+        // on to the URL the server writes for it, the stylesheet's own for a file the stylesheet serves, so
+        // every page shares one cached copy. Only a face an eQuantic build embedded, or a file the theme
+        // serves (ServedFonts.Locate). The redirect is asked again every time, so a new build's file is found
+        // under its new hash, and so is a hash a new build replaced.
+        endpoints.MapGetAndHead("/_equantic/fonts/{assembly}/{**resource}", async context =>
         {
-            var font = context.RequestServices.GetRequiredService<ServedFonts>().Locate(
-                (string?)context.GetRouteValue("assembly") ?? "", (string?)context.GetRouteValue("resource") ?? "");
+            var fonts = context.RequestServices.GetRequiredService<ServedFonts>();
+            var assembly = (string?)context.GetRouteValue("assembly") ?? "";
+            var resource = (string?)context.GetRouteValue("resource") ?? "";
+            var font = fonts.Locate(assembly, resource);
             if (font is null)
             {
                 context.Response.StatusCode = 404;
-                return Task.CompletedTask;
+                return;
+            }
+            var url = fonts.VersionedUrl(assembly, resource, font);
+            if (context.Request.Query["v"] == font.Version && url != font.Url)
+            {
+                await WriteFont(context, font);
+                return;
             }
             context.Response.Headers["Cache-Control"] = "no-cache";
-            context.Response.Redirect(font.Url);
-            return Task.CompletedTask;
+            context.Response.Redirect(url);
         }).AllowAnonymous();
 
         // Map Runtime JS (immutable via BuildId in URL, long cache)
@@ -783,6 +781,24 @@ public static class UIExtensions
     /// <summary>The theme's stylesheet for each mode a request can paint in, written once per theme:
     /// it depends on nothing else, and every page carries it.</summary>
     private static readonly ConditionalWeakTable<IAppTheme, string?[]> ThemeSheets = new();
+
+    /// <summary>
+    /// A served face, immutable: compressed once when it was read, and sent so to a browser that takes Brotli,
+    /// which every current one does. The app's own response compression is not relied on, since no middleware
+    /// of it runs unless the app adds one.
+    /// </summary>
+    private static async Task WriteFont(HttpContext context, ServedFont font)
+    {
+        var brotli = context.Request.GetTypedHeaders().AcceptEncoding
+            .Any(encoding => encoding.Value.Equals("br", StringComparison.OrdinalIgnoreCase) && encoding.Quality is not 0);
+        var body = brotli ? font.Brotli : font.Bytes;
+        context.Response.ContentType = font.ContentType;
+        if (brotli) context.Response.Headers.ContentEncoding = "br";
+        context.Response.Headers.Vary = "Accept-Encoding";
+        context.Response.ContentLength = body.Length;
+        context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+        await context.Response.Body.WriteAsync(body);
+    }
 
     private static string ThemeStyles(IAppTheme theme, ThemeMode? mode)
     {
