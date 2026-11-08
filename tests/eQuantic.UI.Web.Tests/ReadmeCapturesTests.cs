@@ -149,6 +149,31 @@ public class ReadmeCapturesTests
         }
     }
 
+    /// <summary>A readme whose head cannot be found fails the pack, naming what is missing: an IndexOf of -1
+    /// cut it at its 30th character, and every package shipped half a tag (found by the review of #882).</summary>
+    [Fact]
+    public void AReadmeThatDoesNotSayWhereItsHeadEnds_FailsThePack()
+    {
+        var scratch = Directory.CreateTempSubdirectory("eq-readme-").FullName;
+        try
+        {
+            var readme = Path.Combine(scratch, "README.md");
+            File.WriteAllText(readme, "<p align=\"center\"><img src=\"assets/readme/a.png\"></p>\n\n# eQuantic.UI\n");
+            var (exitCode, output, error) = SdkProbe.Run(null, null, "msbuild",
+                Path.Combine("src", "eQuantic.UI.Primitives", "eQuantic.UI.Primitives.csproj"),
+                "-nologo", "-v:m", "-t:WritePackageReadme", "-p:Version=9.9.9-probe",
+                $"-p:EqRepositoryReadme={readme}", $"-p:EqPackageReadme={Path.Combine(scratch, "written.md")}");
+
+            exitCode.Should().NotBe(0, "a readme with no end to its head is no package's readme");
+            (output + error).Should().Contain("does not say where its head ends");
+            File.Exists(Path.Combine(scratch, "written.md")).Should().BeFalse();
+        }
+        finally
+        {
+            Directory.Delete(scratch, recursive: true);
+        }
+    }
+
     /// <summary>What ends the head GitHub draws, which a package's readme replaces.</summary>
     private const string HeadEnds = "<!-- end of the page's head -->";
 

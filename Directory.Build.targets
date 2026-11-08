@@ -212,7 +212,15 @@
             <Code Type="Fragment" Language="cs"><![CDATA[
                 const string HeadEnds = "<!-- end of the page's head -->";
                 var readme = File.ReadAllText(Readme);
-                var body = readme.Substring(readme.IndexOf(HeadEnds, System.StringComparison.Ordinal) + HeadEnds.Length);
+                var ends = readme.IndexOf(HeadEnds, System.StringComparison.Ordinal);
+                if (ends < 0)
+                {
+                    // A readme whose head cannot be found is cut nowhere: an IndexOf of -1 kept it from its
+                    // 30th character, half a tag, under the Markdown head of every package.
+                    Log.LogError(Readme + " does not say where its head ends: write " + HeadEnds + " after it");
+                    return false;
+                }
+                var body = readme.Substring(ends + HeadEnds.Length);
                 var text = (File.ReadAllText(Head).TrimEnd() + body).Replace("](" + Pictures, "](" + Address);
                 if (!File.Exists(Destination) || File.ReadAllText(Destination) != text)
                 {
@@ -228,8 +236,11 @@
     </PropertyGroup>
 
     <Target Name="WritePackageReadme" BeforeTargets="_GetPackageFiles">
+        <PropertyGroup>
+            <EqRepositoryReadme Condition="'$(EqRepositoryReadme)' == ''">$(MSBuildThisFileDirectory)README.md</EqRepositoryReadme>
+        </PropertyGroup>
         <AddressReadmePictures
-            Readme="$(MSBuildThisFileDirectory)README.md"
+            Readme="$(EqRepositoryReadme)"
             Head="$(MSBuildThisFileDirectory)assets/package-head.md"
             Pictures="assets/readme/"
             Address="$(RepositoryUrl.Replace('https://github.com/', 'https://raw.githubusercontent.com/'))/v$(PackageVersion)/assets/readme/"
