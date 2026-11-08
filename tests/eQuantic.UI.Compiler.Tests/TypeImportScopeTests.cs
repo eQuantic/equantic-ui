@@ -35,7 +35,34 @@ public class TypeImportScopeTests
             """, "Room");
 
         room.Errors.Should().BeEmpty();
-        room.TypeScript.Should().NotContain("from \"./List\"").And.NotContain("from \"./Math\"");
+        room.TypeScript.Should().NotContain("from \"./List\"").And.NotContain("from \"./Math\"").And.NotContain("from \"./Math$\"");
+    }
+
+    /// <summary>
+    /// A type's name inside a string the module writes is text, never a reference to the type (#824): a
+    /// constant read off <c>Copy</c> is inlined as <c>'Copy'</c>, and the module imported <c>./Copy</c>,
+    /// a class it never uses, as a page that reads a string imported the catalogue's class from the id in
+    /// <c>$eq.str('Strings', …)</c>. Since #624 an import is what compiles a referenced project's type,
+    /// so a word in a string compiled a type nothing used.
+    /// </summary>
+    [Fact]
+    public void ATypesNameInsideAString_ImportsNoModuleOfIt()
+    {
+        var label = CompileBuilt("""
+            using eQuantic.UI.Primitives;
+
+            namespace App;
+
+            public static class Copy { public const string Title = "Copy"; public static string Live() => "x"; }
+
+            public sealed class Label : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(Copy.Title, TypeRole.BodyM);
+            }
+            """, "Label");
+
+        label.Errors.Should().BeEmpty();
+        label.TypeScript.Should().Contain("'Copy'").And.NotContain("./Copy");
     }
 
     /// <summary>
@@ -93,18 +120,34 @@ public class TypeImportScopeTests
         }
     }
 
+    /// <summary>A file compiled as an app's build compiles it: against the real vocabulary assembly, with
+    /// the project's scan made from the same compilation.</summary>
+    private static CompilationResult CompileBuilt(string source, string component)
+    {
+        var path = Path.Combine(Path.GetTempPath(), "eq-imports-built", "Probe.cs");
+        var compilation = CSharpCompilation.Create("BuiltProbe",
+            [CSharpSyntaxTree.ParseText(source, path: path)], VocabularyReferences(),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        compiler.SetDependencyResolver(ComponentDependencyResolver.From(compilation));
+        return compiler.CompileSource(source, path).Single(result => result.ComponentName == component);
+    }
+
+    private static IEnumerable<MetadataReference> VocabularyReferences() =>
+        ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(reference => reference.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(reference => (MetadataReference)TestReferences.Of(reference))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.Curve).Assembly.Location));
+
     /// <summary>A file compiled against the real vocabulary assembly, which the scanned compile above does
     /// not bind: a Primitives type has to resolve to its symbol for the routing to be asked at all.</summary>
     private static CompilationResult CompileWithVocabulary(string source, string component)
     {
         var path = Path.Combine(Path.GetTempPath(), "eq-imports-vocabulary", "Probe.cs");
-        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
-            .Split(Path.PathSeparator)
-            .Where(reference => reference.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(reference => (MetadataReference)TestReferences.Of(reference))
-            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.Curve).Assembly.Location));
         var compilation = CSharpCompilation.Create("VocabularyProbe",
-            [CSharpSyntaxTree.ParseText(source, path: path)], references,
+            [CSharpSyntaxTree.ParseText(source, path: path)], VocabularyReferences(),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         var compiler = new ComponentCompiler { SymbolsAreAuthoritative = false };
         compiler.SetProjectCompilation(compilation);

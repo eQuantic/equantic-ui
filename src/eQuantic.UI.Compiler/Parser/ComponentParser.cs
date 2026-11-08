@@ -273,19 +273,17 @@ public class ComponentParser
             // declares a member. A class that declared none was skipped here while the resolver had
             // it imported, so the bundle could not resolve the module every user of it named. A
             // [ServerOnly] class never crosses, whichever of its declarations says so.
-            if (!PlainClassModule.Is(classDecl, ProjectSymbol(classDecl, model), chains)) continue;
             // Track L D2: a resx Designer is a plain non-static class by shape, and a module of
             // ResourceManager.GetString calls cannot run in a browser — its accessors rewrite to
             // $eq.str at every use site instead. Recorded on the way past (see the static-helper
-            // loop for why the catalog emitter needs to know it exists).
+            // loop for why the catalog emitter needs to know it exists), and kept out by the one rule
+            // below, which the resolver reads too (#824).
             if (helperModel?.GetDeclaredSymbol(classDecl) is INamedTypeSymbol declaredPlain
                 && Services.ResourceClasses.IsResourceClass(declaredPlain))
-            {
                 DiscoveredResources.TryAdd(
                     CatalogIdOf(helperModel, declaredPlain),
                     Services.ResourceClasses.DesignerPathFor(declaredPlain));
-                continue;
-            }
+            if (!PlainClassModule.Is(classDecl, ProjectSymbol(classDecl, model), chains)) continue;
 
             results.Add(new ComponentDefinition
             {

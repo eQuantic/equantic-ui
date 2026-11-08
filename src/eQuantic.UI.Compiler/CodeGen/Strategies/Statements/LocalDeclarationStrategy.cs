@@ -197,7 +197,12 @@ public class LocalDeclarationStrategy : IStatementStrategy
             if (standIn == "any") return ": any";
             ts = standIn;
         }
-        else ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(decl.Declaration.Type.ValueText());
+        // The written type mapped by its text, then each type of it eqc writes under another name named by
+        // its twin and imported: `Cart.Item c = null;` declared `Item`, and `function f = null;` the word
+        // `function`, neither of them a type the module has.
+        else ts = CodeGen.TypeScriptEmitter.NestedTwinsInside(
+            CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(decl.Declaration.Type.ValueText()), underlying,
+            (part, _) => part.IntroduceTwin(context));
 
         if (ts is "any" or "void") return null;
         if (!ts.EndsWith(" | null", StringComparison.Ordinal)) ts = CodeGen.TypeScriptEmitter.OrNull(ts);
@@ -248,7 +253,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
         if (TsStandIn.Inside(item, context.UsedRuntimeTypes) is { } standIn) return standIn;
         // A NESTED class is its twin, named by its owner and imported as any reference to it is: its own
         // name, `Item` for `Cart.Item`, names nothing (Copilot on #1068).
-        if (item is INamedTypeSymbol nested && nested.NestedTwinName() is not null) return nested.IntroduceTwin(context);
+        if (item is INamedTypeSymbol nested && nested.RenamedTwin() is not null) return nested.IntroduceTwin(context);
         // A type parameter is named as its declaration names it, `class$` for `@class` (Copilot on #1068).
         if (item is ITypeParameterSymbol) return item.Name.ToJsIdentifier();
         if (item is INamedTypeSymbol { SpecialType: SpecialType.None } named) return NamedItemName(named, context);
@@ -305,7 +310,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
             return "";
         // An interface, an exception and a delegate are named by what they cross as (TsStandIn):
         // `IThing thing = new Thing()` declared an `IThing` no module defines.
-        var name = TsStandIn.For(named, context.UsedRuntimeTypes) ?? named.NestedTwinName() ?? named.Name;
+        var name = TsStandIn.For(named, context.UsedRuntimeTypes) ?? named.RenamedTwin() ?? named.Name;
         if (name == "any") return ": any";
         // `VisualNode?` crosses as the union it is — an annotation that rejects the null the C#
         // explicitly allowed would refuse `VisualNode? icon = selected ? new Icon(…) : null`.

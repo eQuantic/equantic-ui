@@ -50,7 +50,7 @@ public class ServerActionDictionaryTests
     [Fact]
     public async Task ADictionaryAnswered_IsWrittenAsItsPairs_InTheOrderItEnumerates()
     {
-        var (status, body) = await Invoke("Scores", """{"actionId":"OrderActions/Scores","arguments":[]}""");
+        var (status, body) = await Invoke("Scores", """{"actionId":"ServerActionDictionaryTests$OrderActions/Scores","arguments":[]}""");
 
         status.Should().Be(StatusCodes.Status200OK, body);
         body.Should().Be("""{"success":true,"result":[[3,"c"],[1,"a"]]}""");
@@ -61,7 +61,7 @@ public class ServerActionDictionaryTests
         // Registered as an app's actions are, by the scan, so the descriptor is the one the scan builds.
         var registry = new ServerActionRegistry();
         registry.ScanAssembly(typeof(ServerActionDictionaryTests).Assembly);
-        registry.GetAction($"{nameof(OrderActions)}/{method}").Should().NotBeNull();
+        registry.GetAction($"{nameof(ServerActionDictionaryTests)}${nameof(OrderActions)}/{method}").Should().NotBeNull();
 
         var root = new ServiceCollection().BuildServiceProvider(validateScopes: true);
         var middleware = new ServerActionsMiddleware(

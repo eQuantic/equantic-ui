@@ -25,7 +25,7 @@ namespace eQuantic.UI.Server.Tests;
 /// </summary>
 public class ServerActionOriginTests
 {
-    private const string Body = """{"actionId":"ContactActions/Send","arguments":[]}""";
+    private const string Body = """{"actionId":"ServerActionOriginTests$ContactActions/Send","arguments":[]}""";
 
     public sealed class ActionLog
     {

@@ -386,7 +386,7 @@ public class InvocationStrategy : IExpressionIrStrategy
         var args = string.Join(", ", arguments.Select(a => JsExprWriter.WriteIn(a, JsPrecedence.Assignment)));
         var homeArgs = !extension.TakesReceiver ? args
             : string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
-        return JsExpr.Callish($"{extension.Home.Name}.{methodName.ToCamelCase()}({homeArgs})");
+        return JsExpr.Callish($"{extension.Home.TwinReference()}.{methodName.ToCamelCase()}({homeArgs})");
     }
 
     /// <summary>

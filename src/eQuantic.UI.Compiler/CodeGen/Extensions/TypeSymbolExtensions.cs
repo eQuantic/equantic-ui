@@ -99,29 +99,36 @@ public static class TypeSymbolExtensions
     /// it, joined by <c>$</c> (<c>Cart$Item</c>, <c>A$B$C</c>, #584), which no C# type can take, so a
     /// nested type's twin never meets a top-level type's. Generic arguments are erased
     /// (<c>Box&lt;T&gt;.Node</c> is <c>Box$Node</c>). Its module is named the same, so a reference
-    /// imports it as it imports any type's. A top-level type's is its own name.
+    /// imports it as it imports any type's. A top-level type's is its own name, after a <c>$</c> when
+    /// that name is a word JavaScript reserves or a global the emitted code reads (<c>function$</c>,
+    /// <c>Math$</c>, #934, #890), for a type whose twin eqc writes: a type of .NET's or of the vocabulary
+    /// is called what it is called.
     /// </summary>
     internal static string TwinTypeName(this INamedTypeSymbol type) =>
-        eQuantic.UI.TwinName.OfNested(type.ContainingType?.TwinTypeName(), type.Name);
+        type.ContainingType is null && !Strategies.Expressions.ObjectCreationStrategy.TwinIsWritten(type)
+            ? type.Name
+            : eQuantic.UI.TwinName.OfNested(type.ContainingType?.TwinTypeName(), type.Name);
 
-    /// <summary>The twin name of a class, record or struct declared inside another type whose twin eqc
-    /// writes (in the source, or in a namespace it transpiles whole), which differs from the name it is
-    /// written with (<see cref="TwinTypeName(INamedTypeSymbol)"/>); null for any other type, whose name a
-    /// reference keeps.</summary>
-    internal static string? NestedTwinName(this INamedTypeSymbol type) =>
-        type is { ContainingType: not null, TypeKind: TypeKind.Class or TypeKind.Struct }
+    /// <summary>The twin name of a class, record or struct whose twin eqc writes (in the source, or in a
+    /// namespace it transpiles whole) under a name other than the one C# gives it
+    /// (<see cref="TwinTypeName(INamedTypeSymbol)"/>): one declared inside another type (#584), or one
+    /// named by a word JavaScript reserves or a global the emitted code reads (#934, #890). Null for any
+    /// other type, whose name a reference keeps.</summary>
+    internal static string? RenamedTwin(this INamedTypeSymbol type) =>
+        type is { TypeKind: TypeKind.Class or TypeKind.Struct }
         && (type.Locations.Any(location => location.IsInSource)
             || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty))
-            ? type.TwinTypeName()
+        && type.TwinTypeName() is var twin && twin != type.Name
+            ? twin
             : null;
 
     /// <summary>
-    /// The name a REFERENCE to a type writes, and imports: a nested type's twin where eqc writes it
-    /// (<see cref="NestedTwinName"/>), and the type's own name otherwise, which is what a top-level type's
+    /// The name a REFERENCE to a type writes, and imports: its twin's where eqc writes it under another
+    /// name (<see cref="RenamedTwin"/>), and the type's own name otherwise, which is what a top-level type's
     /// twin and a hand-written twin of the runtime are called (a nested vocabulary type keeps its simple
     /// name there). Registering one name and calling another imported nothing the call named.
     /// </summary>
-    internal static string TwinReference(this INamedTypeSymbol type) => type.NestedTwinName() ?? type.Name;
+    internal static string TwinReference(this INamedTypeSymbol type) => type.RenamedTwin() ?? type.Name;
 
     /// <summary>
     /// True when the type derives (transitively) from a framework component/state base. Walking the base

@@ -28,6 +28,70 @@ public class NestedTwinNameTests
         results.Single(result => result.ComponentName == "A$B$C").TypeScript.Should().Contain("export class A$B$C");
     }
 
+    /// <summary>A top-level type named by a word JavaScript reserves, or by a global the emitted code
+    /// reads, is its name and a <c>$</c>, its module too, as a local of that name is (#934, #890): the
+    /// module declared <c>export class function</c>, which nothing parses. A nested one is named by its
+    /// owner already, and a type of .NET's keeps its name.</summary>
+    [Fact]
+    public void ATypeNamedByAReservedWordOrAGlobal_IsItsNameAndADollar()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public class function { }
+            public class @class { }
+            public static class Math { public static int One() => 1; }
+            public class Outer { public class function { } }
+            """, "Probe.cs");
+
+        results.Select(result => result.ComponentName).Should()
+            .Contain(["function$", "class$", "Math$", "Outer", "Outer$function"])
+            .And.NotContain(["function", "class", "Math", "Outer$function$"]);
+        results.Single(result => result.ComponentName == "function$").TypeScript.Should().Contain("export class function$ ");
+    }
+
+    /// <summary>A class of the app's named <c>Math</c> is imported and called as its twin, so .NET's
+    /// <c>Math</c> beside it is the global's (#890): the module imported the class as <c>Math</c>, and
+    /// <c>System.Math.Max</c> called the class.</summary>
+    [Fact]
+    public void AClassNamedLikeAGlobal_IsImportedByItsTwin_BesideTheGlobal()
+    {
+        var calc = CompileScanned("""
+            public static class Math { public static int Twice(int x) => x * 2; }
+            public class Calc { public static int Run() => Math.Twice(2) + System.Math.Max(1, 2); }
+            """, "Calc");
+        calc.Errors.Should().BeEmpty();
+        calc.TypeScript.Should().Contain("Math$.twice(2) + Math.max(1, 2)")
+            .And.MatchRegex(@"import \{[^}]*(?<![\w$])Math\$(?![\w$])[^}]*\} from ""\./Math\$""")
+            .And.NotMatchRegex(@"import \{[^}]*(?<![\w$])Math(?![\w$])[^}]*\}");
+    }
+
+    /// <summary>A component's action is called by the component's twin, the name the server registers it
+    /// under (<c>TwinName.OfType</c>): <c>Map$</c> for a component named like a global, and the owner's
+    /// name first for a nested one.</summary>
+    [Fact]
+    public void AnActionsComponent_IsNamedByItsTwin()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            using System.Threading.Tasks;
+            using eQuantic.UI.Primitives;
+            public sealed class Map : StatelessComponent
+            {
+                [ServerAction] public Task<int> Pins() => Task.FromResult(2);
+                public override VisualNode Build(ComponentContext context) => new Text("map", TypeRole.BodyM);
+            }
+            public static class Host
+            {
+                public sealed class Page : StatelessComponent
+                {
+                    [ServerAction] public Task<int> Hits() => Task.FromResult(7);
+                    public override VisualNode Build(ComponentContext context) => new Text("page", TypeRole.BodyM);
+                }
+            }
+            """, "Probe.cs");
+
+        results.Single(result => result.ComponentName == "Map$").TypeScript.Should().Contain("invoke('Map$/Pins', [])");
+        results.Single(result => result.ComponentName == "Host$Page").TypeScript.Should().Contain("invoke('Host$Page/Hits', [])");
+    }
+
     [Fact]
     public void ANestedTypeOfAServerOnlyOwner_HasNoModule()
     {

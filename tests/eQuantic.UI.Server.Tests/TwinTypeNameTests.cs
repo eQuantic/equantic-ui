@@ -57,4 +57,23 @@ public class TwinTypeNameTests
         routes.Should().ContainSingle(route => route.Pattern == "/kept-out/open").Which.Page.Should().Be("OpenShelf$Gate");
         routes.Should().NotContain(route => route.Pattern == "/kept-out/vault");
     }
+
+    /// <summary>A page named like a global the emitted code reads is its twin, <c>Map$</c>, to the route
+    /// table and to the action registry alike, the names eqc writes its module and its calls under (#934,
+    /// #890): the client asked for a module named <c>Map</c> and for an action eqc never calls.</summary>
+    [Fact]
+    public void APageNamedLikeAGlobal_IsServedAndCalledByItsTwin()
+    {
+        TwinName.OfType(typeof(ReservedPages.Map)).Should().Be("Map$");
+
+        var options = new UIOptions();
+        options.ScanAssembly(typeof(TwinTypeNameTests).Assembly);
+        eQuantic.UI.Server.Client.AppSurface.Of(options, pattern => [pattern]).Routes
+            .Should().ContainSingle(route => route.Pattern == "/reserved/map").Which.Page.Should().Be("Map$");
+
+        var registry = new ServerActionRegistry();
+        registry.ScanAssembly(typeof(TwinTypeNameTests).Assembly);
+        registry.GetAction("Map$/Pins").Should().NotBeNull("eqc writes the call as Map$/Pins");
+        registry.GetAction("Map/Pins").Should().BeNull();
+    }
 }

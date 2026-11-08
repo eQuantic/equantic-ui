@@ -46,7 +46,10 @@ public class ServerActionRegistry : IServerActionRegistry
             foreach (var method in methods)
             {
                 var attr = method.GetCustomAttribute<ServerActionAttribute>()!;
-                var actionId = $"{type.Name}/{attr.Name ?? method.Name}";
+                // Named by the component's twin, as eqc names the call it writes (TwinName.OfType): a
+                // component nested in a class (`Host$Page`, #584) or named like a global the emitted code
+                // reads (`Map$`, #934) was registered by its CLR name and answered "Action not found".
+                var actionId = $"{TwinName.OfType(type)}/{attr.Name ?? method.Name}";
                 
                 var descriptor = new ServerActionDescriptor
                 {
