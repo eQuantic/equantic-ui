@@ -65,7 +65,7 @@
     "ios-home.png": {
       "target": "ios",
       "sources": {
-        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/Program.cs": "698ee1d8012cbd38284cee2d0fcbd9b760fdfec3a668369f6548f6ab87810a5a",
         "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
         "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
         "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"
@@ -74,7 +74,7 @@
     "ios-transfer.png": {
       "target": "ios",
       "sources": {
-        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/Program.cs": "698ee1d8012cbd38284cee2d0fcbd9b760fdfec3a668369f6548f6ab87810a5a",
         "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
         "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
         "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"
@@ -83,7 +83,7 @@
     "android-transactions.png": {
       "target": "android",
       "sources": {
-        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/Program.cs": "698ee1d8012cbd38284cee2d0fcbd9b760fdfec3a668369f6548f6ab87810a5a",
         "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
         "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
         "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"
@@ -92,7 +92,7 @@
     "android-cards.png": {
       "target": "android",
       "sources": {
-        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/Program.cs": "698ee1d8012cbd38284cee2d0fcbd9b760fdfec3a668369f6548f6ab87810a5a",
         "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
         "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
         "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"
