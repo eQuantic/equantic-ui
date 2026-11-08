@@ -1,7 +1,9 @@
 # native-manifests Specification
 
 ## Purpose
-TBD - created by archiving change a-declaration-reaches-what-reads-it. Update Purpose after archive.
+What a native app's build writes into the platform's manifests from what the app declares in C#: the
+capabilities it asks the device for, only where an API of the SDK uses them, and the facts stated on
+`builder.Bundle`, on every platform that reads them, each key written once.
 
 ## Requirements
 
