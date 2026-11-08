@@ -190,4 +190,25 @@ public class SpreadsheetReadAloudTests
         Frame(host, 100).Single().Text.Should().Be("C1:C50, 50 rows by 1 column",
             "a band a header selects is said as the range");
     }
+
+    /// <summary>
+    /// A cell whose centre lies under the pinned column headers, a row scrolled half under them, is made the
+    /// active one by a reader's activation, never the column its centre lands on (#1116): the host pressed the
+    /// centre, and the sheet is told the cell's row and column now.
+    /// </summary>
+    [Fact]
+    public void AReadersActivationOfACellHalfUnderTheHeaders_MakesThatCellActive()
+    {
+        var (host, sheet) = Open();
+        host.ScrollBy(Spreadsheet.HeaderWidth + 200, Spreadsheet.HeaderHeight + 200, 0, 20, stepped: false);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        var cell = At(host, 1, 2);
+        (cell.Bounds.Y + cell.Bounds.Height / 2).Should().BeLessThan(Spreadsheet.HeaderHeight,
+            "the row is scrolled half under the headers");
+
+        host.Activate(cell.Id).Should().BeTrue();
+
+        sheet.ActiveCell.Should().Be(new CellRef(0, 1));
+        sheet.Ranges.Should().Equal(new SheetRange(new CellRef(0, 1)));
+    }
 }

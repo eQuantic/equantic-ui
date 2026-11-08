@@ -1939,13 +1939,21 @@ public sealed class PhotonHost
         }
 
         // A GRID'S CELL OR A HEADER with no handler of its own, as a spreadsheet's are: the surface under
-        // them takes the pointer for the whole grid, so activating one is a press and a release at its
-        // centre, where the shell reads it, the tap a finger there makes (#1081). Asked by what the node
-        // IS, as the stops above are: a calendar day is a grid cell too, and its pressable answered first.
+        // them takes the pointer for the whole grid (#1081). Asked by what the node IS, as the stops above
+        // are: a calendar day is a grid cell too, and its pressable answered first. A sheet is told the
+        // cell's row and column, which the node carries (Place): its centre was pressed until #1116, and a
+        // row half under the pinned headers then selected a column. A grid that is no sheet's still takes
+        // the tap a finger there makes.
         foreach (var node in Semantics())
         {
             if (node.Id != id || node.Role is not (SemanticRole.GridCell or SemanticRole.ColumnHeader
                     or SemanticRole.RowHeader)) continue;
+            if (node.Place is { } place && SheetHolding(id) is { } sheet)
+            {
+                BeginSheetEditing(sheet.Element, sheet.Surface);
+                if (sheet.Surface.Model.Activate(place.Row, place.Column)) SurfaceChanged(sheet.Surface.OnChanged);
+                return true;
+            }
             var x = node.Bounds.X + node.Bounds.Width / 2;
             var y = node.Bounds.Y + node.Bounds.Height / 2;
             PressDown(x, y);
@@ -1953,6 +1961,29 @@ public sealed class PhotonHost
             return true;
         }
         return false;
+    }
+
+    /// <summary>The sheet whose surface holds the position <paramref name="id"/> names in the last frame, or
+    /// null: found by position, as a scroll region holding a stop is.</summary>
+    private SheetRegion? SheetHolding(int id)
+    {
+        if (_lastFrame is not { } frame) return null;
+        var at = ElementIn(frame.Root, id);
+        for (var i = 0; at is null && i < frame.OverlayRoots.Count; i++) at = ElementIn(frame.OverlayRoots[i], id);
+        if (at is null) return null;
+        var sheets = frame.SheetRegions;
+        for (var i = 0; i < sheets.Count; i++)
+            if (IsUnder(at, sheets[i].Element)) return sheets[i];
+        return null;
+    }
+
+    /// <summary>The position <paramref name="id"/> names under <paramref name="node"/>, or null.</summary>
+    private static Element? ElementIn(LayoutNode node, int id)
+    {
+        if (node.Element is { } at && at.Id == id) return at;
+        foreach (var child in node)
+            if (ElementIn(child, id) is { } found) return found;
+        return null;
     }
 
     /// <summary>

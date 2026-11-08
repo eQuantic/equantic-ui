@@ -1605,6 +1605,31 @@ public sealed class SheetController : ISheetSurfaceModel
     /// </summary>
     public bool Follow() => _dragAt is { } at && (Filling || _selecting) && Drag(at);
 
+    /// <summary>
+    /// A reader activated what stands at <paramref name="row"/> and <paramref name="column"/> of the table the sheet is
+    /// drawn in, its headers counted (<see cref="ISheetSurfaceModel.Activate"/>): a cell becomes the only range and
+    /// the active cell, brought into view, a column's header or a row's number selects its band, and the corner the
+    /// sheet, as a tap on it does. Both hosts pressed the place's centre, which a pinned band or the window's edge
+    /// can hide: a row half under the column headers selected a column (#1116).
+    /// </summary>
+    public bool Activate(int row, int column)
+    {
+        var headerRows = Grid.HeaderHeight > 0 ? 1 : 0;
+        var headerColumns = Grid.HeaderWidth > 0 ? 1 : 0;
+        var onColumns = row < headerRows;
+        var onRows = column < headerColumns;
+        if (Editing) CommitEdit();
+        if (onColumns || onRows)
+        {
+            PressHeader(onColumns == onRows ? null : onColumns ? SheetAxis.Cols : SheetAxis.Rows,
+                onColumns ? column - headerColumns : row - headerRows, onColumns && onRows, KeyModifiers.None);
+            return true;
+        }
+        Press(Document.Clamp(new CellRef(row - headerRows, column - headerColumns)), Point.Zero, KeyModifiers.None, 1);
+        Reveal();
+        return true;
+    }
+
     /// <summary>A press that selects: the cell, the active range stretched to it with Shift, the cell added as a
     /// range of its own with ⌘ or Ctrl or in add mode, and the second press of a double click editing it in
     /// Edit mode, with the caret where it landed.</summary>

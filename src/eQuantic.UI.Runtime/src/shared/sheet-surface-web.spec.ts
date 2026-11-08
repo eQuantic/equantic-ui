@@ -220,11 +220,10 @@ describe('SheetSurface on the web', () => {
     const node = surfaceFor(sheet);
     const target = makeTarget();
     target.getBoundingClientRect = () => ({ left: 0, top: 0, width: 900, height: 600 }) as DOMRect;
-    /** A cell or a header of the table, where the table draws it. */
-    const drawn = (x: number, y: number, width: number, height: number) => {
+    /** A cell or a header of the table, by its place in the table, the headers counted (#1116). */
+    const placed = (row: number, column: number) => {
       const cell = document.createElement('div');
-      cell.setAttribute('data-eq-cell', '0:0');
-      cell.getBoundingClientRect = () => ({ left: x, top: y, width, height }) as DOMRect;
+      cell.setAttribute('data-eq-cell', `${row}:${column}`);
       target.appendChild(cell);
       return cell;
     };
@@ -235,16 +234,16 @@ describe('SheetSurface on the web', () => {
     };
 
     // D6, then column C's header.
-    activate(drawn(44 + 3 * 96, 26 + 5 * 28, 96, 28));
+    activate(placed(6, 4));
     expect(sheet.activeCell).toEqual(new CellRef(5, 3));
     expect(sheet.ranges).toEqual([new SheetRange(new CellRef(5, 3), new CellRef(5, 3))]);
-    activate(drawn(44 + 2 * 96, 0, 96, 26));
+    activate(placed(0, 3));
     expect(sheet.ranges).toEqual([new SheetRange(new CellRef(0, 2), new CellRef(sheet.document.rows - 1, 2))]);
 
     // The click that follows a press the sheet answered is that press's: B3 stays the selection.
     press(node, target, { clientX: 44 + 96 + 48, clientY: 26 + 2 * 28 + 14 });
     lift(node, target, { clientX: 44 + 96 + 48, clientY: 26 + 2 * 28 + 14 });
-    activate(drawn(44 + 5 * 96, 26 + 7 * 28, 96, 28));
+    activate(placed(8, 6));
     expect(sheet.activeCell).toEqual(new CellRef(2, 1));
 
     // A finger's pan, which the table marked handled, is followed by no click: the next reader's
@@ -253,7 +252,7 @@ describe('SheetSurface on the web', () => {
     const panned = new PointerEvent('pointerup', { pointerId: 1, cancelable: true, pointerType: 'touch', clientX: 300, clientY: 200 });
     panned.preventDefault();
     events(node)['pointerup'](on(panned, target));
-    activate(drawn(44 + 3 * 96, 26 + 5 * 28, 96, 28));
+    activate(placed(6, 4));
     expect(sheet.activeCell).toEqual(new CellRef(5, 3));
   });
 

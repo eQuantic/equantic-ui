@@ -784,6 +784,9 @@ export interface SheetSurfaceModelLike {
   ): boolean;
   /** What the pointer looks like resting at a point: a PointerCursor member name ('crosshair'). */
   cursorAt(position: { x: number; y: number }): string;
+  /** A reader activated the place at a row and a column of the table the surface is drawn in, its headers
+   * counted (#1116). */
+  activate(row: number, column: number): boolean;
 }
 
 /** Arrow-key adjustment semantics — one Tab stop wrapping a slider-like control. */

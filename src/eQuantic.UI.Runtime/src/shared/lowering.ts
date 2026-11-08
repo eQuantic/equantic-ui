@@ -1846,19 +1846,17 @@ function lowerSheetSurface(
 
   // A READER'S ACTIVATION (C# twin: PhotonHost.Activate, #1081): VoiceOver's press and a browser's
   // accessibility action arrive as a click that no press of the sheet's came before, on the cell or the
-  // header activated. The sheet answers it as a press and a release at that cell's centre, the path a tap
-  // takes, so the cell becomes active and a header selects its column or its row. The click that follows
-  // a press the sheet already answered is that press's, and nothing more.
+  // header activated. The sheet answers it by the cell's row and column (`data-eq-cell`), never by where
+  // the cell is drawn: its centre was pressed until #1116, and a row half under the pinned headers then
+  // selected a column. The click that follows a press the sheet already answered is that press's, and
+  // nothing more.
   // Handed the event, which a click is not by default (`clickWithEvent`): the cell is read from it.
   view.events['click'] = clickWithEvent((event: MouseEvent) => {
     if (sheetClicksAnswered.delete(model) || notTheSheets(event)) return;
     const cell = (event.target as Element | null)?.closest?.('[data-eq-cell]') as HTMLElement | null;
-    if (!cell) return;
-    const box = cell.getBoundingClientRect();
-    const at = local(event.currentTarget as HTMLElement, box.left + box.width / 2, box.top + box.height / 2);
-    model.handlePointer('down', at, 0, 1, 'mouse');
-    model.handlePointer('up', at, 0, 1, 'mouse');
-    changed();
+    const [row, column] = (cell?.getAttribute('data-eq-cell') ?? '').split(':').map(Number);
+    if (!Number.isInteger(row) || !Number.isInteger(column)) return;
+    if (model.activate(row, column)) changed();
   }) as unknown as EventHandler;
 
   return view;

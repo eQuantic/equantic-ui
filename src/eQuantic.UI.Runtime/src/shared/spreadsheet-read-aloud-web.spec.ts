@@ -126,6 +126,24 @@ describe('a spreadsheet read aloud on the web (#1081)', () => {
     expect(said(), 'a band a header selects is said as the range').toBe('C1:C50, 50 rows by 1 column');
   });
 
+  it("makes a cell a reader activates the active one, its centre under the pinned headers (#1116)", async () => {
+    // A row scrolled half under the column headers: its centre is on the header band, and pressing the centre
+    // selected the column. The cell is read by its row and column instead.
+    const { sheet, host } = await mount();
+    const surface = host.querySelector('.eq-sheet-surface') as HTMLElement;
+    surface.getBoundingClientRect = () => ({ left: 0, top: 0, width: 900, height: 600 }) as DOMRect;
+    const cell = host.querySelector('[data-eq-cell="1:2"]') as HTMLElement;
+    const top = Spreadsheet.headerHeight;
+    cell.getBoundingClientRect = () =>
+      ({ left: Spreadsheet.headerWidth + 96, top: top - 20, width: 96, height: 28 }) as DOMRect;
+
+    cell.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    await settle();
+
+    expect(sheet.activeCell).toEqual(new CellRef(0, 1));
+    expect(sheet.ranges).toEqual([new SheetRange(new CellRef(0, 1), new CellRef(0, 1))]);
+  });
+
   it('says each move and each growing range in a polite status', async () => {
     const { textarea, said, host } = await mount();
     const status = host.querySelector('.eq-announcement') as HTMLElement;

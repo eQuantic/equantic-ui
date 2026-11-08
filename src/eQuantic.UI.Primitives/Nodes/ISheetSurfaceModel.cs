@@ -107,4 +107,13 @@ public interface ISheetSurfaceModel
     /// any target, so no drawn box can say it.
     /// </summary>
     PointerCursor CursorAt(Point position);
+
+    /// <summary>
+    /// A reader activated what stands at <paramref name="row"/> and <paramref name="column"/> of the table the
+    /// surface is drawn in, in the table's own coordinates, its headers counted: the cell becomes the active one,
+    /// a column's header or a row's number selects its band, and the corner the sheet, as a tap there does. Read
+    /// by the place and never by where it is drawn, whose centre a pinned band or the window's edge can hide
+    /// (#1116). Answers whether the model changed.
+    /// </summary>
+    bool Activate(int row, int column);
 }
