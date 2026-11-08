@@ -1143,11 +1143,31 @@ internal sealed partial class WebLoweringVisitor
     /// degraded into the flow (#671). The wrapper is still the node's element, so it carries the
     /// node's own key, bookmark and origin. Photon's twin is the container reading the one arm its
     /// window resolves.
+    /// <para>
+    /// A component stands where it stands and builds in its own visit, once, so the rule waits for
+    /// what it builds (<see cref="_placing"/>): an AdaptiveNode out of a component is placed like one
+    /// written there, and anything else ends the wait in <see cref="Lower"/> (#738).
+    /// </para>
     /// </summary>
-    private HtmlElement? Place(VisualNode child, Func<VisualNode, HtmlElement?> rule) =>
-        child is AdaptiveNode adaptive
-            ? Decorate(adaptive, LowerAdaptive(adaptive, arm => Place(arm, rule)))
-            : rule(child);
+    private HtmlElement? Place(VisualNode child, Func<VisualNode, HtmlElement?> rule)
+    {
+        if (child is AdaptiveNode adaptive) return PlaceArms(adaptive, rule);
+        if (child is not UiComponent) return rule(child);
+
+        var outer = _placing;
+        _placing = rule;
+        try
+        {
+            return rule(child);
+        }
+        finally
+        {
+            _placing = outer;
+        }
+    }
+
+    private HtmlElement? PlaceArms(AdaptiveNode adaptive, Func<VisualNode, HtmlElement?> rule) =>
+        Decorate(adaptive, LowerAdaptive(adaptive, arm => Place(arm, rule)));
 
     /// <summary>Spec S6: every DECLARED variant renders, each inside a gate whose fixed media rules
     /// show it only in its size-class range (display:contents keeps gates transparent to flex/grid).

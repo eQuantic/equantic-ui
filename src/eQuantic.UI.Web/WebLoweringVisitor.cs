@@ -30,6 +30,10 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
     /// </summary>
     private SimulatedState _simulated;
 
+    /// <summary>The rule of the container a component stands in, while it builds: what it builds may
+    /// be an AdaptiveNode, whose arms are that container's to place (see <see cref="Place"/>).</summary>
+    private Func<VisualNode, HtmlElement?>? _placing;
+
     /// <summary>True while a DISABLED control's subtree is lowered: its boxes write no focus and no
     /// press, pictured or real, so neither a picture nor a control around it reaches them (#508).</summary>
     private bool _inDisabledControl;
@@ -44,8 +48,19 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
     /// side of hydration, and one attribute of disagreement is a diverged subtree.
     /// </para>
     /// </summary>
-    internal HtmlElement? Lower(VisualNode node, bool? horizontalAxis) =>
-        Decorate(node, node.Accept(this, horizontalAxis));
+    internal HtmlElement? Lower(VisualNode node, bool? horizontalAxis)
+    {
+        if (_placing is { } rule)
+        {
+            if (node is AdaptiveNode adaptive)
+            {
+                _placing = null;
+                return PlaceArms(adaptive, rule);
+            }
+            if (node is not UiComponent) _placing = null;
+        }
+        return Decorate(node, node.Accept(this, horizontalAxis));
+    }
 
     /// <summary>
     /// What the funnel writes on the element a node lowered to. A method of its own, apart from the

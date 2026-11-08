@@ -33,7 +33,7 @@ internal sealed partial class MeasureVisitor
         // additionally "lose to content" when space is tight (leftover floors at 0). A Flexible of
         // weight ZERO declares no such intent: it takes no share, so it is a rigid item (#680).
         // What the line lays out: an AdaptiveNode's place is its arm's (see LaidOutChildren).
-        var children = new LaidOutChildren(flex.Children, ctx);
+        var children = new LaidOutChildren(flex.Children, ctx, at);
         var hasFlexibles = false;
         for (var i = 0; i < children.Count; i++)
             if (children[i] is Flexible { Flex: > 0 } or Spacer { Flex: > 0 }) { hasFlexibles = true; break; }
@@ -122,7 +122,7 @@ internal sealed partial class MeasureVisitor
             // stretches THROUGH it. Without this the wrapper grew to the cell and the content
             // inside it stayed at its own width, which is exactly what the tab labels did.
             var (fsW, fsH) = CrossStretch(flexible);
-            var slotAt = children.At(at, i)?.ChildAt(0);
+            var slotAt = children.At(i)?.ChildAt(0);
             // The extent IS the slot's main size (the item is pinned to it below), so the child is
             // stretched on the main axis too, on top of whatever the cross axis granted: an
             // auto-sized cell takes the extent and lays out inside it — a flex item's autos fill
@@ -151,7 +151,7 @@ internal sealed partial class MeasureVisitor
                 return Slot(flexible, i, main, truncating);
             var (sW, sH) = CrossStretch(children[i]);
             return MeasureChild(children[i], horizontal ? main : crossAvail,
-                horizontal ? crossAvail : main, children.At(at, i),
+                horizontal ? crossAvail : main, children.At(i),
                 stretchW: sW, stretchH: sH, truncating: truncating);
         }
 
@@ -176,7 +176,7 @@ internal sealed partial class MeasureVisitor
                     // writes the declared basis at once and transitions only `flex-grow`: a weight
                     // gliding to zero at a basis of 540 lands on 540 continuously, where it used to
                     // glide toward nothing and snap to 540 on its last frame.
-                    flexWeights[i] = ctx.Transitions?.Resolve(children.At(at, i), GlideChannel.Flex,
+                    flexWeights[i] = ctx.Transitions?.Resolve(children.At(i), GlideChannel.Flex,
                         f.Flex, ctx.TimeMs, f.AnimateChanges, ctx.ReducedMotion) ?? f.Flex;
                     if (f.Flex > 0)
                     {
@@ -205,7 +205,7 @@ internal sealed partial class MeasureVisitor
                     {
                         var (zsW, zsH) = CrossStretch(f);
                         inflexible = MeasureChild(f, horizontal ? mainAvail : crossAvail,
-                            horizontal ? crossAvail : mainAvail, children.At(at, i),
+                            horizontal ? crossAvail : mainAvail, children.At(i),
                             stretchW: zsW, stretchH: zsH, contentMain: true);
                     }
                     laid[i] = inflexible;
@@ -213,7 +213,7 @@ internal sealed partial class MeasureVisitor
                     rigidSum += mains[i];
                     continue;
                 case Spacer { Flex: > 0 } s:
-                    flexWeights[i] = ctx.Transitions?.Resolve(children.At(at, i), GlideChannel.Flex,
+                    flexWeights[i] = ctx.Transitions?.Resolve(children.At(i), GlideChannel.Flex,
                         s.Flex, ctx.TimeMs, s.AnimateChanges, ctx.ReducedMotion) ?? s.Flex;
                     continue;
                 case Spacer fixedSpacer:
@@ -225,7 +225,7 @@ internal sealed partial class MeasureVisitor
             var childMaxW = horizontal ? mainAvail : crossAvail;
             var childMaxH = horizontal ? crossAvail : mainAvail;
             var (csW, csH) = CrossStretch(children[i]);
-            var child = MeasureChild(children[i], childMaxW, childMaxH, children.At(at, i),
+            var child = MeasureChild(children[i], childMaxW, childMaxH, children.At(i),
                 stretchW: csW, stretchH: csH);
             laid[i] = child;
             mains[i] = horizontal ? child.Bounds.Width : child.Bounds.Height;
@@ -307,7 +307,7 @@ internal sealed partial class MeasureVisitor
                     }
                     else if (horizontal)
                     {
-                        floors[i] = MathF.Min(mains[i], MinContentWidth(children[i], children.At(at, i), ctx));
+                        floors[i] = MathF.Min(mains[i], MinContentWidth(children[i], children.At(i), ctx));
                         weights[i] = mains[i] - floors[i];
                     }
                     else if (ColumnFloor(laid[i]!) is { } column)
@@ -399,7 +399,7 @@ internal sealed partial class MeasureVisitor
             {
                 var (usW, usH) = CrossStretch(unbounded);
                 var intrinsic = MeasureChild(unbounded.Child, horizontal ? mainAvail : crossAvail,
-                    horizontal ? crossAvail : mainAvail, children.At(at, i)?.ChildAt(0),
+                    horizontal ? crossAvail : mainAvail, children.At(i)?.ChildAt(0),
                     stretchW: usW, stretchH: usH);
                 mains[i] = horizontal ? intrinsic.Bounds.Width : intrinsic.Bounds.Height;
                 rigidSum += mains[i];
@@ -560,7 +560,7 @@ internal sealed partial class MeasureVisitor
         // size instead, the content it contributes to a max-content container, as the single-line
         // pass gives it. Any other child asks for the size it measures.
         // What the lines lay out: an AdaptiveNode's place is its arm's (see LaidOutChildren).
-        var children = new LaidOutChildren(flex.Children, ctx);
+        var children = new LaidOutChildren(flex.Children, ctx, at);
         var measured = new List<LayoutNode>(children.Count);
         var sources = new List<VisualNode>(children.Count);
         var hypothetical = new List<float>(children.Count);
@@ -591,7 +591,7 @@ internal sealed partial class MeasureVisitor
                 forChild = horizontal
                     ? forChild with { Width = forChild.Width.DecidedByContent(true) }
                     : forChild with { Height = forChild.Height.DecidedByContent(true) };
-            var itemAt = children.At(at, i);
+            var itemAt = children.At(i);
             var node = Measure(child, forChild, ctx, ItemChild(itemAt, source));
 
             measured.Add(node);

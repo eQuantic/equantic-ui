@@ -186,6 +186,54 @@ public class S6AdaptiveRealizerTests
             "the compact arm asks for no span, and the node's own is not read");
     }
 
+    private sealed class Builds(VisualNode built) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => built;
+    }
+
+    /// <summary>
+    /// The same arms out of a component, through two of them: a line and a grid see through to the
+    /// AdaptiveNode it builds, as a stack does, so wrapping one in a component does not change where
+    /// its arms stand. The flex item used to be the component, and the arm's alignment and span were
+    /// never written (#738).
+    /// CROSS-PIN: <c>s6-adaptive.spec.ts</c> asserts the same on the twin.
+    /// </summary>
+    [Fact]
+    public void AnArmAComponentBuilds_AlignsItselfInItsLine_AndSpansItsGrid()
+    {
+        var row = new Row(cross: CrossAlign.Start);
+        row.Add(new Builds(new Builds(new AdaptiveNode(Marker(), null, new Primitives.Box(new BoxStyle { Width = 10, Height = 10 })
+        {
+            AlignSelf = CrossAlign.End,
+        }))));
+        var grid = new Grid([GridTrack.Flex(), GridTrack.Flex()]);
+        grid.Add(new Builds(new AdaptiveNode(Marker(), null, new Primitives.Box(new BoxStyle { Height = 10 }) { GridSpan = 2 })));
+
+        var line = WebRealizer.Lower(row, PhotonTheme.Instance).Render().Children[0].Children;
+        var cells = WebRealizer.Lower(grid, PhotonTheme.Instance).Render().Children[0].Children;
+
+        line[1].Children.Single().Attributes["style"].Should().Contain("align-self: flex-end");
+        cells[1].Children.Single().Attributes["style"].Should().Contain("grid-column: span 2");
+    }
+
+    /// <summary>What a component builds below an arm is a container of its own, not the line's: the
+    /// rule that crossed the component ends at the first node that is neither.</summary>
+    [Fact]
+    public void AnAdaptiveNodeInsideWhatAComponentBuilds_IsNotTheOuterLinesToPlace()
+    {
+        var inner = new Primitives.Box(new BoxStyle { Width = 10 },
+            new AdaptiveNode(Marker(), null, new Primitives.Box(new BoxStyle { Width = 10, Height = 10 })
+            {
+                AlignSelf = CrossAlign.End,
+            }));
+        var row = new Row(cross: CrossAlign.Start);
+        row.Add(new Builds(inner));
+
+        var html = HtmlRenderer.RenderNode(WebRealizer.Lower(row, PhotonTheme.Instance).Render());
+
+        html.Should().NotContain("align-self", "the arm stands in a box, which has no line to align it");
+    }
+
     /// <summary>The CSS identifier grammar, which is what a class selector can name.</summary>
     private static readonly System.Text.RegularExpressions.Regex CssIdentifier =
         new("^-?[_a-zA-Z][_a-zA-Z0-9-]*$");

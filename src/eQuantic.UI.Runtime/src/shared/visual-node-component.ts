@@ -11,7 +11,13 @@ import type { HtmlNode } from '../core/types';
 import type { ComponentChild, VisualNodeValue } from './nodes';
 import { ComponentInstanceStore, enterPass, exitPass } from './instance-store';
 import { lowerVisualNode } from './lowering';
-import { ambientLoweringContext, themedLoweringContext } from './photon-context';
+import {
+  ambientLoweringContext,
+  getPhotonTheme,
+  getPhotonTypeScale,
+  setPhotonTheme,
+  themedLoweringContext,
+} from './photon-context';
 import type { AppTheme } from './value-types';
 
 /**
@@ -29,21 +35,32 @@ import type { AppTheme } from './value-types';
 export class VisualNodeComponent extends HtmlElement {
   private readonly node: VisualNodeValue | ComponentChild;
   private readonly theme?: AppTheme;
+  private readonly typeScale: number;
   private readonly _instances = new ComponentInstanceStore();
 
   constructor(
     node: VisualNodeValue | ComponentChild,
     theme?: AppTheme,
-    _typeScale?: number,
+    typeScale = 1,
     props?: unknown,
   ) {
     super(props);
     this.node = node;
     this.theme = theme;
+    this.typeScale = typeScale;
   }
 
   render(): HtmlNode {
-    const context = this.theme ? themedLoweringContext(this.theme) : ambientLoweringContext();
+    const context = this.theme
+      ? themedLoweringContext(this.theme, this.typeScale)
+      : ambientLoweringContext();
+    // The subtree reads ONE theme and one type scale, as the C# realizer's does: a stateless twin
+    // builds from the ambient ones, not from this context, so the bridge's ARE the ambient ones for
+    // the length of this render. A stateless checkbox under a bridge with its own theme drew the
+    // page's colours on the client, over the ones the server had drawn (#701).
+    const ambientTheme = getPhotonTheme();
+    const ambientScale = getPhotonTypeScale();
+    if (this.theme) setPhotonTheme(this.theme, this.typeScale);
     // Reconciler pass join (W6 slice 2): inside a host page render this JOINS the page's pass —
     // the page owns retention (bridges are rebuilt every pass and cannot). Standalone (tests,
     // direct embedding) this instance's own store carries retention across its renders.
@@ -54,6 +71,7 @@ export class VisualNodeComponent extends HtmlElement {
       return lowerVisualNode(this.node as VisualNodeValue, context);
     } finally {
       exitPass();
+      setPhotonTheme(ambientTheme, ambientScale);
     }
   }
 }
