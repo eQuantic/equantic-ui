@@ -32,9 +32,14 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="Text">What the region says, when it says it in words of its own rather than through what
 /// it draws: a spreadsheet's surface announcing its moves (<see cref="SheetSurface.Announcement"/>, #1081).
 /// Null reads it from <paramref name="Node"/>'s subtree, as a <see cref="LiveRegion"/>'s.</param>
+/// <param name="ReadsItself">Whether what a reader says for <paramref name="Node"/> ITSELF is the
+/// announcement, rather than what it holds: the item row a list's keys are on, whose name is its own
+/// (#1088). A <see cref="LiveRegion"/>'s own node carries the region's name, which is why its text is
+/// read from its children.</param>
 internal readonly record struct LiveRegionMark(
     Element Element,
     string Label,
     LiveRegionUrgency Urgency,
     LayoutNode Node,
-    string? Text = null);
+    string? Text = null,
+    bool ReadsItself = false);

@@ -50,6 +50,13 @@ namespace eQuantic.UI.Native.Components;
 /// kept by path, and a region that left had to be forgotten by hand every frame, or a list whose rows
 /// are toasts grew a row per path for the life of the app.
 /// </para>
+///
+/// <para>
+/// A REGION THAT WAS NOT ONE LAST FRAME ARRIVES, even where its position stayed: the item row a list's
+/// keys are on is a region only while it is the one (#1088), and a row the keys come back to is said
+/// again, as a reader says the element a focus comes back to. For a region that is one for as long as
+/// it is drawn, the two are the same thing.
+/// </para>
 /// </summary>
 internal sealed class LiveRegionAnnouncer
 {
@@ -64,7 +71,10 @@ internal sealed class LiveRegionAnnouncer
     private readonly List<LiveAnnouncement> _pending = [];
 
     /// <summary>What each live region of the last frame observed holds now, by its element's id.</summary>
-    private readonly Dictionary<int, string> _current = [];
+    private Dictionary<int, string> _current = [];
+
+    /// <summary>The same for the frame before it, which says whether a region was one then.</summary>
+    private Dictionary<int, string> _previous = [];
     private readonly List<SemanticNode> _scratch = [];
     private bool _seenAFrame;
 
@@ -77,6 +87,7 @@ internal sealed class LiveRegionAnnouncer
     {
         var marks = frame.LiveRegions;
         DueAtMs = null;
+        (_previous, _current) = (_current, _previous);
         _current.Clear();
         for (var i = 0; i < marks.Count; i++)
         {
@@ -84,6 +95,7 @@ internal sealed class LiveRegionAnnouncer
             if (NodeStates.For<LiveRegionState>(mark.Element) is not { } region) continue;
             var text = TextOf(mark);
             _current[mark.Element.Id] = text;
+            if (_seenAFrame && !_previous.ContainsKey(mark.Element.Id)) region.Known = false;
             // A REGION THAT APPEARS **IS** THE EVENT — on any frame but the first. That is the case
             // `LiveRegion` was added for: a Banner that appears announced nothing (B18) and a Toast
             // lowered to a non-modal Overlay announced nothing (C4), and treating arrival as "no
@@ -164,7 +176,8 @@ internal sealed class LiveRegionAnnouncer
     {
         if (mark.Text is { } words) return words;
         _scratch.Clear();
-        SemanticsTree.CollectChildren(mark.Node, _scratch);
+        if (mark.ReadsItself) SemanticsTree.CollectNode(mark.Node, _scratch);
+        else SemanticsTree.CollectChildren(mark.Node, _scratch);
         if (_scratch.Count == 0) return string.Empty;
         if (_scratch.Count == 1) return _scratch[0].Label;
         // A region holding a bar and its caption says both, in reading order, the way a reader

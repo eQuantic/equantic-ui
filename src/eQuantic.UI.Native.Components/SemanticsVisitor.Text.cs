@@ -35,12 +35,52 @@ internal sealed partial class SemanticsVisitor
     /// vanishes under text). The VALUE is what the field holds, and an obscured field holds dots here
     /// as it does on screen: the text never reaches the tree, so no bridge can hand it to a reader.
     /// One dot per character as the eye counts them, what the platform's own secure field exposes.
+    /// <para>
+    /// A field a listbox hangs from is an EDITABLE COMBOBOX, and says whether its list shows, as the web
+    /// makes its text control the combobox (#1083). Until #1088 it read as a plain text field here, and
+    /// the option its arrows reached said nothing: the realizer now marks that row live while it is the
+    /// one (<c>ItemRow</c>).
+    /// </para>
     /// </summary>
-    public bool Visit(TextEntry node, LayoutNode laidOut) =>
-        Announce(new(SemanticRole.TextField, IdOf(laidOut), laidOut.Bounds,
+    public bool Visit(TextEntry node, LayoutNode laidOut)
+    {
+        var listbox = ListboxHungFrom(laidOut);
+        return Announce(new(listbox is null ? SemanticRole.TextField : SemanticRole.EditableComboBox,
+            IdOf(laidOut), laidOut.Bounds,
             node.Label ?? node.Placeholder ?? "",
             node.Obscure ? new string('•', new System.Globalization.StringInfo(node.Value).LengthInTextElements) : node.Value,
-            node.Disabled, Obscured: node.Obscure));
+            node.Disabled, Expanded: listbox?.Open, Obscured: node.Obscure));
+    }
+
+    /// <summary>
+    /// The <see cref="Anchored"/> whose listbox this field's keys walk, or null: the nearest anchored node
+    /// with a panel role above the field, when its panel is a listbox and the field is the first one its
+    /// anchor holds, wherever it sits there. That is the element the web makes the combobox
+    /// (<c>TextControlIn</c>, the anchor's first text control), so a field beside an icon in the anchor is
+    /// one, unlike a pressable, which is the combobox only when it IS the anchor
+    /// (<see cref="AnchorsAListbox"/>). The panel never lays out under the anchor here: it is an overlay
+    /// root of its own.
+    /// </summary>
+    private static Anchored? ListboxHungFrom(LayoutNode laidOut)
+    {
+        for (var node = laidOut.Parent; node is not null; node = node.Parent)
+        {
+            if (node.Source is not Anchored { PanelRole: not AnchorPanelRole.None } anchored) continue;
+            return anchored.PanelRole == AnchorPanelRole.Listbox && ReferenceEquals(FirstField(node), laidOut)
+                ? anchored
+                : null;
+        }
+        return null;
+    }
+
+    /// <summary>The first text field under <paramref name="node"/>, in tree order, or null.</summary>
+    private static LayoutNode? FirstField(LayoutNode node)
+    {
+        if (node.Source is TextEntry) return node;
+        foreach (var child in node)
+            if (FirstField(child) is { } field) return field;
+        return null;
+    }
 
     /// <summary>A multiline editable code surface — a text area to a screen reader.</summary>
     public bool Visit(CodeSurface node, LayoutNode laidOut)

@@ -252,4 +252,37 @@ public class AppKitAccessibilityTests
 
         (dialog.Role, dialog.Subrole).Should().Be(("AXGroup", "AXApplicationDialog"));
     }
+
+    /// <summary>
+    /// A field a listbox hangs from and a password field, read back from the elements AppKit is handed:
+    /// NSComboBox's role for the first (#1088), which AppKit describes as a combo box, and the secure text
+    /// field's subrole for the second (#817), whose value is the dots it draws.
+    /// </summary>
+    [MacFact]
+    public void AFieldAListboxHangsFromAndAPasswordReachAppKitInTheirOwnWords()
+    {
+        var list = new Column(gap: 0);
+        list.Add(new Pressable(new Text("Lisbon", TypeRole.BodyM), () => { }) { Role = PressableRole.Option, Selected = true });
+        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        page.Add(new Anchored(new TextEntry("Lis") { Label = "City" }, list)
+        {
+            Open = true,
+            PanelRole = AnchorPanelRole.Listbox,
+            ActiveIndex = 0,
+        });
+        page.Add(new TextEntry("hunter2") { Label = "Password", Obscure = true });
+
+        var said = ReadBack(page);
+
+        var city = said.Single(element => element.Label == "City");
+        (city.Role, city.Subrole, city.Description).Should().Be(("AXComboBox", null, "combo box"),
+            "an editable combobox is NSComboBox's role, in AppKit's own word for it");
+        FromNSString(Send(city.Element, Sel("accessibilityValue"))).Should().Be("Lis", "it holds what was typed");
+        SendBool(city.Element, Sel("isAccessibilityExpanded")).Should().BeTrue("and says its list shows");
+
+        var password = said.Single(element => element.Label == "Password");
+        (password.Role, password.Subrole).Should().Be(("AXTextField", "AXSecureTextField"));
+        FromNSString(Send(password.Element, Sel("accessibilityValue"))).Should().Be("•••••••",
+            "the dots it draws, never the text");
+    }
 }

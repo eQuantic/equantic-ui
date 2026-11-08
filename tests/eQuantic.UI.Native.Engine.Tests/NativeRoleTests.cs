@@ -105,12 +105,14 @@ public class NativeRoleTests
     /// W3C Core-AAM's for the same ARIA role, with TalkBack's Role.java naming the class it reads:
     /// TabWidget is its "tab bar", and Dialog and AlertDialog its two dialogs. The one departure, a
     /// select-only combobox in each platform's own drop-down words (NSPopUpButton's AXPopUpButton,
-    /// and the Spinner Chrome gives the same web component), is argued in its row.
+    /// and the Spinner Chrome gives the same web component), is argued in its row. An editable one, a
+    /// field with the list under it (#1088), takes Core-AAM's own pair.
     /// </summary>
     [Theory]
     [InlineData(SemanticRole.TabBar, "AXTabGroup", null, "android.widget.TabWidget", UIKitTrait.None, false)]
     [InlineData(SemanticRole.RadioGroup, "AXRadioGroup", null, "android.widget.RadioGroup", UIKitTrait.None, false)]
     [InlineData(SemanticRole.ComboBox, "AXPopUpButton", null, "android.widget.Spinner", UIKitTrait.Button, true)]
+    [InlineData(SemanticRole.EditableComboBox, "AXComboBox", null, "android.widget.EditText", UIKitTrait.None, true)]
     [InlineData(SemanticRole.Dialog, "AXGroup", "AXApplicationDialog", "android.app.Dialog", UIKitTrait.None, false)]
     [InlineData(SemanticRole.AlertDialog, "AXGroup", "AXApplicationAlertDialog", "android.app.AlertDialog", UIKitTrait.None, false)]
     public void TheContainersAndTheComboBoxSpeakEachPlatformsOwnWords(

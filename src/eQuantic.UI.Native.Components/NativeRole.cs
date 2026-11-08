@@ -247,17 +247,26 @@ public readonly record struct NativeRole(
         // A field that shows one choice and opens the list of the others. The ONE departure from
         // Core-AAM in this group, whose words for a combobox (AXComboBox, android.widget.EditText)
         // are an EDITABLE one's: NSComboBox on the Mac, and on Android a field TalkBack calls an
-        // "edit box" and offers to type into. Every combobox this library builds is SELECT-ONLY, and a
-        // select-only field is each platform's drop-down. On the Mac that is NSPopUpButton, whose
+        // "edit box" and offers to type into. This one is SELECT-ONLY, and a select-only field is each
+        // platform's drop-down. On the Mac that is NSPopUpButton, whose
         // AXPopUpButton is also Core-AAM's word for a button with aria-haspopup and the pair to an
         // option's AXMenuItem, NSPopUpButton's own items (#338). On Android it is Spinner, which
         // TalkBack names "drop-down list" and which is the class Chrome gives the web half of this
         // very component (a combobox that is not a text field). UIKit has no trait for it: a menu
         // button reports the button trait, and whether the list is open rides the expanded status
-        // the bridge already sets. An editable combobox, a text field with the list under it, would
-        // take Core-AAM's own pair, and nothing in the library builds one.
+        // the bridge already sets. An editable combobox, a text field with the list under it, takes
+        // Core-AAM's own pair: the next row.
         SemanticRole.ComboBox =>
             new("AXPopUpButton", "android.widget.Spinner", UIKitTrait.Button,
+                Activatable: true, Adjustable: false),
+
+        // A text field with a list under it, a code editor's go-to field (#1088): Core-AAM's own pair for
+        // a combobox, AXComboBox, NSComboBox's role, and android.widget.EditText, which TalkBack calls an
+        // edit box and offers to type into, and the class Chrome gives the web half of this very field.
+        // UIKit has no combobox, and a text field carries no trait, as the TextField row says; whether
+        // the list shows rides the expanded status the bridge already sets.
+        SemanticRole.EditableComboBox =>
+            new("AXComboBox", "android.widget.EditText", UIKitTrait.None,
                 Activatable: true, Adjustable: false),
 
         // A layer that holds the screen until it is answered: AXGroup with the AXApplicationDialog

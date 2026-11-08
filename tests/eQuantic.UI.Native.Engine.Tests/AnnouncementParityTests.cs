@@ -68,6 +68,7 @@ public class AnnouncementParityTests
         { "date-picker", true },
         { "dialog", false },
         { "alert-dialog", false },
+        { "search-field", false },
     };
 
     /// <summary>A FRESH component per target: a stateful one keeps what a press did to it.</summary>
@@ -86,8 +87,22 @@ public class AnnouncementParityTests
             [new DialogAction("Stay", null, Variant.Ghost), new DialogAction("Sign out")])),
         "alert-dialog" => Page(new Dialog("Delete card?", "It cannot be undone.",
             [new DialogAction("Keep", null, Variant.Ghost), new DialogAction("Delete", null, Variant.Destructive)])),
+        "search-field" => SearchField(),
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "not a case"),
     };
+
+    /// <summary>A field with a list under it, the go-to field's shape (#1088): an icon and the field in the
+    /// anchor, the list open, its second option the one the keys are on.</summary>
+    private static VisualNode SearchField()
+    {
+        var list = new Column(gap: 0);
+        list.Add(new Pressable(new Text("Lisbon", TypeRole.BodyM), () => { }) { Role = PressableRole.Option, Selected = false });
+        list.Add(new Pressable(new Text("Porto", TypeRole.BodyM), () => { }) { Role = PressableRole.Option, Selected = true });
+        var anchor = new Row(gap: Space.S1);
+        anchor.Add(new Box(new BoxStyle { Width = 16, Height = 16 }));
+        anchor.Add(new TextEntry("Po") { Label = "City" });
+        return new Anchored(anchor, list) { Open = true, PanelRole = AnchorPanelRole.Listbox, ActiveIndex = 1 };
+    }
 
     private static VisualNode Page(VisualNode layer)
     {
@@ -219,10 +234,15 @@ public class AnnouncementParityTests
                 var aria = element.Attributes["role"]!;
                 var name = element.Attributes.GetValueOrDefault("aria-label")
                            ?? (Containers.Contains(aria) ? "" : TextOf(element).Trim());
-                return new Announcement(AriaRoles[aria], name, StateOf(element));
+                return new Announcement(RoleOf(element, aria), name, StateOf(element));
             })
             .ToList();
     }
+
+    /// <summary>What the tree calls an element of a compared ARIA role: a combobox that is a text control is
+    /// the EDITABLE one, a field with the list under it (#1088), apart from a select-only trigger.</summary>
+    private static SemanticRole RoleOf(HtmlNode element, string aria) =>
+        aria == "combobox" && element.Tag is "input" or "textarea" ? SemanticRole.EditableComboBox : AriaRoles[aria];
 
     /// <summary>Every element, in document order.</summary>
     private static IEnumerable<HtmlNode> Elements(HtmlNode node)
@@ -257,6 +277,8 @@ public class AnnouncementParityTests
         }
 
         var compared = roles.Values.ToHashSet();
+        // What a compared ARIA role can also be called here (RoleOf).
+        if (compared.Contains(SemanticRole.ComboBox)) compared.Add(SemanticRole.EditableComboBox);
         return host.Semantics()
             .Where(stop => compared.Contains(stop.Role))
             .Select(stop => new Announcement(stop.Role, stop.Label, StateOf(stop)))

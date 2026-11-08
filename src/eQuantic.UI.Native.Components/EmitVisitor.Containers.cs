@@ -164,8 +164,12 @@ internal sealed partial class EmitVisitor
         // The layer is the anchored node's DEFERRED slot: built when it is shown, as the panel inside it
         // always was, so a component in an open menu keeps its state from frame to frame and one in a
         // closed menu leaves the tree.
+        //
+        // The item row the keys are on rides with it, a menu's or a listbox's, which the web names with
+        // aria-activedescendant: the pass finds it among the rows it lays out (#1088).
         s.Overlays.Add(new QueuedLayer(new Overlay(layer) { Modal = anchored.PanelRole == AnchorPanelRole.Dialog },
-            s.Node.Element as NodeElement));
+            s.Node.Element as NodeElement,
+            anchored.PanelRole is AnchorPanelRole.Listbox or AnchorPanelRole.Menu ? anchored.ActiveIndex : -1));
     }
 
     // Loop motion: translate the subtree by the frame-clock offset (spec §06 transform-only).

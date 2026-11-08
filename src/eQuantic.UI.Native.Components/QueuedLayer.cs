@@ -15,4 +15,7 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="Layer">What the pass lays out against the viewport and paints above the page.</param>
 /// <param name="Holder">The position whose deferred slot holds the layer's content. Never null for
 /// a node the layout measured; the pass refuses one that is.</param>
-internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder);
+/// <param name="ActiveItem">Which item row of an anchored menu's or listbox's panel the keys are on
+/// (<see cref="Anchored.ActiveIndex"/>), counted as the web numbers the rows, or -1 for none and for
+/// every other layer. The pass announces that row as it changes (#1088).</param>
+internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder, int ActiveItem = -1);

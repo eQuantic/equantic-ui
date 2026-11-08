@@ -236,4 +236,112 @@ public class ComboBoxAndDialogSemanticsTests
             .Which.Should().Match<SemanticNode>(field => field.Label == "Lisbon" && field.Value == null,
                 "unlabelled, the choice it shows is its name and is not read twice");
     }
+
+    /// <summary>
+    /// A FIELD a listbox hangs from is an editable combobox, the go-to field's shape (#1088): the web makes
+    /// its text control the combobox (#1083), and until this it read here as a plain text field. It says
+    /// what it holds and whether its list shows, wherever it sits in the anchor, beside an icon included,
+    /// as the web takes the anchor's first text control. A field a menu hangs from, and the second field
+    /// of an anchor, stay text fields, as on the web.
+    /// </summary>
+    [Fact]
+    public void AFieldAListboxHangsFrom_IsAnEditableComboBoxThatSaysWhetherItsListShows()
+    {
+        var field = new CityField();
+        var host = Render(field);
+
+        host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.EditableComboBox)
+            .Which.Should().Match<SemanticNode>(combo => combo.Label == "City" && combo.Value == "Lis"
+                && combo.Expanded == true && combo.Checked == null && combo.Selected == null);
+        host.Semantics().Where(node => node.Role == SemanticRole.TextField).Should().BeEmpty();
+
+        field.Shown = false;
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.EditableComboBox)
+            .Which.Expanded.Should().BeFalse("its list is closed");
+
+        var list = new Text("the list", TypeRole.BodyM);
+        var menu = Render(new Anchored(new TextEntry("Lis") { Label = "City" }, list) { PanelRole = AnchorPanelRole.Menu });
+        menu.Semantics().Should().ContainSingle().Which.Role.Should().Be(SemanticRole.TextField,
+            "a menu's trigger is no combobox, a field's no more than a button's");
+
+        var two = new Column(gap: 0);
+        two.Add(new TextEntry("Lis") { Label = "City" });
+        two.Add(new TextEntry("PT") { Label = "Country" });
+        var second = Render(new Anchored(two, list) { PanelRole = AnchorPanelRole.Listbox });
+        second.Semantics().Select(node => (node.Role, node.Label)).Should().Equal(
+            [(SemanticRole.EditableComboBox, "City"), (SemanticRole.TextField, "Country")],
+            "the web makes the anchor's first text control the combobox, and only it");
+    }
+
+    /// <summary>
+    /// THE OPTION THE KEYS REACH is said as it changes, while the field keeps the keyboard (#1088): the web
+    /// names it with aria-activedescendant, and on Photon it said nothing until the reader walked into the
+    /// list. It is a polite live region while it is the one, which is how Android reads it, and a row the
+    /// keys come back to is said again, as a reader says the element a focus comes back to.
+    /// </summary>
+    [Fact]
+    public void TheOptionTheKeysReach_IsSaidAsItChanges_AndAgainWhenTheyComeBack()
+    {
+        var field = new CityField();
+        var host = Render(field);
+        host.TakeAnnouncements().Should().BeEmpty("the first frame seeds, as a page's status line does");
+
+        string[] Said(int active, float timeMs)
+        {
+            field.Active = active;
+            host.RenderFrame(new DisplayListBuilder(), timeMs);
+            return host.TakeAnnouncements().Select(said => said.Text).ToArray();
+        }
+
+        Said(1, 2000).Should().Equal(["Porto"]);
+        host.Semantics().Where(node => node.Role == SemanticRole.Option).Select(node => (node.Label, node.Live))
+            .Should().Equal([("Lisbon", (LiveRegionUrgency?)null), ("Porto", LiveRegionUrgency.Polite)],
+                "the row the keys are on is the live one, and only it");
+        Said(0, 4000).Should().Equal(["Lisbon"]);
+        Said(1, 6000).Should().Equal(["Porto"], "the keys came back to it");
+        Said(1, 8000).Should().BeEmpty("nothing moved");
+    }
+
+    /// <summary>A field with two cities under it, the go-to field's shape: an icon and the field in the
+    /// anchor, the field keeping the keyboard while the keys move the active option.</summary>
+    private sealed class CityField : StatefulComponent
+    {
+        private int _active;
+        private bool _shown = true;
+
+        public int Active
+        {
+            get => _active;
+            set => SetState(() => _active = value);
+        }
+
+        public bool Shown
+        {
+            get => _shown;
+            set => SetState(() => _shown = value);
+        }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var list = new Column(gap: 0);
+            string[] cities = ["Lisbon", "Porto"];
+            for (var i = 0; i < cities.Length; i++)
+                list.Add(new Pressable(new Text(cities[i], TypeRole.BodyM), () => { })
+                {
+                    Role = PressableRole.Option,
+                    Selected = i == _active,
+                    CanRequestFocus = false,
+                });
+            var anchor = new Row(gap: Space.S1);
+            anchor.Add(new Box(new BoxStyle { Width = 16, Height = 16 }));
+            anchor.Add(new TextEntry("Lis") { Label = "City" });
+            return new Anchored(anchor, list)
+            {
+                Open = _shown,
+                PanelRole = AnchorPanelRole.Listbox,
+                ActiveIndex = _shown ? _active : -1,
+            };
+        }
+    }
 }

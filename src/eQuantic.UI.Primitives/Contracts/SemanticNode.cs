@@ -121,9 +121,9 @@ public enum SemanticRole : byte
     /// A field that shows one choice and opens the list of the others — a <c>Select</c>'s or a
     /// <c>TimePicker</c>'s trigger, the pressable a listbox panel hangs from. Whether the list is open
     /// rides <see cref="SemanticNode.Expanded"/>, as the web's <c>aria-expanded</c> says it, and the
-    /// choices in it are <see cref="Option"/>s. Every one the library builds is SELECT-ONLY, which is
-    /// why the platforms hear it as their own drop-down rather than as an editable combo box; see
-    /// <c>NativeRole</c>.
+    /// choices in it are <see cref="Option"/>s. It is SELECT-ONLY, which is why the platforms hear it
+    /// as their own drop-down; a field the user types into with the list under it is an
+    /// <see cref="EditableComboBox"/>. See <c>NativeRole</c>.
     /// </summary>
     ComboBox,
 
@@ -162,6 +162,15 @@ public enum SemanticRole : byte
     /// <summary>The header of a table's or a grid's row, named by what it shows, which names the cells
     /// beside it.</summary>
     RowHeader,
+
+    /// <summary>
+    /// A text field a listbox panel hangs from, read as one: what it holds is its value, whether the
+    /// list shows rides <see cref="SemanticNode.Expanded"/>, and the option the keys move to is
+    /// announced as it changes while the field keeps the keyboard, the web's text control with
+    /// <c>role="combobox"</c> and <c>aria-activedescendant</c> (#1088). A code editor's go-to field is
+    /// one. The platforms have their own word for it, apart from a <see cref="ComboBox"/>'s drop-down.
+    /// </summary>
+    EditableComboBox,
 }
 
 /// <summary>A check's state, in ARIA's own three words. Mixed exists for checkboxes and nothing
@@ -255,7 +264,9 @@ public enum SemanticCheck : byte
 /// everything — a region that interrupts when nothing happened is worse than one that never speaks.
 /// <para>A <see cref="SemanticRole.Group"/> carries it for a <c>LiveRegion</c>, because announcing a change
 /// means re-reading what is INSIDE, and every other role here consumes its subtree; the one exception is a
-/// field whose VALUE is what is announced, a spreadsheet's surface saying its moves (#1081).</para>
+/// field whose VALUE is what is announced, a spreadsheet's surface saying its moves (#1081). An item
+/// row a list's keys are on is one while it is the one, so the option an editable combobox's arrows reach
+/// is said as it changes (#1088).</para>
 /// <para>It is the DATA a shell marks a live node with (Android's live region); what is announced
 /// when, the host's announcer decides from frame to frame, and each shell posts it.</para>
 /// </param>

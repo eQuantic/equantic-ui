@@ -36,6 +36,16 @@ public static class SemanticsTree
             if (i < frame.OverlayLayers.Count) visitor.AnnounceOverlay(frame.OverlayLayers[i], frame.OverlayRoots[i]);
             Walk(frame.OverlayRoots[i], visitor);
         }
+        // A node a live region's mark reads ITSELF is that region, the item row a list's keys are on
+        // (#1088), and says so as a region's node does: Android reads a live node when it reports a change.
+        // Nothing in the vocabulary makes it one, so the walk cannot; the frame that recorded the mark can.
+        var marks = frame.LiveRegions;
+        for (var m = 0; m < marks.Count; m++)
+        {
+            if (!marks[m].ReadsItself) continue;
+            for (var i = 0; i < nodes.Count; i++)
+                if (nodes[i].Id == marks[m].Element.Id) nodes[i] = nodes[i] with { Live = marks[m].Urgency };
+        }
         return nodes;
     }
 
@@ -56,6 +66,11 @@ public static class SemanticsTree
         var visitor = new SemanticsVisitor(into);
         foreach (var child in node) Walk(child, visitor);
     }
+
+    /// <summary>What a reader would say for one node ITSELF and what it holds: the item row a list's
+    /// keys are on, whose own name is the announcement (#1088).</summary>
+    internal static void CollectNode(LayoutNode node, List<SemanticNode> into) =>
+        Walk(node, new SemanticsVisitor(into));
 
     /// <summary>
     /// Tree order, which is reading order and the order Tab walks. A node that announced CONSUMED

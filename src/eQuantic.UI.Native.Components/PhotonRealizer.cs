@@ -420,6 +420,13 @@ public static class PhotonRealizer
                 context, rootElement: layerElement);
             overlayRoots.Add(overlayLayout);
             realizedLayers.Add(queued.Layer);
+            // The item row the keys are on, which the web names with aria-activedescendant, is a polite
+            // live region while it is the one, so it is said as it changes (#1088): the field or the trigger
+            // keeps the keyboard while the arrows walk the list, and a reader following them heard nothing
+            // move. Recorded here, where the layer's rows are laid out, once a frame as every mark is.
+            var activeItem = queued.ActiveItem;
+            if (activeItem >= 0 && ItemRow(overlayLayout, ref activeItem) is { Element: { } row } active)
+                input.Add(new LiveRegionMark(row, "", LiveRegionUrgency.Polite, active, ReadsItself: true));
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
             EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
@@ -465,6 +472,20 @@ public static class PhotonRealizer
             TransformedRegions = regions.TransformedOrEmpty,
             NoteLayers = regions.NotesOrEmpty,
         };
+    }
+
+    /// <summary>
+    /// The item row <paramref name="left"/> rows on from <paramref name="node"/>, a menu item or an option,
+    /// counted in tree order as the web numbers the rows its aria-activedescendant names
+    /// (<c>NumberItemRows</c>), or null past the last.
+    /// </summary>
+    private static LayoutNode? ItemRow(LayoutNode node, ref int left)
+    {
+        if (node.Source is Pressable { Role: PressableRole.MenuItem or PressableRole.Option } && left-- == 0)
+            return node;
+        foreach (var child in node)
+            if (ItemRow(child, ref left) is { } row) return row;
+        return null;
     }
 
 
