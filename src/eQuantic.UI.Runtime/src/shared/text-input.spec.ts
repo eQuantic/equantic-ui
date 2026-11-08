@@ -144,6 +144,92 @@ class FormHost extends StatefulComponent {
   }
 }
 
+/** A sign-in's code field: it answers a submit by clearing itself, as a refused code does (#1026). */
+class CodeHost extends StatefulComponent {
+  code = '';
+
+  constructor(private readonly lines: number) {
+    super();
+  }
+
+  override build(): never {
+    return new TextEntry(this.code, (value: string) => this.setState(() => (this.code = value)), {
+      lines: this.lines,
+      onSubmit: () => this.setState(() => (this.code = '')),
+    }) as never;
+  }
+}
+
+/** A field with no handler: nothing owns its value but the person typing in it. */
+class UncontrolledHost extends StatefulComponent {
+  private ticks = 0;
+
+  tick(): void {
+    this.setState(() => this.ticks++);
+  }
+
+  override build(): never {
+    return new TextEntry('') as never;
+  }
+}
+
+describe('A field shows what the page holds (#1026)', () => {
+  const type = (control: HTMLInputElement | HTMLTextAreaElement, text: string): void => {
+    control.value = text;
+    control.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  const enter = (control: Element): void => {
+    control.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  };
+
+  it('a reset in the same render as the typing clears what was typed', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    new CodeHost(1).mount(container);
+
+    const input = container.querySelector('input')!;
+    type(input, '123456');
+    enter(input); // before the next frame: both land in one render, and the page held '' twice
+
+    await nextFrame();
+    expect(container.querySelector('input')!.value).toBe('');
+
+    container.remove();
+  });
+
+  it('a multiline field clears too, whose value is no attribute at all', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    new CodeHost(3).mount(container);
+
+    const area = container.querySelector('textarea')!;
+    type(area, 'line one');
+    await nextFrame();
+    expect(container.querySelector('textarea')!.value).toBe('line one');
+
+    enter(area);
+    await nextFrame();
+    expect(container.querySelector('textarea')!.value).toBe('');
+
+    container.remove();
+  });
+
+  it('a field with no handler keeps what the person typed through a render', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const host = new UncontrolledHost();
+    host.mount(container);
+
+    const input = container.querySelector('input')!;
+    input.value = 'mine';
+    host.tick();
+    await nextFrame();
+
+    expect(container.querySelector('input')!.value).toBe('mine');
+    container.remove();
+  });
+});
+
 describe('TextInput end to end (transpiled component, controlled loop)', () => {
   it('typing drives onChanged → app rebuild → retained instance adopts the fresh value', async () => {
     const container = document.createElement('div');
