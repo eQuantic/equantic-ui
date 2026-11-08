@@ -70,12 +70,18 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
     /// The return type C# declared, as the method's own annotation is: the parameters always said theirs,
     /// and without this TypeScript inferred the DERIVED type a body returns, so a variable the function
     /// initialized refused the sibling C# lets it take (#793). A named type alone, as a local's annotation:
-    /// an async function returns a promise of it, and what is not named keeps what TypeScript infers.
+    /// an async function returns a promise of it, and what is not named keeps what TypeScript infers. A
+    /// reference type C# lets be null keeps it too: written with <c>?</c>, or where nullable annotations are
+    /// off, as <c>Base Find() { return null; }</c> in a <c>#nullable disable</c> file, which the
+    /// annotation refused.
     /// </summary>
     private static string Returns(LocalFunctionStatementSyntax localFn, bool isAsync, ConversionContext context)
     {
         if (!context.TypeAnnotations || isAsync || localFn.ReturnType is NullableTypeSyntax) return "";
-        return TsNamedType.For(context.SemanticHelper.GetType(localFn.ReturnType), context) is { } name and not "any" ? $": {name}" : "";
+        // The symbol's return, which carries the nullable annotation the type's syntax alone does not.
+        if (context.SemanticHelper.GetDeclaredSymbol(localFn) is not IMethodSymbol { ReturnType: var returned }) return "";
+        if (returned is { IsReferenceType: true, NullableAnnotation: not NullableAnnotation.NotAnnotated }) return "";
+        return TsNamedType.For(returned, context) is { } name and not "any" ? $": {name}" : "";
     }
 
     /// <summary>

@@ -14,6 +14,7 @@ public sealed class ATwinSaysItsDeclaredTypeTests
 {
     private static string Compile(string body) =>
         new ComponentCompiler().CompileSource($$"""
+            #nullable enable
             using System;
             public class Shape { }
             public class Circle : Shape { }
@@ -46,8 +47,25 @@ public sealed class ATwinSaysItsDeclaredTypeTests
     [InlineData("System.Collections.Generic.List<int> Items() => new(); Seen = Items().Count;", "() =>")]
     [InlineData("async System.Threading.Tasks.Task Wait() { await System.Threading.Tasks.Task.Delay(1); } _ = Wait();", "async () =>")]
     [InlineData("void Touch() { Seen = 1; } Touch();", "() =>")]
+    // A .NET type is named as the mapper spells it where that names something, and left alone where not:
+    // a Guid is a string, and a Task held as a value a promise (found by the review of #793).
+    [InlineData("Guid Next() => Guid.NewGuid(); _ = Next();", "const next = (): string =>")]
+    [InlineData("System.Threading.Tasks.Task Wait() { return System.Threading.Tasks.Task.CompletedTask; } _ = Wait();", "const wait = (): Promise<void> =>")]
     public void ATypeWithNoNameToSay_LeavesItToTypeScript(string body, string head) =>
         Compile(body).Should().Contain(head);
+
+    /// <summary>Where C# lets the return be null, the annotation does not refuse it: written with
+    /// <c>?</c>, or with nullable annotations off, where <c>Shape Find() { return null; }</c> was written
+    /// <c>(): Shape</c> (found by the review of #793).</summary>
+    [Theory]
+    [InlineData("Shape? Find() { return null; } _ = Find();")]
+    [InlineData("""
+        #nullable disable
+        Shape Find() { return null; } _ = Find();
+        #nullable restore
+        """)]
+    public void AReturnCSharpLetsBeNull_IsNotRefusedIt(string body) =>
+        Compile(body).Should().Contain("const find = () =>");
 
     [Fact]
     public void AnObjectInitializersTemporary_IsTheTypeItHolds()
