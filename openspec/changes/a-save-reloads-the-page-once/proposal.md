@@ -23,7 +23,7 @@ render of an old module could draw the old text back, and an edit to a handler d
   (`mount`). `failed` carries the errors of a rebuild that did not compile, which the development
   overlay shows over the page, where dotnet watch's script showed the compiler's.
 - The server counts the edits applied to it through .NET's `MetadataUpdateHandler`. A rebuild
-  announces itself once the edit of the save it answers has arrived, waiting up to two seconds from
+  announces itself once the edit of the save it answers has arrived, waiting up to five seconds from
   the save when dotnet watch runs the server, so the page reloads once, into markup that holds the
   edit.
 - The boot hydrates that markup and replays the page's fields after it, as a change the next render

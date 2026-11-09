@@ -21,7 +21,7 @@ fields after hydrating it, and SHALL draw over markup that does not.
 
 #### Scenario: No edit reaches the server
 
-- **WHEN** a rebuild ends and no edit reaches the server within two seconds of the save, or the server
+- **WHEN** a rebuild ends and no edit reaches the server within five seconds of the save, or the server
   runs outside dotnet watch
 - **THEN** the rebuild says the page mounts, and the page draws over the server's markup
 

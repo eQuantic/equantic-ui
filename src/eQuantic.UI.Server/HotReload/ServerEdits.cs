@@ -18,11 +18,12 @@ internal sealed class ServerEdits
 {
     /// <summary>
     /// How long a save's edit takes to reach this server at the most: dotnet watch compiles and applies
-    /// it in a few hundred milliseconds, measured at 140ms on a machine at a load average of 22 (#900).
-    /// A save that brings no edit (one that changes nothing .NET compiles) waits this long for its
-    /// reload, counted from the save.
+    /// it in a few hundred milliseconds, measured at 140ms on a machine at a load average of 22 (#900)
+    /// and at 1.4s on the same machine at 70 (#1275). Missing it costs the hydration, since the page
+    /// then draws over markup it cannot trust. Waiting for it costs only a save that brings no edit
+    /// (one that changes nothing .NET compiles), which has nothing new to show, counted from the save.
     /// </summary>
-    internal static readonly TimeSpan Within = TimeSpan.FromSeconds(2);
+    internal static readonly TimeSpan Within = TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// This process's. Every save brings it its edit when dotnet watch runs it and .NET can apply edits

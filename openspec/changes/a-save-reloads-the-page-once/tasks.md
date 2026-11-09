@@ -14,11 +14,11 @@
 
 ## 3. The proof
 
-- [ ] 3.1 Make the measurement fail when a save reloads the page more than once, or the reloaded document does not hydrate, or warns. Verify: a local run reports one document per save, hydrated
-- [ ] 3.2 Prove it in a browser: the served HTML and the hydrated DOM show the new text, and the console has no hydration warning
+- [x] 3.1 Make the measurement fail when a save reloads the page more than once, or the reloaded document does not hydrate, or warns. Verify: a local run at a load average of 70 reports one document per save, hydrated with no warning, the replay at 37 to 42ms
+- [x] 3.2 Prove it in a browser: the page stays on its document while the edit reaches the server, reloads once when the rebuild ends, hydrates the new text with the counter it held, and the console has no hydration warning. A restart reloads it once more, by the run's new name
 - [ ] 3.3 Lower the web's ceiling in `scripts/edit-to-view.budget.json` by what was measured, once #1261 has set it from CI
 
 ## 4. Documentation
 
-- [ ] 4.1 One entry for the ledger citing #1275, as a file of its own under `docs/ledger/`
-- [ ] 4.2 The wiki's hot reload paragraph in five languages
+- [x] 4.1 One entry for the ledger citing #1275, as a file of its own under `docs/ledger/`
+- [x] 4.2 The wiki's hot reload paragraph in five languages
