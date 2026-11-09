@@ -60,12 +60,13 @@ export class VisualNodeComponent extends HtmlElement {
     // page's colours on the client, over the ones the server had drawn (#701).
     const ambientTheme = getPhotonTheme();
     const ambientScale = getPhotonTypeScale();
-    if (this.theme) setPhotonTheme(this.theme, this.typeScale);
     // Reconciler pass join (W6 slice 2): inside a host page render this JOINS the page's pass —
     // the page owns retention (bridges are rebuilt every pass and cannot). Standalone (tests,
     // direct embedding) this instance's own store carries retention across its renders.
     enterPass(this._instances, null);
     try {
+      // Inside the try, so the finally that puts the ambient theme back covers every way out.
+      if (this.theme) setPhotonTheme(this.theme, this.typeScale);
       // Component roots are wire-compatible: the lowering expands them via build() (nodeKind
       // dispatch), so the cast states what the runtime already does.
       return lowerVisualNode(this.node as VisualNodeValue, context);
