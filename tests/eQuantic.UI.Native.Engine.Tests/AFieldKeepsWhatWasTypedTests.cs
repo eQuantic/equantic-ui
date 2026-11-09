@@ -68,6 +68,9 @@ public class AFieldKeepsWhatWasTypedTests
 
         /// <summary>Calls <c>SetState</c> with what was typed.</summary>
         Holds,
+
+        /// <summary>No handler at all: a field the page shows and does not let anyone edit.</summary>
+        None,
     }
 
     /// <summary>A page holding one field, which says when it builds. Through a <see cref="TextInput"/>
@@ -98,8 +101,9 @@ public class AFieldKeepsWhatWasTypedTests
         public override VisualNode Build(ComponentContext context)
         {
             builds.Add("page");
-            Action<string> onChanged = handler switch
+            Action<string>? onChanged = handler switch
             {
+                Handler.None => null,
                 Handler.Ignores => _ => { },
                 Handler.KeepsQuietly => value => _value = value,
                 Handler.Rejects => _ => SetState(() => { }),
@@ -191,6 +195,23 @@ public class AFieldKeepsWhatWasTypedTests
         Frame(host);
 
         Heard(host).Should().Be("ab");
+    }
+
+    /// <summary>
+    /// A field with no handler takes no keys on Photon: the page lets nobody edit it. That holds through a
+    /// field component too, which must not hand its field a handler of its own when it was given none.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AFieldWithNoHandler_TakesNoKeys(bool wrapped)
+    {
+        var (host, _, _, _) = Open(Handler.None, initial: "fixed", wrapped: wrapped);
+
+        host.TextInput("x");
+        Frame(host);
+
+        Heard(host).Should().Be("fixed");
     }
 
     [Fact]

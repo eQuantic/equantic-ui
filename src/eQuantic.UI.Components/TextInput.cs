@@ -129,8 +129,9 @@ public sealed class TextInput : StatefulComponent
         // moves, from the value its parent last handed it. So it keeps the last value the field
         // reported, until its parent configures it again (AdoptConfig) with what the page holds.
         // Without it, a form that kept the value without SetState saw the field go back to the
-        // value it held before the typing the moment the focus left.
-        row.Add(new Flexible(new TextEntry(Value, value =>
+        // value it held before the typing the moment the focus left. With no handler there is no page
+        // to tell, and the field stays one nobody edits: it gets no handler of this component's either.
+        row.Add(new Flexible(new TextEntry(Value, OnChanged is null ? null : value =>
         {
             Value = value;
             OnChanged?.Invoke(value);
