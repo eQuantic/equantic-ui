@@ -225,6 +225,20 @@ public sealed class RealizeResult
     /// <summary>Everything Tab visits, in tree order: buttons and fields in one sequence.</summary>
     public IReadOnlyList<FocusStop> FocusStops { get; }
 
+    /// <summary>
+    /// Where the topmost modal and open layer of this frame was built, or null when none is shown: the
+    /// focus a modal layer holds (#1066), which the web's focus trap finds as the last layer marked
+    /// <c>data-eq-trap</c>. A layer opened from inside it, a menu in a dialog, is built under it, so its
+    /// stops are the trap's too; a toast queued by the page is not. Gated on modal and open exactly as
+    /// the semantics walk announces a dialog.
+    /// </summary>
+    internal Element? ModalLayerRoot()
+    {
+        for (var i = OverlayLayers.Count - 1; i >= 0; i--)
+            if (OverlayLayers[i] is { Modal: true, Open: true }) return OverlayRoots[i].Element;
+        return null;
+    }
+
     /// <summary>Editable fields, in paint order (topmost last).</summary>
     public IReadOnlyList<TextRegion> TextRegions { get; }
 

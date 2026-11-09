@@ -542,7 +542,8 @@ public sealed class PhotonHost
     /// <summary>
     /// Moves focus to the next ENABLED pressable in paint order (wrapping; spec: traversal = child
     /// order, depth-first — hit regions register in exactly that order). Returns false when the
-    /// frame has no focusable region.
+    /// frame has no focusable region. While a modal layer is shown, the walk stays inside the topmost
+    /// one and wraps there (#1066).
     /// </summary>
     public bool FocusNext() => MoveFocus(1);
 
@@ -569,11 +570,30 @@ public sealed class PhotonHost
             }
         }
 
+        // A modal layer holds the walk (#1066): the stops of the topmost one are the only ones Tab visits,
+        // and it wraps among them, as the web's focus trap cycles (focus-trap.ts). From a stop behind the
+        // layer, the walk goes on in paint order to the layer's first stop, or back to its last.
+        var trap = _lastFrame!.ModalLayerRoot();
         var start = current < 0 ? (step > 0 ? 0 : stops.Count - 1) : current + step;
-        var index = ((start % stops.Count) + stops.Count) % stops.Count;
-        var stop = stops[index];
+        for (var walked = 0; walked < stops.Count; walked++)
+        {
+            var index = (((start + walked * step) % stops.Count) + stops.Count) % stops.Count;
+            if (trap is null || Holds(trap, stops[index].Element)) return Land(stops[index]);
+        }
 
-        return Land(stop);
+        // A modal layer with nothing to stop on holds the keyboard all the same: nothing behind it takes
+        // the focus, as the web's trap focuses the layer itself.
+        EndEditing();
+        ClearFocus();
+        return true;
+    }
+
+    /// <summary>Whether <paramref name="element"/> is <paramref name="root"/> or under it.</summary>
+    private static bool Holds(Element root, Element element)
+    {
+        for (Element? at = element; at is not null && at.Depth >= root.Depth; at = at.Parent)
+            if (ReferenceEquals(at, root)) return true;
+        return false;
     }
 
     /// <summary>
