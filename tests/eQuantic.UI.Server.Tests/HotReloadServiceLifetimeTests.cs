@@ -38,6 +38,35 @@ public class HotReloadServiceLifetimeTests
         process.Kill(entireProcessTree: true);
     }
 
+    /// <summary>
+    /// A save while a rebuild runs is rebuilt after it, once, however many saves came. The server used
+    /// to drop it, and the browser stayed on the edit before it until the next save (#1262). A rebuild
+    /// is measured in seconds (#900), so two saves inside one are the ordinary case, not a race.
+    /// </summary>
+    [Fact]
+    public async Task SavesDuringARebuild_AreRebuiltAfterIt_Once()
+    {
+        var started = 0;
+        using var running = new ManualResetEventSlim();
+        using var service = new HotReloadService(Path.GetTempPath(), () =>
+        {
+            Interlocked.Increment(ref started);
+            running.Set();
+            return OperatingSystem.IsWindows()
+                ? ChildProcess.Started("ping", ["-n", "2", "127.0.0.1"])
+                : ChildProcess.Started("sleep", ["1"]);
+        }, TimeSpan.FromSeconds(30));
+
+        var first = Task.Run(service.Rebuild);
+        running.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue("the first rebuild starts");
+        // Two saves while it runs: each returns at once, and the one running owes them a rebuild.
+        service.Rebuild();
+        service.Rebuild();
+        await first.WaitAsync(TimeSpan.FromSeconds(30));
+
+        started.Should().Be(2, "the saves during a rebuild are one more rebuild, neither none nor one each");
+    }
+
     [Fact]
     public void ARebuildPastItsLimit_IsStopped_NotAbandoned()
     {

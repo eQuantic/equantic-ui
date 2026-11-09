@@ -23,6 +23,7 @@ public sealed class HotReloadService : IDisposable
     private Timer? _debounce;
     private Timer? _keepAlive;
     private int _building;
+    private int _pending;
     private Process? _rebuild;
     private volatile bool _disposed;
 
@@ -46,8 +47,18 @@ public sealed class HotReloadService : IDisposable
         _limit = limit;
     }
 
+    /// <summary>
+    /// How long the sources stay quiet before a rebuild starts: long enough to take an editor's save,
+    /// which can be several writes and a rename, as one rebuild, and short against the second an edit
+    /// has to reach the screen in. It was a fixed 400ms, measured as 44% of that bar (#900, #1274).
+    /// </summary>
+    internal static readonly TimeSpan Quiet = TimeSpan.FromMilliseconds(50);
+
     public void Start()
     {
+        // One timer for the service's life, restarted by each event: the watcher raises them on pool
+        // threads, and replacing the timer from two of them at once left the first one running.
+        _debounce = new Timer(_ => Rebuild(), null, Timeout.Infinite, Timeout.Infinite);
         _watcher = new FileSystemWatcher(_contentRoot, "*.cs")
         {
             IncludeSubdirectories = true,
@@ -68,14 +79,46 @@ public sealed class HotReloadService : IDisposable
     {
         var path = e.FullPath.Replace('\\', '/');
         if (path.Contains("/obj/") || path.Contains("/bin/")) return;
-        // Debounce editor save bursts; the build itself serializes via _building.
-        _debounce?.Dispose();
-        _debounce = new Timer(_ => Rebuild(), null, 400, Timeout.Infinite);
+        // Each event of a save restarts the wait, so a burst of writes is one rebuild.
+        if (_disposed) return;
+        try
+        {
+            _debounce?.Change(Quiet, Timeout.InfiniteTimeSpan);
+        }
+        catch (ObjectDisposedException)
+        {
+            // An event still in flight when the app stopped: there is nothing left to rebuild for.
+        }
     }
 
+    /// <summary>
+    /// Rebuilds, and once more when a save came while it ran: once, however many came, since a rebuild
+    /// compiles the whole project. A save that found a rebuild running used to be dropped, and the
+    /// browser stayed on the edit before it until the next save (#1262).
+    /// </summary>
     internal void Rebuild()
     {
-        if (_disposed || Interlocked.Exchange(ref _building, 1) == 1) return;
+        // Said before the flag is taken, so a rebuild already running sees it when it ends.
+        Volatile.Write(ref _pending, 1);
+        while (!_disposed && Interlocked.Exchange(ref _building, 1) == 0)
+        {
+            try
+            {
+                while (!_disposed && Interlocked.Exchange(ref _pending, 0) == 1)
+                    RebuildOnce();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _building, 0);
+            }
+            // A save between the last look and the release found the flag held and left: its rebuild
+            // is this loop's to run.
+            if (Volatile.Read(ref _pending) == 0) return;
+        }
+    }
+
+    private void RebuildOnce()
+    {
         try
         {
             // Started under the gate Dispose takes: a shutdown that comes while the process is starting
@@ -122,7 +165,6 @@ public sealed class HotReloadService : IDisposable
         finally
         {
             _rebuild = null;
-            Interlocked.Exchange(ref _building, 0);
         }
     }
 
