@@ -1,0 +1,12 @@
+{
+  "$comment": [
+    "What scripts/measure-edit-to-view.cs holds each target to, in milliseconds: the warm median of each",
+    "part named, and the run fails over it (#900). A target holds a budget once its number meets the",
+    "roadmap's bar of a second. The desktop does. The web does not, by tens of seconds, and the issues",
+    "under #898 own each part of it over the bar: its numbers are reported on every run, and it gets a",
+    "budget here the day it meets the bar."
+  ],
+  "desktop": {
+    "total": 1000
+  }
+}
