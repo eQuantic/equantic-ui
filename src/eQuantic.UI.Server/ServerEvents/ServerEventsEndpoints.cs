@@ -83,7 +83,9 @@ internal static class ServerEventsEndpoints
         // ...and with its own queue's overflow, which a page that stopped reading causes while the
         // stream is blocked writing to it, and with its lifetime: the page connects again and binds its
         // topics again, each authorized as it stands then (#1292).
-        using var lifetime = new CancellationTokenSource(options.MaxConnectionLifetime);
+        // Up to a tenth shorter, at random, so the streams a restart opened together do not all end, and
+        // bind their topics again, in the same second.
+        using var lifetime = new CancellationTokenSource(options.MaxConnectionLifetime * (1 - Random.Shared.NextDouble() / 10));
         using var ending = CancellationTokenSource.CreateLinkedTokenSource(http.RequestAborted, stopping, connection.Overflowed,
             lifetime.Token);
         var aborted = ending.Token;
