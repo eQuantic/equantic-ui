@@ -118,21 +118,21 @@ public class StringSplitAndSearchConformanceTests
 
     [SkippableTheory]
     // LastIndexOf: the start is the last char a match may end on, and the search runs back its count.
-    [InlineData("return \"abcabc\".LastIndexOf(\"bc\", 4);")]                                // 1
-    [InlineData("return \"abcabc\".LastIndexOf(\"c\", 5, 2);")]                              // 5
-    [InlineData("return \"abcabc\".LastIndexOf(\"a\", 5, 2);")]                              // -1
-    [InlineData("return \"abcabc\".LastIndexOf(\"a\", 6);")]                                 // 3: one past the end steps back
-    [InlineData("return \"abcabc\".LastIndexOf(\"\", 2);")]                                  // 3
-    [InlineData("return \"\".LastIndexOf(\"a\", 0);")]                                       // -1
-    [InlineData("return \"\".LastIndexOf(\"a\", -1);")]                                      // -1
-    [InlineData("return \"\".LastIndexOf(\"\", 0);")]                                        // 0
-    [InlineData("return \"abcabc\".LastIndexOf(count: 2, value: \"c\", startIndex: 5);")]    // 5
+    [InlineData("return \"abcabc\".LastIndexOf(\"bc\", 4, StringComparison.Ordinal);")]                                // 1
+    [InlineData("return \"abcabc\".LastIndexOf(\"c\", 5, 2, StringComparison.Ordinal);")]                              // 5
+    [InlineData("return \"abcabc\".LastIndexOf(\"a\", 5, 2, StringComparison.Ordinal);")]                              // -1
+    [InlineData("return \"abcabc\".LastIndexOf(\"a\", 6, StringComparison.Ordinal);")]                                 // 3: one past the end steps back
+    [InlineData("return \"abcabc\".LastIndexOf(\"\", 2, StringComparison.Ordinal);")]                                  // 3
+    [InlineData("return \"\".LastIndexOf(\"a\", 0, StringComparison.Ordinal);")]                                       // -1
+    [InlineData("return \"\".LastIndexOf(\"a\", -1, StringComparison.Ordinal);")]                                      // -1
+    [InlineData("return \"\".LastIndexOf(\"\", 0, StringComparison.Ordinal);")]                                        // 0
+    [InlineData("return \"abcabc\".LastIndexOf(count: 2, value: \"c\", startIndex: 5, comparisonType: StringComparison.Ordinal);")]    // 5
     // IndexOf: the search stops at its count.
-    [InlineData("return \"abcabc\".IndexOf(\"c\", 0, 2);")]                                  // -1
-    [InlineData("return \"abcabc\".IndexOf(\"c\", 1, 2);")]                                  // 2
-    [InlineData("return \"abcabc\".IndexOf(\"a\", 6);")]                                     // -1
-    [InlineData("return \"abcabc\".IndexOf(\"\", 3);")]                                      // 3
-    [InlineData("return \"abcabc\".IndexOf(\"\", 3, 0);")]                                   // 3
+    [InlineData("return \"abcabc\".IndexOf(\"c\", 0, 2, StringComparison.Ordinal);")]                                  // -1
+    [InlineData("return \"abcabc\".IndexOf(\"c\", 1, 2, StringComparison.Ordinal);")]                                  // 2
+    [InlineData("return \"abcabc\".IndexOf(\"a\", 6, StringComparison.Ordinal);")]                                     // -1
+    [InlineData("return \"abcabc\".IndexOf(\"\", 3, StringComparison.Ordinal);")]                                      // 3
+    [InlineData("return \"abcabc\".IndexOf(\"\", 3, 0, StringComparison.Ordinal);")]                                   // 3
     public void ASearchWithAStartOrACount_FindsWhatDotNetFinds(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -140,13 +140,13 @@ public class StringSplitAndSearchConformanceTests
     }
 
     [SkippableTheory]
-    [InlineData("return \"abcabc\".LastIndexOf(\"a\", 7);")]                                 // range:startIndex
-    [InlineData("return \"abcabc\".LastIndexOf(\"a\", -1);")]                                // range:startIndex
-    [InlineData("return \"abcabc\".LastIndexOf(\"a\", 2, 4);")]                              // range:count
-    [InlineData("return \"abcabc\".LastIndexOf((string)null, 2);")]                          // null:value
-    [InlineData("return \"abcabc\".IndexOf(\"a\", 7);")]                                     // range:startIndex
-    [InlineData("return \"abcabc\".IndexOf(\"a\", 2, 5);")]                                  // range:count
-    [InlineData("return \"abcabc\".IndexOf((string)null, 1);")]                              // null:value
+    [InlineData("return \"abcabc\".LastIndexOf(\"a\", 7, StringComparison.Ordinal);")]                                 // range:startIndex
+    [InlineData("return \"abcabc\".LastIndexOf(\"a\", -1, StringComparison.Ordinal);")]                                // range:startIndex
+    [InlineData("return \"abcabc\".LastIndexOf(\"a\", 2, 4, StringComparison.Ordinal);")]                              // range:count
+    [InlineData("return \"abcabc\".LastIndexOf((string)null, 2, StringComparison.Ordinal);")]                          // null:value
+    [InlineData("return \"abcabc\".IndexOf(\"a\", 7, StringComparison.Ordinal);")]                                     // range:startIndex
+    [InlineData("return \"abcabc\".IndexOf(\"a\", 2, 5, StringComparison.Ordinal);")]                                  // range:count
+    [InlineData("return \"abcabc\".IndexOf((string)null, 1, StringComparison.Ordinal);")]                              // null:value
     public void ASearchWithAStartOrACount_RefusesAsDotNetRefuses(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
