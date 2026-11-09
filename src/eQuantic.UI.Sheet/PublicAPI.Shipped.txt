@@ -29,50 +29,92 @@ eQuantic.UI.Sheet.SheetCellSnapshot.Value.get -> string!
 eQuantic.UI.Sheet.SheetCellSnapshot.Value.init -> void
 eQuantic.UI.Sheet.SheetController
 eQuantic.UI.Sheet.SheetController.ActiveCell.get -> eQuantic.UI.Sheet.CellRef
-eQuantic.UI.Sheet.SheetController.BeginEdit(string! seed) -> void
+eQuantic.UI.Sheet.SheetController.AddingRanges.get -> bool
+eQuantic.UI.Sheet.SheetController.BeginEdit(string! seed, eQuantic.UI.Sheet.SheetEditMode mode) -> void
 eQuantic.UI.Sheet.SheetController.BeginFill() -> void
+eQuantic.UI.Sheet.SheetController.BreakLine() -> void
 eQuantic.UI.Sheet.SheetController.CancelEdit() -> void
 eQuantic.UI.Sheet.SheetController.CancelFill() -> void
+eQuantic.UI.Sheet.SheetController.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
 eQuantic.UI.Sheet.SheetController.CellAt(eQuantic.UI.Primitives.Point point) -> eQuantic.UI.Sheet.CellRef
+eQuantic.UI.Sheet.SheetController.CellEditorGrid.get -> eQuantic.UI.Code.CodeGrid
 eQuantic.UI.Sheet.SheetController.Changed.get -> System.Action<eQuantic.UI.Sheet.SheetEdit!>?
 eQuantic.UI.Sheet.SheetController.Changed.set -> void
 eQuantic.UI.Sheet.SheetController.ClearSelection() -> bool
 eQuantic.UI.Sheet.SheetController.CommitEdit() -> bool
 eQuantic.UI.Sheet.SheetController.CommitFill() -> bool
 eQuantic.UI.Sheet.SheetController.CopyText() -> string!
+eQuantic.UI.Sheet.SheetController.CurrentRegion(eQuantic.UI.Sheet.CellRef cell) -> eQuantic.UI.Sheet.SheetRange
+eQuantic.UI.Sheet.SheetController.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Sheet.SheetController.Cut() -> string!
 eQuantic.UI.Sheet.SheetController.Delete(eQuantic.UI.Sheet.SheetAxis axis, int at, int count = 1) -> void
 eQuantic.UI.Sheet.SheetController.Document.get -> eQuantic.UI.Sheet.SheetDocument!
-eQuantic.UI.Sheet.SheetController.Draft.get -> string!
+eQuantic.UI.Sheet.SheetController.EditMode.get -> eQuantic.UI.Sheet.SheetEditMode
 eQuantic.UI.Sheet.SheetController.Editing.get -> bool
-eQuantic.UI.Sheet.SheetController.EraseFromDraft() -> void
+eQuantic.UI.Sheet.SheetController.EditorBounds.get -> eQuantic.UI.Primitives.Rect
+eQuantic.UI.Sheet.SheetController.EditorRange.get -> eQuantic.UI.Sheet.SheetRange
+eQuantic.UI.Sheet.SheetController.Entry.get -> eQuantic.UI.Code.CodeEditorController!
+eQuantic.UI.Sheet.SheetController.EntryView.get -> eQuantic.UI.Sheet.SheetEntryView
 eQuantic.UI.Sheet.SheetController.Fill(eQuantic.UI.Sheet.SheetRange source, eQuantic.UI.Sheet.SheetRange target, eQuantic.UI.Sheet.SheetRange? selectionBefore = null) -> bool
 eQuantic.UI.Sheet.SheetController.FillDown() -> bool
 eQuantic.UI.Sheet.SheetController.FillRight() -> bool
+eQuantic.UI.Sheet.SheetController.FillSelection(string! value) -> bool
+eQuantic.UI.Sheet.SheetController.FillSelectionWithEntry() -> bool
 eQuantic.UI.Sheet.SheetController.FillSource.get -> eQuantic.UI.Sheet.SheetRange?
 eQuantic.UI.Sheet.SheetController.FillTarget.get -> eQuantic.UI.Sheet.SheetRange?
 eQuantic.UI.Sheet.SheetController.Filling.get -> bool
+eQuantic.UI.Sheet.SheetController.FocusChanged(bool focused) -> void
+eQuantic.UI.Sheet.SheetController.FocusVersion.get -> int
+eQuantic.UI.Sheet.SheetController.Follow() -> bool
+eQuantic.UI.Sheet.SheetController.FormulaBar.get -> eQuantic.UI.Sheet.SheetFormulaBar!
+eQuantic.UI.Sheet.SheetController.GoTo(string! reference) -> bool
 eQuantic.UI.Sheet.SheetController.Grid.get -> eQuantic.UI.Sheet.SheetGrid
 eQuantic.UI.Sheet.SheetController.Grid.set -> void
-eQuantic.UI.Sheet.SheetController.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
-eQuantic.UI.Sheet.SheetController.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
+eQuantic.UI.Sheet.SheetController.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.KeyboardConvention convention, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+eQuantic.UI.Sheet.SheetController.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks, eQuantic.UI.Primitives.PointerKind kind) -> bool
 eQuantic.UI.Sheet.SheetController.HandleText(string! text) -> bool
+eQuantic.UI.Sheet.SheetController.HasKeyboard.get -> bool
 eQuantic.UI.Sheet.SheetController.History.get -> eQuantic.UI.Sheet.SheetHistory!
+eQuantic.UI.Sheet.SheetController.InputBounds.get -> eQuantic.UI.Primitives.Rect
 eQuantic.UI.Sheet.SheetController.Insert(eQuantic.UI.Sheet.SheetAxis axis, int at, int count = 1) -> void
+eQuantic.UI.Sheet.SheetController.LastCellInUse() -> eQuantic.UI.Sheet.CellRef
 eQuantic.UI.Sheet.SheetController.Move(int dRow, int dCol, eQuantic.UI.Sheet.SheetMotion motion = eQuantic.UI.Sheet.SheetMotion.Cell, bool extend = false) -> void
+eQuantic.UI.Sheet.SheetController.MovePage(int direction, bool extend = false) -> bool
+eQuantic.UI.Sheet.SheetController.MovePageAcross(int direction, bool extend = false) -> bool
+eQuantic.UI.Sheet.SheetController.Moved.get -> eQuantic.UI.Sheet.SheetMove
+eQuantic.UI.Sheet.SheetController.NameBox.get -> eQuantic.UI.Sheet.SheetNameBox!
+eQuantic.UI.Sheet.SheetController.NextCorner() -> void
+eQuantic.UI.Sheet.SheetController.Now.get -> System.Func<System.DateTime>!
+eQuantic.UI.Sheet.SheetController.Now.set -> void
 eQuantic.UI.Sheet.SheetController.Paste(string! text) -> bool
+eQuantic.UI.Sheet.SheetController.Ranges.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Sheet.SheetRange>!
 eQuantic.UI.Sheet.SheetController.Redo() -> bool
+eQuantic.UI.Sheet.SheetController.Refresh() -> void
+eQuantic.UI.Sheet.SheetController.Refreshed -> System.Action?
+eQuantic.UI.Sheet.SheetController.RequestFocus() -> void
 eQuantic.UI.Sheet.SheetController.Resize(eQuantic.UI.Sheet.SheetAxis axis, int index, float size) -> void
+eQuantic.UI.Sheet.SheetController.RevealCell.get -> eQuantic.UI.Sheet.CellRef
+eQuantic.UI.Sheet.SheetController.RevealVersion.get -> int
+eQuantic.UI.Sheet.SheetController.SelectActiveColumns() -> void
+eQuantic.UI.Sheet.SheetController.SelectActiveRows() -> void
 eQuantic.UI.Sheet.SheetController.SelectAll() -> void
-eQuantic.UI.Sheet.SheetController.SelectCols(int fromCol, int toCol) -> void
-eQuantic.UI.Sheet.SheetController.SelectRows(int fromRow, int toRow) -> void
+eQuantic.UI.Sheet.SheetController.SelectCols(int anchor, int focus, bool add) -> void
+eQuantic.UI.Sheet.SheetController.SelectRegionThenSheet() -> void
+eQuantic.UI.Sheet.SheetController.SelectRows(int anchor, int focus, bool add) -> void
 eQuantic.UI.Sheet.SheetController.SelectTo(eQuantic.UI.Sheet.CellRef cell) -> void
+eQuantic.UI.Sheet.SheetController.Selecting.get -> bool
 eQuantic.UI.Sheet.SheetController.Selection.get -> eQuantic.UI.Sheet.SheetRange
 eQuantic.UI.Sheet.SheetController.Selection.set -> void
 eQuantic.UI.Sheet.SheetController.SetCell(eQuantic.UI.Sheet.CellRef cell, string! value) -> bool
+eQuantic.UI.Sheet.SheetController.SetComposition(string! text) -> bool
 eQuantic.UI.Sheet.SheetController.SheetController(int rows = 1000, int cols = 26) -> void
+eQuantic.UI.Sheet.SheetController.ShowActiveCell() -> void
 eQuantic.UI.Sheet.SheetController.Step(int dRow, int dCol) -> void
-eQuantic.UI.Sheet.SheetController.TypeIntoDraft(string! text) -> void
+eQuantic.UI.Sheet.SheetController.Summary.get -> eQuantic.UI.Sheet.SheetSummary
+eQuantic.UI.Sheet.SheetController.TabReleased.get -> bool
+eQuantic.UI.Sheet.SheetController.TabReleased.set -> void
+eQuantic.UI.Sheet.SheetController.ToggleEditMode() -> void
+eQuantic.UI.Sheet.SheetController.TypeNow(bool time) -> void
 eQuantic.UI.Sheet.SheetController.Undo() -> bool
 eQuantic.UI.Sheet.SheetController.UpdateFill(eQuantic.UI.Sheet.CellRef at) -> void
 eQuantic.UI.Sheet.SheetDocument
@@ -80,14 +122,17 @@ eQuantic.UI.Sheet.SheetDocument.Cells.get -> System.Collections.Generic.IReadOnl
 eQuantic.UI.Sheet.SheetDocument.Clamp(eQuantic.UI.Sheet.CellRef cell) -> eQuantic.UI.Sheet.CellRef
 eQuantic.UI.Sheet.SheetDocument.ColWidth(int col) -> float
 eQuantic.UI.Sheet.SheetDocument.Cols.get -> int
+eQuantic.UI.Sheet.SheetDocument.ColumnSpans.get -> eQuantic.UI.Sheet.SheetSpans!
 eQuantic.UI.Sheet.SheetDocument.GetCell(eQuantic.UI.Sheet.CellRef cell) -> string!
 eQuantic.UI.Sheet.SheetDocument.HasValue(eQuantic.UI.Sheet.CellRef cell) -> bool
 eQuantic.UI.Sheet.SheetDocument.RowHeight(int row) -> float
+eQuantic.UI.Sheet.SheetDocument.RowSpans.get -> eQuantic.UI.Sheet.SheetSpans!
 eQuantic.UI.Sheet.SheetDocument.Rows.get -> int
 eQuantic.UI.Sheet.SheetDocument.SetCell(eQuantic.UI.Sheet.CellRef cell, string! value) -> void
 eQuantic.UI.Sheet.SheetDocument.SetColWidth(int col, float width) -> void
 eQuantic.UI.Sheet.SheetDocument.SetRowHeight(int row, float height) -> void
 eQuantic.UI.Sheet.SheetDocument.SheetDocument(int rows = 1000, int cols = 26) -> void
+eQuantic.UI.Sheet.SheetDocument.Version.get -> int
 eQuantic.UI.Sheet.SheetEdit
 eQuantic.UI.Sheet.SheetEdit.After.get -> System.Collections.Generic.List<eQuantic.UI.Sheet.SheetCellSnapshot>!
 eQuantic.UI.Sheet.SheetEdit.After.init -> void
@@ -118,17 +163,54 @@ eQuantic.UI.Sheet.SheetEditKind.InsertRows = 1 -> eQuantic.UI.Sheet.SheetEditKin
 eQuantic.UI.Sheet.SheetEditKind.ResizeCol = 6 -> eQuantic.UI.Sheet.SheetEditKind
 eQuantic.UI.Sheet.SheetEditKind.ResizeRow = 5 -> eQuantic.UI.Sheet.SheetEditKind
 eQuantic.UI.Sheet.SheetEditKind.SetCells = 0 -> eQuantic.UI.Sheet.SheetEditKind
+eQuantic.UI.Sheet.SheetEditMode
+eQuantic.UI.Sheet.SheetEditMode.Edit = 1 -> eQuantic.UI.Sheet.SheetEditMode
+eQuantic.UI.Sheet.SheetEditMode.Enter = 0 -> eQuantic.UI.Sheet.SheetEditMode
+eQuantic.UI.Sheet.SheetEntryLanguage
+eQuantic.UI.Sheet.SheetEntryLanguage.Name.get -> string!
+eQuantic.UI.Sheet.SheetEntryLanguage.Rules.get -> eQuantic.UI.Code.CodeLanguageRules!
+eQuantic.UI.Sheet.SheetEntryLanguage.SheetEntryLanguage() -> void
+eQuantic.UI.Sheet.SheetEntryLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Code.CodeToken>! into) -> int
+eQuantic.UI.Sheet.SheetEntryView
+eQuantic.UI.Sheet.SheetEntryView.Cell = 0 -> eQuantic.UI.Sheet.SheetEntryView
+eQuantic.UI.Sheet.SheetEntryView.FormulaBar = 1 -> eQuantic.UI.Sheet.SheetEntryView
+eQuantic.UI.Sheet.SheetFormulaBar
+eQuantic.UI.Sheet.SheetFormulaBar.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Sheet.SheetFormulaBar.CopyText() -> string!
+eQuantic.UI.Sheet.SheetFormulaBar.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
+eQuantic.UI.Sheet.SheetFormulaBar.Cut() -> string!
+eQuantic.UI.Sheet.SheetFormulaBar.FocusChanged(bool focused) -> void
+eQuantic.UI.Sheet.SheetFormulaBar.FocusVersion.get -> int
+eQuantic.UI.Sheet.SheetFormulaBar.Grid.get -> eQuantic.UI.Code.CodeGrid
+eQuantic.UI.Sheet.SheetFormulaBar.Grid.set -> void
+eQuantic.UI.Sheet.SheetFormulaBar.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.KeyboardConvention convention, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.HandleText(string! text) -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.HoldsTheCaret.get -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.Paste(string! text) -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.RequestFocus() -> void
+eQuantic.UI.Sheet.SheetFormulaBar.RevealVersion.get -> int
+eQuantic.UI.Sheet.SheetFormulaBar.SetComposition(string! text) -> bool
 eQuantic.UI.Sheet.SheetGrid
-eQuantic.UI.Sheet.SheetGrid.Deconstruct(out eQuantic.UI.Primitives.Point Origin, out int FirstRow, out int FirstCol) -> void
+eQuantic.UI.Sheet.SheetGrid.CellPadding.get -> eQuantic.UI.Primitives.EdgeInsets
+eQuantic.UI.Sheet.SheetGrid.CellPadding.init -> void
+eQuantic.UI.Sheet.SheetGrid.Deconstruct(out eQuantic.UI.Primitives.ITableScrollModel? Scroll, out float HeaderWidth, out float HeaderHeight) -> void
 eQuantic.UI.Sheet.SheetGrid.Equals(eQuantic.UI.Sheet.SheetGrid other) -> bool
-eQuantic.UI.Sheet.SheetGrid.FirstCol.get -> int
-eQuantic.UI.Sheet.SheetGrid.FirstCol.init -> void
-eQuantic.UI.Sheet.SheetGrid.FirstRow.get -> int
-eQuantic.UI.Sheet.SheetGrid.FirstRow.init -> void
-eQuantic.UI.Sheet.SheetGrid.Origin.get -> eQuantic.UI.Primitives.Point
-eQuantic.UI.Sheet.SheetGrid.Origin.init -> void
+eQuantic.UI.Sheet.SheetGrid.HeaderHeight.get -> float
+eQuantic.UI.Sheet.SheetGrid.HeaderHeight.init -> void
+eQuantic.UI.Sheet.SheetGrid.HeaderWidth.get -> float
+eQuantic.UI.Sheet.SheetGrid.HeaderWidth.init -> void
+eQuantic.UI.Sheet.SheetGrid.LineHeight.get -> float
+eQuantic.UI.Sheet.SheetGrid.LineHeight.init -> void
+eQuantic.UI.Sheet.SheetGrid.Measure.get -> System.Func<string!, float>?
+eQuantic.UI.Sheet.SheetGrid.Measure.init -> void
+eQuantic.UI.Sheet.SheetGrid.Offset.get -> eQuantic.UI.Primitives.TableOffset
+eQuantic.UI.Sheet.SheetGrid.ResizeGrip.get -> float
+eQuantic.UI.Sheet.SheetGrid.ResizeGrip.init -> void
+eQuantic.UI.Sheet.SheetGrid.Scroll.get -> eQuantic.UI.Primitives.ITableScrollModel?
+eQuantic.UI.Sheet.SheetGrid.Scroll.init -> void
 eQuantic.UI.Sheet.SheetGrid.SheetGrid() -> void
-eQuantic.UI.Sheet.SheetGrid.SheetGrid(eQuantic.UI.Primitives.Point Origin, int FirstRow, int FirstCol) -> void
+eQuantic.UI.Sheet.SheetGrid.SheetGrid(eQuantic.UI.Primitives.ITableScrollModel? Scroll, float HeaderWidth, float HeaderHeight) -> void
 eQuantic.UI.Sheet.SheetHistory
 eQuantic.UI.Sheet.SheetHistory.CanRedo.get -> bool
 eQuantic.UI.Sheet.SheetHistory.CanUndo.get -> bool
@@ -143,6 +225,31 @@ eQuantic.UI.Sheet.SheetMotion.Cell = 0 -> eQuantic.UI.Sheet.SheetMotion
 eQuantic.UI.Sheet.SheetMotion.DataEdge = 1 -> eQuantic.UI.Sheet.SheetMotion
 eQuantic.UI.Sheet.SheetMotion.RowBoundary = 2 -> eQuantic.UI.Sheet.SheetMotion
 eQuantic.UI.Sheet.SheetMotion.SheetBoundary = 3 -> eQuantic.UI.Sheet.SheetMotion
+eQuantic.UI.Sheet.SheetMove
+eQuantic.UI.Sheet.SheetMove.ActiveCell = 0 -> eQuantic.UI.Sheet.SheetMove
+eQuantic.UI.Sheet.SheetMove.ActiveRange = 1 -> eQuantic.UI.Sheet.SheetMove
+eQuantic.UI.Sheet.SheetNameBox
+eQuantic.UI.Sheet.SheetNameBox.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Sheet.SheetNameBox.CopyText() -> string!
+eQuantic.UI.Sheet.SheetNameBox.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
+eQuantic.UI.Sheet.SheetNameBox.Cut() -> string!
+eQuantic.UI.Sheet.SheetNameBox.Entry.get -> eQuantic.UI.Code.CodeEditorController!
+eQuantic.UI.Sheet.SheetNameBox.FocusChanged(bool focused) -> void
+eQuantic.UI.Sheet.SheetNameBox.FocusVersion.get -> int
+eQuantic.UI.Sheet.SheetNameBox.Grid.get -> eQuantic.UI.Code.CodeGrid
+eQuantic.UI.Sheet.SheetNameBox.Grid.set -> void
+eQuantic.UI.Sheet.SheetNameBox.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.KeyboardConvention convention, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+eQuantic.UI.Sheet.SheetNameBox.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
+eQuantic.UI.Sheet.SheetNameBox.HandleText(string! text) -> bool
+eQuantic.UI.Sheet.SheetNameBox.Invalid.get -> bool
+eQuantic.UI.Sheet.SheetNameBox.IsPlaced.get -> bool
+eQuantic.UI.Sheet.SheetNameBox.Paste(string! text) -> bool
+eQuantic.UI.Sheet.SheetNameBox.Placed() -> void
+eQuantic.UI.Sheet.SheetNameBox.Removed() -> void
+eQuantic.UI.Sheet.SheetNameBox.RequestFocus() -> void
+eQuantic.UI.Sheet.SheetNameBox.RevealVersion.get -> int
+eQuantic.UI.Sheet.SheetNameBox.SetComposition(string! text) -> bool
+eQuantic.UI.Sheet.SheetNameBox.Typing.get -> bool
 eQuantic.UI.Sheet.SheetRange
 eQuantic.UI.Sheet.SheetRange.Anchor.get -> eQuantic.UI.Sheet.CellRef
 eQuantic.UI.Sheet.SheetRange.Anchor.init -> void
@@ -162,11 +269,33 @@ eQuantic.UI.Sheet.SheetRange.SheetRange(eQuantic.UI.Sheet.CellRef Anchor, eQuant
 eQuantic.UI.Sheet.SheetRange.SheetRange(eQuantic.UI.Sheet.CellRef cell) -> void
 eQuantic.UI.Sheet.SheetRange.TopLeft.get -> eQuantic.UI.Sheet.CellRef
 eQuantic.UI.Sheet.SheetRange.TopRow.get -> int
+eQuantic.UI.Sheet.SheetReference
+eQuantic.UI.Sheet.SheetSpans
+eQuantic.UI.Sheet.SheetSummary
+eQuantic.UI.Sheet.SheetSummary.Average.get -> decimal?
+eQuantic.UI.Sheet.SheetSummary.Average.init -> void
+eQuantic.UI.Sheet.SheetSummary.Count.get -> int
+eQuantic.UI.Sheet.SheetSummary.Count.init -> void
+eQuantic.UI.Sheet.SheetSummary.Deconstruct(out int Count, out int Numbers, out decimal? Sum, out decimal? Average) -> void
+eQuantic.UI.Sheet.SheetSummary.Equals(eQuantic.UI.Sheet.SheetSummary other) -> bool
+eQuantic.UI.Sheet.SheetSummary.Numbers.get -> int
+eQuantic.UI.Sheet.SheetSummary.Numbers.init -> void
+eQuantic.UI.Sheet.SheetSummary.SheetSummary() -> void
+eQuantic.UI.Sheet.SheetSummary.SheetSummary(int Count, int Numbers, decimal? Sum, decimal? Average) -> void
+eQuantic.UI.Sheet.SheetSummary.Sum.get -> decimal?
+eQuantic.UI.Sheet.SheetSummary.Sum.init -> void
 eQuantic.UI.Sheet.TsvCodec
 override eQuantic.UI.Sheet.CellRef.GetHashCode() -> int
 override eQuantic.UI.Sheet.SheetCellSnapshot.GetHashCode() -> int
 override eQuantic.UI.Sheet.SheetGrid.GetHashCode() -> int
 override eQuantic.UI.Sheet.SheetRange.GetHashCode() -> int
+override eQuantic.UI.Sheet.SheetSpans.Count.get -> int
+override eQuantic.UI.Sheet.SheetSpans.ExtentOf(int index) -> double
+override eQuantic.UI.Sheet.SheetSpans.IndexAt(double offset) -> int
+override eQuantic.UI.Sheet.SheetSpans.OffsetOf(int index) -> double
+override eQuantic.UI.Sheet.SheetSpans.Total.get -> double
+override eQuantic.UI.Sheet.SheetSummary.GetHashCode() -> int
+static eQuantic.UI.Sheet.CellRef.ColumnName(int col) -> string!
 static eQuantic.UI.Sheet.CellRef.FromKey(long key) -> eQuantic.UI.Sheet.CellRef
 static eQuantic.UI.Sheet.CellRef.ParseA1(string! text) -> eQuantic.UI.Sheet.CellRef?
 static eQuantic.UI.Sheet.CellRef.operator !=(eQuantic.UI.Sheet.CellRef left, eQuantic.UI.Sheet.CellRef right) -> bool
@@ -176,10 +305,12 @@ static eQuantic.UI.Sheet.SheetCellSnapshot.operator ==(eQuantic.UI.Sheet.SheetCe
 static eQuantic.UI.Sheet.SheetGrid.Default.get -> eQuantic.UI.Sheet.SheetGrid
 static eQuantic.UI.Sheet.SheetGrid.operator !=(eQuantic.UI.Sheet.SheetGrid left, eQuantic.UI.Sheet.SheetGrid right) -> bool
 static eQuantic.UI.Sheet.SheetGrid.operator ==(eQuantic.UI.Sheet.SheetGrid left, eQuantic.UI.Sheet.SheetGrid right) -> bool
-static eQuantic.UI.Sheet.SheetKeymap.Handle(eQuantic.UI.Sheet.SheetController! sheet, string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.ITextClipboard? clipboard = null) -> bool
-static eQuantic.UI.Sheet.SheetKeymap.Type(eQuantic.UI.Sheet.SheetController! sheet, string! text) -> void
+static eQuantic.UI.Sheet.SheetKeymap.Handle(eQuantic.UI.Sheet.SheetController! sheet, string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.KeyboardConvention convention, eQuantic.UI.Primitives.ITextClipboard? clipboard = null) -> bool
 static eQuantic.UI.Sheet.SheetRange.operator !=(eQuantic.UI.Sheet.SheetRange left, eQuantic.UI.Sheet.SheetRange right) -> bool
 static eQuantic.UI.Sheet.SheetRange.operator ==(eQuantic.UI.Sheet.SheetRange left, eQuantic.UI.Sheet.SheetRange right) -> bool
+static eQuantic.UI.Sheet.SheetReference.TryParse(string! text, int rows, int cols, out eQuantic.UI.Sheet.SheetRange range) -> bool
+static eQuantic.UI.Sheet.SheetSummary.operator !=(eQuantic.UI.Sheet.SheetSummary left, eQuantic.UI.Sheet.SheetSummary right) -> bool
+static eQuantic.UI.Sheet.SheetSummary.operator ==(eQuantic.UI.Sheet.SheetSummary left, eQuantic.UI.Sheet.SheetSummary right) -> bool
 static eQuantic.UI.Sheet.TsvCodec.Parse(string! text) -> System.Collections.Generic.List<System.Collections.Generic.List<string!>!>!
 static eQuantic.UI.Sheet.TsvCodec.Serialize(eQuantic.UI.Sheet.SheetDocument! document, eQuantic.UI.Sheet.SheetRange range) -> string!
 ~override eQuantic.UI.Sheet.CellRef.Equals(object obj) -> bool
@@ -190,3 +321,5 @@ static eQuantic.UI.Sheet.TsvCodec.Serialize(eQuantic.UI.Sheet.SheetDocument! doc
 ~override eQuantic.UI.Sheet.SheetGrid.ToString() -> string
 ~override eQuantic.UI.Sheet.SheetRange.Equals(object obj) -> bool
 ~override eQuantic.UI.Sheet.SheetRange.ToString() -> string
+~override eQuantic.UI.Sheet.SheetSummary.Equals(object obj) -> bool
+~override eQuantic.UI.Sheet.SheetSummary.ToString() -> string

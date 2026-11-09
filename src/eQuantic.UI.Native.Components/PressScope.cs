@@ -37,6 +37,11 @@ internal sealed class PressScope
     /// <summary>The IME composition in flight for the focused field ("" when none).</summary>
     public string MarkedText { get; init; } = "";
 
+    /// <summary>The id of the input shape of a <see cref="Drawing"/> under the pointer, which draws its
+    /// Hover, or zero. A shape is a part of its drawing's position rather than a position of its own,
+    /// so the hover chain, which holds positions, cannot name it (#674).</summary>
+    public int HoveredPart { get; init; }
+
     /// <summary>A phone keyboard's composition in the focused field, as a range of the text it was
     /// composed in, or null (see <see cref="TextEditingValue"/>). Drawn only over that text.</summary>
     public (int Start, int End, string Text)? Composing { get; init; }

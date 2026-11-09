@@ -197,6 +197,13 @@ internal static class PlainClassModule
     internal static bool IsServerOnly(ISymbol symbol) =>
         symbol.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute");
 
+    /// <summary>Marked <c>[ServerAction]</c>, read as <see cref="IsServerOnly"/> reads its attribute (#1148).</summary>
+    internal static bool IsServerAction(ISymbol symbol) => ServerActionMark(symbol) is not null;
+
+    /// <summary>The <c>[ServerAction]</c> on <paramref name="symbol"/>, an alias's included, or null.</summary>
+    internal static AttributeData? ServerActionMark(ISymbol symbol) =>
+        symbol.GetAttributes().FirstOrDefault(attribute => attribute.AttributeClass?.Name is "ServerAction" or "ServerActionAttribute");
+
     /// <summary>Whether <paramref name="type"/> is <c>System.Attribute</c> itself.</summary>
     private static bool IsAttributeRoot(INamedTypeSymbol type) =>
         type is { Name: "Attribute", ContainingType: null, Arity: 0 }

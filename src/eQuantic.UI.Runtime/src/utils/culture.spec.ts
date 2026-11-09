@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   activeCulture,
   activeFormatData,
@@ -91,6 +91,77 @@ describe('culture atom', () => {
     expect(activeCulture()).toEqual({ ui: 'es', format: 'es' });
     expect(str('Strings', 'Hero.Title')).toBe('Construye productos');
     expect(renders).toBe(1);
+  });
+
+  describe('the catalogs the build wrote (#825)', () => {
+    const fetched: string[] = [];
+
+    beforeEach(() => {
+      fetched.length = 0;
+      setCultureCatalogLoader();
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          fetched.push(url);
+          return new Response(JSON.stringify({ 'Strings/Hero.Title': url }), { status: 200 });
+        }),
+      );
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      setCultureCatalogLoader(async () => null);
+    });
+
+    it('asks for neutral alone when the language has no catalog of its own', async () => {
+      installCulture('pt-AO', 'pt-AO', {}, null, ['neutral', 'pt-PT']);
+      await setCulture('en-ZA');
+
+      expect(fetched).toEqual(['/_equantic/strings/neutral.json']);
+      expect(activeCulture().ui).toBe('en-ZA');
+    });
+
+    it('walks to the parent the build wrote, past the region it did not', async () => {
+      installCulture('pt-AO', 'pt-AO', {}, null, ['neutral', 'sv']);
+      await setCulture('sv-FI');
+
+      expect(fetched).toEqual(['/_equantic/strings/sv.json']);
+    });
+
+    it("asks for a catalog by the name the build wrote, whatever the case a switcher wrote it in", async () => {
+      installCulture('pt-AO', 'pt-AO', {}, null, ['neutral', 'nb-NO']);
+      await setCulture('nb-no');
+
+      expect(fetched).toEqual(['/_equantic/strings/nb-NO.json']);
+    });
+
+    it('asks for nothing when the app has no catalog at all, and keeps its strings', async () => {
+      installCulture('pt-AO', 'pt-AO', { 'Strings/Hero.Title': 'kept' }, null, []);
+      await setCulture('ko-KR');
+
+      expect(fetched).toEqual([]);
+      expect(str('Strings', 'Hero.Title')).toBe('kept');
+    });
+
+    it('a switch keeps the list, so the next one is held to it too', async () => {
+      installCulture('pt-AO', 'pt-AO', {}, null, ['neutral']);
+      await setCulture('ja-JP');
+      await setCulture('th-TH');
+
+      expect(fetched.filter((url) => !url.endsWith('neutral.json'))).toEqual([]);
+    });
+
+    it('a host with a loader of its own answers for itself', async () => {
+      installCulture('pt-AO', 'pt-AO', {}, null, ['neutral']);
+      const asked: string[] = [];
+      setCultureCatalogLoader(async (culture) => {
+        asked.push(culture);
+        return culture === 'hu' ? {} : null;
+      });
+      await setCulture('hu-HU');
+
+      expect(asked).toEqual(['hu-HU', 'hu']);
+    });
   });
 
   it('a culture already in memory switches back without asking for it again', async () => {

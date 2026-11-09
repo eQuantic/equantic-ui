@@ -39,6 +39,7 @@
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ElevationSpread = 11 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Flex = 2 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Height = 1 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Left = 19 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Opacity = 3 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Rotation = 6 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ScaleX = 7 -> eQuantic.UI.Native.Framework.GlideChannel
@@ -47,6 +48,7 @@
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ShadowColor = 16 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ShadowOffsetY = 13 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.ShadowSpread = 15 -> eQuantic.UI.Native.Framework.GlideChannel
+[EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Top = 20 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.TranslateX = 4 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.TranslateY = 5 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Width = 0 -> eQuantic.UI.Native.Framework.GlideChannel
@@ -172,6 +174,10 @@
 [EQX0001]eQuantic.UI.Native.Framework.ScrollClock.ScrollTo(eQuantic.UI.Primitives.Element! at, float offset, float maxOffset) -> bool
 [EQX0001]eQuantic.UI.Native.Framework.ScrollClock.Smooth.get -> bool
 [EQX0001]eQuantic.UI.Native.Framework.ScrollClock.Smooth.set -> void
+[EQX0001]eQuantic.UI.Native.Framework.ShippedFaces
+[EQX0001]eQuantic.UI.Native.Framework.ShippedFaces.IsRegistered(eQuantic.UI.Primitives.FontFile! file) -> bool
+[EQX0001]eQuantic.UI.Native.Framework.ShippedFaces.Register(eQuantic.UI.Primitives.FontFamily? family) -> bool
+[EQX0001]eQuantic.UI.Native.Framework.ShippedFaces.ShippedFaces(System.Func<eQuantic.UI.Primitives.FontFile!, byte[]!, bool>! register) -> void
 [EQX0001]eQuantic.UI.Native.Framework.StretchKind
 [EQX0001]eQuantic.UI.Native.Framework.StretchKind.Block = 2 -> eQuantic.UI.Native.Framework.StretchKind
 [EQX0001]eQuantic.UI.Native.Framework.StretchKind.Flex = 1 -> eQuantic.UI.Native.Framework.StretchKind
@@ -265,6 +271,10 @@
 [EQX0001]static eQuantic.UI.Native.Framework.RgbaImage.operator !=(eQuantic.UI.Native.Framework.RgbaImage? left, eQuantic.UI.Native.Framework.RgbaImage? right) -> bool
 [EQX0001]static eQuantic.UI.Native.Framework.RgbaImage.operator ==(eQuantic.UI.Native.Framework.RgbaImage? left, eQuantic.UI.Native.Framework.RgbaImage? right) -> bool
 [EQX0001]static eQuantic.UI.Native.Framework.ScrollClock.OffsetOf(eQuantic.UI.Primitives.Element? at) -> float?
+[EQX0001]static eQuantic.UI.Native.Framework.ScrollClock.Settle(eQuantic.UI.Primitives.Element? at, float standing, float range) -> void
+[EQX0001]static eQuantic.UI.Native.Framework.ShippedFaces.CacheFile(string! folder, eQuantic.UI.Primitives.FontFile! file, byte[]! bytes) -> string?
+[EQX0001]static eQuantic.UI.Native.Framework.ShippedFaces.FileFor(eQuantic.UI.Primitives.FontFamily! family, eQuantic.UI.Primitives.FontWeight weight, bool italic) -> eQuantic.UI.Primitives.FontFile?
+[EQX0001]static eQuantic.UI.Native.Framework.ShippedFaces.IsDrawnAsItIs(eQuantic.UI.Primitives.FontFile! file, eQuantic.UI.Primitives.FontWeight weight) -> bool
 [EQX0001]static eQuantic.UI.Native.Framework.TextAlignmentExtensions.BlockWidth(this eQuantic.UI.Primitives.TextAlignment align, float contentWidth, float boxWidth) -> float
 [EQX0001]static eQuantic.UI.Native.Framework.TextAlignmentExtensions.Offset(this eQuantic.UI.Primitives.TextAlignment align, float blockWidth, float lineWidth) -> float
 [EQX0001]static eQuantic.UI.Native.Framework.TextFragment.operator !=(eQuantic.UI.Native.Framework.TextFragment left, eQuantic.UI.Native.Framework.TextFragment right) -> bool

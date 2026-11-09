@@ -1083,15 +1083,14 @@ public class OverloadedMethodTests
         result.TypeScript.Should().Contain("equals(", Exactly.Once(), "the override is the twin's equals, and nothing beside it");
     }
 
-    /// <summary>A server-only override is no member of the twin, so the twin keeps its own: the record's
-    /// synthesized text and its hash. A server-only <c>GetHashCode()</c> took the hash away with nothing in
-    /// its place, so the runtime hashed the record by its identity: two equal records hashed apart, and a
-    /// dictionary keyed by one never found the other. An alias marks it as much as the attribute does
-    /// (#1140): the overrides are asked of their symbol.</summary>
+    /// <summary>A server-only override is no member of the twin, and the runtime calls these on its own, so
+    /// the twin's synthesized text and hash would answer where .NET runs the override: the build refuses it
+    /// (#943). An alias marks it as much as the attribute does (#1140): the overrides are asked of their
+    /// symbol.</summary>
     [Theory]
     [InlineData("[ServerOnly]")]
     [InlineData("[Keep]")]
-    public void AServerOnlyOverride_LeavesTheTwinsOwnInPlace(string attribute)
+    public void AServerOnlyOverride_IsRefused_ForTheRuntimeCallsIt(string attribute)
     {
         var result = Compile($$"""
             using eQuantic.UI.Primitives;
@@ -1104,9 +1103,7 @@ public class OverloadedMethodTests
             }
             """, "Note");
 
-        result.Errors.Should().BeEmpty();
-        result.TypeScript.Should().Contain("$eq.text.record(this, 'Note'")
-            .And.Contain("$eq.hash.combine(this.");
+        result.Errors.Select(error => error.Code).Should().Equal("EQ2010", "EQ2010");
     }
 
     /// <summary>An override of a typed <c>Equals</c> a base record declares fills that one's slot, a name of

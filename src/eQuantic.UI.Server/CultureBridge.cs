@@ -9,7 +9,7 @@ namespace eQuantic.UI.Server;
 
 /// <summary>
 /// Track L D4 — the culture half of the shell bridge, the theme bridge's shape slot for slot:
-/// <c>window.__EQ_CULTURE__ = { name, formatName, format, strings }</c>, applied by boot BEFORE
+/// <c>window.__EQ_CULTURE__ = { name, formatName, format, strings, catalogs }</c>, applied by boot BEFORE
 /// hydration, so the client writes every number and date as the server wrote them, names a month as
 /// the server named it, and resolves exactly the strings it rendered. The FORMAT culture travels with
 /// every page (<c>format</c>, from .NET's own data — see <see cref="Web.CultureFormatBridge"/>, whose
@@ -19,8 +19,10 @@ namespace eQuantic.UI.Server;
 /// strings travel when there are some: the catalog the request's UI culture resolves to, the build's
 /// own output (<c>wwwroot/_equantic/strings/{culture}.json</c>, eqc-emitted), walked exact culture →
 /// parents → <c>neutral.json</c> — the .NET fallback chain, already FLATTENED at emit time (D12), so
-/// this walk only picks a FILE and never merges. A culture switch fetches the format half for the
-/// culture it switches to from <c>/_equantic/culture/{name}.json</c> (<see cref="FormatDocument"/>).
+/// this walk only picks a FILE and never merges. <c>catalogs</c> names the files the build wrote, so a
+/// switch in the browser walks the same chain and asks for none that is not there (#825). A culture
+/// switch fetches the format half for the culture it switches to from
+/// <c>/_equantic/culture/{name}.json</c> (<see cref="FormatDocument"/>).
 /// </summary>
 internal static class CultureBridge
 {
@@ -33,7 +35,9 @@ internal static class CultureBridge
         var webRoot = context.RequestServices.GetService<IWebHostEnvironment>()?.WebRootPath;
         if (string.IsNullOrEmpty(webRoot)) webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
         var stringsDir = Path.Combine(webRoot, "_equantic", "strings");
-        var catalog = Directory.Exists(stringsDir) ? PickCatalog(stringsDir, uiCulture) : null;
+        var built = Directory.Exists(stringsDir);
+        var catalog = built ? PickCatalog(stringsDir, uiCulture) : null;
+        var written = built ? WrittenCatalogs(stringsDir) : "[]";
 
         // The catalog file is the build's own System.Text.Json output (default encoder escapes
         // '<', '>' and '&'), so inlining it RAW inside a <script> is safe by construction; the
@@ -41,7 +45,20 @@ internal static class CultureBridge
         return $"{{\"name\":{JsonSerializer.Serialize(uiCulture.Name)}," +
             $"\"formatName\":{JsonSerializer.Serialize(formatCulture.Name)}," +
             $"\"format\":{Web.CultureFormatBridge.SerializeJson(formatCulture)}" +
-            (catalog is null ? "" : $",\"strings\":{catalog}") + "}";
+            (catalog is null ? "" : $",\"strings\":{catalog}") +
+            $",\"catalogs\":{written}" + "}";
+    }
+
+    /// <summary>The names of the catalogs the build wrote, <c>neutral</c> among them, as JSON, kept by the
+    /// folder's write time, which moves when a file comes or goes: every page asks.</summary>
+    private static string WrittenCatalogs(string stringsDir)
+    {
+        var stamp = Directory.GetLastWriteTimeUtc(stringsDir);
+        if (Cache.TryGetValue(stringsDir, out var cached) && cached.Stamp == stamp) return cached.Text;
+        var names = Directory.EnumerateFiles(stringsDir, "*.json").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal);
+        var text = JsonSerializer.Serialize(names);
+        Cache[stringsDir] = (stamp, text);
+        return text;
     }
 
     /// <summary>

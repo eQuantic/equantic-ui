@@ -172,6 +172,8 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
 
     public HtmlElement? Visit(Hoverable hoverable, bool? horizontalAxis) => LowerHoverable(hoverable);
 
+    public HtmlElement? Visit(DropTarget target, bool? horizontalAxis) => LowerDropTarget(target);
+
     public HtmlElement? Visit(Adjustable adjustable, bool? horizontalAxis) => LowerAdjustable(adjustable);
 
     public HtmlElement? Visit(Progress progress, bool? horizontalAxis) => LowerProgress(progress);
@@ -253,6 +255,7 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
         Box box => (box.Style.Width.Kind == SizeKind.Fill, box.Style.Height.Kind == SizeKind.Fill),
         FlexNode flex => (flex.Width.Kind == SizeKind.Fill, flex.Height.Kind == SizeKind.Fill),
         Stack stack => (stack.Width.Kind == SizeKind.Fill, stack.Height.Kind == SizeKind.Fill),
+        ScrollView scroll => (scroll.Width.Kind == SizeKind.Fill, scroll.Height.Kind == SizeKind.Fill),
         // A table viewport's hug is a fill: it takes the room it is given unless it says how large.
         TableViewport table => (table.Width.Kind is not (SizeKind.Fixed or SizeKind.WindowMinus),
             table.Height.Kind is not (SizeKind.Fixed or SizeKind.WindowMinus)),
@@ -260,6 +263,7 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
         Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
         Pressable pressable => Fills(pressable.Child),
         Hoverable hoverable => Fills(hoverable.Child),
+        DropTarget target => Fills(target.Child),
         Adjustable adjustable => Fills(adjustable.Child),
         Progress progress => Fills(progress.Child),
         LiveRegion live => Fills(live.Child),

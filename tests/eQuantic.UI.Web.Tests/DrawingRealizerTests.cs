@@ -136,4 +136,17 @@ public class DrawingRealizerTests
         Walk(Render(new Drawing(Mark(), 240) { Label = "eQuantic" })).Single(node => node.Tag == "svg")
             .Attributes["aria-label"].Should().Be("eQuantic");
     }
+    /// <summary>A pressable around a drawing whose shapes are inputs yields, as it yields to a button
+    /// inside it: a button may not hold the shapes that are buttons (#674).</summary>
+    [Fact]
+    public void APressableAroundInputShapesYields()
+    {
+        var drawing = new Drawing(new VectorDrawing(0, 0, 100, 100,
+            [new VectorShape("M0 0 L100 0 L0 100 Z", VectorPaint.None) { OnPressed = () => { } }]), 200);
+
+        var html = Render(new Pressable(drawing, () => { }));
+
+        html.Tag.Should().Be("span");
+        html.Attributes["role"].Should().Be("button");
+    }
 }

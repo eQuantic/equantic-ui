@@ -95,6 +95,10 @@ public class ComponentParityFixtureTests
             Transition = new TransitionSpec(StyleChannels.Colors),
             Hover = new StyleDiff { Transform = Transform2D.Translate(0, -2) },
         }), _ => { }) { Axis = DragAxis.Horizontal, Min = -80, Max = 0, RestOffset = -80 }, NoPresses),
+        // A drop area over a box that fills across: the same transparent div on both producers, the
+        // fill passed through, and the four drag events declared by the server and attached by the client.
+        ("drop-target", new DropTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),
+        ("drop-target-disabled", new DropTarget(new Box(new BoxStyle { Height = 40 }), _ => { }) { Enabled = false }, NoPresses),
         // A pinned header's scrolled diff with every member (#506), through the builder a box's
         // states use, over the header's base, whose border is its bottom edge.
         ("pinned-scrolled", new Pinned(new Box(new BoxStyle { Height = 40 }))
@@ -282,6 +286,24 @@ public class ComponentParityFixtureTests
             new AdaptiveNode(Spacer.Fixed(24), null, Spacer.Fixed(64)) { ExpandedFrom = 980 },
             new Text("below", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
         ("adaptive-positioned-in-stack", AdaptiveCorner(), NoPresses),
+        // A drawing whose shapes are inputs (#674): two concelhos, one picked and with a hover in every
+        // member a path has, beside a line that stays a picture. Hydration adopts each path by its
+        // role, its state and its classes, the hover's among them.
+        ("drawing-with-input-shapes", new Drawing(new VectorDrawing(0, 0, 100, 100,
+        [
+            new VectorShape("M0 0 L100 0 L0 100 Z", VectorPaint.Solid(new Color(17, 24, 39, 255)))
+            {
+                Label = "Porto",
+                OnPressed = () => { },
+                Selected = true,
+                Hover = new StyleDiff
+                {
+                    Background = Theme.SurfaceSubtle, BorderColor = Theme.Border, BorderWidth = 2, Opacity = 0.9f,
+                },
+            },
+            new VectorShape("M100 0 L100 100 L0 100 Z", VectorPaint.Inherit) { Label = "Matosinhos", OnPressed = () => { } },
+            new VectorShape("M0 0 L100 100", VectorPaint.None, VectorPaint.Inherit, 1),
+        ]), 200), NoPresses),
     ];
 
     /// <summary>

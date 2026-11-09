@@ -48,7 +48,7 @@ public static class HydrationSpec
                 return null;
             case SpecialType.System_Decimal:
                 return "'decimal'";
-            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+            case SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr:
                 return "'long'";
             // A float arrives as the shortest text that names the SINGLE, which JavaScript parses
             // as the nearest double — a different number until it is rounded back (SinglePrecision).
@@ -271,7 +271,7 @@ public static class HydrationSpec
                 return "'bool'";
             case SpecialType.System_Decimal:
                 return "'decimal'";
-            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+            case SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr:
                 return "'long'";
             case SpecialType.System_Single:
                 return "'single'";

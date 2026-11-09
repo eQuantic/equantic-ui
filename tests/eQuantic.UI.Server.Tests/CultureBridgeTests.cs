@@ -81,6 +81,76 @@ public class CultureBridgeTests
     }
 
     /// <summary>
+    /// The page names the catalogs the build wrote, so a switch to a language with none of its own asks
+    /// for <c>neutral</c> and nothing else (#825). English in an app whose neutral strings are English
+    /// asked for <c>en.json</c>, a 404, on the way to <c>neutral.json</c>.
+    /// </summary>
+    [Fact]
+    public async Task ThePageNamesTheCatalogsTheBuildWrote()
+    {
+        var (app, client, _) = await StartAppAsync();
+        await using var _1 = app;
+
+        var html = await (await GetWithLanguage(client, "pt-BR")).Content.ReadAsStringAsync();
+
+        CultureData(html).GetProperty("catalogs").EnumerateArray().Select(name => name.GetString())
+            .Should().Equal("neutral", "pt-BR");
+    }
+
+    /// <summary>
+    /// A Portuguese culture other than Brazil's reads the neutral <c>pt</c> catalog, which the SDK's
+    /// own strings now write (#1221): <c>pt-PT</c> has no catalog of its own, so the walk takes its
+    /// parent before the neutral one, as ResourceManager does on the server, while <c>pt-BR</c> keeps
+    /// its own.
+    /// </summary>
+    [Fact]
+    public async Task APortugueseCultureWithoutItsOwnCatalog_ReadsItsParents_AndBrazilKeepsItsOwn()
+    {
+        var webRoot = Directory.CreateTempSubdirectory("eq-culture-").FullName;
+        var strings = Path.Combine(webRoot, "_equantic", "strings");
+        Directory.CreateDirectory(strings);
+        File.WriteAllText(Path.Combine(strings, "neutral.json"), """{"SdkResources/UploadChooseFiles":"Choose files"}""");
+        File.WriteAllText(Path.Combine(strings, "pt.json"), """{"SdkResources/UploadChooseFiles":"Escolher ficheiros"}""");
+        File.WriteAllText(Path.Combine(strings, "pt-BR.json"), """{"SdkResources/UploadChooseFiles":"Escolher arquivos"}""");
+
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions { WebRootPath = webRoot });
+        builder.WebHost.UseTestServer();
+        builder.Services.AddUI(options => options.EnableSsr = false);
+        await using var app = builder.Build();
+        app.UseRequestLocalization(options =>
+        {
+            options.AddSupportedUICultures("pt-PT", "pt-AO", "pt-BR");
+            options.AddSupportedCultures("pt-PT", "pt-AO", "pt-BR");
+        });
+        app.MapUI();
+        await app.StartAsync();
+        var client = app.GetTestClient();
+
+        foreach (var culture in new[] { "pt-PT", "pt-AO" })
+        {
+            var data = CultureData(await (await GetWithLanguage(client, culture)).Content.ReadAsStringAsync());
+            data.GetProperty("strings").GetProperty("SdkResources/UploadChooseFiles").GetString()
+                .Should().Be("Escolher ficheiros", $"{culture} has no catalog of its own and its parent is pt");
+        }
+
+        var brazil = CultureData(await (await GetWithLanguage(client, "pt-BR")).Content.ReadAsStringAsync());
+        brazil.GetProperty("strings").GetProperty("SdkResources/UploadChooseFiles").GetString().Should().Be("Escolher arquivos");
+        brazil.GetProperty("catalogs").EnumerateArray().Select(name => name.GetString())
+            .Should().Equal("neutral", "pt", "pt-BR");
+    }
+
+    [Fact]
+    public async Task AnAppWithNoCatalog_NamesNone()
+    {
+        var (app, client, _) = await StartAppAsync(withCatalogs: false);
+        await using var _1 = app;
+
+        var html = await (await GetWithLanguage(client, "pt-BR")).Content.ReadAsStringAsync();
+
+        CultureData(html).GetProperty("catalogs").GetArrayLength().Should().Be(0);
+    }
+
+    /// <summary>
     /// The FORMAT culture travels on every page, catalog or not (#471): an app with no resx was
     /// handed no culture at all, so the browser formatted in its host's locale while the server
     /// formatted in the request's, and the SSR markup and the hydrated page printed one number two

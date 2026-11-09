@@ -344,11 +344,13 @@ jobs:
       # The wiki is a SEPARATE repository, and the version-mark guard reads it from beside this
       # one. Without this the guard passes here having checked nothing, and a wrong "Since
       # 0.2.0-preview.N" reaches the site — which mirrors the wiki — unchallenged.
-      # The version-mark guard asks `git tag --contains`, and a shallow checkout has no tags: it
-      # would answer "unreleased" for everything and pass having checked nothing.
-      - name: Fetch tags (for the version-mark guard)
+      # The version-mark guard compares each release's tree with the one before it, so it needs the
+      # release tags and none of the history between them: depth one is enough. Without them it
+      # would answer "unreleased" for everything and pass having checked nothing. The release tags
+      # only, not every branch as well, which the guard never reads (#999).
+      - name: Fetch the release tags (for the version-mark guard)
         shell: bash
-        run: git fetch --tags --force --depth=1 origin
+        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
 
       - name: Check out the wiki (for the docs guards)
         shell: bash
@@ -386,7 +388,7 @@ jobs:
           while IFS= read -r test_project; do
             echo "::group::$test_project"
             ran=$((ran + 1))
-            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 60m --blame-hang-dump-type none || {
+            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 15m --blame-hang-dump-type none || {
               status=1
               failed="$failed$test_project"$'\n'
             }
@@ -478,11 +480,13 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # The version-mark guard asks `git tag --contains`, and a shallow checkout has no tags: it
-      # would answer "unreleased" for everything and pass having checked nothing.
-      - name: Fetch tags (for the version-mark guard)
+      # The version-mark guard compares each release's tree with the one before it, so it needs the
+      # release tags and none of the history between them: depth one is enough. Without them it
+      # would answer "unreleased" for everything and pass having checked nothing. The release tags
+      # only, not every branch as well, which the guard never reads (#999).
+      - name: Fetch the release tags (for the version-mark guard)
         shell: bash
-        run: git fetch --tags --force --depth=1 origin
+        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
 
       - name: Check out the wiki (for the docs guards)
         shell: bash
@@ -521,7 +525,7 @@ jobs:
           while IFS= read -r test_project; do
             echo "::group::$test_project"
             ran=$((ran + 1))
-            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 60m --blame-hang-dump-type none || {
+            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 15m --blame-hang-dump-type none || {
               status=1
               failed="$failed$test_project"$'\n'
             }
@@ -1071,6 +1075,12 @@ jobs:
     # releases are tagged `ext-v*` for exactly that reason.
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-latest
+    # nuget.org's trusted publishing policy for this workflow names the `nuget` environment, and the
+    # OIDC token it exchanges for a key carries it: a job without both is refused a key (#1224).
+    environment: nuget
+    permissions:
+      contents: read
+      id-token: write
     steps:
       # For scripts/publish-packages.sh, the one loop this job and the workflow run by hand share.
       - uses: actions/checkout@v4
@@ -1086,14 +1096,25 @@ jobs:
           name: nupkgs
           path: nupkgs/
 
+      # No key is stored: a stored one expires, and 0.2.0-preview.66's tag run met nuget.org's 403
+      # on all 52 packages because it had (#1224). The login exchanges this run's OIDC token for a
+      # key that lives an hour, so it runs right before the push. NUGET_USER is the nuget.org profile
+      # name of the policies' creator, an organization secret, never an e-mail address.
+      - name: Log in to nuget.org
+        id: nuget
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       # The script skips what nuget.org already lists, waits before it tries a failed push again,
       # goes on to the next package and fails at the end naming what is still owed (#759). When it
       # does fail, the release is finished with the "Publish a release" workflow, from this run's
-      # own packages: a rerun of this job replays the workflow as it was at the tag.
+      # own packages: a rerun of this job replays the workflow as it was at the tag. An outage long
+      # enough to outlast the key's hour ends the same way, its last pushes refused for the key.
       - name: Publish to nuget.org
         shell: bash
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget.outputs.NUGET_API_KEY }}
         run: ./scripts/publish-packages.sh nupkgs "${GITHUB_REF_NAME#v}"
 
   # The GitHub Release for a framework tag, written AFTER nuget.org has the packages: a release page

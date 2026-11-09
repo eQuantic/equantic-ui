@@ -41,6 +41,8 @@ public class NumberMethodStrategy : IExpressionIrStrategy
         [SpecialType.System_UInt32] = Integer("uint"),
         [SpecialType.System_Int64] = new(Eq.IntParse, Eq.IntTryParse, "long", "0n"),
         [SpecialType.System_UInt64] = new(Eq.IntParse, Eq.IntTryParse, "ulong", "0n"),
+        [SpecialType.System_IntPtr] = new(Eq.IntParse, Eq.IntTryParse, "long", "0n"),
+        [SpecialType.System_UIntPtr] = new(Eq.IntParse, Eq.IntTryParse, "ulong", "0n"),
     };
 
     private static Reader Integer(string tag) => new(Eq.IntParse, Eq.IntTryParse, tag, "0");
@@ -60,6 +62,8 @@ public class NumberMethodStrategy : IExpressionIrStrategy
         ["uint"] = SpecialType.System_UInt32, ["UInt32"] = SpecialType.System_UInt32,
         ["long"] = SpecialType.System_Int64, ["Int64"] = SpecialType.System_Int64,
         ["ulong"] = SpecialType.System_UInt64, ["UInt64"] = SpecialType.System_UInt64,
+        ["nint"] = SpecialType.System_IntPtr, ["IntPtr"] = SpecialType.System_IntPtr,
+        ["nuint"] = SpecialType.System_UIntPtr, ["UIntPtr"] = SpecialType.System_UIntPtr,
     };
 
     public bool CanConvert(SyntaxNode node, ConversionContext context)

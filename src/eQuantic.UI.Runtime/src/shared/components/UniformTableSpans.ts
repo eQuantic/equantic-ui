@@ -34,7 +34,7 @@ export class UniformTableSpans extends TableSpans {
 
     indexAt(offset: number) {
         if (this.count === 0 || this.extent <= 0) return 0;
-        return (Math.trunc(Math.min(Math.max(Math.floor(offset / this.extent), 0), this.count - 1)) | 0);
+        return $eq.num.saturate(Math.min(Math.max(Math.floor(offset / this.extent), 0), this.count - 1));
     }
 
     toJSON() {

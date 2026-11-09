@@ -4,6 +4,8 @@
  * Client-side bridge for invoking server-side actions.
  */
 
+import { activeCulture } from '../utils/culture';
+
 export interface ServerActionResponse<T = unknown> {
   success: boolean;
   result?: T;
@@ -21,6 +23,25 @@ export class ServerActionsClient {
   }
 
   /**
+   * The endpoint, naming the culture the page is in. The endpoint's address has no culture segment,
+   * so the route that rendered `/pt-BR/...` answers nothing here, and the cookie or the browser's
+   * `Accept-Language` chose the language a handler answered in, whatever the page was written in
+   * (#580). The culture travels in the two query keys ASP.NET's own
+   * `QueryStringRequestCultureProvider` reads, ahead of the cookie: the app's localization middleware
+   * applies it, a culture the app does not support is refused there as any other, and a page with no
+   * culture installed sends nothing and keeps that order.
+   */
+  private addressInCulture(): string {
+    const { ui, format } = activeCulture();
+    const query = new URLSearchParams();
+    if (format.length > 0) query.set('culture', format);
+    if (ui.length > 0) query.set('ui-culture', ui);
+    const culture = query.toString();
+    if (culture.length === 0) return this.baseUrl;
+    return `${this.baseUrl}${this.baseUrl.includes('?') ? '&' : '?'}${culture}`;
+  }
+
+  /**
    * Invoke a server action.
    * @param actionId The action identifier (e.g., "Counter/Increment")
    * @param args Arguments to pass to the action
@@ -35,7 +56,7 @@ export class ServerActionsClient {
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      const response = await fetch(this.baseUrl, {
+      const response = await fetch(this.addressInCulture(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

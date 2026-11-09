@@ -91,7 +91,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             // Another enum's value: its own table gives the number, and this one's gives the key.
             if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum)
                 operandIr = Types.EnumShape.ValueOf(sourceEnum, operandIr, context);
-            operandIr = IntoUnderlying(operandIr, operandType, enumTarget);
+            operandIr = IntoUnderlying(operandIr, operandType, enumTarget, ArithmeticContext.ChecksOverflow(cast, context), context);
             // Flags: the int IS the runtime value (identity). Normal: map value → member-name string.
             return Types.EnumShape.Held(enumTarget, operandIr, context);
         }
@@ -105,13 +105,19 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             return ValueFlow.Apply(operation.GetConversion(), operation.Operand.Type, operation.Type,
                 operation.ConstantValue.HasValue ? operation.ConstantValue.Value : null,
                 operation.Operand.ConstantValue.HasValue ? operation.Operand.ConstantValue.Value : null,
-                operand, context, operation.IsChecked);
+                operand, context, operation.IsChecked || (operation.GetConversion().IsTupleConversion && ArithmeticContext.ChecksOverflow(cast, context)));
         }
+
+        // A cast through a user-defined operator with a standard conversion beside it is no operation of
+        // its own: the bound tree holds the two conversions around the operand, where ValueFlow settles
+        // them, and asks nothing of the cast (`(long)new Count(5)` over an operator to an int, #970).
+        var inner = context.Converter.ConvertIr(cast.Expression);
+        if (context.SemanticHelper.GetOperation(cast.Expression)?.Parent is IConversionOperation { IsImplicit: true })
+            return inner;
 
         // No bound tree (a rewritten node, a model-less world): the SPELLED type decides, with the
         // same masks (IntegerWidth) over a truncation — the operand's type is unknowable here, so
         // the truncation stays even for sources that would not need it.
-        var inner = context.Converter.ConvertIr(cast.Expression);
         var text = JsExprWriter.WriteIn(inner, JsPrecedence.Call);
         return cast.Type.ValueText() switch
         {
@@ -141,7 +147,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     private static bool IsIntegral(ITypeSymbol? type) => type?.SpecialType is
         SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16 or
         SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_UInt16 or
-        SpecialType.System_UInt32 or SpecialType.System_UInt64;
+        SpecialType.System_UInt32 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr;
 
     /// <summary>
     /// A number brought into an enum's underlying type, as C#'s explicit conversion brings it:
@@ -149,9 +155,18 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     /// that fits already is left as it is, a long's BigInt is narrowed, and a 64-bit enum, a number
     /// here (#551), takes the value as it comes.
     /// </summary>
-    private static JsExpr IntoUnderlying(JsExpr number, ITypeSymbol? source, INamedTypeSymbol target)
+    private static JsExpr IntoUnderlying(JsExpr number, ITypeSymbol? source, INamedTypeSymbol target, bool isChecked,
+        ConversionContext context)
     {
         if (IntegerWidth.Of(target.EnumUnderlyingType) is not { } width || width.Bits == 64) return number;
+        var fractional = source?.SpecialType is SpecialType.System_Single or SpecialType.System_Double;
+        // A checked cast of a number past the underlying type's range throws, whatever the number's type.
+        if (isChecked && (fractional || IntegerWidth.Of(source) is not null))
+        {
+            var whole = fractional ? JsExpr.Callish($"Math.trunc({JsExprWriter.Write(number)})") : number;
+            var ranged = IntegerWidth.Checked(whole, width, context);
+            return IntegerWidth.Of(source) is { Bits: 64 } ? JsExpr.Callish($"Number({JsExprWriter.Write(ranged)})") : ranged;
+        }
         var from = source is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum
             ? IntegerWidth.Of(sourceEnum.EnumUnderlyingType)
             : IntegerWidth.Of(source);
@@ -162,9 +177,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
                 || narrow == width
                 ? number
                 : IntegerWidth.Wrap(number, width);
-        return source?.SpecialType is SpecialType.System_Single or SpecialType.System_Double
-            ? IntegerWidth.Wrap(JsExpr.Callish($"Math.trunc({JsExprWriter.Write(number)})"), width)
-            : number;
+        return fractional ? ValueFlow.Saturated(number, width, context) : number;
     }
 
     private static bool IsNumeric(ITypeSymbol type) => IsIntegral(type)

@@ -578,6 +578,12 @@ public class CSharpToJsConverter
             return result;
         }
 
+        // A keyword on the left of a member is a type's name, as `String` is, and the fences answer for
+        // what is read off it, at the call: `string.Copy(s)` said EQ1001 for the keyword as well as EQ2004
+        // for the call, where `String.Copy(s)` said one thing (#953).
+        if (expression is PredefinedTypeSyntax { Parent: MemberAccessExpressionSyntax })
+            return JsExpr.Opaque(expression.ToString());
+
         _context.Report(expression, ConversionSeverity.Error, "EQ1001",
             $"C# expression '{expression.Kind()}' has no transpilation strategy — it cannot be emitted as JavaScript. " +
             "Rewrite it in a transpilable form, or add a conversion strategy for this construct.");
