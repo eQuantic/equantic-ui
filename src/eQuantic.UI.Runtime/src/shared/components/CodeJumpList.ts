@@ -89,9 +89,9 @@ export class CodeJumpList {
     }
 
     add(place: CodeRange) {
-        if (this._index < this._places.length - 1) this._places.splice(this._index + 1, this._places.length - this._index - 1);
+        if (this._index < this._places.length - 1) $eq.collections.listRemoveRange(this._places, this._index + 1, this._places.length - this._index - 1);
         this._places.push(place);
-        if (this._places.length > CodeJumpList.capacity) this._places.splice(0, 1);
+        if (this._places.length > CodeJumpList.capacity) $eq.collections.listRemoveAt(this._places, 0);
         this._index = this._places.length - 1;
     }
 

@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Another port when a second checkout runs its own server beside this one's: `E2E_PORT=5210 npm test`.
+const port = process.env.E2E_PORT ?? '5200';
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: false, // Run tests sequentially for better control
@@ -11,7 +14,7 @@ export default defineConfig({
     ['html', { open: 'never' }]
   ],
   use: {
-    baseURL: 'http://localhost:5200',
+    baseURL: `http://localhost:${port}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -23,12 +26,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'dotnet run --project ../../samples/DefaultUIDashboard --no-launch-profile --urls http://localhost:5200',
+    command: `dotnet run --project ../../samples/DefaultUIDashboard --no-launch-profile --urls http://localhost:${port}`,
     env: {
       // Hot reload's SSE stream keeps the network busy forever — e2e pins PRODUCTION behavior.
       ASPNETCORE_ENVIRONMENT: 'Production',
     },
-    url: 'http://localhost:5200',
+    url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     stdout: 'pipe', // Capture server output

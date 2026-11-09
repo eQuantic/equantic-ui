@@ -111,14 +111,14 @@ public class ExpressionStrategyTests
     public void IndexFromEnd_SingleElement_MapsToLengthMinus()
     {
         var result = TestHelper.ConvertExpression("list[^1]");
-        result.Should().Be("this.list[this.list.length - 1]");
+        result.Should().Be("(($0) => $0[$0.length - 1])(this.list)");
     }
 
     [Fact]
     public void IndexFromEnd_SecondLast_MapsCorrectly()
     {
         var result = TestHelper.ConvertExpression("list[^2]");
-        result.Should().Be("this.list[this.list.length - 2]");
+        result.Should().Be("(($0) => $0[$0.length - 2])(this.list)");
     }
     [Fact]
     public void SwitchExpression_MapsTo_NestedTernary()

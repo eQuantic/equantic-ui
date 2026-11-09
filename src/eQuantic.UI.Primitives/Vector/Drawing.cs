@@ -11,6 +11,13 @@ namespace eQuantic.UI.Primitives;
 /// the artwork arrives as data.
 /// </para>
 /// <para>
+/// Its shapes can be INPUTS as well as paint: a <see cref="VectorShape"/> with
+/// <see cref="VectorShape.OnPressed"/> is pressed where its path is painted, reached by Tab, pressed by
+/// Enter and Space, hovered, and announced by its own label (a concelho on a map, #674). A drawing that
+/// holds one is a group of controls, never hidden from assistive tech, whatever its own
+/// <see cref="Label"/> says.
+/// </para>
+/// <para>
 /// Contrast with its two neighbours. <see cref="Icon"/> is a glyph from the §07 size whitelist;
 /// <see cref="Vector"/> is one path in one tint at any size. This is the multi-shape, multi-colour
 /// one — the node you point at a <c>.svg</c>.
@@ -72,7 +79,7 @@ public sealed class Drawing : VisualNode
     /// </summary>
     public ColorToken? Tint { get; init; }
 
-    /// <summary>Accessibility label; null = decorative (aria-hidden on web).</summary>
+    /// <summary>Accessibility label; null = decorative (aria-hidden on web), unless a shape is an input.</summary>
     public string? Label { get; init; }
 
     public sealed override TResult Accept<TState, TResult>(

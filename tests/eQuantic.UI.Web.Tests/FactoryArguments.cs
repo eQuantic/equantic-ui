@@ -98,6 +98,8 @@ internal static class FactoryArguments
         // components: a uniform axis and a fresh scroll are what every TableView builds one with.
         if (type == typeof(TableSpans)) { value = new eQuantic.UI.Components.UniformTableSpans(10, 20); return true; }
         if (type == typeof(ITableScrollModel)) { value = new eQuantic.UI.Components.TableScroll(); return true; }
+        // A policy refuses a largest size of zero, which is what a long defaults to.
+        if (type == typeof(UploadPolicy)) { value = new UploadPolicy("x", [], 1); return true; }
         if (type.IsAbstract || type.IsInterface) return false;
 
         foreach (var ctor in type.GetConstructors().OrderBy(c => c.GetParameters().Length))

@@ -245,6 +245,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     // they hold — the sink it descends with is part of the decision, so it cannot live here.
     public Nothing Visit(Pressable node, EmitState s) { EmitPressable(node, s); return Nothing.Value; }
     public Nothing Visit(Hoverable node, EmitState s) { EmitHoverable(node, s); Descend(s); return Nothing.Value; }
+    // A DOOR, open on purpose: files reach a desktop window through the system's own drag and drop
+    // (NSDraggingDestination, IDropTarget), which no shell answers yet, so the area is its child and
+    // takes nothing. #1216 closes it; the browser realizes the node already (#1213).
+    public Nothing Visit(DropTarget node, EmitState s) { Descend(s); return Nothing.Value; }
     public Nothing Visit(Shortcut node, EmitState s) { EmitShortcut(node, s); Descend(s); return Nothing.Value; }
 
     // ---- nodes that descend themselves, because HOW they descend is the point -----------------

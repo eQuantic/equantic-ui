@@ -200,6 +200,9 @@ export type TypeRoleValue =
   'display' | 'heading' | 'title' | 'bodyL' | 'bodyM' | 'label' | 'caption' | 'titleSmall'
   | 'labelSmall' | 'overline';
 
+export type UploadStateValue =
+  'waiting' | 'sending' | 'paused' | 'completed' | 'failed' | 'cancelled';
+
 export type VariantValue =
   'primary' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'link' | 'success' | 'warning'
   | 'info' | 'tertiary';

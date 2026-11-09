@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The SDK's own strings, in European Portuguese: the norm of every Portuguese-speaking country
+     but Brazil, which keeps its own in SdkResources.pt-BR.resx. pt-PT, pt-AO, pt-MZ and the rest
+     fall back here through their parent, as ResourceManager walks it (#1221). -->
+<root>
+  <data name="Dismiss" xml:space="preserve">
+    <value>Dispensar</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Remover</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Pesquisar…</value>
+  </data>
+  <data name="ClearSearch" xml:space="preserve">
+    <value>Limpar pesquisa</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>Localizar</value>
+  </data>
+  <data name="PreviousMatch" xml:space="preserve">
+    <value>Ocorrência anterior</value>
+  </data>
+  <data name="NextMatch" xml:space="preserve">
+    <value>Ocorrência seguinte</value>
+  </data>
+  <data name="CloseFind" xml:space="preserve">
+    <value>Fechar a barra de localização</value>
+  </data>
+  <data name="CopyCode" xml:space="preserve">
+    <value>Copiar código</value>
+  </data>
+  <data name="CodeEditor" xml:space="preserve">
+    <value>Editor de código</value>
+  </data>
+  <data name="LineNumbered" xml:space="preserve">
+    <value>Linha {0}</value>
+  </data>
+  <data name="UnchangedLine" xml:space="preserve">
+    <value>1 linha inalterada</value>
+  </data>
+  <data name="UnchangedLines" xml:space="preserve">
+    <value>{0} linhas inalteradas</value>
+  </data>
+  <data name="HiddenLine" xml:space="preserve">
+    <value>1 linha oculta</value>
+  </data>
+  <data name="HiddenLines" xml:space="preserve">
+    <value>{0} linhas ocultas</value>
+  </data>
+  <data name="PreviousChange" xml:space="preserve">
+    <value>Alteração anterior</value>
+  </data>
+  <data name="NextChange" xml:space="preserve">
+    <value>Alteração seguinte</value>
+  </data>
+  <data name="ShowInline" xml:space="preserve">
+    <value>Mostrar em linha</value>
+  </data>
+  <data name="ShowSideBySide" xml:space="preserve">
+    <value>Mostrar lado a lado</value>
+  </data>
+  <data name="DiffOriginal" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="DiffModified" xml:space="preserve">
+    <value>Modificado</value>
+  </data>
+  <data name="Spreadsheet" xml:space="preserve">
+    <value>Folha de cálculo</value>
+  </data>
+  <data name="FormulaBar" xml:space="preserve">
+    <value>Barra de fórmulas</value>
+  </data>
+  <data name="NameBox" xml:space="preserve">
+    <value>Caixa de nome</value>
+  </data>
+  <data name="RangeSize" xml:space="preserve">
+    <value>{0}L x {1}C</value>
+  </data>
+  <data name="CellAnnouncement" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="CellBlank" xml:space="preserve">
+    <value>em branco</value>
+  </data>
+  <data name="RangeAnnouncement" xml:space="preserve">
+    <value>{0}, {1} por {2}</value>
+  </data>
+  <data name="RangeOneRow" xml:space="preserve">
+    <value>1 linha</value>
+  </data>
+  <data name="RangeRows" xml:space="preserve">
+    <value>{0} linhas</value>
+  </data>
+  <data name="RangeOneColumn" xml:space="preserve">
+    <value>1 coluna</value>
+  </data>
+  <data name="RangeColumns" xml:space="preserve">
+    <value>{0} colunas</value>
+  </data>
+  <data name="StatusSum" xml:space="preserve">
+    <value>Soma: {0}</value>
+  </data>
+  <data name="StatusAverage" xml:space="preserve">
+    <value>Média: {0}</value>
+  </data>
+  <data name="StatusCount" xml:space="preserve">
+    <value>Contagem: {0}</value>
+  </data>
+  <data name="AddToSelection" xml:space="preserve">
+    <value>Adicionar à seleção</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Voltar</value>
+  </data>
+  <data name="NothingSelected" xml:space="preserve">
+    <value>Nada selecionado</value>
+  </data>
+  <data name="PreviousMonth" xml:space="preserve">
+    <value>Mês anterior</value>
+  </data>
+  <data name="NextMonth" xml:space="preserve">
+    <value>Mês seguinte</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>Hoje</value>
+  </data>
+  <data name="ChooseDate" xml:space="preserve">
+    <value>Escolha uma data</value>
+  </data>
+  <data name="ChooseTime" xml:space="preserve">
+    <value>Escolha uma hora</value>
+  </data>
+  <data name="DateFormatLetters" xml:space="preserve">
+    <value>DMA</value>
+  </data>
+  <data name="CookieConsentTitle" xml:space="preserve">
+    <value>Utilizamos cookies</value>
+  </data>
+  <data name="CookieConsentBody" xml:space="preserve">
+    <value>Os cookies de análise ajudam-nos a perceber como o site é utilizado. Nada é guardado até aceitar, e recusar mantém o site totalmente utilizável.</value>
+  </data>
+  <data name="AcceptCookies" xml:space="preserve">
+    <value>Aceitar</value>
+  </data>
+  <data name="RejectCookies" xml:space="preserve">
+    <value>Recusar</value>
+  </data>
+  <data name="PrivacyPolicy" xml:space="preserve">
+    <value>Política de privacidade</value>
+  </data>
+  <data name="ShowAsTable" xml:space="preserve">
+    <value>Ver como tabela</value>
+  </data>
+  <data name="ShowAsChart" xml:space="preserve">
+    <value>Ver como gráfico</value>
+  </data>
+  <data name="GoTo" xml:space="preserve">
+    <value>Ir para</value>
+  </data>
+  <data name="GoToStart" xml:space="preserve">
+    <value>Escreva : para ir para uma linha, ou @ para ir para um símbolo.</value>
+  </data>
+  <data name="GoToLinePrompt" xml:space="preserve">
+    <value>Escreva o número da linha para onde ir (de 1 a {0}).</value>
+  </data>
+  <data name="GoToLineOrColumn" xml:space="preserve">
+    <value>Prima Enter para ir para a linha {0}, ou escreva dois pontos para acrescentar uma coluna.</value>
+  </data>
+  <data name="GoToColumnPrompt" xml:space="preserve">
+    <value>Prima Enter para ir para a linha {0}, ou escreva uma coluna (de 1 a {1}).</value>
+  </data>
+  <data name="GoToPosition" xml:space="preserve">
+    <value>Prima Enter para ir para a linha {0}, coluna {1}.</value>
+  </data>
+  <data name="SymbolsCount" xml:space="preserve">
+    <value>Símbolos ({0})</value>
+  </data>
+  <data name="NoSymbols" xml:space="preserve">
+    <value>Nenhum símbolo neste documento.</value>
+  </data>
+  <data name="NoMatchingSymbols" xml:space="preserve">
+    <value>Nenhum símbolo corresponde.</value>
+  </data>
+  <data name="NoSymbolProvider" xml:space="preserve">
+    <value>Este editor não tem informação de símbolos.</value>
+  </data>
+  <data name="ReadingSymbols" xml:space="preserve">
+    <value>A ler os símbolos…</value>
+  </data>
+  <data name="DefinitionsCount" xml:space="preserve">
+    <value>Definições ({0})</value>
+  </data>
+  <data name="DeclarationsCount" xml:space="preserve">
+    <value>Declarações ({0})</value>
+  </data>
+  <data name="TypeDefinitionsCount" xml:space="preserve">
+    <value>Definições de tipo ({0})</value>
+  </data>
+  <data name="ImplementationsCount" xml:space="preserve">
+    <value>Implementações ({0})</value>
+  </data>
+  <data name="ReferencesCount" xml:space="preserve">
+    <value>Referências ({0})</value>
+  </data>
+  <data name="FilterPlaces" xml:space="preserve">
+    <value>Escreva para filtrar os locais.</value>
+  </data>
+  <data name="NoMatchingPlaces" xml:space="preserve">
+    <value>Nenhum local corresponde.</value>
+  </data>
+  <data name="NoDefinitionFound" xml:space="preserve">
+    <value>Nenhuma definição encontrada para '{0}'</value>
+  </data>
+  <data name="NoDefinition" xml:space="preserve">
+    <value>Nenhuma definição encontrada</value>
+  </data>
+  <data name="NoDeclarationFound" xml:space="preserve">
+    <value>Nenhuma declaração encontrada para '{0}'</value>
+  </data>
+  <data name="NoDeclaration" xml:space="preserve">
+    <value>Nenhuma declaração encontrada</value>
+  </data>
+  <data name="NoTypeDefinitionFound" xml:space="preserve">
+    <value>Nenhuma definição de tipo encontrada para '{0}'</value>
+  </data>
+  <data name="NoTypeDefinition" xml:space="preserve">
+    <value>Nenhuma definição de tipo encontrada</value>
+  </data>
+  <data name="NoImplementationFound" xml:space="preserve">
+    <value>Nenhuma implementação encontrada para '{0}'</value>
+  </data>
+  <data name="NoImplementation" xml:space="preserve">
+    <value>Nenhuma implementação encontrada</value>
+  </data>
+  <data name="NoReferencesFound" xml:space="preserve">
+    <value>Nenhuma referência encontrada para '{0}'</value>
+  </data>
+  <data name="NoReferences" xml:space="preserve">
+    <value>Nenhuma referência encontrada</value>
+  </data>
+  <data name="FoldLines" xml:space="preserve">
+    <value>Recolher as linhas {0} a {1}</value>
+  </data>
+  <data name="UnfoldLines" xml:space="preserve">
+    <value>Expandir as linhas {0} a {1}</value>
+  </data>
+  <data name="UploadDropHere" xml:space="preserve">
+    <value>Largue os ficheiros aqui, ou escolha-os</value>
+  </data>
+  <data name="UploadDropOneHere" xml:space="preserve">
+    <value>Largue um ficheiro aqui, ou escolha-o</value>
+  </data>
+  <data name="UploadChooseFiles" xml:space="preserve">
+    <value>Escolher ficheiros</value>
+  </data>
+  <data name="UploadChooseFile" xml:space="preserve">
+    <value>Escolher um ficheiro</value>
+  </data>
+  <data name="UploadAccepts" xml:space="preserve">
+    <value>{0}, até {1}</value>
+  </data>
+  <data name="UploadAcceptsAny" xml:space="preserve">
+    <value>Qualquer ficheiro, até {0}</value>
+  </data>
+  <data name="UploadWaiting" xml:space="preserve">
+    <value>Em espera</value>
+  </data>
+  <data name="UploadSending" xml:space="preserve">
+    <value>{0} de {1}</value>
+  </data>
+  <data name="UploadPaused" xml:space="preserve">
+    <value>Em pausa</value>
+  </data>
+  <data name="UploadCompleted" xml:space="preserve">
+    <value>Enviado</value>
+  </data>
+  <data name="UploadCancelled" xml:space="preserve">
+    <value>Cancelado</value>
+  </data>
+  <data name="UploadPause" xml:space="preserve">
+    <value>Pausar</value>
+  </data>
+  <data name="UploadResume" xml:space="preserve">
+    <value>Retomar</value>
+  </data>
+  <data name="UploadCancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="UploadProgress" xml:space="preserve">
+    <value>A enviar {0}</value>
+  </data>
+  <data name="UploadAnnounceCompleted" xml:space="preserve">
+    <value>{0} enviado.</value>
+  </data>
+  <data name="UploadAnnounceFailed" xml:space="preserve">
+    <value>{0} não foi enviado: {1}</value>
+  </data>
+</root>

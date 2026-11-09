@@ -1,4 +1,4 @@
-import { CodeRange } from "../runtime-exports";
+import { $eq, CodeRange } from "../runtime-exports";
 
 export class CodeSnippetStop {
     constructor(index: number, final: boolean) {
@@ -23,8 +23,8 @@ export class CodeSnippetStop {
 
     add(range: CodeRange, enclosing: number[], first: boolean) {
         if (first) {
-            this.ranges.splice(0, 0, range);
-            this.enclosing.splice(0, 0, enclosing);
+            $eq.collections.listInsert(this.ranges, 0, range);
+            $eq.collections.listInsert(this.enclosing, 0, enclosing);
             this.hasPrimary = true;
             return;
         }
@@ -33,8 +33,8 @@ export class CodeSnippetStop {
     }
 
     removeAt(index: number) {
-        this.ranges.splice(index, 1);
-        this.enclosing.splice(index, 1);
+        $eq.collections.listRemoveAt(this.ranges, index);
+        $eq.collections.listRemoveAt(this.enclosing, index);
     }
 
     nestedIn(index: number) {

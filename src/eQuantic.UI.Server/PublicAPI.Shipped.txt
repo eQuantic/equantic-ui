@@ -6,6 +6,7 @@ const eQuantic.UI.Server.CultureRouteConstraint.Name = "culture" -> string!
 const eQuantic.UI.Server.ServerActionsOptions.SectionName = "EQuantic:ServerActions" -> string!
 const eQuantic.UI.Server.ServerEventsOptions.SectionName = "EQuantic:ServerEvents" -> string!
 const eQuantic.UI.Server.ThemeCookie.Name = "eq-theme" -> string!
+const eQuantic.UI.Server.UploadsOptions.SectionName = "EQuantic:Uploads" -> string!
 eQuantic.UI.Server.AlternateRequest
 eQuantic.UI.Server.AlternateRequest.AlternateRequest() -> void
 eQuantic.UI.Server.AlternateRequest.AlternateRequest(string! Culture, Microsoft.AspNetCore.Http.HttpRequest! Request) -> void
@@ -118,18 +119,17 @@ eQuantic.UI.Server.HtmlShellOptions.AddHeadTag(eQuantic.UI.Server.HtmlTag! tag) 
 eQuantic.UI.Server.HtmlShellOptions.AddHeadTag(string! rawHtml) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.AddPreconnect(System.Uri! origin, bool crossOrigin = false) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.AddScript(System.Uri! src, bool defer = true) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.AddStyles(string! css) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.AddStylesheet(System.Uri! href) -> eQuantic.UI.Server.HtmlShellOptions!
-eQuantic.UI.Server.HtmlShellOptions.BaseStyles.get -> string!
-eQuantic.UI.Server.HtmlShellOptions.BaseStyles.set -> void
 eQuantic.UI.Server.HtmlShellOptions.ConfigureMetadata(System.Action<eQuantic.UI.Server.Metadata.SeoBuilder!>! configure) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.DefaultMetadata.get -> eQuantic.UI.Server.Metadata.MetadataCollection!
 eQuantic.UI.Server.HtmlShellOptions.HeadTags.get -> System.Collections.Generic.List<string!>!
 eQuantic.UI.Server.HtmlShellOptions.HtmlClass.get -> string!
 eQuantic.UI.Server.HtmlShellOptions.HtmlClass.set -> void
 eQuantic.UI.Server.HtmlShellOptions.HtmlShellOptions() -> void
-eQuantic.UI.Server.HtmlShellOptions.SetBaseStyles(string! styles) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.SetHtmlClass(string! htmlClass) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.SetTitle(string! title) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.Styles.get -> System.Collections.Generic.IReadOnlyList<string!>!
 eQuantic.UI.Server.HtmlShellOptions.Title.get -> string!
 eQuantic.UI.Server.HtmlShellOptions.Title.set -> void
 eQuantic.UI.Server.HtmlTag
@@ -212,6 +212,7 @@ eQuantic.UI.Server.Rendering.IServerRenderingService.RenderPageAsync(System.Type
 eQuantic.UI.Server.Rendering.ServerRenderResult
 eQuantic.UI.Server.Rendering.ServerRenderResult.Assets.get -> eQuantic.UI.Server.Assets.AssetCollection?
 eQuantic.UI.Server.Rendering.ServerRenderResult.Error.get -> string?
+eQuantic.UI.Server.Rendering.ServerRenderResult.Failed.get -> bool
 eQuantic.UI.Server.Rendering.ServerRenderResult.Html.get -> string?
 eQuantic.UI.Server.Rendering.ServerRenderResult.Metadata.get -> eQuantic.UI.Server.Metadata.MetadataCollection?
 eQuantic.UI.Server.Rendering.ServerRenderResult.SerializedState.get -> string?
@@ -379,10 +380,22 @@ eQuantic.UI.Server.UIOptions.UseInitialThemeMode(eQuantic.UI.Primitives.ThemeMod
 eQuantic.UI.Server.UIOptions.UseServerEvents(System.Action<eQuantic.UI.Server.ServerEventsBuilder!>! configure) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseTheme(eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseThemeCookie(string! name = "eq-theme", int days = 365) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.UseUploads(System.Action<eQuantic.UI.Server.UploadsBuilder!>! configure) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.WithAssetProvider<TProvider>() -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.WithSsr(bool enabled = true) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.WithoutPoweredByHeader() -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.WithoutThemeCookie() -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UploadsBuilder
+eQuantic.UI.Server.UploadsBuilder.Accept(eQuantic.UI.Primitives.UploadPolicy! policy) -> eQuantic.UI.Server.UploadsBuilder!
+eQuantic.UI.Server.UploadsBuilder.Configure(System.Action<eQuantic.UI.Server.UploadsOptions!>! configure) -> eQuantic.UI.Server.UploadsBuilder!
+eQuantic.UI.Server.UploadsOptions
+eQuantic.UI.Server.UploadsOptions.Expiry.get -> System.TimeSpan
+eQuantic.UI.Server.UploadsOptions.Expiry.set -> void
+eQuantic.UI.Server.UploadsOptions.Folder.get -> string?
+eQuantic.UI.Server.UploadsOptions.Folder.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxUnfinished.get -> int
+eQuantic.UI.Server.UploadsOptions.MaxUnfinished.set -> void
+eQuantic.UI.Server.UploadsOptions.UploadsOptions() -> void
 override eQuantic.UI.Server.AlternateRequest.GetHashCode() -> int
 override eQuantic.UI.Server.Assets.InlineScriptAsset.Equals(object? obj) -> bool
 override eQuantic.UI.Server.Assets.InlineScriptAsset.GetHashCode() -> int

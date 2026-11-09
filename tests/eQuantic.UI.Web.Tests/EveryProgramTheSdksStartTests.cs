@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Xml.Linq;
 using eQuantic.UI.Sdk.Tasks;
 using FluentAssertions;
@@ -75,10 +76,20 @@ public class EveryProgramTheSdksStartTests
     public void TheWebSdk_HandsEachProgramItsArguments_AsTheyAre()
     {
         var shipped = Shipped("eQuantic.UI.Sdk");
-        var (directory, environment, record) = Prepare("App", "dotnet", "git", "chmod");
+        var (directory, environment, record) = Prepare("App", "dotnet", "git");
         var framework = Path.Combine(Path.GetDirectoryName(directory)!, "framework $f");
         var runtime = Path.Combine(directory, "runtime $r");
-        Recorders(runtime, Bun);
+        // The bun ships zipped, and the build unpacks it into the user's cache, never beside the zip
+        // (#364): a home of the probe's own, so the developer's cache is not written. dotnet keeps its own.
+        var stand = Path.Combine(directory, "stand-in");
+        Recorders(stand, Bun);
+        Directory.CreateDirectory(runtime);
+        using (var zip = ZipFile.Open(Path.Combine(runtime, Bun + ".zip"), ZipArchiveMode.Create))
+            zip.CreateEntryFromFile(Path.Combine(stand, Bun), Bun);
+        var home = Path.Combine(Path.GetDirectoryName(directory)!, "home $h");
+        environment["DOTNET_CLI_HOME"] = Environment.GetEnvironmentVariable("DOTNET_CLI_HOME") ?? Environment.GetEnvironmentVariable("HOME")!;
+        environment["HOME"] = home;
+        environment["XDG_CACHE_HOME"] = Path.Combine(home, ".cache");
         Directory.CreateDirectory(Path.Combine(directory, "Assets $a"));
         File.WriteAllText(Path.Combine(directory, "Assets $a", "mark.svg"), "<svg/>");
         try
@@ -100,7 +111,7 @@ public class EveryProgramTheSdksStartTests
                     ("EQuanticSourceMaps", "full"),
                     ("EqcCliPath", "$(MSBuildProjectDirectory)/tools $x/eqc.dll"),
                     ("_EqIconToolDir", "$(MSBuildProjectDirectory)/tools $x/"),
-                    ("BunZipPath", "$(MSBuildProjectDirectory)/runtime $r/bun.zip"),
+                    ("BunZipPath", $"$(MSBuildProjectDirectory)/runtime $r/{Bun}.zip"),
                     ("EQuanticAssetsDir", "$(MSBuildProjectDirectory)/Assets $a"),
                     ("EQuanticVectorsFile", "Vectors.g.cs"),
                     ("EQuanticVectorsNamespace", "App.Vectors"),
@@ -129,7 +140,6 @@ public class EveryProgramTheSdksStartTests
                 Call("git", "-C", framework, "describe", "--always", "--dirty", "--abbrev=8"),
                 Call("dotnet", directory + "/tools $x/eqicon.dll", "--source", directory + "/icon `i`.png",
                     "--web", directory + "/wwwroot/_equantic/icons", "--app", Title),
-                Call("chmod", "+x", runtime + "/" + Bun),
                 Call(Bun, "add", "dayjs@1.11.13"),
                 Call(Bun, "add", "@scope/odd@2.0.0"),
                 Call("dotnet", directory + "/tools $x/eqicon.dll", "vectors", "--assets", directory + "/Assets $a",
@@ -137,6 +147,10 @@ public class EveryProgramTheSdksStartTests
                 Call("dotnet", directory + "/tools $x/eqc.dll", "@" + directory + "/obj/equantic.eqc.rsp"),
             ]);
             output.Should().Contain("@ v1.2.3-4-gabcdef12", "what git answers is read back, as Exec read it");
+            Directory.EnumerateFileSystemEntries(runtime).Should().Equal([Path.Combine(runtime, Bun + ".zip")],
+                "nothing is unpacked beside the zip, which may sit in a read-only package cache");
+            Directory.EnumerateFiles(home, Bun, SearchOption.AllDirectories).Should().ContainSingle()
+                .Which.Should().Contain("eQuantic", "the bun that ran is the one unpacked into the user's cache");
             new DirectoryInfo(Path.Combine(directory, "node_modules")).LinkTarget
                 .Should().Be(directory + "/obj/eQuantic/npm/node_modules", "the packages are linked where tools look for them");
         }

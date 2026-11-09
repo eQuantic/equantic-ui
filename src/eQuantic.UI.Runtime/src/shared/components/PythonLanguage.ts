@@ -118,7 +118,7 @@ export class PythonLanguage {
             if (c === '"' || c === '\'') {
                 let start = i;
                 if (i > 0 && 'fFrRbBuU'.indexOf(line[i - 1]) >= 0) start = i - 1;
-                if (start < i && into.length > 0 && into[into.length - 1].end === i) into.splice(into.length - 1, 1);
+                if (start < i && into.length > 0 && into[into.length - 1].end === i) $eq.collections.listRemoveAt(into, into.length - 1);
                 let end = PythonLanguage.scanQuoted(line, i + 1, c);
                 PythonLanguage.add(into, start, (end < 0 ? line.length : end) - start, 'string');
                 i = end < 0 ? line.length : end;
@@ -175,7 +175,7 @@ export class PythonLanguage {
     static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {
         if (length <= 0) return;
         if (into.length > 0 && into[into.length - 1].kind === kind && into[into.length - 1].end === start) {
-            into[into.length - 1] = $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length });
+            (into[into.length - 1] = $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length }));
             return;
         }
         into.push(new CodeToken(start, length, kind));

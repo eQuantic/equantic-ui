@@ -31,6 +31,19 @@ export function resetDraggableController(): void {
   document.removeEventListener('pointerdown', onPointerDown);
 }
 
+/**
+ * The scale the surface's own `transform` draws it at along an axis, 1 when it has none. A browser
+ * reports a transform with any 3D part (a `translateZ` layer hint) as `matrix3d`, whose first two
+ * columns hold the same four numbers a `matrix` does.
+ */
+function ownScale(surface: HTMLElement, horizontal: boolean): number {
+  const matrix = /^matrix(3d)?\(([^)]+)\)$/.exec(getComputedStyle(surface).transform);
+  if (!matrix) return 1;
+  const values = matrix[2].split(',').map(Number);
+  const [a, b, c, d] = matrix[1] ? [values[0], values[1], values[4], values[5]] : values;
+  return (horizontal ? Math.hypot(a, b) : Math.hypot(c, d)) || 1;
+}
+
 function onPointerDown(down: Event): void {
   const target = down.target as Element | null;
   const surface = target?.closest?.('[data-eq-drag]') as HTMLElement | null;
@@ -46,8 +59,15 @@ function onPointerDown(down: Event): void {
 
   // What a NORMALIZED gesture divides by: the surface's own extent, which only the client can
   // measure — a slider's track is fluid, so the component cannot know its width and the DOM can.
+  // The rect is what the finger crosses, so what scales the page around the surface stays in it,
+  // and the surface's OWN transform leaves it: a normalized rest is a `translate` percentage, which
+  // CSS resolves against the untransformed box and applies outside the surface's scale. Divided by
+  // the scaled rect, a 200px surface scaled to 0.5 read its rest of 0.25 as 25px, not the 50px it
+  // sits at, and jumped on the first move.
   const box = surface.getBoundingClientRect();
-  const extent = horizontal ? box.width : box.height;
+  const extent = (horizontal ? box.width : box.height) / ownScale(surface, horizontal);
+  // …and the percentage's own box, which is what a fraction is written back in.
+  const boxExtent = (horizontal ? surface.offsetWidth : surface.offsetHeight) || extent;
 
   const start = horizontal ? (down as PointerEvent).clientX : (down as PointerEvent).clientY;
   let active = false;
@@ -72,7 +92,7 @@ function onPointerDown(down: Event): void {
     ev.preventDefault();
     const offset = travelOf(ev);
     if (follows) {
-      const px = normalized ? offset * extent : offset;
+      const px = normalized ? offset * boxExtent : offset;
       // Through setProperty: the property is newer than the CSSOM's named accessors, and the
       // generic one writes it on every engine.
       surface.style.setProperty('translate', horizontal ? `${px}px` : `0 ${px}px`);

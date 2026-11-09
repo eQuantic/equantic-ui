@@ -43,6 +43,9 @@
          fixture pages (Hydration/), which both halves read. -->
     <ProjectReference Include="..\..\src\eQuantic.UI.Generators\eQuantic.UI.Generators.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- The embedded bun is unpacked by the SDK's own owner (ProgramArchive), so the harness runs the
+         bun the tree's zip holds, from where every build runs it (#932). -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Sdk.Tasks\eQuantic.UI.Sdk.Tasks.csproj" />
   </ItemGroup>
 
   <ItemGroup>

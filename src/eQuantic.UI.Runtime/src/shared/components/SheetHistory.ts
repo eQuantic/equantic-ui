@@ -1,4 +1,4 @@
-import { SheetEdit } from "../runtime-exports";
+import { $eq, SheetEdit } from "../runtime-exports";
 
 export class SheetHistory {
     constructor() {
@@ -24,16 +24,16 @@ export class SheetHistory {
 
     popUndo() {
         if (this._undo.length === 0) return null;
-        let edit = this._undo[this._undo.length - 1];
-        this._undo.splice(this._undo.length - 1, 1);
+        let edit = (($0) => $0[$0.length - 1])(this._undo);
+        $eq.collections.listRemoveAt(this._undo, this._undo.length - 1);
         this._redo.push(edit);
         return edit;
     }
 
     popRedo() {
         if (this._redo.length === 0) return null;
-        let edit = this._redo[this._redo.length - 1];
-        this._redo.splice(this._redo.length - 1, 1);
+        let edit = (($0) => $0[$0.length - 1])(this._redo);
+        $eq.collections.listRemoveAt(this._redo, this._redo.length - 1);
         this._undo.push(edit);
         return edit;
     }

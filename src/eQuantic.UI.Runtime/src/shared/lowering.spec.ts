@@ -2,6 +2,7 @@ import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import type { ColorTokenValue, VisualNodeValue } from './nodes';
 import { lowerVisualNode, px, tokenValue } from './lowering';
+import webFrameAttributes from './web-frame-attributes.fixture.json';
 
 /**
  * Hydration-parity tests: these expectations are CROSS-PINNED with the C# WebRealizerTests — the
@@ -383,6 +384,21 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(locked.attributes['sandbox']).toBe('');
     expect(locked.attributes['src']).toBe('/x');
     expect(locked.attributes['srcdoc']).toBeUndefined();
+  });
+
+  // The server's half writes the fixture (WebFrameRealizerTests.TheAttributesArePinnedForTheBrowsersHalf):
+  // every flag alone, the default, the locked frame and every flag at once. A capability one half hands
+  // over and the other does not is a wallet that appears until the page finishes loading (#1228).
+  it('WebFrame writes sandbox and allow as the server does, for every flag', () => {
+    const table = webFrameAttributes as Record<string, { sandbox: string; allow: string | null }>;
+    expect(Object.keys(table).length).toBeGreaterThan(10);
+    for (const [sandbox, expected] of Object.entries(table)) {
+      const node = lowerVisualNode(
+        { nodeKind: 'webFrame', content: { value: '/x', isInline: false }, sandbox: Number(sandbox), title: 'Frame' } as unknown as VisualNodeValue,
+        ctx,
+      );
+      expect({ sandbox: node.attributes['sandbox'], allow: node.attributes['allow'] ?? null }, `sandbox ${sandbox}`).toEqual(expected);
+    }
   });
 
   // The C# side asserts the same thing in WebFrameRealizerTests.TheDefaultContentDrawsNeitherAttribute.

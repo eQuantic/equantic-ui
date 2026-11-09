@@ -40,6 +40,9 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Generators\eQuantic.UI.Generators.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Material\eQuantic.UI.Material.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Sdk.Tasks\eQuantic.UI.Sdk.Tasks.csproj" />
+    <!-- The server's contracts (IRequireAssets, IHandleMetadata, IServerEventHandler…), which the
+         wiki's snippets implement and WikiImplementationsTests compares them with (#1226). -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
   </ItemGroup>
 
   <ItemGroup>

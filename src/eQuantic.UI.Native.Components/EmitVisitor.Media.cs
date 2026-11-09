@@ -69,6 +69,10 @@ internal sealed partial class EmitVisitor
     // shapes, not a scene.
     private void EmitDrawing(Drawing drawing, EmitState s)
     {
+        // The input shapes first, whatever draws them: a press, a Tab stop and an activation do not
+        // depend on whether this host can rasterize the artwork.
+        var inputs = RegisterShapeInputs(drawing, s);
+
         if (s.Motion.IconRasterizer is not { } drawingIcons)
         {
             // No platform service (tests, headless): the documented placeholder, one box
@@ -80,14 +84,27 @@ internal sealed partial class EmitVisitor
 
         var cache = s.Motion.IconCache ?? IconRasterCache.Shared;
         var inherited = (drawing.Tint ?? s.Theme.TextPrimary).Resolve(s.Mode);
-        foreach (var shape in drawing.Artwork.Shapes)
+        var shapes = drawing.Artwork.Shapes;
+        for (var i = 0; i < shapes.Count; i++)
         {
+            var shape = shapes[i];
+            var id = inputs?[i] ?? 0;
+            // The pointer over an input shape lays its Hover over its own paint, member by member, as
+            // the web's :hover rule does (#674).
+            if (id != 0 && s.Press.HoveredPart == id && shape.Hover is { } hover)
+                shape = Hovered(shape, hover, s);
             // Fill and stroke are two rasters, because they are two shapes: the same path
             // as an alpha mask, and the same path as an outline of a given width.
             if (shape.Fill.Paints)
                 EmitShape(shape, IconGlyphStyle.Fill, shape.Fill);
             if (shape.Stroke.Paints)
                 EmitShape(shape, IconGlyphStyle.Stroke, shape.Stroke);
+            // The keyboard's ring follows the shape's own outline, 2dp of the theme's focus colour
+            // whatever the drawing is scaled to: the web strokes the path the same way, since a ring
+            // around a concelho's box would cross its neighbours.
+            if (id != 0 && s.Press.FocusedId == id)
+                EmitShape(shape with { StrokeWidth = FocusRingOnTheGrid(drawing.Artwork, s.Node.Bounds), Opacity = 1 },
+                    IconGlyphStyle.Stroke, VectorPaint.Solid(s.Theme.FocusRing.Resolve(s.Mode)));
         }
 
         void EmitShape(VectorShape shape, IconGlyphStyle style, VectorPaint paint)
@@ -152,6 +169,57 @@ internal sealed partial class EmitVisitor
                 MathF.Max(maxX - minX, 0) * unitX,
                 MathF.Max(maxY - minY, 0) * unitY);
         }
+    }
+
+    /// <summary>
+    /// Every input shape of <paramref name="drawing"/> (a <see cref="VectorShape"/> with
+    /// <see cref="VectorShape.OnPressed"/>) as a control of its own: a hit region tested against the
+    /// shape's path, which also makes it a Tab stop and what Enter, Space and an assistive tech's
+    /// activation run, under the id the drawing's position keeps for that shape. Answers the ids by
+    /// shape index, or null when the drawing has no input.
+    /// </summary>
+    private static int[]? RegisterShapeInputs(Drawing drawing, EmitState s)
+    {
+        var shapes = drawing.Artwork.Shapes;
+        int[]? ids = null;
+        for (var i = 0; i < shapes.Count; i++)
+        {
+            var shape = shapes[i];
+            if (!shape.IsInput) continue;
+            if (s.Node.Element is not NodeElement at)
+                throw new InvalidOperationException("A drawing with input shapes was drawn with no position to name them by.");
+            ids ??= new int[shapes.Count];
+            ids[i] = at.PartId(i);
+            var bounds = ShapeHit.BoundsOf(drawing.Artwork, shape, s.Node.Bounds);
+            // A shape keeps no slop beyond its path: grown to a finger's minimum, a small concelho's
+            // target would take its neighbours' presses. Its box is the region, and its path decides.
+            var control = new Pressable(drawing, shape.OnPressed) { Label = shape.Label, Selected = shape.Selected };
+            s.Input.Add(new HitRegion(bounds, bounds, control, at)
+            {
+                Id = ids[i],
+                Shape = ShapeHit.For(drawing, i, s.Node.Bounds),
+            });
+        }
+        return ids;
+    }
+
+    /// <summary>The shape with its hover laid over its paint: the fill from the diff's background, the
+    /// stroke from its border, and its opacity, which is all <see cref="VectorShape.Hover"/> takes.</summary>
+    private static VectorShape Hovered(VectorShape shape, StyleDiff hover, EmitState s) => shape with
+    {
+        Fill = hover.Background is { } fill ? VectorPaint.Solid(fill.Resolve(s.Mode)) : shape.Fill,
+        Stroke = hover.BorderColor is { } stroke ? VectorPaint.Solid(stroke.Resolve(s.Mode)) : shape.Stroke,
+        StrokeWidth = hover.BorderWidth ?? shape.StrokeWidth,
+        Opacity = hover.Opacity ?? shape.Opacity,
+    };
+
+    /// <summary>The focus ring's 2dp, on the artwork's grid: the rasterizer strokes in the drawing's own
+    /// units, and a drawing scaled down would thin the ring with it.</summary>
+    private static float FocusRingOnTheGrid(VectorDrawing artwork, Rect box)
+    {
+        var x = box.Width > 0 ? artwork.Width / box.Width : 1;
+        var y = box.Height > 0 ? artwork.Height / box.Height : 1;
+        return x + y;
     }
 
     private void EmitCanvas(Canvas canvas, EmitState s)

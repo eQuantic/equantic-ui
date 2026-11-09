@@ -60,10 +60,8 @@ public abstract class FlexNode : VisualNode, IEnumerable<VisualNode>
     /// taken back from them by shrink times basis, as far as nothing, because a Flexible's minimum
     /// width is zero.
     /// <para>
-    /// Photon does not follow the contract in two places yet. It breaks a weighted Flexible without
-    /// a basis at its natural size, so two that share a line in a browser can take a line each there
-    /// (#728). And it stops a shrinking Flexible at its child's min-content, where a browser lets the
-    /// item shrink past it and the child overflow it.
+    /// Photon does not follow the contract in one place yet: it stops a shrinking Flexible at its
+    /// child's min-content, where a browser lets the item shrink past it and the child overflow it.
     /// </para>
     /// </summary>
     public bool Wrap { get; init; }

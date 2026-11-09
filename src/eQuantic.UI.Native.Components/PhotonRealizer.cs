@@ -14,7 +14,18 @@ namespace eQuantic.UI.Native.Components;
 /// position, which a rebuild keeps while the same control stands there. Remembering the node meant
 /// every press that spanned a frame quietly did nothing, and remembering its path meant a press could
 /// land on whatever control took the place.</param>
-public readonly record struct HitRegion(Rect Bounds, Rect Drawn, Pressable Node, Element Element);
+public readonly record struct HitRegion(Rect Bounds, Rect Drawn, Pressable Node, Element Element)
+{
+    /// <summary>The id the focus, an activation and a held press know this region by: its position's
+    /// own, or for an input shape of a <see cref="Drawing"/> the id its position keeps for that shape
+    /// (<see cref="NodeElement.PartId"/>), since every shape of one drawing stands at one position.</summary>
+    public int Id { get; init; } = Element.Id;
+
+    /// <summary>The path a press must land inside, for an input shape: its box holds its neighbours'
+    /// corners, so the box alone would take their presses (#674). Null for a control, whose box is its
+    /// shape.</summary>
+    internal ShapeHit? Shape { get; init; }
+}
 
 /// <summary>Spec S5/gestures: a hover-reactive region — a Box carrying a Hover diff. The host's
 /// pointer tracking resolves the TOPMOST region under the pointer (paint order = registration
@@ -307,6 +318,9 @@ public static class PhotonRealizer
         // not a single node: CSS :hover matches every ancestor under the pointer, and the native
         // realizer answers the same question the web twin answers.
         IReadOnlyList<Element>? hoveredAt = null,
+        // The input shape of a drawing under the pointer, by the id its drawing's position keeps for
+        // it: a part of a position, which the chain of positions cannot name (#674).
+        int hoveredPart = 0,
         // Where the system's window controls sit under a unified desktop chrome (see
         // LayoutContext.WindowControlsInsets) — zero everywhere else.
         EdgeInsets windowControlsInsets = default,
@@ -371,7 +385,7 @@ public static class PhotonRealizer
         // An InView reports in a tree that is drawn again, as a lifecycle hook runs: a callback that
         // sets state for a tree laid out once would set it for nobody.
         var reportsInView = builds.Live;
-        EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
+        EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
             theme, mode, builder, motion, overlays));
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
@@ -408,7 +422,7 @@ public static class PhotonRealizer
             realizedLayers.Add(queued.Layer);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
+            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
                 theme, mode, builder, motion, overlays));
         }
 

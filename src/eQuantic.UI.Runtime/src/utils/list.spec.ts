@@ -12,7 +12,9 @@ import {
   findIndex,
   findLast,
   findLastIndex,
+  getRange,
   indexOf,
+  insert,
   insertRange,
   lastIndexOf,
   listCapacity,
@@ -21,6 +23,8 @@ import {
   listSortBy,
   order,
   removeAll,
+  removeAt,
+  removeRange,
   stringOrder,
 } from './list';
 import { dec } from './decimal';
@@ -304,5 +308,56 @@ describe('new List<T>(collection), as .NET copies and refuses (#726)', () => {
 
   it('refuses a null collection by its name', () => {
     expect(() => listCopy(null)).toThrow("Value cannot be null. (Parameter 'collection')");
+  });
+});
+
+describe("List<T>'s Insert, RemoveAt, RemoveRange and GetRange, each position checked (#1160)", () => {
+  const offLen =
+    'Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.';
+
+  it('inserts from 0 to the count, and refuses any other index', () => {
+    const list = [1];
+    insert(list, 1, 9);
+    insert(list, 0, 7);
+    expect(list).toEqual([7, 1, 9]);
+    const bounds = "Index must be within the bounds of the List. (Parameter 'index')";
+    expect(fails(() => insert([1], 2, 9))).toBe(bounds);
+    expect(fails(() => insert([1], -1, 9))).toBe(bounds);
+  });
+
+  it('removes at an index below the count, and refuses any other', () => {
+    const list = [1, 2, 3];
+    removeAt(list, 2);
+    expect(list).toEqual([1, 2]);
+    const less = "Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'index')";
+    expect(fails(() => removeAt([1, 2], 2))).toBe(less);
+    expect(fails(() => removeAt([1, 2], -1))).toBe(less);
+  });
+
+  it('removes and takes a range inside the list, checking the index, the count, then the end', () => {
+    const list = [1, 2, 3, 4];
+    removeRange(list, 1, 2);
+    expect(list).toEqual([1, 4]);
+    removeRange(list, 2, 0);
+    expect(getRange([1, 2, 3], 1, 2)).toEqual([2, 3]);
+    expect(getRange([1, 2, 3], 3, 0)).toEqual([]);
+    expect(fails(() => removeRange([1, 2], -1, 1))).toBe("Non-negative number required. (Parameter 'index')");
+    expect(fails(() => getRange([1, 2], 0, -1))).toBe("Non-negative number required. (Parameter 'count')");
+    expect(fails(() => removeRange([1, 2], 1, 5))).toBe(offLen);
+    expect(fails(() => getRange([1], 0, 5))).toBe(offLen);
+  });
+
+  it('hands a twin behind the face its own insert and removeAt, and refuses a null list first', () => {
+    const calls: string[] = [];
+    const twin = {
+      insert: (index: number, item: number) => calls.push(`i${index}:${item}`),
+      removeAt: (index: number) => calls.push(`r${index}`),
+    };
+    insert(twin, 5, 9);
+    removeAt(twin, 7);
+    expect(calls).toEqual(['i5:9', 'r7']);
+    const throughNull = 'Object reference not set to an instance of an object.';
+    expect(fails(() => removeRange(null as unknown as number[], -1, 0))).toBe(throughNull);
+    expect(fails(() => getRange(null as unknown as number[], -1, 0))).toBe(throughNull);
   });
 });

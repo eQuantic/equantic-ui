@@ -58,7 +58,17 @@ public static class ValueFlow
         // would only make the generated code harder to read.
         if (BothOperandsAreChars(conversion)) return translated;
 
-        return Convert(conversion, node, translated, context);
+        // A user-defined conversion and the standard one beside it are two conversions in the bound tree,
+        // one inside the other and both on this node: `long l = new Count(5)` is the operator to an int and
+        // then the int to a long, and `Ticks t = 5` the int to a long and then the operator. The one right
+        // around the node was all this applied, so the other was lost (#970).
+        var settled = Convert(conversion, node, translated, context);
+        while (conversion.Parent is IConversionOperation { IsImplicit: true } outer && ReferenceEquals(outer.Operand, conversion))
+        {
+            conversion = outer;
+            settled = Convert(conversion, node, settled, context);
+        }
+        return settled;
     }
 
     /// <summary>Whether this conversion is one side of a comparison whose BOTH sides are chars.</summary>
@@ -142,6 +152,11 @@ public static class ValueFlow
         if (convertedConstant is not null && Constant(convertedConstant, to) is { } folded)
             return folded;
 
+        // A cast of a floating constant the COMPILER folded is the compiler's value, which is no run-time
+        // conversion's: `unchecked((int)1e12)` is 0 where the same cast of a variable saturates (#1015).
+        if (convertedConstant is not null && operandConstant is double or float && IntegerWidth.Of(to) is not null)
+            return JsExpr.Literal(System.Convert.ToString(convertedConstant, CultureInfo.InvariantCulture)!);
+
         // A DATE becoming an INSTANT is the twin's own conversion, at the offset its kind gives, as .NET's
         // implicit operator converts it: an instant's operator over a date, `instant - date`, bound that
         // conversion and handed the operator the date as it was (#961).
@@ -162,7 +177,7 @@ public static class ValueFlow
             && IntegerWidth.Of(from) is not null)
         {
             var exact = (double)single == System.Convert.ToDouble(operandConstant, CultureInfo.InvariantCulture);
-            return exact && from is not { SpecialType: SpecialType.System_Int64 or SpecialType.System_UInt64 }
+            return exact && from is not { SpecialType: SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr }
                 ? translated
                 : JsExpr.Literal(((double)single).ToString("R", CultureInfo.InvariantCulture));
         }
@@ -174,12 +189,15 @@ public static class ValueFlow
         // conversion's C# Conversion is IsUserDefined with IsNullable false and no IsLifted, the lifted form
         // living only in its internal BestUserDefinedConversionAnalysis.
         if (kind.IsUserDefined)
-            return kind.MethodSymbol is { } method
-                && UserDefinedOperators.Conversion(method, translated,
-                    from.IsNullableValue() && to.IsNullableValue()
-                        && !method.Parameters.Any(parameter => parameter.Type.IsNullableValue()), context) is { } call
-                ? call
-                : translated;
+        {
+            if (kind.MethodSymbol is not { Parameters: [var parameter] } method) return translated;
+            var lifted = from.IsNullableValue() && to.IsNullableValue() && !parameter.Type.IsNullableValue();
+            if (lifted) return UserDefinedOperators.Conversion(method, translated, true, context) ?? translated;
+            // A tuple's element has no bound tree of its own to show the standard conversions beside the
+            // operator, as an operator's operand has (Settle), so they are asked of the pair of types.
+            var operand = Beside(from, parameter.Type, translated, isChecked, context);
+            return Beside(method.ReturnType, to, UserDefinedOperators.Conversion(method, operand, false, context) ?? operand, isChecked, context);
+        }
 
         // A NULLABLE conversion converts the underlying value and lets null pass: `(int?)aDouble?`
         // is null for a null, the numeric narrowing otherwise. The bound tree names only the
@@ -205,6 +223,8 @@ public static class ValueFlow
 
         if (kind.IsNumeric) return Numeric(from, to, translated, operandConstant, isChecked, context);
 
+        if (kind.IsTupleConversion) return Numeric(from, to, translated, null, isChecked, context);
+
         if (kind.IsEnumeration && to is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
         {
             // Only the literal 0 converts implicitly to an enum: the member that is 0, by name.
@@ -217,6 +237,14 @@ public static class ValueFlow
         // interpolated strings, tuples: the value is already what JavaScript needs.
         return translated;
     }
+
+    /// <summary>The standard conversion beside a user-defined one, between the two types it joins; the
+    /// bound tree's own, where it shows one, joins equal types here and converts nothing.</summary>
+    private static JsExpr Beside(ITypeSymbol? from, ITypeSymbol? to, JsExpr value, bool isChecked, ConversionContext context) =>
+        from is not null && to is not null && !SymbolEqualityComparer.Default.Equals(from, to)
+        && context.SemanticModel?.Compilation is CSharpCompilation compilation
+            ? Apply(compilation.ClassifyConversion(from, to), from, to, null, null, value, context, isChecked)
+            : value;
 
     /// <summary>
     /// Whether a conversion UNWRAPS a nullable value: C#'s explicit nullable conversion from a <c>T?</c> into
@@ -251,8 +279,11 @@ public static class ValueFlow
         // 1234567890.123456789012m` was 1234567890.12346), and a char through its code unit.
         if (from is not null && SymbolEqualityComparer.Default.Equals(from, to)) return translated;
 
+        if (from is INamedTypeSymbol { IsTupleType: true } tuple && to is INamedTypeSymbol { IsTupleType: true } target)
+            return TupleElements(tuple, target, translated, isChecked, context);
+
         var value = translated;
-        var fromSpecial = from?.SpecialType ?? SpecialType.None;
+        var fromSpecial = HeldAs(from?.SpecialType ?? SpecialType.None);
 
         // A DECIMAL SOURCE is a runtime Decimal (the typed world guarantees it): its number is
         // asked for once, and the value then narrows or widens like any double. A decimal
@@ -298,6 +329,33 @@ public static class ValueFlow
             : FromNumber(fromSpecial, to, value, isChecked, context);
     }
 
+    /// <summary>
+    /// A tuple into a tuple of other element types: each element converted as C# converts it, at an
+    /// assignment, an argument and a return alike, the value read once (#911). It passed through as it
+    /// was, so a <c>(long, long)</c> made from a <c>(int, int)</c> held numbers, and arithmetic on its
+    /// elements threw for mixing them with a BigInt. Roslyn keeps the elements' conversions to itself, so
+    /// each is classified again from the pair of types. A tuple literal never gets here: it converts its
+    /// elements itself.
+    /// </summary>
+    private static JsExpr TupleElements(INamedTypeSymbol from, INamedTypeSymbol to, JsExpr value, bool isChecked,
+        ConversionContext context)
+    {
+        if (context.SemanticModel?.Compilation is not CSharpCompilation compilation) return value;
+        var (sources, targets) = (from.TupleElements, to.TupleElements);
+        if (sources.Length != targets.Length) return value;
+        var converts = false;
+        var elements = new List<string>(sources.Length);
+        for (var i = 0; i < sources.Length; i++)
+        {
+            var element = JsExpr.Callish($"{{0}}[{i}]");
+            var converted = Apply(compilation.ClassifyConversion(sources[i].Type, targets[i].Type), sources[i].Type, targets[i].Type,
+                null, null, element, context, isChecked);
+            converts |= !ReferenceEquals(converted, element);
+            elements.Add(JsExprWriter.Write(converted));
+        }
+        return converts ? JsExpr.Template($"[{string.Join(", ", elements)}]", [value]) : value;
+    }
+
     /// <summary>A BigInt on its way to another representation: a plain number for the double
     /// family, the width's slice of its bits for a narrower integer, the code unit's character
     /// for char — or the overflow a checked context throws.</summary>
@@ -305,7 +363,7 @@ public static class ValueFlow
         ConversionContext context)
     {
         var text = JsExprWriter.WriteIn(value, JsPrecedence.Call);
-        var target = to?.SpecialType ?? SpecialType.None;
+        var target = HeldAs(to?.SpecialType ?? SpecialType.None);
         switch (target)
         {
             // DIRECTLY to a single, as .NET's conversion does: through the double, a long past 2^53
@@ -336,22 +394,24 @@ public static class ValueFlow
     }
 
     /// <summary>A plain number on its way to another representation: a BigInt for the long
-    /// family, truncated and wrapped into a narrower width (a widening pair passes through
-    /// untouched), the code unit's character for char, rounded once for a genuine loss of float
-    /// precision — or the overflow a checked context throws.</summary>
+    /// family, wrapped into a narrower width (a widening pair passes through untouched) or, from a
+    /// double or a float, saturated (<see cref="Saturated"/>), the code unit's character for char,
+    /// rounded once for a genuine loss of float precision — or the overflow a checked context throws.</summary>
     private static JsExpr FromNumber(SpecialType from, ITypeSymbol? to, JsExpr value, bool isChecked,
         ConversionContext context)
     {
         // A fractional source truncates toward zero FIRST — C# rounds the value before it checks
         // or wraps it, so `checked((byte)255.9)` is 255, not an overflow.
         var fractional = from is SpecialType.System_Single or SpecialType.System_Double;
-        var target = to?.SpecialType ?? SpecialType.None;
+        var target = HeldAs(to?.SpecialType ?? SpecialType.None);
 
         switch (target)
         {
             case SpecialType.System_Int64 or SpecialType.System_UInt64:
                 context.UsedHelpers.Add(Eq.Import);
                 var unsigned64 = target == SpecialType.System_UInt64;
+                if (fractional && !isChecked)
+                    return JsExpr.Callish($"{Eq.SaturateLong}({JsExprWriter.Write(value)}{(unsigned64 ? ", true" : "")})");
                 var range = isChecked
                     ? Checked(value, (64, unsigned64), context)
                     : JsExprWriter.WriteIn(value, JsPrecedence.Call);
@@ -362,7 +422,7 @@ public static class ValueFlow
                     ? IntegerWidth.Wrap(asLong, (64, true))
                     : asLong;
             case SpecialType.System_Char:
-                var unit = fractional && isChecked ? Truncate(value) : value;
+                var unit = !fractional ? value : isChecked ? Truncate(value) : Saturated(value, (32, false), context);
                 return JsExpr.Callish(isChecked
                     ? $"String.fromCharCode({Checked(unit, (16, true), context)})"
                     : $"String.fromCharCode({JsExprWriter.WriteIn(unit, JsPrecedence.Call)})");
@@ -375,6 +435,7 @@ public static class ValueFlow
                 return SinglePrecision.Round(value);
             default:
                 if (IntegerWidth.Of(target) is not { } width) return value;
+                if (fractional && !isChecked) return Saturated(value, width, context);
                 var whole = fractional ? Truncate(value) : value;
                 if (isChecked) return IntegerWidth.Checked(whole, width, context);
                 // The same masks every wrapped RESULT uses (IntegerWidth) — a pair whose source
@@ -383,6 +444,20 @@ public static class ValueFlow
                     ? whole
                     : IntegerWidth.Wrap(whole, width);
         }
+    }
+
+    /// <summary>
+    /// An unchecked double or float into an integer narrower than 64 bits, as .NET 9 and later cast it on
+    /// every platform (#1015): an int and a uint saturate, a NaN is 0, and a narrower width takes the low
+    /// bits of the saturated int, so <c>(byte)300.0</c> is 44 and <c>(byte)1e12</c> is 255. It was the whole
+    /// part wrapped, and JavaScript's <c>| 0</c> wraps a double modulo 2^32.
+    /// </summary>
+    internal static JsExpr Saturated(JsExpr value, (int Bits, bool Unsigned) width, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        if (width == (32, true)) return JsExpr.Callish($"{Eq.SaturateUnsigned}({JsExprWriter.Write(value)})");
+        var saturated = JsExpr.Callish($"{Eq.Saturate}({JsExprWriter.Write(value)})");
+        return width.Bits == 32 ? saturated : IntegerWidth.Wrap(saturated, width);
     }
 
     /// <summary>The value truncated toward zero — the integer part C# takes from a double.</summary>
@@ -405,10 +480,19 @@ public static class ValueFlow
         ? to.Bits > from.Bits || (to.Bits == from.Bits && to.Unsigned)
         : !to.Unsigned && to.Bits >= from.Bits;
 
+    /// <summary>The primitive a number of this type is held as here: a native integer is a long or a ulong
+    /// on every target this SDK ships to (#649), and every other type is itself.</summary>
+    private static SpecialType HeldAs(SpecialType type) => type switch
+    {
+        SpecialType.System_IntPtr => SpecialType.System_Int64,
+        SpecialType.System_UIntPtr => SpecialType.System_UInt64,
+        _ => type,
+    };
+
     private static JsExpr? Constant(object? constant, ITypeSymbol? to) => to?.SpecialType switch
     {
         // A long is a BigInt: the literal carries the suffix, or nothing else will.
-        SpecialType.System_Int64 or SpecialType.System_UInt64 =>
+        SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr =>
             JsExpr.Literal(System.Convert.ToString(constant, CultureInfo.InvariantCulture) + "n"),
         _ => null,
     };

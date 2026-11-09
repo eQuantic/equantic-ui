@@ -10,8 +10,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- Ship only the .zip; the extracted binary (created on-demand by the SDK) must not be packed. -->
-        <Content Include="tools\**" Exclude="tools\bun\bun-linux" PackagePath="tools" />
+        <!-- The zip and nothing else: the SDK unpacks it into the user's cache, never beside it (#364),
+             and a bun an older build left here is not packed. -->
+        <Content Include="tools\bun\bun-linux.zip" PackagePath="tools/bun/" />
         <Content Include="build\**" PackagePath="build" />
     </ItemGroup>
 </Project>

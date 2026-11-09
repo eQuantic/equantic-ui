@@ -246,7 +246,7 @@ export abstract class CurlyBraceLanguage {
     static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {
         if (length <= 0) return;
         if (into.length > 0 && into[into.length - 1].kind === kind && into[into.length - 1].end === start) {
-            into[into.length - 1] = $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length });
+            (into[into.length - 1] = $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length }));
             return;
         }
         into.push(new CodeToken(start, length, kind));

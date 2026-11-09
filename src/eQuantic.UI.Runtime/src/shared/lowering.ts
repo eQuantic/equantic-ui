@@ -25,6 +25,7 @@ export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
 import { installDraggableController } from '../dom/draggable';
+import { dropHandlers, installDropGuard } from '../dom/file-drop';
 import { MOUNTED_HOOK, clickWithEvent } from '../dom/reconciler';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -62,6 +63,7 @@ import type {
   DrawingNode,
   VectorGradientValue,
   VectorPaintValue,
+  VectorShapeValue,
   CornerRadiiValue,
   CurveValue,
   EdgeInsetsValue,
@@ -92,6 +94,7 @@ import type {
   PositionedNode,
   PressableNode,
   HoverableNode,
+  DropTargetNode,
   InFlowNode,
   InViewNode,
   SimulatedNode,
@@ -466,6 +469,8 @@ function lowerNodeKind(
       return lowerNavigable(node as unknown as NavigableNode, context, path);
     case 'hoverable':
       return lowerHoverable(node as unknown as HoverableNode, context, path);
+    case 'dropTarget':
+      return lowerDropTarget(node as unknown as DropTargetNode, context, path);
     case 'simulated':
       return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
     case 'inFlow':
@@ -2253,21 +2258,43 @@ function lowerCameraPreview(node: CameraPreviewNode): HtmlNode {
   };
 }
 
+/** What a WebSandbox flag loosens of the frame's isolation: its `sandbox` token, in declaration order. */
+const SANDBOX_TOKENS: ReadonlyArray<readonly [number, string]> = [
+  [1, 'allow-scripts'],
+  [2, 'allow-same-origin'],
+  [4, 'allow-forms'],
+  [8, 'allow-popups'],
+];
+
+/**
+ * What a WebSandbox flag hands the document of its page's: the features `allow` delegates to it
+ * (Permissions Policy), in declaration order. A passkey is two features, signing in and creating one.
+ */
+const DELEGATED_FEATURES: ReadonlyArray<readonly [number, string]> = [
+  [16, 'payment'],
+  [32, 'camera'],
+  [64, 'microphone'],
+  [128, 'geolocation'],
+  [256, 'fullscreen'],
+  [512, 'clipboard-write'],
+  [1024, 'publickey-credentials-get'],
+  [1024, 'publickey-credentials-create'],
+];
+
 /**
  * A sandboxed iframe (C# twin: WebRealizer.LowerWebFrame). `sandbox` is ALWAYS emitted — empty
- * means fully locked — with one `allow-` token per set flag. The border is the frame's own 1990s
- * default, so it goes.
+ * means fully locked — with one `allow-` token per flag that loosens the isolation, and a flag that
+ * hands the document something of the page's writes its feature into `allow`, which is absent when
+ * there is none (#1228). Both halves are pinned against web-frame-attributes.fixture.json, which the
+ * C# realizer writes. The border is the frame's own 1990s default, so it goes.
  *
  * The content is ONE attribute and no precedence: WebContent is an address or a document and never
  * both. This doc used to say "inline document wins over source", which is what the node's two
  * nullable strings needed and what the type now makes unrepresentable.
  */
 function lowerWebFrame(node: WebFrameNode): HtmlNode {
-  const tokens: string[] = [];
-  if (node.sandbox & 1) tokens.push('allow-scripts');
-  if (node.sandbox & 2) tokens.push('allow-same-origin');
-  if (node.sandbox & 4) tokens.push('allow-forms');
-  if (node.sandbox & 8) tokens.push('allow-popups');
+  const tokens = SANDBOX_TOKENS.filter(([flag]) => node.sandbox & flag).map(([, token]) => token);
+  const features = DELEGATED_FEATURES.filter(([flag]) => node.sandbox & flag).map(([, feature]) => feature);
 
   const radius = node.cornerRadius;
   const hasRadius =
@@ -2286,6 +2313,7 @@ function lowerWebFrame(node: WebFrameNode): HtmlNode {
     sandbox: tokens.join(' '),
     title: node.title ?? '',
   };
+  if (features.length > 0) attributes['allow'] = features.join('; ');
   // ONE attribute, no precedence: WebContent is an address or a document and never both.
   if (node.content?.value) attributes[node.content.isInline ? 'srcdoc' : 'src'] = node.content.value;
 
@@ -2685,8 +2713,11 @@ function lowerDrawing(node: DrawingNode): HtmlNode {
     preserveAspectRatio: 'none',
     fill: 'none',
   };
+  // A drawing whose shapes are inputs is a GROUP of controls, never hidden (C# twin, #674).
+  const hasInputs = (artwork.shapes ?? []).some((shape) => shape.onPressed != null);
+  if (hasInputs) attributes['role'] = 'group';
   if (node.label) attributes['aria-label'] = node.label;
-  else attributes['aria-hidden'] = 'true';
+  else if (!hasInputs) attributes['aria-hidden'] = 'true';
 
   const paint = (value: VectorPaintValue): string =>
     value.kind === 'inherit'
@@ -2749,10 +2780,49 @@ function lowerDrawing(node: DrawingNode): HtmlNode {
         }
         if (shape.evenOdd) shapeAttributes['fill-rule'] = 'evenodd';
         if (shape.opacity < 1) shapeAttributes['opacity'] = num(shape.opacity);
-        return { tag: 'path', attributes: shapeAttributes, events: {}, children: [] };
+        const path: HtmlNode = { tag: 'path', attributes: shapeAttributes, events: {}, children: [] };
+        if (shape.onPressed != null) makeShapeInput(path, shape);
+        return path;
       }),
     ],
   };
+}
+
+/**
+ * Mirror of the C# `MakeInput` (#674): an input shape is a button the browser tests by its path
+ * (`visibleFill`, Photon's `Path.contains`), a Tab stop Enter and Space press, named by its label and
+ * stating its toggle state as pressed-ness; `eq-shape` is the class the theme's focus ring strokes, and
+ * the hover is the shape's own diff under `:hover`, through the members a path has.
+ */
+function makeShapeInput(path: HtmlNode, shape: VectorShapeValue): void {
+  Object.assign(path.attributes, atomicAttrs({ 'pointer-events': 'visibleFill', cursor: 'pointer' }, 'eq-shape'));
+  path.attributes['role'] = 'button';
+  path.attributes['tabindex'] = '0';
+  if (shape.label) path.attributes['aria-label'] = shape.label;
+  if (shape.selected != null) path.attributes['aria-pressed'] = shape.selected ? 'true' : 'false';
+  const pressed = shape.onPressed!;
+  path.events['click'] = (() => pressed()) as unknown as EventHandler;
+  // A path is not a button, so the browser presses it on no key of its own: Enter and Space do here,
+  // and Space scrolls the page no more than it does on a button.
+  path.events['keydown'] = ((event: KeyboardEvent) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    pressed();
+  }) as unknown as EventHandler;
+  if (shape.hover) {
+    const classes = atomizePseudo(':hover', shapeHoverEntries(shape.hover));
+    if (classes) path.attributes['class'] = `${path.attributes['class']} ${classes}`;
+  }
+}
+
+/** The C# `ShapeHoverDeclarations`, in its order: fill, stroke colour and width, opacity. */
+function shapeHoverEntries(hover: StyleDiffValue): Record<string, string | undefined> {
+  const entries: Record<string, string | undefined> = {};
+  if (hover.background) entries['fill'] = tokenValue(hover.background);
+  if (hover.borderColor) entries['stroke'] = tokenValue(hover.borderColor);
+  if (hover.borderWidth != null) entries['stroke-width'] = num(hover.borderWidth);
+  if (hover.opacity != null) entries['opacity'] = num(hover.opacity);
+  return entries;
 }
 
 /** Spec A3 mirror of the C# WebRealizer: single-cell grid stack + absolute Positioned anchors. */
@@ -2821,11 +2891,17 @@ function lowerLayer(
   // through the store, so the instance that builds here is the instance that stays.
   const child = resolveStackChild(raw, context, path);
   if (!child) return null;
+  // A component the stack expanded is decorated as the funnel decorates one, on the element of what
+  // it built, after that node's own (C# twin, #940).
+  const asComponent = (lowered: HtmlNode | null): HtmlNode | null =>
+    raw === child ? lowered : decorate(raw, lowered);
   if (child.nodeKind === 'adaptive') {
     // Checked AFTER the component is resolved, because a component may build one: the arms are
     // then the layers of the stack the component stands in.
-    return placeChild(child, path, (arm, armPath) =>
-      lowerLayer(arm, depth, context, armPath, cellJustify, cellAlign),
+    return asComponent(
+      placeChild(child, path, (arm, armPath) =>
+        lowerLayer(arm, depth, context, armPath, cellJustify, cellAlign),
+      ),
     );
   }
   if (child.nodeKind === 'positioned') {
@@ -2847,7 +2923,7 @@ function lowerLayer(
       (has(positioned.start, positioned.startFraction) && has(positioned.end, positioned.endFraction) && !filling.width) ||
       (has(positioned.top, positioned.topFraction) && has(positioned.bottom, positioned.bottomFraction) && !filling.height);
     const shifted = shift(positioned.shiftX ?? 0, positioned.shiftY ?? 0);
-    return element(
+    const anchor = element(
       'div',
       {
         position: 'absolute',
@@ -2866,9 +2942,13 @@ function lowerLayer(
           : lowered,
       ],
     );
+    // The ANCHOR is the Positioned's element, so it carries what the funnel writes on every node's
+    // element: its key, its bookmark and its origin (C# twin, #940).
+    return asComponent(decorate(positioned, anchor));
   }
-  const lowered = lowerNode(child, context, null, path);
+  const lowered = asComponent(lowerNode(child, context, null, path));
   if (!lowered) return null;
+  const caps = cappedByTheStack(child);
   // The cell IS the stack's available space (native MeasureStack contract): stretched to the grid
   // cell, aligning its child via flex — Fill children cover, hug children anchor.
   return element(
@@ -2880,11 +2960,12 @@ function lowerLayer(
       'align-items': cellAlign,
       width: '100%',
       height: '100%',
-      // …and may not grow PAST it: a grid item's automatic minimum size is min-content, so a layer
-      // holding a scroller would size the track to the scroller's CONTENT and swell the stack to
-      // the widest line in the file.
-      'min-width': '0',
-      'min-height': '0',
+      // …and may not grow PAST it, on an axis the stack caps its layer: a grid item's automatic
+      // minimum size is min-content, so a layer holding a scroller would size the track to the
+      // scroller's CONTENT and swell the stack to the widest line in the file. On any other axis the
+      // layer's size counts toward the stack's own minimum, as it does natively (C# twin, #698).
+      'min-width': caps.width ? '0' : undefined,
+      'min-height': caps.height ? '0' : undefined,
       // Spec A3 (C# twin): paint order IS child order — a child with backdrop-filter/filter/opacity
       // creates a stacking context that CSS would otherwise paint above every plain sibling drawn
       // after it (a blurred scrim covering its own dialog).
@@ -2899,6 +2980,77 @@ function lowerLayer(
     },
     [lowered],
   );
+}
+
+/**
+ * The axes a Stack caps a layer on (C# `CappedByTheStack`): one its child fills, one a scroller hugs,
+ * since a scroller is as wide as the smaller of its content and the room it has, and either axis of
+ * a layer that holds a scroller further down, whose content would size the track the same way.
+ */
+function cappedByTheStack(child: VisualNodeValue): { width: boolean; height: boolean } {
+  const filling = fills(child);
+  if (child.nodeKind === 'scrollView') {
+    const scroller = child as ScrollViewNode;
+    const hugs = (size: { kind?: string } | null | undefined) => (size?.kind ?? 'hug') === 'hug';
+    return {
+      width: filling.width || hugs(scroller.width),
+      height: filling.height || hugs(scroller.height),
+    };
+  }
+  // A size the layer fixed bounds the track already, and counts toward the stack's minimum.
+  const fixed = fixedSize(child);
+  return holdsAScroller(child) ? { width: !fixed.width, height: !fixed.height } : filling;
+}
+
+/** Whether a layer declares a fixed size on each axis, through what takes its child's size (C# `FixedSize`). */
+function fixedSize(node: VisualNodeValue): { width: boolean; height: boolean } {
+  const { nodeKind, child, style, width, height } = node as VisualNodeValue & {
+    child?: VisualNodeValue | null;
+    style?: { width?: { kind?: string }; height?: { kind?: string } };
+    width?: { kind?: string };
+    height?: { kind?: string };
+  };
+  switch (nodeKind) {
+    case 'box':
+      return { width: style?.width?.kind === 'fixed', height: style?.height?.kind === 'fixed' };
+    case 'row':
+    case 'column':
+      return { width: width?.kind === 'fixed', height: height?.kind === 'fixed' };
+    case 'overlay':
+    case 'positioned':
+    case 'tableViewCell':
+    case 'scrollView':
+      return { width: false, height: false };
+    default:
+      return child ? fixedSize(child) : { width: false, height: false };
+  }
+}
+
+/**
+ * Whether a scroller stands in this layer, down through what takes its children's size (C#
+ * `HoldsAScroller`). What a component builds is its own: a stack resolves the layer's component, and
+ * the ones further down have not built yet, on either side.
+ */
+function holdsAScroller(node: VisualNodeValue): boolean {
+  const { nodeKind, child, children } = node as VisualNodeValue & {
+    child?: VisualNodeValue | null;
+    children?: VisualNodeValue[];
+  };
+  switch (nodeKind) {
+    case 'scrollView':
+    case 'tableViewport':
+      return true;
+    case 'row':
+    case 'column':
+      return (children ?? []).some(holdsAScroller);
+    // A wrapper with geometry of its own: the C# `IsLayoutTransparent` exceptions.
+    case 'overlay':
+    case 'positioned':
+    case 'tableViewCell':
+      return false;
+    default:
+      return child ? holdsAScroller(child) : false;
+  }
 }
 
 function textLeaf(content: string): HtmlNode {
@@ -3531,6 +3683,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
       return asSize(value.style?.maxWidth);
     case 'pressable':
     case 'hoverable':
+    case 'dropTarget':
     case 'adjustable':
     case 'progress':
     case 'liveRegion':
@@ -3564,6 +3717,10 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       const stack = node as StackNode;
       return { width: stack.width?.kind === 'fill', height: stack.height?.kind === 'fill' };
     }
+    case 'scrollView': {
+      const scroll = node as ScrollViewNode;
+      return { width: scroll.width?.kind === 'fill', height: scroll.height?.kind === 'fill' };
+    }
     case 'tableViewport': {
       // A table viewport's hug is a fill: it takes the room it is given unless it says how large (C# twin).
       const table = node as unknown as TableViewportNode;
@@ -3588,6 +3745,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return { width: false, height: false };
     case 'hoverable':
       return fills((node as HoverableNode).child);
+    case 'dropTarget':
+      return fills((node as DropTargetNode).child);
     case 'simulated':
       return fills((node as SimulatedNode).child);
     case 'inFlow':
@@ -3765,6 +3924,9 @@ function lowerPressable(
 /** Whether a lowered subtree already carries an interactive ELEMENT — see {@link lowerPressable}. */
 function wrapsAnInteractive(node: HtmlNode): boolean {
   if (node.tag === 'button' || node.tag === 'a') return true;
+  // A control that is not a button element and says it is one (C# twin): an input shape of a
+  // drawing (#674), or a pressable that already yielded.
+  if (node.attributes?.['role'] === 'button') return true;
   return (node.children ?? []).some(wrapsAnInteractive);
 }
 
@@ -4837,4 +4999,27 @@ function showCursorAfterRender(rest: CodeRest): void {
   };
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(show);
   if (typeof setTimeout === 'function') setTimeout(show, 48);
+}
+
+/**
+ * A drop area (the C# LowerDropTarget twin): the same layout-transparent div as a Hoverable, marked
+ * `data-eq-drop`, whose drag handlers read the files (dom/file-drop.ts). Lowering one also arms the
+ * document's guard, so a file that misses every area is refused rather than opened over the page.
+ */
+function lowerDropTarget(node: DropTargetNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    'max-width': sizeValue(cap),
+    'pointer-events': 'auto',
+    height: fill.height ? '100%' : undefined,
+  });
+  const enabled = node.enabled !== false;
+  host.attributes['data-eq-drop'] = enabled ? 'on' : 'off';
+  Object.assign(host.events, dropHandlers(node.onDropped, node.onDragOverChanged, enabled));
+  installDropGuard();
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
 }
