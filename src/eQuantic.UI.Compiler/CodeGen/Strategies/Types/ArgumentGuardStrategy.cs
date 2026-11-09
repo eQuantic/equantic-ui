@@ -60,7 +60,8 @@ internal sealed class ArgumentGuardStrategy : IExpressionIrStrategy
         ["System.ArgumentNullException", "System.ArgumentException", "System.ArgumentOutOfRangeException"];
 
     /// <summary>The numbers a sign guard reads in the browser: a number, a long as a BigInt, a decimal as the
-    /// runtime's, and a char as its code unit.</summary>
+    /// runtime's, and a char as the one-character string it is held as, which is zero only as U+0000 and
+    /// never negative.</summary>
     private static readonly HashSet<SpecialType> Signed =
     [
         SpecialType.System_SByte, SpecialType.System_Byte, SpecialType.System_Int16, SpecialType.System_UInt16,
