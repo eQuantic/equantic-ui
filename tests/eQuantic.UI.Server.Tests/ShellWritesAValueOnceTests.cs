@@ -11,21 +11,13 @@ using Xunit;
 namespace eQuantic.UI.Server.Tests;
 
 /// <summary>
-/// The shell fills each placeholder of its template once, and never reads what it wrote as template
-/// (#1284).
-/// <para>
-/// It used to replace variable after variable over the whole document, so a placeholder inside a
-/// value already written was replaced again by a later variable. The server-rendered markup is
-/// written before the page's state, and HTML encoding leaves <c>{</c> and <c>}</c> alone, so a
-/// visitor's <c>{{InitialState}}</c> in an input became the state's JSON there, and the JSON's first
-/// quote closed the attribute: <c>"{{InitialState}} onmouseover=alert(1) x"</c> gave the input a
-/// real <c>onmouseover</c>. One stored or reflected value, drawn in an attribute and kept in the
-/// page's state, was enough.
-/// </para>
+/// A value the shell inserted is never read again as a template (#1319): each placeholder of the
+/// template is filled once, from the template alone, so text a variable wrote, the server-rendered
+/// markup and the page's state included, is written as it came.
 /// </summary>
 public class ShellWritesAValueOnceTests
 {
-    /// <summary>What a visitor typed: a placeholder of the shell, then the attribute it smuggles.</summary>
+    /// <summary>Text a visitor typed that reads like one of the shell's placeholders.</summary>
     private const string Typed = "{{InitialState}} onmouseover=alert(1) x";
 
     [Fact]
