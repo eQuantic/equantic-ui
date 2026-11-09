@@ -71,7 +71,7 @@ public sealed class NodeElement : Element
     {
         if (_deferred < 0)
             throw new InvalidOperationException(
-                $"A {Configuration.GetType().Name} has no slot the realizer shows.");
+                $"A '{Configuration.NodeKind}' node has no slot the realizer shows.");
 
         Owner.EnterBuild();
         try
