@@ -12,10 +12,11 @@ namespace eQuantic.UI.Native.Testing;
 /// read where each node lands and how its text breaks: Flutter's <c>WidgetTester.getRect</c>, for any
 /// .NET test framework.
 /// <code>
-/// using var tester = new PhotonTester(width: 390, height: 844, density: Density.Compact);
-/// tester.Pump(new ProfileCard());
-/// var name = tester.Find("Ana Beatriz Nogueira");
-/// Assert.Single(name.Text!.Lines);
+/// using var tester = new PhotonTester(width: 360, height: 640);   // a phone's width
+/// tester.Pump(new ProfileCard("Ana Lima", "Principal Engineer, Platform Reliability and Developer Experience"));
+/// var role = tester.Find("Principal Engineer, Platform Reliability and Developer Experience");
+/// Assert.Equal(2, role.Text!.Lines.Count);                      // one line at 1280 dp
+/// Assert.True(role.Bounds.Right &lt;= tester.Root.Bounds.Right);
 /// </code>
 /// <para>
 /// A FRAME is drawn by <see cref="PhotonHost"/>, the frame driver every native shell wraps: a stateful

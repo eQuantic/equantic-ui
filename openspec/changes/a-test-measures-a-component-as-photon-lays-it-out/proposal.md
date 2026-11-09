@@ -16,11 +16,11 @@ list, and an app author would have to learn the engine's types to repeat it.
   references it beside `eQuantic.UI.Testing` when the app also ships through Photon:
 
   ```csharp
-  using var tester = new PhotonTester(width: 390, height: 844, density: Density.Compact);
-  tester.Pump(new ProfileCard());
-  var name = tester.Find("Ana Beatriz Nogueira");
-  Assert.Equal(1, name.Text!.Lines.Count);      // it fits on one line at 390 dp
-  Assert.True(name.Bounds.Right <= 390 - 16);   // inside the card's padding
+  using var tester = new PhotonTester(width: 360, height: 640);   // a phone's width
+  tester.Pump(new ProfileCard("Ana Lima", "Principal Engineer, Platform Reliability and Developer Experience"));
+  var role = tester.Find("Principal Engineer, Platform Reliability and Developer Experience");
+  Assert.Equal(2, role.Text!.Lines.Count);                      // one line at 1280 dp
+  Assert.True(role.Bounds.Right <= tester.Root.Bounds.Right);
   ```
 
   `PhotonTester` takes the theme, the culture, the viewport's width and height in dp, the density, the
