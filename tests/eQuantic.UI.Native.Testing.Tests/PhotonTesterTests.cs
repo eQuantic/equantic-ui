@@ -184,6 +184,55 @@ public class PhotonTesterTests
     }
 
     [Fact]
+    public void ATesterOnASecondThread_IsRefused_WhileAnotherIsMounted()
+    {
+        var first = new PhotonTester(width: 400, height: 300);
+        first.Pump(Text("First"));
+
+        var failure = OnAnotherThread(() =>
+        {
+            using var second = new PhotonTester(width: 400, height: 300);
+            second.Pump(Text("Second"));
+        });
+        Assert.IsType<InvalidOperationException>(failure);
+        Assert.Contains("one UI thread a process", failure!.Message);
+
+        first.Dispose();
+        Assert.Null(OnAnotherThread(() =>
+        {
+            using var second = new PhotonTester(width: 400, height: 300);
+            second.Pump(Text("Second"));
+            Assert.NotNull(second.Find("Second").Text);
+        }));
+    }
+
+    /// <summary>Runs <paramref name="action"/> on a thread of its own and answers what it threw.</summary>
+    private static Exception? OnAnotherThread(Action action)
+    {
+        Exception? thrown = null;
+        var thread = new Thread(() =>
+        {
+            try { action(); }
+            catch (Exception exception) { thrown = exception; }
+        });
+        thread.Start();
+        thread.Join();
+        return thrown;
+    }
+
+    [Fact]
+    public void TwoTestersOnOneThread_MeasureSideBySide()
+    {
+        using var comfortable = new PhotonTester(width: 400, height: 300);
+        using var compact = new PhotonTester(width: 400, height: 300, density: Density.Compact);
+        comfortable.Pump(Column(children: [Button("Save", onPressed: () => { })]));
+        compact.Pump(Column(children: [Button("Save", onPressed: () => { })]));
+
+        Assert.True(compact.Find(SemanticRole.Button, "Save").Bounds.Height
+                    < comfortable.Find(SemanticRole.Button, "Save").Bounds.Height);
+    }
+
+    [Fact]
     public void ThePackage_IsMarkedAsTheNativeTrackIs()
     {
         var mark = typeof(PhotonTester).Assembly.GetCustomAttribute<ExperimentalAttribute>();
