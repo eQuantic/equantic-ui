@@ -1,4 +1,5 @@
 using System.Globalization;
+using eQuantic.UI.Material;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,6 +43,24 @@ public class ComponentTesterTests
 
         tester.Find("1.234,5").Role.Should().Be(SemanticRole.StaticText);
         CultureInfo.CurrentCulture.Should().BeSameAs(before);
+    }
+
+    /// <summary>Says which theme it was built with, so the test can see the one it named reached the
+    /// build rather than the default.</summary>
+    private sealed class ThemeName : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => Text(context.Theme.GetType().Name);
+    }
+
+    [Fact]
+    public void TheThemeATestNames_IsTheOneEveryComponentBuildsWith()
+    {
+        // The wiki's example, which a build compiles here and nowhere else.
+        using var tester = new ComponentTester(theme: MaterialTheme.FromSeed(Color.FromRgb(0x67, 0x50, 0xA4)));
+
+        tester.Pump(new ThemeName());
+
+        tester.Find(nameof(MaterialTheme)).Role.Should().Be(SemanticRole.StaticText);
     }
 
     [Fact]
@@ -137,6 +156,20 @@ public class ComponentTesterTests
         var tap = () => tester.Tap("Save");
 
         tap.Should().Throw<InvalidOperationException>().WithMessage("*disabled*cannot be tapped*");
+    }
+
+    [Fact]
+    public void ALink_IsFollowedByTheBrowser_NotByTheTester()
+    {
+        // As the wiki says: the tester does not navigate, so a link with no handler of its own is
+        // not something a tap can run.
+        using var tester = new ComponentTester();
+        tester.Pump(new Link("/docs", Text("Docs")));
+
+        tester.Find(SemanticRole.Link, "Docs").Should().NotBeNull();
+        var tap = () => tester.Tap("Docs");
+
+        tap.Should().Throw<InvalidOperationException>().WithMessage("Nothing handles a tap on Link \"Docs\"*");
     }
 
     [Fact]
