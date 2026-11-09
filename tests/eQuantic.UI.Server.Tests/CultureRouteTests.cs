@@ -171,6 +171,20 @@ public class CultureRouteTests
         response.Headers.Location!.ToString().Should().Be("/pt-BR/pricing?tab=2");
     }
 
+    /// <summary>#1296: a path with a character a header cannot carry is redirected in its encoded form.</summary>
+    [Fact]
+    public async Task ABareUrlWithAnAccent_GoesToItsAddress_Encoded()
+    {
+        var (app, client) = await StartAppAsync();
+        await using var _ = app;
+        client.DefaultRequestHeaders.Add("Cookie", ".AspNetCore.Culture=c%3Dpt-BR%7Cuic%3Dpt-BR");
+
+        var response = await client.GetAsync("/not%C3%ADcias");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Found);
+        response.Headers.Location!.OriginalString.Should().Be("/pt-BR/not%C3%ADcias");
+    }
+
     [Fact]
     public async Task TheRouteValue_WinsOverTheCookie()
     {
