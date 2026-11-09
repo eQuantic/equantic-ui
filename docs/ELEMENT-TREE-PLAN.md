@@ -504,7 +504,7 @@ the parity rows it closes flip.
    view id stays the node's index in the frame's semantic list, which leads to its id, until the
    provider makes it stable.
 
-   **The field followed** (#996, `openspec/changes/a-photon-field-keeps-what-was-typed`): a field's
+   **The field followed** (#996, `openspec/changes/archive/2026-11-09-a-photon-field-keeps-what-was-typed`): a field's
    position keeps what was typed (`FieldText`), and the field shows it until the page builds it again,
    when it shows what the page holds, whether or not that value changed. That is the rule the web
    settled in #1026, not "take the app's value only when it differs", which left typed digits over a

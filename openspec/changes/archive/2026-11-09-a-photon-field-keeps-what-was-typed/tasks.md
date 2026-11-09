@@ -40,4 +40,4 @@
 - [x] 5.2 The wiki's Photon page, "What a frame builds", in its five languages, on the wiki branch named
   like this pull request's
 - [x] 5.3 One entry for the ledger, citing #996, under `docs/ledger/`
-- [ ] 5.4 The change archived before the merge
+- [x] 5.4 The change archived before the merge
