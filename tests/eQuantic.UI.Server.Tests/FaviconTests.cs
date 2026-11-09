@@ -19,9 +19,9 @@ public class FaviconTests
     private static readonly byte[] Ico = [0, 0, 1, 0, 1, 0, 16, 16, 0, 0, 1, 0, 32, 0, 0, 0, 0, 0, 22, 0, 0, 0];
 
     private static async Task<(WebApplication App, HttpClient Client)> StartAppAsync(bool generated, bool own = false,
-        bool asset = false)
+        bool asset = false, string? root = null)
     {
-        var webRoot = Directory.CreateTempSubdirectory("eq-favicon-").FullName;
+        var webRoot = root ?? Directory.CreateTempSubdirectory("eq-favicon-").FullName;
         if (generated)
         {
             var icons = Path.Combine(webRoot, "_equantic", "icons");
@@ -116,6 +116,23 @@ public class FaviconTests
         var html = await (await client.GetAsync("/")).Content.ReadAsStringAsync();
         html.Should().Contain("""<link rel="icon" href="/favicon.ico">""");
         html.Should().NotContain("sizes=", "only the built file's sizes are known");
+    }
+
+    /// <summary>
+    /// Two hosts on one web root path, one with a referenced project's asset and one without: each
+    /// reads its own provider. Keyed by the path, the second answered with the first one's file.
+    /// </summary>
+    [Fact]
+    public async Task TwoHostsOnOneWebRoot_EachReadTheirOwnProvider()
+    {
+        var root = Directory.CreateTempSubdirectory("eq-favicon-shared-").FullName;
+        var (withAsset, assetClient) = await StartAppAsync(generated: false, asset: true, root: root);
+        await using var _ = withAsset;
+        var (plain, plainClient) = await StartAppAsync(generated: false, root: root);
+        await using var __ = plain;
+
+        (await assetClient.GetByteArrayAsync("/favicon.ico")).Should().Equal([9, 9]);
+        (await plainClient.GetAsync("/favicon.ico")).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact]

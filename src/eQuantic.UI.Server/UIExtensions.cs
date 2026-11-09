@@ -645,9 +645,8 @@ public static class UIExtensions
 
     private static IconSet Icons(HttpContext context)
     {
-        var environment = context.RequestServices.GetService<IWebHostEnvironment>();
-        if (environment?.WebRootPath is not { } root || environment.WebRootFileProvider is not { } files) return IconSet.None;
-        return IconSets.GetOrAdd(root, _ => ReadIcons(files));
+        var files = context.RequestServices.GetService<IWebHostEnvironment>()?.WebRootFileProvider;
+        return files is null ? IconSet.None : IconSets.GetValue(files, ReadIcons);
     }
 
     private static IconSet ReadIcons(IFileProvider files)
@@ -674,12 +673,13 @@ public static class UIExtensions
     }
 
     /// <summary>
-    /// Read once per web root: the icon set is a build output and cannot change under a running app.
-    /// Per ROOT rather than per process, since a process may host more than one app, and the first one
-    /// asked answered for all of them.
+    /// Read once per web root's file provider: the icon set is a build output and cannot change under
+    /// a running app. Keyed by the PROVIDER rather than per process, since a process may host more
+    /// than one app and the first one asked answered for all of them, and rather than by the root's
+    /// path, which two hosts can share with different providers. Weak, so a stopped host's entry goes
+    /// with its provider.
     /// </summary>
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, IconSet> IconSets =
-        new(StringComparer.Ordinal);
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IFileProvider, IconSet> IconSets = new();
 
     /// <summary>
     /// The header a CLIENT NAVIGATION sends. The request goes to the target URL itself rather than
