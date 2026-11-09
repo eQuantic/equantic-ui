@@ -1,7 +1,8 @@
 # served-document Specification
 
 ## Purpose
-TBD - created by archiving change the-served-document-is-written-once-and-never-stored. Update Purpose after archive.
+What the server writes in the document of a page, from the shell's template, and how that document is
+sent: each value written once, and nothing a visitor's page carries kept by a cache.
 
 ## Requirements
 
