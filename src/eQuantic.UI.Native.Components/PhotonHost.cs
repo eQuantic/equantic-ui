@@ -440,7 +440,7 @@ public sealed class PhotonHost
 
     /// <summary>The tree this host keeps across frames: every position, the instances it retains, and
     /// the order its components mount and unmount in, the root's included (see BuildOwner).</summary>
-    private readonly BuildOwner _owner = new();
+    private readonly BuildOwner _owner = ComponentBoundary.Owner();
 
 
     private Pressable? _pressed;

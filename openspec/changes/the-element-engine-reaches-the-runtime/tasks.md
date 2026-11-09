@@ -6,10 +6,10 @@
 
 ## 2. Close what eqc refuses
 
-- [ ] 2.1 `ChildSlots` as one switch over `NodeKind`, a typed read per arm, a default that throws naming the kind.
-- [ ] 2.2 The executing coverage test: every concrete `VisualNode` in Primitives built by `FactoryArguments` and mounted through `BuildOwner`, the unbuildable ones in a baseline that only shrinks. A/B: an arm removed fails it by name.
-- [ ] 2.3 `BuildOwner` handed how a component builds; `ComponentElement` asks the owner; the wiring to `ComponentBoundary` beside it, `[ServerOnly]`, used by Photon and the server; `PublicAPI.Unshipped.txt`.
-- [ ] 2.4 `NodeElement`'s message names `NodeKind`.
+- [x] 2.1 `ChildSlots` as one switch over `NodeKind`, a typed read per arm, a default that throws naming the kind.
+- [x] 2.2 The executing coverage test: every concrete `VisualNode` in Primitives built by `FactoryArguments` and mounted through `BuildOwner`, the unbuildable ones in a baseline that only shrinks. A/B: an arm removed fails it by name.
+- [x] 2.3 `BuildOwner` handed how a component builds; `ComponentElement` asks the owner; the wiring to `ComponentBoundary` beside it, `[ServerOnly]`, used by Photon and the server; `PublicAPI.Unshipped.txt`.
+- [x] 2.4 `NodeElement`'s message names `NodeKind`.
 - [ ] 2.5 Check: the probe reports no diagnostic; the native suites, goldens and the web and server suites unchanged; Photon's frame measured against 1.2.
 
 ## 3. Into the runtime
