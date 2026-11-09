@@ -58,6 +58,24 @@ no node, or by more than one, SHALL fail naming what the frame announces.
 - **WHEN** a test finds `Log out` in a frame that announces `Sign up` and `Ana`
 - **THEN** it fails, and the message names `Sign up` and `Ana`
 
+### Requirement: Photon testers draw from one UI thread a process
+
+Photon's dispatcher and frame ticker belong to the process, as an app's one UI thread does, so every
+`PhotonTester` whose tree is mounted at the same time SHALL draw from one thread. A pump from a second
+thread while another tester is mounted SHALL fail, naming the rule and how to run the tests one at a
+time; testers mounted on one thread SHALL measure side by side.
+
+#### Scenario: A second thread is refused while a tester is mounted, and served once it is disposed
+
+- **WHEN** a test mounts a tester, and pumps another on a thread of its own
+- **THEN** that pump fails saying Photon has one UI thread a process, and once the first tester is
+  disposed, a tester on the other thread draws
+
+#### Scenario: Two testers on one thread measure side by side
+
+- **WHEN** a test mounts a button in a `Comfortable` tester and in a `Compact` one, both alive
+- **THEN** each answers its own box, the `Compact` one shorter
+
 ### Requirement: The native half is opt-in and experimental
 
 `eQuantic.UI.Testing` SHALL reference nothing of the native track, and `eQuantic.UI.Native.Testing`

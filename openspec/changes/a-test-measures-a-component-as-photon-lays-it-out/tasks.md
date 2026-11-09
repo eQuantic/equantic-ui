@@ -5,6 +5,7 @@
 - [x] 1.3 `MeasuredNode`: the node, its box, its text's measurement and its children, copied from the frame; `Root` and `Layers`
 - [x] 1.4 `Find(name)` and `Find(role, name)` through Photon's semantics tree, failing with what is announced
 - [x] 1.5 `ReadPixelsSrgb()` through the reference backend
+- [x] 1.8 One UI thread a process: a pump from a second thread while another tester is mounted fails, and the package's own tests run one at a time
 - [x] 1.6 The API declared in the project's `PublicAPI.Unshipped.txt`, with the `[EQX0001]` prefix
 - [x] 1.7 Proof: `tests/eQuantic.UI.Native.Testing.Tests`, which opts in to EQX0001 as an app's test project would and reaches only the public surface, holds a test per scenario of this change, each A/B'd against the mechanism it proves
 
