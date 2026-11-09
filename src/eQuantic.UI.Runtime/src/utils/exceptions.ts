@@ -93,6 +93,11 @@ const NULL_REFERENCE = chainOf('System.NullReferenceException');
 export interface ExceptionParts {
   readonly paramName?: string | null;
   readonly actualValue?: unknown;
+  /**
+   * The actual value as `string.Format` writes it in the current culture, where the compiler knows its
+   * type: a guard's `-1,5` in pt-BR, which the value's invariant text writes `-1.5`.
+   */
+  readonly actualText?: string;
   readonly innerException?: unknown;
   readonly objectName?: string | null;
   /** `TypeInitializationException.TypeName`, which its message names, a null one as ''. */
@@ -124,7 +129,7 @@ function composed(types: readonly string[], message: string | null | undefined, 
   if (inners.length > 0) text += ' ' + inners.map((inner) => `(${messageOf(inner)})`).join(' ');
   if (parts?.objectName) text += `\nObject name: '${parts.objectName}'.`;
   if (parts?.paramName) text += ` (Parameter '${parts.paramName}')`;
-  if (parts?.actualValue != null) text += `\nActual value was ${valueText(parts.actualValue)}.`;
+  if (parts?.actualValue != null) text += `\nActual value was ${parts.actualText ?? valueText(parts.actualValue)}.`;
   return text;
 }
 
@@ -173,6 +178,8 @@ function held(parts: ExceptionParts): ExceptionParts {
 /** What a framework constructor took besides the message, each held as the member that reads it. */
 function hold(error: Error, parts: ExceptionParts): void {
   for (const [member, value] of Object.entries(parts)) {
+    // The text of the actual value is the message's, and no member of .NET's.
+    if (member === 'actualText') continue;
     Object.defineProperty(error, member, { value, writable: true, configurable: true });
   }
   // An AggregateException's InnerException is its first inner one, as .NET's is.
@@ -239,7 +246,7 @@ export class Exception extends Error {
 /**
  * The members of the base, each read from what the constructor kept. Every member of
  * {@link ExceptionParts} is one, which `satisfies` holds to: a part added there and not here fails
- * the type check.
+ * the type check. The actual value's text is the one part that is not: it is the message's.
  */
 const members = {
   message: (kept: Kept) => composed(kept[TYPES] ?? EXCEPTION, kept[MESSAGE], kept[PARTS]),
@@ -252,7 +259,7 @@ const members = {
   objectName: (kept: Kept) => kept[PARTS]?.objectName,
   typeName: (kept: Kept) => kept[PARTS]?.typeName,
   innerExceptions: (kept: Kept) => kept[PARTS]?.innerExceptions,
-} satisfies Record<keyof ExceptionParts | 'message' | 'name', (kept: Kept) => unknown>;
+} satisfies Record<Exclude<keyof ExceptionParts, 'actualText'> | 'message' | 'name', (kept: Kept) => unknown>;
 
 for (const [member, read] of Object.entries(members)) {
   Object.defineProperty(Exception.prototype, member, {
