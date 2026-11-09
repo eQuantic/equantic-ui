@@ -149,6 +149,7 @@ export {
   CameraPreview,
   WebFrame,
   Hoverable,
+  DropTarget,
   Flexible,
   Spacer,
   Stack,
@@ -344,6 +345,7 @@ export { registerDeviceCapabilities } from './shared/devices/register';
 export { UiDispatcher } from './shared/devices/ui-dispatcher';
 export { RouteValues } from './shared/route-values';
 export {
+  FileFilter,
   GeoLocation,
   ImageData,
   MotionReading,
@@ -355,8 +357,13 @@ export {
   ServerTopic,
   ServerTopicRefusal,
   SpringSpec,
+  UploadedFile,
+  UploadPolicy,
   WindowSizeClasses,
 } from './shared/primitive-values';
+export { PickedFile } from './shared/picked-file';
+export { Upload } from './shared/upload';
 export { WebPhotoLibrary } from './shared/devices/photo-library';
+export { WebFilePicker } from './shared/devices/file-picker';
 export { WebBiometrics } from './shared/devices/biometrics';
 export type { PickedImage } from './shared/devices/photo-library';

@@ -11,8 +11,8 @@ out/
 nupkgs/
 *.nupkg
 
-# Tools (large binaries)
-# Tools (large binaries) - Runtime Packages
+# Tools (large binaries) - Runtime Packages. Only the embedded bun's .zip is tracked, and builds unpack
+# it into the user's cache (#364, #932). The binaries are those older builds unpacked beside the zip.
 src/eQuantic.UI.Runtime.*/tools/bun/bun
 src/eQuantic.UI.Runtime.*/tools/bun/bun-darwin
 src/eQuantic.UI.Runtime.*/tools/bun/bun-linux
@@ -60,10 +60,6 @@ coverage/
 # source twice without anything noticing (#273); untracked, it cannot. Its map is written with it (#1108).
 src/eQuantic.UI.Server/wwwroot/runtime.js
 src/eQuantic.UI.Server/wwwroot/runtime.js.map
-# Embedded bun: only the .zip is tracked; the extracted binary is produced at build time.
-src/eQuantic.UI.Runtime.*/tools/bun/bun-darwin
-src/eQuantic.UI.Runtime.*/tools/bun/bun-linux
-src/eQuantic.UI.Runtime.*/tools/bun/bun.exe
 
 # Playwright e2e output
 tests/e2e/playwright-report/

@@ -365,6 +365,7 @@ public class TypeScriptEmitter
         BeginModule(semanticModel, component.Name);
         _builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
         component.UsedHelpers.Clear();
+        if (component.ClassSyntax is { } componentClass) TwinOwnMembers.RefuseKeptOnTheServer(componentClass, semanticModel, _converter);
 
         // Note: We'll emit imports AFTER generating component code
         // to ensure UsedHelpers is populated
@@ -2748,6 +2749,7 @@ public class TypeScriptEmitter
         // Its twin's name, its owners' and its own (#584): a nested class is a module of its own too.
         var name = cls.TwinTypeName();
         BeginModule(semanticModel, name);
+        TwinOwnMembers.RefuseKeptOnTheServer(cls, semanticModel, _converter);
 
         // The BASE class travels. Dropping it is how `CSharpLanguage : CurlyBraceLanguage` came out
         // as an empty class that answered "tokenize is not a function" — from very far away from the
@@ -3068,13 +3070,12 @@ public class TypeScriptEmitter
             "string" or "char" => "string",
             // Every integer that is not 64 bits is a JS number, as a float and a double are. A narrow
             // one reached TypeScript verbatim (`static get top(): byte`), naming nothing there.
-            "int" or "double" or "float" or "number" or "uint" or "short" or "ushort" or "byte" or "sbyte"
-                or "nint" or "nuint" => "number",
+            "int" or "double" or "float" or "number" or "uint" or "short" or "ushort" or "byte" or "sbyte" => "number",
             // NOT `number`, either of them. A long is a JS bigint on this side and a decimal is the
             // runtime's Decimal class — `$eq.num.long(0)` and `$eq.num.dec(0)` are what the emitter
             // writes for their literals, and a `number` annotation over either is a lie the rest of
             // the file then typechecks against: `unit.mul(...)` on a "number" is the shape it takes.
-            "long" or "ulong" => "bigint",
+            "long" or "ulong" or "nint" or "nuint" => "bigint",
             "decimal" => Decimal,
             "bool" or "boolean" => "boolean",
             "void" => "void",

@@ -132,6 +132,7 @@
     -->
     <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.RunProgram" AssemblyFile="$(_EqTasksAssembly)" TaskFactory="$(_EqTaskFactory)" />
     <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.LinkDirectory" AssemblyFile="$(_EqTasksAssembly)" TaskFactory="$(_EqTaskFactory)" />
+    <UsingTask TaskName="eQuantic.UI.Sdk.Tasks.UnpackProgram" AssemblyFile="$(_EqTasksAssembly)" TaskFactory="$(_EqTaskFactory)" />
     <PropertyGroup>
         <_EqOsArch Condition="'$(_EqOsArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_EqOsArch>
         <_EqIsArm64 Condition="'$(_EqOsArch)' == 'Arm64'">true</_EqIsArm64>
@@ -167,42 +168,21 @@
         </PropertyGroup>
     </Target>
 
+    <!--
+        The bun runs from the user's cache, never from beside its zip: the zip may sit in a package
+        cache that is read-only or shared (#364), or in a source tree whose zip moved on while an
+        older bun stayed unpacked beside it (#932). UnpackProgram names the folder by the zip's
+        SHA-256 and makes it appear whole, so the program is always the zip's, and one zip is
+        unpacked once for every build, package and worktree that carries it.
+    -->
     <Target Name="EnsureBunExtracted" BeforeTargets="ResolveBunPath"
         DependsOnTargets="ResolveBunZipPath">
         <PropertyGroup>
-            <BunExeName Condition="$([MSBuild]::IsOSPlatform('Windows'))">bun.exe</BunExeName>
-            <BunExeName Condition="$([MSBuild]::IsOSPlatform('Linux'))">bun-linux</BunExeName>
-            <BunExeName Condition="$([MSBuild]::IsOSPlatform('OSX'))">bun-darwin</BunExeName>
-
-            <BunZipDir Condition="'$(BunZipPath)' != ''">$([System.IO.Path]::GetDirectoryName('$(BunZipPath)'))</BunZipDir>
+            <BunZipPath>$(BunZipPath.Trim())</BunZipPath>
         </PropertyGroup>
-        <PropertyGroup>
-            <BunExePath Condition="'$(BunZipDir)' != ''">$(BunZipDir)/$(BunExeName)</BunExePath>
-        </PropertyGroup>
-        <PropertyGroup Condition="'$(BunExePath)' != ''">
-            <BunExePath>$(BunExePath.Trim())</BunExePath>
-        </PropertyGroup>
-
-        <!-- Unzip if .exe missing but .zip present -->
-        <Message Text="eQuantic.UI: Extracting Bun runtime from '$(BunZipPath)'..."
-            Importance="High" Condition="Exists('$(BunZipPath)') And !Exists('$(BunExePath)')" />
-        <Unzip
-            SourceFiles="$(BunZipPath)"
-            DestinationFolder="$(BunZipDir)"
-            Condition="Exists('$(BunZipPath)') And !Exists('$(BunExePath)')"
-        />
-
-        <!-- Make executable on Linux/Mac -->
-        <ItemGroup>
-            <_EqBunModeArgument Include="mode" Value="+x" />
-            <_EqBunModeArgument Include="bun" Value="$(BunExePath)" />
-        </ItemGroup>
-        <RunProgram Program="chmod" Arguments="@(_EqBunModeArgument)"
-            Condition="Exists('$(BunExePath)') And !$([MSBuild]::IsOSPlatform('Windows'))" />
-
-        <PropertyGroup Condition="Exists('$(BunExePath)')">
-            <BunPath>$(BunExePath)</BunPath>
-        </PropertyGroup>
+        <UnpackProgram Archive="$(BunZipPath)" Condition="Exists('$(BunZipPath)')">
+            <Output TaskParameter="Program" PropertyName="BunPath" />
+        </UnpackProgram>
     </Target>
 
     <Target Name="ResolveBunPath" BeforeTargets="CompileEQuanticUI"

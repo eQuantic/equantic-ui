@@ -219,7 +219,7 @@ internal static class ExplicitImplementations
         // A component's server action runs its body on the server, and the browser calls its stub, and a
         // member kept on the server is in no twin, its call refused where it is written (EQ2010): neither
         // body hands anything off in the browser (Copilot's third review of #1139).
-        if (declaration is MethodDeclarationSyntax action && Parser.ComponentParser.IsServerAction(action)) return null;
+        if (Services.PlainClassModule.IsServerAction(member)) return null;
         if (StaysOnTheServer(member)) return null;
         // An async body completes its own task, whatever the task it calls: `async Task IFoo.Run() { Run(); }`
         // completes where the call it drops may throw.

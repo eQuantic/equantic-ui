@@ -23,7 +23,6 @@ FieldExpressionStrategy
 FirstStrategy
 GenericNameStrategy
 HtmlNodeStrategy
-IndexFromEndStrategy
 InlinedConstantStrategy
 InterpolatedStringStrategy
 IsPatternStrategy

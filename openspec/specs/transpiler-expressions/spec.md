@@ -774,3 +774,119 @@ in the browser carries SHALL be refused in a pattern with EQ2004, as its member 
 
 - **WHEN** browser-side code tests `l is { Capacity: 8 }` for a `List<int>`
 - **THEN** the build fails with EQ2004, as it fails for `l.Capacity`
+
+### Requirement: An element counted from the end reads its receiver once
+
+An element of an array, a list or a string counted from the end (`a[^n]`) SHALL be read and written with
+its receiver evaluated once, then its offset, then the length, as C# evaluates them, whatever writes it
+(an assignment, a null-conditional assignment, a compound assignment, an increment, `??=`, a deconstruction), and its offset SHALL be
+one value whatever expression it is written as.
+
+#### Scenario: A receiver made by a call
+
+- **WHEN** `int[] Get() { calls++; return arr; }` and `Get()[^1] += 5` runs over `{ 1, 2, 3 }`
+- **THEN** the array holds `1,2,8` and `Get` ran once, as in .NET; it ran twice
+
+#### Scenario: An offset written as a sum
+
+- **WHEN** `var a = new[] { 1, 2, 3, 4 }; int i = 1; return a[^(i + 1)];` runs
+- **THEN** it answers 3, as .NET does
+
+#### Scenario: An offset that changes the receiver's variable
+
+- **WHEN** `a[^Swap()]` is read, where `Swap` assigns another array to `a` and answers 1
+- **THEN** it reads the last element of the array `a` held before `Swap` ran, as in .NET
+
+#### Scenario: An out argument
+
+- **WHEN** `Set(out Get()[^1])` runs, `Set` assigning 9 to its parameter
+- **THEN** the last element is 9 and `Get` ran once, before the call, as in .NET
+
+#### Scenario: An await beside a receiver made by a call
+
+- **WHEN** `Get()[^1] = await F()` and `Get()[^(await Offset())]` run in an async method
+- **THEN** they answer as .NET does, the await suspending that method; the JavaScript did not parse
+
+#### Scenario: A value that awaits and may not run
+
+- **WHEN** `Get()[^1] ??= await F()` runs over an element that is not null
+- **THEN** `F` does not run, as in .NET, and `Get()[^1] += await F()` reads the element before the await
+
+#### Scenario: A Task read beside an await
+
+- **WHEN** `var t = Get()[^(await Offset())]` reads a `Task` from an array
+- **THEN** `t` is that Task, as in .NET, unawaited
+
+#### Scenario: An out target after code
+
+- **WHEN** `Put(Swap(), out a[^1])` is built, `Swap` assigning another array to `a`
+- **THEN** the build fails with EQ1004, since the element is taken before the call and C# takes it after
+  `Swap` ran
+
+### Requirement: An explicit cast of a double or a float saturates as .NET does
+
+An unchecked explicit conversion of a `double` or a `float` to an integer SHALL answer what .NET 9 and later
+answer on every platform: an `int`, a `uint`, a `long` and a `ulong` take the whole part, the type's nearest
+end past its range, and 0 for a NaN, and a `byte`, an `sbyte`, a `short`, a `ushort` and a `char` take the low
+bits of that `int`. A checked conversion SHALL keep throwing, and a constant the compiler folds SHALL be the
+compiler's value, which is no run-time conversion's.
+
+#### Scenario: Past an int
+
+- **WHEN** `double d = 1e12; return (int)d;` runs
+- **THEN** it answers 2147483647, as .NET does; it answered -727379968
+
+#### Scenario: A NaN
+
+- **WHEN** `double d = double.NaN; return (ulong)d;` runs
+- **THEN** it answers 0, as .NET does
+
+#### Scenario: A width under an int
+
+- **WHEN** `(byte)d` runs for a `d` of 300, of -1 and of 1e12
+- **THEN** it answers 44, 255 and 255, as .NET does
+
+#### Scenario: Below an unsigned width
+
+- **WHEN** `double d = -1; return (ulong)d;` runs
+- **THEN** it answers 0, as .NET does; it answered 2^64-1
+
+#### Scenario: A constant the compiler folds
+
+- **WHEN** `return unchecked((int)1e12);` runs
+- **THEN** it answers 0, as .NET does, whose compiler folds the cast, where the same cast of a variable answers
+  2147483647
+
+### Requirement: A native integer is held as a 64-bit integer
+
+An `nint` and an `nuint` SHALL be held as a `long` and a `ulong` are, whatever value they came from, an
+`int`'s, a `long`'s or a constant's, and their arithmetic, comparisons, conversions, `MinValue`, `MaxValue`
+and `Math` members SHALL answer at 64 bits, as .NET answers on every target this SDK ships to.
+
+#### Scenario: An int and a long meeting
+
+- **WHEN** `nint a = (nint)9007199254740993; int i = 5; nint b = i; return (a + b).ToString();` runs
+- **THEN** it answers 9007199254740998, as .NET does; it threw a TypeError for mixing a number with a BigInt
+
+### Requirement: An implicit conversion is applied whole
+
+Every implicit conversion the bound tree wraps a value in SHALL be applied, inner first: a user-defined
+conversion with the standard conversion before or after its operator, and a tuple into a tuple of other
+element types, each element converted as C# converts it and the source read once, at an assignment, an
+argument, a return and a branch alike.
+
+#### Scenario: An operator then a widening
+
+- **WHEN** `long l = new Count(5); return (l * 2).ToString();` runs, `Count` declaring an implicit operator to
+  an `int`
+- **THEN** it answers 10, as .NET does; it threw a TypeError
+
+#### Scenario: A widening then an operator
+
+- **WHEN** `Ticks t = 5;` runs, `Ticks` declaring an implicit operator from a `long`
+- **THEN** `t` is a `Ticks`, as in .NET; it was the BigInt 5
+
+#### Scenario: A tuple of wider elements
+
+- **WHEN** `(int, int) u = (1, 2); (long, long) t = u; return (t.Item1 + 1L).ToString();` runs
+- **THEN** it answers 2, as .NET does, and `t.Equals((object)(1L, 2L))` answers True

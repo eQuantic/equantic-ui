@@ -1,14 +1,16 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
-/// Strategy for Index from end expressions (hat operator).
-/// Handles:
-/// - array[^1] -> array[array.length - 1]
-/// - array[^2] -> array[array.length - 2]
+/// Strategy for Index from end expressions (hat operator) over an array, a list or a string, which are
+/// a JavaScript array or string on this side: <c>a[^n]</c> is <c>a[a.length - n]</c>, read and written
+/// as the <see cref="Place"/> it is, so its receiver is evaluated once (#394). It was text that named
+/// the receiver twice, so <c>Get()[^1]</c> and every write through it called <c>Get</c> twice, and a
+/// deconstruction's target was refused.
 /// <para>
 /// An indexer a twin carries is not here: <c>ring[^1]</c> over a type that counts its elements is its
 /// <c>item</c> at the count the bound tree names (<see cref="Place"/>), and a type that declares
@@ -22,54 +24,37 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// it was written as a call to <c>__INDEX_FROM_END__</c>, which nothing defines.
 /// </para>
 /// </summary>
-public class IndexFromEndStrategy : IConversionStrategy
+public class IndexFromEndStrategy : IExpressionIrStrategy
 {
-    public bool CanConvert(SyntaxNode node, ConversionContext context)
+    public bool CanConvert(SyntaxNode node, ConversionContext context) =>
+        node is PrefixUnaryExpressionSyntax prefix && prefix.IsKind(SyntaxKind.IndexExpression)
+        || node is ElementAccessExpressionSyntax access && HatOf(access, context) is not null;
+
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
-        // Handle ^n expressions
-        if (node is PrefixUnaryExpressionSyntax prefix &&
-            prefix.IsKind(SyntaxKind.IndexExpression))
-        {
-            return true;
-        }
-
-        // Handle element access with ^n index: array[^1]. A dictionary keyed by Index is not one:
-        // `d[^1]` looks the key up (DictionaryEntry), where this counted back from a length a map
-        // does not have. Nor is an indexer a twin carries, or a list face's.
-        if (node is ElementAccessExpressionSyntax elementAccess
-            && DictionaryEntry.Of(elementAccess, context) is null
-            && Indexer.LoweredAt(elementAccess, context) is null)
-        {
-            var arg = elementAccess.ArgumentList.Arguments.FirstOrDefault()?.Expression;
-            if (arg is PrefixUnaryExpressionSyntax indexExpr &&
-                indexExpr.IsKind(SyntaxKind.IndexExpression))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public string Convert(SyntaxNode node, ConversionContext context)
-    {
-        // Handle array[^n] expression
-        if (node is ElementAccessExpressionSyntax elementAccess)
-        {
-            var array = context.Converter.ConvertExpression(elementAccess.Expression);
-            var arg = elementAccess.ArgumentList.Arguments.FirstOrDefault()?.Expression;
-
-            if (arg is PrefixUnaryExpressionSyntax indexExpr &&
-                indexExpr.IsKind(SyntaxKind.IndexExpression))
-            {
-                var offset = context.Converter.ConvertExpression(indexExpr.Operand);
-                return $"{array}[{array}.length - {offset}]";
-            }
-        }
+        if (node is ElementAccessExpressionSyntax access && Place.Of(access, context) is { } place)
+            return place.Read();
 
         // A standalone ^n is an Index value.
-        return context.Unhandled(node, "index-from-end");
+        return JsExpr.Opaque(context.Unhandled(node, "index-from-end"));
     }
+
+    /// <summary>
+    /// The <c>^n</c> of an element access this strategy lowers: an access with one argument counted from
+    /// the end, whose receiver is no dictionary keyed by <c>Index</c> (<c>d[^1]</c> looks the key up,
+    /// <see cref="DictionaryEntry"/>) and carries no indexer a twin or a list face lowers; null otherwise.
+    /// </summary>
+    internal static PrefixUnaryExpressionSyntax? HatOf(ElementAccessExpressionSyntax access, ConversionContext context) =>
+        FromTheEnd(access) is { } hat && DictionaryEntry.Of(access, context) is null && Indexer.LoweredAt(access, context) is null
+            ? hat
+            : null;
+
+    /// <summary>The <c>^n</c> an access with one argument counted from the end is written with, by its
+    /// syntax alone, for a caller that has ruled out the dictionary and the indexer already.</summary>
+    internal static PrefixUnaryExpressionSyntax? FromTheEnd(ElementAccessExpressionSyntax access) =>
+        access.ArgumentList.Arguments is [{ Expression: PrefixUnaryExpressionSyntax hat }] && hat.IsKind(SyntaxKind.IndexExpression)
+            ? hat
+            : null;
 
     public int Priority => 20; // Higher than ElementAccessStrategy
 }

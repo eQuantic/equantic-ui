@@ -204,8 +204,12 @@ internal sealed partial class WebLoweringVisitor
             ["preserveAspectRatio"] = "none",
             ["fill"] = "none",
         };
+        // A drawing whose shapes are inputs is a GROUP of controls, never hidden: aria-hidden would take
+        // every concelho out of the reader's reach with the picture (#674).
+        var hasInputs = drawing.Artwork.Shapes.Any(shape => shape.IsInput);
+        if (hasInputs) svg.RawAttributes["role"] = "group";
         if (drawing.Label is { } label) svg.RawAttributes["aria-label"] = label;
-        else svg.RawAttributes["aria-hidden"] = "true";
+        else if (!hasInputs) svg.RawAttributes["aria-hidden"] = "true";
 
         // Every run the artwork paints with, declared once and referenced by the shapes. The id is
         // the hash of the gradient ITSELF, so two shapes sharing a run share a def.
@@ -251,9 +255,46 @@ internal sealed partial class WebLoweringVisitor
             if (shape.EvenOdd) attributes["fill-rule"] = "evenodd";
             if (shape.Opacity < 1) attributes["opacity"] = TokenCss.Number(shape.Opacity);
             path.RawAttributes = attributes;
+            if (shape.IsInput) MakeInput(path, shape);
             svg.Children.Add(path);
         }
         return svg;
+    }
+
+    /// <summary>
+    /// An input shape (#674): a button the browser tests by its path, a Tab stop that Enter and Space
+    /// press, named by its label and stating its toggle state as pressed-ness, as a
+    /// <see cref="Pressable"/> does. The pointer is taken inside the path whatever it is painted with
+    /// (<c>visibleFill</c>), which is Photon's <c>Path.contains</c>; <c>eq-shape</c> is the class the
+    /// theme's focus ring strokes the outline by; the hover is the shape's own diff under
+    /// <c>:hover</c>, through the members a path has.
+    /// </summary>
+    private static void MakeInput(RealizedElement path, VectorShape shape)
+    {
+        path.ClassName = "eq-shape";
+        path.Style = new HtmlStyle { Cursor = "pointer", PointerEvents = "visibleFill" };
+        path.Role = "button";
+        path.TabIndex = 0;
+        path.AriaLabel = shape.Label;
+        if (shape.Selected is { } selected) path.AriaPressed = selected ? "true" : "false";
+        path.OnClick = shape.OnPressed;
+        path.OnKeyDown = key =>
+        {
+            if (key.Key is "Enter" or " ") shape.OnPressed?.Invoke();
+        };
+        if (shape.Hover is { } hover)
+            foreach (var (property, value) in ShapeHoverDeclarations(hover))
+                path.PseudoDeclarations.Add((":hover", property, value));
+    }
+
+    /// <summary>A shape's hover as declarations, in this order on both producers: its fill, its stroke's
+    /// colour and width, and its opacity — the members of a <see cref="StyleDiff"/> a path has.</summary>
+    private static IEnumerable<(string Property, string Value)> ShapeHoverDeclarations(StyleDiff hover)
+    {
+        if (hover.Background is { } fill) yield return ("fill", TokenCss.Value(fill));
+        if (hover.BorderColor is { } stroke) yield return ("stroke", TokenCss.Value(stroke));
+        if (hover.BorderWidth is { } width) yield return ("stroke-width", TokenCss.Number(width));
+        if (hover.Opacity is { } opacity) yield return ("opacity", TokenCss.Number(opacity));
     }
 
 
@@ -338,28 +379,60 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
+    /// What a <see cref="WebSandbox"/> flag loosens of the frame's own isolation: its token in the
+    /// iframe's <c>sandbox</c>, in the order the flags are declared.
+    /// </summary>
+    private static readonly (WebSandbox Flag, string Token)[] SandboxTokens =
+    [
+        (WebSandbox.Scripts, "allow-scripts"),
+        (WebSandbox.SameOrigin, "allow-same-origin"),
+        (WebSandbox.Forms, "allow-forms"),
+        (WebSandbox.Popups, "allow-popups"),
+    ];
+
+    /// <summary>
+    /// What a <see cref="WebSandbox"/> flag hands the document of its page's: the features the iframe's
+    /// <c>allow</c> delegates to it (Permissions Policy), in the order the flags are declared. A passkey
+    /// is two features, signing in and creating one. <c>WebFrameRealizerTests</c> fails on a flag that
+    /// is in neither table.
+    /// </summary>
+    private static readonly (WebSandbox Flag, string Feature)[] DelegatedFeatures =
+    [
+        (WebSandbox.Payment, "payment"),
+        (WebSandbox.Camera, "camera"),
+        (WebSandbox.Microphone, "microphone"),
+        (WebSandbox.Location, "geolocation"),
+        (WebSandbox.Fullscreen, "fullscreen"),
+        (WebSandbox.CopyToClipboard, "clipboard-write"),
+        (WebSandbox.Passkeys, "publickey-credentials-get"),
+        (WebSandbox.Passkeys, "publickey-credentials-create"),
+    ];
+
+    /// <summary>
     /// A sandboxed <c>iframe</c>. <c>sandbox</c> is ALWAYS present — an empty value is the locked
-    /// frame, and each <see cref="WebSandbox"/> flag appends its <c>allow-</c> token. The border is
-    /// the frame's own 1990s default, so it goes.
+    /// frame, and each flag that loosens the isolation appends its <c>allow-</c> token. A flag that
+    /// hands the document something of the page's writes its feature into <c>allow</c>, which is
+    /// absent when there is none (#1228). The border is the frame's own 1990s default, so it goes.
     /// <para>
     /// The content is ONE attribute and no precedence: <see cref="WebContent"/> can only be an
     /// address or a document, so this reads which and writes it. It used to be an <c>if/else if</c>
     /// over two nullable strings, with the rule that inline won stated here in prose.
     /// </para>
+    /// <para>
+    /// The browser's half writes the same two attributes from the same flags (<c>lowering.ts</c>), and
+    /// <c>WebFrameRealizerTests</c> pins both against <c>web-frame-attributes.fixture.json</c>.
+    /// </para>
     /// </summary>
     private HtmlElement LowerWebFrame(WebFrame frame)
     {
-        var tokens = new List<string>(4);
-        if (frame.Sandbox.HasFlag(WebSandbox.Scripts)) tokens.Add("allow-scripts");
-        if (frame.Sandbox.HasFlag(WebSandbox.SameOrigin)) tokens.Add("allow-same-origin");
-        if (frame.Sandbox.HasFlag(WebSandbox.Forms)) tokens.Add("allow-forms");
-        if (frame.Sandbox.HasFlag(WebSandbox.Popups)) tokens.Add("allow-popups");
-
         var attributes = new Dictionary<string, string>
         {
-            ["sandbox"] = string.Join(' ', tokens),
+            ["sandbox"] = string.Join(' ', SandboxTokens.Where(entry => frame.Sandbox.HasFlag(entry.Flag)).Select(entry => entry.Token)),
             ["title"] = frame.Title,
         };
+        if (DelegatedFeatures.Where(entry => frame.Sandbox.HasFlag(entry.Flag)).Select(entry => entry.Feature).ToList()
+            is { Count: > 0 } features)
+            attributes["allow"] = string.Join("; ", features);
         if (frame.Content.Value is { Length: > 0 } content)
             attributes[frame.Content.IsInline ? "srcdoc" : "src"] = content;
 

@@ -327,6 +327,31 @@ public class UIOptions
     internal ServerEventsBuilder? ServerEvents { get; private set; }
 
     /// <summary>
+    /// Lets the app's pages upload files to it, in resumable parts, under the policies
+    /// <paramref name="configure"/> accepts, and its Server Actions receive them as an
+    /// <see cref="eQuantic.UI.Primitives.UploadedFile"/>:
+    /// <c>ui.UseUploads(uploads =&gt; uploads.Accept(Models))</c>. Where the files are kept and for how
+    /// long is read from <c>EQuantic:Uploads</c>.
+    /// </summary>
+    public UIOptions UseUploads(Action<UploadsBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        // One builder however many times this is called, as for the server events: a library and the
+        // app may each accept their policies, and the endpoint is mapped once.
+        if (Uploads is null)
+        {
+            Uploads = new UploadsBuilder();
+            RegisterServices(Uploads.Register);
+            RegisterEndpoints(endpoints => endpoints.MapUploads());
+        }
+        configure(Uploads);
+        return this;
+    }
+
+    /// <summary>The uploads the app configured, or null when it called no <see cref="UseUploads"/>.</summary>
+    internal UploadsBuilder? Uploads { get; private set; }
+
+    /// <summary>
     /// Routes the app declared in <c>Program.cs</c> with <c>MapPage&lt;T&gt;</c>, rather than on the
     /// page with <c>[Page]</c>.
     /// <para>

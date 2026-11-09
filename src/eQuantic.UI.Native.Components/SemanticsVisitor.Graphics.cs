@@ -33,8 +33,29 @@ internal sealed partial class SemanticsVisitor
     /// <inheritdoc cref="Graphic"/>
     public bool Visit(Vector node, LayoutNode laidOut) => Graphic(node.Label, laidOut);
 
-    /// <inheritdoc cref="Graphic"/>
-    public bool Visit(Drawing node, LayoutNode laidOut) => Graphic(node.Label, laidOut);
+    /// <summary>
+    /// <inheritdoc cref="Graphic" path="/summary"/> Its INPUT shapes are controls of their own, announced
+    /// after the drawing as a reader walks it, each a button named by its label with its toggle state as
+    /// the selected one, at the id the input route gives it, so a reader's activation runs the shape the
+    /// keyboard stops on (#674). A drawing with no label still announces them: the picture is
+    /// decoration, the concelhos are not.
+    /// </summary>
+    public bool Visit(Drawing node, LayoutNode laidOut)
+    {
+        var announced = Graphic(node.Label, laidOut);
+        var shapes = node.Artwork.Shapes;
+        for (var i = 0; i < shapes.Count; i++)
+        {
+            var shape = shapes[i];
+            if (!shape.IsInput) continue;
+            if (laidOut.Element is not NodeElement at)
+                throw new InvalidOperationException("A drawing with input shapes was announced with no position to name them by.");
+            _nodes.Add(new SemanticNode(SemanticRole.Button, at.PartId(i),
+                ShapeHit.BoundsOf(node.Artwork, shape, laidOut.Bounds), shape.Label ?? "", null, false,
+                Selected: shape.Selected));
+        }
+        return announced;
+    }
 
     /// <inheritdoc cref="Graphic"/>
     public bool Visit(CameraPreview node, LayoutNode laidOut) => Graphic(node.Label, laidOut);

@@ -1,4 +1,5 @@
 import type { FontFamily, Point, Rect, Size } from './value-types';
+import type { PickedFile } from './picked-file';
 /**
  * The SHARED abstract vocabulary on the client (docs/SHARED-COMPONENTS-PLAN.md) — the JS shapes of
  * `eQuantic.UI.Primitives` nodes as the transpiler emits them (camelCase properties, enums as
@@ -446,6 +447,16 @@ export interface TextRunValue {
    * instead of between words.
    */
   destination?: string | null;
+}
+
+/** Wire shape of the C# `DropTarget` — an area a person drops files onto. */
+export interface DropTargetNode extends VisualNodeValue {
+  nodeKind: 'dropTarget';
+  child: VisualNodeValue;
+  onDropped?: (files: PickedFile[]) => void;
+  /** true while files are carried over the area, false when they leave or land. */
+  onDragOverChanged?: ((over: boolean) => void) | null;
+  enabled?: boolean;
 }
 
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
@@ -939,7 +950,9 @@ export interface CameraPreviewNode extends VisualNodeValue {
 
 /**
  * An embedded, isolated web document (C# twin: `WebFrame`). `sandbox` crosses as the [Flags]
- * NUMBER — bit 1 scripts, 2 same-origin, 4 forms, 8 popups — and the lowering spells the tokens.
+ * NUMBER — 1 scripts, 2 same-origin, 4 forms, 8 popups loosen the isolation; 16 payment, 32 camera,
+ * 64 microphone, 128 location, 256 fullscreen, 512 copy to clipboard, 1024 passkeys hand the document
+ * something of the page's — and the lowering spells `sandbox` and `allow`.
  */
 export interface WebFrameNode extends VisualNodeValue {
   nodeKind: 'webFrame';
@@ -1078,6 +1091,14 @@ export interface VectorShapeValue {
   strokeWidth: number;
   evenOdd: boolean;
   opacity: number;
+  /** What assistive tech announces for the shape (#674). */
+  label?: string | null;
+  /** A press inside the path, or Enter or Space while focused; absent keeps the shape a picture. */
+  onPressed?: (() => void) | null;
+  /** The toggle state, announced as pressed or not. */
+  selected?: boolean | null;
+  /** The paint under the pointer: fill (`background`), stroke (`borderColor`, `borderWidth`), opacity. */
+  hover?: StyleDiffValue | null;
 }
 
 /** Mirrors `VectorDrawing`: what a `.svg` FILE became, read once at build time. */

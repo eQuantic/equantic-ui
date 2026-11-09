@@ -141,33 +141,54 @@ internal sealed partial class MeasureVisitor
             return FlexItem(flexible, child, main, horizontal, ctx);
         }
 
-        // A RIGID item measured again inside the extent an overflowing line leaves it. A zero
-        // weight goes into a slot of that extent, with a basis or without one: measured through its
-        // wrapper it would hug its content, so a child wider than the extent would hold the item at
-        // the child's width, where the web shrinks the item (`min-width: 0`) and lets the child
-        // overflow it.
+        // An item measured again inside the extent an overflowing line leaves it. A Flexible goes
+        // into a slot of that extent, whatever its weight: measured through its wrapper it would hug
+        // its content, so a child wider than the extent would hold the item at the child's width,
+        // where the web shrinks the item (`min-width: 0`) and lets the child overflow it.
         LayoutNode Remeasure(int i, float main, bool truncating = false)
         {
-            if (children[i] is Flexible zero && flexWeights[i] == 0)
-                return Slot(zero, i, main, truncating);
+            if (children[i] is Flexible flexible)
+                return Slot(flexible, i, main, truncating);
             var (sW, sH) = CrossStretch(children[i]);
             return MeasureChild(children[i], horizontal ? main : crossAvail,
                 horizontal ? crossAvail : main, children.At(at, i),
                 stretchW: sW, stretchH: sH, truncating: truncating);
         }
 
-        // Pass 1 — rigid children (flexibles deferred; text measured at full availability first).
+        // Pass 1 — what each item STARTS from, CSS's flex base size: a rigid child's own size (text
+        // measured at full availability first), a zero weight's basis or content, and a weighted
+        // item's basis. A weighted item is deferred to pass 2, which adds its share of the leftover
+        // to that start; laid out from nothing, `Flexible(a, flex: 1, basis: 540)` beside
+        // `Flexible(b, flex: 1)` in 1440 was 720 | 720, where a browser gives 990 | 450 (#693).
+        // `rigidSum` is what the line takes before anything is shared: every start, summed. An item
+        // is DEFERRED when it declares a weight, asked of the item itself rather than kept beside it,
+        // because every line is laid out every frame.
         var rigidSum = 0f;
+        bool Deferred(int i) => children[i] is Flexible { Flex: > 0 } or Spacer { Flex: > 0 };
         for (var i = 0; i < children.Count; i++)
         {
             switch (children[i])
             {
                 case Flexible f:
                     // Spec B14: an AnimateChanges weight LAYS OUT at the animator's interpolated
-                    // value — forward changes glide over Motion.Base, everything else snaps.
+                    // value — forward changes glide over Motion.Base, everything else snaps. The
+                    // start follows the DECLARED weight and the share the resolved one, as the web
+                    // writes the declared basis at once and transitions only `flex-grow`: a weight
+                    // gliding to zero at a basis of 540 lands on 540 continuously, where it used to
+                    // glide toward nothing and snap to 540 on its last frame.
                     flexWeights[i] = ctx.Transitions?.Resolve(children.At(at, i), GlideChannel.Flex,
                         f.Flex, ctx.TimeMs, f.AnimateChanges, ctx.ReducedMotion) ?? f.Flex;
-                    if (flexWeights[i] > 0) continue;
+                    if (f.Flex > 0)
+                    {
+                        // Only where there is leftover to share: on an unbounded or indeterminate
+                        // axis pass 2 gives the item its content's size instead.
+                        if (mainBounded)
+                        {
+                            mains[i] = f.Basis;
+                            rigidSum += mains[i];
+                        }
+                        continue;
+                    }
                     // A ZERO weight takes no share (#680) — Flutter's inflexible child, CSS's
                     // `flex-grow: 0` — so it is a rigid item, laid out here. Deferred with the
                     // weighted ones, it vanished: pass 2 skips a weight of zero, and nothing else
@@ -175,7 +196,6 @@ internal sealed partial class MeasureVisitor
                     // it starts from its CONTENT (`flex-basis: auto`), so the main axis is decided
                     // by what goes in it and a Fill inside has nothing to fill — as in a browser,
                     // and as Flutter, which lays an inflexible child out unbounded, refuses it.
-                    flexWeights[i] = 0;
                     LayoutNode inflexible;
                     if (f.Basis > 0)
                     {
@@ -214,20 +234,22 @@ internal sealed partial class MeasureVisitor
 
         // Truncation contract (spec A2): on overflow, TEXT children shrink to ellipsis before any
         // sibling is pushed out; fixed children never shrink. Applies whenever the available extent is
-        // finite — a Hug row inside a bounded parent must not overflow it either. ROWS ONLY, for every
-        // item: a single-line column takes nothing back from an overflow here yet, so a zero weight
-        // at a basis of 540 after a fixed 100, in a column 400 tall, stays 540 and runs 240 past the
-        // column's end, where a browser shrinks it to 300 (`min-height: 0`).
-        if (!float.IsPositiveInfinity(mainAvail) && rigidSum + gapTotal > mainAvail && horizontal)
+        // finite — a Hug row inside a bounded parent must not overflow it either. A COLUMN takes its
+        // overflow back too (#747), by the flex-shrink pass alone: a zero weight at a basis of 540
+        // after a fixed 100, in a column 400 tall, ran 240 past the column's end, where a browser
+        // shrinks it to 300 (`min-height: 0`). The text cut stays a row's: a browser does not cut a
+        // paragraph in a column.
+        if (!float.IsPositiveInfinity(mainAvail) && rigidSum + gapTotal > mainAvail)
         {
             // A TEXT CHILD, seen through layout-transparent wrappers. Asking `is Text` here is what
             // made `Pressable(Text(…))` run past the end of a fixed row: not a text, so not cut, so
-            // its floor was its longest word and nothing could shrink it. A ZERO weight is not cut
-            // here, whatever it holds: the web writes it `flex: 0 <shrink> <basis>; min-width: 0`,
-            // an item that gives space back by its shrink TOGETHER with the other items that
-            // shrink, so it gives it in the flex-shrink pass below, and never first, as text.
+            // its floor was its longest word and nothing could shrink it. A Flexible is not cut
+            // here, whatever it holds: the web writes it `flex: <weight> <shrink> <basis>;
+            // min-width: 0`, an item that gives space back by its shrink TOGETHER with the other
+            // items that shrink, so it gives it in the flex-shrink pass below, and never first, as
+            // text.
             bool Cuttable(int i) =>
-                TextWithin(children[i]) is not null && children[i] is not Flexible { Flex: 0 };
+                horizontal && TextWithin(children[i]) is not null && children[i] is not Flexible;
 
             var deficit = rigidSum + gapTotal - mainAvail;
             var textTotal = 0f;
@@ -260,29 +282,44 @@ internal sealed partial class MeasureVisitor
             deficit = rigidSum + gapTotal - mainAvail;
             if (deficit > 0.5f)
             {
-                // What each item may give, and how hard it is asked. An item that is not a zero
-                // weight stops at its min-content floor (`min-width: auto` on the web) and is asked
-                // in proportion to the ROOM it has above it: a floor one item refuses to cross is
-                // width the others have to give, which is what makes a hugging button keep its word
-                // while the stretchy one beside it absorbs the overflow. A ZERO weight is written
-                // `flex: 0 <shrink> <basis>; min-width: 0`, so its floor is zero, a child wider than
-                // the item no longer holds it up (the web lets the child overflow it), and it is
-                // asked by its shrink times its size, as CSS scales a shrink factor: `shrink: 3`
-                // gives three times what `shrink: 1` of the same size gives.
+                // What each item may give, and how hard it is asked. An item that is not a Flexible
+                // stops at its min-content floor (`min-width: auto` on the web) and is asked in
+                // proportion to the ROOM it has above it: a floor one item refuses to cross is width
+                // the others have to give, which is what makes a hugging button keep its word while
+                // the stretchy one beside it absorbs the overflow. In a column that floor is the
+                // height the item measured, which is its min-content height (`min-height: auto`),
+                // so there it gives nothing, unless the web writes its minimum itself (see
+                // ColumnFloor). A Flexible is written `flex: <weight> <shrink> <basis>;
+                // min-width: 0` (`min-height: 0` in a column), so its floor is zero, a child wider
+                // than the item no longer holds it up (the web lets the child overflow it), and it
+                // is asked by its shrink times its start, as CSS scales a shrink factor: `shrink: 3`
+                // gives three times what `shrink: 1` of the same size gives, and a weighted item
+                // with no basis starts from nothing, so it has nothing to give.
                 var floors = new float[children.Count];
                 var weights = new float[children.Count];
                 var yielding = 0f;
                 for (var i = 0; i < children.Count; i++)
                 {
                     if (!Shrinkable(children[i])) continue;
-                    if (children[i] is Flexible { Flex: 0 } zero)
+                    if (children[i] is Flexible flexible)
                     {
-                        weights[i] = zero.Shrink * mains[i];
+                        weights[i] = flexible.Shrink * mains[i];
                     }
-                    else
+                    else if (horizontal)
                     {
                         floors[i] = MathF.Min(mains[i], MinContentWidth(children[i], children.At(at, i), ctx));
                         weights[i] = mains[i] - floors[i];
+                    }
+                    else if (ColumnFloor(laid[i]!) is { } column)
+                    {
+                        // Asked by its inner size, as CSS scales it, and stopped at its floor by the
+                        // loop below: 400 at a floor of 300 gives 100 beside a 540 that gives the rest.
+                        floors[i] = MathF.Min(mains[i], column.Floor);
+                        weights[i] = MathF.Max(0, mains[i] - column.Insets);
+                    }
+                    else
+                    {
+                        continue;
                     }
                     yielding += mains[i] - floors[i];
                 }
@@ -305,20 +342,20 @@ internal sealed partial class MeasureVisitor
                             if (!settled[i] && weights[i] > 0) weightSum += weights[i];
                         if (weightSum <= 0) break;
 
-                        var stopping = 0f;
+                        // Counted by the items, not by what they gave: one already at its floor gives
+                        // nothing and still leaves the weights, or the rest was shared by a sum that
+                        // counted it.
+                        var stopped = false;
                         for (var i = 0; i < children.Count; i++)
                         {
                             if (settled[i] || weights[i] <= 0) continue;
                             if (remaining * (weights[i] / weightSum) <= mains[i] - floors[i]) continue;
                             given[i] = mains[i] - floors[i];
-                            stopping += given[i];
+                            remaining -= given[i];
                             settled[i] = true;
+                            stopped = true;
                         }
-                        if (stopping > 0)
-                        {
-                            remaining -= stopping;
-                            continue;
-                        }
+                        if (stopped) continue;
 
                         for (var i = 0; i < children.Count; i++)
                             if (!settled[i] && weights[i] > 0) given[i] = remaining * (weights[i] / weightSum);
@@ -339,21 +376,26 @@ internal sealed partial class MeasureVisitor
             }
         }
 
-        // Pass 2 — distribute leftover to flexible children by weight.
+        // Pass 2 — distribute leftover to flexible children by weight, each on top of its start.
         var flexTotal = 0f;
         foreach (var w in flexWeights) flexTotal += w;
         var leftover = mainBounded ? MathF.Max(0, mainAvail - rigidSum - gapTotal) : 0f;
+        // Weights that sum to less than one share only that fraction of the leftover, and the rest
+        // stays free (Flexbox §9.7). A declared weight is a whole number, so only one an animation
+        // is gliding gets here, and this is what makes it glide: a lone weight going to zero kept
+        // the whole leftover until its last frame, and dropped it there at once.
+        var shared = flexTotal is > 0 and < 1 ? leftover * flexTotal : leftover;
 
         for (var i = 0; i < children.Count; i++)
         {
-            if (flexWeights[i] == 0) continue;
+            if (!Deferred(i) && flexWeights[i] == 0) continue;
 
             // Max-content sizing (the CSS twin): when there is no leftover to distribute — the
             // main axis is indeterminate or unbounded — a Flexible with CONTENT contributes its
             // own intrinsic size, exactly what a flex-grow item contributes to a max-content
             // container. A share of 0 here erased real content: a drawer's list rows measured
             // 0x0 because their row was hugging. (A flexible SPACER stays 0 — pure space.)
-            if (!mainBounded && children[i] is Flexible unbounded)
+            if (!mainBounded && Deferred(i) && children[i] is Flexible unbounded)
             {
                 var (usW, usH) = CrossStretch(unbounded);
                 var intrinsic = MeasureChild(unbounded.Child, horizontal ? mainAvail : crossAvail,
@@ -367,16 +409,21 @@ internal sealed partial class MeasureVisitor
                 continue;
             }
 
-            var share = flexTotal > 0 ? leftover * flexWeights[i] / flexTotal : 0f;
-            mains[i] = share;
+            var share = flexTotal > 0 ? shared * flexWeights[i] / flexTotal : 0f;
 
             if (children[i] is Flexible flexible)
             {
-                // The flexible slot IS the share on the main axis (the child fills it).
-                laid[i] = Slot(flexible, i, share);
+                // An item already laid out, a zero weight at its start or one an overflow shrank, is
+                // laid again only while it has a share to add: measured twice for nothing, a nest
+                // of overflowing lines would cost twice as much at every level.
+                if (laid[i] is not null && share <= 0) continue;
+                // The flexible slot IS its start plus its share on the main axis (the child fills it).
+                mains[i] += share;
+                laid[i] = Slot(flexible, i, mains[i]);
             }
             else
             {
+                mains[i] = share;
                 laid[i] = ctx.Node(children[i]); // flexible Spacer: pure space
             }
         }
@@ -391,7 +438,7 @@ internal sealed partial class MeasureVisitor
         var mainStretched = horizontal ? stretchW : stretchH;
         var crossStretched = horizontal ? stretchH : stretchW;
 
-        var contentMain = rigidSum + (flexTotal > 0 ? leftover : 0) + gapTotal;
+        var contentMain = rigidSum + (flexTotal > 0 ? shared : 0) + gapTotal;
         var main = mainSize.Kind switch
         {
             SizeKind.Fixed => mainSize.Value,
@@ -447,9 +494,12 @@ internal sealed partial class MeasureVisitor
                 _ => 0,
             };
             if (alignment == CrossAlign.Stretch
-                && CrossSizeKind(children[i], horizontal) != SizeKind.Fixed)
+                && DeclaredSizeKind(SizedBy(child).Source, !horizontal) is not (SizeKind.Fixed or SizeKind.WindowMinus))
             {
                 // CSS parity: stretch fills AUTO cross sizes only — an explicit cross size is kept.
+                // Asked of what the child measured to, by the classifier the main axis asks: a
+                // hand-kept list of its own missed a fixed Stack, Canvas, CameraPreview, ScrollView
+                // and WebFrame, and stretched a 20-tall one to the row's 100 (#744).
                 childCross = crossExtent;
                 child.Bounds = horizontal
                     ? child.Bounds with { Height = crossExtent }
@@ -476,12 +526,10 @@ internal sealed partial class MeasureVisitor
         source is Flexible ? item?.ChildAt(0) : item;
 
     /// <summary>
-    /// Spec S3 — the wrapping flex pass (the CSS flex-wrap twin), as it stands. A child breaks onto a
-    /// new line when the size it asks for would overflow the main extent: a Flexible's basis when it
-    /// declares one, and the size the child measures otherwise. That is CSS's hypothetical size for
-    /// every child but one: a WEIGHTED Flexible without a basis starts from zero in CSS
-    /// (<c>flex: n 1 0%</c>), and this pass breaks it at its child's natural size, so two of them
-    /// that share a line in a browser can take a line each here (#728). Each line is then resolved
+    /// Spec S3 — the wrapping flex pass (the CSS flex-wrap twin). A child breaks onto a new line when
+    /// the size it asks for would overflow the main extent, CSS's hypothetical size: a Flexible's
+    /// basis when it declares one, nothing for a WEIGHTED Flexible without one (CSS writes it
+    /// <c>flex: n 1 0%</c>), and the size the child measures otherwise. Each line is then resolved
     /// on its own (below) and arranged with the container's <see cref="FlexNode.Main"/>; within its
     /// line a child follows <see cref="FlexNode.Cross"/> (or its own AlignSelf); lines stack with
     /// RunGap.
@@ -502,18 +550,23 @@ internal sealed partial class MeasureVisitor
             : !float.IsPositiveInfinity(mainMax) ? mainMax - padMain
             : float.PositiveInfinity;
 
-        // Measure every child at the size the line breaker works from: its basis when it declares
-        // one, its natural size otherwise. With a basis that is CSS's hypothetical size exactly: a
-        // pane with a basis of 440 asks for 440 whatever its content happens to measure, so two of
-        // them share a line while there is room for both and take a line each when there is not.
-        // Without one it is CSS's for every child but a WEIGHTED Flexible, which CSS starts from
-        // zero (`flex: n 1 0%`) and this starts from its child's natural size, the v1 behaviour in
-        // which a Flexible simply degraded to its child (#728).
+        // Measure every child, and note the size the line breaker works from, CSS's hypothetical
+        // size: a pane with a basis of 440 asks for 440 whatever its content happens to measure, so
+        // two of them share a line while there is room for both and take a line each when there is
+        // not. A WEIGHTED Flexible without a basis asks for nothing, as CSS starts it from zero
+        // (`flex: n 1 0%`): broken at its child's natural size, two of them around 600 boxes took a
+        // line of 1000 each, where a browser puts both on one line at 500 (#728). That needs a line
+        // to grow it, so on an UNBOUNDED main axis, where no line resolves, it asks for its child's
+        // size instead, the content it contributes to a max-content container, as the single-line
+        // pass gives it. Any other child asks for the size it measures.
         // What the lines lay out: an AdaptiveNode's place is its arm's (see LaidOutChildren).
         var children = new LaidOutChildren(flex.Children, ctx);
         var measured = new List<LayoutNode>(children.Count);
         var sources = new List<VisualNode>(children.Count);
         var hypothetical = new List<float>(children.Count);
+        // Whether an item starts from nothing while it was measured against the whole line: it is
+        // measured again where its line leaves it, wherever that is.
+        var fromNothing = new List<bool>(children.Count);
         var grow = new List<int>(children.Count);
         var shrink = new List<int>(children.Count);
         // Where each item stands, kept beside it for every later measure of it. Neither the count
@@ -544,7 +597,11 @@ internal sealed partial class MeasureVisitor
             measured.Add(node);
             positions.Add(itemAt);
             sources.Add(source);
-            hypothetical.Add(basis > 0 ? basis : horizontal ? node.Bounds.Width : node.Bounds.Height);
+            var startsFromNothing = basis <= 0 && flexible is { Flex: > 0 } && float.IsFinite(mainAvail);
+            fromNothing.Add(startsFromNothing);
+            hypothetical.Add(basis > 0 ? basis
+                : startsFromNothing ? 0
+                : horizontal ? node.Bounds.Width : node.Bounds.Height);
             grow.Add(flexible?.Flex ?? 0);
             shrink.Add(flexible?.Shrink ?? 0);
         }
@@ -554,7 +611,9 @@ internal sealed partial class MeasureVisitor
         // 540 around a 400 box occupies 540, as in a browser, and not the box's 400.
         var resolved = new List<float>(hypothetical);
 
-        // Break into lines, measuring against the hypothetical sizes.
+        // Break into lines, measuring against the hypothetical sizes. A line is "started" by the
+        // items it holds, not by the size they ask for: an item that asks for nothing still has a
+        // gap before the next one.
         var lines = new List<(int Start, int Count, float Main, float Cross)>();
         var lineStart = 0;
         var lineMain = 0f;
@@ -563,8 +622,8 @@ internal sealed partial class MeasureVisitor
         {
             var childMain = hypothetical[i];
             var childCross = horizontal ? measured[i].Bounds.Height : measured[i].Bounds.Width;
-            var withGap = lineMain > 0 ? lineMain + flex.Gap + childMain : childMain;
-            if (lineMain > 0 && withGap > mainAvail)
+            var withGap = i > lineStart ? lineMain + flex.Gap + childMain : childMain;
+            if (i > lineStart && withGap > mainAvail)
             {
                 lines.Add((lineStart, i - lineStart, lineMain, lineCross));
                 lineStart = i;
@@ -596,15 +655,17 @@ internal sealed partial class MeasureVisitor
                 var slack = mainAvail - line.Main;
                 var totalGrow = 0;
                 var scaledShrink = 0f;
+                var measuredElsewhere = false;
                 for (var i = line.Start; i < line.Start + line.Count; i++)
                 {
                     totalGrow += grow[i];
                     scaledShrink += shrink[i] * hypothetical[i];
+                    measuredElsewhere |= fromNothing[i];
                 }
 
                 var growing = slack > 0.01f && totalGrow > 0;
                 var shrinking = slack < -0.01f && scaledShrink > 0;
-                if (!growing && !shrinking) continue;
+                if (!growing && !shrinking && !measuredElsewhere) continue;
 
                 var resolvedMain = 0f;
                 var resolvedCross = 0f;
@@ -619,7 +680,11 @@ internal sealed partial class MeasureVisitor
                         size = MathF.Max(size, horizontal ? MinContentWidth(sources[i], positions[i], ctx) : 0);
                     }
 
-                    if (MathF.Abs(size - hypothetical[i]) > 0.01f)
+                    // What it was measured against: an item that starts from nothing was measured
+                    // against the whole line. Only a size that differs from that is measured again:
+                    // a lone weighted item takes the whole line, and measuring it twice at every
+                    // level of a nest of wrapping rows cost a leaf 1,024 measures at ten levels.
+                    if (MathF.Abs(size - (fromNothing[i] ? mainAvail : hypothetical[i])) > 0.01f)
                     {
                         // Measured again inside the size it resolved to, so text re-wraps there. The
                         // item built below OCCUPIES that size, even when its content is shorter:
@@ -631,8 +696,8 @@ internal sealed partial class MeasureVisitor
                         measured[i] = Measure(child, constraints.ForChild(horizontal ? size : crossMax - padCross,
                             horizontal ? crossMax - padCross : size) with { WidthIsACeiling = MainSizeIsACeiling(SizedBy(measured[i]).Source, horizontal) },
                             ctx, ItemChild(positions[i], sources[i]));
-                        resolved[i] = size;
                     }
+                    resolved[i] = size;
 
                     resolvedMain += size + (i > line.Start ? flex.Gap : 0);
                     resolvedCross = MathF.Max(resolvedCross,

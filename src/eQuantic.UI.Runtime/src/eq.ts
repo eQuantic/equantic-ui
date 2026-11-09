@@ -55,6 +55,9 @@ import {
   intRem,
   longDiv,
   longRem,
+  saturate,
+  saturateLong,
+  saturateUnsigned,
   singleFromLong,
   substring,
 } from './utils/overflow';
@@ -66,6 +69,17 @@ import {
   toHexString,
   toHexStringLower,
 } from './utils/convert-encoding';
+import {
+  booleanFromObject,
+  charFrom,
+  charFromObject,
+  charFromText,
+  integerFrom,
+  integerFromDecimal,
+  integerFromDouble,
+  integerFromObject,
+  realFromObject,
+} from './utils/number-convert';
 import {
   intConvert,
   intParse,
@@ -179,6 +193,8 @@ import {
   findLast,
   findLastIndex,
   indexOf as listIndexOf,
+  getRange as listGetRange,
+  insert as listInsert,
   insertRange,
   lastIndexOf as listLastIndexOf,
   listCapacity,
@@ -188,6 +204,8 @@ import {
   listSortBy,
   order,
   removeAll,
+  removeAt as listRemoveAt,
+  removeRange as listRemoveRange,
   stringOrder,
 } from './utils/list';
 import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
@@ -392,8 +410,21 @@ export const $eq = {
     realParse,
     realTryParse,
     realConvert,
+    /** `Convert.To<number>` of what is not text, as .NET converts it (#401). */
+    integerFrom,
+    integerFromDouble,
+    integerFromDecimal,
+    integerFromObject,
+    realFromObject,
+    charFrom,
+    charFromText,
+    charFromObject,
     long,
     checked,
+    /** An explicit cast of a double or a float to an integer, which saturates (#1015). */
+    saturate,
+    saturateUnsigned,
+    saturateLong,
     divRem,
     divRemLong,
     intDiv,
@@ -563,6 +594,11 @@ export const $eq = {
     /** `List<T>.AddRange` and `InsertRange`, one element at a time, never a spread past an engine's cap (#1060). */
     addRange,
     insertRange,
+    /** `List<T>.Insert`, `RemoveAt`, `RemoveRange` and `GetRange`, each position checked as .NET checks it (#1160). */
+    listInsert,
+    listRemoveAt,
+    listRemoveRange,
+    listGetRange,
     removeAll,
     copyTo,
     copyRangeTo,
@@ -585,7 +621,7 @@ export const $eq = {
     pair,
   },
   /** `bool.Parse`, `bool.TryParse` and `Convert.ToBoolean(string)`, as .NET reads the text. */
-  bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert },
+  bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert, fromObject: booleanFromObject },
   /** `Convert.ToBase64String`, `ToBase64CharArray`, `ToHexString` and `ToHexStringLower`, as .NET
    * encodes the bytes (#716). */
   convert: { toBase64String, toBase64CharArray, toHexString, toHexStringLower },

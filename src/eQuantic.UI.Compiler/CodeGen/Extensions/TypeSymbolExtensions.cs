@@ -21,6 +21,7 @@ public static class TypeSymbolExtensions
         SpecialType.System_Int16, SpecialType.System_UInt16,
         SpecialType.System_Int32, SpecialType.System_UInt32,
         SpecialType.System_Int64, SpecialType.System_UInt64,
+        SpecialType.System_IntPtr, SpecialType.System_UIntPtr,
     };
 
     private static readonly SpecialType[] PrimitiveNumericTypes =
@@ -225,9 +226,10 @@ public static class TypeSymbolExtensions
     public static bool IsDecimal(this ITypeSymbol? type) =>
         type.UnwrapNullable()?.SpecialType == SpecialType.System_Decimal;
 
-    /// <summary><c>long</c>/<c>ulong</c> (or their nullable forms).</summary>
+    /// <summary><c>long</c>/<c>ulong</c> (or their nullable forms), and <c>nint</c>/<c>nuint</c>, which are
+    /// 64 bits wide on every target and held as they are (#649).</summary>
     public static bool IsLong(this ITypeSymbol? type) =>
-        type.UnwrapNullable()?.SpecialType is SpecialType.System_Int64 or SpecialType.System_UInt64;
+        type.UnwrapNullable()?.SpecialType is SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr;
 
     /// <summary>
     /// <c>Nullable&lt;T&gt;</c> over a primitive numeric T (the kinds whose lifted operators route

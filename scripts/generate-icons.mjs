@@ -8,15 +8,13 @@
  * package references ONLY eQuantic.UI.Primitives — the same catalog serves the web realizer
  * (inline SVG) and the native glyph atlas (W4) once it lands.
  *
- * Usage, from the repository root, with the embedded bun the Runtime project extracts (no Node).
- * The binary is per host — the package names the three:
+ * Usage, from the repository root, with the embedded bun (no Node). The Runtime project unpacks the
+ * one this machine runs into the user's cache, under its zip's SHA-256, and MSBuild answers its path:
  *
- *     macOS    src/eQuantic.UI.Runtime.OsxArm64/tools/bun/bun-darwin   scripts/generate-icons.mjs [prefix …]
- *     Linux    src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux     scripts/generate-icons.mjs [prefix …]
- *     Windows  src\eQuantic.UI.Runtime.Win64\tools\bun\bun.exe          scripts/generate-icons.mjs [prefix …]
+ *     bun=$(dotnet msbuild -restore src/eQuantic.UI.Runtime -t:ResolveEmbeddedBun -getProperty:_BunPath)
+ *     "$bun" scripts/generate-icons.mjs [prefix …]
  *
- * (Osx64 / LinuxArm64 / WinArm64 on the other architectures; no prefix = all sets. The binary is
- * extracted by the first build of the Runtime or the Server project.) The source is PINNED: every set is read from one commit of
+ * (no prefix = all sets.) The source is PINNED: every set is read from one commit of
  * iconify/icon-sets, so the same command regenerates the same bytes on any machine on any day.
  * Taking newer icons is a change of that commit and nothing else, and the regenerated diff is its
  * review.

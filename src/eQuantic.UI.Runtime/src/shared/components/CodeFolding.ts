@@ -365,7 +365,7 @@ export class CodeFolding {
         let folded: boolean[] = [];
         let open: CodeFold[] = [];
         for (const region of all) {
-            while (open.length > 0 && open[open.length - 1].endLine < region.startLine) open.splice(open.length - 1, 1);
+            while (open.length > 0 && open[open.length - 1].endLine < region.startLine) $eq.collections.listRemoveAt(open, open.length - 1);
             if (open.length > 0) {
                 let holding = open[open.length - 1];
                 if (region.startLine === holding.startLine || region.endLine > holding.endLine) continue;

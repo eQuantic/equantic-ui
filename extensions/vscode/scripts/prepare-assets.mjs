@@ -56,7 +56,7 @@ copyFileSync(source, target);
 const server = resolve(extension, '../../src/eQuantic.UI.Server/eQuantic.UI.Server.csproj');
 const runtimeSource = resolve(extension, '../../src/eQuantic.UI.Server/wwwroot/runtime.js');
 const runtimeDir = join(extension, 'runtime');
-const bundled = spawnSync('dotnet', ['msbuild', server, '-t:BundleRuntime', '-nologo', '-v:quiet'], { stdio: 'inherit' });
+const bundled = spawnSync('dotnet', ['msbuild', '-restore', server, '-t:BundleRuntime', '-nologo', '-v:quiet'], { stdio: 'inherit' });
 if (bundled.error || bundled.status !== 0 || !existsSync(runtimeSource)) {
   console.error(`prepare-assets: bundling the runtime through ${server} failed — ${bundled.error?.message ?? `exit ${bundled.status}`}.`);
   process.exit(1);

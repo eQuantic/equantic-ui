@@ -3376,6 +3376,768 @@ record of a release, the wiki's Upgrading page is the distillate.
   [#1019](https://github.com/eQuantic/equantic-ui/issues/1019) and
   [#1020](https://github.com/eQuantic/equantic-ui/issues/1020)). Proposed and archived through
   OpenSpec (`openspec/specs/device-passkeys`, a new spec).
+- **2026-10-19 · The code editor explains the call being written, and its completion waits for no
+  provider**: the rest of slice 4 of `docs/CODE-EDITOR-PLAN.md`. `CodeSignatureHelpSession` opens the
+  panel on a provider's trigger character or ⌘⇧Space, asks again while it shows, after 120 ms as VS Code
+  does and at once on a retrigger character, and lets its providers (`ICodeSignatureProvider`, LSP's
+  `textDocument/signatureHelp`, typed) say which signature applies and which argument the caret is on,
+  `gap:` included, and close it by answering none. ↑ and ↓ walk the overloads, ⌥↑ and ⌥↓ beside a
+  completion list too, the arrows are the caret's while a card hides the panel, and Escape closes it. An
+  app's provider keeps the trigger characters it does not declare in the browser too, the runtime carrying
+  the interface's defaults.
+  `CodeEditor.SignatureProviders` draws it as a note of the code surface over the caret's line, on the
+  other side of a completion list, the argument marked in the accent colour, a polite live region. The
+  completion applies each provider's answer as it arrives, in the order of `Providers`, keeping the
+  entry selected, and a request belongs to its provider, so asking one again no longer drops what a slow
+  one still owes ([#298](https://github.com/eQuantic/equantic-ui/issues/298),
+  [#620](https://github.com/eQuantic/equantic-ui/issues/620)). Both run the same on the web, sessions
+  executed against .NET key by key. Proposed and archived through OpenSpec
+  (`openspec/specs/code-signature-help`, a new spec, and `openspec/specs/code-completion`).
+- **2026-10-20 · The code editor's keys are commands, and its keymap is data**: the first part of slice 2
+  of `docs/CODE-EDITOR-PLAN.md`. Every action a key ran is a `CodeCommand`, and `CodeKeymap.Defaults` is
+  a table of `CodeKeyBinding`s from the SDK's `KeyChord` to a command, one for each keyboard convention,
+  a chord trying its commands in order until one runs and a binding of two keys waiting only while its
+  command could run. `CodeEditorController.Execute` runs a command with no key, `CanExecute` says whether
+  it would, and `CodeEditor.KeyBindings` puts an app's own bindings over the defaults, a chord bound to
+  `None` going back to the host. A chord names its modifiers exactly: measured over every key and every
+  combination of the four modifiers in both conventions and ten states (`CodeKeymapBehaviourTests`), the
+  combinations the hand-written keymap claimed by accident went to the host, and every chord the tables
+  name answers as before but three, on purpose (⇧Tab and ⇧Enter over a list, ⌥↑ ⌥↓ outside the
+  signature panel) ([#1010](https://github.com/eQuantic/equantic-ui/issues/1010)). Proposed and
+  archived through OpenSpec (`openspec/specs/code-keymap`, a new spec).
+- **2026-10-21 · 0.2.0-preview.65 released** from `9bab1d2d`: a page that uses a passkey from one C#
+  contract, realized in the browser (#1021), a table that scrolls Excel's whole sheet on both axes, on
+  both targets (#1014), and a code editor that shows its problems and explains the code (#1008), with
+  the release's own issue (#1023). The publish pushed all 51 packages, and all 51 restored cold from
+  nuget.org an hour and a half after the tag. An app scaffolded from the published templates built in
+  Release with no warning, served the Server package's runtime byte for byte, counted in a browser,
+  and resolved `IPasskeys` to the browser's realization
+  *([v0.2.0-preview.65](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.65))*.
+- **2026-10-22 · The spreadsheet scrolls both axes on the table viewport**: the sheet moved into an
+  assembly of its own, `eQuantic.UI.Spreadsheets`, and onto slice 0a's viewport, its headers pinned
+  rows and columns of the table, so a cell starts under its header by construction and only the cells
+  in view are built, at 100 000 × 100 in the gallery and up to Excel's extent. The engine reads a
+  press against the live scroll, keeps the active cell in view through a reveal version that carries
+  the cell the command left, and scrolls a held drag; the selection is drawn as marks, the colours
+  come from the theme's new sheet slot, and the web surface takes pointer events, a finger's tap
+  selecting on release and its pan scrolling. Measured in Chromium (headers aligned to 0 px at 400, 900
+  and 1 440 px; a drag held below the grid scrolled 1 383 px in a second and stopped on release) and
+  benched at 100 000 × 100: a keystroke 2.6 ms on Photon and 9.1 ms in the runtime
+  ([#995](https://github.com/eQuantic/equantic-ui/issues/995)). Proposed and archived through OpenSpec
+  (`openspec/specs/spreadsheet`, `openspec/specs/table-viewport`).
+- **2026-10-24 · The code editor moves, copies, deletes, joins and sorts lines**: the second part of
+  slice 2 of `docs/CODE-EDITOR-PLAN.md`. ⌥↑ and ⌥↓ move the lines the selection takes, the selection
+  with them, ⇧⌥↑ and ⇧⌥↓ copy them, ⇧⌘K deletes them, ⌃J joins them as VS Code joins (the next line's
+  leading spaces and tabs go, and one space joins the text), ⌘↩ and ⇧⌘↩ open a line below and above
+  the caret's, and two commands no key runs sort them, case aside and then by code unit, the same on
+  both targets. Each operation is one replacement and one undo step, and the history records the
+  selection it leaves, so redo selects the lines again. Compared with the twin over the joins of the
+  white space .NET and JavaScript disagree on, the sorts of lines whose order only case decides, and
+  seeded sessions on a real file (`CodeLinesTwinTests`): the joins fail against a twin that trims with
+  JavaScript's own `trimStart`, and the sorts against one that orders by its own lower case
+  ([#1011](https://github.com/eQuantic/equantic-ui/issues/1011)). Proposed and archived through
+  OpenSpec (`openspec/specs/code-lines`, a new spec).
+- **2026-10-24 · The document is the theme's**: the first slice of #1038, under the epic of any design
+  system in C# with no CSS (#1035). `IAppTheme` names the document around the components: `TextFamily`
+  beside `MonoFamily`, and `Selection`, `OnSelection`, `Placeholder`, `ScrollbarThumb` and
+  `ScrollbarTrack`, each defaulting to the value the SDK already drew with, so Photon's goldens hold. The
+  web's theme stylesheet writes the body, the selection, every field's placeholder and, when the theme
+  sets them, the page's scrollbars from them, on every page (Photon's theme when the app chose none, which also defined the
+  variables a table's scrollbars named and nothing declared), and it comes before the app's own CSS.
+  `HtmlShellOptions.SetBaseStyles` and `BaseStyles` gave way to `AddStyles`, which appends. Photon sets
+  a field's text through the merge a `Text` goes through, and a field's placeholder, a table's
+  scrollbars and the code editor's selection read the slots on both targets, the text a selection
+  covers in `OnSelection`. A page the server does not render shows a placeholder the theme's
+  stylesheet centres, and answers 200: in production an app with a 500 page used to answer every
+  `DisableSsr` page with it, because the server told the two apart by the placeholder's text. On the way,
+  `IAppTheme.cs`, `UIExtensions.cs` and `TokenCss.cs` split into one type per file, the stylesheet
+  generator was renamed `ThemeStylesheet`, and twelve copies of a test rasterizer became one
+  ([#1038](https://github.com/eQuantic/equantic-ui/issues/1038)). Proposed and archived through
+  OpenSpec (`openspec/specs/document-theme`, a new spec, `typography` and `page-routes`).
+- **2026-10-24 · The runtime cases as the newest ICU does**: `ubuntu-latest` moved to Ubuntu 26.04, whose
+  ICU is 78, Unicode 17, and .NET 10 there upper-cases `ƛ` to `Ƛ`, where the runtime kept the letters
+  Unicode 16 and 17 cased as the servers of Ubuntu 24.04 and Windows keep them: 48 cases of
+  `CasingConformanceTests` failed on `main` and on every pull request. Edgar's decision was the newer
+  Unicode: the runtime's list of the code points to keep their case became the list of their case pairs,
+  written out so that a browser whose own Unicode is older answers as the servers do, and the 48 cases
+  pass on macOS 26 and fail there on main's runtime. On a host whose ICU is older the suite leaves those
+  letters out of the cases that read every code point and compares every other one
+  ([#1032](https://github.com/eQuantic/equantic-ui/issues/1032)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
+- **2026-10-25 · A face a page names loads on the web as it does on Photon**: the third slice of #1038
+  ([#1056](https://github.com/eQuantic/equantic-ui/issues/1056)). A family a `Text` names at a call site
+  loads wherever it comes from, built by hand or read from a library's catalog. A page the server renders
+  declares, in an `eq-faces` style element in its head, the faces of every such family the theme's
+  stylesheet does not declare, collected while it renders (`FaceSink`, beside `StyleSink`). A page the
+  browser builds declares a family the first time the runtime sets or measures text in it, once every file
+  of it is there, as the same `@font-face` rules, unless the document has it, asking for each file by its identity at
+  `/_equantic/fonts/<assembly>/<resource>`, which the server sends on to the hashed URL. The web serves a
+  face the theme names, or one an eQuantic build embedded in an assembly the app's deployment carries,
+  read from the deployment so every instance answers every URL, a library the app names only as text
+  included: a family over a font a library embedded another way is
+  served nowhere, and logged. A family is declared once, falls back whole when a file fails to load,
+  whoever declared it, and the pages that measured text in it measure again. `ServedFonts` became a
+  service the render and the routes share. Proposed and archived through OpenSpec (`font-faces`).
+- **2026-10-25 · A face from Google Fonts is fetched by the build and served by the app**: the fourth slice of
+  #1038 ([#1057](https://github.com/eQuantic/equantic-ui/issues/1057)). An app declares a family in C#,
+  `[assembly: GoogleFont("Inter", FontWeight.Regular, FontWeight.Bold, Italic = true)]`, and the build fetches
+  the file of each cut before the app compiles (eqicon's `fetch-fonts`, from a target before
+  `AssignTargetPaths` in both SDKs), keeps it under `obj/equantic/fonts/google` and embeds it as the faces
+  under `Assets` are, so the catalog names `Fonts.Inter` and the server and Photon load it from the app. No
+  page asks Google for anything. Each file is pinned in `fonts.lock.json` beside the project, by its URL and
+  its SHA-256, written by the SDK and committed by the app as NuGet's `packages.lock.json` is: a pinned file
+  that changed or vanished, or a cut added to a family Google has replaced, fails the build (EQ4009) until the
+  family is taken out of the lock. No build takes a pin out, since the families a build reads depend on its
+  symbols, each build embeds from a folder of its own, and a build that fails leaves the lock as it was. EQ4007 refuses a
+  declaration the build cannot read before the compile, and EQ4008 a family, weight or italic Google does not
+  have, or Google out of reach. The weights outside `FontWeight` are #1082. Proposed and archived through
+  OpenSpec (`font-faces`).
+- **2026-10-25 · A number is read in the culture the call names**: `decimal.TryParse(text,
+  NumberStyles.Float, CultureInfo.CurrentCulture, out var d)` failed the build (EQ2108), and a number
+  read with no provider read the invariant culture in the browser under a warning (EQ2110), where .NET
+  reads the current one; the spreadsheet's status bar met it summing `7,01` on a pt-BR page. The
+  runtime's number grammar, .NET's `TryParseNumber` with the invariant culture's symbols written in,
+  takes the culture's `NumberFormatInfo` and matches it as .NET 10's source does (a no-break space read
+  from a typed space, a hyphen for a culture whose minus is U+2212, the currency's separators before the
+  number's, a real's infinity and NaN in the culture's words). eqc asks the date readers' policy: no
+  provider, the current culture and a null one, a null behind a cast included, read the page's culture,
+  the invariant culture passes a flag, any other is EQ2108; `ParseCulture` and EQ2110 are gone. Proved by
+  eight cases in nine cultures run on both sides
+  ([#1087](https://github.com/eQuantic/equantic-ui/issues/1087),
+  [#908](https://github.com/eQuantic/equantic-ui/issues/908)). Proposed and archived through OpenSpec
+  with slice 2a (`openspec/specs/transpiler-bcl`).
+- **2026-10-25 · An undo step holds the edits one command made, and a moved line keeps its problems**: a
+  line operation of #1033 was one replacement over every line it rewrote, so `CodeEdit.Carry` took a
+  problem on a moved line to the replacement's ends, over the moved line and the one it passed. A step of
+  the history is now the edits one command made, in order: undo takes them back last first, redo makes them
+  again, and the editor raises `Changed` once the step is made, with every replacement in the order made, a
+  `CodeChange`, where it raised one `CodeEdit` or null. The editor's problems follow each replacement the
+  moment the document takes it, as its colours do, so one reported at any moment stands where it was
+  reported.
+  A move is the line it passes written on the block's other side and deleted where it was, so the block's
+  problems travel with it, through the move, its undo and its redo
+  ([#1031](https://github.com/eQuantic/equantic-ui/issues/1031)); one of no width at the document's end
+  is [#1059](https://github.com/eQuantic/equantic-ui/issues/1059). The history's twin met a transpiler gap
+  on the way: a method's outs were declared untyped in TypeScript, and one assigned an empty list failed
+  `tsc`; eqc declares them `any` there now
+  ([#1034](https://github.com/eQuantic/equantic-ui/issues/1034)). Proposed and archived through OpenSpec
+  (`openspec/specs/code-history`, `openspec/specs/code-lines`, `openspec/specs/code-editor`).
+- **2026-10-25 · A shipped family crosses hydration whole**: what Copilot's third review of #1062 found
+  after it merged ([#1069](https://github.com/eQuantic/equantic-ui/issues/1069)). The theme bridge sends
+  a family with its files, so a component reads after hydration the family it read on the server, a
+  file's names written escaped inside the script element, and the generated theme writes them the same
+  way. A call eqc reads from its syntax places every element it lists for a params parameter in that
+  parameter, after a named argument too, where one place a parameter dropped the rest. Android caches a
+  face whole or not at all, and a cache that cannot take it is a face that did not register. Proposed and
+  archived through OpenSpec (`font-faces` and `transpiler-expressions`).
+- **2026-10-25 · A theme ships its faces**: the second slice of #1038, under the epic of any design
+  system in C# with no CSS (#1035). A family is a type: `FontFamily` names it and carries its files,
+  each a `FontFile` (the assembly it is embedded in, its resource, its weight range, its italic), and
+  `TypeStyle.Family`, `IAppTheme.TextFamily` and `IAppTheme.MonoFamily` take it, the string going with
+  no conversion beside it. An app declares nothing for its own faces: both SDKs embed every `.ttf` and
+  `.otf` under `Assets`, and eqicon reads each file's family, weights and italic into a typed `Fonts`
+  catalog, stopping the build on a file it cannot read (EQ4005) or two that claim one face (EQ4006).
+  The web serves every file of the theme's families and of the app's catalog by the hash of its bytes,
+  immutable, declares each with an `@font-face` rule in the theme's stylesheet and preloads the text
+  face's upright files; a page that measured text in a face still loading rebuilds when it arrives.
+  Photon registers a family's files with each shell's text engine the first time text asks for it:
+  CoreText's font manager on Apple, an in-memory font collection on Windows, typefaces from the cache
+  on Android ([#1055](https://github.com/eQuantic/equantic-ui/issues/1055)). A family a page names
+  outside the theme and the catalog loads on the web in #1056, and a face from a provider in #1057.
+  Proposed and archived through OpenSpec (`openspec/specs/font-faces`, a new spec, and `typography`).
+  Its review found eqc deciding a params argument by its type, so a collection that was not an array
+  arrived as one element, and recursing until the stack overflowed on a C# 13 params collection listed
+  at a call: both are read from the bound tree now.
+- **2026-10-25 · Text is set in each of the nine weights, on the web and on Photon**: a task under #1038
+  ([#1082](https://github.com/eQuantic/equantic-ui/issues/1082)). `FontWeight` names the nine weights OpenType
+  defines, `Thin` (100), `ExtraLight` (200), `Light` (300) and `Black` (900) appended to the five, so
+  `GoogleFont` takes all nine. The runtime reads a weight's number from a table generated from the C# enum
+  (`FontWeightNumbers`), where a hand-written switch drew the new ones at 400. CoreText is asked for the
+  weight itself, its weight trait, with the slant, where it was asked for one bold trait at 600 and above,
+  and Android for the weight from API 28. A family that ships files is drawn from the file of its weight and
+  slant, opened directly and chosen as a browser chooses (`ShippedFaces.FileFor`), since CoreText's match by
+  weight picked neighbouring files of Inter, measured. On Apple a variable file is opened at the weight on its
+  axis, which the review of this change found had regressed to the default instance, and a shipped file is no
+  longer registered with the font manager, which nothing reads now. Windows still asks DirectWrite by weight
+  ([#1099](https://github.com/eQuantic/equantic-ui/issues/1099)). eqicon's catalog reads a static face's weight from its
+  `STAT`, where Google's Thin and ExtraLight of Inter, which both carry the weight class 250, say 100 and 200.
+  Proved in a browser, in a Photon frame drawn on macOS with no window and on the Android emulator. Proposed and
+  archived through OpenSpec (`typography`).
+- **2026-10-25 · The board's Roadmap shows real dates and a forecast measured on the board**: the
+  view was empty, and nothing on the board carried a size, so a count of issues or of pull requests
+  dated 1.0 for the next day. Issues carry points now, Fibonacci from 1 to 13 in the board's
+  Estimate field, and a delivered issue nobody pointed gets the points of the lines a person wrote in
+  the pull requests that closed it, the files a tool writes left out: the board's 361 delivered
+  issues were pointed that way, and its 273 open ones by hand against them. `scripts/roadmap.py`
+  measures the pace in points over 28 calendar days (1,141 points, 40.8 a day, on the day it
+  landed), plans the open work with a lane per epic at the share each had, writes the real dates of
+  what happened and the forecast of the rest on epics and features, and gives each milestone a plan
+  date, a range from a thousand runs and the date it would land with all the pace. It never closes an
+  issue: a feature here also collects the defects found around it, so one whose sub-issues are all
+  closed is listed for a person, which kept the 1.0 security review (#306) open. The slices E3 to E5
+  of the Element tree went on the board for 1.0 (#1093, #1094, #1095), and fourteen issues no epic
+  held were typed and placed under one
+  ([#1090](https://github.com/eQuantic/equantic-ui/issues/1090)). Proposed and archived through
+  OpenSpec (`openspec/specs/working-agreement`).
+- **2026-10-25 · A cell's editor takes every character a keyboard types**: a cell's entry became the code
+  engine's document, edited through the platform's own text door on both targets, so a dead key, an input
+  method's composition, an emoji and AltGr reach the cell, and a caret, a selection, word moves and undo
+  live inside it. Enter and Edit modes, the line break, the fill of a selection, the date and time chords,
+  Backspace that edits and an editor that grows over its neighbours came with it, and the formula bar and
+  the name box joined the family as components the app places beside the grid, views of one controller.
+  Escape releases Tab, so a keyboard can leave a sheet ([#732](https://github.com/eQuantic/equantic-ui/issues/732)).
+  On the way a single line of text began keeping its spaces on the web, as Photon and Flutter keep them,
+  and the code engine learned to hold one line. Proved in Chromium on the dashboard's `/sheet` and in a
+  real PhotonDesktop window through the macOS shell's text input client (dead keys and a Japanese
+  composition), and
+  benched at 100 000 × 100: a character into an open entry 3.0 ms on Photon and 9.5 ms in the runtime
+  ([#983](https://github.com/eQuantic/equantic-ui/issues/983)). Proposed and archived through OpenSpec
+  (`openspec/specs/spreadsheet`, `openspec/specs/code-editor`).
+- **2026-10-25 · The code editor edits at every caret**: an editor held one selection, so a word renamed
+  in five places was five edits and a column of values could not be typed into at once. It holds several
+  now, the primary the one placed last, as Rider's is: ⌥⌘↑ and ⌥⌘↓ add a caret above or below every
+  caret, ⌘D the next occurrence of the word, ⇧⌘L every one, ⌥ and a press adds or takes away a caret,
+  and ⇧⌥ and a drag select a column; carets that meet are made one, as VS Code merges its cursors. Every
+  command runs at every caret as one undo step, from the last caret to the first, the carets placed in
+  one pass linear in their number; the line operations run once for each block of carets, and Tab, ⇧Tab
+  and ⌘/ over lines are an edit a line, so a problem on an indented line keeps its text. A paste spreads
+  a line to each caret, a completion goes in at every one, and undo and redo put back every caret
+  ([#1012](https://github.com/eQuantic/equantic-ui/issues/1012)). The code block's twin met a transpiler
+  gap on the way: an empty list of tuples was left unannotated in TypeScript and inferred as an array of
+  arrays; eqc annotates it with the tuple now ([#1063](https://github.com/eQuantic/equantic-ui/issues/1063)).
+  Proposed and archived through OpenSpec
+  (`openspec/specs/code-cursors`, `openspec/specs/code-history`).
+- **2026-10-25 · The code editor goes to a line and a symbol, and back**: an editor of thousands of lines
+  had no way to a line but scrolling, no list of what the document declares and no way back after a jump.
+  ⌃G opens a field over the code that reads a line and a column as VS Code's "Go to Line" reads them, ⇧⌘O
+  lists the document's symbols, from `ICodeSymbolProvider` (LSP's `documentSymbol`, typed as `CodeSymbol`
+  and `CodeSymbolKind`), filtered by the completion's matcher, the first word against the name and the
+  others against the container, and the field's text keeps VS Code's `:` and `@` so one becomes the other.
+  While it is typed the code is centred on what it reads and its lines are washed, the caret where it
+  was; Enter goes there and Escape gives back the view exactly as it stood. Every move of the caret is
+  heard by the jump list, by the rules of VS Code's navigation history, a jump always a place of its own,
+  and ⌃- and ⌃⇧- (Alt+← and Alt+→ elsewhere) walk it, its places carried through every edit as Rider's are.
+  The field is the field's own listbox, as a `Select`'s is, on both targets from the same C#. Under it, a
+  `ScrollView` can be told where to go after its first frame (`ScrollView.Request`, Flutter's `jumpTo`),
+  which no component could do before, and the controller knows the view it is drawn in, so it centres a
+  position (`RevealInCenter`) and gives a view back. And eqc annotates an empty `[]` in a typed local
+  with its item, as it did `new List<T>()`, where TypeScript refused the untyped array
+  ([#1086](https://github.com/eQuantic/equantic-ui/issues/1086))
+  ([#1083](https://github.com/eQuantic/equantic-ui/issues/1083)). Proposed and archived through OpenSpec
+  (`openspec/specs/code-navigation`).
+- **2026-10-25 · The code editor inserts snippets**: a completion could insert only plain text, so an entry
+  offering a loop left the person to select its variable and its bound by hand. An entry inserts a snippet
+  now, written in the Language Server Protocol's syntax and read as VS Code reads it, never failing:
+  `CodeSnippet.Parse`, then `CodeCompletionItem.Snippet`, `InsertSnippet` for an app's own command, and
+  `CodeSnippetCompletionProvider` for the snippets an app lists by prefix. A copy goes in at every caret as
+  one undo step, taking its line's indentation, and the session walks its stops with Tab and ⇧Tab, every
+  place a stop is written selected with it, so a mirror is a caret and is typed with its stop. The stop the
+  carets stand at grows at its edges while the others are carried as marks, as VS Code switches a
+  placeholder's stickiness; a placeholder typed over takes its nested stops; a choice shows as the
+  completion's list; the final stop, Escape, between the panel and the other carets, and a caret that
+  leaves end it, and its placeholders are washed on both targets. Three gaps of eqc the engine met are
+  closed with it: a `StringBuilder` member is imported where it is named
+  ([#1074](https://github.com/eQuantic/equantic-ui/issues/1074)), a function member whose result may be null
+  starts as the null a member takes ([#1075](https://github.com/eQuantic/equantic-ui/issues/1075)), and a
+  list's own `Reverse` reverses it in place, a range of a list or an array too, where it was LINQ's copy
+  thrown away ([#1076](https://github.com/eQuantic/equantic-ui/issues/1076))
+  ([#1013](https://github.com/eQuantic/equantic-ui/issues/1013)). Proposed and archived through OpenSpec
+  (`openspec/specs/code-snippets`).
+- **2026-10-25 · The enum value guard refuses a member it has no line for**: a bug under #849
+  ([#1096](https://github.com/eQuantic/equantic-ui/issues/1096)). `EnumValueAbiTests` refused a recorded member
+  whose number moved or that vanished, and passed over one never recorded: 18 members of `CodeCommand`, 2 of
+  `SheetEditMode` and 2 of `SheetEntryView` had been appended that way, unpinned, so the next member inserted
+  above one of them would have renumbered it with every suite green. A member with no line fails now, named,
+  until it is recorded with `EQ_UPDATE_ENUM_VALUES=1`, and the 22 are recorded beside `FontWeight`'s four.
+- **2026-10-25 · The grid selects as Excel does**: slice 2a of the spreadsheet. Several ranges at once
+  (⌘/Ctrl press and drag, Shift+F8's add mode), headers read by the engine with their modifiers (a band
+  pressed, dragged, stretched with Shift, added with ⌘/Ctrl), Excel's row, column, region, page and corner
+  chords in both keyboard traditions, Ctrl+End to the last cell in use, Ctrl+Y, the Tab-Enter column, the
+  active cell kept where the selection began, each range one outlined rectangle with header emphasis and a
+  dimmed selection when the grid loses the keyboard, a cell cursor that glides through a keyed table mark
+  and jumps under reduced motion, and `StatusBar(controller)`, the Sum, the Average and the Count in the
+  page's language and culture. The macOS shell offers a key to the app before the input method while
+  nothing is composed, so Shift+Space selects there as on every other shell; a dead key and a Japanese
+  composition were proved through the shell's input client in the sheet, a text field and the code
+  editor. Benched over Excel's 1 048 576 rows by 100 columns, all selected, with a hundred thousand cells
+  in use: the summary costs 13 ms in .NET and 83 ms in the runtime, and a key that moves nothing reads it
+  from the cache
+  ([#984](https://github.com/eQuantic/equantic-ui/issues/984)). Proposed and archived through OpenSpec
+  (`openspec/specs/spreadsheet`, `openspec/specs/table-viewport`).
+- **2026-10-26 · The grid is read aloud**: slice 2b of the spreadsheet. A `TableView` says what it is to
+  a reader (`TableRole`: a group as before, a table or a grid) and what each cell is (`TableCellRole`, and
+  `Selected` and `Current` in a grid). The web writes a table or a grid whose rows own their cells across
+  the pinned bands by `aria-owns`, each cell with its role, its column and what it spans and the grid with
+  its whole row and column count, the server's first pass and the runtime alike; Photon announces five new roles (`Table`,
+  `Grid`, `Cell`, `ColumnHeader`, `RowHeader`) with each cell's place and the table's extent, in AppKit's,
+  Android's and UIKit's words, over a tree that stays flat until #1105 nests it. The spreadsheet's table is
+  that grid, named after the sheet, its headers heading their columns and rows, and its surface announces
+  each move and each growing range in the page's culture (`SheetSurface.Announcement`, from
+  `SheetController.Moved`): a polite status on the web, its field's value marked live on Photon. A reader's
+  activation of a cell or a header is a tap at its centre on both targets. Found on the way and fixed:
+  Photon's live region announcer recorded a change inside its quiet window as said, so the second of two
+  quick arrows was never heard; only the macOS shell posted an announcement, which iOS and Android now do
+  too; and a heading's level reached VoiceOver as garbage on macOS (#1107). Heard with VoiceOver in Safari,
+  the hidden corner put each column's header a column early, since WebKit places a cell by its order in its
+  row: every cell a table holds is now one a reader reaches, the corner an empty header and a cell the
+  builder leaves empty a blank one. VoiceOver's own navigation cannot yet walk into a Photon window on macOS
+  (#1111). The code surface's accessible value and invalid state is #1078, next
+  ([#1081](https://github.com/eQuantic/equantic-ui/issues/1081),
+  [#1107](https://github.com/eQuantic/equantic-ui/issues/1107),
+  [#1111](https://github.com/eQuantic/equantic-ui/issues/1111)). Proposed and archived through OpenSpec
+  (`openspec/specs/table-viewport`, `spreadsheet`, `native-accessibility`).
+- **2026-10-26 · The board's sprints are filled from what closed and what the plan finishes**: the
+  Iteration field held three two-week sprints from 2026-09-15 and no issue. `scripts/roadmap.py` keeps
+  them now on the same grid, back to the sprint holding the repository's first day, 2026-01-22,
+  which is Sprint 1, and forward as far as the plan reaches (Sprint 23 to 2026-12-07). A delivered
+  issue sits in the sprint it closed in and an open one in the sprint the plan finishes it in, moving
+  as the plan moves, and the report gives each sprint the points its issues delivered, the lines a
+  person wrote on main, which the months before the board have as their only measure, since the work
+  went to main without pull requests until mid-August, and the points it is planned to hold. Sprints
+  18 to 20 delivered 314, 678 and 463 points ([#1103](https://github.com/eQuantic/equantic-ui/issues/1103)).
+  Proposed and archived through OpenSpec (`openspec/specs/working-agreement`).
+- **2026-10-27 · Android draws a shipped file the catalog weighs bold as the file draws, with no fake bold**: a
+  task under #1038 ([#1109](https://github.com/eQuantic/equantic-ui/issues/1109)), found reviewing #1099. From
+  API 28 the Android shell asked its engine for the style's weight over the file `ShippedFaces.FileFor` chooses,
+  and minikin lays a fake bold over a face asked for 600 or more and 200 above the weight its file declares, so a
+  file the catalog weighs at 700 that declares 400 drew bolder there than on every other target. The rule #1099
+  wrote into the Windows shell moved into the framework, `ShippedFaces.IsDrawnAsItIs`, and both shells read it: a
+  static file asked for its catalog's weight or a lighter one, or weighed bold and asked for a heavier one, is asked
+  for at the weight its typeface reads in the file. Proved on the emulator three ways, rasterizing through
+  `AndroidTextService` and comparing byte for byte: the change, the shell as it was and the change without the
+  clause for a bold file. Proposed and archived through OpenSpec (`typography`).
+- **2026-10-27 · The code editor folds its regions**: the engine had a fold contract and a row map that hides
+  lines under a header, but nothing asked the contract, kept what was folded or drew a way to fold. A chevron
+  beside the line numbers now marks every line a region starts on, down while open and right while folded, a
+  button for a screen reader named by its lines, and a press toggles it; a folded header shows `⋯` after its
+  text, which unfolds it, and the caret steps over the lines it hides. `CodeEditorController.Folding`
+  (`CodeFolding`) asks `ICodeFoldProvider` (LSP's `foldingRange`, now asynchronous) once the text rests, or the
+  indentation's provider when there is none, and joins the answers as VS Code's `sanitizeAndMerge` does. VS
+  Code's seven keys fold and unfold in both conventions (⌥⌘[ ⌥⌘], Ctrl+Shift+[ ], ⌘K ⌘[ ⌘K ⌘] ⌘K ⌘L ⌘K ⌘0
+  ⌘K ⌘J), and a fold never hides what is worked on: the regions are carried through every edit, an edit or a
+  caret reaching a hidden line unfolds it, a fold over a caret puts it at the end of the header, and an answer
+  never folds a region over a caret, as VS Code's folding model blocks those lines
+  ([#1119](https://github.com/eQuantic/equantic-ui/issues/1119)). Proposed and archived through OpenSpec
+  (`openspec/specs/code-folding`).
+- **2026-10-27 · The code editor goes to a definition and its references**: the editor reached a line, a
+  symbol and back, but not what a name means. F12 goes to where the name at the caret is defined, ⌘F12
+  (Ctrl+F12) to where it is implemented and ⇧F12 finds where it is used, from `ICodeDefinitionProvider` (LSP's
+  `definition`, `declaration`, `typeDefinition` and `implementation`, one method told which by
+  `CodeDefinitionKind`) and `ICodeReferenceProvider` (`references`), as VS Code's `SymbolNavigationAction`
+  answers them: one place gone to, near the top of the view and recorded as a jump, several listed in the
+  go-to field with their lines, filtered by what is typed, none said in a card at the caret, and the
+  references instead on the definition itself. F4 and ⇧F4 walk the places of the last list, shown or not,
+  carried through every edit. ⌘ over a name (Ctrl elsewhere) underlines it when a provider says where it is
+  defined, the pointer a hand over it, and a click goes there, as VS Code's `ClickLinkGesture` does. A place
+  in another document is handed to the app (`OpenRequested`, `CodeEditor.OnOpenRequested`), which owns its
+  documents. Under it, a code surface says what the pointer looks like over it (`ICodeSurfaceModel.CursorAt`),
+  the hosts hand it the modifiers a pointer passes with and a hover again when they change at rest, and the
+  macOS shell's press reads ⌥ and ⌃, which it dropped, so ⌥ and a press now adds a caret in a macOS window
+  ([#1084](https://github.com/eQuantic/equantic-ui/issues/1084)). Proposed and archived through OpenSpec
+  (`openspec/specs/code-navigation`, `openspec/specs/code-editor`).
+- **2026-10-27 · The development overlay speaks only C#**: a frame of the app is its C#, and a frame
+  inside the SDK is named as the SDK's, by its own C# file and line where eqc transpiled it into the
+  runtime and by the runtime's module elsewhere. No frame reaches a developer at a JavaScript position,
+  while the maps load or after one fails. The served runtime gained the map that makes it possible: the
+  Server's build writes it with the bundle and eqc composes it (`eqc compose-map`) with the map now
+  committed beside each transpiled module, naming the sources from `src/` with no text; the Server
+  embeds it and answers it at `/_equantic/runtime.js.map` in Development alone. An error raised inside
+  the SDK says the fault is the SDK's, names the app's call to check when there is one, and hands over a
+  report to copy, with the SDK's version the configuration now carries in Development. The title is
+  Unhandled Runtime Error, where every error read Build Error, and the browser's ResizeObserver loop
+  notice opens nothing. The served runtime grew 1 257 bytes gzipped (to 300 401), inside its budget
+  ([#1108](https://github.com/eQuantic/equantic-ui/issues/1108)). Proposed and archived through
+  OpenSpec (`openspec/specs/dev-error-overlay`).
+- **2026-10-27 · Windows draws a shipped family from the file of its weight, as the other targets do**: a task
+  under #1038 ([#1099](https://github.com/eQuantic/equantic-ui/issues/1099)). The Windows shell handed DirectWrite
+  every file of a family in one collection and asked for the family by name and weight, so DirectWrite decided by
+  what it reads in the files, where every other target follows the family's catalog. Measured on the Windows
+  runner, the case #1099 expected does not occur: DirectWrite tells Inter's Thin and ExtraLight apart, whose files
+  both declare 250. Two others did: a file the catalog weighs at 700 that declares 400 drew with a bold
+  DirectWrite simulates, and a family the theme names otherwise than its file fell back. Each shipped file is a
+  collection of its own now, text is set from the collection of the file `ShippedFaces.FileFor` chooses, under
+  the theme's name when the file carries it, and a static file the catalog holds at the weight asked, or weighs
+  bold, is asked for at the weight DirectWrite reads in it. Proved on the Windows runner three ways: the change,
+  the shell as it was and the change without the catalog's weight. Proposed and archived through OpenSpec
+  (`typography`, `font-faces`).
+- **2026-10-29 · A concrete lookup answers its indexer and Contains by its keys**: a bug under #849
+  ([#1168](https://github.com/eQuantic/equantic-ui/issues/1168)), found reviewing #1145. A receiver typed as the
+  concrete `Lookup<TKey, TElement>`, the class `ToLookup` builds, reached by a cast, an `as` or a type pattern, was
+  not the lookup eqc knew: its `Contains(key)` was an element search among the groups, false for every key, and its
+  indexer an array's, which threw. `LookupStrategy` claims the class beside `ILookup<TKey, TElement>`, so both
+  members search the groups by the key type's equality as the interface does. `ContainsStrategy` takes a
+  `System.Linq` `Contains` only when it is an extension, LINQ's own, so a lookup's `Contains` no strategy claims is
+  EQ2004 at build rather than a quiet `false`. Proposed and archived through OpenSpec (`transpiler-sequences`).
+- **2026-10-29 · A list adds and inserts a range of any size, as .NET's does**: a bug under #849
+  ([#1060](https://github.com/eQuantic/equantic-ui/issues/1060)). eqc lowered `AddRange` to `push(...items)` and
+  `InsertRange` to `splice(index, 0, ...items)`, which hand every element to one call as its arguments, and an
+  engine caps those by its stack: measured with a spread into `push`, about 638,000 in JavaScriptCore (Safari's
+  engine, and the embedded Bun) and 124,000 in V8, so a million elements threw a RangeError in every browser. The
+  same spread threw a TypeError for a null collection, added a string's code points, inserted at an index .NET
+  refuses, and put a named collection in the index's place. The runtime adds and inserts one element at a time
+  now (`$eq.collections.addRange`, `insertRange`), copying the collection as `new List<T>(collection)` copies it,
+  which also asks a sorted set's view its count as .NET does, and eqc calls them for the bound overload with each
+  argument in its parameter. With no model, `Max` and `Min` fold the values instead of spreading them. Measured at
+  a million, `Concat`, `ToList`, `new List<T>(items)`, `..items`, `RemoveAll` and a bound `Max` were already
+  bounded. Proposed and archived through OpenSpec (`transpiler-bcl`, `runtime-collections`).
+- **2026-10-29 · A lookup's Contains asks for a group of that key**: a bug under #849
+  ([#1145](https://github.com/eQuantic/equantic-ui/issues/1145)). `ILookup<TKey, TElement>.Contains(key)` lowered
+  as a collection's `Contains`, `$eq.collections.contains(l, key, 'item')`, which looked for an element equal to
+  the key among the groups `ToLookup` builds, so it answered false for every key. eqc answers it now from the
+  lookup's own groups, with the search its indexer already made: `some` where the indexer runs `find`, by the key
+  type's equality, so a record, a decimal and a date are found by value, a NaN equal to itself, a class by its own
+  `Equals` and a null key like any other, the key evaluated once. The lookup's two members are one strategy,
+  `LookupStrategy`, which replaces `LookupIndexerStrategy` in the compiler's surface, and the indexer's output
+  does not change. Proposed and archived through OpenSpec (`transpiler-sequences`).
+- **2026-10-29 · A module numbers its own temporaries, whatever the build emitted before it**: a bug under #849
+  ([#1138](https://github.com/eQuantic/equantic-ui/issues/1138)). The emitter reset its converter before a
+  component's module and never before a plain class's or a static helper's, so those numbered their temporaries
+  after the module written before them (`SheetController` began at `$n88`), kept every earlier module's trees in
+  the node cache, and an edit to one class renumbered every twin written after it, which is how two open pull
+  requests conflicted in twins neither touched. Every module now starts in one place, `BeginModule`, from a reset
+  converter with its own model and class, and the record emitter's module resets the converter it is handed.
+  Proved by a plain class, a static helper and a record emitted after one that binds two temporaries, which fail
+  against `main` (`$n2`) and match their module emitted alone; nine twins regenerate, by the names of their
+  temporaries alone. Proposed and archived through OpenSpec (`transpiler-names`).
+- **2026-10-29 · A pattern reads its input once, a member's getter included**: a bug under #849
+  ([#1149](https://github.com/eQuantic/equantic-ui/issues/1149)). An `is` pattern settled single evaluation
+  of its input with a rule of its own: a call was bound in an arrow, and a path of names (`c.Value`,
+  `this.value`) was read again at every mention, where a property's getter runs each time. Measured with a
+  getter that counts its reads, `c.Value is 2 or 1` answered 21 where .NET answers 11, through every shape
+  of pattern and the binary type test, and `f() is var _` never called `f`. The test is now a
+  `JsExpr.Template` over the input, so the writer binds it once wherever the test reads it twice, as for
+  every other translation, and the writer reads a template's holes in its code only, a string spelling
+  `{0}` left as it is. A member read inside the pattern is still read once per mention, which #1150
+  follows. Proposed and archived through OpenSpec (`transpiler-expressions`).
+- **2026-10-29 · A property pattern reads its member as a member access reads it**: a bug under #849
+  ([#1147](https://github.com/eQuantic/equantic-ui/issues/1147)), with the fence half of the same rule under #845
+  ([#920](https://github.com/eQuantic/equantic-ui/issues/920)). `PatternConverter` named a pattern's member with a
+  table of its own, where a member access goes through the member-access strategies, and the type of the value
+  read from was handed down from the subject alone. A nested pattern had none, so `{ Roles: { Count: 1 } }` over a
+  set and `{ Inner: { Count: 2 } }` over an app's record counted an array's `length`, in a positional part and a
+  list's element too; a tuple's `Item1` was read as a field; a dictionary's `Keys` as a member the Map has not; and
+  `list is { Capacity: 8 }` was written with no diagnostic. Each was false in the browser where .NET said true. A
+  pattern's read is now a member access on a placeholder that stands for the value, handed to the converter, with
+  the type the bound pattern narrows to at every depth, so every strategy and fence of a member access holds for
+  it, and EQ2004 refuses what the browser cannot read. `PatternConverter.BuildCondition` and `CollectBindings`
+  lose their `accessType` parameter. Proposed and archived through OpenSpec (`transpiler-expressions`).
+- **2026-10-29 · A [ServerOnly] method is known by its symbol, so an alias or a partial definition keeps it out of every twin**:
+  a bug under #849 ([#1140](https://github.com/eQuantic/equantic-ui/issues/1140)). Whether a method stays on the
+  server was read off its own attribute lists by name, and two spellings C# accepts carry the attribute where those
+  lists do not show it: an alias of `ServerOnlyAttribute`, and the defining half of a partial method, whose
+  attributes C# merges with the implementing half's. Measured on main for a class, a static class, a record, a
+  struct, a static class nested in a component and a component, built as eqc builds an app and compiled on its own:
+  each wrote the method into its twin with its body, named the app type the body constructs, and failed the build
+  with EQ2112 and EQ2103; the EQ1007 guard refused such a method beside its overload. The rule asks the method's
+  symbol now wherever a model holds its tree, and every reader hands it its model: the parser, the emitters, method
+  lowering, the import and refusal scans and the overload guard. A member that writes no attribute and is no
+  partial method binds nothing. The same proof found a record that takes a `[ServerOnly]` interface default
+  refused with EQ1008, however the attribute was spelled, where a class left the default out, and Copilot's review
+  found a private helper only such a default calls crossing with it (EQ2112) and the EQ1007 guard counting the
+  default: the shared discovery of defaults leaves a server-only one out now, before its helpers are collected. Proposed and archived through OpenSpec (`client-boundary`).
+- **2026-10-29 · Every member of a type holds a name of its own on its twin, whatever kind it is**: a bug under
+  #849 ([#1146](https://github.com/eQuantic/equantic-ui/issues/1146)). EQ1007 refused two methods of one name and
+  a record's state beside a member of its name; every other pair that lowered to one key of the twin passed the
+  build, and the browser kept one of them. Measured on every emitter: a static field beside a static property or
+  method of its name, which took its place when the class was defined, a component's field beside its property,
+  whose getter it hid, a property beside a method, an event beside either, an extension block's property or
+  indexer beside a method, two `operator +` of one type, a conversion beside `FromInt`, and members on names the
+  twin writes itself (`With(int)` on a record, `ToString(string)`, `Constructor()`, `static Prototype`). A new pass
+  puts every member on the key the emitters write it under and refuses the second, keeping what the twin holds as
+  one member (a moved field, a property's accessors, an override of `Equals(object)`, `GetHashCode()` or
+  `ToString()`). The record emitter now writes such an override in place of its own and nothing else there, and a
+  `[ServerOnly]` override, which is no member of the twin, leaves the twin's own in place: a server-only
+  `GetHashCode()` had left a record no hash at all, so two equal records hashed apart. A component's twin
+  holds every parameter of its primary constructor, read or not, unless it only initializes the member of
+  its name, and is asked the runtime's names as any value is, and a static class nested in a component is
+  checked once, as the module it is, so a `[ServerOnly]` one is checked nowhere. Every
+  SDK source the runtime embeds, every sample and every template transpile with it, refused nowhere. Proposed and
+  archived through OpenSpec (`transpiler-names`).
+- **2026-10-29 · An empty collection expression builds the collection its target names**: a bug under #849
+  ([#1144](https://github.com/eQuantic/equantic-ui/issues/1144)). `Dictionary<string, int> ids = [];`, the form
+  the IDE suggests for `new()`, went out as a JavaScript array, and so did a sorted dictionary, a sorted list, a
+  queue, a stack and a linked list started with `[]` or `[with(…)]`: a dictionary's first write threw and its
+  count was null, a queue had no `enqueue`. eqc builds each one as `new()` builds it now, with the capacity
+  `with(…)` hands the constructor, and refuses with EQ1004 an element only an `Add` of the app's own could add.
+  It was found measuring a report that a `Dictionary<string, T>` lowers to a plain object, whose `__proto__` key
+  goes to the prototype's setter: since #443 every dictionary is the runtime's class, held by a `Map`, and
+  conformance tests now pin `__proto__`, `constructor`, `toString`, `hasOwnProperty` and `valueOf` through every
+  construction form and through the code diff engine. A lookup's `Contains`, wrong for every key, was found on
+  the way and filed as #1145. Proposed and archived through OpenSpec (`runtime-dictionaries`,
+  `runtime-collections`).
+- **2026-10-29 · Every component's configuration reaches its kept instance, and a test hands each one a second
+  configuration to prove it**: a task under #160 ([#1142](https://github.com/eQuantic/equantic-ui/issues/1142)).
+  A `StatefulComponent` learns what its parent hands it on a rebuild only through its hand-written `AdoptConfig`,
+  and nothing checked the list: `CodeEditor` shipped three settings outside it (#1008), and every test passed
+  until one handed a second configuration. `AdoptConfigCoverageTests` now does that to every concrete
+  `StatefulComponent` beside it, one public `set` or `init` property and one constructor argument at a time, and
+  fails naming what the kept instance does not carry; a baseline that only shrinks names what is read once on
+  purpose (`CodeEditor.InitialCode`, an `Accordion`'s `openIndex`). Its first run found ten components dropping
+  inputs: `Disabled` in `DatePicker`, `DateTimePicker`, `TimePicker`, `Select` and `TextInput`, three more
+  `TextInput` settings, `ListView`'s `Overscan`, `Width` and `Height`, `Menu.Placement`, `Accordion.Multiple`,
+  `Calendar.Label`, and `CookieConsent`, which had no override at all. Each is carried now: an `init` setting
+  is backed by a field the override writes, and `CookieConsent` keeps the fresh instance whole. eqc wrote such
+  a field of `SizeValue` as `= undefined`, which `tsc` refuses, where it leaves a property of one alone; it
+  leaves the field alone too now. Proved both ways by removing a line from an override, and the emitter's fix
+  against the emitter as it was. Proposed and archived through OpenSpec (`element-tree`, `transpiler-classes`).
+- **2026-10-29 · Every spelling of a char literal is measured on both sides**: a task under #849
+  ([#1165](https://github.com/eQuantic/equantic-ui/issues/1165)). #527 made a char literal cross from its
+  value where it had crossed as its C# token text, and its cases left out two spellings JavaScript reads
+  otherwise when handed the token: measured in the embedded Bun and in Node, `'\x007'` is two characters
+  and `'\x0041'` three. The conformance suite now runs every spelling of a char on both sides, one case
+  each, `'\a'`, `'\e'`, `'\x7'`, `'\x007'`, `'\x0041'`, `'\0'`, a space and a letter, and the five
+  JavaScript reads otherwise fail on the token-text arm, each on its own. The translation did not change.
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`).
+- **2026-10-29 · An explicit interface implementation holds its member's name once**: a bug under #849
+  ([#1139](https://github.com/eQuantic/equantic-ui/issues/1139)). eqc wrote every explicit implementation under
+  the name of the member it implements, and the overload check left them out on purpose, so two of one name
+  were both written and the browser kept the last: `IFoo.Run()` and `IBar.Run()` both answered as `IBar`'s, one
+  handing off to the other, written last, called itself until the stack overflowed, and so did an explicit
+  property reading the type's own. One that hands back what the member holding its name answers, its parameters
+  passed through, is not written now, so that member answers through each interface, and a method of the type's
+  own it hands off to keeps its name instead of being refused for answering another interface. What the twin
+  would still hold twice along its chain, two explicit implementations with answers of their own, one beside a
+  property, an event or an override of its name, or one on the name of a base's member, is refused with EQ1007,
+  naming the interfaces. A component's parser dropped a method beside an explicit implementation of its name,
+  taking it for an overload, and keeps it now. Routing a call through one interface to a name of its own would
+  need every type implementing that interface to answer it, so it was not done. Proved against main both ways:
+  20 of the first 23 compiler tests and the conformance test fail there, the conformance test by a refusal and,
+  with that case set aside, by a module that never finished. Proposed and archived through OpenSpec
+  (`transpiler-interfaces`).
+- **2026-10-29 · The code editor's notes are built by one builder, and a builder is no component**: the
+  hover card and the signature panel each built the same note over the code, and the panel copied the
+  card's frame, measuring and placement, whose members had been widened to `internal` only so it could.
+  `CodeNoteBuilder` owns them now: the two faces and their line heights, the width of the longest line
+  rounded up to a whole pixel and capped at 80 columns and the view (the pixel a copy forgets, and a
+  browser's layout then cuts the line with an ellipsis), the parts stacked with their height, the frame,
+  and where a note stands over the line, on the side another note leaves free. The card, the not-found
+  message and the panel build through it, and a third note (the find widget, code actions) will too.
+  Nothing a person sees changed: the goldens `code-problems-*` and `code-signature-*` match byte for byte
+  ([#1141](https://github.com/eQuantic/equantic-ui/issues/1141)). The builder met two transpiler bugs on
+  the way. eqc took a class declaring `Build` for a component even where the compilation said it derived
+  from nothing but `object`, and wrote its twin over `StatelessComponent`; the parser and the dependency
+  resolver now ask the chain of bases wherever the compilation binds it, and a method's name only where a
+  base does not bind ([#1164](https://github.com/eQuantic/equantic-ui/issues/1164)). And a plain class's
+  member of a struct with no zero of its own started as a bare `undefined`, which the runtime's strict
+  build refused; it is said to be one, `undefined!`, as a reference's `null!` already was
+  ([#1169](https://github.com/eQuantic/equantic-ui/issues/1169)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
+- **2026-10-29 · A bounded code editor's code fills its viewport by layout, and a short file never scrolls**: a
+  bug under #419 ([#1143](https://github.com/eQuantic/equantic-ui/issues/1143)). The code was as tall as the height
+  the vertical scroll view reported (#599), and on the web the sideways scroll view's scrollbar stood under it
+  wherever scrollbars take space: measured in Chromium with 17px scrollbars, a two-line file with a long line in a
+  pane 300 tall was 317 tall and scrolled by 17. The number also lagged a frame (the first frame drew the code as
+  tall as the file, and a pane that shrank ran the code past it), and an editor with no line numbers cut a long
+  file at its pane's bottom with nothing to scroll. `ScrollView.FillViewport` says the content is never smaller
+  than the viewport, decided by layout on both targets: a flex line over the scroller's content box on the web,
+  which leaves the scrollbar out, and a second measure at the viewport's size on Photon, where a stretched
+  scroll view now takes the stretched size. Both of the editor's scroll views fill, its row of gutter and code is
+  always there and stretches, and `CodeBlock.MinHeight` goes. Proved by Photon layout and component tests, the
+  lowering specs and a parity case, each failing first, and in Chromium on the dashboard's `/code` page with
+  scrollbars that take space. Proposed and archived through OpenSpec (`scrolling`, `code-editor`).
+- **2026-10-29 · The VS Code extension's packaging tooling moves past sixteen advisories**: a task under #306
+  ([#1178](https://github.com/eQuantic/equantic-ui/issues/1178)). Dependabot reported seventeen open advisories
+  against the extension's lockfile, all in the tooling that packages it (`@vscode/vsce` and what it pulls), none
+  in the `.vsix`, which carries no `node_modules`. Sixteen closed inside the declared ranges: `undici` 7.30.1,
+  `markdown-it` 14.3.3, `fast-uri` 3.1.9 (its override's floor raised to the patched version) and
+  `brace-expansion` 5.0.12, and no other package moved. Proved by the job that reads the lock, `npm ci` and
+  `npm run package`, whose check spawns the packaged design host. The seventeenth, `@azure/msal-node`, waits on an
+  `@azure/identity` that accepts MSAL 7 (#1179).
+- **2026-10-30 · A fence holds at every spelling, and for what the runtime calls itself**: a Server Action
+  is known by its symbol, so an alias of the attribute or a partial method crosses as its stub and never
+  with its body ([#1148](https://github.com/eQuantic/equantic-ui/issues/1148)). A `[ServerOnly]` override of
+  `ToString`, `Equals(object)` or `GetHashCode` on a type that crosses fails the build with EQ2010 where it
+  is declared, since the runtime calls those on its own and the browser printed what .NET would not
+  ([#943](https://github.com/eQuantic/equantic-ui/issues/943)), which inverts what #1146 pinned for a
+  record. A type test or `as` of a package's type fails with EQ2004, where it was a null check true for any
+  value ([#951](https://github.com/eQuantic/equantic-ui/issues/951)), and a refused call on a keyword is
+  told once ([#953](https://github.com/eQuantic/equantic-ui/issues/953)). Proposed and archived through
+  OpenSpec (`openspec/specs/server-actions`, `openspec/specs/client-boundary`).
+- **2026-10-30 · A gesture reads the space its surface was laid out in**: two Bugs under #166
+  ([#702](https://github.com/eQuantic/equantic-ui/issues/702), [#734](https://github.com/eQuantic/equantic-ui/issues/734)).
+  A surface under a transform took the pointer where it was drawn and then measured the gesture on the screen. On
+  Photon a 40dp drag at 2× stored 40dp and was drawn 80 away, a track turned a quarter heard nothing along itself,
+  and a pan wrote screen distances into the scroll offset and the fling. A captured gesture now reads every point
+  through the inverse the press found, held until the release. On the web a normalized drag divided by a rect that
+  includes the surface's own scale while its rest is a percentage of the untransformed box, so a surface at
+  `scale(.5)` jumped back 11px from a 14px move (Chrome 152: 400, 389, 415); it stays under the finger now (400, 414,
+  440). Proposed and archived through OpenSpec (`transformed-surfaces`, `gestures`).
+- **2026-10-30 · A position in a sequence is read once and checked as .NET checks it**: bugs under #849
+  ([#394](https://github.com/eQuantic/equantic-ui/issues/394),
+  [#1160](https://github.com/eQuantic/equantic-ui/issues/1160)). `a[^n]` over an array, a list or a string was
+  text that named its receiver twice, so `Get()[^1]` and every write through it called `Get` twice, and a
+  deconstruction's target was refused; it is a place now, read and written through the subscript with the receiver
+  evaluated once, the offset, then the length. The issue's other worry, an offset spliced bare, did not hold when
+  measured: `a[^(i + 1)]` already answered right, since the parentheses its author wrote survive the text. Review found that the place's template broke two neighbours: an `out` target was assigned through its read, and an
+  `await` beside a bound receiver landed in a synchronous arrow, which the template writer now makes async and awaits,
+  the guard of a null-conditional assignment too. An `out` target after code that runs is refused (EQ1004), and a `ref`
+  target's receiver still runs twice (#1190). A list's `Insert`, `RemoveAt`, `RemoveRange` and `GetRange` placed a
+  named argument by its position in the call and clamped a position .NET refuses (`Insert(5, 9)` on a list of one
+  appended); they take each argument in its parameter's place and check it in .NET's words through the runtime's
+  `utils/list.ts`. Proved by the conformance suite on both sides, failing before. Proposed and archived through
+  OpenSpec (`transpiler-expressions`, `transpiler-bcl`).
+- **2026-10-30 · A stack's layer keeps what it carries on the web**: two Bugs under #166
+  ([#698](https://github.com/eQuantic/equantic-ui/issues/698), [#940](https://github.com/eQuantic/equantic-ui/issues/940)).
+  Every cell of a `Stack` was written `min-width: 0; min-height: 0`, which keeps a scroller's content from swelling
+  the stack and also took a fixed layer out of the stack's own minimum, so a row squeezed a hugging stack to 0 while
+  its content overflowed at the same edge (the spreadsheet's row-number strip beside its grid, 44 on Photon). A cell
+  is capped now only where Photon caps the layer: on an axis it fills, on one a scroller hugs, and on both when it
+  holds a scroller further down. And the anchor a
+  stack builds for a `Positioned` never passed through the funnel, so its key, its bookmark and its origin were
+  dropped by both producers and a link to it led nowhere; the anchor carries them. Measured on the web realizer's
+  own HTML in Chrome 152, 0 before and 44 after, with the scrollers still capped at 482, and on the dashboard's code
+  editor at 700 wide. Proposed and archived through OpenSpec (`layout`).
+- **2026-10-30 · A Server Action runs in the culture of its page, and a switch asks for no catalog the build
+  did not write**: the actions endpoint has no culture segment, so a Portuguese page with an English
+  browser got its handler's answer in English
+  ([#580](https://github.com/eQuantic/equantic-ui/issues/580)). Every call now names the page's culture in
+  the query keys ASP.NET's own `QueryStringRequestCultureProvider` reads ahead of the cookie, so the app's
+  `UseRequestLocalization` applies and checks it, with no transport of the SDK's. Switching to an app's
+  neutral language asked for `en.json`, a 404, on the way to `neutral.json`
+  ([#825](https://github.com/eQuantic/equantic-ui/issues/825)): the page now names the catalogs the build
+  wrote, and the walk asks only for those. Proposed and archived through OpenSpec
+  (`openspec/specs/server-actions`, `openspec/specs/page-culture`).
+- **2026-10-30 · Photon resolves a flex line as CSS does**: four Bugs under #166
+  ([#693](https://github.com/eQuantic/equantic-ui/issues/693), [#728](https://github.com/eQuantic/equantic-ui/issues/728),
+  [#744](https://github.com/eQuantic/equantic-ui/issues/744), [#747](https://github.com/eQuantic/equantic-ui/issues/747)).
+  Photon's single-line pass shared a whole row by weight and never started a weighted Flexible from its basis
+  (720 | 720 where Chrome gives 990 | 450), its wrapping pass broke a weighted Flexible without a basis at its
+  child's natural size (two lines where Chrome shares one), a column took nothing back from an overflow (a zero
+  weight 240 past its column's end), and a row that stretches asked a hand-kept list whether a cross size was
+  explicit, which stretched a fixed Stack, Canvas, CameraPreview or ScrollView. Every item now starts from its flex
+  base size and only the leftover is shared, weights under one sharing only that fraction, which also makes a
+  weight animated to zero glide onto its basis instead of snapping there; a column gives its Flexibles' height
+  back, and what fills it shares the overflow, so two Fill siblings in a column are 150 | 150 where `SizeKind.Fill`
+  documented the second past the end; and one classifier, `DeclaredSizeKind`, answers both axes, asked of what a
+  child measured to, through a component to what it built. Measured on the web realizer's own HTML in Chrome 152 and proved both ways on
+  Photon. Proposed and archived through OpenSpec (`flex-layout`).
+- **2026-10-30 · The embedded bun is unpacked into the user's cache, under its zip's SHA-256**: every place
+  that ran the bun unpacked it beside its zip, and only when no binary was there. From packages that was
+  the NuGet package cache, so an app's first build failed against a cache restored read-only, baked into
+  an image or shared on a volume ([#364](https://github.com/eQuantic/equantic-ui/issues/364)), and in a
+  source tree a worktree went on running bun 1.3.14 after its zip moved to 1.4.3, bundling every module
+  with it and failing two cell-width cases nothing else failed
+  ([#932](https://github.com/eQuantic/equantic-ui/issues/932)). One owner, `ProgramArchive` behind the task
+  `UnpackProgram`, now unpacks it into the user's cache in a folder named by the zip's SHA-256 that
+  appears whole in one rename, for the SDK, the Server's bundle, the Runtime's tests and the conformance
+  harness alike, and CI builds the web template against a read-only package cache restored from the
+  packages it just packed. Proposed and archived through OpenSpec (`openspec/specs/build-programs`).
+- **2026-10-31 · A number narrowed to an integer answers .NET's value**: bugs under #849
+  ([#401](https://github.com/eQuantic/equantic-ui/issues/401),
+  [#1015](https://github.com/eQuantic/equantic-ui/issues/1015)). `Convert.ToInt32` and its siblings of anything
+  but text were `$eq.math.round`, with no range, no BigInt, a decimal handed back and a char read as a number;
+  they go by the overload C# bound now, through the runtime's `utils/number-convert.ts`, in .NET's words, and an
+  `object` is read by what it holds when the call runs. An explicit cast of a double or a float wrapped where
+  .NET 9 and later saturate; it saturates now. The issue asked for every width to saturate at its own ends and
+  the measurement said otherwise: a width under `int` takes the low bits of the saturated `int`, so `(byte)300.0`
+  is 44 and `(byte)1e12` is 255. A constant the compiler folds is its own case: `unchecked((int)1e12)` is 0. Proved by the conformance suite on both sides: 56 of the first 65 cases fail on
+  main. Proposed and archived through OpenSpec (`transpiler-bcl`, `transpiler-expressions`).
+- **2026-11-03 · A drawing's shapes are inputs**: [#674](https://github.com/eQuantic/equantic-ui/issues/674), under
+  Feature #194. A `VectorShape` with `OnPressed` is pressed where its path is painted, by its fill rule, reached by
+  Tab, pressed by Enter and Space, announced as a button by its `Label` with `Selected` as its state, and painted
+  in its `Hover` (fill, stroke, opacity) under the pointer; the keyboard's focus strokes its outline. On the web
+  each one is a `path` with a button's role and `pointer-events: visibleFill`, the same tree from the server and
+  the client; on Photon a hit region tests the path by its winding number under a part id of the drawing's
+  position, so the press, the focus, the semantics and an activation name the same shape. The dashboard sample
+  shows it at `/map`. Proposed and archived through OpenSpec (`drawing-inputs`).
+- **2026-11-03 · An implicit conversion is applied whole, and a native integer is 64 bits**: bugs under #849
+  ([#649](https://github.com/eQuantic/equantic-ui/issues/649),
+  [#911](https://github.com/eQuantic/equantic-ui/issues/911),
+  [#970](https://github.com/eQuantic/equantic-ui/issues/970)). A user-defined conversion and the standard one beside
+  it are two conversions on one node of the bound tree, and `ValueFlow` applied only the one around the node, so
+  `long l = new Count(5)` kept a number; it applies each now, inner first, and asks the pair of types for the
+  standard conversions a tuple's element has no tree to show. A tuple converted to wider elements passed its array
+  through; each element converts now. An `nint` was a number or a BigInt by where it came from; it is a BigInt,
+  64 bits wide as on every target the SDK ships to, so an array it sizes, or a `long` sizes, takes its number, and a
+  `ulong`'s math and bit members answer as a `long`'s do. Proved by the conformance suite on both sides. Proposed and
+  archived through OpenSpec (`transpiler-expressions`).
+- **2026-11-04 · A page uploads files: `IUploads`, `Upload` and `FileUpload`**: the third and last slice of
+  #1212 ([#1215](https://github.com/eQuantic/equantic-ui/issues/1215)). A page held the files a person chose and
+  had no C# way to send them to the endpoint slice B mapped. `IUploads.Start(file, policy)` answers an `Upload`
+  with its state, progress, error and result, `Pause`, `Resume`, `Cancel` and an `IDisposable` subscription; the
+  browser realizes it over a small tus client of the runtime's own, in parts of 8 MB with progress inside each,
+  a failed part sent again from the server's offset after a growing pause, and a page reloaded halfway going on
+  with the same file from an address kept in `localStorage`. `UploadPolicy.Accepts` and `RefusalOf` are now the
+  one rule the page asks before it sends and the server asks again, in the same words. `FileUpload` is the drop
+  area, the button and a row per file, its strings in every culture the SDK ships, enabled only once mounted
+  because hydration keeps the server's disabled markup (measured on the sample). Proved by vitest against an
+  in-memory tus server and over the transpiled component, the conformance suite for the policy's rule, and a
+  Playwright spec that sends a file of three parts through the sample's real server and checks the SHA-256 its
+  Server Action read. The served runtime grows by about 4.8 KB gzipped. Proposed through OpenSpec
+  (`file-uploads`).
+- **2026-11-04 · A person chooses files on the web, by a picker or by dropping them**: a task under #1212
+  ([#1213](https://github.com/eQuantic/equantic-ui/issues/1213)), the first slice of uploading files. The vocabulary
+  gains `PickedFile`, a file a person chose with its name, MIME type, size and content and never a path, which a
+  browser does not give and a phone answers otherwise; `IFilePicker`, the portable way to ask a person for files,
+  realized in the browser through the file input the photo library already opened, which both now share; and
+  `DropTarget`, a layout-transparent area that hands over the files dropped on it and says when files are carried
+  over it. The web realizer declares the four drag events and the runtime answers them, keeping the set of
+  elements a drag entered on the area's element, because a counter drifted when the "over" report re-rendered
+  the area; once a page has shown a drop area, a file let go outside every area is refused instead of opened over
+  the page. `FileFilter` gained its runtime twin. Photon renders a drop area's child and takes nothing, a door
+  #1216 closes for the desktop shells, and D15 (#782) for the phones. Proposed and archived through OpenSpec
+  (`file-picking`).
+- **2026-11-04 · The server receives files in resumable parts and hands them to a Server Action**: the second
+  slice of #1212 ([#1214](https://github.com/eQuantic/equantic-ui/issues/1214)). A Server Action took JSON of at
+  most 1 MB, so a file of real size had no way to reach the app's server. An app now declares an `UploadPolicy`
+  once, in C# its pages and its server both read (a name, the formats as `FileFilter`s, the largest size), and
+  `UseUploads(u => u.Accept(policy))` on `AddUI` maps `/api/_equantic/uploads`, which speaks tus through
+  `tusdotnet` with no tus type public. A creation the policy does not accept is refused with a reason (400, 401,
+  413, 415, 429); an upload belongs to the signed-in person or else to the browser, by a strictly necessary
+  cookie, and only its owner continues, inspects, deletes or receives it, after a restart too; `EQuantic:Uploads`
+  sets the folder, the unfinished uploads allowed and the expiry, past which a hosted service removes an upload
+  finished or not, since `tusdotnet`'s own expiry removes only the unfinished (measured). A Server Action takes
+  an `UploadedFile`, bound from its id alone for its owner once complete, and streams it with `OpenRead`, which
+  the build refuses in client code. Proved by real tus requests through the real endpoint, each owner, limit and
+  sweep rule failing with its check taken out, and by the conformance suite for the three runtime twins.
+  Proposed through OpenSpec (`file-uploads`).
+- **2026-11-05 · 0.2.0-preview.66 released** from `0b00fc32`: a page that takes files with no
+  JavaScript, in parts that survive a dropped connection, read by a Server Action as a stream (#1212),
+  a theme that ships its own faces in nine weights and Google Fonts fetched by the build, the
+  spreadsheet on the two-axis viewport selecting and editing as Excel does, and the code editor's
+  folding, navigation, snippets and every caret, 53 pull requests in all. It is the first release
+  through nuget.org's trusted publishing (#1224): the tag's run met an expired key on all 52
+  packages, `Publish a release` pushed 49 of them from that run's artifact once the policies were in
+  place, and the last three once the eQuantic organization co-owned them as it owns the rest. An app
+  outside the repository restored the packages it uses cold from nuget.org and took a 20 × 30 × 40 mm
+  STL through its upload page end to end
+  *([v0.2.0-preview.66](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.66))*.
+- **2026-11-05 · A release reaches nuget.org with no key that expires**: the tag run of
+  `0.2.0-preview.66` passed every job and then met nuget.org's 403 for an expired key on all 52
+  packages, since nuget.org now caps a key's life at weeks. Both workflows that publish log in
+  through nuget.org's trusted publishing instead, in the `nuget` environment, with a key that lives
+  an hour, and `scripts/check-publish-packages.sh` fails a pull request that brings a stored key
+  back ([#1224](https://github.com/eQuantic/equantic-ui/issues/1224)). Proposed and archived
+  through OpenSpec (`openspec/specs/release-publishing`).
+- **2026-11-05 · A wiki snippet implements an SDK interface as the interface is**: the DesignSystem
+  page's "The document is the theme's" went on writing `public string? TextFamily => "…"` in all five
+  languages after `TextFamily` became a `FontFamily?` in 0.2.0-preview.66, because the snippet was
+  never transcribed into `WikiClaimsCompile`, the only thing that compiled the wiki. The page writes a
+  `FontFamily` now, and `WikiImplementationsTests` compiles every C# block of every page and language
+  against the SDK's assemblies and compares each member a type writes over an SDK interface with the
+  interface's own, 160 members in 40 pages, with no transcription. It failed on the wiki's master
+  naming the five copies and their lines. `eQuantic.UI.Web.Tests` references `eQuantic.UI.Server`,
+  without which 35 snippets over the server's contracts went unread, and an SDK interface the guard
+  cannot resolve fails it ([#1226](https://github.com/eQuantic/equantic-ui/issues/1226)). Proposed and
+  archived through OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-06 · An embedded document is handed what its page may use**: a `WebFrame` could loosen
+  its isolation (script, origin, forms, new windows) and hand the document nothing of its page's, so
+  a payment provider's checkout framed by myartwork3d offered the card and never Apple Pay or Google
+  Pay, which a browser refuses a cross-origin frame without `allow="payment"`. `WebSandbox` names
+  `Payment`, `Camera`, `Microphone`, `Location`, `Fullscreen`, `CopyToClipboard` and `Passkeys`, and
+  both halves of the web target write them into the iframe's `allow`, pinned against one fixture the
+  server's half writes and the browser's reads. The wiki's Components page documents `WebFrame` in
+  all five languages ([#1228](https://github.com/eQuantic/equantic-ui/issues/1228)). Proposed and
+  archived through OpenSpec (`openspec/specs/embedded-documents`, a new spec).
+- **2026-11-06 · A Portuguese app outside Brazil reads the SDK in Portuguese**: the SDK's strings had
+  catalogs for English, `es` and `pt-BR`, and .NET walks `pt-PT`, `pt-AO` and every Portuguese
+  culture but Brazil's through `pt`, never through `pt-BR`, so an app in `pt-PT` read every built-in
+  text of the components in English ("Choose files" on myartwork3d's upload page). The SDK ships a
+  neutral `pt` catalog in European Portuguese, all 98 keys, which a build writes as `strings/pt.json`
+  and the server and the browser reach by the walk they already did. `SdkStringsLocalizationTests`
+  fails on a catalog that lacks a key, carries one the neutral catalog does not or differs in a
+  placeholder ([#1221](https://github.com/eQuantic/equantic-ui/issues/1221)). Proposed and archived
+  through OpenSpec (`openspec/specs/sdk-strings`, a new spec).
 
 ## Retired documents
 

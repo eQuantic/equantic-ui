@@ -96,7 +96,7 @@ internal sealed partial class WebLoweringVisitor
             // are then the layers of the stack the component stands in.
             var arms = Place(child, arm => LowerLayer(stack, arm, depth));
             if (unmeasured && arms is not null) MarkUnmeasured(arms);
-            return arms;
+            return Decorate(raw, child, arms);
         }
 
         if (child is Positioned positioned)
@@ -149,12 +149,18 @@ internal sealed partial class WebLoweringVisitor
             {
                 anchor.Children.Add(lowered);
             }
-            return anchor;
+            // The ANCHOR is the Positioned's element, the one place its offsets live, so it carries
+            // what the funnel writes on every node's element: its key, its bookmark and its origin.
+            // The stack builds it without dispatching the Positioned, so nothing wrote them, and a
+            // link to the Positioned's bookmark, or a rule on its id, found nothing (#940).
+            return Decorate(raw, child, Decorate(positioned, anchor));
         }
 
-        var content = Lower(child, horizontalAxis: null);
+        // What the component built is the component's element too, as the funnel decorates it.
+        var content = Decorate(raw, child, Lower(child, horizontalAxis: null));
         if (content is null) return null;
         if (unmeasured) MarkUnmeasured(content);
+        var (capsWidth, capsHeight) = CappedByTheStack(child);
         // The cell IS the stack's available space (the native MeasureStack contract): it stretches
         // to the single grid cell and aligns its child via flex — so a Fill child covers the stack
         // while a hug child sits at the Stack.Align anchor.
@@ -168,14 +174,17 @@ internal sealed partial class WebLoweringVisitor
                 AlignItems = AlignmentAlign(stack.Align),
                 Width = "100%",
                 Height = "100%",
-                // …and the cell may not grow PAST it. A grid item's automatic minimum size is its
-                // min-content size, so one layer holding a scroller sizes the track to the
-                // scroller's content and the whole stack swells to the widest line in the file —
-                // the scrollbar disappears and the overflow is clipped by whatever ancestor happens
-                // to be smaller. Native measures a layer against the stack's own extent, which is
-                // exactly what min-0 restores.
-                MinWidth = "0",
-                MinHeight = "0",
+                // …and the cell may not grow PAST it, on an axis the stack caps its layer. A grid
+                // item's automatic minimum size is its min-content size, so one layer holding a
+                // scroller sizes the track to the scroller's content and the whole stack swells to
+                // the widest line in the file — the scrollbar disappears and the overflow is clipped
+                // by whatever ancestor happens to be smaller. Native measures that layer against the
+                // stack's own extent, which is exactly what min-0 restores. On any other axis the
+                // layer's size counts toward the stack's own minimum, as it does natively: written
+                // on every cell, min-0 let a line squeeze a hugging stack to nothing while its
+                // content overflowed at the same edge (#698).
+                MinWidth = capsWidth ? "0" : null,
+                MinHeight = capsHeight ? "0" : null,
                 // A grid item takes z-index without needing `position` — this is what keeps a
                 // filtered child from jumping above the siblings drawn after it.
                 ZIndex = depth.ToString(),
@@ -190,6 +199,54 @@ internal sealed partial class WebLoweringVisitor
         cell.Children.Add(content);
         return cell;
     }
+
+    /// <summary>
+    /// The axes a Stack caps a layer on, where Photon measures the layer against the stack's own
+    /// extent and takes the answer: one its child fills, one a scroller hugs, since a scroller is as
+    /// wide as the smaller of its content and the room it has, and either axis of a layer that holds
+    /// a scroller further down, whose content would size the track the same way (TS twin:
+    /// <c>cappedByTheStack</c>).
+    /// </summary>
+    private (bool Width, bool Height) CappedByTheStack(VisualNode child)
+    {
+        var (width, height) = Fills(child);
+        if (child is ScrollView scroller)
+            return (width || scroller.Width.Kind == SizeKind.Hug, height || scroller.Height.Kind == SizeKind.Hug);
+        // A size the layer fixed bounds the track already, and counts toward the stack's minimum: a
+        // scroller inside a box 44 wide swells nothing past 44.
+        var (fixedWidth, fixedHeight) = FixedSize(child);
+        return HoldsAScroller(child) ? (!fixedWidth, !fixedHeight) : (width, height);
+    }
+
+    /// <summary>Whether a layer declares a fixed size on each axis, seen through what takes its
+    /// child's size (TS twin: <c>fixedSize</c>).</summary>
+    private static (bool Width, bool Height) FixedSize(VisualNode node) => node switch
+    {
+        Box box => (box.Style.Width.Kind == SizeKind.Fixed, box.Style.Height.Kind == SizeKind.Fixed),
+        FlexNode flex => (flex.Width.Kind == SizeKind.Fixed, flex.Height.Kind == SizeKind.Fixed),
+        SingleChildNode wrapper when wrapper.IsLayoutTransparent() => FixedSize(wrapper.Child),
+        _ => (false, false),
+    };
+
+    /// <summary>
+    /// A node a stack expanded itself from a component <paramref name="raw"/>, decorated as the funnel
+    /// decorates a component: its key, bookmark and origin on the element of what it built, after that
+    /// node's own. A stack never dispatches the component, so they were dropped (#940).
+    /// </summary>
+    private HtmlElement? Decorate(VisualNode raw, VisualNode resolved, HtmlElement? lowered) =>
+        ReferenceEquals(raw, resolved) ? lowered : Decorate(raw, lowered);
+
+    /// <summary>Whether a scroller stands in this layer, down through what takes its children's size
+    /// (TS twin: <c>holdsAScroller</c>). What a component builds is its own: a stack resolves the
+    /// layer's component, and the ones further down have not built yet, on either side.</summary>
+    private static bool HoldsAScroller(VisualNode node) => node switch
+    {
+        ScrollView or TableViewport => true,
+        Box { Child: { } child } => HoldsAScroller(child),
+        FlexNode flex => flex.Children.Any(HoldsAScroller),
+        SingleChildNode wrapper when wrapper.IsLayoutTransparent() => HoldsAScroller(wrapper.Child),
+        _ => false,
+    };
 
     /// <summary>
     /// Wave 3 anchored overlay: a position:relative host wrapping the anchor; while Open, an

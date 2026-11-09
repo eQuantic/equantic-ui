@@ -377,6 +377,16 @@ public static class PatternConverter
                 return $"{access} instanceof {named.IntroduceTwin(context)}";
         }
 
+        // A package's type has no module and no twin, so nothing in the browser can say a value is one:
+        // the test below answered true for any value, and `as` handed the value back (#951).
+        if (context.SemanticHelper.GetSymbol(typeSyntax) is ITypeSymbol package && package.IsPackages())
+        {
+            context.Report(typeSyntax, ConversionSeverity.Error, "EQ2004",
+                $"A type test of '{package.ToDisplayString()}' has no JavaScript translation: {package.PackageReason()}. "
+                + TwinlessTypeExtensions.PackageRemedy);
+            return "false";
+        }
+
         return $"{access} != null";
     }
 
@@ -419,7 +429,7 @@ public static class PatternConverter
                 return $"typeof {access} === 'string' && {access}.length === 1";
             case SpecialType.System_Boolean:
                 return $"typeof {access} === 'boolean'";
-            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+            case SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr:
                 return $"typeof {access} === 'bigint'";
             case SpecialType.System_Int32 or SpecialType.System_Int16 or SpecialType.System_SByte
                 or SpecialType.System_Byte or SpecialType.System_UInt16 or SpecialType.System_UInt32:

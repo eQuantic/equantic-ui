@@ -53,6 +53,40 @@ export function checked(
 }
 
 /**
+ * An explicit cast of a double or a float to an `int`, as .NET 9 and later cast it on every platform:
+ * the whole part, the type's end past its range, and 0 for a NaN (#1015). `| 0` wraps a double modulo
+ * 2^32 where .NET saturates. A narrower width takes the low bits of this int, as the JIT narrows it:
+ * `(byte)300.0` is 44 and `(byte)1e12` is 255.
+ */
+export function saturate(value: number): number {
+  if (value !== value) return 0;
+  if (value >= 2147483647) return 2147483647;
+  if (value <= -2147483648) return -2147483648;
+  return Math.trunc(value) + 0;
+}
+
+/** {@link saturate} for a `uint`, which has a range of its own: -1.0 is 0. */
+export function saturateUnsigned(value: number): number {
+  if (value !== value || value <= 0) return 0;
+  if (value >= 4294967295) return 4294967295;
+  return Math.trunc(value);
+}
+
+/**
+ * {@link saturate} for a `long` or a `ulong`, a BigInt here. The ends are compared with the doubles
+ * 2^63 and 2^64, since neither type's largest value is a double.
+ */
+export function saturateLong(value: number, unsigned = false): bigint {
+  if (value !== value) return 0n;
+  if (unsigned) {
+    if (value <= 0) return 0n;
+    return value >= 18446744073709551616 ? 18446744073709551615n : BigInt(Math.trunc(value));
+  }
+  if (value >= 9223372036854775808) return 9223372036854775807n;
+  return value <= -9223372036854775808 ? -9223372036854775808n : BigInt(Math.trunc(value));
+}
+
+/**
  * .NET's `Math.DivRem` for an integer that is a plain number here: the truncated quotient and the
  * remainder — or the throw .NET throws. A zero divisor is a DivideByZeroException where JavaScript
  * would answer Infinity and NaN; `int.MinValue / -1` overflows a 32-bit int and throws; a narrower

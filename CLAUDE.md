@@ -364,14 +364,16 @@ dotnet pack --configuration Release --output nupkgs
 
 ### TypeScript Runtime (src/eQuantic.UI.Runtime)
 
-The TypeScript runtime is built using **embedded Bun** (bundled in platform-specific runtime packages). Bun binaries are stored as `.zip` files and auto-extracted during build.
+The TypeScript runtime is built using **embedded Bun** (bundled in platform-specific runtime packages). Bun binaries are stored as `.zip` files, and every build unpacks the one it needs into the user's cache, in a folder named by the zip's SHA-256 (`ProgramArchive`, in `eQuantic.UI.Sdk.Tasks`): never beside the zip, where a package cache may be read-only (#364) and a source tree kept an older bun after its zip moved on (#932).
 
 ```bash
 # Type-check (tsc) and test (vitest run) the runtime through the embedded Bun — no Node, any OS.
-# The build extracts the bun itself from the sibling package for this OS and architecture
-# (src/eQuantic.UI.Runtime.<Os><Arch>/tools/bun/), and the target installs from bun.lock first.
+# The build unpacks the bun of the sibling package for this OS and architecture
+# (src/eQuantic.UI.Runtime.<Os><Arch>/tools/bun/*.zip), and the target installs from bun.lock first.
 dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
 
+# That bun's path, for running it by hand:
+#   bun=$(dotnet msbuild -restore src/eQuantic.UI.Runtime -t:ResolveEmbeddedBun -getProperty:_BunPath)
 # Lint and format go through the same binary, from src/eQuantic.UI.Runtime:
 #   <that bun> x eslint src --ext .ts
 #   <that bun> x prettier --write "src/**/*.{ts,json}"
@@ -840,6 +842,14 @@ the ids given in `-f packages="…"`), then writes the release page from the tag
 `release-github` could not do. Running it twice changes nothing. The loop is proven outside a
 release by `scripts/check-publish-packages.sh`, which CI runs against a stub on every pull request
 (#759).
+
+**No key is stored (#1224).** Both workflows log in to nuget.org through trusted publishing: in
+the `nuget` environment, `NuGet/login` exchanges the run's OIDC token for a key that lives an hour,
+under a policy on nuget.org for each workflow file (owner `eQuantic`, packages `eQuantic.UI.*`).
+A stored key expired under `0.2.0-preview.66` and every push met a 403. A login that is refused
+means the policy and the workflow disagree, about the file's name, the environment or a package's
+id, and the fix is on nuget.org's Trusted Publishing page, never a key in the secrets:
+`check-publish-packages.sh` fails a pull request that brings one back.
 
 **The release's list of BREAKS is not written from memory — the build already has it.** Every
 project that ships an assembly declares its public surface in `PublicAPI.Shipped.txt`, and

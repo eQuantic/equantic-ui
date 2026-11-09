@@ -17,21 +17,40 @@ namespace eQuantic.UI.Compiler.CodeGen;
 internal static class TwinOwnMembers
 {
     /// <summary>
+    /// Refuses a <c>[ServerOnly]</c> override of <c>ToString</c>, <c>Equals</c> or <c>GetHashCode</c> on a
+    /// type that crosses (EQ2010). No twin holds it, and its callers are the runtime as much as the code:
+    /// a value going into text or a comparison never asks the type, so the fence on a call does not meet
+    /// them, and the browser printed the type's name, or compared by reference, where .NET runs the
+    /// override (#943).
+    /// </summary>
+    internal static void RefuseKeptOnTheServer(TypeDeclarationSyntax type, SemanticModel? model, CSharpToJsConverter converter)
+    {
+        foreach (var method in type.Members.OfType<MethodDeclarationSyntax>())
+            if (RuntimeCallsItself.Any(name => Overrides(method, name, model))
+                && Parser.ComponentParser.StaysOnTheServer(method, inAComponent: false, model))
+                converter.Report(method, ConversionSeverity.Error, "EQ2010",
+                    $"'{type.Identifier.ValueText}.{method.Identifier.ValueText}' is [ServerOnly], and '{type.Identifier.ValueText}' crosses to the browser, "
+                    + "where the runtime calls this member on its own for text and for equality, and no twin holds it. "
+                    + "Write the member so it crosses, or mark the type [ServerOnly].");
+    }
+
+    /// <summary>The members of <c>object</c> the runtime calls without the code asking the type.</summary>
+    private static readonly string[] RuntimeCallsItself = [nameof(ToString), nameof(Equals), nameof(GetHashCode)];
+
+    /// <summary>
     /// Whether <paramref name="method"/> overrides object's member <paramref name="name"/>: an instance
     /// override whose chain of overridden methods ends at <c>object</c>'s, asked of the model, and of the
     /// syntax where there is none, one parameter of type <c>object</c> for <c>Equals</c> and none for the
     /// others. An override of a typed <c>Equals</c> a base declares (<c>Equals(int)</c>) fills that one's
     /// slot, which holds a name of its own (<see cref="TwinMethodName.TypedEquals"/>), so it takes nothing
     /// of the twin's <c>equals</c>: the twin of a derived record wrote none for it, and its values compared
-    /// as its base's. A <c>[ServerOnly]</c> override is no member of the twin, so it takes nobody's place
-    /// there, and the twin writes its own.
+    /// as its base's.
     /// </summary>
     internal static bool Overrides(MethodDeclarationSyntax method, string name, SemanticModel? model)
     {
         if (method.Identifier.ValueText != name
             || !method.Modifiers.Any(SyntaxKind.OverrideKeyword)
-            || method.Modifiers.Any(SyntaxKind.StaticKeyword)
-            || Parser.ComponentParser.StaysOnTheServer(method, inAComponent: false, model))
+            || method.Modifiers.Any(SyntaxKind.StaticKeyword))
             return false;
         if (model?.SyntaxTree == method.SyntaxTree && model.GetDeclaredSymbol(method) is IMethodSymbol symbol)
         {

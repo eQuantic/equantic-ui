@@ -96,6 +96,8 @@ public static class ConsoleShell
         new(Icons.Person, "Identity", "/identity"),
         // Colours a component derives in its browser-side code, which the browser holds as data.
         new(Icons.Copy, "Colors", "/colors"),
+        // Files sent to the server in parts, which a Server Action reads as a stream.
+        new(Icons.Plus, "Uploads", "/uploads"),
     ];
 
     /// <summary>

@@ -28,7 +28,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// and once threw a ReferenceError; <c>CopyTo</c>, which writes into the array it is handed; and
 /// <c>AddRange</c> and <c>InsertRange</c>, one element at a time. They were <c>push(...items)</c> and
 /// <c>splice(index, 0, ...items)</c>, which hand every element to the call as an argument, and an engine
-/// caps a call's arguments, so a large range threw in the browser (#1060).
+/// caps a call's arguments, so a large range threw in the browser (#1060). <c>Insert</c>, <c>RemoveAt</c>,
+/// <c>RemoveRange</c> and <c>GetRange</c> check their positions as .NET does, where a <c>splice</c> or a
+/// <c>slice</c> clamped them to the array or counted a negative one from its end, and take a named
+/// argument in its parameter's place, where the text placed it by its position in the call (#1160).
 /// </para>
 /// <para>
 /// A call of the array's own method is IR, so a lambda passed to it (<c>ForEach</c>, <c>Exists</c>…)
@@ -115,19 +118,20 @@ public class ListMethodStrategy : IExpressionIrStrategy
         var args = argsIr.Select(JsExprWriter.Write).ToList();
         return methodName switch
         {
-            // A named argument could fill either of a range's parameters, and no model says which.
-            "AddRange" or "InsertRange" when invocation.ArgumentList.Arguments.Any(argument => argument.NameColon is not null) =>
+            // A named argument could fill either of two positions, and no model says which.
+            "AddRange" or "InsertRange" or "Insert" or "RemoveRange" or "GetRange"
+                when invocation.ArgumentList.Arguments.Any(argument => argument.NameColon is not null) =>
                 JsExpr.Opaque(context.Unhandled(invocation, $"List.{methodName} with a named argument, which no model places")),
             "AddRange" when args.Count > 0 => Helper(context, $"{Eq.ListAddRange}({caller}, {args[0]})"),
-            "Insert" => ConvertInsert(caller, args),
+            "Insert" when args.Count > 1 => Helper(context, $"{Eq.ListInsert}({caller}, {args[0]}, {args[1]})"),
             "InsertRange" when args.Count > 1 => Helper(context, $"{Eq.ListInsertRange}({caller}, {args[0]}, {args[1]})"),
             // An element type no model can say compares by what each value turns out to be.
             "Remove" when args.Count > 0 => Helper(context, $"{Eq.ListRemove}({caller}, {args[0]}, 'own')"),
-            "RemoveAt" => ConvertRemoveAt(caller, args),
-            "RemoveRange" => ConvertRemoveRange(caller, args),
+            "RemoveAt" when args.Count > 0 => Helper(context, $"{Eq.ListRemoveAt}({caller}, {args[0]})"),
+            "RemoveRange" when args.Count > 1 => Helper(context, $"{Eq.ListRemoveRange}({caller}, {args[0]}, {args[1]})"),
             "RemoveAll" when args.Count > 0 => Helper(context, $"{Eq.ListRemoveAll}({caller}, {args[0]})"),
             "Clear" => $"{caller}.splice(0)",
-            "GetRange" => ConvertGetRange(caller, args),
+            "GetRange" when args.Count > 1 => Helper(context, $"{Eq.ListGetRange}({caller}, {args[0]}, {args[1]})"),
             // No model to say which overload, element type or comparer a call is: the shapes that
             // need one have none to take.
             _ => JsExpr.Opaque(context.Unhandled(invocation, $"List.{methodName}, which no model binds")),
@@ -223,6 +227,17 @@ public class ListMethodStrategy : IExpressionIrStrategy
             case "InsertRange":
                 context.UsedHelpers.Add(Eq.Import);
                 return ParameterTemplate.Call($"{Eq.ListInsertRange}({{0}}, {{1}}, {{2}})", list, invocation, method, context);
+            // Each position checked as .NET checks it, its arguments in their parameters' places (#1160).
+            case "Insert":
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call($"{Eq.ListInsert}({{0}}, {{1}}, {{2}})", list, invocation, method, context);
+            case "RemoveAt":
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call($"{Eq.ListRemoveAt}({{0}}, {{1}})", list, invocation, method, context);
+            case "RemoveRange" or "GetRange":
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call($"{(name == "GetRange" ? Eq.ListGetRange : Eq.ListRemoveRange)}({{0}}, {{1}}, {{2}})",
+                    list, invocation, method, context);
             case "CopyTo":
                 context.UsedHelpers.Add(Eq.Import);
                 return ParameterTemplate.Call(count switch
@@ -308,35 +323,6 @@ public class ListMethodStrategy : IExpressionIrStrategy
     /// <summary>The array's own method, called with the arguments as they are.</summary>
     private static JsExpr Method(JsExpr caller, string name, IReadOnlyList<JsExpr> args) =>
         JsExpr.Call(JsExpr.Member(caller, name), args);
-
-    private string ConvertInsert(string caller, List<string> args)
-    {
-        if (args.Count >= 2)
-            return $"{caller}.splice({args[0]}, 0, {args[1]})";
-        return caller;
-    }
-
-    private string ConvertRemoveAt(string caller, List<string> args)
-    {
-        if (args.Count == 0) return caller;
-        return $"{caller}.splice({args[0]}, 1)";
-    }
-
-    private string ConvertRemoveRange(string caller, List<string> args)
-    {
-        if (args.Count >= 2)
-            return $"{caller}.splice({args[0]}, {args[1]})";
-        return caller;
-    }
-
-    private string ConvertGetRange(string caller, List<string> args)
-    {
-        if (args.Count >= 2)
-            return $"{caller}.slice({args[0]}, {args[0]} + {args[1]})";
-        if (args.Count == 1)
-            return $"{caller}.slice({args[0]})";
-        return $"[...{caller}]";
-    }
 
     public int Priority => 15; // Higher than InvocationStrategy (1)
 }

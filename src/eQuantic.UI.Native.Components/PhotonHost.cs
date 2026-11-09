@@ -366,7 +366,7 @@ public sealed class PhotonHost
             _focusVisible ? _focusedId : 0, _textAt, caretIndex, CaretVisible,
             selection.Start, selection.End, density: Density,
             markedText: _marked, composing: _composing,
-            hoveredAt: _hoverAt,
+            hoveredAt: _hoverAt, hoveredPart: _hoveredPart,
             nodePool: RecycleFrames ? _nodePool : null,
             windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame, rebuildAll: rebuildAll, log: Log);
         if (_lift != 0) builder.Pop();
@@ -452,11 +452,22 @@ public sealed class PhotonHost
     /// by then. The node itself does not survive a Build; its position does, for as long as the same
     /// control stands there, and a control that took its place is not the one pressed.</summary>
     private Element? _pressedAt;
+
+    /// <summary>The id of the region the held press began on: its position's, or the shape's for an input
+    /// shape of a drawing, since every shape of one drawing shares its position (#674).</summary>
+    private int _pressedId;
     private VisualNode? _hovered;
     /// <summary>The hover CHAIN — every region under the pointer, topmost first, tracked by position
     /// (the press's rebuild-surviving rule) with the node kept for the Hoverable callbacks. CSS
     /// :hover matches every ancestor, and the native pointer answers the same question.</summary>
     private readonly List<Element> _hoverAt = new();
+
+    /// <summary>The input shape of a drawing under the pointer, by its id, or zero: where a press
+    /// would land, which is the shape whose Hover is drawn (#674).</summary>
+    private int _hoveredPart;
+
+    /// <summary>The input shape of a drawing the pointer is over, by its id, or zero.</summary>
+    public int HoveredPart => _hoveredPart;
     private readonly List<VisualNode> _hoverNodes = new();
     private readonly TransitionClock _transitions = new();
     private readonly ScrollClock _scrolls = new();
@@ -469,7 +480,7 @@ public sealed class PhotonHost
     /// next view drawn at its place.
     /// </summary>
     private (Element Element, ScrollAxis Axis, float MaxOffset, float Start, float FromOffset,
-        float LastAt, float LastTimeMs, float Velocity, bool Active)? _pan;
+        float LastAt, float LastTimeMs, float Velocity, bool Active, Matrix2D? Space)? _pan;
 
     /// <summary>
     /// A press a table viewport's scroll took. On a scrollbar it is the scroll's from the start
@@ -503,8 +514,9 @@ public sealed class PhotonHost
     /// the pointer travels past the slop (which cancels the pressable press), resolved on release.</summary>
     // The armed gesture surface. `Node` is a DragDismiss or a Draggable — the rules live on it, so
     // the host only tracks where the finger started and whether the slop has been passed. `Element`
-    // is its position, which keeps the drag.
-    private (Element Element, VisualNode Node, float StartX, float StartY, float Extent, bool Active)? _drag;
+    // is its position, which keeps the drag. Its start and its extent are in the surface's own space
+    // (see InGestureSpace), and `Space` is what takes a point there.
+    private (Element Element, VisualNode Node, float StartX, float StartY, float Extent, bool Active, Matrix2D? Space)? _drag;
 
     /// <summary>The clock of the last rendered frame — glide-backs anchor to it on release.</summary>
     private float _lastTimeMs;
@@ -879,7 +891,7 @@ public sealed class PhotonHost
 
     private bool IsFocused(HitRegion region) =>
         _focusedId != 0
-            ? region.Element.Id == _focusedId
+            ? region.Id == _focusedId
             : _focused is not null && ReferenceEquals(region.Node, _focused);
 
     /// <summary>Puts the focus on a stop's id and its position.</summary>
@@ -899,11 +911,13 @@ public sealed class PhotonHost
     /// <summary>Gives focus to a specific region — what a pointer press does, so that releasing over
     /// a control and then pressing Enter goes on working on the control the user just touched.
     /// <paramref name="at"/> is the control's position (a <see cref="HitRegion.Element"/>), which the
-    /// focus follows across rebuilds; without one it holds the node, for a frame that never rebuilds.</summary>
-    public void Focus(Pressable node, Element? at = null, bool visible = true)
+    /// focus follows across rebuilds; without one it holds the node, for a frame that never rebuilds.
+    /// <paramref name="id"/> is the region's own (<see cref="HitRegion.Id"/>) where it is not its
+    /// position's: an input shape of a drawing.</summary>
+    public void Focus(Pressable node, Element? at = null, bool visible = true, int? id = null)
     {
         _focused = node;
-        _focusedId = at?.Id ?? 0;
+        _focusedId = id ?? at?.Id ?? 0;
         _focusedAt = at;
         _focusVisible = visible;
         NeedsRender = true;
@@ -1858,7 +1872,7 @@ public sealed class PhotonHost
         for (var i = 0; i < regions.Count; i++)
         {
             var region = regions[i];
-            if (region.Element.Id != id || region.Node.Disabled) continue;
+            if (region.Id != id || region.Node.Disabled) continue;
             region.Node.OnPressed?.Invoke();
             NeedsRender = true;
             return true;
@@ -2092,10 +2106,10 @@ public sealed class PhotonHost
             // The travel that COUNTS is the one along the gesture's own axis: a sideways swipe must
             // not arm on a vertical scroll, and a sheet must not arm on a sideways one.
             var horizontal = drag.Node is Draggable { Axis: DragAxis.Horizontal };
-            var travel = horizontal ? x - drag.StartX : y - drag.StartY;
-            var armed = drag.Node is Draggable
-                ? Math.Abs(travel) > Touch.PressCancelSlop
-                : travel > Touch.PressCancelSlop;
+            var at = InGestureSpace(drag.Space, x, y);
+            var travel = horizontal ? at.X - drag.StartX : at.Y - drag.StartY;
+            var slop = SlopIn(drag.Space, horizontal);
+            var armed = drag.Node is Draggable ? Math.Abs(travel) > slop : travel > slop;
 
             if (!drag.Active && armed)
             {
@@ -2133,10 +2147,11 @@ public sealed class PhotonHost
         // is what makes a surface feel attached to the hand rather than chased by it.
         if (_pan is { } pan)
         {
-            var along = pan.Axis == ScrollAxis.Horizontal ? x : y;
+            var panAt = InGestureSpace(pan.Space, x, y);
+            var along = pan.Axis == ScrollAxis.Horizontal ? panAt.X : panAt.Y;
             var travelled = along - pan.Start;
 
-            if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+            if (!pan.Active && MathF.Abs(travelled) > SlopIn(pan.Space, pan.Axis == ScrollAxis.Horizontal))
             {
                 _pressed = null;
                 _pressedAt = null;
@@ -2167,6 +2182,7 @@ public sealed class PhotonHost
         // so their moves end HERE instead of latching whatever box they happened to cross last.
         if (kind != PointerKind.Mouse) return;
         if (!_held) HoverCode(new Point(x, y));
+        HoverShape(new Point(x, y));
 
         // The CHAIN of regions under the pointer, topmost first — CSS :hover matches every
         // ancestor, so a button inside a hover-opened panel hovers BOTH (the web twin's answer).
@@ -2405,6 +2421,11 @@ public sealed class PhotonHost
     {
         _pointerAt = null;
         LeaveCode(except: null);
+        if (_hoveredPart != 0)
+        {
+            _hoveredPart = 0;
+            NeedsRender = true;
+        }
         if (_hoveredCanvas is { } leaving)
         {
             _hoveredCanvas = null;
@@ -2420,6 +2441,21 @@ public sealed class PhotonHost
         _hovered = null;
         _hoverAt.Clear();
         _hoverNodes.Clear();
+        NeedsRender = true;
+    }
+
+    /// <summary>
+    /// Follows the input shape of a drawing under the pointer: the one a press there would land on, so a
+    /// shape drawn under another control, or a point inside its box and outside its path, hovers
+    /// nothing. A change repaints, since the shape draws its own Hover (#674).
+    /// </summary>
+    private void HoverShape(Point point)
+    {
+        var regions = _lastFrame?.HitRegions;
+        var at = regions is null ? -1 : HitAt(regions, point);
+        var part = at >= 0 && regions![at].Shape is not null ? regions[at].Id : 0;
+        if (part == _hoveredPart) return;
+        _hoveredPart = part;
         NeedsRender = true;
     }
 
@@ -2471,10 +2507,15 @@ public sealed class PhotonHost
         for (var i = dragRegions.Count - 1; i >= 0; i--)
         {
             if (!Covers(dragRegions, i, dragRegions[i].Bounds, point)) continue;
-            // The surface's own extent along the axis — what a NORMALIZED gesture divides by.
+            // The surface's own extent along the axis — what a NORMALIZED gesture divides by, in
+            // the space it was laid out in, as everything else this gesture measures is: the box a
+            // transform drew it in is another size, and turned, another axis.
             var horizontalSurface = dragRegions[i].Node is Draggable { Axis: DragAxis.Horizontal };
-            var extent = horizontalSurface ? dragRegions[i].Bounds.Width : dragRegions[i].Bounds.Height;
-            _drag = (dragRegions[i].Element, dragRegions[i].Node, x, y, extent, false);
+            var turned = TransformedAt(dragRegions, i);
+            var own = turned?.Local ?? dragRegions[i].Bounds;
+            var from = InGestureSpace(turned?.Inverse, x, y);
+            _drag = (dragRegions[i].Element, dragRegions[i].Node, from.X, from.Y,
+                horizontalSurface ? own.Width : own.Height, false, turned?.Inverse);
             break;
         }
 
@@ -2488,9 +2529,11 @@ public sealed class PhotonHost
             {
                 var region = scrollRegions[i];
                 if (!Covers(scrollRegions, i, region.Bounds, point) || region.MaxOffset <= 0) continue;
-                var along = region.Axis == ScrollAxis.Horizontal ? x : y;
+                var space = TransformedAt(scrollRegions, i)?.Inverse;
+                var from = InGestureSpace(space, x, y);
+                var along = region.Axis == ScrollAxis.Horizontal ? from.X : from.Y;
                 _pan = (region.Element, region.Axis, region.MaxOffset, along,
-                    ScrollClock.OffsetOf(region.Element) ?? region.Fallback, along, _lastTimeMs, 0, false);
+                    ScrollClock.OffsetOf(region.Element) ?? region.Fallback, along, _lastTimeMs, 0, false, space);
                 break;
             }
         }
@@ -2528,6 +2571,7 @@ public sealed class PhotonHost
             }
             _pressed = region.Node;
             _pressedAt = region.Element;
+            _pressedId = region.Id;
             // Pressing a control takes focus off whatever had it — including a field being edited,
             // whose caret must not go on blinking somewhere the user is no longer looking. Unless
             // it may not take the keyboard (Pressable.CanRequestFocus): a row of the list a code
@@ -2537,7 +2581,7 @@ public sealed class PhotonHost
                 EndEditing();
                 // Focused, but not RINGED: pressing Enter after clicking a button goes on working,
                 // and the click leaves no ring behind it.
-                Focus(region.Node, region.Element, visible: false);
+                Focus(region.Node, region.Element, visible: false, id: region.Id);
             }
             NeedsRender = true;
             return true;
@@ -2710,6 +2754,29 @@ public sealed class PhotonHost
     }
 
     /// <summary>
+    /// A point of a captured gesture in the space its surface was laid out in, which is the space of
+    /// everything the gesture writes: a drag's offset and its normalized travel, a scroll offset and
+    /// a fling's speed. Read on the screen, a 40dp drag of a surface drawn twice as large stored 40dp
+    /// and so moved it 80, and a track turned a quarter heard no travel along the line it is drawn on
+    /// (#734). <paramref name="space"/> is the one the press found and stays for the whole gesture: a
+    /// surface that follows the finger moves that transform's result under it, and it has to measure
+    /// against where it started.
+    /// </summary>
+    private static Point InGestureSpace(Matrix2D? space, float x, float y) =>
+        space is { } toLocal ? toLocal.Transform(new Point(x, y)) : new Point(x, y);
+
+    /// <summary>
+    /// The slop along a gesture's own axis, in its own space. A slop is the finger's, so it is the same
+    /// distance on the screen whatever a surface is drawn at, as the web measures it: read in the
+    /// surface's space it took twice the travel to arm at 2×, and a tremor armed one drawn small.
+    /// </summary>
+    private static float SlopIn(Matrix2D? space, bool horizontal) => space is { } toLocal
+        ? Touch.PressCancelSlop * (horizontal
+            ? MathF.Sqrt(toLocal.M11 * toLocal.M11 + toLocal.M21 * toLocal.M21)
+            : MathF.Sqrt(toLocal.M12 * toLocal.M12 + toLocal.M22 * toLocal.M22))
+        : Touch.PressCancelSlop;
+
+    /// <summary>
     /// Where the gesture now IS, as the caller wants to hear it: measured from the rest it started
     /// at — a row already open reports where it ends up, not how far this one drag went — in dp, or
     /// as a fraction of the surface's own extent.
@@ -2816,7 +2883,8 @@ public sealed class PhotonHost
             if (drag.Node is Draggable draggable)
             {
                 var horizontal = draggable.Axis == DragAxis.Horizontal;
-                var raw = horizontal ? x - drag.StartX : y - drag.StartY;
+                var at = InGestureSpace(drag.Space, x, y);
+                var raw = horizontal ? at.X - drag.StartX : at.Y - drag.StartY;
                 var travel = Math.Clamp(Report(draggable, raw, drag.Extent),
                     draggable.Min, draggable.Max);
                 _drags.Release(drag.Element, _lastTimeMs,
@@ -2827,7 +2895,7 @@ public sealed class PhotonHost
             }
 
             var dismiss = (DragDismiss)drag.Node;
-            var dy = y - drag.StartY;
+            var dy = InGestureSpace(drag.Space, x, y).Y - drag.StartY;
             if (dy >= DragDismiss.ThresholdDp)
             {
                 _drags.Drop(drag.Element);
@@ -2869,7 +2937,7 @@ public sealed class PhotonHost
             // and failed for every press that outlived its frame — which is every real one, because
             // showing the pressed state repaints and the next Build hands back new nodes; matching
             // on its path ran whatever control had taken the place.
-            if (!IsTheSamePressable(region, pressed, pressedAt)) continue;
+            if (!IsTheSamePressable(region, pressed, pressedAt, _pressedId)) continue;
             if (!Covers(regions, i, region.Bounds, point)) return false; // canceled by releasing outside
             region.Node.OnPressed?.Invoke();
             return true;
@@ -2881,10 +2949,11 @@ public sealed class PhotonHost
     /// control for as long as it stands there, as the paint walk decides it
     /// (<see cref="PressScope.IsPressed"/>). The node alone answers only for a press the host tracks
     /// no position for: an app can keep one node and hand it to two pages, so a page replaced by the
-    /// other shows the same node at a position nobody pressed.</summary>
-    private static bool IsTheSamePressable(HitRegion region, Pressable pressed, Element? pressedAt) =>
+    /// other shows the same node at a position nobody pressed. The id tells apart the input shapes of
+    /// one drawing, which share its position (#674).</summary>
+    private static bool IsTheSamePressable(HitRegion region, Pressable pressed, Element? pressedAt, int pressedId) =>
         pressedAt is not null
-            ? ReferenceEquals(region.Element, pressedAt)
+            ? ReferenceEquals(region.Element, pressedAt) && region.Id == pressedId
             : ReferenceEquals(region.Node, pressed);
 
     /// <summary>A tap that no pressable claimed: the TOPMOST link region under the point navigates
@@ -2994,8 +3063,16 @@ public sealed class PhotonHost
     private bool Covers(object regions, int index, Rect box, Point point, bool drawn = false)
     {
         if (!box.Contains(point)) return false;
-        if (TransformedAt(regions, index) is not { } region) return true;
-        return (drawn ? region.LocalDrawn : region.Local).Contains(region.Inverse.Transform(point));
+        var local = point;
+        if (TransformedAt(regions, index) is { } region)
+        {
+            local = region.Inverse.Transform(point);
+            if (!(drawn ? region.LocalDrawn : region.Local).Contains(local)) return false;
+        }
+        // An input shape of a drawing is pressed where its path is, by its fill rule: its box holds
+        // its neighbours' corners (#674). Tested in the space the drawing was laid out in.
+        return regions is not IReadOnlyList<HitRegion> hits || hits[index].Shape is not { } shape
+            || shape.Contains(local);
     }
 
     /// <summary>

@@ -44,7 +44,10 @@ public class ArrayCreationStrategy : IConversionStrategy
             && sized.Type.RankSpecifiers[0].Sizes[0] is { } sizeExpr
             && sizeExpr is not OmittedArraySizeExpressionSyntax)
         {
-            return Sized(sized, context.Converter.ConvertExpression(sizeExpr), context);
+            // A size C# takes as a long or a native integer is a BigInt here, and neither `new Array` nor
+            // `Array.from` reads one as a length: the first made an array of the one BigInt, the second threw.
+            var size = context.Converter.ConvertExpression(sizeExpr);
+            return Sized(sized, context.SemanticHelper.GetType(sizeExpr).IsLong() ? $"Number({size})" : size, context);
         }
 
         return "[]";
