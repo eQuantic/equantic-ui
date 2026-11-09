@@ -85,5 +85,7 @@ internal static class ChildSlots
     // the order the layout measures them in.
     private static NodeSlots CodeSurfaceSlots(CodeSurface node) => node.Notes.Count == 0
         ? NodeSlots.Two(node.Child, node.Options)
-        : NodeSlots.Listed([node.Child, .. node.Options is { } options ? [options] : Array.Empty<VisualNode>(), .. node.Notes]);
+        : node.Options is { } options
+            ? NodeSlots.Listed([node.Child, options, .. node.Notes])
+            : NodeSlots.Listed([node.Child, .. node.Notes]);
 }
