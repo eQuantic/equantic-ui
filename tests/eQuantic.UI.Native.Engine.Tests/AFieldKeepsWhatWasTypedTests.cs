@@ -81,6 +81,9 @@ public class AFieldKeepsWhatWasTypedTests
         /// <summary>Resets the field's value, as a page answering a refused code does.</summary>
         public void Reset() => SetState(() => _value = "");
 
+        /// <summary>Builds the same field again, at the same position, holding <paramref name="value"/>.</summary>
+        public void Hold(string value) => SetState(() => _value = value);
+
         /// <summary>Draws another field at this one's place: another key, its own value.</summary>
         public void Replace(string value) => SetState(() =>
         {
@@ -224,6 +227,30 @@ public class AFieldKeepsWhatWasTypedTests
         Heard(host).Should().Be("ab");
         host.CaretIndex.Should().Be(2, "the caret sits after the last key");
         host.EditingValue!.Value.Text.Should().Be("ab");
+    }
+
+    /// <summary>
+    /// Whether the page built the field is the position's to say, not a reader's. A reader holding the
+    /// node of an older frame (the host keeps its last frame until the next is drawn) would otherwise
+    /// take that node's value, and what was typed since the page last built the field would be gone.
+    /// </summary>
+    [Fact]
+    public void AReaderHoldingAnOlderNode_LeavesWhatWasTyped()
+    {
+        var (host, page, _, _) = Open(Handler.Ignores);
+        var older = host.LastFrame!.TextRegions.Single();
+
+        page.Hold("built");
+        Frame(host);
+        host.TextInput("X");
+        Frame(host);
+        var shown = Heard(host);
+        shown.Should().Contain("X").And.Contain("b");
+
+        FieldText.Of(older.Element, older.Entry).Should().Be(shown);
+        Frame(host);
+
+        Heard(host).Should().Be(shown, "what was typed stays until the page builds the field again");
     }
 
     [Fact]

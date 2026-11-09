@@ -27,9 +27,9 @@ public static class FieldText
     /// value; the same node means it did not, and the field keeps what was typed. With no position (one
     /// that left the tree, or none at all) it is the value of <paramref name="entry"/>.
     /// <para>
-    /// The position's node, never the caller's, because a caller can hold the node of a frame the build
-    /// has already moved past: the host reads the field from its last frame until the next one is drawn.
-    /// Taking that node's value would put the field back to it, and the next reader forward again.
+    /// The position's node, never the caller's: whether the page built the field is a fact about the
+    /// position. A reader holding the node of an older frame (the host keeps its last frame until the
+    /// next is drawn) reads what the field shows, and cannot put the field back to that node's value.
     /// </para>
     /// </summary>
     public static string Of(Element? at, TextEntry entry)
