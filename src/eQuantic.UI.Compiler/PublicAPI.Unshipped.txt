@@ -1,1 +1,5 @@
 #nullable enable
+const eQuantic.UI.Compiler.CodeGen.Eq.Guard = "$eq.guard" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TypesNamed = "$eq.types.named" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TypesOf = "$eq.types.of" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TypesSame = "$eq.types.same" -> string!

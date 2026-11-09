@@ -373,7 +373,7 @@ public static class PatternConverter
             // tests `Host$Page`, #584), and it reaches the import list, or the module references a
             // free variable.
             if (named.ReportIfKeptOut(typeSyntax, context)) return "false";
-            if (LowersToAJsClass(named) || IsEmittedAppType(named))
+            if (IsAJsClass(named))
                 return $"{access} instanceof {named.IntroduceTwin(context)}";
         }
 
@@ -448,6 +448,14 @@ public static class PatternConverter
         }
         return null;
     }
+
+    /// <summary>
+    /// Whether a value of this type is an instance of a class of its own on the other side, a prototype
+    /// <c>instanceof</c> reads: a type of the transpiled libraries or the vocabulary
+    /// (<see cref="LowersToAJsClass"/>), or one of the app's (<see cref="IsEmittedAppType"/>). The one rule a
+    /// type test and a comparison of runtime types (<c>RuntimeTypeEqualityStrategy</c>) both read.
+    /// </summary>
+    internal static bool IsAJsClass(INamedTypeSymbol type) => LowersToAJsClass(type) || IsEmittedAppType(type);
 
     /// <summary>
     /// Whether this is one of the APP's own types, whose twin the compiler emits as a class. A class
