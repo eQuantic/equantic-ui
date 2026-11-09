@@ -38,22 +38,24 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // another (TwinConstructor.IsSerializationConstructor).
         TwinConstructor.RefuseSerializationNew(node, context);
         var built = Build(node, context);
-        // A generic record or struct built as the closed type C# names carries its type arguments: one
-        // twin class serves every one of them, and `Box<int>` equalled `Box<double>` holding the same 1
-        // (#651). Its `equals` compares the mark (Eq.SameClosure).
+        // A generic type built as the closed type C# names carries its type arguments: one twin class
+        // serves every one of them, and `Box<int>` equalled `Box<double>` holding the same 1 (#651). A
+        // record's or a struct's `equals` compares the mark (Eq.SameClosure), and so does a comparison of
+        // runtime types, a class's included (#1202).
         if (ClosureOf(context.SemanticHelper.GetType(node)) is not { } typeArguments) return built;
         context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Call(JsExpr.Identifier(Eq.Closing), built, JsExpr.Literal($"'{typeArguments}'"));
     }
 
     /// <summary>
-    /// The type arguments a value of <paramref name="type"/> is marked with: a generic record or struct
-    /// the source declares, whose twin eqc writes with the comparison, closed over types the build knows.
-    /// A type argument that is a type parameter is known only at run time, and the value goes unmarked.
+    /// The type arguments a value of <paramref name="type"/> is marked with: a generic class, record or
+    /// struct the source declares, closed over types the build knows. A type argument that is a type
+    /// parameter is known only at run time, and the value goes unmarked. <c>typeof</c> of a closed type
+    /// is closed over the same text (<c>RuntimeTypeEqualityStrategy</c>).
     /// </summary>
-    private static string? ClosureOf(ITypeSymbol? type) =>
+    internal static string? ClosureOf(ITypeSymbol? type) =>
         type is INamedTypeSymbol { IsGenericType: true } named
-        && (named.IsRecord || named.TypeKind == TypeKind.Struct)
+        && named.TypeKind is TypeKind.Class or TypeKind.Struct
         && named.Locations.Any(location => location.IsInSource)
         && !named.TypeArguments.Any(ContainsTypeParameter)
             ? string.Join(", ", named.TypeArguments.Select(RuntimeName))
@@ -77,7 +79,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private static readonly SymbolDisplayFormat GenericDefinition =
         SymbolDisplayFormat.FullyQualifiedFormat.WithGenericsOptions(SymbolDisplayGenericsOptions.None);
 
-    private static bool ContainsTypeParameter(ITypeSymbol type) => type switch
+    internal static bool ContainsTypeParameter(ITypeSymbol type) => type switch
     {
         ITypeParameterSymbol => true,
         IArrayTypeSymbol array => ContainsTypeParameter(array.ElementType),
