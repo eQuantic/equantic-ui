@@ -83,21 +83,29 @@ internal sealed class FirstReleases
         return new FirstReleases(found);
     }
 
-    /// <summary>The release tags, oldest first.</summary>
+    /// <summary>The release tags, oldest first: <c>v0.2.0-preview.9</c>, then <c>v0.2.0-preview.10</c>,
+    /// then <c>v1.0.0-preview.2</c>, then <c>v1.0.0</c>. Any other tag is not a release.</summary>
     private static IEnumerable<string> Releases(string root) =>
-        Git(root, "tag", "--list", "v0.*")
+        Git(root, "tag", "--list", "v*")
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(tag => (Tag: tag, Order: PreviewOrder(tag)))
-            .Where(entry => entry.Order >= 0)
-            .OrderBy(entry => entry.Order)
+            .Select(tag => (Tag: tag, Version: VersionOf(tag)))
+            .Where(entry => entry.Version is not null)
+            .OrderBy(entry => entry.Version!.Value.Major)
+            .ThenBy(entry => entry.Version!.Value.Minor)
+            .ThenBy(entry => entry.Version!.Value.Patch)
+            .ThenBy(entry => entry.Version!.Value.Preview)
             .Select(entry => entry.Tag);
 
-    /// <summary>Sorts preview.9 BEFORE preview.10: the whole point of the check is off-by-one
-    /// version numbers, and a lexical sort has its own.</summary>
-    private static int PreviewOrder(string tag) =>
-        Regex.Match(tag, @"preview\.(\d+)$") is { Success: true } match
-            ? int.Parse(match.Groups[1].Value)
-            : -1;
+    /// <summary>
+    /// A release tag's version, compared part by part as numbers: the whole point of the check is
+    /// off-by-one version numbers, and a lexical sort has its own (preview.10 before preview.9). A
+    /// preview comes before the release it previews, so a stable version sorts as the last preview.
+    /// </summary>
+    private static (int Major, int Minor, int Patch, int Preview)? VersionOf(string tag) =>
+        Regex.Match(tag, @"^v(\d+)\.(\d+)\.(\d+)(?:-preview\.(\d+))?$") is { Success: true } match
+            ? (int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value), int.Parse(match.Groups[3].Value),
+                match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : int.MaxValue)
+            : null;
 
     /// <summary>
     /// Adds what one diff changes to each search's count. A line opening with <c>---</c> or

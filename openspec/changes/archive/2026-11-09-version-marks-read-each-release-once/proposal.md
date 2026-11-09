@@ -22,18 +22,21 @@ fail.
   release is its count in the release before plus what the diff added, less what it removed, and the
   first release where the count is above zero is the one it shipped in. Sixty-seven diffs answer
   every mark; a `text @ path` search counts the text only in that file or under that directory.
+  Releases are ordered by version, part by part as numbers, a preview before the release it
+  previews, so the guard reads 1.0 and what follows it as it reads the previews.
 - The answer reads only the releases' trees, never the history between them, so CI's shallow
   checkout and a full clone answer the same. Measured on all 154 distinct searches the wiki writes:
   the same answer as the old searches gave on a checkout shaped like CI's, every one, and as they
   gave on a full clone, every one but `string? Href { get; init; }`, which was added and renamed on
   the same day and never reached a release tree (the old search answered the release that held the
   commits, the new one answers none, and neither fails the mark).
-- `FirstReleasesTests` writes a repository with three releases and pins what the guard must get
-  right by construction: preview.9 before preview.10, a path that narrows the count, a file moved
+- `FirstReleasesTests` writes a repository with five releases and pins what the guard must get
+  right by construction: preview.9 before preview.10, a later version's previews after an earlier
+  one's and a stable release after its own, a path that narrows the count, a file moved
   into the path, a line inside a hunk that reads like a file's header, a name with a space, a symbol
   added and removed between releases, and a checkout of each release at depth one answering as the
   full history does.
-- CI fetches the release tags alone (`+refs/tags/v0.*:refs/tags/v0.*`, depth one), not every branch
+- CI fetches the release tags alone (`+refs/tags/v*:refs/tags/v*`, depth one), not every branch
   too, which nothing reads; and `--blame-hang-timeout` is 15 minutes again on both `dotnet test`
   lines, where the slowest other case took 55 seconds on main's last run.
 - Nothing a developer using the SDK writes or meets changes, and neither the public surface nor the

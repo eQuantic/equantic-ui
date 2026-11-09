@@ -3,7 +3,7 @@ using FluentAssertions;
 namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
-/// What <see cref="FirstReleases"/> answers, on a repository written here with three releases (#999).
+/// What <see cref="FirstReleases"/> answers, on a repository written here with five releases (#999).
 /// The wiki's marks prove the guard agrees with itself on the cases the wiki happens to hold; these
 /// name the ones it must get right by construction: the order of the releases, a path, a file that
 /// moved, a header-shaped line inside a hunk, a name with a space, and a checkout shaped like CI's.
@@ -21,6 +21,8 @@ public class FirstReleasesTests
         "class Theta @ src/A",
         "class Iota @ src/A/With Space.cs",
         "class Kappa @ src/A",
+        "class Lambda",
+        "class Mu",
     ];
 
     [Fact]
@@ -49,6 +51,10 @@ public class FirstReleasesTests
             releases.Of("class Iota @ src/A/With Space.cs").Should().Be("0.2.0-preview.10");
             // Moved under src/A in preview.9 without a change: a rename would carry no line.
             releases.Of("class Kappa @ src/A").Should().Be("0.2.0-preview.9");
+            // A later version's preview comes after every preview of an earlier one, whatever its
+            // number, and a stable release after its own previews.
+            releases.Of("class Lambda").Should().Be("1.0.0-preview.2");
+            releases.Of("class Mu").Should().Be("1.0.0");
         }
         finally
         {
@@ -68,7 +74,7 @@ public class FirstReleasesTests
         try
         {
             Git(shallow, "init", "--quiet");
-            Git(shallow, "fetch", "--quiet", "--depth=1", new Uri(root).AbsoluteUri, "+refs/tags/v0.*:refs/tags/v0.*");
+            Git(shallow, "fetch", "--quiet", "--depth=1", new Uri(root).AbsoluteUri, "+refs/tags/v*:refs/tags/v*");
             Git(shallow, "rev-parse", "--is-shallow-repository").Trim().Should().Be("true");
 
             var full = FirstReleases.Read(root, Searches);
@@ -83,8 +89,8 @@ public class FirstReleasesTests
         }
     }
 
-    /// <summary>Three releases, tagged preview.1, preview.9 and preview.10, and a commit between the
-    /// last two that adds what the next one takes away.</summary>
+    /// <summary>Five releases, tagged 0.2.0-preview.1, .9 and .10, 1.0.0-preview.2 and 1.0.0, and a
+    /// commit between .9 and .10 that adds what .10 takes away.</summary>
     private static string Releases()
     {
         var root = Directory.CreateTempSubdirectory("eq-releases-").FullName;
@@ -106,6 +112,12 @@ public class FirstReleasesTests
         Write(root, "src/A/One.cs", "class Alpha {}\nclass Gamma {}\n++ reads like a header\nclass Theta {}\n");
         Write(root, "src/A/With Space.cs", "class Iota {}\n");
         Release(root, "v0.2.0-preview.10");
+
+        Write(root, "src/C/Three.cs", "class Lambda {}\n");
+        Release(root, "v1.0.0-preview.2");
+
+        Write(root, "src/C/Four.cs", "class Mu {}\n");
+        Release(root, "v1.0.0");
 
         return root;
     }

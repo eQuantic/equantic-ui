@@ -350,7 +350,7 @@ jobs:
       # only, not every branch as well, which the guard never reads (#999).
       - name: Fetch the release tags (for the version-mark guard)
         shell: bash
-        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v0.*:refs/tags/v0.*'
+        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
 
       - name: Check out the wiki (for the docs guards)
         shell: bash
@@ -486,7 +486,7 @@ jobs:
       # only, not every branch as well, which the guard never reads (#999).
       - name: Fetch the release tags (for the version-mark guard)
         shell: bash
-        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v0.*:refs/tags/v0.*'
+        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
 
       - name: Check out the wiki (for the docs guards)
         shell: bash
