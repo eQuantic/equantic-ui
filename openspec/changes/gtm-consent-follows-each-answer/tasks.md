@@ -5,6 +5,7 @@
 - [x] 1.1 `ConsentCookie.SecureName` and `Resolve` read the secure cookie over HTTPS, the plain one only over HTTP. Verify: `SsrConsentTests`, a planted plain cookie over HTTPS is unanswered
 - [x] 1.2 `WebConsent` keeps and reads `__Host-eq-consent` on an HTTPS page. Verify: `consent.spec.ts`
 - [x] 1.3 The installer updates the signals on every answer, grants only `ConsentGrants`, and writes names as JSON. Verify: `GtmTests`
+- [x] 1.4 The owner's defaults: consent by default with `WithoutConsent()` to opt out, and `analytics_storage` alone granted unless the app names more. Verify, both ways: with the old defaults the four default cases fail; with `WithoutConsent` and `WithConsentGrants` inert their two cases fail
 
 ## 2. Proof and documentation
 

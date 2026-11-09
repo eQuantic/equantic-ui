@@ -17,21 +17,33 @@ SHALL read as unanswered.
 - **WHEN** a visitor grants on a page served over HTTPS
 - **THEN** the answer is kept in `__Host-eq-consent`, and that is the answer the next read returns
 
-### Requirement: The GTM installer follows every answer
+### Requirement: The GTM installer waits for consent and follows every answer
 
-With `WithConsent`, the installer SHALL declare every Consent Mode signal `denied` by default, SHALL load
-the container on the first grant and turn on only the signals the app named, and SHALL turn every signal
-back to `denied` on a denial.
+Unless the app says `WithoutConsent()`, the installer SHALL declare every Consent Mode signal `denied` by
+default, SHALL load the container on the first grant and turn on `analytics_storage` alone, or the signals
+the app named with `WithConsentGrants`, and SHALL turn every signal back to `denied` on a denial. With
+`WithoutConsent()` it SHALL load the container on every page.
+
+#### Scenario: A plain UseGtm
+
+- **WHEN** an app says `UseGtm("GTM-…")` and nothing else
+- **THEN** the container is fetched only on a granted answer, and a grant turns on `analytics_storage`
+  while the three advertising signals stay `denied`
+
+#### Scenario: An app that asks nothing
+
+- **WHEN** an app says `WithoutConsent()`
+- **THEN** the container loads on every page and no consent default is declared
 
 #### Scenario: A denial after a grant
 
 - **WHEN** a visitor who granted then denies, on the same page
 - **THEN** every Consent Mode signal is updated to `denied`
 
-#### Scenario: A grant that covers analytics alone
+#### Scenario: A grant that covers advertising too
 
-- **WHEN** an app says `WithConsent(GtmConsentSignals.AnalyticsStorage)` and the visitor grants
-- **THEN** `analytics_storage` is updated to `granted` and the three advertising signals stay `denied`
+- **WHEN** an app says `WithConsentGrants(GtmConsentSignals.All)` and the visitor grants
+- **THEN** all four signals are updated to `granted`
 
 ### Requirement: A configured name stays inside its string
 
