@@ -1,1 +1,2 @@
 #nullable enable
+eQuantic.UI.Primitives.ISheetSurfaceModel.Activate(int row, int column) -> bool
