@@ -1,5 +1,7 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using eQuantic.UI.Primitives;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace eQuantic.UI.Server.Tests;
@@ -39,13 +41,23 @@ public sealed class DashboardSite : WebApplicationFactory<Program>
             .OrderBy(route => route, StringComparer.Ordinal)
             .ToArray();
 
-    private HttpClient? _client;
+    // Each route renders once for every test of the fixture: /table and /sheet build hundreds of
+    // cells, and the fragment test asks again for the pages its links point at.
+    private readonly ConcurrentDictionary<string, Lazy<Task<string>>> _documents = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Production, as the app ships and as scripts/capture-readme.sh photographs it: Development adds
+    /// a hot reload connection to every page, which is markup no visitor is ever served.
+    /// </summary>
+    protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Production");
 
     /// <summary>The document <paramref name="route"/> serves, and a failure when it serves none.</summary>
-    public async Task<string> DocumentAsync(string route)
+    public Task<string> DocumentAsync(string route) =>
+        _documents.GetOrAdd(route, key => new Lazy<Task<string>>(() => FetchAsync(key))).Value;
+
+    private async Task<string> FetchAsync(string route)
     {
-        _client ??= CreateClient();
-        var response = await _client.GetAsync(route);
+        var response = await CreateClient().GetAsync(route);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync();
     }

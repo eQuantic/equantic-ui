@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.RegularExpressions;
 using eQuantic.UI.Primitives;
 
@@ -13,7 +14,9 @@ namespace eQuantic.UI.Server.Tests;
 public class DashboardDocumentTests(DashboardSite site) : IClassFixture<DashboardSite>
 {
     private static readonly Regex Identifier = new("\\sid=\"([^\"]+)\"", RegexOptions.Compiled);
-    private static readonly Regex Anchor = new("<a[^>]*href=\"([^\"]*)\"", RegexOptions.Compiled);
+    // An <a> element's own href: `<a\s` so `<aside>` and `<area>` are not links, and `\shref` so a
+    // `data-href` is not one either.
+    private static readonly Regex Anchor = new("<a\\s[^>]*?\\shref=\"([^\"]*)\"", RegexOptions.Compiled);
 
     // A grid repeats hundreds of ids when it lands in two arms: measured with the page put back in
     // both, /table drew 434 twice and /sheet 279. Listed whole, they buried the three of /charts.
@@ -37,6 +40,10 @@ public class DashboardDocumentTests(DashboardSite site) : IClassFixture<Dashboar
     /// the day a shared article went back into two arms.
     /// </para>
     /// </summary>
+    /// <summary>Every id <paramref name="html"/> claims, as many times as it claims it.</summary>
+    private static IEnumerable<string> IdsOf(string html) =>
+        Identifier.Matches(html).Cast<Match>().Select(match => WebUtility.HtmlDecode(match.Groups[1].Value));
+
     [Fact]
     public async Task NoNameIsClaimedTwiceOnAPage()
     {
@@ -50,11 +57,8 @@ public class DashboardDocumentTests(DashboardSite site) : IClassFixture<Dashboar
             var html = await site.DocumentAsync(route);
 
             var counts = new Dictionary<string, int>(StringComparer.Ordinal);
-            foreach (var match in Identifier.Matches(html).Cast<Match>())
-            {
-                var id = match.Groups[1].Value;
+            foreach (var id in IdsOf(html))
                 counts[id] = counts.TryGetValue(id, out var seen) ? seen + 1 : 1;
-            }
 
             counted += counts.Count;
             var repeated = counts.Where(entry => entry.Value > 1)
@@ -97,7 +101,7 @@ public class DashboardDocumentTests(DashboardSite site) : IClassFixture<Dashboar
             var html = await site.DocumentAsync(route);
             foreach (var match in Anchor.Matches(html).Cast<Match>())
             {
-                var href = match.Groups[1].Value;
+                var href = WebUtility.HtmlDecode(match.Groups[1].Value);
                 if (href.StartsWith("//", StringComparison.Ordinal)) continue;
 
                 var hash = href.IndexOf('#');
@@ -107,7 +111,8 @@ public class DashboardDocumentTests(DashboardSite site) : IClassFixture<Dashboar
                 var page = hash == 0 ? route : href[..hash];
                 if (page.Length == 0) page = "/";
 
-                var pair = $"{page}\u0000{href[(hash + 1)..]}";
+                // As a browser reads it: the fragment percent-decoded, then matched to an id exactly.
+                var pair = $"{page}\u0000{Uri.UnescapeDataString(href[(hash + 1)..])}";
                 if (wanted.Add(pair)) seenOn[pair] = route;
             }
         }
@@ -119,8 +124,9 @@ public class DashboardDocumentTests(DashboardSite site) : IClassFixture<Dashboar
         foreach (var pair in wanted)
         {
             var parts = pair.Split('\u0000');
-            var html = await site.DocumentAsync(parts[0]);
-            if (!html.Contains($"id=\"{parts[1]}\"", StringComparison.Ordinal))
+            // The id ATTRIBUTE, read as the sibling reads it: a substring would take `data-id` for one.
+            var ids = IdsOf(await site.DocumentAsync(parts[0])).ToHashSet(StringComparer.Ordinal);
+            if (!ids.Contains(parts[1]))
                 missing.Add($"{parts[0]}#{parts[1]} names nothing on that page (linked from {seenOn[pair]})");
         }
 
