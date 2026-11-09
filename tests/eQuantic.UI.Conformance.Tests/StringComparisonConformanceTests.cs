@@ -21,18 +21,18 @@ public class StringComparisonConformanceTests
     [InlineData("\"Hello\".Equals(\"hello\", StringComparison.InvariantCultureIgnoreCase)")] // true
     // StartsWith
     [InlineData("\"Hello World\".StartsWith(\"hello\", StringComparison.OrdinalIgnoreCase)")] // true
-    [InlineData("\"Hello World\".StartsWith(\"hello\")")]                                     // false
+    [InlineData("\"Hello World\".StartsWith(\"hello\", StringComparison.Ordinal)")]                                     // false
     [InlineData("\"Hello World\".StartsWith(\"Hello\", StringComparison.Ordinal)")]           // true
     // EndsWith
     [InlineData("\"Hello World\".EndsWith(\"WORLD\", StringComparison.OrdinalIgnoreCase)")]   // true
-    [InlineData("\"Hello World\".EndsWith(\"world\")")]                                       // false
+    [InlineData("\"Hello World\".EndsWith(\"world\", StringComparison.Ordinal)")]                                       // false
     // Contains
     [InlineData("\"Hello World\".Contains(\"LO W\", StringComparison.OrdinalIgnoreCase)")]    // true
     [InlineData("\"Hello World\".Contains(\"lo w\")")]                                        // false
     [InlineData("\"Hello World\".Contains(\"lo W\")")]                                        // true
     // IndexOf
     [InlineData("\"Hello World\".IndexOf(\"WORLD\", StringComparison.OrdinalIgnoreCase)")]    // 6
-    [InlineData("\"Hello World\".IndexOf(\"world\")")]                                        // -1
+    [InlineData("\"Hello World\".IndexOf(\"world\", StringComparison.Ordinal)")]                                        // -1
     [InlineData("\"Hello World\".IndexOf(\"o\", StringComparison.Ordinal)")]                  // 4
     // string.Equals (static) with StringComparison
     [InlineData("string.Equals(\"A\", \"a\", StringComparison.OrdinalIgnoreCase)")]           // true
