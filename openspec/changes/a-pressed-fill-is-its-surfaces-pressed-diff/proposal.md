@@ -21,9 +21,21 @@ shape this repository removes rather than keeps.
 
 - The components that set `PressedBackground` (`Button`, `IconButton`, `Chip`, `ListItem`, `Tabs`,
   `NavigationRail`, `BottomNavigation`, `SearchField`) set their surface's
-  `Pressed = new StyleDiff { Background = … }` instead, on the box that was the pressed control's
-  first child and so the one that took the fill. Every one of them draws the same fill pressed, on
-  both targets, as it did.
+  `Pressed = new StyleDiff { Background = … }` instead, on the box the handoff names. Five of them
+  (`Button`, `IconButton`, `Chip`, `ListItem`, the search field's clear button) fill the box that
+  was already the pressed control's first child, so they draw the same fill in the same place, on
+  both targets, as they did.
+- Three did not agree between the targets, because each mechanism chose its own box: the web filled
+  the control's first child, and Photon the first box it DREW under the control. A tab's first child
+  is its whole cell and its first box drawn is the 3dp strip under its label: measured on main, a
+  pressed tab painted 133x3 on Photon and its whole cell on the web. A navigation item's first child
+  is the whole item and its first box drawn is its pill. The handoff settles both: "Pressed:
+  SurfaceSubtle fill on the tab cell", and of the navigation bar, whose twin the rail is, "Press-down
+  shows the pill". So a tab wraps its cell in a surface that carries the fill, and the bar and the
+  rail put it on the pill: Photon's tab and the web's bar and rail change place, and a pressed pill
+  now changes at once on the web, as on Photon, rather than fading in. The colour stays as it was;
+  where it differs from the handoff's (the pill at 40%, an unselected filter chip pressed into its
+  rest colour) is #1254.
 - `Pressable.PressedBackground` goes, and so does the `pressedBackground` parameter of the
   `UI.Pressable` factory. With them go the web's `--eq-pressed-bg` custom property, the
   `eq-press-fill` marker, the two `!important` rules of the generated stylesheet and the `eq-pressed`
