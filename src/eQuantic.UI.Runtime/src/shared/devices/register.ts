@@ -8,6 +8,7 @@ import { WebNetworkStatus } from './network-status';
 import { WebPasskeys } from './passkeys';
 import { WebPhotoLibrary } from './photo-library';
 import { WebFilePicker } from './file-picker';
+import { WebFileSaver } from './file-saver';
 import { WebUploads } from './uploads';
 import { WebTextClipboard } from './text-clipboard';
 import { WebCultureController } from './culture-controller';
@@ -33,6 +34,8 @@ export function registerDeviceCapabilities(): void {
   services.registerSingleton('IPhotoLibrary', () => new WebPhotoLibrary());
   // Any file, through the same input the photo library opens, answered as PickedFiles.
   services.registerSingleton('IFilePicker', () => new WebFilePicker());
+  // Its other half: a file the page made, handed to the person as a download from the press (#1022).
+  services.registerSingleton('IFileSaver', () => new WebFileSaver());
   // What a page does with the files it was handed: sends them to its own server, in parts it can
   // resume, under a policy the server accepts.
   services.registerSingleton('IUploads', () => new WebUploads());

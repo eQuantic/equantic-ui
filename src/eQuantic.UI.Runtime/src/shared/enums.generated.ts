@@ -100,6 +100,8 @@ export type DeviceCapabilityValue =
 
 export type DragAxisValue = 'vertical' | 'horizontal';
 
+export type FileSaveOutcomeValue = 'offered' | 'saved' | 'cancelled';
+
 export type FontWeightValue =
   'thin' | 'extraLight' | 'light' | 'regular' | 'medium' | 'semiBold' | 'bold' | 'extraBold'
   | 'black';
