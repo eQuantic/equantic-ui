@@ -18,7 +18,10 @@
 //            frame   the edit applied, to the frame that draws it (Photon says so on its console)
 //
 // A budget file, when given, holds the warm median of the parts it names, in milliseconds, and the
-// run fails over any of them. The bar itself is reported on every run.
+// run fails over any of them. A target that meets the bar is held to the bar. One that does not is
+// held to a CEILING, the number it measures on CI with that runner's spread, which only ever comes
+// down: the run says when a median falls under half its ceiling, and the work that made it faster
+// lowers it, until it is the bar. The bar itself is reported on every run.
 //
 // usage: dotnet run scripts/measure-edit-to-view.cs -- web|desktop [--runs <n>] [--report <file>] [--budget <file>]
 //   web needs Google Chrome (EQ_CHROME names another one), desktop a session that can open a window.
@@ -184,6 +187,10 @@ if (budgetPath is not null && JsonNode.Parse(File.ReadAllText(budgetPath))?[targ
         if (summary[name]?["median"] is not JsonValue median) failures.Add($"the budget names {name}, which was not measured");
         else if (median.GetValue<double>() > limit!.GetValue<double>())
             failures.Add($"{target} {name}: the warm median is {median.GetValue<double>():F0}ms, over the budget of {limit.GetValue<double>():F0}ms");
+        // A ceiling above the bar only ever comes down: a change that made this part faster says by how
+        // much, so the number it earned is written into the budget in the same pull request.
+        else if (limit.GetValue<double>() > BarMs && median.GetValue<double>() < limit.GetValue<double>() / 2)
+            Console.WriteLine($"::notice::{target} {name}: the warm median is {median.GetValue<double>():F0}ms, under half its ceiling of {limit.GetValue<double>():F0}ms: lower the ceiling in the budget");
     }
 }
 foreach (var failure in failures) Console.WriteLine($"::error::{failure}");
