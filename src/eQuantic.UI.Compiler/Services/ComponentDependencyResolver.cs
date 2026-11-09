@@ -372,24 +372,10 @@ public class ComponentDependencyResolver
     /// </summary>
     private static bool IsComponentLike(ClassDeclarationSyntax classDecl, INamedTypeSymbol? symbol)
     {
-        if (symbol is not null)
-        {
-            if (symbol.IsUiComponent()) return true;
-            if (symbol.BasesBind()) return false;
-        }
-
-        if (classDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax>()
-            .Any(m => m.Identifier.ValueText is "Build" or "Render" or "CreateState"))
-        {
-            return true;
-        }
-
         var baseName = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ValueText();
-        if (baseName is null) return false;
-        if (baseName.Contains('<')) baseName = baseName[..baseName.IndexOf('<')];
-        if (baseName.Contains('.')) baseName = baseName[(baseName.LastIndexOf('.') + 1)..];
-        return baseName is "StatefulComponent" or "StatelessComponent" or "ComponentState"
-            or "HtmlElement" or "UiComponent" or "Flex" or "Container" or "Stack";
+        if (baseName?.Contains('<') == true) baseName = baseName[..baseName.IndexOf('<')];
+        if (baseName?.Contains('.') == true) baseName = baseName[(baseName.LastIndexOf('.') + 1)..];
+        return ComponentRule.Is(classDecl, symbol, baseName);
     }
 
     /// <summary>

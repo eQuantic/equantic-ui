@@ -197,14 +197,7 @@ public class ComponentParser
             // the static-helper emission path instead.
             if (c.Modifiers.Any(SyntaxKind.StaticKeyword)) continue;
 
-            var bn = BaseName(c);
-            var hasBR = c.Members.OfType<MethodDeclarationSyntax>().Any(m => IsBuildEntryPoint(m, "Render", "Build"));
-            // With the model, the chain decides wherever it binds: a builder whose last step is `Build` derives
-            // from nothing a component does, and was written as one (#1164). The name of a method is the answer
-            // only where a base on the chain does not bind, or there is no model at all.
-            bool direct = model?.GetDeclaredSymbol(c) is INamedTypeSymbol s
-                ? (s.IsUiComponent() || hasBR && !s.BasesBind())
-                : (bn is "StatefulComponent" or "StatelessComponent" or "HtmlElement" or "Flex" or "Container" or "Stack" || hasBR);
+            bool direct = ComponentRule.Is(c, model?.GetDeclaredSymbol(c) as INamedTypeSymbol, BaseName(c));
             // A component is known by its twin's name, a nested one by its owner's too, so a top-level
             // component and a nested plain class of the same simple name are never taken for each
             // other (#584); and a nested one crosses where its owner does, as a nested class does.
@@ -733,9 +726,7 @@ public class ComponentParser
     /// </para>
     /// </summary>
     private static bool IsBuildEntryPoint(MethodDeclarationSyntax method, params string[] names) =>
-        names.Contains(method.Identifier.ValueText)
-        && !method.Modifiers.Any(SyntaxKind.StaticKeyword)
-        && !method.Modifiers.Any(SyntaxKind.PrivateKeyword);
+        ComponentRule.IsBuildEntryPoint(method, names);
 
     private void ParsePrimitiveClass(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
