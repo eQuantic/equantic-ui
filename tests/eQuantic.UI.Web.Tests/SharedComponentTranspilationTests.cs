@@ -4,6 +4,7 @@ using eQuantic.UI.Compiler;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Web.Tests;
 
@@ -864,4 +865,64 @@ public class SharedComponentTranspilationTests
             ts.Should().NotContain("new TypeStyle({", $"{name} rebuilds a positional twin");
     }
 
+    /// <summary>
+    /// THE ELEMENT ENGINE'S <c>VisitChildren</c> TRANSPILES WITHOUT A FENCE, ahead of E3a (#1127),
+    /// which carries the engine into the runtime. The engine as a whole does not transpile yet: it is
+    /// <c>[ServerOnly]</c>, its kinds reach the engine's internals, and E3a starts from what refuses
+    /// it. So this lifts the REAL text of the method out of <c>Element.cs</c>, <c>NodeElement.cs</c>
+    /// and <c>ComponentElement.cs</c> into a probe that holds the same fields, and runs it through eqc.
+    /// <para>
+    /// Finding exactly one method of that name in each file is part of the check: the runtime twin
+    /// has one method per name, and the visitor's overloads are what refused the engine once
+    /// (EQ1007). A second <c>VisitChildren</c> in any of the three fails here before it reaches eqc.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheElementEnginesVisitChildren_TranspilesWithoutAFence()
+    {
+        string Method(string file)
+        {
+            var text = File.ReadAllText(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Elements", file));
+            return CSharpSyntaxTree.ParseText(text).GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
+                .Single(method => method.Identifier.Text == "VisitChildren")
+                .WithoutLeadingTrivia().ToFullString();
+        }
+
+        var source = $$"""
+            using System;
+            using System.Collections.Generic;
+
+            namespace Probe;
+
+            public abstract class Element
+            {
+                {{Method("Element.cs")}}
+            }
+
+            public sealed class NodeElement : Element
+            {
+                private readonly List<Element?> _children = new();
+
+                {{Method("NodeElement.cs")}}
+            }
+
+            public sealed class ComponentElement : Element
+            {
+                private Element? _child;
+
+                {{Method("ComponentElement.cs")}}
+            }
+            """;
+        var path = Path.Combine(RepoRoot(), "tests", "eQuantic.UI.Web.Tests", "Fixtures", "VisitChildrenProbe.cs");
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(BindingCompilation(source, path));
+
+        var results = compiler.CompileSource(source, path);
+
+        results.Should().OnlyContain(result => result.Success,
+            string.Join("; ", results.SelectMany(result => result.Errors).Select(error => $"{error.Code} {error.Message}")));
+        foreach (var kind in new[] { "NodeElement", "ComponentElement" })
+            Regex.Matches(results.Single(result => result.ComponentName == kind).TypeScript, @"\bvisitChildren\(")
+                .Should().ContainSingle($"{kind}'s twin has the one method");
+    }
 }

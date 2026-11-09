@@ -50,7 +50,7 @@ public class ServerActionDictionaryTests
     [Fact]
     public async Task ADictionaryAnswered_IsWrittenAsItsPairs_InTheOrderItEnumerates()
     {
-        var (status, body) = await Invoke("Scores", """{"actionId":"OrderActions/Scores","arguments":[]}""");
+        var (status, body) = await Invoke("Scores", """{"actionId":"eQuantic.UI.Server.Tests.ServerActionDictionaryTests+OrderActions/Scores","arguments":[]}""");
 
         status.Should().Be(StatusCodes.Status200OK, body);
         body.Should().Be("""{"success":true,"result":[[3,"c"],[1,"a"]]}""");
@@ -61,7 +61,7 @@ public class ServerActionDictionaryTests
         // Registered as an app's actions are, by the scan, so the descriptor is the one the scan builds.
         var registry = new ServerActionRegistry();
         registry.ScanAssembly(typeof(ServerActionDictionaryTests).Assembly);
-        registry.GetAction($"{nameof(OrderActions)}/{method}").Should().NotBeNull();
+        registry.GetAction($"{typeof(OrderActions).FullName}/{method}").Should().NotBeNull();
 
         var root = new ServiceCollection().BuildServiceProvider(validateScopes: true);
         var middleware = new ServerActionsMiddleware(
@@ -77,6 +77,7 @@ public class ServerActionDictionaryTests
         var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
         context.Request.Path = "/api/_equantic/actions";
         context.Request.Method = "POST";
+        context.Request.ContentType = "application/json";
         context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(request));
         var response = new MemoryStream();
         context.Response.Body = response;
