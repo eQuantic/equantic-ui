@@ -136,8 +136,9 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   writes are cross-pinned with the ones hydration computes. `tests/e2e` proves adoption, live events
   and client navigation on a real browser, but no CI job runs it: the headless-browser instrument is
   an open decision (#286).
-- **Security**: hardened (deserialization allow-list, payload cap); needs a formal hardening review
-  and a CSP the SDK writes (#306). **Consent before cookies (2026-09)**: `IConsent` as
+- **Security**: hardened (deserialization allow-list, payload cap). The formal hardening review is
+  written ([docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md), #1265), and its findings are #1284 to
+  #1297. A CSP the SDK writes is still owed (#306). **Consent before cookies (2026-09)**: `IConsent` as
   a capability, the `CookieConsent` card, and `UseGtm(...).WithConsent()` — Consent Mode defaults to
   denied and the container is fetched only on a granted answer, on the first paint and live.
 - **Server events (2026-10)**: a component hears what the server publishes to a typed topic
@@ -490,4 +491,5 @@ The bar 1.0 holds the web track to (#898, criterion 3); each line says whether i
   (#294).
 - **CSS**: at least one first-party engine ships. Met by Phase 6; a provider contract was the
   other half of this line, and pillar 5 declined it.
-- **Security**: a formal hardening review, and a CSP the SDK writes. Not met (#306).
+- **Security**: a formal hardening review, and a CSP the SDK writes. The review is written (#1265);
+  the CSP is not met (#306).
