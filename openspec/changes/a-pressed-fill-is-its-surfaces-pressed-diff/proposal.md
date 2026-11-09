@@ -37,7 +37,18 @@ shape this repository removes rather than keeps.
 - The pill of the SELECTED destination takes no pressed fill. Photon's first box drawn was that
   pill too, so on main a held press traded the selected pill for `SurfaceSubtle` on Photon, which
   read as the selection going away while the finger stayed down; on the web the whole item was
-  washed and the pill stayed on top. The selected pill now keeps its colour on both targets. The colour stays as it was;
+  washed and the pill stayed on top. The selected pill now keeps its colour on both targets, and so
+  does a selected `ListItem`, whose hover already left its selection alone.
+- A control's press and focus stop at a control NESTED in it, on both targets. Once a fill was a
+  member of the `Pressed` diff like the rest, pressing a row filled every button inside it, because
+  both families selected every box under the control (#508); the old mechanism had hidden that for
+  fills only, by reaching the control's first box alone, while a nested control's scale or elevation
+  already pressed with the row. On the web the pressed family now selects the active control that
+  holds no active control and leaves out a box under a control that is not active, and the focus
+  family leaves out a box under a control inside the focused one, both inside a `:where()` that
+  weighs nothing, so the (0,4,0) over (0,3,0) order holds. On Photon a nested control sets its own
+  press and focus for its subtree. A `Simulated` picture follows the same rule, ring included. This
+  also closes a difference the wiki named: on the web a pressed button pressed the row around it too. The colour stays as it was;
   where it differs from the handoff's (the pill at 40%, an unselected filter chip pressed into its
   rest colour) is #1254.
 - `Pressable.PressedBackground` goes, and so does the `pressedBackground` parameter of the

@@ -10,7 +10,10 @@
   the navigation bar and the rail filled the whole item on the web, where the handoff draws the
   tab's cell and the pill; both targets now fill those, pinned by one test per target over the
   same eight components. The selected destination's pill takes no pressed fill, where Photon
-  traded it for another colour while the finger stayed down. A break:
+  traded it for another colour while the finger stayed down, and neither does a selected list row.
+  A control's press and focus now stop at a control nested in it, on both targets and in a
+  `Simulated` picture: once the fill was a member of the diff, pressing a row filled every button
+  in it, and on the web a pressed button had always pressed its row too. A break:
   `Pressable(box, …, pressedBackground: theme.Surface)` becomes `Pressable(box, …)` over a box
   whose style says `Pressed = new StyleDiff { Background = theme.Surface }`, and
   `PressedBackground = x` moves the same way
