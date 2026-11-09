@@ -206,8 +206,9 @@ The grid is Excel's size, 1 048 576 rows by 16 384 columns, and costs only what 
 declare less. A cell's key becomes a `long`, the same number on both targets (D18).
 
 A sheet asked to fill an axis that has no bound, which is what a sheet in a scrolling page is (D1),
-takes the visible extent of the scroller around it on that axis and scrolls inside it, and a
-development log says what was decided. Flutter's answer is an error ("Vertical viewport was given
+takes what the scroller around it on that axis shows from where the sheet starts and scrolls inside
+it, or the whole extent when what is left is under half of it (#1006), and a development log says what
+was decided. Flutter's answer is an error ("Vertical viewport was given
 unbounded height"); the product principle's is that the SDK already knows, so the app learns nothing.
 
 ### 3. Overlays live in the grid's own coordinates
