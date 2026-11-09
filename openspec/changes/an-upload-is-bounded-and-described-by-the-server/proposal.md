@@ -22,7 +22,7 @@ Measured on main, the 18 tests this change adds all fail there.
   the dots and spaces Windows drops from its end, is never `.` or `..`, gains a `_` before a name Windows
   keeps for a device, and is at most 255 characters.
 - **The folder** under the web root stops the app at start.
-- **The cookie** is `Secure` but for plain HTTP to this machine or a private-network address.
+- **The cookie** is `Secure` but for plain HTTP to this machine, or in Development.
 - **A policy larger than a byte quota** stops the app at start, naming it: every upload under it would be refused.
 
 ## Capabilities

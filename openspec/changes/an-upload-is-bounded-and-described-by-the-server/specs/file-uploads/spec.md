@@ -23,7 +23,7 @@ start, and so SHALL a policy that accepts a file larger than a byte limit.
 An uploaded file's type SHALL be the one its extension names, never the device's. Its name SHALL keep no
 folder, no control character and no character a file system refuses, SHALL never be `.` or `..`, and
 SHALL not be a name Windows keeps for a device. A folder under the web root SHALL stop the app at start,
-and the owner's cookie SHALL be `Secure` but for plain HTTP to this machine or a private-network address.
+and the owner's cookie SHALL be `Secure` but for plain HTTP to this machine, or in the Development environment.
 
 #### Scenario: A page uploaded as a picture
 

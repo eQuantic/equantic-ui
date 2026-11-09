@@ -188,12 +188,26 @@ public sealed class UploadsLimitsTests : IDisposable
     }
 
     [Theory]
-    [InlineData("http://192.168.1.20/")]
     [InlineData("http://10.0.0.5/")]
-    public async Task OverPlainHttpToTheLocalNetwork_TheCookieIsNotSecure_SoAPhoneOnTheDevServerKeepsIt(string address)
+    [InlineData("http://192.168.1.20/")]
+    public async Task BehindAProxyThatSendsAPrivateAddress_TheCookieIsStillSecure(string address)
     {
+        // nginx's proxy_pass to a private address sends that address as the Host by default.
         await using var app = await UploadsApp.StartAsync(_folder);
         app.Client.BaseAddress = new Uri(address);
+        var browser = app.Browser();
+
+        using var created = await browser.CreateAsync(5, "small", "a.txt");
+
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        browser.LastSetCookie.Should().Contain("secure");
+    }
+
+    [Fact]
+    public async Task InDevelopment_PlainHttpToTheLocalNetwork_KeepsTheCookie()
+    {
+        await using var app = await UploadsApp.StartAsync(_folder, environment: "Development");
+        app.Client.BaseAddress = new Uri("http://192.168.1.20/");
         var browser = app.Browser();
 
         using var created = await browser.CreateAsync(5, "small", "a.txt");
