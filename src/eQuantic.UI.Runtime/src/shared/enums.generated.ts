@@ -21,6 +21,8 @@ export type AnchorPanelRoleValue = 'none' | 'menu' | 'listbox' | 'dialog';
 export type AnchorPlacementValue =
   'bottomStart' | 'bottomEnd' | 'topStart' | 'topEnd' | 'bottomCenter' | 'topCenter';
 
+export type AppIconUseValue = 'launcher' | 'small';
+
 export type BiometricResultValue =
   'succeeded' | 'failed' | 'cancelled' | 'fallbackRequested' | 'notEnrolled' | 'unavailable';
 
