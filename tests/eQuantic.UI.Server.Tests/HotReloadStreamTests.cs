@@ -170,6 +170,8 @@ public class HotReloadStreamTests
         var clock = Stopwatch.StartNew();
         service.Rebuild();
         var took = clock.Elapsed;
+        // The frame is written by the stream's own loop: waited for, never assumed written.
+        await UntilAsync(page, "event: rebuilt");
         leave.Cancel();
         await listening;
 
@@ -191,6 +193,8 @@ public class HotReloadStreamTests
         var clock = Stopwatch.StartNew();
         service.Rebuild();
         var took = clock.Elapsed;
+        // The frame is written by the stream's own loop: waited for, never assumed written.
+        await UntilAsync(page, "event: rebuilt");
         leave.Cancel();
         await listening;
 
