@@ -233,12 +233,13 @@ defect, once per push of fixes, and never after the third round.
 
 ### Requirement: A pull request merges on its own CI, against the current main
 
-The repository's ruleset SHALL require the CI's jobs (`test-runtime`, the three `test` legs, `samples`,
-the three `build-platform-runtimes`, `build-packages`, `commit-messages`, `openspec`, `session-start`,
-`wiki-checkout` and `package-extension`) to pass on a pull request's head, and SHALL require that head
-to be up to date with main, so a pull request merges only on a CI run that saw the main it lands on.
-Every job in a dependency chain SHALL be required, since GitHub counts a job skipped for a failed
-dependency as passed.
+The repository's ruleset SHALL require the CI's jobs to pass on a pull request's head: `test-runtime`,
+the three `test` jobs of Ubuntu and the three of Windows (`conformance`, `web` and `rest`),
+`test (macos-latest)`, `samples`, the three `build-platform-runtimes`, `build-packages`,
+`commit-messages`, `openspec`, `session-start`, `wiki-checkout` and `package-extension`. It SHALL require
+that head to be up to date with main, so a pull request merges only on a CI run that saw the main it
+lands on. Every job in a dependency chain SHALL be required, since GitHub counts a job skipped for a
+failed dependency as passed.
 
 #### Scenario: main moved after the CI ran
 
@@ -254,6 +255,11 @@ dependency as passed.
 
 - **WHEN** a pull request turns a `[MacFact]` red
 - **THEN** `test (macos-latest)` fails and the pull request cannot merge
+
+#### Scenario: A red test in one group
+
+- **WHEN** a pull request turns a Conformance case red on Windows
+- **THEN** `test (windows-latest, conformance)` fails and the pull request cannot merge
 
 ### Requirement: A commit message carries no tool's attribution
 
@@ -651,3 +657,43 @@ SHALL never cancel, nor queue behind another, a run on main, on a tag, or starte
 
 - **WHEN** main gets a push while a pull request's runs come and go
 - **THEN** main's run goes to the end
+
+### Requirement: Each system's tests run as parallel groups
+
+CI SHALL run each system's test projects as parallel jobs, one per group: the Conformance project, the
+Web project, and every other project found under `tests/`. The projects SHALL be found and never
+listed, so a new project lands in a group without an edit to the workflow. A group that finds no
+project SHALL fail, and a job SHALL name every red project of its group at its end.
+
+#### Scenario: A new test project
+
+- **WHEN** a project is added under `tests/` and nothing else changes
+- **THEN** it runs in the `rest` group on every system
+
+#### Scenario: A named project renamed away
+
+- **WHEN** the Conformance project is renamed and the grouping is not
+- **THEN** the `conformance` group finds no project and its job fails, saying so
+
+### Requirement: A restore reads its packages from a cache keyed on their versions
+
+The jobs that restore .NET packages SHALL restore them from a cache keyed on the runner's system, the
+job, and a hash of every line that declares a package or a version (the package items and `...Version`
+properties of the project, props and targets files, `global.json` and the `packages.lock.json` files),
+with no fallback to another key's cache. An edit that declares no package SHALL keep the key. The
+repository's own packages (`equantic.*`) SHALL never be kept in the cache.
+
+#### Scenario: A version changes
+
+- **WHEN** a pull request changes the version of a referenced package
+- **THEN** its jobs miss the cache and restore from nuget.org
+
+#### Scenario: A project edit that declares no package
+
+- **WHEN** a pull request adds a property or a `<Compile Remove>` to a project file
+- **THEN** its jobs restore from the same cache as before
+
+#### Scenario: A package this repository built
+
+- **WHEN** a job restores an `equantic.*` package it packed
+- **THEN** that package is not in the cache the next run restores

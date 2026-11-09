@@ -265,18 +265,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # The packages a restore downloads, kept between runs (#1312). The key changes when a version
-      # changes anywhere it is declared, and there is no fallback key: a miss restores from nuget.org,
-      # as before, rather than trusting another key's cache as complete. This repository's own packages
-      # (`equantic.*`), which a build packs and a later step restores, are never kept: a stale build of
-      # this repository is never what a step reads.
+      # The packages a restore downloads, kept between runs, keyed on what the repository declares (#1312).
       - name: Cache the NuGet packages
-        uses: actions/cache@v4
+        uses: ./.github/actions/nuget-cache
         with:
-          path: |
-            ~/.nuget/packages
-            !~/.nuget/packages/equantic.*
-          key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', 'Directory.Build.props', 'Directory.Build.targets', '**/*.csproj', '**/packages.lock.json') }}
+          scope: ${{ github.job }}
 
       - name: Install mobile workloads (iOS/Android shells)
         run: dotnet workload install ios android
@@ -441,18 +434,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # The packages a restore downloads, kept between runs (#1312). The key changes when a version
-      # changes anywhere it is declared, and there is no fallback key: a miss restores from nuget.org,
-      # as before, rather than trusting another key's cache as complete. This repository's own packages
-      # (`equantic.*`), which a build packs and a later step restores, are never kept: a stale build of
-      # this repository is never what a step reads.
+      # The packages a restore downloads, kept between runs, keyed on what the repository declares (#1312).
       - name: Cache the NuGet packages
-        uses: actions/cache@v4
+        uses: ./.github/actions/nuget-cache
         with:
-          path: |
-            ~/.nuget/packages
-            !~/.nuget/packages/equantic.*
-          key: nuget-${{ runner.os }}-${{ github.job }}-${{ matrix.group }}-${{ hashFiles('global.json', 'Directory.Build.props', 'Directory.Build.targets', '**/*.csproj', '**/packages.lock.json') }}
+          scope: ${{ github.job }}
 
       # The version-mark guard compares each release's tree with the one before it, so it needs the
       # release tags and none of the history between them: depth one is enough. Without them it
@@ -475,9 +461,14 @@ jobs:
           EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
         run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
 
-      - name: The test groups still partition the projects
+      # Once a run, for an answer that is the same on every system and group: the split of a fixture
+      # tree, and what moves the NuGet cache's key.
+      - name: The test groups and the cache key still discriminate
+        if: matrix.group == 'rest'
         shell: bash
-        run: ./scripts/test-groups.sh --self-test
+        run: |
+          ./scripts/test-groups.sh --self-test
+          ./scripts/nuget-cache-key.sh --self-test
 
       - name: Test
         shell: bash
@@ -495,12 +486,19 @@ jobs:
           # Sorted, because `find` returns filesystem order: without it, WHICH project hides the
           # others changes from one machine to the next.
           #
-          # The group's projects come from scripts/test-groups.sh, which finds them under tests/. Process
-          # substitution rather than a pipe, so the loop body is not a subshell and `status` survives.
+          # The group's projects come from scripts/test-groups.sh, which finds them under tests/. The list
+          # is read whole first, so a script that fails fails the step, rather than handing the loop the
+          # part of the tree it reached. A here-string rather than a pipe, so the loop body is not a
+          # subshell and `status` survives.
+          if ! projects=$(./scripts/test-groups.sh --projects "$EQ_TEST_GROUP"); then
+            echo "::error::The test group '$EQ_TEST_GROUP' could not be listed."
+            exit 1
+          fi
           status=0
           ran=0
           failed=""
           while IFS= read -r test_project; do
+            [ -n "$test_project" ] || continue
             echo "::group::$test_project"
             ran=$((ran + 1))
             dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 15m --blame-hang-dump-type none || {
@@ -508,7 +506,7 @@ jobs:
               failed="$failed$test_project"$'\n'
             }
             echo "::endgroup::"
-          done < <(./scripts/test-groups.sh --projects "$EQ_TEST_GROUP")
+          done <<< "$projects"
 
           # An empty list is not a pass: a renamed folder and the step is green having tested nothing.
           if [ "$ran" -eq 0 ]; then
@@ -542,18 +540,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # The packages a restore downloads, kept between runs (#1312). The key changes when a version
-      # changes anywhere it is declared, and there is no fallback key: a miss restores from nuget.org,
-      # as before, rather than trusting another key's cache as complete. This repository's own packages
-      # (`equantic.*`), which a build packs and a later step restores, are never kept: a stale build of
-      # this repository is never what a step reads.
+      # The packages a restore downloads, kept between runs, keyed on what the repository declares (#1312).
       - name: Cache the NuGet packages
-        uses: actions/cache@v4
+        uses: ./.github/actions/nuget-cache
         with:
-          path: |
-            ~/.nuget/packages
-            !~/.nuget/packages/equantic.*
-          key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', 'Directory.Build.props', 'Directory.Build.targets', '**/*.csproj', '**/packages.lock.json') }}
+          scope: ${{ github.job }}
 
       # The native suite's workload facts (an Android font packed once, the iOS platform version)
       # skip without them, as they did nowhere while this suite ran in build-packages, which installs them.
@@ -592,18 +583,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # The packages a restore downloads, kept between runs (#1312). The key changes when a version
-      # changes anywhere it is declared, and there is no fallback key: a miss restores from nuget.org,
-      # as before, rather than trusting another key's cache as complete. This repository's own packages
-      # (`equantic.*`), which a build packs and a later step restores, are never kept: a stale build of
-      # this repository is never what a step reads.
+      # The packages a restore downloads, kept between runs, keyed on what the repository declares (#1312).
       - name: Cache the NuGet packages
-        uses: actions/cache@v4
+        uses: ./.github/actions/nuget-cache
         with:
-          path: |
-            ~/.nuget/packages
-            !~/.nuget/packages/equantic.*
-          key: nuget-${{ runner.os }}-${{ github.job }}-${{ hashFiles('global.json', 'Directory.Build.props', 'Directory.Build.targets', '**/*.csproj', '**/packages.lock.json') }}
+          scope: ${{ github.job }}
 
       - name: Install mobile workloads (the samples' ios and android heads)
         run: dotnet workload install ios android

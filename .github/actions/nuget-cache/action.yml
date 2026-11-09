@@ -1,0 +1,31 @@
+name: NuGet package cache
+description: >-
+  Restores ~/.nuget/packages from a cache keyed on the packages and versions the repository declares
+  (#1312), and saves it when the job ends.
+inputs:
+  scope:
+    description: >-
+      What shares one cache besides the runner's system: the job's name. The three test groups of one
+      system share theirs, since they restore nearly the same packages.
+    required: true
+runs:
+  using: composite
+  steps:
+    # The key moves only when a line that declares a package or a version does
+    # (scripts/nuget-cache-key.sh), so an edit to a project that changes no package keeps the cache.
+    - name: Key the cache on the declared packages
+      id: key
+      shell: bash
+      run: echo "versions=$(./scripts/nuget-cache-key.sh)" >> "$GITHUB_OUTPUT"
+
+    # No fallback key: a miss restores from nuget.org, as before, rather than trusting another key's
+    # cache as complete. The packages are listed one by one (`/*`), so the `!` line can take this
+    # repository's own out: `equantic.*`, which a build packs and a later step restores from its own
+    # feed, is never kept, and a stale build of this repository is never what a step reads.
+    - name: Cache the NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.nuget/packages/*
+          !~/.nuget/packages/equantic.*
+        key: nuget-${{ runner.os }}-${{ inputs.scope }}-${{ steps.key.outputs.versions }}

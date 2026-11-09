@@ -19,15 +19,21 @@ project SHALL fail, and a job SHALL name every red project of its group at its e
 
 ### Requirement: A restore reads its packages from a cache keyed on their versions
 
-The jobs that restore .NET packages SHALL restore them from a cache whose key changes when a version
-changes in any file that declares one (`global.json`, `Directory.Build.props`, `Directory.Build.targets`,
-the project files and the `packages.lock.json` files), with no fallback to another key's cache. The
-repository's own packages (`equantic.*`) SHALL never be kept in it.
+The jobs that restore .NET packages SHALL restore them from a cache keyed on the runner's system, the
+job, and a hash of every line that declares a package or a version (the package items and `...Version`
+properties of the project, props and targets files, `global.json` and the `packages.lock.json` files),
+with no fallback to another key's cache. An edit that declares no package SHALL keep the key. The
+repository's own packages (`equantic.*`) SHALL never be kept in the cache.
 
 #### Scenario: A version changes
 
 - **WHEN** a pull request changes the version of a referenced package
 - **THEN** its jobs miss the cache and restore from nuget.org
+
+#### Scenario: A project edit that declares no package
+
+- **WHEN** a pull request adds a property or a `<Compile Remove>` to a project file
+- **THEN** its jobs restore from the same cache as before
 
 #### Scenario: A package this repository built
 

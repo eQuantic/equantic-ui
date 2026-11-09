@@ -23,10 +23,11 @@ set -euo pipefail
 
 readonly GROUPS_IN_ORDER="conformance web rest"
 
-# Every test project under the root, sorted, as CI always found them.
-all_projects() {
-  find "${EQ_TESTS_ROOT:-tests}" -name '*.csproj' -not -path '*/bin/*' -not -path '*/obj/*' | sort
-}
+# shellcheck source=scripts/test-projects.sh
+. "$(dirname "${BASH_SOURCE[0]}")/test-projects.sh"
+
+# Every test project under the root, sorted, found as the macOS job finds them.
+all_projects() { test_projects "${EQ_TESTS_ROOT:-tests}"; }
 
 # The group a project file belongs to, from its name.
 group_of() {
@@ -43,12 +44,15 @@ projects() {
     *" $group "*) ;;
     *) echo "::error::'$group' is not a test group; the groups are: $GROUPS_IN_ORDER." >&2; return 2 ;;
   esac
+  local all
+  all=$(all_projects) || { echo "::error::The test projects under ${EQ_TESTS_ROOT:-tests} could not be listed." >&2; return 1; }
   while IFS= read -r project; do
+    [ -n "$project" ] || continue
     if [ "$(group_of "$project")" = "$group" ]; then
       printf '%s\n' "$project"
       found=yes
     fi
-  done < <(all_projects)
+  done <<< "$all"
   if [ -z "$found" ]; then
     echo "::error::The test group '$group' found no project under ${EQ_TESTS_ROOT:-tests}, so its job would run nothing." >&2
     return 1
