@@ -1,6 +1,7 @@
 import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import type { ColorTokenValue, VisualNodeValue } from './nodes';
+import { num } from './css-values';
 import { lowerVisualNode, px, tokenValue } from './lowering';
 import webFrameAttributes from './web-frame-attributes.fixture.json';
 
@@ -48,6 +49,49 @@ describe('token → CSS formatting (mirrors C# TokenCss)', () => {
     expect(px(16)).toBe('16px');
     expect(px(3.5)).toBe('3.5px');
     expect(px(0.1)).toBe('0.1px');
+  });
+
+  // Each row is `TokenCss.Px` measured on .NET 10, and TokenCssPxTests pins the server's side (#729).
+  it.each([
+    [1.005, '1.01px'],
+    [2.675, '2.68px'],
+    [0.125, '0.13px'],
+    [540.125, '540.13px'],
+    [0.005, '0.01px'],
+    [0.004, '0px'],
+    [-0.001, '-0px'],
+    [-0.005, '-0.01px'],
+    [-1.005, '-1.01px'],
+    [0.995, '1px'],
+    [99.999, '100px'],
+    [123456.79, '123456.8px'],
+    [16777216, '16777220px'],
+    [1e10, '10000000000px'],
+    [3.3333333, '3.33px'],
+    [1.5e-5, '0px'],
+    [1234566.5, '1234566px'],
+    [1234567.5, '1234568px'],
+    [123456.25, '123456.2px'],
+    [1000000.5, '1000000px'],
+    [Number.NaN, 'NaNpx'],
+    [Number.POSITIVE_INFINITY, 'Infinitypx'],
+    [Number.NEGATIVE_INFINITY, '-Infinitypx'],
+  ])('writes %f as the server writes it', (dp, text) => {
+    expect(px(Math.fround(dp))).toBe(text);
+  });
+
+  // Each row is `TokenCss.Number` measured on .NET 10, which TokenCssPxTests pins too.
+  it.each([
+    [1.00005, '1.0001'],
+    [0.33335, '0.3334'],
+    [5e-5, '0.0001'],
+    [-1e-5, '-0'],
+    [-0, '-0'],
+    [1234.5625, '1234.562'],
+    [1.5e-7, '0'],
+    [0.1, '0.1'],
+  ])('writes the bare number %f as the server writes it', (value, text) => {
+    expect(num(value)).toBe(text);
   });
 });
 
