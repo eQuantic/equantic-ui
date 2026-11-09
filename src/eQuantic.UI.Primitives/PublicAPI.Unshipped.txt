@@ -1,1 +1,4 @@
 #nullable enable
+abstract eQuantic.UI.Primitives.Element.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
+override eQuantic.UI.Primitives.ComponentElement.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
+override eQuantic.UI.Primitives.NodeElement.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void

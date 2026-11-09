@@ -35,6 +35,12 @@ public sealed class ComponentElement : Element
     /// <inheritdoc />
     public override Element? ChildAt(int slot) => slot == 0 ? _child : null;
 
+    /// <inheritdoc />
+    public override void VisitChildren(Action<Element> visitor)
+    {
+        if (_child is not null) visitor(_child);
+    }
+
     private protected override void FirstBuild()
     {
         if (Owner.Live && Component is StatefulComponent stateful && stateful.Place(this))

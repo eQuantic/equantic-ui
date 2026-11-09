@@ -74,16 +74,7 @@ internal sealed class ElementFrame
         {
             var element = pending.Pop();
             _positions.TryAdd(element.Configuration, element);
-
-            // A node's children are a LIST, which has no empty slot, or at most TWO fixed slots,
-            // either of which may be empty (NodeSlots). So only the first slot can be empty with a
-            // child after it, and from the second on an empty one is the end.
-            for (var slot = 0; ; slot++)
-            {
-                var child = element.ChildAt(slot);
-                if (child is not null) pending.Push(child);
-                else if (slot >= 1) break;
-            }
+            element.VisitChildren(pending.Push);
         }
     }
 }

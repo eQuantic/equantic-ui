@@ -182,16 +182,8 @@ public class FrameLoweringTests
     private static Counter? KeptCounter(Element element)
     {
         if (element is ComponentElement { Component: Counter counter }) return counter;
-        for (var slot = 0; ; slot++)
-        {
-            var child = element.ChildAt(slot);
-            if (child is null)
-            {
-                if (slot >= 1) return null;
-                continue;
-            }
-
-            if (KeptCounter(child) is { } found) return found;
-        }
+        Counter? found = null;
+        element.VisitChildren(child => found ??= KeptCounter(child));
+        return found;
     }
 }
