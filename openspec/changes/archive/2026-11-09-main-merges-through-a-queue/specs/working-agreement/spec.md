@@ -5,8 +5,9 @@
 CI SHALL check out the wiki for the documentation guards at the branch named exactly like the pull
 request's head branch when the wiki has one and the pull request comes from this repository, and at
 the wiki's default branch otherwise. In a merge queue's run, CI SHALL read the wiki's default branch
-with the wiki branch of every pull request the group puts on main merged onto it, in the group's
-order, leaving out a pull request from a fork. The branch name SHALL be read as data and never
+with the wiki branch of every pull request already merged whose branch still waits, and then of every
+pull request the group puts on main, merged onto it in that order, leaving out a pull request from a
+fork. The branch name SHALL be read as data and never
 interpolated into a command. When the wiki's branches cannot be listed, when a group's commits do
 not end with the pull request its ref names, or when two of its wiki branches conflict, the checkout
 SHALL fail and leave nothing behind, rather than read the default branch.
@@ -46,6 +47,11 @@ SHALL fail and leave nothing behind, rather than read the default branch.
 
 - **WHEN** a merge group puts two of this repository's pull requests on main, each with a wiki branch
 - **THEN** the guards read the default branch with both branches merged onto it
+
+#### Scenario: A pull request already on main whose wiki branch waits
+
+- **WHEN** the queue merged a pull request whose wiki branch nobody has merged into master yet
+- **THEN** the next group's guards read that branch's pages too
 
 #### Scenario: A merge group with a fork's pull request
 
@@ -113,6 +119,11 @@ body, so the message a squash writes on main is one the job already read on the 
 
 - **WHEN** a merge group holds two squash commits and the first carries a tool's attribution
 - **THEN** the `commit-messages` job fails on the group's run, before the commit reaches main
+
+#### Scenario: A range the checkout cannot measure
+
+- **WHEN** a pull request's or a merge group's base is not in the checkout
+- **THEN** the `commit-messages` job fails instead of reading the head alone
 
 #### Scenario: A signature the squash composer wrapped
 

@@ -13,7 +13,7 @@ on:
   # GitHub's merge queue (#1308): a reviewed, green pull request waits in the queue, which runs this
   # workflow on the pull request together with every one ahead of it and merges the group when the
   # required jobs pass. Every job those checks name runs here; the publishing jobs, which run on a
-  # push to main or a tag, do not. There is no concurrency group, so no queue run cancels another.
+  # push to main or a tag, do not.
   merge_group:
     types: [checks_requested]
   workflow_dispatch:
@@ -22,6 +22,16 @@ on:
         description: "Version to build (leave empty to use Directory.Build.props)"
         required: false
         default: ""
+
+# A new push to a pull request cancels the run of the head it replaces (#1309): every run holds three
+# macOS runners, the scarcest kind, and a stale one made every other pull request wait for them. Only
+# a pull request's runs share a group, keyed on its number; a run on main, on a tag, on a merge group
+# or by hand gets a group of its own run, so nothing ever cancels it or queues it behind another. The
+# reasons live here and not inside the expressions, where a `#` is not a comment but a parse error
+# that fails the whole workflow before any job starts.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('ci-pull-request-{0}', github.event.pull_request.number) || format('ci-run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # A commit message says something about the change and nothing about what composed it. Three
