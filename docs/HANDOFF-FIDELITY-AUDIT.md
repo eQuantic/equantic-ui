@@ -145,7 +145,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2767-2778  _pan = null;
+  PhotonHost.cs:2903-2914  _pan = null;
           if (_drag is null)
           {
               var scrollRegions = _lastFrame.ScrollRegions;
@@ -811,7 +811,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Stepper.cs`
 - **Handoff**: The value group is one stop: ↑/→ increment, ↓/← decrement, Home/End clamp; the −/+ buttons are also plain stops.
-- **Code**: the −/+ buttons are plain stops as specified, but the value group is not a stop at all and no arrow key does anything: with no Adjustable in the tree (Stepper.cs:67) there is no keydown handler, and the value cell is a plain Box, not a Pressable (line 62), so it is not focusable. Home/End are unimplemented framework-wide in any case (lowering.ts:3313-3318, PhotonHost.cs:3276).
+- **Code**: the −/+ buttons are plain stops as specified, but the value group is not a stop at all and no arrow key does anything: with no Adjustable in the tree (Stepper.cs:67) there is no keydown handler, and the value cell is a plain Box, not a Pressable (line 62), so it is not focusable. Home/End are unimplemented framework-wide in any case (lowering.ts:3313-3318, PhotonHost.cs:3373).
 - **Evidence**:
 
   ```
@@ -1183,14 +1183,14 @@ the pill's 40 down.
 
   ```
   Tokens.cs:214  public const float PressCancelSlop = 12;
-  PhotonHost.cs:2164  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+  PhotonHost.cs:2170  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
   ```
 
 ### A6 ScrollView · missing-feature · **unverified**
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/ScrollView.cs`
 - **Handoff**: contentPadding merges safe-area bottom (§A5). Keyboard: bottom inset grows by IME height; focused input kept visible (M4).
-- **Code**: ScrollView exposes no contentPadding slot at all — its whole surface is Child, Axis, Width, Height, Offset, OnScrolled, OnViewportChanged — and "ContentPadding" appears nowhere in src/. With no such prop there is nothing for the safe-area bottom to merge into, so A5's "Don't wrap ScrollView in a bottom SafeArea — pass the inset as content padding instead" has no supported spelling. No IME-height inset either (no KeyboardHeight/ImeHeight anywhere). The keep-focused-input-visible half IS present: PhotonHost.ScrollIntoView (PhotonHost.cs:504).
+- **Code**: ScrollView exposes no contentPadding slot at all — its whole surface is Child, Axis, Width, Height, Offset, OnScrolled, OnViewportChanged — and "ContentPadding" appears nowhere in src/. With no such prop there is nothing for the safe-area bottom to merge into, so A5's "Don't wrap ScrollView in a bottom SafeArea — pass the inset as content padding instead" has no supported spelling. No IME-height inset either (no KeyboardHeight/ImeHeight anywhere). The keep-focused-input-visible half IS present: PhotonHost.ScrollIntoView (PhotonHost.cs:518).
 - **Evidence**:
 
   ```
@@ -1225,12 +1225,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/PhotonHost.cs`
 - **Handoff**: Focused region: ↑/↓ line · PgUp/PgDn viewport · Home/End extremes. Space stays with the focused control, not the scroll.
-- **Code**: No key ever moves a scroll region in the Photon host. The only writers into ScrollClock are the wheel entry point ScrollBy(x, y, delta) (PhotonHost.cs:1867), the pointer pan (1374), the fling on release (1836) and focus-driven ScrollIntoView (399). The "Home"/"End"/"ArrowUp"/"ArrowDown" cases at PhotonHost.cs:1358-1363 belong to the text-entry caret, not to a focused scroll region, and PageUp/PageDown appear nowhere outside the code editor's keymap. On web the div is not focusable either (no tabindex), so keyboard scrolling depends entirely on browser defaults.
+- **Code**: No key ever moves a scroll region in the Photon host. The only writers into ScrollClock are the wheel entry point ScrollBy(x, y, delta) (PhotonHost.cs:1881), the pointer pan (1374), the fling on release (1836) and focus-driven ScrollIntoView (399). The "Home"/"End"/"ArrowUp"/"ArrowDown" cases at PhotonHost.cs:1372-1377 belong to the text-entry caret, not to a focused scroll region, and PageUp/PageDown appear nowhere outside the code editor's keymap. On web the div is not focusable either (no tabindex), so keyboard scrolling depends entirely on browser defaults.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2260  public bool ScrollBy(float x, float y, float delta)
-  PhotonHost.cs:1707-1710  case "Home" or "ArrowUp":
+  PhotonHost.cs:2266  public bool ScrollBy(float x, float y, float delta)
+  PhotonHost.cs:1716-1719  case "Home" or "ArrowUp":
                   MoveCaret(0, selecting);
                   return true;
               case "End" or "ArrowDown":
@@ -1775,7 +1775,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Keys: ... Enter commits single-line
-- **Code**: TextInput exposes no submit hook and never sets TextEntry.OnSubmit when it builds the entry (TextInput.cs:100-114 sets Placeholder/Label/Description/Invalid/Disabled/Obscure/Autofocus/OnFocusChanged only), so Enter has nothing to commit to. The plumbing exists on both targets and goes unused: TextEntry.OnSubmit (src/eQuantic.UI.Primitives/Nodes/TextEntry.cs), the web keydown (lowering.ts:1167-1172) and the native Enter case (src/eQuantic.UI.Native.Components/PhotonHost.cs:1689-1695). SearchField wires it (SearchField.cs:44); TextInput does not.
+- **Code**: TextInput exposes no submit hook and never sets TextEntry.OnSubmit when it builds the entry (TextInput.cs:100-114 sets Placeholder/Label/Description/Invalid/Disabled/Obscure/Autofocus/OnFocusChanged only), so Enter has nothing to commit to. The plumbing exists on both targets and goes unused: TextEntry.OnSubmit (src/eQuantic.UI.Primitives/Nodes/TextEntry.cs), the web keydown (lowering.ts:1167-1172) and the native Enter case (src/eQuantic.UI.Native.Components/PhotonHost.cs:1703-1709). SearchField wires it (SearchField.cs:44); TextInput does not.
 - **Evidence**:
 
   ```
@@ -1786,7 +1786,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Keys: ... Esc drops focus, never the value.
-- **Code**: Honoured on native (src/eQuantic.UI.Native.Components/PhotonHost.cs:1697-1699 `case "Escape": EndEditing(); return true;`) but absent on web: lowerTextEntry's only keydown handler is created when onSubmit is set and matches Enter alone. Since TextInput sets no onSubmit at all, a web TextInput has no keydown handler whatsoever and Escape does nothing.
+- **Code**: Honoured on native (src/eQuantic.UI.Native.Components/PhotonHost.cs:1711-1713 `case "Escape": EndEditing(); return true;`) but absent on web: lowerTextEntry's only keydown handler is created when onSubmit is set and matches Enter alone. Since TextInput sets no onSubmit at all, a web TextInput has no keydown handler whatsoever and Escape does nothing.
 - **Evidence**:
 
   ```
@@ -1808,7 +1808,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SearchField.cs`
 - **Handoff**: Esc clears the query first; a second Esc blurs · Enter submits · ↓ moves into the suggestion list where present.
-- **Code**: The two-step Escape is implemented nowhere. SearchField wires only OnSubmit (SearchField.cs:44); the web entry has no Escape branch (src/eQuantic.UI.Runtime/src/shared/lowering.ts:1169-1171 matches 'Enter' only), and native Escape blurs immediately on the FIRST press without clearing (src/eQuantic.UI.Native.Components/PhotonHost.cs:1697-1699) — the opposite order to the spec. Enter→onSubmit is correct.
+- **Code**: The two-step Escape is implemented nowhere. SearchField wires only OnSubmit (SearchField.cs:44); the web entry has no Escape branch (src/eQuantic.UI.Runtime/src/shared/lowering.ts:1169-1171 matches 'Enter' only), and native Escape blurs immediately on the FIRST press without clearing (src/eQuantic.UI.Native.Components/PhotonHost.cs:1711-1713) — the opposite order to the spec. Enter→onSubmit is correct.
 - **Evidence**:
 
   ```
@@ -2304,12 +2304,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SegmentedControl.cs`
 - **Handoff**: ONE tab stop, roving: ←/→ move AND select (wraps) · Home/End.
-- **Code**: the one Tab stop and the wrapping arrows are correct (SegmentedControl.cs:109-113), but Home/End are handled on no target: the Adjustable keydown recognises only the four arrow keys on the web (lowering.ts:3313-3318), only the same four on native (PhotonHost.cs:3276), and the SSR realizer emits no key handler at all (WebLoweringVisitor.Interaction.cs:121-166 LowerAdjustable).
+- **Code**: the one Tab stop and the wrapping arrows are correct (SegmentedControl.cs:109-113), but Home/End are handled on no target: the Adjustable keydown recognises only the four arrow keys on the web (lowering.ts:3313-3318), only the same four on native (PhotonHost.cs:3373), and the SSR realizer emits no key handler at all (WebLoweringVisitor.Interaction.cs:121-166 LowerAdjustable).
 - **Evidence**:
 
   ```
   lowering.ts:4315-4332  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3459  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3488  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -2330,12 +2330,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: ←/↓ −1 step · →/↑ +1 · PgUp/PgDn ±10% · Home/End min/max.
-- **Code**: the four arrows are wired correctly (the web lowering even splits ↑/↓ by role so a slider's up increases), but PgUp/PgDn and Home/End are handled nowhere — the web keydown returns early on any other key (lowering.ts:3318) and PhotonHost.cs:3276 gates on the same four names.
+- **Code**: the four arrows are wired correctly (the web lowering even splits ↑/↓ by role so a slider's up increases), but PgUp/PgDn and Home/End are handled nowhere — the web keydown returns early on any other key (lowering.ts:3318) and PhotonHost.cs:3373 gates on the same four names.
 - **Evidence**:
 
   ```
   lowering.ts:4315-4332  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3459  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3488  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2882,12 +2882,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/PhotonHost.cs`
 - **Handoff**: Scroll = translated rrect clip. The compositor caches the content layer; a scroll frame re-encodes zero widgets — it updates one transform.
-- **Code**: A scroll frame re-encodes the WHOLE tree. ScrollTo/ScrollBy only set NeedsRender, and RenderFrame then re-runs PhotonRealizer.Realize over _root, which re-measures the ScrollView's child from scratch and moves it by writing child.Bounds (MeasureVisitor.Containers.cs:249-253 MeasureScrollView, 668-672) — the offset is a layout translate, not a retained transform on a cached layer. There is object recycling (nodePool) and raster caching (text/icon), but no content-layer cache and no transform-only path, so the 8.33ms 120Hz claim is not what the code buys.
+- **Code**: A scroll frame re-encodes the WHOLE tree. ScrollTo/ScrollBy only set NeedsRender, and RenderFrame then re-runs PhotonRealizer.Realize over _root, which re-measures the ScrollView's child from scratch and moves it by writing child.Bounds (MeasureVisitor.Containers.cs:254-258 MeasureScrollView, 668-672) — the offset is a layout translate, not a retained transform on a cached layer. There is object recycling (nodePool) and raster caching (text/icon), but no content-layer cache and no transform-only path, so the 8.33ms 120Hz claim is not what the code buys.
 - **Evidence**:
 
   ```
   PhotonHost.cs:365  _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
-  PhotonHost.cs:2181  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
+  PhotonHost.cs:2187  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
                       NeedsRender = true;
   ```
 

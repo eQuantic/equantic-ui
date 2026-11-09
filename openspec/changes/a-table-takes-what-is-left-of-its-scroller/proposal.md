@@ -19,6 +19,17 @@ whose page is 844 px tall and starts the table below its padding.
   one started elsewhere than the measure assumed. Where it started is kept by the viewport's scroll model
   for the next frame, so a steady page measures once.
 - The development log says which of the two the viewport took, on both targets.
+- Where a viewport started is kept by its scroll model, which each `TableView` owns, and a component
+  lives in one window's tree: two windows drawing tables keep each its own, frame after frame. An app that
+  hands one `Scroll` to two tables already shares their offset and the window the model arranges, which
+  describe one viewport, and the start goes with them.
+- The content is measured twice only on a frame where a table's start moves: its first, or one where what
+  stands above it is still changing size. A steady page measures once.
+- When no element around the table scrolls, the web's document scrolls the page, so the viewport starts
+  somewhere in it and takes what is left from there. Photon's window never scrolls: an axis with no bound and
+  no `ScrollView` around is a measure no page holds, and the viewport takes the window's extent, as before.
+  The two cases are not the same tree on the two targets, so the answers differ by the platform, not by the
+  rule.
 - Nothing a developer writes changes: the same `SizeValue.Fill` lays out where it should. Neither the
   public surface nor the developer surface moves. Parts reached: the runtime (web realizer's table half)
   and Photon's layout.

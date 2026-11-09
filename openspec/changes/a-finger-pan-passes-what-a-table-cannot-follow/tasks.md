@@ -3,6 +3,7 @@
 ## 1. Photon
 
 - [x] 1.1 Under a finger's candidate pan of a table, the host arms the scroller around the table, and once the table takes the pan, `PassOn` moves that scroller by what the table did not follow; the table's point is mapped as the press's frame mapped it; a drag surface in a cell takes the press from the table's candidate. Verify: three of the four new `TableViewportTests` cases fail on the host as it was, and the table, pan, drag, scroll and sheet cases pass (689)
+- [x] 1.2 One scroller per axis around the table, the nearest and the nearest on the other axis, each given what the table did not follow along it, each flung on release. Verify: a diagonal pan of a table at both its ends, in a sideways strip inside a page, moves the strip 60 across and the page 60 down, and on the host with one scroller the page stays still; the gesture cases pass (695)
 
 ## 2. Web
 

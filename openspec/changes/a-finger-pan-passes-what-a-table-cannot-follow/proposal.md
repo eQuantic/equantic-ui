@@ -20,8 +20,10 @@ its drag.
 - A drag surface inside a cell keeps its gesture: the table's candidate pan lets go of a press that begins on
   it, on Photon as it already did for a sheet's resize grip, and on the web for any `[data-eq-drag]` in the
   viewport.
-- On Photon the pan passes to the nearest scroller around the table under the finger, on that scroller's
-  axis; on the web to the nearest scroller around it on each axis, or the page itself when the window scrolls.
+- On both targets the pan passes, on each axis, to the nearest scroller around the table on that axis: a table
+  in a strip that scrolls sideways inside a page that scrolls down hands what goes across to the strip and what
+  goes down to the page. On the web, when no element around scrolls an axis, the page itself takes it, since
+  the document scrolls there; Photon's window never scrolls, so a page there is always a `ScrollView`.
 - Nothing a developer writes changes, and neither the public surface nor the developer surface moves. Parts
   reached: Photon's host and the runtime's table half.
 

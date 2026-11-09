@@ -7,6 +7,8 @@
 ## 2. Photon
 
 - [x] 2.1 A `ScrollView` collects the viewports that take its extent, reads where each starts after measuring its content, and measures again once when one moved; the scroll model keeps where it started. Verify: the case of a table below the top of its scroller fails on the rule as it was, the rest of `TableViewportTests` and the perf harness pass
+- [x] 2.2 Where a viewport started is kept by the scroll model its table owns. Verify: two hosts drawing tables at different starts, frame after frame, keep 440 and 500
+- [x] 2.3 The rule across, on both targets. Verify: a table beside a 120-point label in a sideways strip 700 wide takes 580
 
 ## 3. Proved against the real thing
 
