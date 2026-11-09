@@ -204,9 +204,12 @@ internal sealed class AnnouncedTree
 
     private string NameOf(HtmlNode node, SemanticRole role)
     {
+        // A label an element names by id is read even when it is hidden: the accessible-name rule
+        // reads what a reference points at, which is how a page names a dialog by a title it does not
+        // show.
         if (Attribute(node, "aria-labelledby") is { } ids)
             return Collapse(string.Join(" ", ids.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                .Select(id => _byId.TryGetValue(id, out var label) ? TextOf(label) : "")));
+                .Select(id => _byId.TryGetValue(id, out var label) ? TextOf(label, includeHidden: true) : "")));
         if (Attribute(node, "aria-label") is { } label && Collapse(label) is { Length: > 0 } named) return named;
         if (node.Tag == "img" && Attribute(node, "alt") is { } alt) return Collapse(alt);
         return NamedFromContent(role) ? Collapse(TextOf(node)) : "";
@@ -237,14 +240,15 @@ internal sealed class AnnouncedTree
     }
 
     /// <summary>
-    /// The text a subtree reads as, hidden parts left out. Inline elements run together, as they do
-    /// on the page; a block one stands apart, so two paragraphs do not read as one word.
+    /// The text a subtree reads as, hidden parts left out unless <paramref name="includeHidden"/>.
+    /// Inline elements run together, as they do on the page; a block one stands apart, so two
+    /// paragraphs do not read as one word.
     /// </summary>
-    private string TextOf(HtmlNode node)
+    private string TextOf(HtmlNode node, bool includeHidden = false)
     {
         if (node.Tag == "#text") return node.TextContent ?? "";
-        if (Hidden(node)) return "";
-        var text = string.Concat(node.Children.Select(TextOf));
+        if (!includeHidden && Hidden(node)) return "";
+        var text = string.Concat(node.Children.Select(child => TextOf(child, includeHidden)));
         return node.Tag is "div" or "p" or "li" or "section" or "article" ? $" {text} " : text;
     }
 

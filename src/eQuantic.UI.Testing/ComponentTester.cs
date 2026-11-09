@@ -41,6 +41,7 @@ public sealed class ComponentTester : IDisposable
     private VisualNode? _root;
     private HtmlNode? _frame;
     private AnnouncedTree? _announced;
+    private string? _html;
     private bool _disposed;
 
     /// <summary>A tester for one component and the frames it draws.</summary>
@@ -84,7 +85,7 @@ public sealed class ComponentTester : IDisposable
     public IServiceProvider Services { get; }
 
     /// <summary>The markup of the current frame, as the web realizer lowered it.</summary>
-    public string Html => HtmlRenderer.RenderNode(Frame);
+    public string Html => _html ??= HtmlRenderer.RenderNode(Frame);
 
     /// <summary>The current frame's markup as a tree, for a test that walks it.</summary>
     public HtmlNode Root => Frame;
@@ -131,19 +132,34 @@ public sealed class ComponentTester : IDisposable
         _root = page;
 
         var asked = new HashSet<UiComponent>(ReferenceEqualityComparer.Instance);
-        for (var round = 0; ; round++)
+        var seen = new HashSet<ComponentElement>(ReferenceEqualityComparer.Instance);
+        var rounds = 0;
+        while (true)
         {
-            var pending = Discover(page).Where(component => asked.Add(component)).ToList();
+            var positions = Discover(page);
+            var pending = positions.Where(entry => !asked.Contains(entry.Key)).ToList();
             if (pending.Count == 0) break;
-            if (round == MaxPrefetchRounds)
+
+            // The bound counts rounds that reached a POSITION the page had not reached before, which is
+            // what the server's rounds are: a component waiting its turn below (next comment) spends none.
+            if (pending.SelectMany(entry => entry.Value).Count(seen.Add) > 0 && ++rounds > MaxPrefetchRounds)
                 throw new InvalidOperationException(
-                    $"The page still asks for data after {MaxPrefetchRounds} rounds ({string.Join(", ", pending.Select(c => c.GetType().Name))}): "
+                    $"The page still asks for data after {MaxPrefetchRounds} rounds ({string.Join(", ", pending.Select(entry => entry.Key.GetType().Name))}): "
                     + "the server would draw it with the defaults. Something each round loads builds a component that loads again.");
+
+            // A STATELESS component below another that asks in this round waits for the next one: that
+            // one's position builds again once it has loaded, and hands this position a fresh instance,
+            // since a stateless one is never kept. What the old instance loaded would go with it, and the
+            // fresh one would be asked again. A stateful one is kept through its parent's build, and goes now.
+            var asking = new HashSet<UiComponent>(pending.Select(entry => entry.Key), ReferenceEqualityComparer.Instance);
+            var due = pending.Where(entry => entry.Key is StatefulComponent
+                || !entry.Value.Any(position => BelowAnotherAsking(position, asking))).ToList();
 
             // ONE AT A TIME, as the server asks them: they share the services, and two components
             // resolving one scoped dependency would use it at once.
-            foreach (var component in pending)
+            foreach (var (component, at) in due)
             {
+                asked.Add(component);
                 using (new CultureScope(Culture))
                     await ((IServerPrefetch)component).PrefetchAsync(Services, cancellationToken).ConfigureAwait(false);
 
@@ -151,7 +167,7 @@ public sealed class ComponentTester : IDisposable
                 // and only that subtree builds again, with the instance the position keeps
                 // (docs/ELEMENT-TREE-PLAN.md 3.7). Building everything instead would hand a stateless
                 // component's position the fresh instance its parent makes, and the data would go.
-                MarkPositionsOf(_owner.Root!, component);
+                foreach (var position in at) position.MarkNeedsBuild();
             }
         }
 
@@ -187,7 +203,8 @@ public sealed class ComponentTester : IDisposable
         Collect(_owner.Root!, entries, name);
         if (entries.Count != 1)
             throw new InvalidOperationException(entries.Count == 0
-                ? $"{announcement} is not a text entry: a code surface or a sheet takes typing its own way."
+                ? $"No text entry is labelled \"{name}\", though {announcement} is announced: a field is typed into "
+                  + "through its TextEntry's Label, and a code surface or a sheet takes typing its own way."
                 : $"{entries.Count} text entries are labelled \"{name}\".");
         var changed = entries[0].OnChanged
                       ?? throw new InvalidOperationException($"{announcement} has nothing listening for its text.");
@@ -230,11 +247,21 @@ public sealed class ComponentTester : IDisposable
         _frame = WebRealizer.LowerFrame(root, Theme, 1f, styles, Density).Render();
         _owner.EndFrame();
         _announced = AnnouncedTree.Read(_frame, styles, Width);
+        _html = null;
     }
 
-    /// <summary>A discovery round: the tree built and lowered as the frame will be, with the server's
-    /// expansion scope naming every component it reaches, by the instance its position keeps.</summary>
-    private IEnumerable<UiComponent> Discover(VisualNode page)
+    /// <summary>
+    /// A discovery round: the tree built and lowered as the frame will be, with the server's expansion
+    /// scope naming every component it reaches, by the instance its position keeps. Answers each
+    /// component that loads data with the positions that hold it.
+    /// <para>
+    /// A component that holds NO position is asked too, with none to mark: an adaptive node's arm the
+    /// tester's width does not resolve lowers as a tree drawn once, and the server loads every arm, so
+    /// the markup carries the hidden arm's data as the server's does. Its instance is the node the arm
+    /// holds, the same from one round to the next while its parent does not build again.
+    /// </para>
+    /// </summary>
+    private Dictionary<UiComponent, List<ComponentElement>> Discover(VisualNode page)
     {
         using var culture = new CultureScope(Culture);
         var scope = new ComponentExpansionScope();
@@ -248,7 +275,38 @@ public sealed class ComponentTester : IDisposable
             ComponentExpansionScope.Ambient = null;
         }
 
-        return scope.Expanded.Values.Where(component => component is IServerPrefetch).ToList();
+        var reached = new HashSet<UiComponent>(scope.Expanded.Values.Where(component => component is IServerPrefetch),
+            ReferenceEqualityComparer.Instance);
+        var positions = new Dictionary<UiComponent, List<ComponentElement>>(ReferenceEqualityComparer.Instance);
+        Positions(_owner.Root!, reached, positions);
+        foreach (var component in reached) positions.TryAdd(component, []);
+        return positions;
+    }
+
+    /// <summary>Every position holding one of <paramref name="reached"/>, in tree order: one, unless a
+    /// parent placed the same instance twice.</summary>
+    private static void Positions(Element element, HashSet<UiComponent> reached,
+        Dictionary<UiComponent, List<ComponentElement>> positions)
+    {
+        if (element is ComponentElement position && reached.Contains(position.Component))
+        {
+            if (!positions.TryGetValue(position.Component, out var held))
+                positions[position.Component] = held = [];
+            held.Add(position);
+        }
+
+        element.VisitChildren(child => Positions(child, reached, positions));
+    }
+
+    /// <summary>Whether a component above <paramref name="position"/> asks for data in this round.</summary>
+    private static bool BelowAnotherAsking(Element position, HashSet<UiComponent> asking)
+    {
+        for (var above = position.Parent; above is not null; above = above.Parent)
+        {
+            if (above is ComponentElement { Component: var component } && asking.Contains(component)) return true;
+        }
+
+        return false;
     }
 
     private (Announcement Announcement, HtmlNode Node) Locate(string name, string what,
@@ -295,15 +353,6 @@ public sealed class ComponentTester : IDisposable
         }
 
         return null;
-    }
-
-    /// <summary>Marks every position <paramref name="component"/> holds: one, unless a parent placed
-    /// the same instance twice.</summary>
-    private static void MarkPositionsOf(Element element, UiComponent component)
-    {
-        if (element is ComponentElement position && ReferenceEquals(position.Component, component))
-            position.MarkNeedsBuild();
-        element.VisitChildren(child => MarkPositionsOf(child, component));
     }
 
     private static void Collect(Element element, List<TextEntry> entries, string label)

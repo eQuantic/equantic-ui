@@ -290,6 +290,65 @@ public class ComponentTesterTests
         tester.Semantics.Select(stop => stop.Name).Should().Equal("Title a", "Title b");
     }
 
+    [Fact]
+    public async Task TheArmAWidthHides_LoadsItsDataAsTheServersDoes()
+    {
+        // On a desk the compact arm is hidden, and the server still loads it: its markup carries every
+        // arm with its data, and the media rules pick one. The tester's markup is the server's.
+        using var tester = new ComponentTester(width: 1280, services: Services());
+
+        await tester.PumpPageAsync(new Page(() => AdaptiveNode(new Stats(), expanded: Text("Desk"))));
+
+        tester.Semantics.Select(stop => stop.Name).Should().Equal("Title", "Desk");
+        tester.Html.Should().Contain("Title stats").And.NotContain("loading");
+    }
+
+    /// <summary>Counts what it was asked, so a test can see a component asked twice.</summary>
+    private sealed class CountingCatalog : ICatalog
+    {
+        public List<string> Asked { get; } = [];
+
+        public Task<IReadOnlyList<string>> IdsAsync()
+        {
+            Asked.Add("ids");
+            return Task.FromResult<IReadOnlyList<string>>(["a"]);
+        }
+
+        public Task<string> TitleAsync(string id)
+        {
+            Asked.Add(id);
+            return Task.FromResult($"Title {id}");
+        }
+    }
+
+    /// <summary>A page that loads AND builds a stateless component that loads too.</summary>
+    private sealed class LoadingPage : StatelessComponent, IServerPrefetch
+    {
+        private string _heading = "";
+
+        [ServerOnly]
+        public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) =>
+            _heading = (await services.GetRequiredService<ICatalog>().IdsAsync())[0];
+
+        public override VisualNode Build(ComponentContext context) => Column(children: [Text(_heading), new Stats()]);
+    }
+
+    [Fact]
+    public async Task AComponentBelowAnotherThatLoads_IsAskedOnce()
+    {
+        // Both ask in the first round. The page's position builds again once it has loaded, and that
+        // build hands the stateless component's position a fresh instance: asked in the same round,
+        // the old one's load is thrown away and the fresh one asked again. The server asks each once.
+        var catalog = new CountingCatalog();
+        using var tester = new ComponentTester(
+            services: new ServiceCollection().AddSingleton<ICatalog>(catalog).BuildServiceProvider());
+
+        await tester.PumpPageAsync(new LoadingPage());
+
+        tester.Semantics.Select(stop => stop.Name).Should().Equal("a", "Title stats");
+        catalog.Asked.Should().Equal("ids", "stats");
+    }
+
     private sealed class Chain(int depth) : StatelessComponent, IServerPrefetch
     {
         private bool _loaded;
