@@ -203,6 +203,67 @@ describe('TableViewport on the web', () => {
     expect(pressed).not.toHaveBeenCalled();
   });
 
+  // #1007: what a finger's pan cannot follow passes to the page around the table.
+  const pageAround = (scrollTop: number) => {
+    const page = document.createElement('div');
+    page.style.overflowY = 'auto';
+    let top = scrollTop;
+    Object.defineProperty(page, 'scrollTop', { get: () => top, set: (value: number) => (top = value), configurable: true });
+    document.body.appendChild(page);
+    return page;
+  };
+  const toItsEnd = (view: HTMLElement, scroll: { offset: { down: number } }, less = 0) => {
+    wheel(view, { deltaY: 100_000, deltaMode: 0 });
+    const end = scroll.offset.down;
+    if (less) wheel(view, { deltaY: -less, deltaMode: 0 });
+    return end;
+  };
+
+  it("passes a finger's pan to the page around it when the table is at its last row", () => {
+    const page = pageAround(500);
+    const { scroll, view } = build({ rows: 20, height: 300, parent: page });
+    const end = toItsEnd(view, scroll);
+
+    pointer(view, 'pointerdown', 300, 200);
+    pointer(view, 'pointermove', 300, 150);
+    pointer(view, 'pointermove', 300, 100);
+    pointer(view, 'pointerup', 300, 100);
+
+    expect(scroll.offset.down).toBe(end);
+    expect(page.scrollTop).toBe(600);
+    // The lift's click is the pan's, and swallowed, as in any pan.
+    view.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+
+  it("gives a finger's pan to the table while it can follow, and the rest to the page", () => {
+    const page = pageAround(500);
+    const { scroll, view } = build({ rows: 20, height: 300, parent: page });
+    const end = toItsEnd(view, scroll, 56);
+    expect(scroll.offset.down).toBe(end - 56);
+
+    pointer(view, 'pointerdown', 300, 200);
+    pointer(view, 'pointermove', 300, 150);
+    pointer(view, 'pointermove', 300, 100);
+    pointer(view, 'pointerup', 300, 100);
+
+    expect(scroll.offset.down).toBe(end);
+    expect(page.scrollTop).toBe(544);
+    view.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+
+  it('leaves a drag surface inside a cell its gesture', () => {
+    const { scroll, view } = build();
+    const grip = document.createElement('div');
+    grip.setAttribute('data-eq-drag', '');
+    view.appendChild(grip);
+
+    grip.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 400, clientY: 400, pointerId: 7, pointerType: 'touch' }));
+    pointer(view, 'pointermove', 400, 340);
+    pointer(view, 'pointerup', 400, 340);
+
+    expect(scroll.offset.down).toBe(0);
+  });
+
   it('leaves a tap to the cell under it', () => {
     const { scroll, view } = build();
     const pressed = vi.fn();
