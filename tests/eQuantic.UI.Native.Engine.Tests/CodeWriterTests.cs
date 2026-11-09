@@ -56,15 +56,15 @@ public class CodeWriterTests
             eQuantic.UI.Build.WebIcons.Write(dir, "Wallet", source, rgba);
 
             // Each answers a different question — the tab, the pinned home screen, the install.
-            new[] { "favicon-32.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "site.webmanifest" }
+            new[] { "favicon.ico", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "site.webmanifest" }
                 .Should().OnlyContain(file => File.Exists(Path.Combine(dir, file)));
 
             var manifest = File.ReadAllText(Path.Combine(dir, "site.webmanifest"));
             manifest.Should().Contain("\"name\" : \"Wallet\"").And.Contain("\"192x192\"").And.Contain("\"512x512\"");
 
             // The downscale AVERAGES rather than point-samples, so a flat field stays exactly flat.
-            var small = PngCodec.Decode(File.ReadAllBytes(Path.Combine(dir, "favicon-32.png")));
-            small.Width.Should().Be(32);
+            var small = PngCodec.Decode(File.ReadAllBytes(Path.Combine(dir, "apple-touch-icon.png")));
+            small.Width.Should().Be(180);
             small.Rgba.Take(4).Should().Equal([(byte)10, (byte)60, (byte)140, (byte)255]);
         }
         finally

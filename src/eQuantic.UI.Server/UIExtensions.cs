@@ -421,16 +421,20 @@ public static class UIExtensions
 
         // The tab's icon at the address every browser and every crawler asks for, whatever a page
         // links (#1240): the favicon.ico the build wrote from the app's icon. An app with its own file
-        // in wwwroot keeps it: static files answer before any endpoint, and under MapStaticAssets,
-        // where the file is an endpoint too, this one's order is after it rather than beside it,
-        // which routing would refuse as ambiguous. With no icon the
-        // answer is a bare 404, where the fallback rendered the whole not-found page for every tab.
-        // Not immutable: the address never changes and the icon may, so a browser asks again daily.
+        // in wwwroot keeps it, read here first: with minimal hosting the routing runs before
+        // UseStaticFiles, and the static files serve nothing a route matched, so the file never got a
+        // say. Under MapStaticAssets, where the file is an endpoint too, this one's order is after it
+        // rather than beside it, which routing would refuse as ambiguous. With no icon the answer is a
+        // bare 404, where the fallback rendered the whole not-found page for every tab. Not
+        // immutable: the address never changes and the icon may, so a browser asks again daily.
         endpoints.MapGetAndHead("/favicon.ico", async context =>
         {
             var root = context.RequestServices.GetService<IWebHostEnvironment>()?.WebRootPath;
-            var favicon = root is null ? null : Path.Combine(root, "_equantic", "icons", "favicon.ico");
-            if (favicon is null || !File.Exists(favicon))
+            var favicon = root is null
+                ? null
+                : new[] { Path.Combine(root, "favicon.ico"), Path.Combine(root, "_equantic", "icons", "favicon.ico") }
+                    .FirstOrDefault(File.Exists);
+            if (favicon is null)
             {
                 context.Response.StatusCode = 404;
                 return;
@@ -633,12 +637,15 @@ public static class UIExtensions
     /// <summary>The head links for the generated icon set — empty when an app declared no icon.</summary>
     private static IReadOnlyList<string> GeneratedIconTags(HttpContext context)
     {
-        if (_iconTags is not null) return _iconTags;
+        var root = context.RequestServices.GetService<IWebHostEnvironment>()?.WebRootPath;
+        if (root is null) return [];
+        return IconTags.GetOrAdd(root, ReadIconTags);
+    }
 
-        var environment = context.RequestServices.GetService<IWebHostEnvironment>();
-        var root = environment?.WebRootPath;
-        var icons = root is null ? null : Path.Combine(root, "_equantic", "icons");
-        if (icons is null || !Directory.Exists(icons)) return _iconTags = [];
+    private static IReadOnlyList<string> ReadIconTags(string root)
+    {
+        var icons = Path.Combine(root, "_equantic", "icons");
+        if (!Directory.Exists(icons)) return [];
 
         var tags = new List<string>();
         void Link(string file, HtmlTag tag)
@@ -652,11 +659,16 @@ public static class UIExtensions
         Link("favicon.ico", HtmlTag.Link("icon", "/favicon.ico").Attr("sizes", "16x16 32x32 48x48"));
         Link("apple-touch-icon.png", HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png"));
         Link("site.webmanifest", HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest"));
-        return _iconTags = tags;
+        return tags;
     }
 
-    /// <summary>Computed once: the icon set is a build output and cannot change under a running app.</summary>
-    private static IReadOnlyList<string>? _iconTags;
+    /// <summary>
+    /// Computed once per web root: the icon set is a build output and cannot change under a running
+    /// app. Per ROOT rather than per process, since a process may host more than one app, and the first
+    /// one asked answered for all of them.
+    /// </summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, IReadOnlyList<string>> IconTags =
+        new(StringComparer.Ordinal);
 
     /// <summary>
     /// The header a CLIENT NAVIGATION sends. The request goes to the target URL itself rather than
