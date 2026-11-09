@@ -1,4 +1,4 @@
-- **2026-11-02 · eqc answers a comparison of runtime types and the argument guards as .NET does**: a task under
+- **2026-11-09 · eqc answers a comparison of runtime types and the argument guards as .NET does**: a task under
   #1127 ([#1202](https://github.com/eQuantic/equantic-ui/issues/1202)), found measuring the element engine for the
   runtime. `a.GetType() == b.GetType()`, Flutter's `canUpdate`, and every `ThrowIf` guard of the three argument
   exceptions failed the build with EQ2004. A comparison of runtime types now answers through `$eq.types` wherever
