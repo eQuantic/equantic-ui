@@ -48,8 +48,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 /// </summary>
 internal static class FieldSlotExtensions
 {
-    /// <summary>The name <paramref name="field"/> is written under in its twin.</summary>
-    internal static string TwinSlot(this IFieldSymbol field)
+    /// <summary>The name <paramref name="field"/> is written under in its twin, worked out once per symbol:
+    /// every read of a static asks it, and a symbol belongs to one compilation, whose types it reads.</summary>
+    internal static string TwinSlot(this IFieldSymbol field) => Slots.GetValue(field, SlotOfField);
+
+    private static readonly ConditionalWeakTable<IFieldSymbol, string> Slots = new();
+
+    private static string SlotOfField(IFieldSymbol field)
     {
         var name = TwinName.Of(field.Name);
         if (!Movable(field)) return name;
@@ -97,12 +102,16 @@ internal static class FieldSlotExtensions
 
     /// <summary>A field of a type the source declares, whose twin eqc writes by this same rule (a
     /// framework type's twin is the runtime's, and names its members as they are): an instance field of
-    /// a plain class, and a static of a class, a record or a struct, a constant's included (#1175).</summary>
+    /// a plain class, and a static of a class, a record or a struct, a constant's included (#1175). A
+    /// static of a type the runtime provides stays where it is: the runtime's twin is written by a build
+    /// that never reads an app's types derived from it, which an app's build would move it for.</summary>
     private static bool Movable(IFieldSymbol field) =>
         !field.IsImplicitlyDeclared
         && field.ContainingType is { TypeKind: TypeKind.Class or TypeKind.Struct } type
         && type.Locations.Any(location => location.IsInSource)
-        && (field.IsStatic || (type is { TypeKind: TypeKind.Class, IsRecord: false } && !IsComponent(type)));
+        && (field.IsStatic
+            ? !type.IsRuntimeProvided()
+            : type is { TypeKind: TypeKind.Class, IsRecord: false } && !IsComponent(type));
 
     /// <summary>Whether a member of the field's own type holds its twin name: a property, an event or a
     /// method, an explicit implementation's included under the name of the member it implements

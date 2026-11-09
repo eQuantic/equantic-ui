@@ -1,7 +1,9 @@
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using eQuantic.UI.Compiler;
 using FluentAssertions;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests;
@@ -55,6 +57,38 @@ public class PartialMemberTests
         result.Errors.Should().BeEmpty();
         result.TypeScript.Should().Contain("level(").And.Contain("$level");
         result.TypeScript.Should().NotMatchRegex(Held("level"));
+    }
+
+    /// <summary>
+    /// A defining half whose implementing half is in another declaration, a generated file's, stays in the
+    /// twin of its own declaration: eqc writes one module per declaration (EQ1006), and left out, the
+    /// property was in no twin at all, where it was held as a value of its own.
+    /// </summary>
+    [Fact]
+    public void APartialPropertyImplementedInAnotherDeclaration_StaysInItsOwn()
+    {
+        var dir = Directory.CreateTempSubdirectory("eq-partial-members");
+        try
+        {
+            File.WriteAllText(Path.Combine(dir.FullName, "Gauge.cs"),
+                "public sealed partial class Gauge { public partial int Level { get; set; } public int Mark() => 1; }");
+            File.WriteAllText(Path.Combine(dir.FullName, "Gauge.Level.g.cs"),
+                "public sealed partial class Gauge { public partial int Level { get => field; set => field = value * 2; } }");
+            var files = Directory.GetFiles(dir.FullName, "*.cs");
+            var project = CSharpCompilation.Create("PartialMembersProbe",
+                files.Select(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file)),
+                [TestReferences.Of(typeof(object).Assembly.Location)]);
+            var compiler = new ComponentCompiler();
+            compiler.SetProjectCompilation(project);
+
+            var defining = compiler.CompileDirectory(dir.FullName).Single(result => result.TypeScript.Contains("mark("));
+
+            defining.TypeScript.Should().MatchRegex(Held("level"));
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
     }
 
     [Theory]

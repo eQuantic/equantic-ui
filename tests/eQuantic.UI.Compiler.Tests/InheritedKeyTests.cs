@@ -68,7 +68,9 @@ public class InheritedKeyTests
     /// <summary>
     /// What holds a key of its own is not refused: an override is the member it overrides, a method that
     /// hides a member holds a name of its own (#563), a field that moves is in a slot of its own (#396,
-    /// #1175), a static and an instance member never meet, and a member kept on the server reaches no twin.
+    /// #1175), a static and an instance member never meet, a static that hides a base's static of its own
+    /// C# name is reached through its own class, as the base's is through the base, and a member kept on the
+    /// server reaches no twin.
     /// </summary>
     [Theory]
     [InlineData("public class Base { public virtual int Size => 3; }\npublic sealed class Derived : Base { public override int Size => 4; }")]
@@ -77,6 +79,7 @@ public class InheritedKeyTests
     [InlineData("public class Base { protected int size; }\npublic sealed class Derived : Base { public int Size => size; }")]
     [InlineData("public class Base { protected static int size; }\npublic sealed class Derived : Base { public static int Size() => size; }")]
     [InlineData("public class Base { public static int Size => 3; }\npublic sealed class Derived : Base { public int size() => 4; }")]
+    [InlineData("public class Base { public static Base Default => new(); }\npublic sealed class Derived : Base { public static new Derived Default => new(); }")]
     [InlineData("public class Base { [eQuantic.UI.Primitives.ServerOnly] public int Size => 3; }\npublic sealed class Derived : Base { public int size() => 4; }")]
     public void AMemberOnAKeyOfItsOwn_IsNotRefused(string source) =>
         Compile(source, "Derived").Errors.Where(error => error.Code == "EQ1007").Should().BeEmpty();

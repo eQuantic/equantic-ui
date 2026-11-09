@@ -79,6 +79,22 @@ public class StaticFieldSlotTests
         foreach (var text in written) result.TypeScript.Should().Contain(text);
     }
 
+    /// <summary>A static of a type the runtime provides keeps its name: the runtime's twin is written by a
+    /// build that never reads an app's types derived from it, so moving it for one would read a slot the
+    /// runtime does not hold.</summary>
+    [Fact]
+    public void AStaticOfARuntimeProvidedType_KeepsItsName()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            [eQuantic.UI.Primitives.RuntimeProvided] public class Base { public static int count = 1; }
+            public sealed class Derived : Base { public static int Count() => 4; }
+            public sealed class Reader { public static int Read() => Base.count; }
+            """, "Probe.cs").ToList();
+
+        results.Single(result => result.ComponentName == "Reader").TypeScript
+            .Should().Contain("Base.count;").And.NotContain("count$");
+    }
+
     /// <summary>A static and an instance member never meet, one on the class and the other on its
     /// prototype, so neither moves the other.</summary>
     [Fact]

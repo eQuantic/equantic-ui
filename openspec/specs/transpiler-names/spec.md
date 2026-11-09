@@ -253,9 +253,10 @@ and with nothing to convert between the two, and a static beside an instance
 member of its name. A static class nested in a type SHALL be checked once, as the module it is, and a
 `[ServerOnly]` one, which is no module, SHALL NOT be checked. Along a class chain, eqc SHALL refuse with
 EQ1007, naming both members and the base's file and line, a member on the key a member of a base the
-source declares holds, statics included, where one of the two is not a method: an override SHALL stand,
-and so SHALL a method that hides a member and holds a name of its own, and a field that moved to a slot
-of its own.
+source declares holds, statics included, where one of the two is not a method, and an instance property
+or event that hides a base's member of its own C# name: an override SHALL stand, and so SHALL a method
+that hides a member and holds a name of its own, a static that hides a base's static of its own C# name,
+each reached through its own class, and a field that moved to a slot of its own.
 
 #### Scenario: A static field beside a static method of its name
 

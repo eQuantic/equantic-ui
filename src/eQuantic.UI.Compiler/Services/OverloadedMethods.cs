@@ -567,8 +567,7 @@ internal static class OverloadedMethods
                 Code = "EQ1007",
                 Message =
                     $"'{type.Identifier.ValueText}.{Signature(method)}' lowers to `{(isStatic ? "static " : "")}{name}()`, "
-                    + $"and so does '{inherited.ContainingType.Name}.{inherited.Name}("
-                    + $"{string.Join(", ", inherited.Parameters.Select(p => p.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)))})', "
+                    + $"and so does '{inherited.ContainingType.Name}.{Displayed(inherited)}', "
                     + $"which it inherits{at}. A JavaScript class chain has one member per name, so the derived "
                     + "one would answer every call on both. Give each its own name.",
                 SourcePath = sourcePath,
@@ -626,7 +625,8 @@ internal static class OverloadedMethods
     /// key is the lowered name and whether the member is static, a class inheriting its base's statics
     /// through its constructor (<c>Derived.size</c> reaches <c>Base.size</c> unless <c>Derived</c> holds one).
     /// An override is the member it overrides, a method that hides one holds a name of its own
-    /// (<see cref="TwinMethodName"/>, #563), and a field that moves is in a slot of its own
+    /// (<see cref="TwinMethodName"/>, #563), a static that hides a base's static of its own C# name is
+    /// reached through its own class, as the base's is through the base, and a field that moves is in a slot of its own
     /// (<see cref="FieldSlotExtensions"/>, #396, #1175), so none of them is refused. An indexer is not judged
     /// along the chain yet, an explicit implementation is <see cref="CheckExplicitImplementations"/>', and a
     /// field of a base another project declares is <see cref="CheckInheritedFields"/>'.
@@ -688,6 +688,9 @@ internal static class OverloadedMethods
                 if (candidate.IsStatic != member.IsStatic || !HoldsAKey(candidate) || KeyOf(candidate) != key) continue;
                 if (member is IMethodSymbol && candidate is IMethodSymbol) continue;
                 if (OverridesMember(member, candidate)) continue;
+                // A static that hides a base's static of its own name is reached through its own class, and
+                // C# binds the base's through the base: `Derived.Default` and `Base.Default` are two statics.
+                if (member.IsStatic && member.Name == candidate.Name) continue;
                 return candidate;
             }
         }
