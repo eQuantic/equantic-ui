@@ -54,7 +54,11 @@ internal sealed class UploadsOptionsValidator(IHostEnvironment environment, ISer
     {
         // The web host's environment, which a web app registers beside the generic host's: only it knows
         // the web root.
-        if (services.GetService<IWebHostEnvironment>() is not { WebRootPath: { Length: > 0 } webRoot }) return null;
+        if (services.GetService<IWebHostEnvironment>() is not { } web) return null;
+        // ASP.NET Core leaves the web root unset when its folder does not exist yet, which an upload folder
+        // inside it would then create: the default one is the one the static files serve from then on
+        // (found in the review of #1326).
+        var webRoot = web.WebRootPath is { Length: > 0 } configured ? configured : Path.Combine(environment.ContentRootPath, "wwwroot");
         var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(webRoot));
         var kept = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
         var comparison = OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;

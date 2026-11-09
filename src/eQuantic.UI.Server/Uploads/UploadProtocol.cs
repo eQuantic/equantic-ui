@@ -182,7 +182,10 @@ internal sealed class UploadProtocol
     {
         if (name.Length <= 255) return name;
         var extension = Path.GetExtension(name) is { Length: <= 16 } kept ? kept : "";
-        return name[..(255 - extension.Length)].TrimEnd('.', ' ') + extension;
+        var end = 255 - extension.Length;
+        // Never between the two halves of a character outside the basic plane (an emoji).
+        if (char.IsHighSurrogate(name[end - 1])) end--;
+        return name[..end].TrimEnd('.', ' ') + extension;
     }
 
     /// <summary>

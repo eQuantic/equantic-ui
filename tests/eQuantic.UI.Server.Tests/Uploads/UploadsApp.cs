@@ -50,11 +50,13 @@ internal sealed class UploadsApp : IAsyncDisposable
     public TusBrowser Browser(string? user = null, string? origin = null) => new(Client, user, origin);
 
     public static async Task<UploadsApp> StartAsync(string folder, FakeTimeProvider? time = null,
-        IReadOnlyDictionary<string, string?>? configuration = null, string? webRoot = null)
+        IReadOnlyDictionary<string, string?>? configuration = null, string? webRoot = null, string? contentRoot = null)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
-            WebRootPath = webRoot ?? Directory.CreateTempSubdirectory("eq-uploads-web-").FullName,
+            ContentRootPath = contentRoot,
+            // An empty one leaves the web root to ASP.NET Core's default, which is unset while wwwroot does not exist.
+            WebRootPath = webRoot == "" ? null : webRoot ?? Directory.CreateTempSubdirectory("eq-uploads-web-").FullName,
         });
         builder.WebHost.UseTestServer();
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>

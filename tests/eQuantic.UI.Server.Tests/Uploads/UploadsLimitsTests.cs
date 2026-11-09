@@ -126,6 +126,11 @@ public sealed class UploadsLimitsTests : IDisposable
         var longDevice = await browser.UploadAsync(Content(5), "CON." + new string('a', 247) + ".stl", "small", partSize: 5);
         var (_, kept) = await browser.InvokeAsync("Receive", new { id = TusBrowser.IdOf(longDevice) });
         kept.Split('|')[1].Should().HaveLength(255).And.StartWith("_CON.").And.EndWith(".stl");
+
+        // A cut never parts the two halves of an emoji.
+        var emoji = await browser.UploadAsync(Content(5), new string('a', 254) + "\U0001F600b", "small", partSize: 5);
+        var (_, whole) = await browser.InvokeAsync("Receive", new { id = TusBrowser.IdOf(emoji) });
+        whole.Split('|')[1].Should().Be(new string('a', 254));
     }
 
     [Theory]
@@ -225,6 +230,25 @@ public sealed class UploadsLimitsTests : IDisposable
         finally
         {
             Directory.Delete(webRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task AFolderUnderTheDefaultWebRoot_StopsTheApp_BeforeTheWebRootExists()
+    {
+        var content = Directory.CreateTempSubdirectory("eq-uploads-content-").FullName;
+        try
+        {
+            // A content root with no wwwroot yet, so ASP.NET Core leaves the web root unset.
+            var start = () => UploadsApp.StartAsync(Path.Combine(content, "wwwroot", "uploads"), webRoot: "", contentRoot: content);
+
+            (await start.Should().ThrowAsync<OptionsValidationException>())
+                .Which.Message.Should().Contain("under the web root");
+            Directory.Exists(Path.Combine(content, "wwwroot")).Should().BeFalse();
+        }
+        finally
+        {
+            Directory.Delete(content, recursive: true);
         }
     }
 
