@@ -15,7 +15,7 @@
 
 - [x] 3.1 The modules generated as E3a-3 will generate them, and the runtime's `tsc` read: the six emission defects filed under #1174 (#1299, #1303 to #1307), the browser's component model left to E3a-3 (#1301).
 - [x] 3.2 Photon's frame against 1.2: allocation identical, realize within noise.
-- [ ] 3.3 The native suite, the web suite, the server suite, and Compiler and Conformance through the suite lock with `--blame-hang`.
+- [x] 3.3 The native suite, the web suite, the server suite, and Compiler and Conformance through the suite lock with `--blame-hang`.
 
 ## 4. Documentation
 
