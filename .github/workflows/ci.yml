@@ -1032,6 +1032,8 @@ jobs:
             extensions/vscode/package.json
             extensions/vscode/package-lock.json
           sparse-checkout-cone-mode: false
+          # Nothing below runs git, and the install below runs other people's scripts.
+          persist-credentials: false
 
       # The SAME archive the packaging job built and verified, not a rebuild of it. A rebuild is a
       # different artifact, and the one that was checked would not be the one that shipped.
@@ -1056,9 +1058,16 @@ jobs:
           echo "publishing $packaged"
 
       # `npm ci` installs exactly the lockfile, integrity hashes checked, and fails on a drift from the
-      # manifest instead of resolving around it: the same install package-extension ran.
+      # manifest instead of resolving around it: the same install package-extension ran. It runs the
+      # tree's install scripts, so the Marketplace credentials the job reads are blanked for this step:
+      # an install needs none of them.
       - name: Install the vsce the lockfile pinned
         working-directory: extensions/vscode
+        env:
+          VSCE_PAT: ''
+          AZURE_CLIENT_ID: ''
+          AZURE_TENANT_ID: ''
+          AZURE_SUBSCRIPTION_ID: ''
         run: npm ci --no-audit --no-fund
 
       # Microsoft Entra, when it is configured. `vsce publish --azure-credential` acquires its token

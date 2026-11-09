@@ -14,6 +14,7 @@
 ## 3. The extension publishes the tree that was proven
 
 - [x] 3.1 Check out the extension's manifest and lockfile in `publish-extension`, install them with `npm ci`, and publish with the vsce that install put in `node_modules/.bin`. Verify: `actionlint` reports nothing it did not report before
+- [x] 3.3 Blank the Marketplace credentials during the install, whose scripts run, and keep no token from the checkout (`persist-credentials: false`). Verify: `actionlint` reports nothing new
 - [x] 3.2 Run the job's checkout, install and vsce on a copy of those two files. Verify: `vsce --version` answers 3.9.2, and `vsce publish --help` lists `--packagePath` and `--azure-credential`
 
 ## 4. The stray lockfile

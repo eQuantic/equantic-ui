@@ -23,7 +23,7 @@ trees that actually run were not the ones Dependabot watches.
 - `bun.lock` stays the runtime's authority, and `package-lock.json` stays as its mirror, because it
   is the file Dependabot reads. `RuntimeLockfilesTests`, in the Web tests, compares the two by
   resolved `name@version` (bun and npm hoist the same tree differently, so a path decides nothing),
-  and compares the ranges each records with the manifest's. A change that updates one lockfile
+  and compares the ranges each records with every dependency section of the manifest. A change that updates one lockfile
   alone, or moves a range in `package.json` that one tool alone resolved, fails, naming what differs
   and the command that resolves it. Measured on today's main, the two lockfiles resolve the same 233
   `name@version` pairs over 228 names.
@@ -31,6 +31,8 @@ trees that actually run were not the ones Dependabot watches.
   installs them with `npm ci`, the install `package-extension` ran, and publishes with the vsce that
   install put in `node_modules/.bin`. The archive it publishes is still the one the packaging job
   verified.
+  The install runs the tree's install scripts, so the step blanks the Marketplace credentials the
+  job reads, and the checkout keeps no token in `.git/config`.
 - The root `bun.lock` is removed.
 - Nothing a developer using the SDK writes or meets changes, and neither the public surface nor the
   developer surface moves.
