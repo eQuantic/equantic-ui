@@ -505,6 +505,15 @@ the parity rows it closes flip.
    and the browser matches by index until E3 drives it with the same engine. And Android's virtual
    view id stays the node's index in the frame's semantic list, which leads to its id, until the
    provider makes it stable.
+
+   **The field followed** (#996, `openspec/changes/archive/2026-11-09-a-photon-field-keeps-what-was-typed`): a field's
+   position keeps what was typed (`FieldText`), and the field shows it until the page builds it again,
+   when it shows what the page holds, whether or not that value changed. That is the rule the web
+   settled in #1026, not "take the app's value only when it differs", which left typed digits over a
+   field its page had reset. A key now builds what the field's handler marked and nothing else; the
+   rebuild of every component stays for a code surface's or a spreadsheet's handler that calls no
+   `SetState`. Measured with recycled frames: a frame after a key typed into a field whose form keeps
+   the value without `SetState`, above the stateful dashboard, 96,992 to 30,864 bytes.
 3. **E3, the browser.** The runtime's stores, module maps and path attributes move onto the
    transpiled engine; hydration builds the element tree; the shell an app declares in `Program.cs`
    stays mounted across client navigations, and the dashboard sample moves its frame into it. Proof:

@@ -84,10 +84,13 @@ SHALL build the marked positions, ancestors before descendants, and nothing else
 draws only because something moves (a glide, a transition, a presence, a loop, a frame ticker's
 subscriber) SHALL build nothing. A frame after input SHALL build what the input reached: the
 positions the handlers it ran marked. Input the host routes into a field, a code surface or a
-spreadsheet SHALL be handed to the app's handler, and a frame after such a handler that called no
-`SetState` SHALL rebuild every component, because the host cannot see where the value lives. A frame
-the host draws for work posted to its thread SHALL build what the work marked. A frame after an invalidation the host was told of, a
-resize, a density change or a hot reload SHALL rebuild every component.
+spreadsheet SHALL be handed to the app's handler. A frame after a key typed into a field SHALL build
+what the field's handler marked and nothing else, because the field keeps what was typed itself. A
+frame after a code surface's or a spreadsheet's handler that called no `SetState` SHALL rebuild every
+component, because the host cannot see which component shows what the surface's model holds. A frame
+the host draws for work posted to its thread SHALL build what the work marked. A frame after an
+invalidation the host was told of, a resize, a density change or a hot reload SHALL rebuild every
+component.
 
 #### Scenario: A loop runs
 
@@ -121,7 +124,7 @@ resize, a density change or a hot reload SHALL rebuild every component.
 
 - **WHEN** a stateful form keeps its field's value without `SetState`, directly or through a field
   component with state of its own, and keys are typed into the field
-- **THEN** each next frame rebuilds every component, and the field shows every key typed
+- **THEN** no component builds in the frames after the keys, and the field shows every key typed
 
 #### Scenario: Work posted to the thread that draws
 

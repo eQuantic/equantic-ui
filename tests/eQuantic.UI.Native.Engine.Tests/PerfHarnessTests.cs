@@ -405,6 +405,78 @@ public class PerfHarnessTests
             "a press builds what its handler's SetState marked, not every component on the screen");
     }
 
+    /// <summary>A form that keeps its field's value without <c>SetState</c>, above the stateful
+    /// dashboard: the field a person types into, beside 24 cards that have nothing to do with it.</summary>
+    private sealed class QuietForm : Primitives.StatefulComponent
+    {
+        private string _name = "";
+
+        public override VisualNode Build(ComponentContext context) =>
+            new TextEntry(_name, value => _name = value) { Label = "Name" };
+    }
+
+    private sealed class TypedDashboard : Primitives.StatefulComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var page = new Column(gap: Space.S3) { Width = SizeValue.Fill };
+            page.Add(new QuietForm());
+            page.Add(new StatefulDashboard());
+            return page;
+        }
+    }
+
+    /// <summary>
+    /// A frame after a KEY, with the shells' configuration: a character typed into a field whose
+    /// handler keeps the value without <c>SetState</c>, and the frame that shows it. Until #996 the host
+    /// could not see where such a value lives, so that frame rebuilt every component on the screen.
+    /// </summary>
+    private static long PooledBytesPerTypedFrame()
+    {
+        var host = Open(new TypedDashboard(), recycleFrames: true);
+        var field = host.LastFrame!.TextRegions.Single().Bounds.Center;
+        host.PressDown(field.X, field.Y);
+        host.PressUp(field.X, field.Y);
+        host.RenderFrame(new DisplayListBuilder(), 0f);
+
+        for (var frame = 0; frame < 10; frame++)
+        {
+            host.TextInput("x");
+            host.RenderFrame(new DisplayListBuilder(), 8f + frame * 8f);
+        }
+
+        const int measured = 60;
+        var builder = new DisplayListBuilder();
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var frame = 0; frame < measured; frame++)
+        {
+            builder.Reset();
+            host.TextInput("x");
+            host.RenderFrame(builder, 96f + frame * 8f);
+        }
+        return (GC.GetAllocatedBytesForCurrentThread() - before) / measured;
+    }
+
+    /// <summary>
+    /// Measured 2026-11-09 (#996): 96,992 bytes on main, where the frame after each key rebuilt the
+    /// page, the form and the 24 cards because the host could not see where the value lived, and
+    /// 30,864 once the field keeps the key on its position and the frame builds nothing. The ceiling is
+    /// that number and about a tenth.
+    /// </summary>
+    private const long PooledTypedCeilingBytesPerFrame = 33 * 1024;
+
+    [Fact]
+    public void AFrameAfterAKey_StaysUnderItsCeiling()
+    {
+        var perFrame = PooledBytesPerTypedFrame();
+
+        _output.WriteLine($"pooled frame after a key: {perFrame} bytes/frame "
+                          + $"(ceiling {PooledTypedCeilingBytesPerFrame})");
+        perFrame.Should().BeLessThan(PooledTypedCeilingBytesPerFrame,
+            "a key shows from the field's position, so a handler that kept the value without SetState "
+            + "leaves nothing for the frame to build");
+    }
+
     [Fact]
     public void AnOverlayLayer_CostsAFrameLessThanItsCeiling()
     {
