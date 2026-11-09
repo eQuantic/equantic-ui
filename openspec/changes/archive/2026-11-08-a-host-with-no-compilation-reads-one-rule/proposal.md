@@ -31,7 +31,7 @@ dependency scan disagreed about what a component is where a base did not bind.
 
 ## Impact
 
-- **eqc**: `ComponentRule` (new), `ComponentParser`, `ComponentDependencyResolver`, `TypeScriptEmitter`,
+- **`eQuantic.UI.Compiler`**, the library eqc runs: `ComponentRule` (new), `ComponentParser`, `ComponentDependencyResolver`, `TypeScriptEmitter`,
   `HostOnlySymbolExtensions`.
 - **The runtime, the realizers, the Photon shells, the SDKs, the templates**: none.
 - **Public surface**: none. The developer surface does not move.
