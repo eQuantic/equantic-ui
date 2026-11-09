@@ -20,10 +20,11 @@ internal static class ComponentRule
     /// model at all.
     /// </summary>
     /// <param name="declaration">The class.</param>
-    /// <param name="symbol">Its type, or null where nothing can answer for it.</param>
-    /// <param name="writtenBase">The first base it writes, by its simple name; null for none.</param>
-    internal static bool Is(ClassDeclarationSyntax declaration, INamedTypeSymbol? symbol, string? writtenBase)
+    /// <param name="symbol">Its type, or null where nothing can answer for it, which then reads the first base
+    /// the class writes by its simple name, an alias read through its directive.</param>
+    internal static bool Is(ClassDeclarationSyntax declaration, INamedTypeSymbol? symbol)
     {
+        var writtenBase = symbol is null ? declaration.BaseList?.Types.FirstOrDefault()?.Type.TwinTypeName(null) : null;
         var hasEntryPoint = declaration.Members.OfType<MethodDeclarationSyntax>()
             .Any(method => IsBuildEntryPoint(method, "Render", "Build"));
         return symbol is not null
@@ -32,8 +33,21 @@ internal static class ComponentRule
                 or "HtmlElement" or "UiComponent" or "Flex" or "Container" or "Stack";
     }
 
-    /// <summary>A method a component is rendered through: an instance one, not private, of one of
-    /// <paramref name="names"/>.</summary>
+    /// <summary>
+    /// Whether this method IS the component's entry point, rather than merely sharing its name.
+    /// <para>
+    /// Matching on the name alone made any method called <c>Render</c> the build method — so a page
+    /// with a <c>private static VisualNode Render(DocBlock block, IAppTheme theme)</c> helper had its
+    /// Build body REPLACED by the helper's, and the helper itself dropped. The emitted
+    /// <c>build(_context)</c> then referenced the helper's parameters, which do not exist in that
+    /// scope, and the page died at hydration on "block is not defined" — while SSR rendered
+    /// correct HTML and answered 200, so a smoke test saw a perfect page.
+    /// </para>
+    /// <para>
+    /// The entry point overrides a public abstract, so it is never static and never private. A
+    /// helper is one or the other, which is exactly what tells them apart without a semantic model.
+    /// </para>
+    /// </summary>
     internal static bool IsBuildEntryPoint(MethodDeclarationSyntax method, params string[] names) =>
         names.Contains(method.Identifier.ValueText)
         && !method.Modifiers.Any(SyntaxKind.StaticKeyword)

@@ -372,10 +372,7 @@ public class ComponentDependencyResolver
     /// </summary>
     private static bool IsComponentLike(ClassDeclarationSyntax classDecl, INamedTypeSymbol? symbol)
     {
-        var baseName = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ValueText();
-        if (baseName?.Contains('<') == true) baseName = baseName[..baseName.IndexOf('<')];
-        if (baseName?.Contains('.') == true) baseName = baseName[(baseName.LastIndexOf('.') + 1)..];
-        return ComponentRule.Is(classDecl, symbol, baseName);
+        return ComponentRule.Is(classDecl, symbol);
     }
 
     /// <summary>

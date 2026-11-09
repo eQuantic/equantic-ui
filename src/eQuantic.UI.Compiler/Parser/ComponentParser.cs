@@ -197,7 +197,7 @@ public class ComponentParser
             // the static-helper emission path instead.
             if (c.Modifiers.Any(SyntaxKind.StaticKeyword)) continue;
 
-            bool direct = ComponentRule.Is(c, model?.GetDeclaredSymbol(c) as INamedTypeSymbol, BaseName(c));
+            bool direct = ComponentRule.Is(c, model?.GetDeclaredSymbol(c) as INamedTypeSymbol);
             // A component is known by its twin's name, a nested one by its owner's too, so a top-level
             // component and a nested plain class of the same simple name are never taken for each
             // other (#584); and a nested one crosses where its owner does, as a nested class does.
@@ -340,7 +340,7 @@ public class ComponentParser
                 // happens to declare a Build would have had that one taken for its own.
                 var buildMethod = classDecl.Members
                     .OfType<MethodDeclarationSyntax>()
-                    .FirstOrDefault(m => IsBuildEntryPoint(m, "Build"));
+                    .FirstOrDefault(m => ComponentRule.IsBuildEntryPoint(m, "Build"));
                 if (buildMethod != null)
                 {
                     definition.BuildMethodNode = buildMethod;
@@ -666,7 +666,7 @@ public class ComponentParser
 
             var methodName = method.Identifier.ValueText;
             if (methodName == "CreateState") continue;
-            if (IsBuildEntryPoint(method, "Render", "Build"))
+            if (ComponentRule.IsBuildEntryPoint(method, "Render", "Build"))
             {
                 // Build WINS over Render: a write-once component's contract is Build, and letting a
                 // later Render overwrite it is how the last method in the file decided the page.
@@ -709,24 +709,6 @@ public class ComponentParser
             definition.Methods.Add(methodDef);
         }
     }
-
-    /// <summary>
-    /// Whether this method IS the component's entry point, rather than merely sharing its name.
-    /// <para>
-    /// Matching on the name alone made any method called <c>Render</c> the build method — so a page
-    /// with a <c>private static VisualNode Render(DocBlock block, IAppTheme theme)</c> helper had its
-    /// Build body REPLACED by the helper's, and the helper itself dropped. The emitted
-    /// <c>build(_context)</c> then referenced the helper's parameters, which do not exist in that
-    /// scope, and the page died at hydration on "block is not defined" — while SSR rendered
-    /// correct HTML and answered 200, so a smoke test saw a perfect page.
-    /// </para>
-    /// <para>
-    /// The entry point overrides a public abstract, so it is never static and never private. A
-    /// helper is one or the other, which is exactly what tells them apart without a semantic model.
-    /// </para>
-    /// </summary>
-    private static bool IsBuildEntryPoint(MethodDeclarationSyntax method, params string[] names) =>
-        ComponentRule.IsBuildEntryPoint(method, names);
 
     private void ParsePrimitiveClass(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {

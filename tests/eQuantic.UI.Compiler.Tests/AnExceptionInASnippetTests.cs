@@ -15,6 +15,7 @@ public sealed class AnExceptionInASnippetTests
         public class Failure : Exception
         {
             public static int Count;
+            public const string Kind = "order";
             public int Code = 7;
             public Failure(string message) : base(message) { }
             public string Describe() => Message;
@@ -48,6 +49,7 @@ public sealed class AnExceptionInASnippetTests
     [Theory]
     [InlineData("try { throw new Failure(\"m\"); } catch (Failure f) { return f.Message; }")]
     [InlineData("try { throw new Failure(\"m\"); } catch (Exception e) { return e.Message; }")]
+    [InlineData("return Failure.Kind;")]   // a constant is inlined before any fence reads it, and needs no module
     public void WhatTheRuntimesExceptionCarries_StillBuilds(string body) =>
         Errors(body).Should().BeEmpty();
 }
