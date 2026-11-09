@@ -77,6 +77,7 @@ public class ServerActionDictionaryTests
         var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
         context.Request.Path = "/api/_equantic/actions";
         context.Request.Method = "POST";
+        context.Request.ContentType = "application/json";
         context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(request));
         var response = new MemoryStream();
         context.Response.Body = response;

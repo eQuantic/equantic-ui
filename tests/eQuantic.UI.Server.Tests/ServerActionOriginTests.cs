@@ -303,7 +303,7 @@ public class ServerActionOriginTests
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/_equantic/actions")
         {
-            Content = new StringContent(Body, Encoding.UTF8, "text/plain"),
+            Content = new StringContent(Body, Encoding.UTF8, "application/json"),
         };
         request.Headers.Add("Origin", origin);
         return (await client.SendAsync(request)).StatusCode;
@@ -350,6 +350,7 @@ public class ServerActionOriginTests
         var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
         context.Request.Path = "/api/_equantic/actions";
         context.Request.Method = "POST";
+        context.Request.ContentType = "application/json";
         context.Request.Host = new HostString(host);
         foreach (var (name, value) in headers) context.Request.Headers[name] = value;
         context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(Body));

@@ -3,3 +3,5 @@
 eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.ServerActionAuthorizationService(Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Authorization.ServerActionAuthorizationService!>! logger) -> void
 *REMOVED*static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.PolicyFailed(string! policyName) -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
 *REMOVED*static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.RolesFailed(string! requiredRoles) -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
+eQuantic.UI.Server.ServerActionsOptions.MaxRequestBodySize.get -> long
+eQuantic.UI.Server.ServerActionsOptions.MaxRequestBodySize.set -> void
