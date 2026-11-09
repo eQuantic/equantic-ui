@@ -158,7 +158,21 @@ public class TableViewportTests
     // ---- the unbounded axis --------------------------------------------------------------------
 
     [Fact]
-    public void ATableThatFillsAnUnboundedAxis_TakesTheVisibleExtentOfItsScroller()
+    public void ATableThatFillsAnUnboundedAxis_AtTheTopOfItsScroller_TakesItsVisibleExtent()
+    {
+        var tally = new Tally();
+        var page = new ScrollView(Table(tally, height: SizeValue.Fill));
+        var host = Host(page, 700, 500, tally);
+
+        Region(host).Bounds.Height.Should().Be(500);
+        Cells(host).Should().HaveCountLessThan(1000, "its own scroll engaged, so only the window is built");
+        tally.Logged.Should().ContainSingle().Which.Should().Contain("500 points the scroller around it shows");
+    }
+
+    /// <summary>#1006: a table below the top of its page ends, and its scrollbar with it, where the page's
+    /// visible part ends, on the first frame and on every one after it.</summary>
+    [Fact]
+    public void ATableThatFillsAnUnboundedAxis_BelowTheTopOfItsScroller_TakesWhatIsLeftFromWhereItStarts()
     {
         var tally = new Tally();
         var content = new Column(gap: 0);
@@ -167,9 +181,32 @@ public class TableViewportTests
         var page = new ScrollView(content);
         var host = Host(page, 700, 500, tally);
 
+        var start = Region(host).Bounds.Y;
+        start.Should().BeGreaterThan(0, "the intro stands above it");
+        Region(host).Bounds.Height.Should().Be(500 - start);
+        Region(host).Bounds.Bottom.Should().Be(500, "its end stands where the page's visible part ends");
+
+        Settle(host);
+        Region(host).Bounds.Height.Should().Be(500 - start, "the next frame reads where it started");
+        tally.Logged.Should().ContainSingle().Which.Should()
+            .Contain($"{500 - start} of the 500 points the scroller around it shows that are left from where it starts");
+    }
+
+    /// <summary>#1006: what is left under half of what the scroller shows is a sliver, and a table that far
+    /// down a page takes the whole extent, scrolling into view whole.</summary>
+    [Fact]
+    public void ATableThatFillsAnUnboundedAxis_FarDownItsScroller_TakesItsVisibleExtent()
+    {
+        var tally = new Tally();
+        var content = new Column(gap: 0);
+        content.Add(new Box(new BoxStyle { Height = SizeValue.Fixed(300), Width = SizeValue.Fill }));
+        content.Add(Table(tally, height: SizeValue.Fill));
+        var page = new ScrollView(content);
+        var host = Host(page, 700, 500, tally);
+
+        Region(host).Bounds.Y.Should().Be(300);
         Region(host).Bounds.Height.Should().Be(500);
-        Cells(host).Should().HaveCountLessThan(1000, "its own scroll engaged, so only the window is built");
-        tally.Logged.Should().ContainSingle().Which.Should().Contain("scroller around it").And.Contain("500");
+        tally.Logged.Should().ContainSingle().Which.Should().Contain("500 points the scroller around it shows");
     }
 
     // ---- the wheel -------------------------------------------------------------------------------
