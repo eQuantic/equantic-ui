@@ -37,7 +37,7 @@ exposure caching the visitor's state already is.
 - Hashes cannot admit every element. A hash admits an external script only through that script's
   `integrity` attribute, and the SDK cannot know the hash of a file it does not serve: a chart
   library's CDN script, or an app's `AddScript` URL. A nonce admits them as it admits the rest.
-- Hashes would not survive a cache either. Five of the elements change per request or per response,
+- Hashes would not survive a cache either. Three of the elements change per request or per response,
   so their hashes would be computed per response, as a nonce is, and the policy would change with
   every page anyway.
 - One mechanism, not two. A policy of a nonce for some elements and hashes for others is two things

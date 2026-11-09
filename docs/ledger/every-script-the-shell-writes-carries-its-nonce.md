@@ -3,7 +3,7 @@
   own neither: the template's seven elements, the app's CSS, GTM's four scripts, a chart library's
   CDN script and initializer, and every page's assets, the atomic sheet among them. Each request now
   has one nonce of 128 random bits, stamped on every script and style the shell writes, chosen over
-  hashes by measure: a hash cannot admit a CDN script the SDK does not serve, and five of the
+  hashes by measure: a hash cannot admit a CDN script the SDK does not serve, and three of the
   elements change with every response anyway. `HtmlShellOptions.HeadTags` holds `HtmlTag`s rendered
   per request, and `AddHeadTag(string)` is gone, since text the shell did not build is text it
   cannot stamp. Where an app wrote `AddHeadTag("<meta name=\"theme-color\" content=\"#3b82f6\">")` it
