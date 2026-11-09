@@ -1,20 +1,17 @@
 # Proposal
 
-Closes #1284 and #1288, two Bugs under #1174 (a sub-issue of #157), both found by the security review
-of #1265.
+Closes #1319, a security fix tracked in a private advisory, and #1288, a Bug under #1174 (a sub-issue of
+#157), both found by the security review of #1265.
 
 ## Why
 
 The document the server sends for a page is written from one template, `app-shell.html`, and two
 things about it let one visitor's data reach where it must not.
 
-- **#1284, high.** `HtmlTemplateEngine.Render` replaced each `{{Variable}}` over the WHOLE document,
-  one variable after another. The server-rendered markup is written before the page's state, the
-  configuration, the theme and the culture, and HTML encoding leaves `{` and `}` alone, so a
-  placeholder inside a value already written was replaced by a later variable. A visitor's
-  `{{InitialState}} onmouseover=alert(1) x`, drawn in a field and kept in the page's state, became the
-  state's JSON inside the field's `value`, and the JSON's first quote closed the attribute: the input
-  gained a real `onmouseover`. One stored or reflected value was enough.
+- **#1319.** `HtmlTemplateEngine.Render` filled each `{{Variable}}` over the WHOLE document, one
+  variable after another, so a placeholder inside a value already written was filled again by a later
+  variable. Text the document carries from elsewhere, the server-rendered markup among it, could be read
+  as template.
 - **#1288, medium.** The document went with no `Cache-Control`, while it carries what the visitor's
   cookies chose (theme, density, culture) and the page's own `window.__INITIAL_STATE__`. The same state
   answered to a client navigation was already `no-store`. A CDN or proxy rule that caches HTML would

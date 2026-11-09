@@ -107,11 +107,9 @@ public class HtmlTemplateEngine
         });
 
         // 3. Every {{Variable}} of the TEMPLATE, in one pass: a value is written once and never read
-        // again. Replacing variable after variable over the whole buffer read every value already
-        // inserted, so a placeholder inside one was replaced by a later variable: a visitor's
-        // "{{InitialState}}" in the server-rendered markup became the page's state there, and the
-        // state's first quote closed the attribute it stood in (#1284). A placeholder with no
-        // variable stays as it is, as it always did.
+        // again. Filling variable after variable over the whole buffer read every value already
+        // inserted, so a placeholder inside one was filled by a later variable (#1319). A placeholder
+        // with no variable stays as it is, as it always did.
         return _variableRegex.Replace(result, match =>
             variables.TryGetValue(match.Groups[1].Value, out var value) ? value ?? string.Empty : match.Value);
     }

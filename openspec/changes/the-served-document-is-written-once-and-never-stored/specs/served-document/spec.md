@@ -7,11 +7,12 @@ variable wrote, the server-rendered markup and what a visitor typed in it includ
 it came, and a `{{Name}}` inside it SHALL NOT be replaced. A placeholder of the template with no
 variable SHALL stay as it is.
 
-#### Scenario: A visitor's placeholder in a field
+#### Scenario: A placeholder in a page's own text
 
-- **WHEN** a page's server data holds `{{InitialState}} onmouseover=alert(1) x`, drawn in a `TextEntry`
-- **THEN** the served field's `value` is that text, and the page's state is written in its script and
-  nowhere else, where the field held the state's JSON and gained an `onmouseover`
+- **WHEN** a page's server data holds text that reads like one of the template's placeholders, drawn in a
+  `TextEntry`
+- **THEN** the served field's `value` is that text as it came, and the page's state is written in its
+  script and nowhere else
 
 #### Scenario: A value holding other placeholders
 

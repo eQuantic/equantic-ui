@@ -16,4 +16,4 @@
 ## 4. Documentation
 
 - [ ] 4.1 The wiki's Security page in its five languages, on a branch named like the pull request's
-- [ ] 4.2 One entry for the ledger citing #1284 and #1288, as a file of its own under `docs/ledger/`
+- [ ] 4.2 One entry for the ledger citing #1319 and #1288, as a file of its own under `docs/ledger/`
