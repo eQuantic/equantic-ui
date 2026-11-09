@@ -58,13 +58,18 @@ public class ElementEngineTranspilesTests
         refused.Should().BeEmpty("the engine crosses to the browser, so every construct in it must be one eqc translates");
     }
 
-    /// <summary>The source with every <c>[ServerOnly]</c> attribute removed, the rest of it as written.</summary>
+    /// <summary>The source with every <c>[ServerOnly]</c> attribute removed, the rest of it as written: an
+    /// attribute beside it in the same brackets stays, and only a list left empty goes.</summary>
     private static string WithoutServerOnly(string source, string path)
     {
         var root = CSharpSyntaxTree.ParseText(source, path: path).GetRoot();
-        var marks = root.DescendantNodes().OfType<AttributeListSyntax>()
-            .Where(list => list.Attributes.Any(attribute => attribute.Name.ToString() is "ServerOnly" or "ServerOnlyAttribute"))
-            .ToList();
-        return root.RemoveNodes(marks, SyntaxRemoveOptions.KeepExteriorTrivia)!.ToFullString();
+        var stripped = root.ReplaceNodes(
+            root.DescendantNodes().OfType<AttributeListSyntax>().Where(list => list.Attributes.Any(IsServerOnly)),
+            (_, list) => list.WithAttributes(SyntaxFactory.SeparatedList(list.Attributes.Where(attribute => !IsServerOnly(attribute)))));
+        var emptied = stripped.DescendantNodes().OfType<AttributeListSyntax>().Where(list => list.Attributes.Count == 0);
+        return stripped.RemoveNodes(emptied, SyntaxRemoveOptions.KeepExteriorTrivia)!.ToFullString();
     }
+
+    private static bool IsServerOnly(AttributeSyntax attribute) =>
+        attribute.Name.ToString() is "ServerOnly" or "ServerOnlyAttribute";
 }

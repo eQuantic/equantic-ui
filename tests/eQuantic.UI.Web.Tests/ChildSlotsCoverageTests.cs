@@ -79,6 +79,27 @@ public class ChildSlotsCoverageTests
         }
     }
 
+    /// <summary>
+    /// The mount below reads Primitives' types, so a node kind declared anywhere else would never be held
+    /// to an arm: every node type of the SDK's other assemblies takes its kind from Primitives.
+    /// </summary>
+    [Fact]
+    public void NoNodeKindIsDeclaredOutsideTheVocabulary()
+    {
+        var vocabulary = typeof(VisualNode).Assembly;
+        var outside = typeof(ChildSlotsCoverageTests).Assembly.GetReferencedAssemblies()
+            .Where(name => name.Name is { } assembly && assembly.StartsWith("eQuantic.UI", StringComparison.Ordinal))
+            .Select(Assembly.Load)
+            .Where(assembly => assembly != vocabulary)
+            .SelectMany(assembly => assembly.GetTypes())
+            .Where(type => typeof(VisualNode).IsAssignableFrom(type) && !type.IsAbstract
+                && type.GetProperty(nameof(VisualNode.NodeKind))!.DeclaringType!.Assembly != vocabulary)
+            .Select(type => type.FullName)
+            .ToList();
+
+        outside.Should().BeEmpty("ChildSlots reads the kinds Primitives declares, and this test mounts only those");
+    }
+
     [Fact]
     public void EveryNodeKind_HasItsChildrensSlots()
     {
