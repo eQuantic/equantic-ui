@@ -745,8 +745,6 @@ public static class UIExtensions
     private static async Task ServePageState(HttpContext context, Type? page, DeclaredPage? declared)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
-        // Never cached: this is the page's data, and the next visitor's is not this one's.
-        context.Response.Headers["Cache-Control"] = "no-store";
         // The answer to a navigation says so, with the header the request carried, whatever its
         // status: a page that answers 404 for content that does not exist still sends its title, its
         // head and its state, and the client applies them as a full load of it shows them. Read off
@@ -843,6 +841,13 @@ public static class UIExtensions
 
     private static async Task ServeAppShell(HttpContext context, Type? page, DeclaredPage? declared)
     {
+        // Never stored, by the browser or by any cache between it and the server, and said here once
+        // for both answers of a page's route: the document carries what this visitor's cookies chose
+        // (theme, density, culture) and the page's own state, and so does the data a navigation asks
+        // for. The next visitor's is not this one's. The document went with no Cache-Control at all,
+        // so a CDN rule that caches HTML served one visitor's prefetched data to the next (#1288).
+        context.Response.Headers.CacheControl = "no-store";
+
         // A client navigation asks the same route for the page's data instead of a document.
         if (context.Request.Headers.ContainsKey(NavigationHeader))
         {
