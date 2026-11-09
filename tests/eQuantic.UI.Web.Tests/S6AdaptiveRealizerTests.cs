@@ -234,6 +234,51 @@ public class S6AdaptiveRealizerTests
         html.Should().NotContain("align-self", "the arm stands in a box, which has no line to align it");
     }
 
+    /// <summary>
+    /// A gate answers whether its arm shows at a width as its media query does (<see cref="AdaptiveGates.Css"/>),
+    /// at the boundaries the queries draw: the compact arm up to its threshold and not at it, the
+    /// middle arm from its threshold to 0.02 dp short of the next, and the expanded arm from its own.
+    /// The last but one row is the gap those 0.02 dp leave, where the page shows no arm; the answer
+    /// says so too, rather than rounding it into one.
+    /// </summary>
+    [Theory]
+    [InlineData(599.99f, true, false, false)]
+    [InlineData(600f, false, true, false)]
+    [InlineData(839.98f, false, true, false)]
+    [InlineData(839.99f, false, false, false)]
+    [InlineData(840f, false, false, true)]
+    public void AGate_ShowsWhereItsMediaQueryDoes(float width, bool compact, bool medium, bool expanded)
+    {
+        AdaptiveGates.Shows(AdaptiveGates.CompactUntil(600), width).Should().Be(compact);
+        AdaptiveGates.Shows(AdaptiveGates.MediumFrom(600, 840), width).Should().Be(medium);
+        AdaptiveGates.Shows(AdaptiveGates.ExpandedFrom(840), width).Should().Be(expanded);
+        AdaptiveGates.Shows(AdaptiveGates.MediumFrom(600, 0), width).Should().Be(width >= 600,
+            "an open-ended middle arm shows from its threshold on");
+    }
+
+    /// <summary>
+    /// A SINK says which of its classes take an element out of what a screen reader reads: a gate whose
+    /// arm does not show at the width, and the two declarations that leave the accessibility tree.
+    /// Everything else it wrote is read through, and so is a class it never wrote.
+    /// </summary>
+    [Fact]
+    public void ASink_SaysWhichOfItsClassesHideAnElement()
+    {
+        var sink = new StyleSink();
+        var compact = AdaptiveGates.CompactUntil(600);
+        sink.AddAdaptiveGate(compact);
+
+        sink.HidesAt(compact, 400).Should().BeFalse("the compact arm shows on a phone");
+        sink.HidesAt(compact, 1280).Should().BeTrue("and not on a desk");
+        sink.HidesAt(sink.ClassFor("display", "none"), 1280).Should().BeTrue();
+        sink.HidesAt(sink.ClassFor("visibility", "hidden"), 1280).Should().BeTrue();
+        sink.HidesAt(sink.ClassFor("opacity", "0"), 1280).Should().BeFalse("a transparent element is still read");
+        sink.HidesAt(sink.ClassFor("display", "none", ":hover"), 1280).Should().BeFalse(
+            "a variant applies only in its state");
+        sink.HidesAt(sink.ClassForScrolled("display", "none"), 1280).Should().BeFalse();
+        sink.HidesAt("eq-unwritten", 1280).Should().BeFalse("a class the sink never wrote is not its to answer");
+    }
+
     /// <summary>The CSS identifier grammar, which is what a class selector can name.</summary>
     private static readonly System.Text.RegularExpressions.Regex CssIdentifier =
         new("^-?[_a-zA-Z][_a-zA-Z0-9-]*$");

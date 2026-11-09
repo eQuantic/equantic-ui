@@ -8,7 +8,8 @@ namespace eQuantic.UI.Web;
 /// What DOM the server writes for each word of the vocabulary — the web realizer's dispatch, moved
 /// off a switch with a default arm and onto the visitor the compiler checks.
 /// </summary>
-internal sealed partial class WebLoweringVisitor(ComponentContext context, FontlessMeasurer measurer)
+internal sealed partial class WebLoweringVisitor(
+    ComponentContext context, FontlessMeasurer measurer, ElementFrame? frame = null)
     : IVisualNodeVisitor<bool?, HtmlElement?>
 {
     /// <summary>The theme and type scale this lowering runs against — fixed for the pass.</summary>
@@ -17,6 +18,12 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
     /// <summary>The context's measurer, which answers 0 and counts: how <see cref="Visit(UiComponent, bool?)"/>
     /// learns that a component was built on widths nobody measured.</summary>
     private readonly FontlessMeasurer _measurer = measurer;
+
+    /// <summary>The frame of a live element tree this lowering walks, or null for a tree drawn once:
+    /// with one, a component is lowered from what its position built and a layer is shown to the
+    /// owner before it lowers (<see cref="ElementFrame"/>). Set aside, not replaced, for a subtree
+    /// the tree does not hold: an adaptive node's arm other than the one it resolved.</summary>
+    private ElementFrame? _frame = frame;
 
 
     /// <summary>
@@ -228,6 +235,18 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
     /// </summary>
     public HtmlElement? Visit(UiComponent component, bool? horizontalAxis)
     {
+        // A FRAME OF A LIVE TREE built it already, through the same boundary, with the instance
+        // its position keeps. What it built is lowered as it stands, and a discovery round names
+        // the KEPT instance, the one whose fields the next frame reads. The unmeasured mark below is
+        // hydration's, and a frame's tree has no server markup to adopt yet: the owner that renders
+        // a request (E4) is the one that will need it, and it builds through a measurer it owns.
+        if (_frame is { } frame)
+        {
+            var (kept, built) = frame.At(component);
+            ComponentExpansionScope.Ambient?.Enter(kept);
+            return built is not null ? Lower(built, horizontalAxis) : null;
+        }
+
         // NAMED BEFORE IT BUILDS, and the order is the whole mechanism: ExpandContained runs
         // Build on the next line, so anything a previous discovery round loaded for this component
         // has to be back on it by now or the build reads the empty defaults again. Null outside an

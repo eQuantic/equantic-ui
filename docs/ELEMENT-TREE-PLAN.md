@@ -256,7 +256,9 @@ Each tree has one owner, after Flutter's `BuildOwner`: the dirty list, the build
 pass's unmount-then-mount order, the error boundary's report and tally, the dispatcher, and the
 diagnostics. A Photon host owns one per window, the server one per request, the browser one per
 document and one per island (`VisualNodeComponent`), and an email render one per message. The
-browser's is the document's and not the page's, so it outlives a client navigation.
+browser's is the document's and not the page's, so it outlives a client navigation. A component test
+owns one per `ComponentTester` (#1245), LIVE like Photon's rather than structural like the server's,
+because a test draws one frame after another and drives input the way a browser does.
 
 ### 3.7 Per target
 
@@ -511,6 +513,24 @@ the parity rows it closes flip.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.
+
+   **Started by the component tester** (#1245), which needed the realizer half first:
+   - `WebRealizer.LowerFrame` lowers a frame of a live tree from its positions: a component from what
+     its position built, a layer shown in its deferred slot before it lowers, an adaptive arm the
+     element does not hold lowered as a tree drawn once. Its first frame is `Lower`'s markup byte for
+     byte on every component parity case at every size class, save hydration's unmeasured mark,
+     which counts what each component's build asked the measurer and so belongs to the owner: E4
+     attributes it from a measurer the request owner keeps. The frame is a field of the lowering,
+     not a channel. Its public form is provisional, and E4 decides it.
+   - In a frame, the expansion scope is handed the instance a position keeps, so a discovery round
+     asks the instance the next frame draws.
+   - `Element.VisitChildren` walks a tree from outside the engine, and `ComponentElement.MarkNeedsBuild`
+     is public: the tester's prefetch marks the position that loaded and only that subtree builds,
+     this section's rule. Rebuilding everything instead loses a stateless component's data, and a
+     test fails on it.
+
+   What remains E4's: the owner per request, the channels moving onto it, and the mark's
+   attribution.
 5. **E5, inherited components.** `InheritedComponent`, `DependOn`, `Find`,
    `OnDependenciesChanged`, dependency-driven rebuild, `Theme`, the route and `InFlow` as inherited
    components, `Navigator.Of`. Proof: a change rebuilds its dependents and nothing else, on both
