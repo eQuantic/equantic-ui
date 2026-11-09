@@ -159,13 +159,14 @@ public sealed class ComponentTester : IDisposable
     }
 
     /// <summary>Taps the control a screen reader announces as <paramref name="name"/>: its click
-    /// handler runs, or the nearest one around it, as a click bubbles. Draws nothing; call
+    /// handler runs, or the nearest one around it, as a click bubbles. A tap names a CONTROL, so a
+    /// run of text or a picture of the same name is not a candidate. Draws nothing; call
     /// <see cref="Pump()"/> to see what it changed.</summary>
-    public void Tap(string name) => TapOne(Locate(name, "a tap lands on",
-        (_, node) => ClickOf(node) is not null));
+    public void Tap(string name) => TapOne(Locate(name, "control",
+        (announcement, _) => announcement.Role is not (SemanticRole.StaticText or SemanticRole.Image)));
 
     /// <summary>Taps the control announced with <paramref name="role"/> and <paramref name="name"/>.</summary>
-    public void Tap(SemanticRole role, string name) => TapOne(Locate(name, $"a {role}",
+    public void Tap(SemanticRole role, string name) => TapOne(Locate(name, role.ToString(),
         (announcement, _) => announcement.Role == role));
 
     /// <summary>
@@ -176,7 +177,7 @@ public sealed class ComponentTester : IDisposable
     public void EnterText(string name, string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var (announcement, _) = Locate(name, "a text field",
+        var (announcement, _) = Locate(name, "text field",
             (stop, _) => stop.Role is SemanticRole.TextField or SemanticRole.CodeField);
         if (announcement.Disabled) throw new InvalidOperationException($"{announcement} takes no text.");
 
@@ -196,11 +197,11 @@ public sealed class ComponentTester : IDisposable
     }
 
     /// <summary>The one stop announced as <paramref name="name"/>.</summary>
-    public Announcement Find(string name) => Locate(name, "a stop", static (_, _) => true).Announcement;
+    public Announcement Find(string name) => Locate(name, "stop", static (_, _) => true).Announcement;
 
     /// <summary>The one stop announced with <paramref name="role"/> and <paramref name="name"/>.</summary>
     public Announcement Find(SemanticRole role, string name) =>
-        Locate(name, $"a {role}", (announcement, _) => announcement.Role == role).Announcement;
+        Locate(name, role.ToString(), (announcement, _) => announcement.Role == role).Announcement;
 
     /// <summary>Takes the tree down, so every <c>OnUnmount</c> runs: what a test's end is to the
     /// components it drew.</summary>
@@ -267,13 +268,13 @@ public sealed class ComponentTester : IDisposable
             ? " Nothing is announced."
             : " It announces:\n  " + string.Join("\n  ", tree.Announcements);
         throw new InvalidOperationException((matches.Count == 0
-            ? $"Nothing in the frame is announced as \"{name}\" for {what}."
-            : $"{matches.Count} stops are announced as \"{name}\" for {what}; name the role to tell them apart.") + heard);
+            ? $"No {what} in the frame is announced as \"{name}\"."
+            : $"{matches.Count} of the frame's stops are announced as \"{name}\"; name the role to tell them apart.") + heard);
     }
 
     private void TapOne((Announcement Announcement, HtmlNode Node) stop)
     {
-        if (stop.Announcement.Disabled) throw new InvalidOperationException($"{stop.Announcement} cannot be tapped.");
+        if (stop.Announcement.Disabled) throw new InvalidOperationException($"{stop.Announcement} is disabled: it cannot be tapped.");
         var handler = ClickOf(stop.Node)
                       ?? throw new InvalidOperationException($"Nothing handles a tap on {stop.Announcement}.");
 
