@@ -74,6 +74,12 @@ public class EnumConformanceTests
         public enum U : uint { Low = 1, High = 0x80000000 }
         [System.Flags] public enum Wide : long { None = 0, A = 1, B = 1L << 40 }
         public enum Tiny : byte { Zero = 0, One = 1 }
+        [System.Flags] public enum Huge : long { None = 0, A = 1, B = 1L << 40, Top = 1L << 62 }
+        public enum Span64 : long { Min = long.MinValue, Zero = 0, Max = long.MaxValue }
+        [System.Flags] public enum Big : ulong { None = 0, Low = 1, Top = 1UL << 63 }
+        public enum UMax : ulong { Zero = 0, Max = ulong.MaxValue }
+        [System.Flags] public enum UFlags : uint { None = 0, A = 1, Top = 0x80000000 }
+        [System.Flags] public enum Small : byte { None = 0, A = 1, B = 0x80 }
         """;
 
     /// <summary>
@@ -94,6 +100,90 @@ public class EnumConformanceTests
     [InlineData("try { return Enum.GetName(typeof(Status), (object)true); } catch (Exception e) { return e.Message; }")] // "The value passed in must be an enum base..."
     [InlineData("try { return Enum.IsDefined(typeof(Status), (object)true).ToString(); } catch (Exception e) { return e.Message; }")] // "Unknown enum type."
     public void AnEnum_ReadsItsWidth_AndRunsItsArgumentsInOrder(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Enums);
+    }
+
+    /// <summary>
+    /// A 64-bit enum is held as a BigInt, as a <c>long</c> is (#551): a member past 2^53 was written as a
+    /// number that is not its value, and its casts, its text, its statics and its order lost the low
+    /// digits.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("return (long)Huge.Top;")]                                                                        // "4611686018427387904"
+    [InlineData("var h = Huge.Top; return h.ToString(\"D\") + \"|\" + h.ToString(\"X\") + \"|\" + h;")]             // "4611686018427387904|4000000000000000|Top"
+    [InlineData("return Enum.Parse<Span64>(\"9223372036854775807\") == Span64.Max;")]                              // true
+    [InlineData("var x = Span64.Max; var n = Span64.Min; return x.ToString(\"D\") + \"|\" + n.ToString(\"D\") + \"|\" + (long)x;")] // "9223372036854775807|-9223372036854775808|9223372036854775807"
+    [InlineData("return string.Join(\",\", Enum.GetValues<Span64>());")]                                           // "Zero,Max,Min"
+    [InlineData("var u = UMax.Max; return (ulong)u;")]                                                             // "18446744073709551615"
+    [InlineData("long v = 1L << 62; return ((Huge)v).ToString() + \"|\" + ((Huge)v == Huge.Top);")]               // "Top|True"
+    [InlineData("var t = Huge.Top; var a = Huge.A; return (int)t + \"|\" + (int)(t | a);")]                         // "0|1"
+    [InlineData("long v = (1L << 62) + 5; return ((Span64)v).ToString();")]                                        // "4611686018427387909"
+    [InlineData("var h = Huge.Top; return h;")]                                                                    // 4611686018427387904, held as a BigInt
+    [InlineData("var d = new Dictionary<Huge, int> { [Huge.Top] = 1, [Huge.B] = 2 }; return d[Huge.Top] + d[Huge.B];")] // 3
+    [InlineData("var h = Huge.Top; return h switch { Huge.A => 1, Huge.Top => 2, _ => 0 };")]                      // 2
+    [InlineData("Huge h = default; return h == Huge.None;")]                                                       // true
+    [InlineData("var h = Huge.Top; return $\"{h}|{h:D}|{h:X}|{h,5}\";")]                                           // "Top|4611686018427387904|4000000000000000|  Top"
+    public void A64BitEnum_IsHeldAsALongIs(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Enums);
+    }
+
+    /// <summary>
+    /// An enum's operators compute at its underlying type's width (#555): JavaScript's own computed in
+    /// signed 32 bits, so a uint flag's high bit read negative and a long's flags above bit 31 vanished.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var a = Huge.A; var b = Huge.B; return (long)(a | b);")]                     // "1099511627777"
+    [InlineData("var a = UFlags.A; var t = UFlags.Top; return (a | t).HasFlag(t);")]           // true
+    [InlineData("var t = Big.Top; return (ulong)(t | t);")]                                    // "9223372036854775808"
+    [InlineData("var a = Huge.A; return (long)~a;")]                                           // "-2"
+    [InlineData("var x = UFlags.A; return (uint)~x;")]                                         // 4294967294
+    [InlineData("var s = Small.A; return (byte)~s;")]                                          // 254
+    [InlineData("var t = UFlags.Top; return (uint)(t & UFlags.Top);")]                          // 2147483648
+    [InlineData("var h = Huge.Top; h |= Huge.A; return h.ToString();")]                        // "A, Top"
+    [InlineData("var h = Huge.Top | Huge.B; return (h & ~Huge.B).ToString();")]                // "Top"
+    [InlineData("var u = UFlags.Top; u ^= UFlags.Top; return u.ToString();")]                  // "None"
+    [InlineData("var t = Huge.Top; var b = Huge.B; return t > b;")]                            // true
+    [InlineData("var t = Big.Top; var l = Big.Low; return (t > l) + \"|\" + (t < l);")]        // "True|False"
+    [InlineData("var u = UFlags.Top; var a = UFlags.A; return u > a;")]                        // true
+    [InlineData("var s = Status.Pending; s++; return s.ToString();")]                          // "Inactive"
+    [InlineData("var s = Status.Active; return (s + 2).ToString();")]                          // "Inactive"
+    [InlineData("var s = Status.Inactive; var a = Status.Active; return s - a;")]              // 2
+    [InlineData("var h = Huge.B; h++; return (long)h;")]                                       // "1099511627777"
+    [InlineData("var b = Big.Top; return (b - 1).ToString(\"D\");")]                           // "9223372036854775807"
+    public void AnEnumsOperators_ComputeAtItsWidth(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Enums);
+    }
+
+    /// <summary>
+    /// An enum's conversions are C#'s enumeration conversions, each the numeric conversion between the
+    /// underlying types, and its comparisons read its values (#551, #555): a checked cast throws where
+    /// .NET throws, a foreach over numbers reads each as a member where every one became the zero member,
+    /// GetValueOrDefault answers the zero member where it wrote its declared name, a flags enum's
+    /// CompareTo answers where it called a method no number has, a relational pattern compares values
+    /// where it compared keys, and an object unboxes only the underlying type.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var t = Huge.Top; try { return checked((int)t).ToString(); } catch (OverflowException) { return \"overflow\"; }")] // "overflow"
+    [InlineData("var t = Huge.Top; return unchecked((int)t);")]                                                                  // 0
+    [InlineData("int n = 300; try { return checked((Tiny)n).ToString(); } catch (OverflowException) { return \"overflow\"; }")] // "overflow"
+    [InlineData("var r = \"\"; foreach (Status s in new[] { 2, 0, 1 }) r += s + \",\"; return r;")]                            // "Inactive,Active,Pending,"
+    [InlineData("Status? s = null; Huge? h = null; return s.GetValueOrDefault() + \"|\" + h.GetValueOrDefault();")]              // "Active|None"
+    [InlineData("var a = Huge.Top; var b = Huge.A; var p = Perm.Write; return a.CompareTo(b) + \"|\" + p.CompareTo(Perm.Read) + \"|\" + b.CompareTo(a);")] // "1|1|-1"
+    [InlineData("var s = Status.Inactive; return (s is > Status.Pending) + \"|\" + (s is < Status.Active);")]                   // "True|False"
+    [InlineData("var s = Status.Pending; var h = Huge.Top; return (double)s + \"|\" + (double)h;")]                               // "1|4.611686018427388E+18"
+    [InlineData("object o = 1; try { var h = (Huge)o; return \"cast\"; } catch (InvalidCastException) { return \"refused\"; }")] // "refused"
+    [InlineData("object o = 1L; return ((Huge)o).ToString();")]                                                                  // "A"
+    [InlineData("return Enum.IsDefined(typeof(Huge), 1L) + \"|\" + Enum.GetName(typeof(Huge), 1);")]                            // "True|A"
+    [InlineData("var l = new List<Span64> { Span64.Max, Span64.Min, Span64.Zero }; l.Sort(); return string.Join(\",\", l);")]  // "Min,Zero,Max"
+    [InlineData("Huge? a = Huge.A; Huge? n = null; return (a | Huge.B) + \"|\" + ((n | Huge.B) == null);")]                     // "A, B|True"
+    [InlineData("var s = Status.Active; s += 2; var u = UFlags.A; u |= UFlags.Top; return s + \"|\" + (uint)u;")]               // "Inactive|2147483649"
+    public void AnEnumsConversions_AreDotNets(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Enums);
