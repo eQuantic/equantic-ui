@@ -22,6 +22,9 @@ internal sealed class SecurityHeaders : IStartupFilter
 
     public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
     {
+        // Built here, at start, so the policy and why it reports only (dotnet watch) are in the log
+        // before the first page is asked for.
+        app.ApplicationServices.GetService(typeof(ContentSecurityPolicy));
         app.Use((context, pipeline) =>
         {
             context.Response.OnStarting(static state =>

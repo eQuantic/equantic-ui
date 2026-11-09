@@ -137,6 +137,8 @@ public class ContentSecurityPolicyTests
     [InlineData("ConnectSources:0", "api.example.com")]
     [InlineData("ConnectSources:0", "https://api.example.com; script-src *")]
     [InlineData("FrameAncestors:0", "'unsafe-inline'")]
+    [InlineData("ReportUri", "/r; script-src *")]
+    [InlineData("ReportUri", "javascript:alert(1)")]
     public async Task ASourceThePolicyCouldNotWrite_StopsTheApp(string key, string value)
     {
         var start = () => StartAsync(

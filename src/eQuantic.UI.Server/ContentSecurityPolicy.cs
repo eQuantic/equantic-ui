@@ -21,7 +21,7 @@ namespace eQuantic.UI.Server;
 /// <para>
 /// Under <c>dotnet watch</c> the policy is written as report-only: dotnet watch injects a script of
 /// its own into every page, which the SDK did not write and cannot stamp, and enforcing would refuse
-/// the reload it exists for. The first page says so in the log, with the policy it writes.
+/// the reload it exists for. The log says so at start, with the policy it writes.
 /// </para>
 /// </summary>
 internal sealed class ContentSecurityPolicy
@@ -31,6 +31,8 @@ internal sealed class ContentSecurityPolicy
 
     private readonly string _header;
     private readonly string _template;
+    private readonly ILogger? _logger;
+    private int _upstreamWarned;
 
     public ContentSecurityPolicy(IOptions<ContentSecurityPolicyOptions> options, ILogger<ContentSecurityPolicy> logger)
         : this(options.Value, Environment.GetEnvironmentVariable("DOTNET_WATCH"), logger)
@@ -39,6 +41,7 @@ internal sealed class ContentSecurityPolicy
 
     internal ContentSecurityPolicy(ContentSecurityPolicyOptions options, string? dotnetWatch, ILogger? logger = null)
     {
+        _logger = logger;
         var underWatch = dotnetWatch == "1";
         _header = options.ReportOnly || underWatch ? Reporting : Enforcing;
         _template = Compose(options);
@@ -52,11 +55,23 @@ internal sealed class ContentSecurityPolicy
     /// <summary>The header's name and value for a page whose scripts carry <paramref name="nonce"/>.</summary>
     internal (string Name, string Value) For(string nonce) => (_header, _template.Replace(NoncePlaceholder, nonce));
 
-    /// <summary>Writes the header on a page, unless something before it already wrote one.</summary>
+    /// <summary>
+    /// Writes the header on a page, unless something before it already wrote one: then the app's own
+    /// wins, and the log says once that the SDK's was not written, since a policy without the page's
+    /// nonce refuses every script the shell writes.
+    /// </summary>
     public void WriteTo(HttpResponse response, string nonce)
     {
         var (name, value) = For(nonce);
-        if (!response.Headers.ContainsKey(name)) response.Headers[name] = value;
+        if (!response.Headers.ContainsKey(name))
+        {
+            response.Headers[name] = value;
+            return;
+        }
+        if (Interlocked.Exchange(ref _upstreamWarned, 1) == 0)
+            _logger?.LogWarning(
+                "{Header} was already written before the shell, so the SDK's policy is not: unless it admits the page's nonce, it refuses every script the shell writes.",
+                name);
     }
 
     private static string Compose(ContentSecurityPolicyOptions options)
