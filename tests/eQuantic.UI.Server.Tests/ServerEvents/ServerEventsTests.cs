@@ -653,6 +653,8 @@ public class ServerEventsTests
     [InlineData("MaxTopicsPerConnection", "0")]
     [InlineData("MaxPayloadBytes", "0")]
     [InlineData("MaxQueuedEventsPerConnection", "-1")]
+    [InlineData("MaxConnections", "0")]
+    [InlineData("MaxConnectionLifetime", "00:00:00")]
     public async Task ALimitTheConnectionsCannotRunWith_StopsTheAppFromStarting(string setting, string value)
     {
         var starting = () => ServerEventsApp.StartAsync(
