@@ -1139,6 +1139,8 @@ public static class UIExtensions
                ;
         });
 
+        // The page's policy, with the nonce its scripts carry, when the app turned one on (#1267).
+        context.RequestServices.GetService<ContentSecurityPolicy>()?.WriteTo(context.Response, nonce);
         context.Response.ContentType = "text/html";
         await context.Response.WriteAsync(html);
     }
