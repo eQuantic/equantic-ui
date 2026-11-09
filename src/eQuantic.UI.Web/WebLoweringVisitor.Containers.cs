@@ -26,8 +26,8 @@ internal sealed partial class WebLoweringVisitor
         // result. The server's traversal therefore did not see a prefetching component inside a
         // Stack at all — no load, no payload entry, and no diagnosis, on a container nobody would
         // think twice about using. Both sides skipped it identically, so nothing drifted, which is
-        // exactly why it would never have been noticed.
-        // From what its position built, in a frame of a live tree, as Visit(UiComponent) does.
+        // exactly why it would never have been noticed. In a frame of a live tree the name goes to
+        // the instance the position keeps, as Visit(UiComponent) gives it.
         if (_frame is { } frame)
         {
             var (kept, built) = frame.At(component);
@@ -1171,7 +1171,7 @@ internal sealed partial class WebLoweringVisitor
 
         void AddVariant(VisualNode variant, string gate)
         {
-            if (Arm(variant, place) is not { } lowered) return;
+            if (Arm(adaptive, variant, place) is not { } lowered) return;
             var gated = new RealizedElement("div") { AdaptiveGate = gate };
             gated.Children.Add(lowered);
             wrapper.Children.Add(gated);
@@ -1179,7 +1179,7 @@ internal sealed partial class WebLoweringVisitor
 
         // A lone Compact needs no gating — it IS the tree at every size.
         if (adaptive.Medium is null && adaptive.Expanded is null)
-            return Arm(adaptive.Compact, place) ?? wrapper;
+            return Arm(adaptive, adaptive.Compact, place) ?? wrapper;
 
         // Ranges chain off the DECLARED variants and the node's own thresholds (a design that
         // switches at 1024 gets 1024 gates, not the spec's 600/840).
@@ -1200,9 +1200,9 @@ internal sealed partial class WebLoweringVisitor
     /// media rules hide at this size, and a change of size replaces the arm's subtree on both
     /// targets, so no instance they would have kept is ever shown.
     /// </summary>
-    private HtmlElement? Arm(VisualNode arm, Func<VisualNode, HtmlElement?> place)
+    private HtmlElement? Arm(AdaptiveNode adaptive, VisualNode arm, Func<VisualNode, HtmlElement?> place)
     {
-        if (_frame is not { } frame || frame.Holds(arm)) return place(arm);
+        if (_frame is not { } frame || frame.HoldsArm(adaptive, arm)) return place(arm);
 
         _frame = null;
         try

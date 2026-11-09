@@ -42,8 +42,12 @@ internal sealed class ElementFrame
                 $"A {component.GetType().Name} was lowered that this frame did not build: the element "
                 + "tree and the tree being lowered disagree.");
 
-    /// <summary>Whether <paramref name="node"/> stands at a position of this frame.</summary>
-    internal bool Holds(VisualNode node) => _positions.ContainsKey(node);
+    /// <summary>Whether <paramref name="arm"/> is the arm <paramref name="adaptive"/>'s OWN position
+    /// holds: the one its size class resolved. Asked of that position and not of the frame at large,
+    /// because one node instance can stand elsewhere in the tree too.</summary>
+    internal bool HoldsArm(AdaptiveNode adaptive, VisualNode arm) =>
+        _positions.TryGetValue(adaptive, out var element)
+        && ReferenceEquals(element.ChildAt(0)?.Configuration, arm);
 
     /// <summary>
     /// Shows <paramref name="layer"/> in the deferred slot of <paramref name="holder"/>'s position

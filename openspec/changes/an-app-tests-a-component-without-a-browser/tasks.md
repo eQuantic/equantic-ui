@@ -24,10 +24,10 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 A `Testing` page on the wiki, in English and in its Portuguese, Spanish, French and German twins, on a wiki branch named like the pull request's, showing the three shapes as the tests write them
-- [ ] 4.2 `docs/ELEMENT-TREE-PLAN.md`: the test host among the owners of 3.6, and what E4 inherits (`LowerFrame`, the kept instance a round names, the visitor and the mark)
-- [ ] 4.3 A ledger entry under `docs/ledger/` citing #1245
-- [ ] 4.4 Proof: the docs guards pass against the wiki branch (`EQ_WIKI_DIR` on a worktree of it)
+- [x] 4.1 A `Testing` page on the wiki, in English and in its Portuguese, Spanish, French and German twins, on a wiki branch named like the pull request's, showing the three shapes as the tests write them
+- [x] 4.2 `docs/ELEMENT-TREE-PLAN.md`: the test host among the owners of 3.6, and what E4 inherits (`LowerFrame`, the kept instance a round names, the visitor and the mark)
+- [x] 4.3 A ledger entry under `docs/ledger/` citing #1245
+- [x] 4.4 Proof: the docs guards pass against the wiki branch (`EQ_WIKI_DIR` on a worktree of it)
 
 ## 5. Close
 
