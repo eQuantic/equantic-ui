@@ -72,12 +72,12 @@ public class BclMethodGroupConformanceTests
         """,
         // A string's and a list's members.
         """
-        var w = "Hello"; Func<string, bool> has = w.Contains; Func<string> upper = w.ToUpper; Func<string, bool> starts = w.StartsWith;
+        var w = "Hello"; Func<string, bool> has = w.Contains; Func<string> upper = w.ToUpper; Func<char, bool> starts = w.StartsWith;
         Func<int, string> from = w.Substring; Func<char[], string> trim = w.Trim;
         w = "x";
         var list = new List<int> { 1, 2 }; Action<int> add = list.Add; Func<int, bool> holds = list.Contains; Func<int, int> at = list.IndexOf;
         add(3);
-        return has("ell") + "|" + upper() + "|" + starts("He") + "|" + from(1) + "|" + trim(new[] { 'H', 'o' }) + "|"
+        return has("ell") + "|" + upper() + "|" + starts('H') + "|" + from(1) + "|" + trim(new[] { 'H', 'o' }) + "|"
             + holds(3) + "|" + at(2) + "|" + list.Count;
         """,
         // A number rounded as .NET rounds it, a half to the even neighbour.

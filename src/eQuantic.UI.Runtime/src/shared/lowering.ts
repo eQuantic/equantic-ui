@@ -20,7 +20,7 @@ import type { EventHandler, HtmlNode } from '../core/types';
 import { CanvasPointer } from './canvas-pointer';
 import { browserPastesOn, ClipboardRefused, CodeSurfaceClipboard } from './code-surface-clipboard';
 // Leaf helpers — see css-values for why they are not defined here.
-import { hex, modifiersOf, num, tokenValue } from './css-values';
+import { floatText, hex, modifiersOf, num, tokenValue } from './css-values';
 export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
@@ -203,8 +203,7 @@ function sideWidths(width: number, sides: number): string {
 
 export function px(dp: number): string {
   if (dp === 0) return '0';
-  // Matches C# "0.##" formatting (up to 2 decimals, no trailing zeros).
-  return `${parseFloat(dp.toFixed(2))}px`;
+  return `${floatText(Math.fround(dp), 2)}px`;
 }
 
 
