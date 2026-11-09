@@ -28,6 +28,9 @@ internal sealed class RunningCompiler : IModuleCompiler
     /// <summary>The prefix of eqc's answer to a compile, the one line of its output this reads.</summary>
     internal const string AnswerPrefix = "@eqc ";
 
+    /// <summary>How long the project's MSBuild may take to say how to start eqc.</summary>
+    private static readonly TimeSpan DiscoveryLimit = TimeSpan.FromMinutes(5);
+
     /// <summary>
     /// The variables dotnet watch gives the app it runs, which a .NET process started by the app
     /// inherits: with them, eqc would load dotnet watch's agent and contend for the app's own channel to
@@ -41,10 +44,14 @@ internal sealed class RunningCompiler : IModuleCompiler
 
     private readonly Func<RunningCompiler, ProcessStartInfo?> _discover;
     private readonly object _gate = new();
+    // Held across finding and starting eqc: the start's Prepare and the first save meet here, and the
+    // second finds the first one's eqc instead of starting another nobody would stop. Dispose takes
+    // only the gate, so it can still stop the MSBuild a holder of this waits on.
+    private readonly object _readying = new();
     private ProcessStartInfo? _start;
     private Process? _eqc;
     private Process? _discovery;
-    private TaskCompletionSource<CompileOutcome>? _answer;
+    private (Process Eqc, TaskCompletionSource<CompileOutcome> Answer)? _pending;
     private bool _disposed;
 
     /// <summary>The eqc of the project in <paramref name="contentRoot"/>, found by asking MSBuild.</summary>
@@ -77,7 +84,8 @@ internal sealed class RunningCompiler : IModuleCompiler
         {
             if (_disposed) return CompileOutcome.NotRun("the app stopped");
             answer = new TaskCompletionSource<CompileOutcome>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _answer = answer;
+            // The answer belongs to THIS eqc: one stopped before it may still say it exited.
+            _pending = (eqc, answer);
         }
         try
         {
@@ -107,6 +115,11 @@ internal sealed class RunningCompiler : IModuleCompiler
     /// it died or was stopped.</summary>
     private Process? Ready()
     {
+        lock (_readying) return ReadyOnce();
+    }
+
+    private Process? ReadyOnce()
+    {
         lock (_gate)
         {
             if (_disposed) return null;
@@ -123,10 +136,10 @@ internal sealed class RunningCompiler : IModuleCompiler
         {
             if (_disposed) return null;
             var eqc = new Process { StartInfo = start, EnableRaisingEvents = true };
-            eqc.OutputDataReceived += (_, line) => Heard(line.Data);
+            eqc.OutputDataReceived += (_, line) => Heard(eqc, line.Data);
             // Read so its pipe never fills: the errors also arrive in the answer.
             eqc.ErrorDataReceived += (_, _) => { };
-            eqc.Exited += (_, _) => _answer?.TrySetResult(CompileOutcome.NotRun("eqc exited before it answered"));
+            eqc.Exited += (_, _) => AnswerOf(eqc)?.TrySetResult(CompileOutcome.NotRun("eqc exited before it answered"));
             if (!eqc.Start()) return null;
             eqc.BeginOutputReadLine();
             eqc.BeginErrorReadLine();
@@ -135,8 +148,14 @@ internal sealed class RunningCompiler : IModuleCompiler
         }
     }
 
+    /// <summary>The answer the compile in flight on <paramref name="eqc"/> waits for, if one does.</summary>
+    private TaskCompletionSource<CompileOutcome>? AnswerOf(Process eqc)
+    {
+        lock (_gate) return _pending is { } pending && ReferenceEquals(pending.Eqc, eqc) ? pending.Answer : null;
+    }
+
     /// <summary>A line eqc wrote: its answer to the compile in flight, or something to pass over.</summary>
-    private void Heard(string? line)
+    private void Heard(Process eqc, string? line)
     {
         if (line is null || !line.StartsWith(AnswerPrefix, StringComparison.Ordinal)) return;
         try
@@ -145,11 +164,11 @@ internal sealed class RunningCompiler : IModuleCompiler
             var compiled = answer.RootElement.GetProperty("compiled").GetBoolean();
             var errors = answer.RootElement.GetProperty("errors").EnumerateArray()
                 .Select(error => error.GetString() ?? string.Empty).ToArray();
-            _answer?.TrySetResult(new CompileOutcome(compiled, errors));
+            AnswerOf(eqc)?.TrySetResult(new CompileOutcome(compiled, errors));
         }
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException)
         {
-            _answer?.TrySetResult(CompileOutcome.NotRun($"eqc answered in a form this server does not read: {line}"));
+            AnswerOf(eqc)?.TrySetResult(CompileOutcome.NotRun($"eqc answered in a form this server does not read: {line}"));
         }
     }
 
@@ -174,7 +193,17 @@ internal sealed class RunningCompiler : IModuleCompiler
         {
             var output = msbuild.StandardOutput.ReadToEndAsync();
             var errors = msbuild.StandardError.ReadToEndAsync();
-            msbuild.WaitForExit();
+            if (!msbuild.WaitForExit(DiscoveryLimit))
+            {
+                Stop(msbuild);
+                Console.WriteLine($"[eQuantic.HotReload] MSBuild did not say how to start eqc in {DiscoveryLimit.TotalMinutes:F0} minutes, and was stopped");
+                return null;
+            }
+            // A stop kills it: that is no failure to report.
+            lock (_gate)
+            {
+                if (_disposed) return null;
+            }
             if (msbuild.ExitCode != 0)
             {
                 Console.WriteLine($"[eQuantic.HotReload] MSBuild could not say how to start eqc:\n{output.Result}{errors.Result}");
@@ -231,7 +260,7 @@ internal sealed class RunningCompiler : IModuleCompiler
             discovery = _discovery;
             _eqc = null;
         }
-        _answer?.TrySetResult(CompileOutcome.NotRun("the app stopped"));
+        if (eqc is not null) AnswerOf(eqc)?.TrySetResult(CompileOutcome.NotRun("the app stopped"));
         if (discovery is not null) Stop(discovery);
         if (eqc is not null)
         {

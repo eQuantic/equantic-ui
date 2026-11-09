@@ -85,6 +85,29 @@ public class RunningCompilerTests
         found.Should().Be(1, "MSBuild says how to start eqc once for a run of the server");
     }
 
+    /// <summary>
+    /// The server's start gets eqc ready while a save may already be asking for it: they meet, and one
+    /// eqc is started. Two were, and the second assignment orphaned the first, which nothing stopped.
+    /// </summary>
+    [Fact]
+    public async Task GettingReady_AndTheFirstSave_StartOneEqc()
+    {
+        var found = 0;
+        using var compiler = new RunningCompiler(_ =>
+        {
+            Interlocked.Increment(ref found);
+            Thread.Sleep(500);
+            return Answering(Compiled);
+        });
+
+        var ready = Task.Run(compiler.Prepare);
+        var save = Task.Run(() => compiler.Compile(TimeSpan.FromSeconds(30)));
+        await Task.WhenAll(ready, save).WaitAsync(TimeSpan.FromSeconds(30));
+
+        (await save).Compiled.Should().BeTrue();
+        found.Should().Be(1, "the second waits for the first one's eqc instead of starting another");
+    }
+
     [Fact]
     public void AFailedCompile_AnswersWithItsErrorLines()
     {
