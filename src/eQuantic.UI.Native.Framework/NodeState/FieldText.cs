@@ -5,8 +5,8 @@ namespace eQuantic.UI.Native.Framework;
 /// <summary>
 /// What a field shows on Photon: what was typed into it, until the page builds it again, and then the
 /// value the page hands it, whether or not that value changed since the last build (#996). It is
-/// Flutter's <c>EditableText</c>, whose controller keeps the text and takes the app's value when the
-/// widget is configured again, and it is what the web shows after a render (#1026).
+/// Flutter's <c>EditableText</c>, whose controller keeps the text and takes the app's value when its
+/// parent configures it again, and it is what the web shows after a render (#1026).
 /// <para>
 /// The text lives on the field's position, so it leaves the tree with the field, and a field drawn at
 /// another's place starts from its own value. Every reader asks <see cref="Of"/>: the measure, the

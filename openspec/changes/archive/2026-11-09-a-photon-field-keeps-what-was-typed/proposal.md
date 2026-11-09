@@ -12,7 +12,7 @@ handler that called no `SetState` rebuilds every component, as every frame after
 host found controls by their position. It is the one input that still rebuilds the whole tree.
 
 Flutter's answer is the structural one: `EditableText` keeps what was typed in its controller, and the
-app's value reaches the controller only when the widget is configured again. The browser does the same
+app's value reaches the controller only when the field's parent configures it again. The browser does the same
 with an input's live value, and #1026 settles what the web shows after a render: the value the page
 holds, whether or not it changed since the last render (a page that reset a field in the same render as
 the typing that filled it kept showing the typed digits, on eQuantic.Auth's sign-in).
