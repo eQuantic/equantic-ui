@@ -214,10 +214,13 @@ export class CodeCompletion {
     askAgainIfIncomplete() {
         let word = this.word();
         let incomplete: any[] = [];
+        let outrun: any[] = [];
         for (const answer of this._answers) {
-            if (answer.isIncomplete && this.lastAskedWord(answer.provider) !== word) incomplete.push(answer.provider);
+            if (this.lastAskedWord(answer.provider) === word) continue;
+            if (answer.isIncomplete) incomplete.push(answer.provider); else if (!$eq.text.startsWith(word, answer.askedWord, 'ordinal')) outrun.push(answer.provider);
         }
         if (incomplete.length > 0) this.ask('incomplete', null, incomplete, false);
+        if (outrun.length > 0) this.ask('invoked', null, outrun, false);
     }
 
     lastAskedWord(provider: any) {
