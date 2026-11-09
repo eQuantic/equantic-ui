@@ -1,6 +1,6 @@
 # Proposal
 
-Closes #900, a Task under #898.
+Part of #900, a Task under #898, and closes #1258, a Bug under #1174.
 
 ## Why
 
@@ -23,7 +23,11 @@ alone, on a machine running a load average of 22, took 11 to 48 seconds.
   the ones after it (warm), with the parts named: the wait after the save, MSBuild, eqc, bun, the
   reload and the replay on the web, and the delta's compile and apply and the next frame on the desktop.
 - Where a sample's number holds the bar, a budget that fails above it, the way `ServedRuntimeBudgetTests`
-  holds the runtime's size (#290). Where it does not, an issue that owns each part over the bar.
+  holds the runtime's size (#290). Where it does not, a ceiling that only comes down, and an issue that
+  owns each part over the bar (#1274 to #1281, the slices of #900).
+- A Photon app that publishes trimmed kept .NET's startup hook off for every build, so `dotnet watch`
+  restarted the desktop sample on every edit (#1258): the native SDK turns it on for the Debug build of
+  a desktop head that is not a publish.
 - `ROADMAP.md` says the measured number in place of "not measured yet".
 
 The parts it reaches: the measuring tool (new), eqc (which reports how long each of its phases
@@ -39,5 +43,6 @@ public surface nor the developer surface moves.
 
 ### Modified Capabilities
 
-- `hot-reload`: the time from a save to the screen is measured on both samples, and a budget holds it
-  where the bar is met. The requirement is written once the numbers are measured.
+- `hot-reload`: the time from a save to the screen is measured on both samples, a budget holds the
+  desktop to the bar, a ceiling that only comes down holds the web, and an app that publishes trimmed
+  reloads an edit in place.

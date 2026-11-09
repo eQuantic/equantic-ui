@@ -37,6 +37,25 @@ fail when the median is over the budget, naming the part and the value.
 - **WHEN** the same edits are held to a budget below their median
 - **THEN** the run fails, saying the warm median and the budget it is over
 
+### Requirement: The web sample is held to a ceiling that only comes down
+
+The time from a save to the frame that draws it, measured on the dashboard sample under `dotnet
+watch`, SHALL be held to a ceiling on its warm median, set from the first CI run that measured it with
+room for the runner's spread. The measurement SHALL fail over the ceiling, and SHALL say when the
+median falls under half of a ceiling that is above the bar, so the change that made it faster lowers
+it in the same pull request.
+
+#### Scenario: Over the ceiling
+
+- **WHEN** the measuring tool times four edits of the web sample with the repository's budget, and
+  their warm median is over the ceiling
+- **THEN** the run fails, saying the warm median and the ceiling it is over
+
+#### Scenario: Far under the ceiling
+
+- **WHEN** the warm median is under half of a ceiling above the bar of a second
+- **THEN** the run passes and says the ceiling can be lowered
+
 ### Requirement: An app that publishes trimmed reloads an edit in place
 
 A Photon app that sets `PublishTrimmed` or `PublishAot` SHALL keep .NET's startup hook on for a Debug

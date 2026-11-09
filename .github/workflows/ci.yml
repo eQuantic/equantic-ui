@@ -825,8 +825,8 @@ jobs:
       # each sample under dotnet watch, a component's file changed on disk, the clock stopped when a
       # window or a browser DRAWS the change, each part of the path timed on its own. LAST in the job,
       # because it edits the samples' sources while it runs: the steps above read what the builds wrote.
-      # The desktop holds a budget and fails over it. The web is reported and fails only when it cannot
-      # measure: it is tens of seconds over the bar, and the issues under #898 own each part of that.
+      # The desktop holds the bar's budget and fails over it. The web is tens of seconds over the bar, and
+      # fails over a ceiling that only comes down as the slices of #900 make each part of it faster.
       - name: Edit to view, timed on both samples
         shell: bash
         run: |
