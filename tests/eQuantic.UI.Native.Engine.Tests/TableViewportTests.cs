@@ -312,6 +312,97 @@ public class TableViewportTests
         Region(host).Viewport.Scroll.Offset.Down.Should().BeGreaterThan(lifted);
     }
 
+    // ---- a finger's pan in a page (#1007) ----------------------------------------------------------
+
+    /// <summary>A page that scrolls down, holding a table of twenty rows 300 tall and room below it.</summary>
+    private static (PhotonHost Host, double End) TableInAPage(Tally tally, VisualNode? table = null)
+    {
+        var content = new Column(gap: 0);
+        content.Add(table ?? Table(tally, rows: 20, height: SizeValue.Fixed(300)));
+        content.Add(new Box(new BoxStyle { Height = SizeValue.Fixed(800), Width = SizeValue.Fill }));
+        var host = Host(new ScrollView(content), 700, 500, tally);
+        return (host, 20 * 28 - Region(host).Viewport.Scroll.Viewport.Height);
+    }
+
+    private static void Pan(PhotonHost host, float x, float fromY, float toY)
+    {
+        host.PressDown(x, fromY, kind: PointerKind.Touch);
+        host.PointerMove(x, (fromY + toY) / 2, PointerKind.Touch);
+        host.RenderFrame(new DisplayListBuilder(), _clock += 16);
+        host.PointerMove(x, toY, PointerKind.Touch);
+        host.PressUp(x, toY, PointerKind.Touch);
+        Settle(host);
+    }
+
+    [Fact]
+    public void AtItsLastRow_AFingersPanPassesToThePageAroundIt()
+    {
+        var tally = new Tally();
+        var (host, end) = TableInAPage(tally);
+        host.ScrollBy(300, 150, 0, (float)end, stepped: false);
+        Settle(host);
+        var top = Region(host).Bounds.Y;
+
+        Pan(host, 300, 200, 100);
+
+        Region(host).Viewport.Scroll.Offset.Down.Should().Be(end);
+        Region(host).Bounds.Y.Should().Be(top - 100, "the table could follow none of it, so the page took it all");
+    }
+
+    [Fact]
+    public void AFingersPan_IsTheTablesWhileItCanFollow_AndThePagesForTheRest()
+    {
+        var tally = new Tally();
+        var (host, end) = TableInAPage(tally);
+        host.ScrollBy(300, 150, 0, (float)end - 56, stepped: false);
+        Settle(host);
+        var top = Region(host).Bounds.Y;
+
+        Pan(host, 300, 200, 100);
+
+        Region(host).Viewport.Scroll.Offset.Down.Should().Be(end, "the two rows it had left");
+        Region(host).Bounds.Y.Should().Be(top - 44, "and the page the 44 points past them");
+    }
+
+    [Fact]
+    public void AFingersPanTheTableCanFollow_LeavesThePageStill()
+    {
+        var tally = new Tally();
+        var (host, _) = TableInAPage(tally);
+        var top = Region(host).Bounds.Y;
+
+        Pan(host, 300, 200, 160);
+
+        Region(host).Viewport.Scroll.Offset.Down.Should().Be(40);
+        Region(host).Bounds.Y.Should().Be(top);
+    }
+
+    [Fact]
+    public void ADragSurfaceInACell_KeepsItsGesture()
+    {
+        var tally = new Tally();
+        var moved = new List<float>();
+        var table = new TableView(new UniformTableSpans(20, 28), new UniformTableSpans(6, 96), (row, column) =>
+            row == 2 && column == 2
+                ? new Draggable(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }))
+                    { OnMoved = moved.Add }
+                : new Text($"{row}:{column}", TypeRole.BodyM))
+        {
+            PinnedRows = 1,
+            PinnedColumns = 1,
+            Height = SizeValue.Fixed(300),
+        };
+        var (host, _) = TableInAPage(tally, table);
+        var cell = Cells(host).Single(c => c.Cell.Row == 2 && c.Cell.Column == 2).Bounds;
+        var top = Region(host).Bounds.Y;
+
+        Pan(host, cell.X + cell.Width / 2, cell.Y + cell.Height / 2, cell.Y + cell.Height / 2 - 60);
+
+        moved.Should().NotBeEmpty("the surface in the cell took the drag");
+        Region(host).Viewport.Scroll.Offset.Down.Should().Be(0, "and the table let go of it");
+        Region(host).Bounds.Y.Should().Be(top);
+    }
+
     // ---- the scrollbars --------------------------------------------------------------------------
 
     [Fact]
