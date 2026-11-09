@@ -663,12 +663,12 @@ public static class UIExtensions
         if ((own ?? built) is not null)
         {
             var link = HtmlTag.Link("icon", "/favicon.ico");
-            tags.Add((own is null ? link.Attr("sizes", "16x16 32x32 48x48") : link).Render());
+            tags.Add((own is null ? link.Attr("sizes", "16x16 32x32 48x48") : link).Render(nonce: null));
         }
         if (Find("_equantic/icons/apple-touch-icon.png") is not null)
-            tags.Add(HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png").Render());
+            tags.Add(HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png").Render(nonce: null));
         if (Find("_equantic/icons/site.webmanifest") is not null)
-            tags.Add(HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest").Render());
+            tags.Add(HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest").Render(nonce: null));
         return new IconSet(tags, own ?? built);
     }
 

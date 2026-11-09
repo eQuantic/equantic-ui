@@ -73,7 +73,7 @@ public sealed class HtmlTag
     /// <summary>The rendered element. Attribute VALUES are HTML-encoded; <see cref="Content"/> is not
     /// (it is a script/style body by construction). A <c>script</c> or a <c>style</c> carries
     /// <paramref name="nonce"/> when one is given; any other element ignores it.</summary>
-    public string Render(string? nonce = null)
+    public string Render(string? nonce)
     {
         var html = new StringBuilder("<").Append(TagName);
         foreach (var (name, value) in Attributes)
@@ -88,7 +88,7 @@ public sealed class HtmlTag
         return html.Append(Content).Append("</").Append(TagName).Append('>').ToString();
     }
 
-    public override string ToString() => Render();
+    public override string ToString() => Render(nonce: null);
 
     /// <summary>The elements a Content-Security-Policy admits by nonce: scripts and styles.</summary>
     internal static bool CarriesNonce(string tagName) =>
