@@ -24,8 +24,10 @@ namespace eQuantic.UI.Testing;
 internal sealed class AnnouncedTree
 {
     /// <summary>The ARIA roles the realizer writes that the vocabulary has a word for. One it does not
-    /// (a <c>listbox</c>, a <c>row</c>, a <c>status</c>) is no stop of its own, and what it holds is
-    /// walked as if it were not there.</summary>
+    /// (a <c>listbox</c>, a <c>row</c>) is no stop of its own, and what it holds is walked as if it were
+    /// not there. A live region (<c>status</c>, <c>log</c>, <c>alert</c>) is the vocabulary's live
+    /// <see cref="SemanticRole.Group"/>, the stop Photon hands the platform's reader to mark live
+    /// (#339).</summary>
     private static readonly Dictionary<string, SemanticRole> AriaRoles = new(StringComparer.Ordinal)
     {
         ["button"] = SemanticRole.Button,
@@ -40,6 +42,9 @@ internal sealed class AnnouncedTree
         ["gridcell"] = SemanticRole.GridCell,
         ["progressbar"] = SemanticRole.ProgressIndicator,
         ["group"] = SemanticRole.Group,
+        ["status"] = SemanticRole.Group,
+        ["log"] = SemanticRole.Group,
+        ["alert"] = SemanticRole.Group,
         ["radio"] = SemanticRole.Radio,
         ["tab"] = SemanticRole.Tab,
         ["menuitem"] = SemanticRole.MenuItem,
@@ -67,11 +72,16 @@ internal sealed class AnnouncedTree
     private readonly List<Announcement> _announced = new();
     private readonly List<HtmlNode> _nodes = new();
 
+    /// <summary>The elements an <c>aria-owns</c> moves, each under the element that names it.</summary>
+    private readonly Dictionary<HtmlNode, HtmlNode> _owners = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<HtmlNode> _walked = new(ReferenceEqualityComparer.Instance);
+
     private AnnouncedTree(HtmlNode root, StyleSink styles, float widthDp)
     {
         _styles = styles;
         _width = widthDp;
         Index(root);
+        IndexOwnership(root);
         Walk(root);
     }
 
@@ -104,8 +114,48 @@ internal sealed class AnnouncedTree
         }
     }
 
+    /// <summary>
+    /// What <c>aria-owns</c> moves. The accessibility tree takes an owned element out of its place in the
+    /// document and reads it under the element that owns it, after that element's own children and in the
+    /// order the attribute lists them: a table whose rows are written in bands, pinned headers apart from
+    /// the scrolled cells, is read row by row only through it. An element owned twice stays with the first
+    /// owner, and one that would own an element around it is ignored, as ARIA requires.
+    /// </summary>
+    private void IndexOwnership(HtmlNode root)
+    {
+        foreach (var owner in _parents.Keys.Prepend(root))
+        {
+            if (Attribute(owner, "aria-owns") is not { } ids) continue;
+            foreach (var id in ids.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (!_byId.TryGetValue(id, out var owned) || IsAround(owned, owner)) continue;
+                _owners.TryAdd(owned, owner);
+            }
+        }
+    }
+
+    private bool IsAround(HtmlNode candidate, HtmlNode node)
+    {
+        for (HtmlNode? at = node; at is not null; at = _parents.GetValueOrDefault(at))
+            if (ReferenceEquals(at, candidate)) return true;
+        return false;
+    }
+
+    /// <summary>The children the accessibility tree gives <paramref name="node"/>: its own, save those
+    /// another element owns, then the ones it owns, in the order it names them.</summary>
+    private IEnumerable<HtmlNode> ReadingChildren(HtmlNode node)
+    {
+        foreach (var child in node.Children)
+            if (!_owners.ContainsKey(child)) yield return child;
+        if (Attribute(node, "aria-owns") is not { } ids) yield break;
+        foreach (var id in ids.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            if (_byId.TryGetValue(id, out var owned) && _owners.TryGetValue(owned, out var owner) && ReferenceEquals(owner, node))
+                yield return owned;
+    }
+
     private void Walk(HtmlNode node)
     {
+        if (!_walked.Add(node)) return;
         if (node.Tag == "#text")
         {
             // A run of text no element around it named: a stop of its own, as a Text is.
@@ -130,7 +180,7 @@ internal sealed class AnnouncedTree
             return;
         }
 
-        foreach (var child in node.Children) Walk(child);
+        foreach (var child in ReadingChildren(node)) Walk(child);
     }
 
     private void Add(HtmlNode node, Announcement announcement)
@@ -162,6 +212,9 @@ internal sealed class AnnouncedTree
             headingLevel = int.TryParse(Attribute(node, "aria-level"), out var level) ? level : 2;
             return SemanticRole.StaticText;
         }
+
+        // A region that says it is live without a role is one too.
+        if (Attribute(node, "aria-live") is { } live && live != "off") return SemanticRole.Group;
 
         switch (node.Tag)
         {
@@ -212,7 +265,13 @@ internal sealed class AnnouncedTree
                 .Select(id => _byId.TryGetValue(id, out var label) ? TextOf(label, includeHidden: true) : "")));
         if (Attribute(node, "aria-label") is { } label && Collapse(label) is { Length: > 0 } named) return named;
         if (node.Tag == "img" && Attribute(node, "alt") is { } alt) return Collapse(alt);
-        return NamedFromContent(role) ? Collapse(TextOf(node)) : "";
+        if (NamedFromContent(role) && Collapse(TextOf(node)) is { Length: > 0 } content) return content;
+        // The last resorts of HTML's name computation (HTML-AAM): an element's title, and for a text
+        // field after it, its placeholder, which is how a field without a label is announced.
+        if (Attribute(node, "title") is { } title && Collapse(title) is { Length: > 0 } titled) return titled;
+        if (node.Tag is "input" or "textarea" && Attribute(node, "placeholder") is { } placeholder)
+            return Collapse(placeholder);
+        return "";
     }
 
     private string? ValueOf(HtmlNode node, SemanticRole role) => role switch
