@@ -466,11 +466,18 @@ public static class UIExtensions
         endpoints.MapGetAndHead("/_equantic/{name}.js", async context =>
         {
             var name = (string?)context.GetRouteValue("name");
-            var path = AssetPaths.Resolve(
-                Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic"),
-                name, ".js");
+            var environment = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
+            var path = AssetPaths.Resolve(Path.Combine(environment.WebRootPath, "_equantic"), name, ".js");
+            // Not under the web root: the local directory, as a development run lays it out. Found
+            // there, the module is served as one found under the web root is, and its status is 200: a
+            // browser refuses to run a module answered 404 (#1296).
+            var localPath = AssetPaths.Resolve(
+                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js");
+            var found = path is not null && File.Exists(path) ? path
+                : localPath is not null && File.Exists(localPath) ? localPath
+                : null;
 
-            if (path is not null && File.Exists(path))
+            if (found is not null)
             {
                 context.Response.ContentType = "application/javascript";
                 // Hot reload rewrites fixed-name bundles in place, and the build id in their URL is
@@ -481,28 +488,18 @@ public static class UIExtensions
                 context.Response.Headers["Cache-Control"] = hotReloads
                     ? "no-cache"
                     : "public, max-age=31536000, immutable";
-                await context.Response.SendFileAsync(path);
+                await context.Response.SendFileAsync(found);
             }
             else
             {
                 context.Response.StatusCode = 404;
-                // Try finding it in the local directory (Dev scenario)
-                var localPath = AssetPaths.Resolve(
-                    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js");
-                if (localPath is not null && File.Exists(localPath))
+                // Plain text, and only Development says where it looked: the paths are the server's
+                // own, and this route serves anyone, so no other environment writes back what the
+                // request named (#1296).
+                if (path is not null && environment.IsDevelopment())
                 {
-                    context.Response.ContentType = "application/javascript";
-                    await context.Response.SendFileAsync(localPath);
-                }
-                else if (path is not null)
-                {
-                    // The paths are the server's own, and this route serves anyone: they are for a
-                    // developer, so only Development writes them.
-                    context.Response.ContentType = "application/javascript";
-                    await context.Response.WriteAsync(
-                        context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment()
-                            ? $"// 404: Component {name} not found at {path} or {localPath}"
-                            : $"// 404: Component {name} not found");
+                    context.Response.ContentType = "text/plain; charset=utf-8";
+                    await context.Response.WriteAsync($"Component {name} not found at {path} or {localPath}");
                 }
             }
         }).AllowAnonymous();
@@ -821,7 +818,10 @@ public static class UIExtensions
         // until the browser gave up with ERR_TOO_MANY_REDIRECTS.
         if (!map.IsDefault(map.Split(path).Culture)) return false;
 
-        context.Response.Redirect(map.PathFor(culture, path) + context.Request.QueryString, permanent: false);
+        // The path as a URL writes it: a decoded one holds what a header cannot carry, and a page whose
+        // address has an accent answered 500 instead of its redirect (#1296).
+        context.Response.Redirect(map.PathFor(culture, context.Request.Path.ToUriComponent()) + context.Request.QueryString,
+            permanent: false);
         return true;
     }
 
