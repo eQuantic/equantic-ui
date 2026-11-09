@@ -27,6 +27,7 @@ import type {
 import { CanvasPointer } from './canvas-pointer';
 import type { PickedFile } from './picked-file';
 export { CanvasPointer };
+import { floatText } from './css-values';
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
 import {
@@ -1425,7 +1426,7 @@ export class RangeValue {
    * no number by definition — lost them too.
    */
   get number(): string {
-    return `${parseFloat(this.now.toFixed(4))}`;
+    return floatText(Math.fround(this.now), 4);
   }
 }
 
