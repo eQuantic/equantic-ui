@@ -5,3 +5,8 @@ static eQuantic.UI.Primitives.ComponentBoundary.Owner() -> eQuantic.UI.Primitive
 static eQuantic.UI.Primitives.ComponentBoundary.StructuralOwner() -> eQuantic.UI.Primitives.BuildOwner!
 *REMOVED*eQuantic.UI.Primitives.BuildOwner.BuildOwner() -> void
 *REMOVED*static eQuantic.UI.Primitives.BuildOwner.Structural() -> eQuantic.UI.Primitives.BuildOwner!
+*REMOVED*eQuantic.UI.Primitives.IAppIcon.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Primitives.AppIconUse
+eQuantic.UI.Primitives.AppIconUse.Launcher = 0 -> eQuantic.UI.Primitives.AppIconUse
+eQuantic.UI.Primitives.AppIconUse.Small = 1 -> eQuantic.UI.Primitives.AppIconUse
+eQuantic.UI.Primitives.IAppIcon.Build(eQuantic.UI.Primitives.ComponentContext! context, eQuantic.UI.Primitives.AppIconUse use) -> eQuantic.UI.Primitives.VisualNode!
