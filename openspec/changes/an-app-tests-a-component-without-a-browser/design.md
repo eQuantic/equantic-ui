@@ -43,11 +43,17 @@ The frame is a field of the lowering visitor, which is one instance per lowering
 `AsyncLocal`: section 3.5 of docs/ELEMENT-TREE-PLAN.md moves the web's channels off the async flow
 and onto the owner, and a seventh channel would be a step the other way.
 
-The frame finds every position by walking the tree with `Element.ChildAt`, the only enumeration the
-engine exposes. `NodeSlots` states the invariant that makes the walk exact: a node's children are a
-list, which holds no empty slot, or at most two fixed slots, either of which may be empty. So only
-the first slot can be empty with a child after it. The walk adds nothing to `Primitives/Elements`,
-which E3a is reworking.
+The frame finds every position by walking the tree with `Element.VisitChildren`, Flutter's
+`visitChildren`, which this change adds. Only the element knows how many slots it has: reading
+`ChildAt` until an empty one cannot tell an empty slot from the end without leaning on `NodeSlots`'
+invariant from outside, which the first version of the frame did and the tester was about to do a
+second time. It is one method by the name, each kind overriding it and adding no other, as a plain
+loop and a delegate, because E3a carries the engine into the runtime, whose twin has one method per
+name; a test lifts the method's real text out of the three engine files and runs it through eqc.
+
+In a discovery round the server's expansion scope is handed the instance a position KEEPS, not the
+fresh one a parent's build made and the element discarded, so what a prefetch loads lands on the
+instance the next frame draws.
 
 A component the frame has no position for, and a layer whose holder it has none for, is refused with
 an exception rather than built fresh: built fresh it draws its defaults and nothing says so. Photon
@@ -85,11 +91,13 @@ adaptive arm whose gate does not show at the tester's width.
 An `Announcement` speaks `SemanticRole`, so an author's test never names an ARIA role, and the native
 track's `SemanticNode` can be projected onto the same shape when #339 compares the two.
 
-The tester lowers WITHOUT a style sink, so a declaration stays inline where the reader can see it;
-the server writes the same declarations as atomic classes.
-
-Whether an adaptive arm shows is the gate's own question, answered by `AdaptiveGates.Shows` beside
-the media query it writes, rather than by a second parser of gate names in the package.
+The tester lowers THROUGH a style sink, as the server does, so its markup is the markup the server
+writes, and because an adaptive arm's gate becomes a class only there. Which of a node's classes hide
+it is then the sink's question, since the sink holds the rule each class names:
+`StyleSink.HidesAt(className, widthDp)` answers for a gate that does not show at the width (through
+`AdaptiveGates.Shows`, beside the media query it writes) and for `display:none` and
+`visibility:hidden`, the two declarations that leave the accessibility tree. A reader parsing the
+stylesheet back would be the sink's format written twice.
 
 ### Typing reaches the vocabulary, not the markup
 
@@ -104,18 +112,23 @@ The SDK's theme (`PhotonTheme`, what `AddUI` serves without `UseTheme`), the inv
 test reads the same on every machine, a 1280 dp viewport, and comfortable density. The package
 depends on no test framework.
 
-## Divergences from docs/ELEMENT-TREE-PLAN.md
+### A prefetch marks its position
 
-Both are written into the plan in this change.
+A completed prefetch marks the position that keeps the component, through
+`ComponentElement.MarkNeedsBuild`, made public as Flutter's `markNeedsBuild` is, and only that subtree
+builds again, with that instance: section 3.7's rule for the server. Rebuilding every component
+instead was the first version, and it fails a stateless component that loads inside a page: its
+parent hands the position a fresh instance on every build, which is asked again, and the tester
+stopped at five rounds. That case is a test, and it fails under the rebuild.
+
+## Divergence from docs/ELEMENT-TREE-PLAN.md
+
+One, written into the plan in this change.
 
 - **A fourth kind of host.** Section 3.6 lists one owner per Photon window, per server request, per
   browser document and per email message. A component test is a host too, with a LIVE owner like
   Photon's, because a test drives frames and input as a browser does. The server stays structural,
   as 3.7 sets.
-- **A prefetch rebuilds every component, not its subtree.** Section 3.7 has a completed prefetch mark
-  its element and rebuild that subtree. Marking is internal to the engine, and this change does not
-  touch `Primitives/Elements`, so `PumpPageAsync` rebuilds every component after a round: the same
-  instances, the same answer, more builds. E4 replaces it with the mark.
 
 ## Not in this change
 

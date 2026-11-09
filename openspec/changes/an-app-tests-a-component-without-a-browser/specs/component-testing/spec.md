@@ -11,8 +11,9 @@ tester SHALL restore the caller's cultures when it returns.
 
 #### Scenario: A component that reads the theme renders without one being registered
 
-- **WHEN** a test pumps a `Select` with a `ComponentTester` constructed with no argument
-- **THEN** the frame draws, and its markup carries the SDK theme's colours
+- **WHEN** a test pumps a `Select` of `One` and `Two` with `One` chosen, with a `ComponentTester`
+  constructed with no argument
+- **THEN** the frame draws, and announces one combo box whose value is `One`
 
 #### Scenario: The culture a test names is the one a component formats with
 
@@ -85,9 +86,11 @@ gate that does not show at the tester's width SHALL NOT be announced. `Find(name
 ### Requirement: A page's server data loads before its first frame
 
 `PumpPageAsync(page)` SHALL call `PrefetchAsync` on every `IServerPrefetch` component the tree
-reaches, one at a time and with the tester's services, then build again and do the same for any it
-had not reached before, until a round reaches none, and then draw the first frame. The instance that
-prefetched SHALL be the one the frame draws.
+reaches, one at a time and with the tester's services, mark the position that keeps each one so that
+only its subtree builds again, with that instance, and do the same for any component that build
+reaches for the first time, until a round reaches none; then it SHALL draw the first frame. The
+instance that prefetched SHALL be the one the frame draws. A page still reaching new components after
+five rounds, the server's bound, SHALL fail with an exception naming them.
 
 #### Scenario: A page that reads a service
 
@@ -95,8 +98,20 @@ prefetched SHALL be the one the frame draws.
   `PumpPageAsync`
 - **THEN** the first frame reads `Downloads: 675617`
 
+#### Scenario: A stateless component that loads, inside a page
+
+- **WHEN** a page builds a new stateless component on every build, and that component's prefetch
+  loads `Title stats`
+- **THEN** the first frame reads `Title stats`, where rebuilding every component after the prefetch
+  hands the position a fresh instance each round and never settles
+
 #### Scenario: A component the data brings
 
 - **WHEN** a page builds one prefetching card per item its own prefetch loaded, and each card's
   prefetch loads its title
 - **THEN** the first frame shows every card's title
+
+#### Scenario: A page that never settles
+
+- **WHEN** each prefetch of a page builds a new component that prefetches
+- **THEN** `PumpPageAsync` throws, saying the page still asks for data after five rounds

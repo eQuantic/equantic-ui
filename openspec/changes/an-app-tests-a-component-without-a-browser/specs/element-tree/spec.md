@@ -36,3 +36,33 @@ write.
 
 - **WHEN** a frame is asked for what a component built that no position of it holds
 - **THEN** it throws `InvalidOperationException`
+
+#### Scenario: A discovery round names the kept instance
+
+- **WHEN** the server's expansion scope is armed while a frame is lowered in which a page hands a
+  stateful child's position a fresh instance
+- **THEN** the scope names the instance the position keeps, not the fresh one
+
+### Requirement: An element hands its children to a visitor
+
+`Element.VisitChildren(visitor)` SHALL hand the visitor every child position the element keeps, in
+slot order, passing over a slot that holds nothing (a layer not shown yet). It SHALL be the only method
+of that name on each kind of element, written so eqc transpiles it without a diagnostic.
+
+#### Scenario: The method crosses to the runtime
+
+- **WHEN** the text of `VisitChildren` in `Element.cs`, `NodeElement.cs` and `ComponentElement.cs` is
+  run through eqc in a class holding the same fields
+- **THEN** eqc reports nothing, and each kind's module holds one `visitChildren`
+
+### Requirement: A host marks a position to build again
+
+`ComponentElement.MarkNeedsBuild()` SHALL be public, so a host that changed what a component reads
+without a `SetState` (a prefetch that loaded its fields) asks for that position alone to build again,
+with the instance it keeps.
+
+#### Scenario: A prefetch that loaded
+
+- **WHEN** a stateless component a page builds anew on every build loads its data, its position is
+  marked, and the owner builds
+- **THEN** only that position builds, with the instance that loaded, and draws what it loaded

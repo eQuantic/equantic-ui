@@ -41,9 +41,15 @@ attribute each.
   overlay's child, an anchored panel) is shown to the owner before it lowers. Its first frame is
   `Lower`'s markup byte for byte, save hydration's unmeasured mark. It is the first step of E4 (#1094)
   and its public form is provisional: E4 decides it.
-- **`AdaptiveGates.Shows(gate, widthDp)`** answers whether an adaptive arm's gate shows at a width,
-  from the same rule that writes its media query, so the tester's semantics skip the arms the page
-  hides at the tester's width.
+- **`StyleSink.HidesAt(className, widthDp)`** answers whether a class takes an element out of what a
+  screen reader reads at a width: an adaptive arm's gate that does not show there, `display:none` or
+  `visibility:hidden`. The sink holds the rule each class names, so the tester's semantics never parse
+  the stylesheet back.
+- **`Element.VisitChildren(Action<Element>)`**, Flutter's `visitChildren`, so a reader outside the
+  engine walks a tree without leaning on how a node stores its slots, and
+  **`ComponentElement.MarkNeedsBuild()`** public, as Flutter's `markNeedsBuild` is: a completed
+  prefetch marks its position and only that subtree builds again, with the instance it keeps
+  (docs/ELEMENT-TREE-PLAN.md 3.7). Both are written for the runtime E3a carries the engine into.
 - **The SDK's own web tests read semantics through the package** where they read the same thing by
   hand.
 
@@ -56,16 +62,20 @@ attribute each.
 
 ### Modified Capabilities
 
-- `element-tree`: a frame of the tree is lowered on the web from its positions.
+- `element-tree`: a frame of the tree is lowered on the web from its positions, an element hands its
+  children to a visitor, and a host marks a position to build again.
 
 ## Impact
 
-- New project and package `eQuantic.UI.Testing` (`contract` surface), referencing Primitives,
-  Components and Web; its API declared in `PublicAPI.Unshipped.txt`.
-- `eQuantic.UI.Web`: `WebRealizer.LowerFrame` and `AdaptiveGates.Shows`, declared in
-  `PublicAPI.Unshipped.txt`; the internal `ElementFrame` and four sites of the lowering visitor. The
-  SSR path is unchanged: every pinned output stays byte-identical.
-- `eQuantic.UI.Primitives`: no change. `Elements/` is untouched, as E3a reworks it.
+- New project and package `eQuantic.UI.Testing` (`contract` surface), referencing the web realizer
+  and through it the vocabulary; its API declared in `PublicAPI.Unshipped.txt`.
+- `eQuantic.UI.Web`: `WebRealizer.LowerFrame` and `StyleSink.HidesAt`, declared in
+  `PublicAPI.Unshipped.txt`; the internal `ElementFrame`, `AdaptiveGates.Shows` (internal) and four
+  sites of the lowering visitor. The SSR path is unchanged: every pinned output stays byte-identical.
+- `eQuantic.UI.Primitives`: `Element.VisitChildren` and `ComponentElement.MarkNeedsBuild` made
+  public, declared in `PublicAPI.Unshipped.txt`. Neither is a break: `Element`'s constructor is
+  `private protected`, so nothing outside the engine derives from it. Both were agreed with the
+  element-tree work (E3a) before they touched `Elements/`.
 - eqc, the runtime, the Photon shells, the SDKs' targets and the templates: no change. The
   developer surface does not move.
 - Docs: a `Testing` page on the wiki in its five languages, `docs/ELEMENT-TREE-PLAN.md` (the test
