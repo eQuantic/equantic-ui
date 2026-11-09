@@ -118,9 +118,12 @@ report() {
 
 # Scans every commit message in base..head, or head alone when base is empty, the all-zero sha or not
 # a commit here (a new branch, a tag push, the first push to a repository): there is then no range to
-# walk, and scanning the head beats skipping and reporting success it did not measure.
+# walk, and scanning the head beats skipping and reporting success it did not measure. With a third
+# argument, `strict`, a base that is given and cannot be resolved fails instead: a pull request's or a
+# merge group's base always exists, so not finding it means a checkout too shallow to measure the range,
+# and the head alone would pass every other commit in it.
 scan_range() {
-    local base="$1" head="${2:-HEAD}" commits count sha hits
+    local base="$1" head="${2:-HEAD}" strict="${3:-}" commits count sha hits
 
     # An unresolvable HEAD is the one failure that must never read as success. A shallow checkout
     # that does not contain the commit would otherwise walk an empty range, print "all clean" and
@@ -128,6 +131,12 @@ scan_range() {
     # ran in the condition it exists for.
     if ! git rev-parse --verify --quiet "$head^{commit}" >/dev/null; then
         printf 'cannot resolve %s in this checkout, so nothing was measured.\n' "$head" >&2
+        printf 'Give the job a full history (actions/checkout with fetch-depth: 0).\n' >&2
+        return 1
+    fi
+
+    if [ -n "$strict" ] && ! git rev-parse --verify --quiet "$base^{commit}" >/dev/null; then
+        printf 'cannot resolve the base %s in this checkout, so the range was not measured.\n' "${base:-(empty)}" >&2
         printf 'Give the job a full history (actions/checkout with fetch-depth: 0).\n' >&2
         return 1
     fi
@@ -169,28 +178,47 @@ EOF
     return 0
 }
 
+# One field of an event's JSON, by its dotted path, empty when the event has none. jq where it is,
+# python3 otherwise, since a runner that is not GitHub's may carry one and not the other; neither is a
+# failure that says so. EQ_JSON_READER=python makes the self-test read through python3 as well.
+event_field() {
+    local path="$1" field="$2"
+    if [ ! -r "$path" ]; then
+        printf 'the event file %s cannot be read, so the event names nothing.\n' "${path:-(unset GITHUB_EVENT_PATH)}" >&2
+        return 1
+    fi
+    if [ "${EQ_JSON_READER:-}" != python ] && command -v jq >/dev/null 2>&1; then
+        jq -r ".$field // empty" "$path"
+    elif command -v python3 >/dev/null 2>&1; then
+        python3 -c 'import json, sys
+value = json.load(open(sys.argv[1], encoding="utf-8"))
+for key in sys.argv[2].split("."):
+    value = value.get(key) if isinstance(value, dict) else None
+print("" if value is None else value)' "$path" "$field"
+    else
+        printf 'neither jq nor python3 is on PATH, so the event cannot be read.\n' >&2
+        return 1
+    fi
+}
+
 # The range a CI event is about (#1308), from the event's name, its JSON and the run's commit: the
 # base on one line and the head on the next, an empty base meaning the head alone. A pull request or a
 # merge group that names no base or no head is refused rather than read as a shorter range: that is a
 # guard measuring less than it says.
 event_range() {
     local name="$1" path="$2" sha="$3" base="" head=""
-    if ! command -v jq >/dev/null 2>&1; then
-        printf 'jq is not on PATH, so the %s event cannot be read.\n' "${name:-unnamed}" >&2
-        return 1
-    fi
     case "$name" in
     pull_request)
-        base=$(jq -r '.pull_request.base.sha // empty' "$path") || return 1
-        head=$(jq -r '.pull_request.head.sha // empty' "$path") || return 1
+        base=$(event_field "$path" pull_request.base.sha) || return 1
+        head=$(event_field "$path" pull_request.head.sha) || return 1
         ;;
     merge_group)
         # The queue's run: base_sha is main as the queue saw it, head_sha the group's last squash.
-        base=$(jq -r '.merge_group.base_sha // empty' "$path") || return 1
-        head=$(jq -r '.merge_group.head_sha // empty' "$path") || return 1
+        base=$(event_field "$path" merge_group.base_sha) || return 1
+        head=$(event_field "$path" merge_group.head_sha) || return 1
         ;;
     push)
-        base=$(jq -r '.before // empty' "$path") || return 1
+        base=$(event_field "$path" before) || return 1
         head=$sha
         ;;
     *)
@@ -374,12 +402,18 @@ runs the guard
             errors=1
         fi
     }
-    expect_range pull_request pull_request sha0 $'b1\nh1'
-    expect_range merge_group merge_group h2 $'b2\nh2'
-    expect_range push push h3 $'b3\nh3'
-    expect_range workflow_dispatch workflow_dispatch h5 $'\nh5'
-    expect_range merge_group merge_group_without_base h4 "(refused)"
-    expect_range pull_request pull_request_without_head sha0 "(refused)"
+    local reader
+    for reader in jq python; do
+        EQ_JSON_READER=$reader
+        expect_range pull_request pull_request sha0 $'b1\nh1'
+        expect_range merge_group merge_group h2 $'b2\nh2'
+        expect_range push push h3 $'b3\nh3'
+        expect_range workflow_dispatch workflow_dispatch h5 $'\nh5'
+        expect_range merge_group merge_group_without_base h4 "(refused)"
+        expect_range pull_request pull_request_without_head sha0 "(refused)"
+        expect_range pull_request no_such_event_file sha0 "(refused)"
+    done
+    unset EQ_JSON_READER
 
     # End to end, on a repository of its own: a merge group of two squash commits whose FIRST carries a
     # tool's signature. The head alone is clean, so a range of the head alone, which is what the
@@ -404,10 +438,27 @@ runs the guard
         printf 'SELF-TEST FAILED: the group'"'"'s head alone was refused, so the fixture proves nothing about the range\n'
         errors=1
     fi
+    # Refused, and refused for the signed commit: an --event that failed for any other reason (a head
+    # it cannot resolve, an event it cannot read) would otherwise pass this case for the wrong reason.
+    local out
     ranges=$((ranges + 1))
-    if (cd "$repo" && GITHUB_EVENT_NAME=merge_group GITHUB_EVENT_PATH="$events/group.json" GITHUB_SHA="$head_sha" \
-        bash "$self" --event) >/dev/null 2>&1; then
+    if out=$(cd "$repo" && GITHUB_EVENT_NAME=merge_group GITHUB_EVENT_PATH="$events/group.json" GITHUB_SHA="$head_sha" \
+        bash "$self" --event 2>&1); then
         printf 'SELF-TEST FAILED: a merge group whose first squash carries a signature passed --event\n'
+        errors=1
+    elif ! /usr/bin/grep -qF 'chore: something real' <<<"$out"; then
+        printf 'SELF-TEST FAILED: --event refused the merge group without naming the signed commit:\n%s\n' "$out"
+        errors=1
+    fi
+
+    # A group whose base is not in the checkout, as in a shallow one, is refused rather than read as its
+    # head alone, which would pass every other squash in it.
+    printf '{"merge_group":{"base_sha":"%s","head_sha":"%s"}}' "1111111111111111111111111111111111111111" "$head_sha" \
+        >"$events/shallow.json"
+    ranges=$((ranges + 1))
+    if (cd "$repo" && GITHUB_EVENT_NAME=merge_group GITHUB_EVENT_PATH="$events/shallow.json" GITHUB_SHA="$head_sha" \
+        bash "$self" --event) >/dev/null 2>&1; then
+        printf 'SELF-TEST FAILED: a merge group whose base is not in the checkout passed --event\n'
         errors=1
     fi
     rm -rf "$events"
@@ -468,7 +519,10 @@ case "${1:---help}" in
         exit 1
     fi
     { IFS= read -r base; IFS= read -r head; } <<<"$range"
-    scan_range "$base" "$head"
+    case "${GITHUB_EVENT_NAME:-}" in
+    pull_request | merge_group) scan_range "$base" "$head" strict ;;
+    *) scan_range "$base" "$head" ;;
+    esac
     exit $?
     ;;
 *)
