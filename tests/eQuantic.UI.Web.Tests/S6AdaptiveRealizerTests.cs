@@ -208,6 +208,29 @@ public class S6AdaptiveRealizerTests
             "an open-ended middle arm shows from its threshold on");
     }
 
+    /// <summary>
+    /// A SINK says which of its classes take an element out of what a screen reader reads: a gate whose
+    /// arm does not show at the width, and the two declarations that leave the accessibility tree.
+    /// Everything else it wrote is read through, and so is a class it never wrote.
+    /// </summary>
+    [Fact]
+    public void ASink_SaysWhichOfItsClassesHideAnElement()
+    {
+        var sink = new StyleSink();
+        var compact = AdaptiveGates.CompactUntil(600);
+        sink.AddAdaptiveGate(compact);
+
+        sink.HidesAt(compact, 400).Should().BeFalse("the compact arm shows on a phone");
+        sink.HidesAt(compact, 1280).Should().BeTrue("and not on a desk");
+        sink.HidesAt(sink.ClassFor("display", "none"), 1280).Should().BeTrue();
+        sink.HidesAt(sink.ClassFor("visibility", "hidden"), 1280).Should().BeTrue();
+        sink.HidesAt(sink.ClassFor("opacity", "0"), 1280).Should().BeFalse("a transparent element is still read");
+        sink.HidesAt(sink.ClassFor("display", "none", ":hover"), 1280).Should().BeFalse(
+            "a variant applies only in its state");
+        sink.HidesAt(sink.ClassForScrolled("display", "none"), 1280).Should().BeFalse();
+        sink.HidesAt("eq-unwritten", 1280).Should().BeFalse("a class the sink never wrote is not its to answer");
+    }
+
     /// <summary>The CSS identifier grammar, which is what a class selector can name.</summary>
     private static readonly System.Text.RegularExpressions.Regex CssIdentifier =
         new("^-?[_a-zA-Z][_a-zA-Z0-9-]*$");
