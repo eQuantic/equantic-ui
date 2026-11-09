@@ -608,6 +608,20 @@ public static class Eq
     /// <c>catch</c>, a type pattern and an <c>as</c> write.</summary>
     public const string ExceptionIs = "$eq.exceptions.is";
 
+    /// <summary>The argument guards of .NET's argument exceptions, one function per method, named as the
+    /// method in camelCase (<c>$eq.guard.throwIfNegative</c>): the arguments in parameter order, then
+    /// what the compiler hands of the type, its equality or its ordering, and its text.</summary>
+    public const string Guard = "$eq.guard";
+
+    /// <summary><c>value.GetType()</c> as a runtime type the comparison reads, refused through null.</summary>
+    public const string TypesOf = "$eq.types.of";
+
+    /// <summary><c>typeof(X)</c> of a class twin, closed over the type arguments C# names.</summary>
+    public const string TypesNamed = "$eq.types.named";
+
+    /// <summary>Whether two runtime types are one, as <c>Type</c>'s <c>==</c> answers it.</summary>
+    public const string TypesSame = "$eq.types.same";
+
     /// <summary>A <c>throw</c> expression: throws its one argument, which is evaluated where C#
     /// evaluates the exception, in the caller's own function.</summary>
     public const string Raise = "$eq.exceptions.raise";
