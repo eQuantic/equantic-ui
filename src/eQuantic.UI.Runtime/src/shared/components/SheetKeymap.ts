@@ -207,6 +207,10 @@ export class SheetKeymap {
         return (() => { const $s = key; if ($s === 'ArrowUp') return [-1, 0]; if ($s === 'ArrowDown') return [1, 0]; if ($s === 'ArrowLeft') return [0, -1]; if ($s === 'ArrowRight') return [0, 1]; return [0, 0]; })();
     }
 
+    static claimsEscape(sheet: SheetController) {
+        return sheet.editing || sheet.addingRanges;
+    }
+
     static isModifierKey(key: string) {
         return (((((((((key === 'Shift' || key === 'Control') || key === 'Alt') || key === 'AltGraph') || key === 'Meta') || key === 'OS') || key === 'CapsLock') || key === 'Fn') || key === 'Hyper') || key === 'Super');
     }

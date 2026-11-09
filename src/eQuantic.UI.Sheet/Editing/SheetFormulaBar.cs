@@ -73,6 +73,10 @@ public sealed class SheetFormulaBar : ICodeSurfaceModel
     }
 
     /// <inheritdoc />
+    /// <remarks>Only over an edit, which Escape cancels: at rest the bar's Escape is the host's.</remarks>
+    public bool ClaimsEscape(KeyboardConvention convention) => _sheet.Editing;
+
+    /// <inheritdoc />
     public bool HandleText(string text)
     {
         if (text.Length == 0) return false;

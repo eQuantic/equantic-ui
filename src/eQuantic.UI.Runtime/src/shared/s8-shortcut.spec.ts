@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { lowerVisualNode } from './lowering';
-import { commitShortcuts, activeShortcuts, chordOf, resetShortcuts } from '../dom/shortcuts';
+import { commitShortcuts, activeShortcuts, chordOf, resetShortcuts, TAKES_KEY_FIRST } from '../dom/shortcuts';
 import { Reconciler } from '../dom/reconciler';
 import { photonTheme } from './design-system.generated';
 import type { LoweringContext } from './lowering';
@@ -366,6 +366,62 @@ describe('S8 nested shortcuts', () => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
 
       expect(fired).toEqual(['inner']);
+    } finally {
+      parent.remove();
+    }
+  });
+});
+
+/**
+ * A binding waits for the focus that takes its key first (#1181; C# twin: PhotonHost.KeyDown, which asks
+ * the code or sheet surface the keyboard is in before it fires a binding of Escape). The focus is asked
+ * with an event of the runtime's own, which it cancels to keep the key: a dialog's Escape then reaches the
+ * element's own keydown, and the dialog stays open.
+ */
+describe('S8 shortcuts the focus takes first', () => {
+  beforeEach(() => resetShortcuts());
+
+  it('fires only when the focus does not take the key first', () => {
+    const fired: string[] = [];
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    try {
+      let takes = true;
+      const field = {
+        nodeKind: 'pressable',
+        child: marker(),
+        onPressed: () => {},
+        label: 'field',
+      } as unknown as VisualNodeValue;
+      const dialog = {
+        nodeKind: 'shortcut',
+        child: { nodeKind: 'column', children: [field] },
+        chord: { key: 'Escape' },
+        onPressed: () => fired.push('dialog'),
+      } as unknown as VisualNodeValue;
+      new Reconciler().reconcile(parent, null, lowerVisualNode(dialog, ctx));
+      commitShortcuts();
+      const focus = parent.querySelector<HTMLElement>('[aria-label="field"]')!;
+      focus.addEventListener(TAKES_KEY_FIRST, (asked) => {
+        if (takes) asked.preventDefault();
+      });
+      const heard: boolean[] = [];
+      focus.addEventListener('keydown', (event) => heard.push(event.defaultPrevented));
+      focus.focus();
+      const escape = () => {
+        const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+        focus.dispatchEvent(event);
+        return event;
+      };
+
+      expect(escape().defaultPrevented, 'a key the focus takes is not cancelled for it').toBe(false);
+      expect(fired, 'the dialog waits for the focus').toEqual([]);
+      expect(heard, "the focus's own keydown hears the key").toEqual([false]);
+
+      takes = false;
+      expect(escape().defaultPrevented).toBe(true);
+      expect(fired, 'a key the focus lets go is the binding').toEqual(['dialog']);
+      expect(heard, 'cancelled on its way down, by the binding').toEqual([false, true]);
     } finally {
       parent.remove();
     }

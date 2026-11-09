@@ -51,6 +51,10 @@ export class SheetFormulaBar {
         return claimed;
     }
 
+    claimsEscape(_convention: KeyboardConventionValue) {
+        return this._sheet.editing;
+    }
+
     handleText(text: string) {
         if (text.length === 0) return false;
         this.take();

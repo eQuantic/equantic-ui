@@ -241,6 +241,13 @@ public static class SheetKeymap
         _ => (0, 0),
     };
 
+    /// <summary>
+    /// Whether <see cref="Handle"/> would claim Escape now, without running anything (#1181): while a cell is
+    /// edited, whose edit it cancels, and in add mode, which it ends. At rest it only releases Tab, and is
+    /// left to whatever is around the sheet.
+    /// </summary>
+    internal static bool ClaimsEscape(SheetController sheet) => sheet.Editing || sheet.AddingRanges;
+
     /// <summary>Whether a key name is a modifier pressed alone: never a command, and never the end of Tab's
     /// release.</summary>
     internal static bool IsModifierKey(string key) =>

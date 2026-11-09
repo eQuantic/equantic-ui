@@ -94,6 +94,10 @@ public sealed class SheetNameBox : ICodeSurfaceModel
     }
 
     /// <inheritdoc />
+    /// <remarks>While the box is typed into, whose typing Escape gives up for the grid.</remarks>
+    public bool ClaimsEscape(KeyboardConvention convention) => Typing;
+
+    /// <inheritdoc />
     public bool HandleText(string text)
     {
         if (!Typing || text.Length == 0) return false;

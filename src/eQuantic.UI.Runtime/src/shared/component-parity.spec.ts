@@ -20,6 +20,7 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { measurePhotonText, setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
+import { TAKES_KEY_FIRST } from '../dom/shortcuts';
 import {
   AdaptiveNode,
   Box,
@@ -685,9 +686,10 @@ function frames(node: unknown, presses: number[]): unknown[] {
  * Scoped to the entry's own tag on purpose. Other components attach the same NAMES for their own
  * reasons — a table viewport listens for keydown — and filtering globally would hide a real
  * regression the day one of those joins the fixture. The spreadsheet's door is a textarea, an entry
- * of this kind: its keydown, clipboard trio and focus are the client's alone too.
+ * of this kind: its keydown, clipboard trio and focus are the client's alone too, and so is its answer to
+ * the question the client's shortcut controller asks before a binding fires (TAKES_KEY_FIRST, #1181).
  */
-const CLIENT_ONLY_EVENTS = new Set(['focus', 'blur', 'input', 'keydown', 'paste', 'cut', 'copy']);
+const CLIENT_ONLY_EVENTS = new Set(['focus', 'blur', 'input', 'keydown', 'paste', 'cut', 'copy', TAKES_KEY_FIRST]);
 const ENTRY_TAGS = new Set(['input', 'textarea']);
 
 function canonical(node: HtmlNode): unknown {

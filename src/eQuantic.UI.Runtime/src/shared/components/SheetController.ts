@@ -889,6 +889,10 @@ export class SheetController {
         return SheetKeymap.handle(this, key, modifiers, convention, clipboard);
     }
 
+    claimsEscape(_convention: KeyboardConventionValue) {
+        return SheetKeymap.claimsEscape(this);
+    }
+
     handleText(text: string) {
         if (text.length === 0) return false;
         this.tabReleased = false;

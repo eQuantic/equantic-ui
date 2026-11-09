@@ -89,6 +89,10 @@ export class SheetNameBox {
         return claimed;
     }
 
+    claimsEscape(_convention: KeyboardConventionValue) {
+        return this.typing;
+    }
+
     handleText(text: string) {
         if (!this.typing || text.length === 0) return false;
         this._justFocused = false;

@@ -1,1 +1,4 @@
 #nullable enable
+eQuantic.UI.Sheet.SheetController.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool
+eQuantic.UI.Sheet.SheetNameBox.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool

@@ -584,6 +584,10 @@ export class CodeEditorController {
         return this.goTo.isOpen ? this.goTo.key(key, modifiers) : CodeKeymap.handle(this, key, modifiers, convention, clipboard);
     }
 
+    claimsEscape(convention: KeyboardConventionValue) {
+        return !(this.goTo.notFound == null) || this.goTo.isOpen || CodeKeymap.claims(this, KeyChord.escape, convention);
+    }
+
     execute(command: CodeCommandValue, clipboard: any = null) {
         {
             let pasted: any;

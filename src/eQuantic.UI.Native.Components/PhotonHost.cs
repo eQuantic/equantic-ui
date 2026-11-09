@@ -3337,7 +3337,8 @@ public sealed class PhotonHost
     /// Spec S8 — a key press from the shell (desktop windows have a real keyboard): fires the LAST
     /// matching <see cref="Shortcut"/> of the current frame (the dialog on top wins the chord) and
     /// returns whether it was handled, so the shell can stop propagating it. Being on screen IS the
-    /// subscription — an unmounted dialog's Esc simply is not in the frame any more.
+    /// subscription — an unmounted dialog's Esc simply is not in the frame any more. Escape waits for the
+    /// code or sheet surface the keyboard is in while it would claim the key (#1181).
     /// <para>
     /// <paramref name="modifiers"/> carries <see cref="KeyModifiers.Command"/> for the PLATFORM's
     /// command key (⌘ on macOS, Ctrl elsewhere) — the shell resolves that, exactly like the browser
@@ -3346,13 +3347,9 @@ public sealed class PhotonHost
     /// </summary>
     public bool KeyDown(string key, KeyModifiers modifiers = KeyModifiers.None)
     {
-        // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.
-        if (BindingFor(key, modifiers) is { } binding)
-        {
-            binding.OnPressed();
-            NeedsRender = true;
-            return true;
-        }
+        // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it. Escape
+        // waits for the surface the keyboard is in, while the surface has something of its own to close.
+        if (BindingFor(key, modifiers) is { } binding && !SurfaceTakesFirst(key, modifiers)) return Fire(binding);
 
         // A SPREADSHEET under the selection speaks Excel: arrows move (⌘ jumps to the data edge,
         // ⇧ extends), Tab/Enter walk, Delete clears, ⌘C/⌘V are TSV through the platform clipboard.
@@ -3455,6 +3452,28 @@ public sealed class PhotonHost
         return false;
     }
 
+    /// <summary>
+    /// Whether the code or sheet surface the keyboard is in takes <paramref name="key"/> before a binding of
+    /// it fires (#1181; TS twin: the text door's answer to <c>TAKES_KEY_FIRST</c>, which shortcuts.ts asks the
+    /// focus): Escape, while the surface would claim it, so a dialog stays open over an open completion list
+    /// or a cell being edited, as Flutter dismisses a route only for an Escape nothing under the focus took.
+    /// <see cref="KeyDown"/>'s sheet or code branch then takes the key.
+    /// </summary>
+    private bool SurfaceTakesFirst(string key, KeyModifiers modifiers)
+    {
+        if (key != KeyChord.Escape.Key || modifiers != KeyChord.Escape.Modifiers) return false;
+        if (SheetTarget is { } sheet) return sheet.Model.ClaimsEscape(KeyboardConvention);
+        return CodeTarget is { } code && code.Model.ClaimsEscape(KeyboardConvention);
+    }
+
+    /// <summary>Runs a binding's action and asks for the frame that shows it.</summary>
+    private bool Fire(ShortcutBinding binding)
+    {
+        binding.OnPressed();
+        NeedsRender = true;
+        return true;
+    }
+
     /// <summary>The binding of THIS frame that answers a chord: the last one declared (the dialog on
     /// top wins), skipping a focus-scoped one whose subtree does not hold the focus.</summary>
     private ShortcutBinding? BindingFor(string key, KeyModifiers modifiers)
@@ -3489,7 +3508,8 @@ public sealed class PhotonHost
     /// The platform's back, Android's gesture and button: the layer on top (a dialog, a sheet, a
     /// drawer, a menu, a phone's detail pane) closes, through the Escape it already declares, because
     /// every layer back should close already answers to it. A field inside a dialog leaves with the
-    /// dialog, as a binding answers every key before the field does.
+    /// dialog: back fires the binding itself, where <see cref="KeyDown"/> lets a code or sheet surface with
+    /// something of its own to close take Escape first (#1181).
     /// <para>
     /// Unlike <see cref="KeyDown"/>, neither an edit nor a focus ring takes it, as a focused
     /// <c>TextField</c> never holds Flutter's back and an <c>EditText</c> never holds Android's. On a
@@ -3499,7 +3519,7 @@ public sealed class PhotonHost
     /// focused. Answers whether anything took it.
     /// </para>
     /// </summary>
-    public bool Back() => CanGoBack && KeyDown(KeyChord.Escape.Key, KeyChord.Escape.Modifiers);
+    public bool Back() => BindingFor(KeyChord.Escape.Key, KeyChord.Escape.Modifiers) is { } binding && Fire(binding);
 
     /// <summary>
     /// Takes the tree down: every component that mounted is told it left, the root among them.

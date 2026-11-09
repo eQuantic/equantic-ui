@@ -1609,6 +1609,94 @@ describe('a code editor at either end of a dialog', () => {
   });
 });
 
+/**
+ * A dialog's Escape waits for the editor the keyboard is in (#1181; C# twin: LayerEscapeTests, on Photon).
+ * The page's bindings heard Escape in the capture phase, before the editor's input, so Escape on an open
+ * completion list closed the dialog, and what was typed in it went with it, while the same editor on the
+ * page closed only the list.
+ */
+describe('a code editor in a dialog, with its completion list open', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+    resetShortcuts();
+  });
+
+  it('closes the list on Escape and keeps the dialog, which the next Escape closes', async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const { CodeWordCompletionProvider } = await import('./components/CodeWordCompletionProvider');
+    const { ComponentInstanceStore, enterPass, exitPass } = await import('./instance-store');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const component = new CodeEditor('var Column = 1; var ColorToken = 2;\n\n', 'csharp');
+    component.completions = [new CodeWordCompletionProvider()];
+    const editor = component.editor;
+    let dialogClosed = 0;
+    // One pass, as a page renders the dialog around the editor.
+    const render = () => {
+      enterPass(new ComponentInstanceStore(), null);
+      try {
+        const dialog = {
+          nodeKind: 'shortcut',
+          child: component.build(context as never),
+          chord: { key: 'Escape' },
+          onPressed: () => dialogClosed++,
+        };
+        return lowerVisualNode(dialog as never, context as never);
+      } finally {
+        exitPass();
+      }
+    };
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    const reconciler = new Reconciler();
+    let mounted: HtmlNode | null = null;
+    const mount = () => {
+      const next = render();
+      reconciler.reconcile(parent, mounted, next);
+      mounted = next;
+      return parent.querySelector('textarea')!;
+    };
+
+    editor.selection = new CodeRange(new CodePosition(1, 0));
+    let input = mount();
+    input.focus();
+    for (const c of 'Co') {
+      input.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: c, bubbles: true, cancelable: true }));
+    }
+    // The providers answer through a promise, as a language server does.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    input = mount();
+    expect(editor.completion.isOpen, 'a word typed opens the list').toBe(true);
+    const escape = () => {
+      const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      input.dispatchEvent(event);
+      return event;
+    };
+
+    expect(escape().defaultPrevented, 'the editor claimed it').toBe(true);
+
+    expect(dialogClosed, 'the list is nearer the keyboard than the dialog').toBe(0);
+    expect(editor.completion.isOpen).toBe(false);
+    expect(editor.document.line(1), 'what was typed stays').toBe('Co');
+    expect(editor.tabMovesFocus, 'the list took the Escape, which released nothing').toBe(false);
+    expect(document.activeElement).toBe(input);
+
+    input = mount();
+    escape();
+    expect(dialogClosed, "with nothing over the code, Escape is the dialog's").toBe(1);
+  });
+});
+
 /** Every node under `node` that `test` accepts, in tree order. */
 function nodesWhere(node: HtmlNode, test: (candidate: HtmlNode) => boolean): HtmlNode[] {
   const found: HtmlNode[] = test(node) ? [node] : [];

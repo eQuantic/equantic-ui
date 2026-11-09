@@ -886,6 +886,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         return GoTo.IsOpen ? GoTo.Key(key, modifiers) : CodeKeymap.Handle(this, key, modifiers, convention, clipboard);
     }
 
+    /// <inheritdoc />
+    /// <remarks>Read in the order <see cref="HandleKey"/> takes Escape: what was said about nothing found, the
+    /// go-to field, then the keymap.</remarks>
+    public bool ClaimsEscape(KeyboardConvention convention) =>
+        GoTo.NotFound is not null || GoTo.IsOpen || CodeKeymap.Claims(this, KeyChord.Escape, convention);
+
     /// <summary>
     /// Runs <paramref name="command"/> as its key would, with no key: what a menu, a command palette or an
     /// app's own shortcut calls. Answers whether it did anything, which is whether the key would have been

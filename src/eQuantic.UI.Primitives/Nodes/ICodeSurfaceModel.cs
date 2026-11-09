@@ -106,4 +106,15 @@ public interface ICodeSurfaceModel
     /// the code takes no pointer on any target, so no drawn box can say it.
     /// </summary>
     PointerCursor CursorAt(Point position);
+
+    /// <summary>
+    /// Whether Escape pressed now would be the editor's: <see cref="HandleKey"/> would claim it, because
+    /// something of the editor's own closes on it (a completion list, a card, a snippet being walked, a
+    /// second caret). A host asks before a binding of Escape around the editor fires, and leaves the key
+    /// to the editor when it answers true, so a dialog stays open while the editor has something nearer
+    /// the keyboard to close, as Flutter dismisses a route only for an Escape nothing under it took
+    /// (#1181). False when Escape would only release the Tab trap: the key is then the dialog's. It
+    /// answers without doing anything.
+    /// </summary>
+    bool ClaimsEscape(KeyboardConvention convention);
 }

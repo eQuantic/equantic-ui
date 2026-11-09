@@ -1323,6 +1323,9 @@ public sealed class SheetController : ISheetSurfaceModel
     public bool HandleKey(string key, KeyModifiers modifiers, KeyboardConvention convention, ITextClipboard? clipboard) =>
         SheetKeymap.Handle(this, key, modifiers, convention, clipboard);
 
+    /// <inheritdoc />
+    public bool ClaimsEscape(KeyboardConvention convention) => SheetKeymap.ClaimsEscape(this);
+
     /// <summary>
     /// Typed text, Excel's way: the first character of an entry REPLACES the active cell (a fresh, empty
     /// entry in Enter mode takes it), and the rest go in at the entry's caret. The document changes on

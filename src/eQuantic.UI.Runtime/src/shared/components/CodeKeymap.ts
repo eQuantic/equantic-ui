@@ -75,6 +75,24 @@ export class CodeKeymap {
         return false;
     }
 
+    static claims(editor: CodeEditorController, chord: KeyChord, convention: KeyboardConventionValue) {
+        if (CodeKeymap.isModifierKey(chord.key)) return false;
+        let bindings = CodeKeymap.bindings(editor, convention);
+        let waited: any; 
+        if ((waited = editor.pendingChord) != null) {
+            for (const binding of bindings) { let starts: any; if ((starts = binding.first) != null && CodeKeymap.matches(starts, waited) && CodeKeymap.matches(binding.chord, chord)) return true; }
+        }
+        for (const binding of bindings) {
+            let starts: any; 
+            if ((starts = binding.first) != null) {
+                if (CodeKeymap.matches(starts, chord) && editor.canExecute(binding.command)) return true;
+                continue;
+            }
+            if (CodeKeymap.matches(binding.chord, chord) && editor.canExecute(binding.command)) return true;
+        }
+        return false;
+    }
+
     static bindings(editor: CodeEditorController, convention: KeyboardConventionValue) {
         let defaults = CodeKeymap.table(convention);
         let own = editor.keyBindings;

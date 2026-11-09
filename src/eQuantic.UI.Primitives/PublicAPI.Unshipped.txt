@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Primitives.ICodeSurfaceModel.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool
+eQuantic.UI.Primitives.ISheetSurfaceModel.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool
