@@ -77,7 +77,15 @@ if (Environment.GetEnvironmentVariable("EQC_TIMINGS") is { Length: > 0 } timings
         ended = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
         bunMs = (long)build.BundleElapsed.TotalMilliseconds,
     });
-    File.AppendAllText(timings, line + "\n");
+    try
+    {
+        File.AppendAllText(timings, line + "\n");
+    }
+    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+    {
+        // A measurement nobody can read back is not a reason to fail a build that compiled.
+        Console.Error.WriteLine($"eqc: EQC_TIMINGS could not be written: {ex.Message}");
+    }
 }
 
 if (isWatchMode)

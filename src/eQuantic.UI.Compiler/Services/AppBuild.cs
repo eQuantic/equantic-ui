@@ -333,15 +333,15 @@ public sealed class AppBuild
     }
 
     /// <summary>
-    /// Compiles every module, writes the string catalogs and bundles. True when it produced an error,
-    /// so the process can exit non-zero and fail the build.
-    /// </summary>
-    /// <summary>
     /// How long the last <see cref="CompileAndBundle"/> spent in bun, so a caller timing the build can
     /// tell bundling from compiling: eqc writes it for the edit-to-view measurement (#900).
     /// </summary>
     public TimeSpan BundleElapsed { get; private set; }
 
+    /// <summary>
+    /// Compiles every module, writes the string catalogs and bundles. True when it produced an error,
+    /// so the process can exit non-zero and fail the build.
+    /// </summary>
     public bool CompileAndBundle()
     {
         BundleElapsed = TimeSpan.Zero;

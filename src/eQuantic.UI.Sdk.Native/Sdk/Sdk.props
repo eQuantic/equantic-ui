@@ -20,17 +20,6 @@
         -->
         <EnableConfigurationBindingGenerator Condition="'$(EnableConfigurationBindingGenerator)' == ''">true</EnableConfigurationBindingGenerator>
 
-        <!--
-            Hot reload reaches a running app through a startup hook, and an app that publishes trimmed
-            or ahead of time turns startup hooks off for EVERY build, so `dotnet watch` restarted it on
-            each edit instead of applying the edit in place, saying so in a line nobody reads twice.
-            This repository's desktop sample publishes trimmed on purpose, and its reload was a restart
-            from September until #900 measured it. The hook stays on for a Debug build that is not a
-            publish, which is what `dotnet watch` builds: the property it evaluates with is never set on
-            the build itself, so the runtime refused the hook while dotnet watch waited for it. A
-            publish sets _IsPublishing, so what ships is trimmed exactly as before.
-        -->
-        <StartupHookSupport Condition="'$(StartupHookSupport)' == '' And '$(Configuration)' == 'Debug' And '$(_IsPublishing)' != 'true'">true</StartupHookSupport>
     </PropertyGroup>
 
     <!-- The DECLARATIVE factory surface, available in every file without an import, exactly as on
