@@ -40,7 +40,7 @@ public sealed class PhotonTester : IDisposable
     private DisplayList? _paint;
     private MeasuredNode? _root;
     private IReadOnlyList<MeasuredNode> _layers = [];
-    private Dictionary<int, List<MeasuredNode>> _byPosition = [];
+    private Dictionary<int, MeasuredNode> _byPosition = [];
     private bool _disposed;
 
     /// <summary>A tester for one component and the frames it draws.</summary>
@@ -174,7 +174,7 @@ public sealed class PhotonTester : IDisposable
         _paint = builder.Build();
         _frame = frame;
 
-        var byPosition = new Dictionary<int, List<MeasuredNode>>();
+        var byPosition = new Dictionary<int, MeasuredNode>();
         _root = MeasuredNode.Copy(frame.Root, byPosition);
         var layers = new MeasuredNode[frame.OverlayRoots.Count];
         for (var i = 0; i < layers.Length; i++) layers[i] = MeasuredNode.Copy(frame.OverlayRoots[i], byPosition);
@@ -203,15 +203,12 @@ public sealed class PhotonTester : IDisposable
             : $"{matches.Count} of the frame's nodes are announced as \"{name}\"; name the role to tell them apart.") + heard);
     }
 
-    /// <summary>The measured node <paramref name="announced"/> was read from: the one its position holds
-    /// at the box it was announced with.</summary>
-    private MeasuredNode Measured(SemanticNode announced)
-    {
-        if (!_byPosition.TryGetValue(announced.Id, out var held) || held.Count == 0)
-            throw new InvalidOperationException(
+    /// <summary>The measured node <paramref name="announced"/> was read from: the one its position holds.</summary>
+    private MeasuredNode Measured(SemanticNode announced) =>
+        _byPosition.TryGetValue(announced.Id, out var measured)
+            ? measured
+            : throw new InvalidOperationException(
                 $"{announced.Role} \"{announced.Label}\" was announced from a position the frame laid nothing out at.");
-        return held.FirstOrDefault(node => node.Bounds == announced.Bounds) ?? held[0];
-    }
 
     private void Unmount()
     {
