@@ -121,6 +121,11 @@ public sealed class UploadsLimitsTests : IDisposable
 
         status.Should().Be(HttpStatusCode.OK, answer);
         answer.Split('|')[1].Should().Be("_CON");
+
+        // A device's name of 255 characters keeps its extension when the _ makes it one too long.
+        var longDevice = await browser.UploadAsync(Content(5), "CON." + new string('a', 247) + ".stl", "small", partSize: 5);
+        var (_, kept) = await browser.InvokeAsync("Receive", new { id = TusBrowser.IdOf(longDevice) });
+        kept.Split('|')[1].Should().HaveLength(255).And.StartWith("_CON.").And.EndWith(".stl");
     }
 
     [Theory]

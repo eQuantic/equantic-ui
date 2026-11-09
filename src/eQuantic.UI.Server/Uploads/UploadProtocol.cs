@@ -176,6 +176,15 @@ internal sealed class UploadProtocol
     private static string? Text(Dictionary<string, TusMetadata> metadata, string key) =>
         metadata.TryGetValue(key, out var value) && value.GetString(Encoding.UTF8) is { Length: > 0 } text ? text : null;
 
+    /// <summary>A name cut to 255 characters, its extension kept when it is a short one, and the dots and
+    /// spaces the cut leaves at the stem's end dropped.</summary>
+    private static string Cut(string name)
+    {
+        if (name.Length <= 255) return name;
+        var extension = Path.GetExtension(name) is { Length: <= 16 } kept ? kept : "";
+        return name[..(255 - extension.Length)].TrimEnd('.', ' ') + extension;
+    }
+
     /// <summary>
     /// The type the server says the file is: the one its extension names, or <c>application/octet-stream</c>.
     /// The device's <c>filetype</c> is never read: an app that served a file with it served an HTML page
@@ -200,19 +209,10 @@ internal sealed class UploadProtocol
             .Select(c => c is '<' or '>' or ':' or '"' or '|' or '?' or '*' ? '_' : c).ToArray()).Trim();
         // Cut first, then trimmed and checked: a cut can end the name in the dots and spaces Windows drops,
         // and leave a name the checks below refuse (found in the review of #1326).
-        if (name.Length > 255)
-        {
-            // An extension longer than a short one is no extension to keep: the name is cut where it ends.
-            var extension = Path.GetExtension(name) is { Length: <= 16 } kept ? kept : "";
-            name = name[..(255 - extension.Length)].TrimEnd('.', ' ') + extension;
-        }
-        name = name.TrimEnd('.', ' ');
+        name = Cut(name).TrimEnd('.', ' ');
         if (name.Length == 0 || name is "." or "..") return null;
-        if (DeviceNames.Contains(name.Split('.')[0].TrimEnd(' ')))
-        {
-            name = "_" + name;
-            if (name.Length > 255) name = name[..255].TrimEnd('.', ' ');
-        }
+        // A device's name is kept apart by a leading _, cut again with its extension kept.
+        if (DeviceNames.Contains(name.Split('.')[0].TrimEnd(' '))) name = Cut("_" + name);
         return name;
     }
 }
