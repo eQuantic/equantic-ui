@@ -10,9 +10,9 @@ namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
 /// The desktop sample's own form, typed into through its host, where #996's rule meets real
-/// components: a <c>TextInput</c> and a <c>SearchField</c>, each a stateful component of its own that
-/// holds a field and not its value, under the Studio's shell, whose page keeps the values with
-/// <c>SetState</c>. The scenarios of <see cref="AFieldKeepsWhatWasTypedTests"/> on a page someone wrote.
+/// components: a <c>TextInput</c>, a stateful component of its own that rebuilds its field on focus,
+/// and a <c>SearchField</c>, a stateless one that builds its field only when its page does, under the
+/// Studio's shell, whose page keeps the values with <c>SetState</c>. The scenarios of <see cref="AFieldKeepsWhatWasTypedTests"/> on a page someone wrote.
 /// </summary>
 public class StudioFieldsTests
 {
