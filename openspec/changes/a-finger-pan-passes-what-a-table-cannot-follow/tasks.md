@@ -10,6 +10,7 @@
 
 ## 3. Proved against the real thing
 
+- [x] 3.0 The dashboard's `/table` screen in Chromium at 1280 by 900, with touch pointer events sent to the table. Verify: with the grid at its first row and the page scrolled 36, a finger's pan of 30 toward the bottom scrolls the page to 6; a pan of 40 the grid can follow moves the cells 40 and leaves the page at 6
 - [ ] 3.1 The Native.Engine, Web, Server, Compiler and Conformance suites and the runtime suite pass whole
 
 ## 4. Documentation
