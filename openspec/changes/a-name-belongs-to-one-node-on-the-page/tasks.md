@@ -7,15 +7,22 @@
 
 ## 2. The guard
 
-- [ ] 2.1 Put the page of the dashboard's shell in two arms of one `AdaptiveNode`. Verify: `NoNameIsClaimedTwiceOnAPage` fails naming the routes and the ids, and passes once the shell is back
-- [ ] 2.2 Run the Server suite whole. Verify: its total, duration and exit code, with the sample referenced
+- [x] 2.1 Put the page of the dashboard's shell in two arms of one `AdaptiveNode`. Verify: `NoNameIsClaimedTwiceOnAPage` fails naming the routes and the ids, and passes once the shell is back
+- [x] 2.2 Run the Server suite whole. Verify: its total, duration and exit code, with the sample referenced
 
 ## 3. The first fragment a sample links to
 
-- [ ] 3.1 Give /charts a "Jump to" row and its cards their bookmarks. Verify: `NoFragmentPointsAtAPlaceThatIsNotThere` passes, and fails when a card's bookmark is renamed
-- [ ] 3.2 Drive /charts in a browser at a phone's width and a desktop's. Verify: each link moves the page to its card, each id is in the document once, and the hydrated classes are the served ones
-- [ ] 3.3 Take the README's charts picture again and look at it. Verify: `ReadmeCapturesTests` passes with the new sources recorded
+- [x] 3.1 Give /charts a "Jump to" row and its cards their bookmarks. Verify: `NoFragmentPointsAtAPlaceThatIsNotThere` passes, and fails when a card's bookmark is renamed
+- [x] 3.2 Drive /charts in a browser at a phone's width and a desktop's. Verify: each link moves the page to its card, each id is in the document once, and the hydrated classes are the served ones
 
-## 4. Documentation
+## 4. The rail scrolls its destinations
 
-- [ ] 4.1 One entry for the ledger citing #1252, as a file of its own under `docs/ledger/`
+- [x] 4.1 Measure the document at 1280x900 on three routes. Verify: 1034px tall before the fix on /, /rows and /charts alike, and the rail is what overflows
+- [x] 4.2 Give the destinations the rail's remaining share, in a scroller, inset 4dp. Verify: the document is 900px, a link to a fragment leaves the window at 0, every destination has 4px of room inside the scroller's clip on each side and the last one below it, and the hydrated classes are the served ones
+- [x] 4.3 Open the compact drawer on a 375x812 phone. Verify: its destinations scroll, the sandbox card and the account stay inside the window, and the document is 812px
+- [x] 4.4 Take the README's four web pictures again and look at each beside main's. Verify: the dashboard, diff and forms pictures change only inside the rail, the charts picture also by its new row, and `ReadmeCapturesTests` passes with the sources recorded
+- [x] 4.5 Run the Web suite whole, which compiles the shell for `ConsoleShellTests`. Verify: its total, duration and exit code
+
+## 5. Documentation
+
+- [x] 5.1 One entry for the ledger citing #1252, as a file of its own under `docs/ledger/`

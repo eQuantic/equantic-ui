@@ -26,7 +26,14 @@ sample links to a fragment at all, which is how the router defect fixed in #100 
 - `NoFragmentPointsAtAPlaceThatIsNotThere` fails on an in-page link whose fragment names nothing on
   the page it points at. A duplicate passes it twice over, which is why both exist.
 - /charts gets a "Jump to" row of links to its three cards, each card claiming a `Bookmark`: the
-  first fragment any sample links to. The README's charts picture is taken again.
+  first fragment any sample links to.
+- Driving those links found a defect of the sample's own: the console's rail did not scroll. With
+  twenty destinations it is taller than a laptop's window, so it overflowed its box and the document
+  grew to 1034px in a 900px window: the wheel and a link to a fragment scrolled the WINDOW, taking
+  the toolbar off the top, and the README's pictures show the rail cut off at their bottom edge. The
+  destinations now take what the brand and the footer leave and scroll in it, inset 4dp inside the
+  scroller so the focus ring the SDK draws outside a control is not clipped. The compact drawer
+  shows the same content and gets the same fix. The four web pictures of the README are taken again.
 - The Server tests reference the sample, so it builds on every runner the suite runs on, where the
   samples job builds it on macOS alone.
 - Nothing a developer using the SDK writes or meets changes. No part of the SDK changes, and neither
