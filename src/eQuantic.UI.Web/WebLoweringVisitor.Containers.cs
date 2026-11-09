@@ -27,11 +27,15 @@ internal sealed partial class WebLoweringVisitor
         // Stack at all — no load, no payload entry, and no diagnosis, on a container nobody would
         // think twice about using. Both sides skipped it identically, so nothing drifted, which is
         // exactly why it would never have been noticed.
-        ComponentExpansionScope.Ambient?.Enter(component);
-
         // From what its position built, in a frame of a live tree, as Visit(UiComponent) does.
         if (_frame is { } frame)
-            return frame.BuiltBy(component) is { } built ? ResolveForPositioning(built) : child;
+        {
+            var (kept, built) = frame.At(component);
+            ComponentExpansionScope.Ambient?.Enter(kept);
+            return built is not null ? ResolveForPositioning(built) : child;
+        }
+
+        ComponentExpansionScope.Ambient?.Enter(component);
 
         // Through the boundary's bound rather than a hop count of this method's own: the loop
         // it replaces stopped ITSELF spinning after eight hops and then handed a still

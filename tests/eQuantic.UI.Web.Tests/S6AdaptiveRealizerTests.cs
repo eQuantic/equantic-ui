@@ -186,6 +186,28 @@ public class S6AdaptiveRealizerTests
             "the compact arm asks for no span, and the node's own is not read");
     }
 
+    /// <summary>
+    /// A gate answers whether its arm shows at a width as its media query does (<see cref="AdaptiveGates.Css"/>),
+    /// at the boundaries the queries draw: the compact arm up to its threshold and not at it, the
+    /// middle arm from its threshold to 0.02 dp short of the next, and the expanded arm from its own.
+    /// The last but one row is the gap those 0.02 dp leave, where the page shows no arm; the answer
+    /// says so too, rather than rounding it into one.
+    /// </summary>
+    [Theory]
+    [InlineData(599.99f, true, false, false)]
+    [InlineData(600f, false, true, false)]
+    [InlineData(839.98f, false, true, false)]
+    [InlineData(839.99f, false, false, false)]
+    [InlineData(840f, false, false, true)]
+    public void AGate_ShowsWhereItsMediaQueryDoes(float width, bool compact, bool medium, bool expanded)
+    {
+        AdaptiveGates.Shows(AdaptiveGates.CompactUntil(600), width).Should().Be(compact);
+        AdaptiveGates.Shows(AdaptiveGates.MediumFrom(600, 840), width).Should().Be(medium);
+        AdaptiveGates.Shows(AdaptiveGates.ExpandedFrom(840), width).Should().Be(expanded);
+        AdaptiveGates.Shows(AdaptiveGates.MediumFrom(600, 0), width).Should().Be(width >= 600,
+            "an open-ended middle arm shows from its threshold on");
+    }
+
     /// <summary>The CSS identifier grammar, which is what a class selector can name.</summary>
     private static readonly System.Text.RegularExpressions.Regex CssIdentifier =
         new("^-?[_a-zA-Z][_a-zA-Z0-9-]*$");

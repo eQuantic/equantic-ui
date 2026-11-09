@@ -27,15 +27,17 @@ internal sealed class ElementFrame
     internal ElementFrame(Element root) => Index(root);
 
     /// <summary>
-    /// What <paramref name="component"/>'s position built in this frame — by its RETAINED instance,
-    /// which is not the one a parent's latest build holds. Null when it built nothing.
+    /// The position of <paramref name="component"/> in this frame: the instance it KEEPS, which is not
+    /// the one a parent's latest build holds, and what that instance built, null when it built
+    /// nothing. The kept one is also the one a discovery round must ask for its data, so a prefetch
+    /// lands on the instance the next frame draws.
     /// </summary>
     /// <exception cref="InvalidOperationException">The frame has no position for the component: the
     /// engine went wrong, and lowering a fresh instance instead would draw its defaults in silence
     /// (Photon refuses a layer without a position for the same reason).</exception>
-    internal VisualNode? BuiltBy(UiComponent component) =>
+    internal (UiComponent Kept, VisualNode? Built) At(UiComponent component) =>
         _positions.TryGetValue(component, out var element) && element is ComponentElement position
-            ? position.ChildAt(0)?.Configuration
+            ? (position.Component, position.ChildAt(0)?.Configuration)
             : throw new InvalidOperationException(
                 $"A {component.GetType().Name} was lowered that this frame did not build: the element "
                 + "tree and the tree being lowered disagree.");

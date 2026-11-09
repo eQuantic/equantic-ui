@@ -134,6 +134,37 @@ public class FrameLoweringTests
         counter.Unmounts.Should().Be(1);
     }
 
+    /// <summary>
+    /// A DISCOVERY ROUND names the instance a position keeps. The server finds the components to
+    /// prefetch through the expansion scope; in a frame of a live tree the instance worth asking is
+    /// the kept one, whose fields the next frame reads, and not the fresh one a parent's build made
+    /// and the element discarded — the round E4 owes ("a prefetch round that keeps a component's
+    /// instance").
+    /// </summary>
+    [Fact]
+    public void ADiscoveryRound_NamesTheKeptInstance_NotTheOneAParentsBuildMade()
+    {
+        var owner = new BuildOwner();
+        var page = new Page(() => new Counter());
+        Frame(owner, page);
+        var kept = KeptCounter(owner.Root!);
+
+        var scope = new ComponentExpansionScope();
+        ComponentExpansionScope.Ambient = scope;
+        try
+        {
+            // Every component builds again, so the page hands the position a FRESH counter.
+            WebRealizer.LowerFrame(owner.Build(page, Context(), WindowSizeClass.Expanded, rebuildAll: true), Theme);
+        }
+        finally
+        {
+            ComponentExpansionScope.Ambient = null;
+        }
+
+        owner.EndFrame();
+        scope.Expanded.Values.OfType<Counter>().Should().ContainSingle().Which.Should().BeSameAs(kept);
+    }
+
     [Fact]
     public void AComponentTheFrameDidNotBuild_IsRefused_RatherThanDrawnAtItsDefaults()
     {
@@ -142,7 +173,7 @@ public class FrameLoweringTests
             WindowSizeClass.Expanded, rebuildAll: false));
 
         var stranger = new Counter();
-        var lowering = () => frame.BuiltBy(stranger);
+        var lowering = () => frame.At(stranger);
 
         lowering.Should().Throw<InvalidOperationException>().WithMessage("*did not build*");
     }

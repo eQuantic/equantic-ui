@@ -220,19 +220,24 @@ internal sealed partial class WebLoweringVisitor(
     /// </summary>
     public HtmlElement? Visit(UiComponent component, bool? horizontalAxis)
     {
+        // A FRAME OF A LIVE TREE built it already, through the same boundary, with the instance
+        // its position keeps. What it built is lowered as it stands, and a discovery round names
+        // the KEPT instance, the one whose fields the next frame reads. The unmeasured mark below is
+        // hydration's, and a frame's tree has no server markup to adopt yet: the owner that renders
+        // a request (E4) is the one that will need it, and it builds through a measurer it owns.
+        if (_frame is { } frame)
+        {
+            var (kept, built) = frame.At(component);
+            ComponentExpansionScope.Ambient?.Enter(kept);
+            return built is not null ? Lower(built, horizontalAxis) : null;
+        }
+
         // NAMED BEFORE IT BUILDS, and the order is the whole mechanism: ExpandContained runs
         // Build on the next line, so anything a previous discovery round loaded for this component
         // has to be back on it by now or the build reads the empty defaults again. Null outside an
         // SSR expansion, which is every other caller — the web realizer is also the email one's and
         // the design host's, and neither prefetches.
         ComponentExpansionScope.Ambient?.Enter(component);
-
-        // A FRAME OF A LIVE TREE built it already, through the same boundary, with the instance
-        // its position keeps. What it built is lowered as it stands. The unmeasured mark below is
-        // hydration's, and a frame's tree has no server markup to adopt yet: the owner that renders
-        // a request (E4) is the one that will need it, and it builds through a measurer it owns.
-        if (_frame is { } frame)
-            return frame.BuiltBy(component) is { } built ? Lower(built, horizontalAxis) : null;
 
         return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
             static (built, state) =>

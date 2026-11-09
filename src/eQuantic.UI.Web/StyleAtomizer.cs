@@ -381,6 +381,25 @@ public static class AdaptiveGates
         };
     }
 
+    /// <summary>
+    /// Whether the arm behind <paramref name="gate"/> shows at a viewport <paramref name="widthDp"/>
+    /// wide: the media conditions <see cref="Css"/> writes, read as numbers, arm by arm. The two are
+    /// one table in two forms and change together. A headless reader asks this rather than parsing
+    /// gate names of its own, which would be the grammar spelled twice.
+    /// </summary>
+    public static bool Shows(string gate, float widthDp)
+    {
+        var (kind, from, until) = Parse(gate);
+        var width = Units(widthDp);
+        return kind switch
+        {
+            'c' => width < until,
+            'm' when until > 0 => width >= from && width <= until - 200,
+            'm' or 'x' => width >= from,
+            _ => throw new ArgumentOutOfRangeException(nameof(gate), gate, "Unknown adaptive gate."),
+        };
+    }
+
     /// <summary>(kind, from, until) parsed back out of the gate name — the name IS the spec.</summary>
     private static (char Kind, long From, long Until) Parse(string gate)
     {
