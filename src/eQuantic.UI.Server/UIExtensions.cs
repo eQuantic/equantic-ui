@@ -658,10 +658,10 @@ public static class UIExtensions
 
         // The tab's 16, 32 and 48 in one file at the root (#1240), 180 is what iOS Safari pins to a
         // home screen, and the manifest carries the install icons — each answers a different
-        // question, so each gets its own link. The sizes are the built file's, so an app's own
-        // favicon.ico, which answers at the root instead, is linked without them.
+        // question, so each gets its own link. The root's favicon is linked whichever file answers
+        // it, and the sizes are the built file's, so an app's own favicon.ico is linked without them.
         var tags = new List<string>();
-        if (built is not null)
+        if ((own ?? built) is not null)
         {
             var link = HtmlTag.Link("icon", "/favicon.ico");
             tags.Add((own is null ? link.Attr("sizes", "16x16 32x32 48x48") : link).Render());

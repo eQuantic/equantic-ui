@@ -37,8 +37,8 @@ so that an icon built in a Linux container is the one drawn on a laptop.
 ### Requirement: The web serves the tab's icon at the root
 
 The web set SHALL hold `favicon.ico` with 16, 32 and 48 from the icon's small cut, its transparency
-kept, or from the icon when the app draws one artwork. Every page SHALL link `/favicon.ico` with its
-sizes, and the server SHALL answer `/favicon.ico` from the app's own `favicon.ico` when its web root has one, a referenced
+kept, or from the icon when the app draws one artwork. Every page SHALL link `/favicon.ico` whenever the root answers one, with the
+built file's sizes when the built file answers it, and the server SHALL answer `/favicon.ico` from the app's own `favicon.ico` when its web root has one, a referenced
 project's static web asset included, from the built file otherwise, and with 404 when there is neither.
 
 #### Scenario: A browser asks for the favicon
@@ -49,7 +49,7 @@ project's static web asset included, from the built file otherwise, and with 404
 #### Scenario: An app with its own file
 
 - **WHEN** the app has `wwwroot/favicon.ico`
-- **THEN** `/favicon.ico` answers that file
+- **THEN** `/favicon.ico` answers that file, and every page links it without sizes
 
 #### Scenario: A transparent cut reduced
 

@@ -102,6 +102,20 @@ public class FaviconTests
         await using var _ = app;
 
         (await client.GetByteArrayAsync("/favicon.ico")).Should().Equal([9, 9]);
+        (await (await client.GetAsync("/")).Content.ReadAsStringAsync())
+            .Should().Contain("""<link rel="icon" href="/favicon.ico">""", "the root answers one, so every page links it");
+    }
+
+    [Fact]
+    public async Task AnAppsOwnFavicon_WithNoIconDeclared_IsLinkedWithoutSizes()
+    {
+        var (app, client) = await StartAppAsync(generated: false, own: true);
+        await using var _ = app;
+
+        (await client.GetByteArrayAsync("/favicon.ico")).Should().Equal([7, 7, 7]);
+        var html = await (await client.GetAsync("/")).Content.ReadAsStringAsync();
+        html.Should().Contain("""<link rel="icon" href="/favicon.ico">""");
+        html.Should().NotContain("sizes=", "only the built file's sizes are known");
     }
 
     [Fact]
