@@ -344,11 +344,13 @@ jobs:
       # The wiki is a SEPARATE repository, and the version-mark guard reads it from beside this
       # one. Without this the guard passes here having checked nothing, and a wrong "Since
       # 0.2.0-preview.N" reaches the site — which mirrors the wiki — unchallenged.
-      # The version-mark guard asks `git tag --contains`, and a shallow checkout has no tags: it
-      # would answer "unreleased" for everything and pass having checked nothing.
-      - name: Fetch tags (for the version-mark guard)
+      # The version-mark guard compares each release's tree with the one before it, so it needs the
+      # release tags and none of the history between them: depth one is enough. Without them it
+      # would answer "unreleased" for everything and pass having checked nothing. The release tags
+      # only, not every branch as well, which the guard never reads (#999).
+      - name: Fetch the release tags (for the version-mark guard)
         shell: bash
-        run: git fetch --tags --force --depth=1 origin
+        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v0.*:refs/tags/v0.*'
 
       - name: Check out the wiki (for the docs guards)
         shell: bash
@@ -386,7 +388,7 @@ jobs:
           while IFS= read -r test_project; do
             echo "::group::$test_project"
             ran=$((ran + 1))
-            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 60m --blame-hang-dump-type none || {
+            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 15m --blame-hang-dump-type none || {
               status=1
               failed="$failed$test_project"$'\n'
             }
@@ -478,11 +480,13 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # The version-mark guard asks `git tag --contains`, and a shallow checkout has no tags: it
-      # would answer "unreleased" for everything and pass having checked nothing.
-      - name: Fetch tags (for the version-mark guard)
+      # The version-mark guard compares each release's tree with the one before it, so it needs the
+      # release tags and none of the history between them: depth one is enough. Without them it
+      # would answer "unreleased" for everything and pass having checked nothing. The release tags
+      # only, not every branch as well, which the guard never reads (#999).
+      - name: Fetch the release tags (for the version-mark guard)
         shell: bash
-        run: git fetch --tags --force --depth=1 origin
+        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v0.*:refs/tags/v0.*'
 
       - name: Check out the wiki (for the docs guards)
         shell: bash
@@ -521,7 +525,7 @@ jobs:
           while IFS= read -r test_project; do
             echo "::group::$test_project"
             ran=$((ran + 1))
-            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 60m --blame-hang-dump-type none || {
+            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 15m --blame-hang-dump-type none || {
               status=1
               failed="$failed$test_project"$'\n'
             }
