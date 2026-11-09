@@ -222,14 +222,24 @@ public static class ConsoleShell
     /// it bare — ONE list of destinations, wherever it lives.</summary>
     private static VisualNode SidebarContent(IAppTheme theme, string activeHref, ShellActions actions)
     {
+        // Inset by S1 INSIDE the scroller, as Flutter pads a ListView rather than its parent: a
+        // scroller clips at its own edge, and the focus ring is drawn 4dp outside the control, so a
+        // destination flush with that edge lost both sides of its ring to the clip.
+        var destinations = new Column(gap: Space.S2, padding: EdgeInsets.All(Space.S1)) { Width = SizeValue.Fill };
+        destinations.Add(GroupLabel(theme, "Operate"));
+        foreach (var entry in Operate) destinations.Add(NavItem(theme, entry, activeHref));
+        destinations.Add(GroupLabel(theme, "Explore"));
+        foreach (var entry in Explore) destinations.Add(NavItem(theme, entry, activeHref));
+
         var column = new Column(gap: Space.S2) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         column.Add(Brand(theme));
         column.Add(SearchAffordance(theme, actions.OnOpenPalette));
-        column.Add(GroupLabel(theme, "Operate"));
-        foreach (var entry in Operate) column.Add(NavItem(theme, entry, activeHref));
-        column.Add(GroupLabel(theme, "Explore"));
-        foreach (var entry in Explore) column.Add(NavItem(theme, entry, activeHref));
-        column.Add(new Spacer(1));
+        // The destinations take what the brand and the footer leave, and SCROLL in it. With twenty of
+        // them the rail is taller than a laptop's window, and a rail that cannot scroll overflows its
+        // box: the document grew to 1034px in a 900px window, so the wheel and a link to a fragment
+        // scrolled the WINDOW, and took the toolbar off the top with them. Where they fit, the share
+        // pushes the footer to the bottom, which is all the Spacer this replaces ever did.
+        column.Add(new Flexible(new ScrollView(destinations), 1));
         column.Add(SandboxCard(theme, actions.Sandbox, actions.OnToggleSandbox));
         column.Add(new Divider());
         column.Add(Account(theme, actions.OnAccountMenu));
