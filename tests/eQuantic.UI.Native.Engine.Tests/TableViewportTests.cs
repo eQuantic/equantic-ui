@@ -209,6 +209,28 @@ public class TableViewportTests
         tally.Logged.Should().ContainSingle().Which.Should().Contain("500 points the scroller around it shows");
     }
 
+    /// <summary>#1006 across: a table that fills its width in a strip that scrolls sideways, beside a label,
+    /// ends where the strip's visible part ends.</summary>
+    [Fact]
+    public void ATableThatFillsAnUnboundedWidth_BesideALabel_TakesWhatIsLeftFromWhereItStarts()
+    {
+        var tally = new Tally();
+        var line = new Row(gap: 0);
+        line.Add(new Box(new BoxStyle { Width = SizeValue.Fixed(120), Height = SizeValue.Fixed(20) }));
+        line.Add(new TableView(new UniformTableSpans(20, 28), new UniformTableSpans(40, 96),
+            (row, column) => new Text($"{row}:{column}", TypeRole.BodyM))
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fixed(300),
+        });
+        var host = Host(new ScrollView(line, ScrollAxis.Horizontal), 700, 500, tally);
+
+        Region(host).Bounds.X.Should().Be(120);
+        Region(host).Bounds.Width.Should().Be(580);
+        tally.Logged.Should().ContainSingle(entry => entry.Contains("width"))
+            .Which.Should().Contain("580 of the 700 points the scroller around it shows that are left from where it starts");
+    }
+
     // ---- the wheel -------------------------------------------------------------------------------
 
     [Fact]

@@ -48,6 +48,7 @@ function build(options: {
   parent?: HTMLElement;
   /** Where the viewport's box stands in the window, as the browser would measure it. */
   top?: number;
+  left?: number;
 } = {}): Built {
   const scroll = new TableScroll();
   const scrolled: { across: number; down: number }[] = [];
@@ -66,7 +67,8 @@ function build(options: {
   Object.defineProperty(view, 'clientWidth', { value: options.width ?? 900, configurable: true });
   Object.defineProperty(view, 'clientHeight', { value: options.height ?? 600, configurable: true });
   const top = options.top ?? 0;
-  view.getBoundingClientRect = () => ({ top, left: 0, right: 0, bottom: top, width: 0, height: 0, x: 0, y: top }) as DOMRect;
+  const left = options.left ?? 0;
+  view.getBoundingClientRect = () => ({ top, left, right: left, bottom: top, width: 0, height: 0, x: left, y: top }) as DOMRect;
   (options.parent ?? document.body).appendChild(view);
   commitTableViewports();
   return { scroll, view, lowered, scrolled, viewports };
@@ -324,6 +326,16 @@ describe('TableViewport on the web', () => {
     const { view } = build({ height: 0, parent: scrollingPage(100), top: -64 });
 
     expect(view.style.height).toBe('808px');
+  });
+
+  it('takes what is left of a sideways scroller from where it starts, when its own width came out empty', () => {
+    const strip = document.createElement('div');
+    strip.style.overflowX = 'auto';
+    Object.defineProperty(strip, 'clientWidth', { value: 700, configurable: true });
+    document.body.appendChild(strip);
+    const { view } = build({ width: 0, height: 300, parent: strip, left: 120 });
+
+    expect(view.style.width).toBe('580px');
   });
 
   it('takes the whole extent the scroller shows when what is left from where it starts is a sliver', () => {
