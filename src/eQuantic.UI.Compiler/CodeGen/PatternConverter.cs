@@ -24,7 +24,8 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// while a record/struct uses its <c>Deconstruct</c> element names (<c>.x</c>, <c>.y</c>) — a record is a
 /// plain object at runtime, so index access would read <c>undefined</c> — and a <c>Deconstruct</c> the app
 /// wrote is called (<see cref="PositionalPart"/>). A property subpattern reads its member as a member
-/// access of it reads it, through the same strategies (<see cref="Read"/>).
+/// access of it reads it, through the same strategies, and once for the operation where reading it runs
+/// the app's code (<see cref="Read"/>).
 /// </summary>
 public static class PatternConverter
 {
@@ -554,6 +555,10 @@ public static class PatternConverter
     /// receiver type, as an array's <c>length</c>; and a .NET member no browser value carries was named
     /// with no diagnostic (#920). Each answered false where .NET answered true.
     /// </para>
+    /// <para>
+    /// A member whose read runs the app's code is read once for the pattern-matching operation, however
+    /// many of its tests and bindings read it (<see cref="ReadRunsTheAppsCode"/>, <see cref="MatchParts"/>).
+    /// </para>
     /// </summary>
     private static string Read(string at, ITypeSymbol? receiver, SimpleNameSyntax name, ExpressionSyntax read,
         ConversionContext context)
@@ -565,14 +570,42 @@ public static class PatternConverter
         context.SemanticHelper.MapType(placeholder, receiver.UnwrapNullable());
         context.SemanticHelper.MapSynthetic(access, read);
         context.SemanticHelper.MapSynthetic(access.Name, name);
+        var member = context.SemanticHelper.GetSymbol(name);
         // The model types a name before a colon as nothing: the member's own type is the read's.
-        context.SemanticHelper.MapType(access, context.SemanticHelper.GetSymbol(name) switch
+        context.SemanticHelper.MapType(access, member switch
         {
             IPropertySymbol property => property.Type,
             IFieldSymbol field => field.Type,
             _ => null,
         });
         // Spliced as it is, the receiver of the next member of a path among other places: written as one.
-        return JsExprWriter.WriteIn(context.Converter.ConvertIr(access), JsPrecedence.Call);
+        var written = JsExprWriter.WriteIn(context.Converter.ConvertIr(access), JsPrecedence.Call);
+        if (member is null || !ReadRunsTheAppsCode(member, receiver.UnwrapNullable())) return written;
+        // Read once for the operation, by the first test that reaches it, as .NET's decision graph reads it
+        // (MatchParts, #1150). A member may answer null, so what is held is a box around its value, which
+        // never is: held as it is, `$p ?? ($p = …)` read a null member again at the next mention.
+        var held = context.MatchParts.Held(at, member);
+        return $"({held} ?? ({held} = [{written}]))[0]";
     }
+
+    /// <summary>
+    /// Whether reading <paramref name="member"/> off a value of type <paramref name="receiver"/> can run the
+    /// app's code, so the operation holds what it answers instead of reading it at every mention: a property
+    /// the app declares with an accessor of its own, and one an override or an implementation may answer for
+    /// (abstract, virtual, an override, an interface's) where the property or the value's type is the app's.
+    /// A field, an auto-property the twin keeps under its own name (<see cref="PropertyStore.IsKeptUnderItsName"/>)
+    /// and a property of the platform's read off a value of the platform's (a list's <c>Count</c>, a string's
+    /// <c>Length</c>) run none of it, and are written where the pattern reads them.
+    /// </summary>
+    private static bool ReadRunsTheAppsCode(ISymbol member, ITypeSymbol? receiver) => member switch
+    {
+        IPropertySymbol property when property.IsAbstract || property.IsVirtual || property.IsOverride =>
+            DeclaredInSource(property) || DeclaredInSource(receiver),
+        IPropertySymbol property => property.OriginalDefinition.DeclaringSyntaxReferences.Any(reference =>
+            reference.GetSyntax() is PropertyDeclarationSyntax declared && !PropertyStore.IsKeptUnderItsName(declared)),
+        _ => false,
+    };
+
+    private static bool DeclaredInSource(ISymbol? symbol) =>
+        symbol?.OriginalDefinition.Locations.Any(location => location.IsInSource) == true;
 }
