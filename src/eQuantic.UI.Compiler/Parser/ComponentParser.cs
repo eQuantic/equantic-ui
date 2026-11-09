@@ -592,8 +592,8 @@ public class ComponentParser
 
     private void ParseMethods(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
-        // Extract properties
-        var properties = classDecl.Members
+        // Extract properties: a partial one from its implementing half (#1172).
+        var properties = classDecl.TwinMembers()
             .OfType<PropertyDeclarationSyntax>();
         
         foreach (var prop in properties)
@@ -851,6 +851,7 @@ public class ComponentParser
     /// </summary>
     private void ParseComponentFields(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
+        var model = TryGetSemanticModel(classDecl.SyntaxTree);
         foreach (var field in classDecl.Members.OfType<FieldDeclarationSyntax>())
         {
             var isStatic = field.Modifiers.Any(SyntaxKind.StaticKeyword)
@@ -860,6 +861,7 @@ public class ComponentParser
                 definition.ComponentFields.Add(new StateField
                 {
                     Name = variable.Identifier.ValueText,
+                    Slot = variable.SlotOf(model),
                     Type = field.Declaration.Type.ValueText(),
                     TypeNode = field.Declaration.Type,
                     DefaultValueNode = variable.Initializer?.Value,

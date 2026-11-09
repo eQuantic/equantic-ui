@@ -146,7 +146,7 @@ internal static class ExplicitImplementations
     /// <summary>Whether a member is kept on the server, out of every twin: marked <c>[ServerOnly]</c> itself or
     /// through what it overrides, the attribute bound or, in a compilation without its reference (the
     /// playground's), by the name it is written with.</summary>
-    private static bool StaysOnTheServer(ISymbol member) =>
+    internal static bool StaysOnTheServer(ISymbol member) =>
         member.IsHostOnly() || member.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnly");
 
     /// <summary>Whether <paramref name="reached"/> holds <paramref name="name"/> on its type's twin, beside an

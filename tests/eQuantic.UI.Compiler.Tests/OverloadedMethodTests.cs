@@ -810,7 +810,8 @@ public class OverloadedMethodTests
     /// What is one member is not refused: a positional parameter the body redeclares under its own name
     /// (#546), a static beside an instance member of the name, a struct's primary constructor parameter
     /// read only by an initializer, which no instance holds, and the two accessors of one property. A
-    /// plain class's field beside a member of its name moves to a slot of its own (`count$`, #396). An
+    /// plain class's field beside a member of its name moves to a slot of its own (`count$`, #396), and so
+    /// does a static field of any type, a component's included, beside a static member of its name (#1175). An
     /// override of object's <c>ToString()</c>, <c>GetHashCode()</c> or <c>Equals(object)</c> is written
     /// in place of the twin's own (#1146), a typed <c>Equals</c> holds a name of its own (#947), and a
     /// static <c>ToString</c> lives on the class, apart from the instance's text. The two halves of a
@@ -831,6 +832,12 @@ public class OverloadedMethodTests
     [InlineData("Key", "public sealed class Key { public int X; public override bool Equals(object? o) => o is Key k && k.X == X; public override int GetHashCode() => X; public override string ToString() => \"key\"; }")]
     [InlineData("Same", "public sealed record Same(int V) { public bool Equals(Same? other) => other?.V == V; public override int GetHashCode() => V; }")]
     [InlineData("Fmt", "public sealed record Fmt(int V) { public static string ToString(int v) => v.ToString(); }")]
+    [InlineData("Counter", "public static class Counter { private static int count; public static int Count { get => count; set => count = value * 2; } }")]
+    [InlineData("Seq", "public static class Seq { private static int next; public static int Next() => ++next; }")]
+    [InlineData("Limits", "public static class Limits { public const int Max = 3; public static int max => 4; }")]
+    [InlineData("Ids", "public sealed class Ids { private static int next; public static int Next() => ++next; }")]
+    [InlineData("Cfg", "public sealed class Cfg { private static int count; public static int Count { get; set; } = 5; }")]
+    [InlineData("Page", "using eQuantic.UI.Primitives; public sealed class Page : StatelessComponent { private static int count; public static int Count => count; public override VisualNode Build(ComponentContext context) => new Text(\"\", TypeRole.BodyM); }")]
     [InlineData("Halves", "public sealed partial class Halves { public partial int Level { get; set; } public partial int Level { get => field; set => field = value * 2; } public partial event System.Action? Moved; public partial event System.Action? Moved { add { } remove { } } }")]
     [InlineData("Shown", "using eQuantic.UI.Primitives; public sealed class Shown : StatelessComponent { public override string ToString() => \"Shown\"; public override VisualNode Build(ComponentContext context) => new Text(\"\", TypeRole.BodyM); }")]
     [InlineData("Consent", "using eQuantic.UI.Primitives; public sealed class Consent(string? policyHref = null) : StatefulComponent { public string? PolicyHref { get; init; } = policyHref; public override VisualNode Build(ComponentContext context) => new Text(PolicyHref ?? \"\", TypeRole.BodyM); }")]
@@ -845,18 +852,15 @@ public class OverloadedMethodTests
     /// <summary>
     /// Every pair of members of one type that lands on one key of its twin, the same lowered name and the
     /// same static-ness, whatever kind each member is (#1146). Each passed the build, and the browser kept
-    /// one of them: a static field took the place of a static accessor or method of its name when the
-    /// class was defined (<c>Seq.Next()</c> was "not a function"), a value held on each instance hid an
+    /// one of them: a static held on the class took the place of a static accessor or method of its name
+    /// when the class was defined (<c>Seq.Next()</c> was "not a function" beside its counter, which moves
+    /// out of the way since #1175, as a static auto-property does not), a value held on each instance hid an
     /// accessor or a method of its name, two statics of one name answered for each other, and so did two
     /// <c>operator +</c>, which the twin names by their symbol alone.
     /// </summary>
     public static TheoryData<string, string, string, string> MembersOnOneKey => new()
     {
-        { "Counter", "public static class Counter { private static int count; public static int Count { get => count; set => count = value * 2; } }", "Counter.Count", "Counter.count" },
-        { "Seq", "public static class Seq { private static int next; public static int Next() => ++next; }", "Seq.Next()", "Seq.next" },
-        { "Limits", "public static class Limits { public const int Max = 3; public static int max => 4; }", "Limits.max", "Limits.Max" },
-        { "Ids", "public sealed class Ids { private static int next; public static int Next() => ++next; }", "Ids.Next()", "Ids.next" },
-        { "Cfg", "public sealed class Cfg { private static int count; public static int Count { get; set; } = 5; }", "Cfg.Count", "Cfg.count" },
+        { "Setting", "public sealed class Setting { public static int Count { get; set; } public static int count() => 1; }", "Setting.count()", "Setting.Count" },
         { "Shape", "public sealed class Shape { public int Total => 3; public int total() => 4; }", "Shape.total()", "Shape.Total" },
         { "Twins", "public sealed class Twins { public int Total { get; set; } = 1; public int total { get; set; } = 2; }", "Twins.total", "Twins.Total" },
         { "Named", "public sealed class Named { public string Name { get; set; } = \"a\"; public string name() => Name; }", "Named.name()", "Named.Name" },
@@ -888,7 +892,6 @@ public class OverloadedMethodTests
     [InlineData("StatelessComponent", "private readonly string label = \"x\"; public string Label => label.ToUpper();", "Page.Label", "Page.label")]
     [InlineData("StatefulComponent", "private int count; public int Count { get => count; set => count = value * 2; }", "Page.Count", "Page.count")]
     [InlineData("StatelessComponent", "public string Title => \"t\"; private string title() => \"x\";", "Page.title()", "Page.Title")]
-    [InlineData("StatelessComponent", "private static int count; public static int Count => count;", "Page.Count", "Page.count")]
     [InlineData("StatefulComponent", "public event System.Action? Changed; private bool changed;", "Page.changed", "Page.Changed")]
     public void AComponentsMembersOnOneKey_AreRefused(string kind, string members, string later, string earlier)
     {
@@ -908,7 +911,7 @@ public class OverloadedMethodTests
     }
 
     /// <summary>A static class nested in a component is a module of its own, and holds one member per key
-    /// too.</summary>
+    /// too: a static auto-property beside a static method of its name.</summary>
     [Fact]
     public void AStaticClassNestedInAComponent_HoldsOneMemberPerKey()
     {
@@ -920,11 +923,11 @@ public class OverloadedMethodTests
             {
                 private static class Copy
                 {
-                    private static int count;
-                    public static int Count() => ++count;
+                    public static int Count { get; set; }
+                    public static int count() => ++Count;
                 }
 
-                public override VisualNode Build(ComponentContext context) => new Text(Copy.Count().ToString(), TypeRole.BodyM);
+                public override VisualNode Build(ComponentContext context) => new Text(Copy.count().ToString(), TypeRole.BodyM);
             }
             """, "Page$Copy");
 

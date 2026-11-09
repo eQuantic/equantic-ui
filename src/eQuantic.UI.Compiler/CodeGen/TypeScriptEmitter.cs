@@ -402,7 +402,7 @@ public class TypeScriptEmitter
                     && TypeInitializer.Orders(staticsOf, ModelFor);
                 _converter.SetCurrentClass(component.Name);
                 var initializedStatics = orderedStatics
-                    ? TypeInitializer.Collect(component.ClassSyntax!, type => DeclarationType(component, type.ValueText()),
+                    ? TypeInitializer.Collect(component.ClassSyntax!, ModelFor, type => DeclarationType(component, type.ValueText()),
                         type => ValueTypeDefault(type.ValueText(), type) ?? "null", StaticValue)
                     : [];
                 var slots = initializedStatics.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
@@ -413,7 +413,7 @@ public class TypeScriptEmitter
                     {
                         if (component.IsPrimitive && !field.IsStatic) continue;
                         // A static that initializes in order is its slot's, and holds no field.
-                        if (field.IsStatic && slots.Contains(field.Name.ToCamelCase())) continue;
+                        if (field.IsStatic && slots.Contains(field.Slot)) continue;
                         var tsType = DeclarationType(component, field.Type);
                         var tsDefault = field.DefaultValueNode is not { Parent: EqualsValueClauseSyntax given } ? null
                             : field.IsStatic && field.TypeNode is { } declared ? StaticValue(given, declared)
@@ -430,11 +430,11 @@ public class TypeScriptEmitter
                         // static one, which TypeScript does not ask that of, with no initializer.
                         if (tsDefault == "undefined")
                         {
-                            if (field.IsStatic) c.Field(field.Name.ToCamelCase(), tsType, null, field.DefaultValueNode, isStatic: true);
+                            if (field.IsStatic) c.Field(field.Slot, tsType, null, field.DefaultValueNode, isStatic: true);
                             else c.State(field.Name.ToCamelCase(), tsType, field.DefaultValueNode);
                             continue;
                         }
-                        c.Field(field.Name.ToCamelCase(), tsType, tsDefault, field.DefaultValueNode, field.IsStatic);
+                        c.Field(field.Slot, tsType, tsDefault, field.DefaultValueNode, field.IsStatic);
                     }
 
 
@@ -588,7 +588,7 @@ public class TypeScriptEmitter
                     if (component.ClassSyntax is { } indexed)
                     {
                         _converter.SetCurrentClass(component.Name);
-                        foreach (var indexer in indexed.Members.OfType<IndexerDeclarationSyntax>())
+                        foreach (var indexer in indexed.TwinMembers().OfType<IndexerDeclarationSyntax>())
                             EmitIndexer(indexer, c);
                     }
 
@@ -1708,7 +1708,7 @@ public class TypeScriptEmitter
             // initializer after a field's written below it.
             var ordered = TypeInitializer.Orders(cls, ModelFor);
             _converter.SetCurrentClass(name);
-            var initialized = ordered ? TypeInitializer.Collect(cls, DeclaredType, DefaultOf, StaticValue) : [];
+            var initialized = ordered ? TypeInitializer.Collect(cls, ModelFor, DeclaredType, DefaultOf, StaticValue) : [];
             var slots = initialized.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
             foreach (var f in cls.Members.OfType<FieldDeclarationSyntax>())
             {
@@ -1724,7 +1724,8 @@ public class TypeScriptEmitter
                     var isStaticMember = asStatic
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
-                    var fieldName = v.Identifier.ValueText.ToCamelCase();
+                    // In its slot, which moves a case apart from a static member of its name (#1175).
+                    var fieldName = v.SlotOf(ModelFor(v));
                     // A static that initializes in order is its slot's, and holds no field.
                     if (isStaticMember && slots.Contains(fieldName)) continue;
                     // An instance field is state, declared and started with the class's other state, in
@@ -1736,7 +1737,7 @@ public class TypeScriptEmitter
                     c.Field(fieldName, DeclaredType(f.Declaration.Type), def ?? DefaultOf(f.Declaration.Type), v, isStatic: true);
                 }
             }
-            foreach (var p in cls.Members.OfType<PropertyDeclarationSyntax>())
+            foreach (var p in cls.TwinMembers().OfType<PropertyDeclarationSyntax>())
             {
                 // An enumerator's explicit IEnumerator.Current beside its generic one holds its name, and
                 // answers alike: written, it replaced the generic one and read itself (#612). So does an
@@ -1829,7 +1830,7 @@ public class TypeScriptEmitter
             // subscription is a use of the type, which runs its static constructor first, and the
             // handlers that constructor adds come before the subscriber's, as in .NET. As a plain
             // field, it was subscribed to before the constructor ran.
-            foreach (var e in cls.Members.OfType<EventFieldDeclarationSyntax>())
+            foreach (var e in cls.TwinMembers().OfType<EventFieldDeclarationSyntax>())
             {
                 var isStaticEvent = asStatic || e.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
                 foreach (var v in e.Declaration.Variables)
@@ -1848,7 +1849,7 @@ public class TypeScriptEmitter
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
                 EmitClassMethod(m, c, asStatic);
-            foreach (var indexer in cls.Members.OfType<IndexerDeclarationSyntax>())
+            foreach (var indexer in cls.TwinMembers().OfType<IndexerDeclarationSyntax>())
                 EmitIndexer(indexer, c);
             // A sequence of the app's is iterable as its own GetEnumerator() says (#612).
             if (!asStatic && ModelFor(cls)?.GetDeclaredSymbol(cls) is INamedTypeSymbol sequence
@@ -1899,10 +1900,14 @@ public class TypeScriptEmitter
             // name, read through the property, as System.Text.Json writes the property: JSON.stringify
             // writes an object's own properties, so a server action received `$name` and bound nothing.
             // So does one whose field moved a case apart from a member (`value$`, #396), whose own key
-            // is storage no server reads. A derived class inherits it.
-            if (!asStatic && (cls.Members.OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
-                    || cls.Members.OfType<FieldDeclarationSyntax>().SelectMany(field => field.Declaration.Variables)
-                        .Any(variable => SlotOf(variable, ModelFor(cls)).EndsWith('$'))))
+            // is storage no server reads. A derived class inherits it. A static's slot is the class's,
+            // which no JSON of an instance writes (#1175).
+            if (!asStatic && (cls.TwinMembers().OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
+                    || cls.Members.OfType<FieldDeclarationSyntax>()
+                        .Where(field => !field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
+                            && !field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword))
+                        .SelectMany(field => field.Declaration.Variables)
+                        .Any(variable => variable.SlotOf(ModelFor(cls)).EndsWith('$'))))
             {
                 _converter.UsedHelpers.Add(Eq.Import);
                 c.Member(JsClassMember.Method("", "toJSON", "", "", "",
@@ -2244,7 +2249,7 @@ public class TypeScriptEmitter
         foreach (var parameter in cls.ParameterList?.Parameters ?? default)
             if (cls.HoldsParameter(parameter, model))
                 state.Add(new(parameter.Identifier.ValueText.ToCamelCase(), DeclaredType(parameter.Type), parameter));
-        foreach (var member in cls.Members)
+        foreach (var member in cls.TwinMembers())
         {
             if (member.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                 || member.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword)) continue;
@@ -2252,7 +2257,7 @@ public class TypeScriptEmitter
             {
                 case FieldDeclarationSyntax field:
                     foreach (var variable in field.Declaration.Variables)
-                        state.Add(new(SlotOf(variable, model), DeclaredType(field.Declaration.Type), variable));
+                        state.Add(new(variable.SlotOf(model), DeclaredType(field.Declaration.Type), variable));
                     break;
                 case EventFieldDeclarationSyntax handler:
                     foreach (var variable in handler.Declaration.Variables)
@@ -2266,11 +2271,6 @@ public class TypeScriptEmitter
         }
         return state;
     }
-
-    /// <summary>The slot an instance field's variable lives in (<see cref="Extensions.FieldSlotExtensions"/>):
-    /// its twin name, or, a case apart from another member, the name with a <c>$</c> after it.</summary>
-    private static string SlotOf(VariableDeclaratorSyntax variable, SemanticModel? model) =>
-        model?.GetDeclaredSymbol(variable) is IFieldSymbol field ? field.TwinSlot() : variable.Identifier.ValueText.ToCamelCase();
 
     /// <summary>
     /// Whether <paramref name="method"/> reads <paramref name="parameter"/>. Asked of the model where
