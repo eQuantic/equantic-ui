@@ -21,7 +21,7 @@ over files a designer exported. Measured why, on the dashboard sample:
 3. One artwork where a brand has two. The launcher's icon fills its square, opaque; the tab's is
    another cut, transparent, with wider strokes.
 4. No `/favicon.ico`. Every browser and every crawler asks for it at the root, and an app without a
-   file there answered with the whole not-found page.
+   file there answered 404 to every one of them.
 
 A typed `AddFavicon(rel, type, sizes)` was considered and refused: those are HTML's own words with
 enums around them, and the developer would still learn which sizes a browser wants. The SDK knows
@@ -39,7 +39,7 @@ them, so the app states its artwork and the SDK derives every link.
   on transparent rather than on the theme's background.
 - The web set writes `favicon.ico` (16, 32 and 48, from the small cut with its transparency) in place
   of `favicon-32.png`; the server links it and answers `/favicon.ico` at the root, an app's own
-  `wwwroot/favicon.ico` first, and a bare 404 with no icon at all. The icon links are cached per web
+  favicon first, a referenced project's static web asset included, and 404 with neither. The icon links are cached per web
   root rather than per process.
 - The downscale weighs colour by alpha, so a transparent cut keeps no dark rim; an opaque icon's
   result is unchanged.

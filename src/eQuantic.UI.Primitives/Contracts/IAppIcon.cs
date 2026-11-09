@@ -16,9 +16,10 @@ namespace eQuantic.UI.Primitives;
 /// screen actually shows, anything finer is a smudge.
 /// </para>
 /// <para>
-/// It is written like any file of the app: the usings the app compiles with reach it, and so does
-/// the catalog of its own artwork, so <c>Drawing(Vectors.Mark, SizeValue.Fill)</c> draws the brand
-/// from the SVG under <c>Assets</c> rather than redrawing it as shapes. Only the vocabulary is drawn:
+/// It is written like any file of the app: the usings the app compiles with reach it, and in a web
+/// app so does the catalog of its own artwork, so <c>Drawing(Vectors.Mark, SizeValue.Fill)</c> draws
+/// the brand from the SVG under <c>Assets</c> rather than redrawing it as shapes. The device SDK writes
+/// no vector catalog yet, so a native app's icon draws shapes. Only the vocabulary is drawn:
 /// the icon is rasterized before the app runs, with nothing of the app's own code but this file.
 /// </para>
 /// </summary>

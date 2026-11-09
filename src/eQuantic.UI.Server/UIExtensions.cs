@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -420,21 +421,16 @@ public static class UIExtensions
         }).AllowAnonymous();
 
         // The tab's icon at the address every browser and every crawler asks for, whatever a page
-        // links (#1240): the favicon.ico the build wrote from the app's icon. An app with its own file
-        // in wwwroot keeps it, read here first: with minimal hosting the routing runs before
-        // UseStaticFiles, and the static files serve nothing a route matched, so the file never got a
-        // say. Under MapStaticAssets, where the file is an endpoint too, this one's order is after it
-        // rather than beside it, which routing would refuse as ambiguous. With no icon the answer is a
-        // bare 404, where the fallback rendered the whole not-found page for every tab. Not
-        // immutable: the address never changes and the icon may, so a browser asks again daily.
+        // links (#1240): the favicon.ico the build wrote from the app's icon. An app's own favicon.ico
+        // wins, wherever its web root has it, a referenced project's static web assets included: with
+        // minimal hosting the routing runs before UseStaticFiles, and the static files serve nothing a
+        // route matched, so this route answers from the same file provider they read. Under
+        // MapStaticAssets, where the file is an endpoint too, this one's order is after it rather than
+        // beside it, which routing would refuse as ambiguous. Not immutable: the address never changes
+        // and the icon may, so a browser asks again daily.
         endpoints.MapGetAndHead("/favicon.ico", async context =>
         {
-            var root = context.RequestServices.GetService<IWebHostEnvironment>()?.WebRootPath;
-            var favicon = root is null
-                ? null
-                : new[] { Path.Combine(root, "favicon.ico"), Path.Combine(root, "_equantic", "icons", "favicon.ico") }
-                    .FirstOrDefault(File.Exists);
-            if (favicon is null)
+            if (Icons(context).Favicon is not { } favicon)
             {
                 context.Response.StatusCode = 404;
                 return;
@@ -635,39 +631,54 @@ public static class UIExtensions
     }
 
     /// <summary>The head links for the generated icon set — empty when an app declared no icon.</summary>
-    private static IReadOnlyList<string> GeneratedIconTags(HttpContext context)
+    private static IReadOnlyList<string> GeneratedIconTags(HttpContext context) => Icons(context).Tags;
+
+    /// <summary>
+    /// What the app's web root holds of its icon: the links every page carries, and the file that
+    /// answers <c>/favicon.ico</c>. Read through the web root's file provider, the one UseStaticFiles
+    /// reads, so a file a referenced project contributes as a static web asset counts as the app's own.
+    /// </summary>
+    private sealed record IconSet(IReadOnlyList<string> Tags, IFileInfo? Favicon)
     {
-        var root = context.RequestServices.GetService<IWebHostEnvironment>()?.WebRootPath;
-        if (root is null) return [];
-        return IconTags.GetOrAdd(root, ReadIconTags);
+        public static readonly IconSet None = new([], null);
     }
 
-    private static IReadOnlyList<string> ReadIconTags(string root)
+    private static IconSet Icons(HttpContext context)
     {
-        var icons = Path.Combine(root, "_equantic", "icons");
-        if (!Directory.Exists(icons)) return [];
+        var environment = context.RequestServices.GetService<IWebHostEnvironment>();
+        if (environment?.WebRootPath is not { } root || environment.WebRootFileProvider is not { } files) return IconSet.None;
+        return IconSets.GetOrAdd(root, _ => ReadIcons(files));
+    }
 
-        var tags = new List<string>();
-        void Link(string file, HtmlTag tag)
-        {
-            if (File.Exists(Path.Combine(icons, file))) tags.Add(tag.Render());
-        }
+    private static IconSet ReadIcons(IFileProvider files)
+    {
+        IFileInfo? Find(string path) => files.GetFileInfo(path) is { Exists: true, IsDirectory: false } file ? file : null;
+        var own = Find("favicon.ico");
+        var built = Find("_equantic/icons/favicon.ico");
 
         // The tab's 16, 32 and 48 in one file at the root (#1240), 180 is what iOS Safari pins to a
         // home screen, and the manifest carries the install icons — each answers a different
-        // question, so each gets its own link.
-        Link("favicon.ico", HtmlTag.Link("icon", "/favicon.ico").Attr("sizes", "16x16 32x32 48x48"));
-        Link("apple-touch-icon.png", HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png"));
-        Link("site.webmanifest", HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest"));
-        return tags;
+        // question, so each gets its own link. The sizes are the built file's, so an app's own
+        // favicon.ico, which answers at the root instead, is linked without them.
+        var tags = new List<string>();
+        if (built is not null)
+        {
+            var link = HtmlTag.Link("icon", "/favicon.ico");
+            tags.Add((own is null ? link.Attr("sizes", "16x16 32x32 48x48") : link).Render());
+        }
+        if (Find("_equantic/icons/apple-touch-icon.png") is not null)
+            tags.Add(HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png").Render());
+        if (Find("_equantic/icons/site.webmanifest") is not null)
+            tags.Add(HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest").Render());
+        return new IconSet(tags, own ?? built);
     }
 
     /// <summary>
-    /// Computed once per web root: the icon set is a build output and cannot change under a running
-    /// app. Per ROOT rather than per process, since a process may host more than one app, and the first
-    /// one asked answered for all of them.
+    /// Read once per web root: the icon set is a build output and cannot change under a running app.
+    /// Per ROOT rather than per process, since a process may host more than one app, and the first one
+    /// asked answered for all of them.
     /// </summary>
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, IReadOnlyList<string>> IconTags =
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, IconSet> IconSets =
         new(StringComparer.Ordinal);
 
     /// <summary>

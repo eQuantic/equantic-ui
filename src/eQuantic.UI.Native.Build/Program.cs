@@ -456,9 +456,12 @@ for (var i = 3; i < rgba.Length; i += 4) rgba[i] = 255;
 
 // The small cut keeps its transparency: it stands on a tab, which shows through it. 256 is four
 // times the largest size it is drawn at, so every size of it is a reduction. An icon with one
-// artwork answers Small with the launcher's square, which is opaque already.
+// artwork answers Small with the launcher's square, which is opaque already. Only the web set has a
+// tab, so a native icon draws none.
 const int smallSize = 256;
-(int, byte[]) small = (smallSize, Rasterize(icon.Build(new ComponentContext(theme), AppIconUse.Small), smallSize, transparent: true));
+(int, byte[])? small = webDir is null
+    ? null
+    : (smallSize, Rasterize(icon.Build(new ComponentContext(theme), AppIconUse.Small), smallSize, transparent: true));
 
 Emit(outDir, webDir, androidDir, macIcns, windowsIco, appName, name, (int)size, rgba, small);
 Console.WriteLine($"eqicon: wrote {Where(outDir, webDir, androidDir, macIcns, windowsIco)} from {iconType.FullName}");

@@ -48,6 +48,10 @@ public static class WebIcons
         var (faviconSize, faviconRgba) = small ?? (sourceSize, sourceRgba);
         File.WriteAllBytes(Path.Combine(outDir, "favicon.ico"), IconFile.Encode(faviconSize, faviconRgba, FaviconSizes));
 
+        // The PNG favicon the set wrote before the ICO (#1240): nothing links it, and a folder the app
+        // publishes should not keep a file of an older build.
+        File.Delete(Path.Combine(outDir, "favicon-32.png"));
+
         // A manifest is what turns a page into something a phone will install. Written through the
         // JSON writer for the same reason the asset catalog is: a generated file people may read.
         File.WriteAllText(Path.Combine(outDir, "site.webmanifest"), JsonWriter.Document(manifest => manifest

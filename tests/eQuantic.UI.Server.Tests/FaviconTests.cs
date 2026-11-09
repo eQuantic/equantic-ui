@@ -11,14 +11,15 @@ namespace eQuantic.UI.Server.Tests;
 /// <summary>
 /// The tab's icon at the address every browser and crawler asks for (#1240): <c>/favicon.ico</c>,
 /// answered from the <c>favicon.ico</c> the build wrote from the app's icon, and linked from every
-/// page. An app's own file wins, and with no icon the answer is a bare 404 rather than the whole
-/// not-found page the fallback renders.
+/// page. An app's own file wins, a referenced project's static web asset included, and with neither
+/// the answer is 404.
 /// </summary>
 public class FaviconTests
 {
     private static readonly byte[] Ico = [0, 0, 1, 0, 1, 0, 16, 16, 0, 0, 1, 0, 32, 0, 0, 0, 0, 0, 22, 0, 0, 0];
 
-    private static async Task<(WebApplication App, HttpClient Client)> StartAppAsync(bool generated, bool own = false)
+    private static async Task<(WebApplication App, HttpClient Client)> StartAppAsync(bool generated, bool own = false,
+        bool asset = false)
     {
         var webRoot = Directory.CreateTempSubdirectory("eq-favicon-").FullName;
         if (generated)
@@ -35,6 +36,15 @@ public class FaviconTests
         builder.Services.AddUI(options => options.EnableSsr = false);
 
         var app = builder.Build();
+        if (asset)
+        {
+            // What static web assets do in development: a referenced project's wwwroot joins the web
+            // root's file provider, with no file under the app's own folder.
+            var library = Directory.CreateTempSubdirectory("eq-favicon-library-").FullName;
+            File.WriteAllBytes(Path.Combine(library, "favicon.ico"), [9, 9]);
+            app.Environment.WebRootFileProvider = new Microsoft.Extensions.FileProviders.CompositeFileProvider(
+                app.Environment.WebRootFileProvider, new Microsoft.Extensions.FileProviders.PhysicalFileProvider(library));
+        }
         app.UseStaticFiles();
         app.MapUI();
         await app.StartAsync();
@@ -71,16 +81,31 @@ public class FaviconTests
     }
 
     [Fact]
-    public async Task AnAppsOwnFavicon_Wins()
+    public async Task AnAppsOwnFavicon_Wins_AndIsLinkedWithoutTheBuiltFilesSizes()
     {
         var (app, client) = await StartAppAsync(generated: true, own: true);
         await using var _ = app;
 
         (await client.GetByteArrayAsync("/favicon.ico")).Should().Equal([7, 7, 7]);
+        (await (await client.GetAsync("/")).Content.ReadAsStringAsync())
+            .Should().Contain("""<link rel="icon" href="/favicon.ico">""", "the sizes are the built file's, not the app's");
+    }
+
+    /// <summary>
+    /// A favicon a referenced project serves as a static web asset (myartwork3d's Theme project does):
+    /// under minimal hosting the route runs before UseStaticFiles, so it reads the same file provider.
+    /// </summary>
+    [Fact]
+    public async Task AFaviconAReferencedProjectServes_Wins_WithNoIconOfTheApps()
+    {
+        var (app, client) = await StartAppAsync(generated: false, asset: true);
+        await using var _ = app;
+
+        (await client.GetByteArrayAsync("/favicon.ico")).Should().Equal([9, 9]);
     }
 
     [Fact]
-    public async Task WithNoIcon_TheFaviconIsABare404_NotTheNotFoundPage()
+    public async Task WithNoIconAndNoFile_TheFaviconIsNotFound()
     {
         var (app, client) = await StartAppAsync(generated: false);
         await using var _ = app;
@@ -88,7 +113,7 @@ public class FaviconTests
         var response = await client.GetAsync("/favicon.ico");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        (await response.Content.ReadAsStringAsync()).Should().BeEmpty("the fallback rendered the whole shell for every tab");
+        (await response.Content.ReadAsStringAsync()).Should().BeEmpty();
         (await (await client.GetAsync("/")).Content.ReadAsStringAsync()).Should().NotContain("rel=\"icon\"");
     }
 }

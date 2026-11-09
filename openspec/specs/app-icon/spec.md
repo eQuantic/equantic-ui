@@ -38,8 +38,8 @@ so that an icon built in a Linux container is the one drawn on a laptop.
 
 The web set SHALL hold `favicon.ico` with 16, 32 and 48 from the icon's small cut, its transparency
 kept, or from the icon when the app draws one artwork. Every page SHALL link `/favicon.ico` with its
-sizes, and the server SHALL answer `/favicon.ico` from the app's own `wwwroot/favicon.ico` when there
-is one, from the built file otherwise, and with a bare 404 when the app declares no icon.
+sizes, and the server SHALL answer `/favicon.ico` from the app's own `favicon.ico` when its web root has one, a referenced
+project's static web asset included, from the built file otherwise, and with 404 when there is neither.
 
 #### Scenario: A browser asks for the favicon
 

@@ -49,6 +49,11 @@ public class FaviconTests
             var touch = eQuantic.UI.Native.Engine.PngCodec.Decode(File.ReadAllBytes(Path.Combine(dir, "apple-touch-icon.png")));
             touch.Rgba.Take(4).Should().Equal(Red);
             File.Exists(Path.Combine(dir, "favicon-32.png")).Should().BeFalse("the ICO carries the tab's 32");
+
+            // A folder written by an older build loses its PNG favicon on the next.
+            File.WriteAllBytes(Path.Combine(dir, "favicon-32.png"), [1]);
+            WrittenFavicon(dir, null);
+            File.Exists(Path.Combine(dir, "favicon-32.png")).Should().BeFalse("nothing links it any more");
         }
         finally
         {
