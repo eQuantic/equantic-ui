@@ -35,6 +35,12 @@ public sealed class ComponentElement : Element
     /// <inheritdoc />
     public override Element? ChildAt(int slot) => slot == 0 ? _child : null;
 
+    /// <inheritdoc />
+    public override void VisitChildren(Action<Element> visitor)
+    {
+        if (_child is not null) visitor(_child);
+    }
+
     private protected override void FirstBuild()
     {
         if (Owner.Live && Component is StatefulComponent stateful && stateful.Place(this))
@@ -104,8 +110,16 @@ public sealed class ComponentElement : Element
 
     /// <summary>Asks for this position to build again: a <c>SetState</c>, through the instance. The
     /// owner counts the request even when the position is already waiting to build
-    /// (<see cref="BuildOwner.Marks"/>).</summary>
-    internal void MarkNeedsBuild()
+    /// (<see cref="BuildOwner.Marks"/>).
+    /// <para>
+    /// Public for a HOST that changed what a component reads without a <c>SetState</c>, as Flutter's
+    /// <c>markNeedsBuild</c> is: a prefetch that loaded a component's fields marks its position, and
+    /// only that subtree builds again, with the instance the position keeps (docs/ELEMENT-TREE-PLAN.md
+    /// 3.7). Rebuilding everything instead hands a stateless component's position the fresh instance
+    /// its parent made, and what the old one loaded is gone.
+    /// </para>
+    /// </summary>
+    public void MarkNeedsBuild()
     {
         if (!IsActive) return;
         Owner.CountMark();

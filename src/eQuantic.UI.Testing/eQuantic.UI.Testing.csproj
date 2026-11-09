@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <PackageId>eQuantic.UI.Testing</PackageId>
+    <Description>Component tests for eQuantic.UI apps, in any .NET test framework: draw a component with a theme and a culture, tap and type by the name a screen reader announces, and read the markup the web gets and what a screen reader hears, with no browser.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The web realizer, and through it the vocabulary: the tester draws frames with the
+         vocabulary's own BuildOwner and lowers them with the realizer the server uses. It takes no
+         test framework, so an xUnit, NUnit or MSTest project asserts on what it answers. -->
+    <ProjectReference Include="..\eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
+  </ItemGroup>
+
+</Project>
