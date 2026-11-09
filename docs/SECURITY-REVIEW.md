@@ -2,7 +2,8 @@
 
 The written hardening review #306 asked for, measured on `main` at `2d97110f1` (2026-11-09) and filed
 as #1265. It says what was reviewed, what each part was checked against, what holds and what does
-not. Every finding is an issue of its own, a Bug under #1174 with its points.
+not. Every finding is an issue of its own: a Bug under #1174 with its points, or, for the two rated
+high, an issue whose details wait in a private security advisory for the preview that fixes them.
 
 The Content-Security-Policy is not reviewed here: it does not exist yet, and #1266 to #1270 build it.
 The dependency side is not reviewed again either: #1177, #1178, #1179, #1180 and #1259 moved the
@@ -13,17 +14,18 @@ the one the runtime installs.
 
 The code was read, not run, area by area, against the question a reviewer asks of each: what a
 request can reach, what it can make the server write, and what it can make the server spend. Every
-finding below was checked again against the code before it was filed. The one rated high that
-depends on how HTML parses was reproduced on the real shell template, through the engine, with the
-values the server writes (#1284). The evidence blocks are held to the code by `DocsIndexTests`, so a
-line that moves fails the suite rather than misleading the next reader.
+finding below was checked again against the code before it was filed. The two rated high are
+tracked in private security advisories until a preview carrying their fixes is released, so this
+review names them and their area and nothing more (#1319, #1320). The evidence blocks are held to
+the code by `DocsIndexTests`, so a line that moves fails the suite rather than misleading the next
+reader.
 
 ## Verdicts
 
 | Area | Holds | Findings |
 |---|---|---|
-| The shell and what it writes | The script slots, text and attribute encoding, metadata | #1284 (high), #1286 (medium), #1288 (medium), #1295 (low) |
-| Server Actions | The allow-list, deserialization, the payload cap, the origin check | #1285 (high), #1290 (low), #1291 (low) |
+| The shell and what it writes | The script slots, text and attribute encoding, metadata | #1319 (high), #1286 (medium), #1288 (medium), #1295 (low) |
+| Server Actions | The allow-list, deserialization, the payload cap, the origin check | #1320 (high), #1290 (low), #1291 (low) |
 | Uploads | File names never reach a disk path, the owner check, streaming | #1287 (medium), #1293 (low) |
 | Server events | Unknown topics are refused, policies run with their schemes | #1292 (low) |
 | The hot-reload relay | It only sends, and only `reload` | #1297 (low) |
@@ -43,15 +45,8 @@ quotes. Metadata values are attribute-encoded as well.
 src/eQuantic.UI.Web/Dom/HtmlRenderer.cs:244  sb.Append(HttpUtility.HtmlAttributeEncode(value));
 ```
 
-**#1284, high.** The template engine replaces each variable over the whole buffer, one after another,
-so a placeholder inside a value it already inserted is replaced again by a later variable. The
-server-rendered content is inserted before the page's state, so a visitor's `{{InitialState}}` in an
-attribute becomes the state's JSON there, and its first quote closes the attribute. Reproduced: the
-input `{{InitialState}} onmouseover=alert(1) x` renders an element with a real `onmouseover`.
-
-```text
-src/eQuantic.UI.Server/HtmlTemplateEngine.cs:114  builder.Replace(placeholder, kvp.Value ?? string.Empty);
-```
+**#1319, high.** A defect in how the shell writes its template, tracked in a private security
+advisory until the preview that fixes it is released.
 
 **#1286, medium.** No URL scheme is checked anywhere. A destination is rewritten only when it is a
 rooted path, so a `javascript:` link from a `Link`, a `TextRun` or a Markdown link is written as it
@@ -93,15 +88,8 @@ src/eQuantic.UI.Server/ServerActionsMiddleware.cs:44  private const long MaxRequ
 src/eQuantic.UI.Server/ServerActionOrigins.cs:35  return request.Headers["Sec-Fetch-Site"].ToString() is not ("cross-site" or "same-site");
 ```
 
-**#1285, high.** An action is authorized by other rules than its page. The page accepts ASP.NET
-Core's own `[Authorize]`, its schemes and the app's fallback policy. The action reads only the SDK's
-attribute, checks the default scheme's user, and is public when it names nothing.
-
-```text
-src/eQuantic.UI.Server/Authorization/PageAuthorization.cs:47  case IAuthorizeData or IAllowAnonymous:
-src/eQuantic.UI.Server/Authorization/ServerActionAuthorizationService.cs:11  using AuthorizeAttribute = eQuantic.UI.Primitives.AuthorizeAttribute;
-src/eQuantic.UI.Server/Authorization/ServerActionAuthorizationService.cs:69  // If no authorization attributes, action is public by default
-```
+**#1320, high.** A defect in how Server Actions are authorized, tracked in a private security
+advisory until the preview that fixes it is released.
 
 **#1290, low.** The id is the type's simple name and the method's, and the registry keeps the last
 one registered under it.

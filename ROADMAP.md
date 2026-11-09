@@ -137,8 +137,8 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   and client navigation on a real browser, but no CI job runs it: the headless-browser instrument is
   an open decision (#286).
 - **Security**: hardened (deserialization allow-list, payload cap). The formal hardening review is
-  written ([docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md), #1265), and its findings are #1284 to
-  #1297. A CSP the SDK writes is still owed (#306). **Consent before cookies (2026-09)**: `IConsent` as
+  written ([docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md), #1265), and its findings are #1286 to
+  #1297, #1319 and #1320. A CSP the SDK writes is still owed (#306). **Consent before cookies (2026-09)**: `IConsent` as
   a capability, the `CookieConsent` card, and `UseGtm(...).WithConsent()` — Consent Mode defaults to
   denied and the container is fetched only on a granted answer, on the first paint and live.
 - **Server events (2026-10)**: a component hears what the server publishes to a typed topic
