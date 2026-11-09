@@ -80,9 +80,20 @@ public class ImageCache : IDisposable
     {
         try
         {
-            return Directory.Exists(_options.CacheDirectory)
-                ? new DirectoryInfo(_options.CacheDirectory).EnumerateFiles().Sum(file => file.Length)
-                : 0;
+            if (!Directory.Exists(_options.CacheDirectory)) return 0;
+            long total = 0;
+            foreach (var file in new DirectoryInfo(_options.CacheDirectory).EnumerateFiles())
+            {
+                // One removed while the folder is walked is skipped, not a reason to count nothing.
+                try
+                {
+                    total += file.Length;
+                }
+                catch (IOException)
+                {
+                }
+            }
+            return total;
         }
         catch (IOException)
         {
@@ -128,11 +139,15 @@ public class ImageCache : IDisposable
                 return;
             }
 
-            var target = _options.MaxCacheSize / 10 * 9;
+            // Nine tenths of the cap, never truncated to nothing for a small one.
+            var target = _options.MaxCacheSize - _options.MaxCacheSize / 10;
             var removed = 0;
-            foreach (var (file, length, _) in files.OrderBy(file => file.Written))
+            var oldestFirst = files.OrderBy(file => file.Written).ToList();
+            for (var at = 0; at < oldestFirst.Count; at++)
             {
-                if (total <= target) break;
+                var (file, length, _) = oldestFirst[at];
+                // The newest copy, the one just written, stays when what is left fits the cap.
+                if (total <= target || (at == oldestFirst.Count - 1 && total <= _options.MaxCacheSize)) break;
                 try
                 {
                     file.Delete();

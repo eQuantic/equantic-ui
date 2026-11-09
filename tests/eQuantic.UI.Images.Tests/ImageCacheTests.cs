@@ -219,4 +219,27 @@ public class ImageCacheTests : IDisposable
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
         }
     }
+
+    [Theory]
+    [InlineData(100, 10, 95)]
+    [InlineData(5, 3, 3)]
+    public async Task TheCopyJustWritten_StaysWhenItFits_EvenUnderASmallCap(long cap, int older, int newer)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"equantic-cache-newest-{Guid.NewGuid():N}");
+        try
+        {
+            using var cache = new ImageCache(new ImageOptimizationOptions { CacheDirectory = directory, MaxCacheSize = cap });
+            await cache.SetAsync("a.jpg", 640, 75, "image/webp", new byte[older]);
+            File.SetLastWriteTimeUtc(Directory.GetFiles(directory).Single(), DateTime.UtcNow.AddMinutes(-2));
+
+            await cache.SetAsync("b.jpg", 640, 75, "image/webp", new byte[newer]);
+
+            (await cache.GetAsync("b.jpg", 640, 75, "image/webp")).Should().NotBeNull();
+            Directory.GetFiles(directory).Sum(file => new FileInfo(file).Length).Should().BeLessThanOrEqualTo(cap);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
 }
