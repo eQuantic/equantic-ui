@@ -11,9 +11,9 @@
 
 ## 3. Proved against the real thing
 
-- [ ] 3.1 Run the Server suite whole, and the Conformance suite through the suite lock, which serves pages through the shell (`HydrationCrossingTests`). Verify: their totals and exit codes
+- [x] 3.1 Run the Server suite whole, the wiki guards, and the Conformance suite, which serves pages through the shell (`HydrationCrossingTests`). Verify: Server 469 of 469 and the wiki guards 72 of 72 on the branch with main merged, and Conformance on CI's two `test` jobs
 
 ## 4. Documentation
 
-- [ ] 4.1 The wiki's Security page in its five languages, on a branch named like the pull request's
-- [ ] 4.2 One entry for the ledger citing #1319 and #1288, as a file of its own under `docs/ledger/`
+- [x] 4.1 The wiki's Security page in its five languages, on a branch named like the pull request's
+- [x] 4.2 One entry for the ledger citing #1319 and #1288, as a file of its own under `docs/ledger/`
