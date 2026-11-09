@@ -12,7 +12,8 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// <para>
 /// The handoff names the place. A button, an icon button, a chip, a list row and the search
 /// field's clear button fill their whole surface; a tab fills its cell ("Pressed: SurfaceSubtle fill
-/// on the tab cell"); the navigation bar and the rail show their pill ("Press-down shows the pill").
+/// on the tab cell"); the navigation bar and the rail show their pill ("Press-down shows the pill"),
+/// on every destination but the selected one, whose pill already shows.
 /// </para>
 /// <para>
 /// Until #616 a pressed fill reached Photon through <c>PendingFill</c>, which the FIRST box drawn
@@ -106,8 +107,12 @@ public class PressedFillPlacementTests
         }
         else
         {
-            // Every item shows its pill, and the fill is the pill, never the whole item.
-            fills.Count.Should().Be(controls.Count, $"each {c.Name} shows its pill");
+            // Every item but the selected one shows its pill, and the fill is the pill, never the
+            // whole item. The selected one's pill already shows, and keeps its own colour.
+            fills.Count.Should().Be(controls.Count - 1, $"each unselected {c.Name} shows its pill");
+            Painted(pressed, Theme.Colors(Variant.Primary).Subtle).Should().Contain(
+                r => MathF.Abs(r.Width - c.PillWidth) < 0.5f && MathF.Abs(r.Height - c.PillHeight) < 0.5f,
+                $"the selected {c.Name} keeps its pill while pressed");
             fills.Should().OnlyContain(r => MathF.Abs(r.Width - c.PillWidth) < 0.5f && MathF.Abs(r.Height - c.PillHeight) < 0.5f,
                 $"a pressed {c.Name} fills its {c.PillWidth}x{c.PillHeight} pill; "
                 + $"it painted {string.Join(", ", fills.Select(r => $"{r.Width}x{r.Height}"))}");
@@ -125,7 +130,8 @@ public class PressedFillPlacementTests
     public void AHeldPress_FillsTheSamePlaceAsAPicturedOne(Case c)
     {
         var (pictured, root) = Draw(new Simulated(SimulatedState.Pressed, c.Build()));
-        var target = Controls(root)[0];
+        // The last control: an unselected one wherever there is a selection.
+        var target = Controls(root)[^1];
         var expected = Painted(pictured, c.Fill)
             .Where(r => target.Contains(new Point(r.X + r.Width / 2, r.Y + r.Height / 2))).ToList();
 

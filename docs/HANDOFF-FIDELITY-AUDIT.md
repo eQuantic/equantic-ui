@@ -327,7 +327,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:74-79  var column = new Column(gap: 2) { Height = SizeValue.Fill, Main = MainAlign.Center, Cross = CrossAlign.Center };
+  BottomNavigation.cs:76-81  var column = new Column(gap: 2) { Height = SizeValue.Fill, Main = MainAlign.Center, Cross = CrossAlign.Center };
   ```
 
 ### B4 BottomNavigation · documented-deviation · **unverified**
@@ -338,7 +338,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:97-102  return new Box(new BoxStyle { Width = SizeValue.Fill, Height = 56, Background = theme.Surface, }, row);
+  BottomNavigation.cs:99-104  return new Box(new BoxStyle { Width = SizeValue.Fill, Height = 56, Background = theme.Surface, }, row);
   ```
 
 ### B5 Tabs · metric · **unverified**
@@ -1515,7 +1515,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:100  Height = 56,
+  BottomNavigation.cs:102  Height = 56,
   ```
 
 ### B4 BottomNavigation · behaviour · **unverified**
@@ -1526,7 +1526,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:71  Pressed = new StyleDiff { Background = theme.SurfaceSubtle },   // on the pill since #616
+  BottomNavigation.cs:73  Pressed = isActive ? null : new StyleDiff { Background = theme.SurfaceSubtle },   // on the pill of an unselected destination since #616
   ```
 
 ### B4 BottomNavigation · missing-feature · **unverified**
@@ -1537,7 +1537,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:63-72  var pill = new Box(new BoxStyle { Width = 56, Height = 26, Background = isActive ? primary.Subtle : null, CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)), }, pillContent);
+  BottomNavigation.cs:63-74  var pill = new Box(new BoxStyle { Width = 56, Height = 26, Background = isActive ? primary.Subtle : null, CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)), }, pillContent);
   ```
 
 ### B4 BottomNavigation · semantics · **unverified**
@@ -1548,7 +1548,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:97-101  return new Box(new BoxStyle { Width = SizeValue.Fill, Height = 56, Background = theme.Surface, }, row);
+  BottomNavigation.cs:99-103  return new Box(new BoxStyle { Width = SizeValue.Fill, Height = 56, Background = theme.Surface, }, row);
   ```
 
 ### B4 BottomNavigation · semantics · **unverified**
@@ -1559,18 +1559,18 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:88  Label = item.Label,
+  BottomNavigation.cs:90  Label = item.Label,
   ```
 
 ### B4 BottomNavigation · behaviour · **unverified**
 
 - **Component**: `src/eQuantic.UI.Components/BottomNavigation.cs`
 - **Handoff**: Dynamic Type: labels scale to ×1.3, bar grows; icons fixed.
-- **Code**: Labels do carry MaxScale 1.3 (BottomNavigation.cs:83) and icons are fixed at IconSize.Md, but the bar is a FIXED Height, not a MinHeight, so it cannot grow — at ×1.3 the 11/14 label grows inside an unchanged 56dp bar (pill 26 + gap 2 + line 18 = 46 before any padding) and clips rather than pushing the bar taller. BoxStyle.MinHeight is the facility for this and is used elsewhere (ListItem.cs:114, Table.cs:52).
+- **Code**: Labels do carry MaxScale 1.3 (BottomNavigation.cs:85) and icons are fixed at IconSize.Md, but the bar is a FIXED Height, not a MinHeight, so it cannot grow — at ×1.3 the 11/14 label grows inside an unchanged 56dp bar (pill 26 + gap 2 + line 18 = 46 before any padding) and clips rather than pushing the bar taller. BoxStyle.MinHeight is the facility for this and is used elsewhere (ListItem.cs:114, Table.cs:52).
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:100  Height = 56,
+  BottomNavigation.cs:102  Height = 56,
   ```
 
 ### B5 Tabs · documented-deviation · **unverified**
@@ -1693,12 +1693,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Badge.cs`
 - **Handoff**: "Decorative; the count folds into the host's announcement (\"Notifications, 3 new\")."
-- **Code**: The count never reaches the host's accessible name. The badge is attached inside the host's Pressable (BottomNavigation.cs:60 / NavigationRail.cs:93), and the Pressable's Label is the plain item label (BottomNavigation.cs:88 `Label = item.Label`), which lowers to aria-label (src/eQuantic.UI.Web/WebLoweringVisitor.Interaction.cs:482 LowerPressable) and therefore OVERRIDES the badge text inside the button. The button announces "Cards" with no mention of the 2 unread items.
+- **Code**: The count never reaches the host's accessible name. The badge is attached inside the host's Pressable (BottomNavigation.cs:60 / NavigationRail.cs:93), and the Pressable's Label is the plain item label (BottomNavigation.cs:90 `Label = item.Label`), which lowers to aria-label (src/eQuantic.UI.Web/WebLoweringVisitor.Interaction.cs:482 LowerPressable) and therefore OVERRIDES the badge text inside the button. The button announces "Cards" with no mention of the 2 unread items.
 - **Evidence**:
 
   ```
   BottomNavigation.cs:60  var iconNode = item.BadgeCount > 0 ? Badge.Over(icon, item.BadgeCount) : (VisualNode)icon;
-  BottomNavigation.cs:88  Label = item.Label,
+  BottomNavigation.cs:90  Label = item.Label,
   WebLoweringVisitor.Interaction.cs:515  AriaLabel = pressable.Label,
   ```
 
@@ -1841,7 +1841,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: "press-down tints the box border Primary instantly"
-- **Code**: No pressed feedback of any kind is wired: the Pressable is built without `PressedBackground`, and the box's BorderColor is a pure function of Error (Checkbox.cs:43) — nothing swaps it on press. The mechanism exists and is used elsewhere (Chip.cs:101, BottomNavigation.cs:89 set PressedBackground; the CSS swap lives at ThemeStylesheet.cs:93). The doc comment's v1 fence (Checkbox.cs:10-11) covers only the scale-pop motion, not the press tint.
+- **Code**: No pressed feedback of any kind is wired: the Pressable is built without `PressedBackground`, and the box's BorderColor is a pure function of Error (Checkbox.cs:43) — nothing swaps it on press. The mechanism exists and is used elsewhere (Chip.cs:101, BottomNavigation.cs:91 set PressedBackground; the CSS swap lives at ThemeStylesheet.cs:93). The doc comment's v1 fence (Checkbox.cs:10-11) covers only the scale-pop motion, not the press tint.
 - **Evidence**:
 
   ```
@@ -2616,7 +2616,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/NavigationRail.cs`
 - **Handoff**: "A11y · usage: Navigation landmark \"primary\"; items announce label + 'current' when selected." and "Semantics: Navigation landmark + aria-current=\"page\"."
-- **Code**: The rail's root is a plain Box (NavigationRail.cs:146-158) that lowers to a bare <div>: no landmark role, no accessible name. Only the per-item half of the contract exists (Role = PressableRole.Destination at line 126 → aria-current="page" in lowering.ts:2898). There is no landmark vocabulary anywhere in the framework — grep for landmark/nav roles across src/eQuantic.UI.Primitives, src/eQuantic.UI.Web/WebRealizer.cs and Runtime lowering.ts returns nothing but a prose FENCE note in ListItem.cs:53. So a screen-reader user gets four buttons in the page body, with no "navigation" region to jump to.
+- **Code**: The rail's root is a plain Box (NavigationRail.cs:148-160) that lowers to a bare <div>: no landmark role, no accessible name. Only the per-item half of the contract exists (Role = PressableRole.Destination at line 126 → aria-current="page" in lowering.ts:2898). There is no landmark vocabulary anywhere in the framework — grep for landmark/nav roles across src/eQuantic.UI.Primitives, src/eQuantic.UI.Web/WebRealizer.cs and Runtime lowering.ts returns nothing but a prose FENCE note in ListItem.cs:53. So a screen-reader user gets four buttons in the page body, with no "navigation" region to jump to.
 - **Evidence**:
 
   ```
@@ -3092,11 +3092,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/BottomNavigation.cs`
 - **Handoff**: A11y: tab semantics — "Home, tab, 1 of 4, selected". [vs the same block's Semantics line: selected = aria-current="page" on web]
-- **Code**: The block contradicts itself and the code follows the Semantics line, with the choice reasoned in place (BottomNavigation.cs:89-91): Role = Destination → aria-current="page", no role="tab" and no set position ("1 of 4" is not emitted — no aria-setsize/aria-posinset exist in the lowering). Reported so the handoff line can be reconciled, not as a defect against the Semantics contract.
+- **Code**: The block contradicts itself and the code follows the Semantics line, with the choice reasoned in place (BottomNavigation.cs:91-93): Role = Destination → aria-current="page", no role="tab" and no set position ("1 of 4" is not emitted — no aria-setsize/aria-posinset exist in the lowering). Reported so the handoff line can be reconciled, not as a defect against the Semantics contract.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:92  Role = PressableRole.Destination,
+  BottomNavigation.cs:94  Role = PressableRole.Destination,
   ```
 
 ### B5 Tabs · missing-feature · **unverified**

@@ -67,8 +67,10 @@ public sealed class BottomNavigation : StatelessComponent
                 Background = isActive ? primary.Subtle : null,
                 CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
                 // The press shows on the pill, where the handoff puts it ("Press-down shows the pill")
-                // and where the hover lives too, never on the whole column.
-                Pressed = new StyleDiff { Background = theme.SurfaceSubtle },
+                // and where the hover lives too, never on the whole column. The selected destination's
+                // pill already shows, and a press never trades it for another fill: that read as the
+                // selection going away for as long as the finger stayed down.
+                Pressed = isActive ? null : new StyleDiff { Background = theme.SurfaceSubtle },
             }, pillContent);
 
             var column = new Column(gap: 2)

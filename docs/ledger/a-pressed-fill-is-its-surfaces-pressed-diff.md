@@ -9,8 +9,10 @@
   WHERE three components filled: a pressed tab painted the 3dp strip under its label on Photon, and
   the navigation bar and the rail filled the whole item on the web, where the handoff draws the
   tab's cell and the pill; both targets now fill those, pinned by one test per target over the
-  same eight components. A break: `Pressable(box, …, pressedBackground: theme.Surface)` becomes
-  `Pressable(box, …)` over a box whose style says `Pressed = new StyleDiff { Background =
-  theme.Surface }`, and `PressedBackground = x` moves the same way
+  same eight components. The selected destination's pill takes no pressed fill, where Photon
+  traded it for another colour while the finger stayed down. A break:
+  `Pressable(box, …, pressedBackground: theme.Surface)` becomes `Pressable(box, …)` over a box
+  whose style says `Pressed = new StyleDiff { Background = theme.Surface }`, and
+  `PressedBackground = x` moves the same way
   ([#616](https://github.com/eQuantic/equantic-ui/issues/616)). Proposed and archived through
   OpenSpec, in `interaction-states`.

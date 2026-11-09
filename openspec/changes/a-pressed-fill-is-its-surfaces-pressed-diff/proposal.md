@@ -33,7 +33,11 @@ shape this repository removes rather than keeps.
   SurfaceSubtle fill on the tab cell", and of the navigation bar, whose twin the rail is, "Press-down
   shows the pill". So a tab wraps its cell in a surface that carries the fill, and the bar and the
   rail put it on the pill: Photon's tab and the web's bar and rail change place, and a pressed pill
-  now changes at once on the web, as on Photon, rather than fading in. The colour stays as it was;
+  now changes at once on the web, as on Photon, rather than fading in.
+- The pill of the SELECTED destination takes no pressed fill. Photon's first box drawn was that
+  pill too, so on main a held press traded the selected pill for `SurfaceSubtle` on Photon, which
+  read as the selection going away while the finger stayed down; on the web the whole item was
+  washed and the pill stayed on top. The selected pill now keeps its colour on both targets. The colour stays as it was;
   where it differs from the handoff's (the pill at 40%, an unselected filter chip pressed into its
   rest colour) is #1254.
 - `Pressable.PressedBackground` goes, and so does the `pressedBackground` parameter of the

@@ -10,8 +10,8 @@
 - [x] 2.2 Remove `Pressable.PressedBackground`, the factory's `pressedBackground` parameter, `PendingFill`, `--eq-pressed-bg`, `eq-press-fill`, `eq-pressed` and the two `!important` rules, on both web producers. Verify: no reference left in `src`, `samples` or `tests` but the guards that assert their absence, and the two `PublicAPI` files carry the `*REMOVED*` lines
 - [x] 2.3 Regenerate the transpiled twins. Verify: the only change in each is the moved fill
 - [x] 2.4 Guard the order the `!important` stood in for. Verify: `APressedFill_OutranksEveryOtherFillOfItsBox_BySpecificityAlone` reads the computed specificity of the pressed fill's selector against the box's own, its hover's and its focus's, and fails when the pressed family is weakened to `.eq-pressable:active` (measured: (0,3,0) against the focus's (0,3,0))
-- [ ] 2.5 Press a button in a browser on main and on the branch. Verify: the computed `background-color` while held is the same, a hovered one too, and the hydrated classes are the served ones
-- [ ] 2.6 Run the Web, Native.Engine, Compiler and Conformance suites whole, the last two through the suite lock, and the runtime's. Verify: each one's total and exit code
+- [x] 2.5 Measure in Chromium the computed `background-color` of the SDK's own output (the theme stylesheet, the atomic sheet and the lowered HTML of a button, a selected filter chip, tabs and a navigation bar), each state's pseudo-class rewritten as a class of the same weight so a press can be held. Verify: pressed is the token the component set on main, hover, focus and press together are the press, and the fill lands on the surface, the cell or the pill. The hydrated classes are the served ones by the parity fixture, which compares the C# and TypeScript lowerings of the same trees
+- [x] 2.6 Run the Web, Native.Engine, Compiler and Conformance suites whole, the last two through the suite lock, and the runtime's. Verify: each one's total and exit code
 
 ## 3. Documentation
 

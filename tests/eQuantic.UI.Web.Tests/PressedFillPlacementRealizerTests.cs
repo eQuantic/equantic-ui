@@ -13,7 +13,8 @@ namespace eQuantic.UI.Web.Tests;
 /// <para>
 /// The handoff names the place. A button, an icon button, a chip, a list row, the search field's
 /// clear button and a tab fill the surface the control wraps, which is its first child; the
-/// navigation bar and the rail show their pill. Until #616 the web filled the first child of every
+/// navigation bar and the rail show their pill, on every destination but the selected one, whose
+/// pill already shows. Until #616 the web filled the first child of every
 /// pressed control while Photon filled the first box it drew, which for a tab was the 3dp strip
 /// under its label.
 /// </para>
@@ -90,6 +91,11 @@ public class PressedFillPlacementRealizerTests
         foreach (var control in controls)
         {
             var filled = Walk(control).Skip(1).Where(node => Writes(css, node, fill, pressed: true)).ToList();
+            if (c.Where == Place.Pill && control.Attributes.ContainsKey("aria-current"))
+            {
+                filled.Should().BeEmpty($"the selected {c.Name}'s pill already shows, and keeps its colour pressed");
+                continue;
+            }
             filled.Should().ContainSingle($"a pressed {c.Name} paints its fill once");
             var target = filled[0];
 
