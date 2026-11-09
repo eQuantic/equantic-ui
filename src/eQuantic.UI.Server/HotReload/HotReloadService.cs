@@ -109,6 +109,20 @@ public sealed class HotReloadService : IDisposable
             _assets.EnableRaisingEvents = true;
         }
 
+        // The compiler gets ready while the app starts, so the first save of a run pays no MSBuild and
+        // no process start. A compiler that cannot get ready says why on the first save.
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                _compiler.Prepare();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[eQuantic.HotReload] the compiler could not get ready: {ex.Message}");
+            }
+        });
+
         // A parked SSE request that never says anything gets idle-dropped by Kestrel and by every
         // proxy in between — a couple of quiet minutes and hot reload was silently over for that
         // tab. A comment frame every 20s is invisible to the client and keeps the pipe warm.

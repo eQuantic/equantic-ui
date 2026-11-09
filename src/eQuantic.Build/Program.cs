@@ -67,6 +67,9 @@ return hadErrors ? 1 : 0;
 static int Serve(AppBuildOptions options)
 {
     Console.WriteLine($"👀 eQuantic.UI: serving compiles of {options.SourceDirectories.Count} directories, one for each `compile` read");
+    // Loaded once before the first request and thrown away, so the first save does not pay for
+    // loading the compiler itself: what each compile loads again is the project.
+    new AppBuild(options, TextWriter.Null, TextWriter.Null).Load();
     string? request;
     while ((request = Console.In.ReadLine()) is not null)
     {

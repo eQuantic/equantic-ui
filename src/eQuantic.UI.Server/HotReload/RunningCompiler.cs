@@ -97,6 +97,12 @@ internal sealed class RunningCompiler : IModuleCompiler
         return CompileOutcome.NotRun($"eqc did not answer in {limit.TotalSeconds:F0}s, and was stopped");
     }
 
+    /// <summary>
+    /// Asks MSBuild how to start eqc and starts it, so the first save of a run pays neither: the
+    /// server calls this as it starts, beside the app's own start.
+    /// </summary>
+    public void Prepare() => Ready();
+
     /// <summary>The running eqc, started when there is none: the first save of a run, or the one after
     /// it died or was stopped.</summary>
     private Process? Ready()

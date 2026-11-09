@@ -6,6 +6,9 @@ namespace eQuantic.UI.Server.HotReload;
 /// </summary>
 internal interface IModuleCompiler : IDisposable
 {
+    /// <summary>Gets ready for the first save without compiling, while the app starts.</summary>
+    void Prepare();
+
     /// <summary>Compiles the app's modules, and gives up after <paramref name="limit"/>.</summary>
     CompileOutcome Compile(TimeSpan limit);
 }

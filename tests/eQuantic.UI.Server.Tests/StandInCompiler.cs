@@ -10,6 +10,10 @@ internal sealed class StandInCompiler(Func<TimeSpan, CompileOutcome> compile) : 
 
     public int Disposals { get; private set; }
 
+    public void Prepare()
+    {
+    }
+
     public CompileOutcome Compile(TimeSpan limit) => compile(limit);
 
     public void Dispose() => Disposals++;
