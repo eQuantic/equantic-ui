@@ -146,6 +146,17 @@ public class PressedFillPlacementTests
             $"held, the {c.Name} fills {held[0].Width}x{held[0].Height}, pictured {expected.Single().Width}x{expected.Single().Height}");
     }
 
+    /// <summary>A selected row's fill IS its state, and a press does not wash it away.</summary>
+    [Fact]
+    public void APressedSelectedRow_KeepsItsSelection()
+    {
+        var (pressed, _) = Draw(new Simulated(SimulatedState.Pressed,
+            new ListItem("Wallet", onPressed: () => { }) { Selected = true }));
+
+        Painted(pressed, Primary.Subtle).Should().NotBeEmpty("the selected row keeps its fill pressed");
+        Painted(pressed, Theme.SurfaceSubtle).Should().BeEmpty("and is not washed to the press's");
+    }
+
     private static DisplayList Frame(PhotonHost host)
     {
         var builder = new DisplayListBuilder();

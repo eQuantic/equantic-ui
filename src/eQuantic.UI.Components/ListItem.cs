@@ -122,9 +122,12 @@ public sealed class ListItem : StatelessComponent
             Hover = OnPressed is null || Selected
                 ? null
                 : new StyleDiff { Background = theme.SurfaceSubtle },
-            // Pressed on every interactive row, a selected one included: the press is the row's
-            // answer to the finger, and a disabled row shows none because its control is disabled.
-            Pressed = OnPressed is null ? null : new StyleDiff { Background = theme.SurfaceSubtle },
+            // Pressed for the same rows and the same reason: a press that washed a selected row to
+            // SurfaceSubtle erased the selection for as long as the finger stayed down (#616). A
+            // disabled row shows none because its control is disabled.
+            Pressed = OnPressed is null || Selected
+                ? null
+                : new StyleDiff { Background = theme.SurfaceSubtle },
         }, row);
 
         return OnPressed is null
