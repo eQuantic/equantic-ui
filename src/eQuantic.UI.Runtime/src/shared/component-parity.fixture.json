@@ -33023,6 +33023,256 @@
       ]
     }
   ],
+  "links-with-schemes": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11yg588 eq-19dgm5h eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "a",
+          "attrs": {
+            "class": "eq-g7fowl eq-link"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "script",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "a",
+          "attrs": {
+            "class": "eq-g7fowl eq-link"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "folded",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "a",
+          "attrs": {
+            "class": "eq-g7fowl eq-link",
+            "href": "mailto:team@example.com"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "mail",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "span",
+          "attrs": {
+            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "a",
+              "attrs": {},
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "data",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {},
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "vb",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {
+                "href": "tel:\u002B351210000000"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "call",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {
+                "href": "HTTPS://example.com"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "web",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {
+                "href": "#top"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "here",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {
+                "href": "docs/next?page=2"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "next",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp eq-qginuq"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-115fhry eq-16x7aca eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "a",
+                  "attrs": {},
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": "click",
+                      "attrs": {},
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "tag": "span",
+                  "attrs": {},
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": " and ",
+                      "attrs": {},
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "tag": "a",
+                  "attrs": {
+                    "href": "https://example.com/docs"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": "docs",
+                      "attrs": {},
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "links-in-portuguese": [
     {
       "tag": "div",
