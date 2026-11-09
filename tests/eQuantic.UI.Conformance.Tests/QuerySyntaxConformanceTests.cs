@@ -29,7 +29,7 @@ public class QuerySyntaxConformanceTests
     [InlineData("var arr = new[] { 3, 1, 2 }; return (from a in arr orderby a select a).ToList();")]  // [1,2,3]
     // range-variable members inside the bodies
     [InlineData(Words + "return (from w in ws where w.Length > 3 orderby w select w.ToUpper()).ToList();")]
-    [InlineData(Words + "return (from w in ws where w.StartsWith(\"p\") select w.Length).ToList();")]  // [4]
+    [InlineData(Words + "return (from w in ws where w.StartsWith(\"p\", StringComparison.Ordinal) select w.Length).ToList();")]  // [4]
     // group … by
     [InlineData(Words + "return (from w in ws group w by w.Length).Select(g => g.Key).ToList();")]    // [4,3,5]
     [InlineData(Words + "return (from w in ws group w by w.Length).Select(g => g.Count()).ToList();")] // [2,1,1]

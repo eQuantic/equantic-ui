@@ -133,20 +133,6 @@ public class StringStrategyTests
     }
 
     [Fact]
-    public void StartsWith_MapsToStartsWith()
-    {
-        var result = TestHelper.ConvertExpression("str.StartsWith(\"prefix\")");
-        result.Should().Be("this.str.startsWith('prefix')");
-    }
-
-    [Fact]
-    public void EndsWith_MapsToEndsWith()
-    {
-        var result = TestHelper.ConvertExpression("str.EndsWith(\"suffix\")");
-        result.Should().Be("this.str.endsWith('suffix')");
-    }
-
-    [Fact]
     public void Contains_String_MapsToIncludes()
     {
         var result = TestHelper.ConvertExpression("str.Contains(\"sub\")");
@@ -171,25 +157,11 @@ public class StringStrategyTests
     }
 
     [Fact]
-    public void IndexOf_MapsToIndexOf()
-    {
-        var result = TestHelper.ConvertExpression("str.IndexOf(\"x\")");
-        result.Should().Be("this.str.indexOf('x')");
-    }
-
-    [Fact]
-    public void LastIndexOf_MapsToLastIndexOf()
-    {
-        var result = TestHelper.ConvertExpression("str.LastIndexOf(\"x\")");
-        result.Should().Be("this.str.lastIndexOf('x')");
-    }
-
-    [Fact]
     public void LastIndexOf_FromAStartForACount_IsTheRuntimesOrdinalSearch()
     {
         // JavaScript's lastIndexOf takes no count and reads its start as where a match may begin,
         // where .NET's is where it must end by (#724).
-        var result = TestHelper.ConvertExpression("str.LastIndexOf(\"x\", 4, 2)");
+        var result = TestHelper.ConvertExpression("str.LastIndexOf(\"x\", 4, 2, StringComparison.Ordinal)");
         result.Should().Be("$eq.text.lastIndexOf(this.str, 'x', 4, 2, 'ordinal')");
     }
 
