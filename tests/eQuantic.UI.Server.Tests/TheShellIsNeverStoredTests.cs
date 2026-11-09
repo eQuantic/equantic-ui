@@ -1,5 +1,6 @@
 using System.Net;
 using System.Reflection;
+using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -16,6 +17,13 @@ namespace eQuantic.UI.Server.Tests;
 /// </summary>
 public class TheShellIsNeverStoredTests
 {
+    /// <summary>A page of this class's own, so the route it asks for is declared here.</summary>
+    [Page("/never-stored")]
+    public sealed class NeverStoredPage : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new Text("kept nowhere", TypeRole.BodyM);
+    }
+
     private static async Task<HttpResponseMessage> Get(bool ssr, string path, bool navigation = false)
     {
         var builder = WebApplication.CreateBuilder();
@@ -25,15 +33,13 @@ public class TheShellIsNeverStoredTests
             options.ScanAssembly(Assembly.GetExecutingAssembly());
             options.EnableSsr = ssr;
         });
-        var app = builder.Build();
+        await using var app = builder.Build();
         app.MapUI();
         await app.StartAsync();
 
-        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        using var request = new HttpRequestMessage(HttpMethod.Get, path);
         if (navigation) request.Headers.Add(UIExtensions.NavigationHeader, "1");
-        var response = await app.GetTestClient().SendAsync(request);
-        await app.DisposeAsync();
-        return response;
+        return await app.GetTestClient().SendAsync(request);
     }
 
     [Theory]
@@ -41,7 +47,7 @@ public class TheShellIsNeverStoredTests
     [InlineData(false)]
     public async Task APage_IsSentNeverStored(bool ssr)
     {
-        var response = await Get(ssr, "/one-pass");
+        var response = await Get(ssr, "/never-stored");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Be("text/html");
@@ -61,7 +67,7 @@ public class TheShellIsNeverStoredTests
     [Fact]
     public async Task ANavigationsState_IsSentNeverStored()
     {
-        var response = await Get(ssr: true, "/one-pass", navigation: true);
+        var response = await Get(ssr: true, "/never-stored", navigation: true);
 
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/json");
         response.Headers.CacheControl!.NoStore.Should().BeTrue("the page's data is this visitor's");
