@@ -19,6 +19,12 @@ place SHALL start from its own value.
   later builds for another reason
 - **THEN** the field shows `ab` after the keys and after the form builds
 
+#### Scenario: A field component's own rebuild
+
+- **WHEN** a form keeps its field's value without `SetState` through a `TextInput`, `ab` is typed, and the
+  focus leaves the field, so the `TextInput` builds again on its own
+- **THEN** the field shows `ab`
+
 #### Scenario: A handler that rejects the key
 
 - **WHEN** a field holding `ab` is typed `!` into, and its handler calls `SetState` keeping `ab`

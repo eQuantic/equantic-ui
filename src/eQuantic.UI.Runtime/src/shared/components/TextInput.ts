@@ -87,7 +87,10 @@ export class TextInput extends StatefulComponent {
         if ((leading = this.leading) != null) {
             row.add(new Icon(IconGlyph.fromIcons(leading), 20, theme.textMuted));
         }
-        row.add(new Flexible(new TextEntry(this.value, this.onChanged, { placeholder: this.placeholder, label: this.label.length > 0 ? this.label : null, description: caption.length > 0 ? caption : null, invalid: hasError, disabled: this.disabled, obscure: this.obscure, autofocus: this.autofocus, onFocusChanged: (focused: boolean) => {
+        row.add(new Flexible(new TextEntry(this.value, (value: string) => {
+            this.value = value;
+            this.onChanged?.(value);
+        }, { placeholder: this.placeholder, label: this.label.length > 0 ? this.label : null, description: caption.length > 0 ? caption : null, invalid: hasError, disabled: this.disabled, obscure: this.obscure, autofocus: this.autofocus, onFocusChanged: (focused: boolean) => {
             this.setState(() => this._focused = focused);
             this.onFocusChanged?.(focused);
         } }), 1));

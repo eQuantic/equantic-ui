@@ -39,12 +39,14 @@ For a developer using the SDK:
   builds the field again, as an input does in a browser. To put the field back, the handler calls
   `SetState`. This is the one migration line.
 
-The parts it reaches are all Photon's: the layout's measure, the paint walk, the semantics walk and the
-host (the caret, the selection, the word and line moves, a click's caret, a triple click and the phone
-keyboard's editing value) read the field's text from its position, through one function in
-`eQuantic.UI.Native.Framework`. The web, eqc, the SDKs and the templates do not move. The public surface
-of `eQuantic.UI.Native.Framework` (experimental, `EQX0001`) gains `FieldText`; the developer surface
-does not move.
+On Photon, the layout's measure, the paint walk, the semantics walk and the host (the caret, the
+selection, the word and line moves, a click's caret, a triple click and the phone keyboard's editing
+value) read the field's text from its position, through one function in `eQuantic.UI.Native.Framework`.
+One write-once component moves on both targets: `TextInput`, which holds a field and not its value,
+keeps the last value its field reported until its parent configures it again, so its own rebuild when
+the focus moves no longer builds the field from the value its parent handed it before the typing. eqc,
+the SDKs and the templates do not move. The public surface of `eQuantic.UI.Native.Framework`
+(experimental, `EQX0001`) gains `FieldText`; the developer surface does not move.
 
 ## Capabilities
 
@@ -65,6 +67,7 @@ None.
   measure of a `TextEntry`.
 - `src/eQuantic.UI.Native.Components`: `PhotonHost` (the text editing, and the fallback removed for a
   field), the paint walk of a field and the semantics walk of a field.
+- `src/eQuantic.UI.Components/TextInput.cs`, and its transpiled twin in the runtime.
 - `docs/FLUTTER-PARITY.md`'s Element tree row, which names this as the difference left.
 - The wiki's Photon page, "What a frame builds", in its five languages: its bullet on a frame after
   input says a field's handler that calls no `SetState` rebuilds every component.

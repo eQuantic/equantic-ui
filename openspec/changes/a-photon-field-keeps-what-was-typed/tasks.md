@@ -24,6 +24,8 @@
 - [x] 3.5 Tests for each scenario of the `text-entry` requirement, and `InputBuildsWhatItReachedTests`
   for the `element-tree` one: a key typed into a field whose handler calls no `SetState` builds nothing
   and still draws
+- [x] 3.6 `TextInput` keeps the last value its field reported until its parent configures it again, and
+  its transpiled twin is regenerated; tested through a form that keeps the value without `SetState`
 
 ## 4. Against the real thing
 

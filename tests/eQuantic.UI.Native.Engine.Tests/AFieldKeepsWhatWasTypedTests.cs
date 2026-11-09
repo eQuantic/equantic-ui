@@ -1,3 +1,4 @@
+using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
@@ -69,8 +70,11 @@ public class AFieldKeepsWhatWasTypedTests
         Holds,
     }
 
-    /// <summary>A page holding one field, which says when it builds.</summary>
-    private sealed class Page(Handler handler, string initial, List<string> builds) : StatefulComponent
+    /// <summary>A page holding one field, which says when it builds. Through a <see cref="TextInput"/>
+    /// when <paramref name="wrapped"/>: a component that holds the field and not its value, and rebuilds
+    /// on its own when the focus moves.</summary>
+    private sealed class Page(Handler handler, string initial, List<string> builds, bool wrapped = false)
+        : StatefulComponent
     {
         private string _value = initial;
         private int _generation;
@@ -102,18 +106,20 @@ public class AFieldKeepsWhatWasTypedTests
                 Handler.UpperCases => value => SetState(() => _value = value.ToUpperInvariant()),
                 _ => value => SetState(() => _value = value),
             };
-            return new TextEntry(_value, onChanged) { Label = "Field", Key = $"field {_generation}" };
+            return wrapped
+                ? new TextInput(_value, onChanged, "Field") { Key = $"field {_generation}" }
+                : new TextEntry(_value, onChanged) { Label = "Field", Key = $"field {_generation}" };
         }
     }
 
     private sealed record Opened(PhotonHost Host, Page Page, Recorder Recorder, List<string> Builds);
 
     /// <summary>A host showing the page, with the field holding the caret.</summary>
-    private static Opened Open(Handler handler, string initial = "")
+    private static Opened Open(Handler handler, string initial = "", bool wrapped = false)
     {
         var builds = new List<string>();
         var recorder = new Recorder();
-        var page = new Page(handler, initial, builds);
+        var page = new Page(handler, initial, builds, wrapped);
         var host = new PhotonHost(page, Theme, ThemeMode.Light, 480, 200, recorder) { TextRasterizer = recorder };
         Frame(host);
         var field = host.LastFrame!.TextRegions.Single().Bounds;
@@ -144,10 +150,12 @@ public class AFieldKeepsWhatWasTypedTests
         builds.Should().BeEmpty("nothing marked a position, and the field keeps the key itself");
     }
 
-    [Fact]
-    public void AHandlerThatKeepsTheValueWithoutSayingSo_ShowsEveryKey_BeforeAndAfterThePageBuilds()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AHandlerThatKeepsTheValueWithoutSayingSo_ShowsEveryKey_BeforeAndAfterThePageBuilds(bool wrapped)
     {
-        var (host, page, _, builds) = Open(Handler.KeepsQuietly);
+        var (host, page, _, builds) = Open(Handler.KeepsQuietly, wrapped: wrapped);
 
         host.TextInput("a");
         Frame(host);
@@ -162,6 +170,27 @@ public class AFieldKeepsWhatWasTypedTests
 
         builds.Should().Equal(["page"]);
         Heard(host).Should().Be("ab", "the page built the field with the value it kept, which is what was typed");
+    }
+
+    /// <summary>
+    /// A field component rebuilds on its own when the focus moves, from the value its parent last handed
+    /// it. A form that kept the value without <c>SetState</c> never handed it the typed one, so the
+    /// component has to keep what its field reported, or the field goes back to the value it held before
+    /// the typing the moment the focus leaves.
+    /// </summary>
+    [Fact]
+    public void AFormThatKeepsTheValueWithoutSayingSo_KeepsWhatWasTyped_WhenTheFocusLeavesItsFieldComponent()
+    {
+        var (host, _, _, _) = Open(Handler.KeepsQuietly, wrapped: true);
+
+        host.TextInput("a");
+        Frame(host);
+        host.TextInput("b");
+        Frame(host);
+        host.KeyDown("Escape");
+        Frame(host);
+
+        Heard(host).Should().Be("ab");
     }
 
     [Fact]
@@ -197,10 +226,12 @@ public class AFieldKeepsWhatWasTypedTests
     /// drawn it the page reset the field to <c>""</c> again. A rule that takes the page's value only when
     /// it changed sees <c>""</c> twice and leaves the code on screen over an empty field.
     /// </summary>
-    [Fact]
-    public void AResetInTheSameFrameAsTheTyping_ShowsNothing()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AResetInTheSameFrameAsTheTyping_ShowsNothing(bool wrapped)
     {
-        var (host, page, recorder, _) = Open(Handler.Holds);
+        var (host, page, recorder, _) = Open(Handler.Holds, wrapped: wrapped);
 
         host.TextInput("1");
         host.TextInput("2");

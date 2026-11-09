@@ -124,7 +124,17 @@ public sealed class TextInput : StatefulComponent
         {
             row.Add(new Icon(leading, IconSize.Dense, theme.TextMuted)); // spec B9: 20dp leading glyph
         }
-        row.Add(new Flexible(new TextEntry(Value, OnChanged)
+        // The field keeps what was typed on its position until the page builds it again (#996), and
+        // this component holds the field but not the value: it rebuilds on its own when the focus
+        // moves, from the value its parent last handed it. So it keeps the last value the field
+        // reported, until its parent configures it again (AdoptConfig) with what the page holds.
+        // Without it, a form that kept the value without SetState saw the field go back to the
+        // value it held before the typing the moment the focus left.
+        row.Add(new Flexible(new TextEntry(Value, value =>
+        {
+            Value = value;
+            OnChanged?.Invoke(value);
+        })
         {
             Placeholder = Placeholder,
             Label = Label.Length > 0 ? Label : null,

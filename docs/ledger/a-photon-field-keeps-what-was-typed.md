@@ -7,7 +7,10 @@
   the tests left `ab!` after a rejected key and `123` over a field reset in the same frame as the
   typing. The measure, the paint, the semantics, the caret and the phone keyboard's editing value read
   the one text, and the position decides whether the page built the field, so a reader holding an
-  older frame's node cannot wipe what was typed. A frame after a key typed into a field whose form
-  keeps the value without `SetState` went from 96,992 to 30,864 bytes and builds nothing
+  older frame's node cannot wipe what was typed. Review found that `TextInput`, rebuilding on its own
+  when the focus left, built the field from the value its parent had handed it before the typing, and
+  a form keeping the value without `SetState` lost it; `TextInput` now keeps what its field reported
+  until its parent configures it again, on both targets. A frame after a key typed into a field whose
+  form keeps the value without `SetState` went from 96,992 to 30,864 bytes and builds nothing
   ([#996](https://github.com/eQuantic/equantic-ui/issues/996)). Proposed and archived through
   OpenSpec (`openspec/specs/text-entry`, `openspec/specs/element-tree`).

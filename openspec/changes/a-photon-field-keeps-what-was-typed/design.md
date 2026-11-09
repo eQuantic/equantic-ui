@@ -78,6 +78,22 @@ semantics in `eQuantic.UI.Native.Components`, so the two functions are public, o
 surface (`EQX0001`). A position keeps one kind of state, and a `TextEntry`'s keeps no other: a flex
 weight's track lives on its `Flexible`, and a box's glide on its box.
 
+### A field component keeps what its field reported
+
+`TextInput` holds a field and not its value, and it rebuilds on its own when the focus moves, from the
+value its parent last handed it. With the fallback gone, a form that keeps the value without
+`SetState` never hands it the typed one, and review found the consequence: the moment the focus left,
+`TextInput` built the field from the value it held before the typing, the field took it as the page's,
+and what was typed was gone (measured: `ab` before the focus left, an empty field after).
+
+No rule on the field can tell that rebuild from #1026's reset: both hand the field, after a key, the
+value it had before the key. The difference is who built it, so the fix is where the stale value comes
+from: `TextInput` keeps the last value its field reported and builds the field with it, until its
+parent configures it again (`AdoptConfig`) with what the page holds. That is what a Flutter text
+field's controller does across its own rebuilds. A reset that goes through the page still reaches the
+field, because the page's build configures `TextInput` again. `TextInput` is write-once, so the web
+gets the same answer, and its transpiled twin moves with it.
+
 ### A frame after a key builds what was marked
 
 `Commit` records the key on the position and hands the value to `OnChanged`, and the frame builds what
