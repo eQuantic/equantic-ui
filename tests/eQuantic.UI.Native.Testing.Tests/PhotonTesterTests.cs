@@ -50,7 +50,7 @@ public class PhotonTesterTests
     {
         private int _count = 1;
 
-        public void Grow() => SetState(() => _count = 1_000_000);
+        public void Set(int count) => SetState(() => _count = count);
 
         public override VisualNode Build(ComponentContext context) => Column(children: [Text($"Count: {_count}")]);
     }
@@ -63,18 +63,27 @@ public class PhotonTesterTests
         tester.Pump(counter);
         var before = tester.Find("Count: 1");
         var firstRoot = tester.Root;
+        var (firstBox, firstLine) = (before.Bounds, before.Text!.Lines[0].Width);
 
-        counter.Grow();
+        counter.Set(1_000_000);
         Assert.True(tester.HasScheduledFrame);
         tester.Pump();
 
         // A text in a column takes the column's width, so the box holds still: the LINE is what grew.
         var after = tester.Find("Count: 1000000");
-        Assert.True(after.Text!.Lines[0].Width > before.Text!.Lines[0].Width, $"Before {before}, after {after}.");
-        Assert.Equal("Count: 1", Texts(firstRoot).Single());
-        Assert.Same(before.Text, Find(firstRoot, "Count: 1").Text);
+        Assert.True(after.Text!.Lines[0].Width > firstLine, $"Before {before}, after {after}.");
         Assert.Equal("Count: 1000000", Texts(tester.Root).Single());
         Assert.False(tester.HasScheduledFrame);
+
+        // A host that recycles frames hands the first frame's nodes to the frame after the next, which
+        // writes over them: the measurement held from the first frame must not move with it.
+        counter.Set(42);
+        tester.Pump();
+
+        Assert.Equal("Count: 42", Texts(tester.Root).Single());
+        Assert.Equal(firstBox, before.Bounds);
+        Assert.Equal(firstLine, before.Text!.Lines[0].Width);
+        Assert.Equal("Count: 1", Texts(firstRoot).Single());
     }
 
     [Fact]

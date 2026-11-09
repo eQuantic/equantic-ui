@@ -40,20 +40,19 @@ public sealed class MeasuredNode
         + (Text is null ? "" : $", {Text.Lines.Count} line{(Text.Lines.Count == 1 ? "" : "s")}");
 
     /// <summary>Copies <paramref name="node"/> and everything under it, filing each copy under the id of
-    /// the position that built it, the id Photon's semantics tree names it by. A wrapper and what it
-    /// wraps can stand at one position, so an id files every node it holds, outermost first.</summary>
-    internal static MeasuredNode Copy(LayoutNode node, Dictionary<int, List<MeasuredNode>> byPosition)
+    /// the position that built it, the id Photon's semantics tree names it by.</summary>
+    /// <exception cref="InvalidOperationException">Two nodes of the frame stand at one position: the
+    /// engine lays one node out a position, and a reader that picked between two would answer one of
+    /// them in silence.</exception>
+    internal static MeasuredNode Copy(LayoutNode node, Dictionary<int, MeasuredNode> byPosition)
     {
-        List<MeasuredNode>? filed = null;
-        if (node.Element is { } position && !byPosition.TryGetValue(position.Id, out filed))
-            byPosition[position.Id] = filed = [];
-        var at = filed?.Count ?? 0;
-
         var children = new MeasuredNode[node.Children.Count];
         for (var i = 0; i < children.Length; i++) children[i] = Copy(node.Children[i], byPosition);
 
         var measured = new MeasuredNode(node.Source, node.Bounds, node.Text, children);
-        filed?.Insert(at, measured);
+        if (node.Element is { } position && !byPosition.TryAdd(position.Id, measured))
+            throw new InvalidOperationException(
+                $"Two nodes of the frame stand at one position: {byPosition[position.Id]} and {measured}.");
         return measured;
     }
 }
