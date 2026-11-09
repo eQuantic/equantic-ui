@@ -197,15 +197,21 @@ internal sealed class UploadProtocol
         if (Text(metadata, "filename") is not { } sent) return null;
         var name = sent[(sent.LastIndexOfAny(['/', '\\']) + 1)..];
         name = new string(name.Where(c => !char.IsControl(c) && char.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.Format)
-            .Select(c => c is '<' or '>' or ':' or '"' or '|' or '?' or '*' ? '_' : c).ToArray()).Trim().TrimEnd('.', ' ');
-        if (name.Length == 0 || name is "." or "..") return null;
-        var stem = name.Split('.')[0];
-        if (DeviceNames.Contains(stem)) name = "_" + name;
+            .Select(c => c is '<' or '>' or ':' or '"' or '|' or '?' or '*' ? '_' : c).ToArray()).Trim();
+        // Cut first, then trimmed and checked: a cut can end the name in the dots and spaces Windows drops,
+        // and leave a name the checks below refuse (found in the review of #1326).
         if (name.Length > 255)
         {
             // An extension longer than a short one is no extension to keep: the name is cut where it ends.
             var extension = Path.GetExtension(name) is { Length: <= 16 } kept ? kept : "";
-            name = name[..(255 - extension.Length)] + extension;
+            name = name[..(255 - extension.Length)].TrimEnd('.', ' ') + extension;
+        }
+        name = name.TrimEnd('.', ' ');
+        if (name.Length == 0 || name is "." or "..") return null;
+        if (DeviceNames.Contains(name.Split('.')[0].TrimEnd(' ')))
+        {
+            name = "_" + name;
+            if (name.Length > 255) name = name[..255].TrimEnd('.', ' ');
         }
         return name;
     }

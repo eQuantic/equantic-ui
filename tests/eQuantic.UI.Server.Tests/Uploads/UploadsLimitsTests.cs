@@ -108,12 +108,28 @@ public sealed class UploadsLimitsTests : IDisposable
         answer.Split('|')[2].Should().Be("image/png");
     }
 
+    [Fact]
+    public async Task ACutName_IsTrimmedAndCheckedAfterTheCut()
+    {
+        await using var app = await UploadsApp.StartAsync(_folder);
+        var browser = app.Browser();
+        using (var dots = await browser.CreateAsync(5, "small", ".." + new string(' ', 253) + "a"))
+            dots.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var location = await browser.UploadAsync(Content(5), "CON" + new string(' ', 252) + "a", "small", partSize: 5);
+
+        var (status, answer) = await browser.InvokeAsync("Receive", new { id = TusBrowser.IdOf(location) });
+
+        status.Should().Be(HttpStatusCode.OK, answer);
+        answer.Split('|')[1].Should().Be("_CON");
+    }
+
     [Theory]
     [InlineData("a\u0001b<c>.txt", "ab_c_.txt")]
     [InlineData("CON.txt", "_CON.txt")]
     [InlineData("lpt1", "_lpt1")]
     [InlineData("report. . ", "report")]
     [InlineData("invoice\u202Efdp.txt", "invoicefdp.txt")]
+    [InlineData("CON  .txt", "_CON  .txt")]
     public async Task TheName_IsOneAFileSystemTakesAsItIs(string sent, string kept)
     {
         await using var app = await UploadsApp.StartAsync(_folder);
