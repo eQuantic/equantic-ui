@@ -16,7 +16,11 @@ runs:
     - name: Key the cache on the declared packages
       id: key
       shell: bash
-      run: echo "versions=$(./scripts/nuget-cache-key.sh)" >> "$GITHUB_OUTPUT"
+      # Assigned before it is written: inside `echo` a failing key script would leave `echo`'s status,
+      # and the cache would be saved under a key that names no version.
+      run: |
+        versions=$(./scripts/nuget-cache-key.sh)
+        echo "versions=$versions" >> "$GITHUB_OUTPUT"
 
     # No fallback key: a miss restores from nuget.org, as before, rather than trusting another key's
     # cache as complete. The packages are listed one by one (`/*`), so the `!` line can take this
