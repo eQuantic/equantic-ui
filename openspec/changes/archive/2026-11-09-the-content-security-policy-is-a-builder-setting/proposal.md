@@ -24,8 +24,8 @@ was `'unsafe-inline'`, which admits an injected script as readily.
 - The SDK adds what its own features need. `UseGtm` declares the hosts Google's guidance names for
   GTM and GA4, and its snippet hands the container the page's nonce. Server events, Server Actions,
   uploads and the hot-reload relay are the app's own origin. Under `dotnet watch`, whose injected
-  script no nonce admits, the policy is written report-only. The first page logs the policy it
-  writes.
+  script no nonce admits, the policy is written report-only. The start-up log names the policy it
+  writes. A header something upstream wrote first wins, and the log warns once.
 - `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` come with
   the policy, on every response.
 - `style-src` is not written yet: the runtime's own style elements and the realizer's style

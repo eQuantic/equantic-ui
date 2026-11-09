@@ -37,12 +37,13 @@ frame-ancestors 'self' <app>; connect-src 'self' <features> <app>[; report-uri <
 
 dotnet watch injects its browser-refresh script into every page it serves. The SDK did not write
 it and cannot stamp it, so an enforced policy would refuse the reload dotnet watch exists for. Under
-`DOTNET_WATCH=1` the policy is written report-only, and the first page's log line says so. The SDK's
+`DOTNET_WATCH=1` the policy is written report-only, and the start-up log says so. The SDK's
 own relay needs nothing: it is the app's own origin.
 
 ## Where it is written
 
-On pages only, by the shell, which holds the nonce. A policy governs a document, so a script or a
+On pages only, by the shell, which holds the nonce. A policy something upstream already wrote wins,
+and the log warns once, since it refuses the shell's scripts unless it admits the nonce. A policy governs a document, so a script or a
 JSON response would carry it for nothing. The two headers that come with it go on every response,
 through a startup filter like `PoweredByHeader`, and neither overwrites a value something upstream
 wrote.
