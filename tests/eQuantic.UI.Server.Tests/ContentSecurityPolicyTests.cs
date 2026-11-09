@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
+using eQuantic.UI.Charts.ApexCharts;
 using eQuantic.UI.Gtm;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
@@ -119,6 +120,16 @@ public class ContentSecurityPolicyTests
             "the app wrote no host for GTM: the SDK knows what its own integration connects to");
         document.Should().Contain("j.setAttribute('nonce',n.nonce||n.getAttribute('nonce'))",
             "the container script carries the page's nonce, which GTM hands the tags it writes");
+    }
+
+    [Fact]
+    public void ApexCharts_IsHandedThePagesNonce_ForTheStyleElementItCreates()
+    {
+        var options = new UIOptions().UseApexCharts();
+
+        options.HtmlShell.HeadTags.Should().ContainSingle(tag => tag.Content != null && tag.Content.Contains("data-apex-init"))
+            .Which.Content.Should().Contain("cfg.chart.nonce=n.nonce",
+                "ApexCharts writes its CSS in a style element it creates, which a strict style-src refuses without the nonce");
     }
 
     [Fact]

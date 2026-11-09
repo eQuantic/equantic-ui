@@ -6,6 +6,7 @@
   carry 4 to 25 each (a pressable's pressed fill, a loop's endpoints, an editor's caret), per element
   and often per frame, and server-rendered markup is styled before any script could write them
   through the CSSOM. An injected style element is still refused, and the runtime's one
-  `setAttribute('style')` writes through `style.cssText`
+  `setAttribute('style')` writes through `style.cssText`. ApexCharts, which writes its CSS in a style
+  element of its own, is handed the page's nonce
   ([#1268](https://github.com/eQuantic/equantic-ui/issues/1268)). Proposed and archived through
   OpenSpec, into `content-security`.
