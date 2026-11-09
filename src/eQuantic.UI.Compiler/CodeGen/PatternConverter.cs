@@ -48,18 +48,11 @@ public static class PatternConverter
                 return ConstantMatch(constant, constant.Expression, access, context);
 
             case RelationalPatternSyntax relational:
-                // An ENUM's relation compares the values (#555): a non-flags enum is held as its member's
-                // key, which compared alphabetically, and a 64-bit one's constant is a BigInt.
-                if (context.SemanticHelper.GetType(relational.Expression) is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType
-                    && context.SemanticHelper.TryGetConstantValue(relational.Expression, out var bound) && bound is not null)
-                {
-                    var value = JsExprWriter.WriteIn(Strategies.Types.EnumShape.ValueOf(enumType, JsExpr.Opaque(access), context),
-                        JsPrecedence.Relational);
-                    var limit = Strategies.Types.EnumShape.ValueLiteral(enumType,
-                        System.Convert.ToDecimal(bound, System.Globalization.CultureInfo.InvariantCulture));
-                    return $"{value} {relational.OperatorToken.Text} {limit}";
-                }
-                return $"{access} {relational.OperatorToken.Text} {context.Converter.ConvertExpression(relational.Expression)}";
+                // A null never matches a relation, where JavaScript's `null < 5` is true: an input that may
+                // be null is tested for a value first, so `n is < 5` over an empty `int?` is false, as in C#.
+                return MayBeNull(relational, context)
+                    ? $"({access} != null && {Relation(relational, access, context)})"
+                    : Relation(relational, access, context);
 
             case DeclarationPatternSyntax declaration:
                 return TypeCheck(declaration.Type, access, context);
@@ -334,6 +327,31 @@ public static class PatternConverter
     /// which is exactly how one of the two answers went stale without anyone noticing. One rule, one
     /// place, both callers.
     /// </summary>
+    /// <summary>
+    /// A relational pattern's comparison of a value that is not null. An ENUM's relation compares the
+    /// values (#555): a non-flags enum is held as its member's key, which compared alphabetically, and a
+    /// 64-bit one's constant is a BigInt.
+    /// </summary>
+    private static string Relation(RelationalPatternSyntax relational, string access, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetType(relational.Expression) is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType
+            && context.SemanticHelper.TryGetConstantValue(relational.Expression, out var bound) && bound is not null)
+        {
+            var value = JsExprWriter.WriteIn(Strategies.Types.EnumShape.ValueOf(enumType, JsExpr.Opaque(access), context),
+                JsPrecedence.Relational);
+            var limit = Strategies.Types.EnumShape.ValueLiteral(enumType,
+                System.Convert.ToDecimal(bound, System.Globalization.CultureInfo.InvariantCulture));
+            return $"{value} {relational.OperatorToken.Text} {limit}";
+        }
+        return $"{access} {relational.OperatorToken.Text} {context.Converter.ConvertExpression(relational.Expression)}";
+    }
+
+    /// <summary>Whether a relational pattern's input may be null: a nullable value type, or a reference type
+    /// the relation reads a number out of. Without a model the input is taken as a value, as it was.</summary>
+    private static bool MayBeNull(RelationalPatternSyntax relational, ConversionContext context) =>
+        context.SemanticHelper.GetOperation(relational) is IPatternOperation { InputType: var input }
+        && (input.IsNullableValue() || !input.IsValueType);
+
     public static string TypeCheck(TypeSyntax typeSyntax, string access, ConversionContext context)
     {
         // A type the platform represents by a value of its own, read off the SYMBOL: the spelling

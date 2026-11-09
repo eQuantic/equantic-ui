@@ -195,9 +195,11 @@ function byValue(shape: EnumShape): number[] {
  */
 export function name(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'object'): string | null {
   if (given == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'value')");
-  // An object must hold the enum or a number, as .NET's GetName(Type, object) requires: a boxed
-  // member is its key here, and a string or a bool of any other kind is refused in .NET's words.
-  if (as === 'object' && typeof given !== 'number' && typeof given !== 'bigint' && !(typeof given === 'string' && keys(shape).includes(given)))
+  // An object must hold the enum or an integer, as .NET's GetName(Type, object) requires: a boxed
+  // member is its key here, and a string, a bool or a fraction is refused in .NET's words, where a
+  // 64-bit enum's BigInt of a fraction threw a RangeError.
+  const integral = typeof given === 'bigint' || (typeof given === 'number' && Number.isInteger(given));
+  if (as === 'object' && !integral && !(typeof given === 'string' && keys(shape).includes(given)))
     throw exception(
       'System.ArgumentException',
       "The value passed in must be an enum base or an underlying type for an enum, such as an Int32. (Parameter 'value')",

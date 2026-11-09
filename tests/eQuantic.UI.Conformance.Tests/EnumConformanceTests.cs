@@ -154,6 +154,10 @@ public class EnumConformanceTests
     [InlineData("var s = Status.Inactive; var a = Status.Active; return s - a;")]              // 2
     [InlineData("var h = Huge.B; h++; return (long)h;")]                                       // "1099511627777"
     [InlineData("var b = Big.Top; return (b - 1).ToString(\"D\");")]                           // "9223372036854775807"
+    [InlineData("Status? s = null; Status? t = Status.Active; return (s is < Status.Inactive) + \"|\" + (t is < Status.Inactive);")] // "False|True": a null never matches a relation
+    [InlineData("var h = Huge.A; h += 1; var s = h.ToString(); h -= 2; return s + \"|\" + (long)h;")] // "2|-1"
+    [InlineData("var x = Span64.Zero; x += 5; return (long)x;")] // "5"
+    [InlineData("try { return Enum.GetName(typeof(Huge), 1.5) ?? \"null\"; } catch (ArgumentException) { return \"arg\"; } catch (InvalidOperationException) { return \"op\"; }")] // "arg": a fraction is no underlying type
     public void AnEnumsOperators_ComputeAtItsWidth(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
