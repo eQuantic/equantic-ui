@@ -225,6 +225,13 @@ public sealed class PhotonHost
     public float RenderScale { get; set; } = 1f;
 
     /// <summary>
+    /// What a frame is cleared to before anything is drawn. Null, the default, is the theme's
+    /// background, which a window shows. An app icon's small cut is drawn on
+    /// <see cref="Color.Transparent"/>, since it stands on a browser's tab, which shows through it (#1240).
+    /// </summary>
+    public Color? Backdrop { get; init; }
+
+    /// <summary>
     /// The margins the DISPLAY owns — notch, status bar, home indicator. A desktop window has none,
     /// so the default of zero is the correct answer there; a phone shell fills these from the
     /// platform and every <see cref="SafeArea"/> in the tree insets without the app knowing a number.
@@ -339,7 +346,7 @@ public sealed class PhotonHost
         var caretIndex = CaretIndex;
         var selection = Selection;
 
-        builder.Clear(_theme.Background.Resolve(Mode));
+        builder.Clear(Backdrop ?? _theme.Background.Resolve(Mode));
         if (RenderScale != 1f) builder.PushTransform(Matrix2D.Scale(RenderScale, RenderScale));
         if (_lift != 0) builder.PushTransform(Matrix2D.Translation(0, -_lift));
         _lastTimeMs = timeMs;
