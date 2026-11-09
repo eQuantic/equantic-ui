@@ -388,8 +388,132 @@ control "prints the key" \
   "the key reaches the client and no log" \
   's/^  \[ "\$status" -eq 0 \] && return 0$/  echo "key $NUGET_API_KEY"; [ "$status" -eq 0 ] \&\& return 0/'
 
+# --- the workflows that publish ----------------------------------------------------------------------
+
+# Every job that runs scripts/publish-packages.sh gets its key from nuget.org's trusted publishing,
+# for that run, and no workflow reads one from the secrets (#1224): a stored key expires, and
+# 0.2.0-preview.66's tag run met nuget.org's 403 on all 52 packages because it had. The login is
+# NuGet/login, its token needs `id-token: write`, and the policy for each workflow names the `nuget`
+# environment, so a job missing any of the three is refused a key on the day of a release.
+
+# jobs_running_the_script <workflow>: the jobs, each from its `  <id>:` line, whose steps run the
+# script. A line at the left margin ends a block, so `on:` and `permissions:` are no job's.
+jobs_running_the_script() {
+  awk '
+    function flush() { if (job != "" && runs) printf "%s", block; job = ""; block = ""; runs = 0 }
+    /^  [A-Za-z0-9_-]+:[[:space:]]*$/ { flush(); job = $0; block = $0 "\n"; next }
+    /^[^ #]/ { flush(); next }
+    job != "" { block = block $0 "\n"; if ($0 ~ /scripts\/publish-packages\.sh/) runs = 1 }
+    END { flush() }
+  ' "$1"
+}
+
+# workflow_permissions <workflow>: the top-level `permissions:` block, which a job without its own
+# inherits.
+workflow_permissions() {
+  awk '/^permissions:/ { on = 1; next } /^[^ #]/ { on = 0 } on' "$1"
+}
+
+# login_step_id <job block>: the `id:` of the step that uses NuGet/login, empty when it has none.
+login_step_id() {
+  printf '%s' "$1" | awk '
+    /^      - / { id = "" }
+    /^      (- )?  ?id:/ { sub(/.*id:[[:space:]]*/, ""); id = $0 }
+    /^      (- )?  ?uses: NuGet\/login@/ { print id; exit }
+  '
+}
+
+# check_workflow <workflow> <name>: prints one line per broken promise, nothing when they hold.
+check_workflow() {
+  local file=$1 name=$2 jobs login granted
+  jobs=$(jobs_running_the_script "$file")
+  if [ -z "$jobs" ]; then
+    echo "$name: no job runs scripts/publish-packages.sh, so nothing here publishes"
+    return
+  fi
+  # A comment may name the secret, as this one does. Only a line that is not one reads it.
+  if grep -v '^[[:space:]]*#' "$file" | grep -q 'secrets\.NUGET_API_KEY'; then
+    echo "$name: reads a stored key, secrets.NUGET_API_KEY, which expires"
+  fi
+  case "$jobs" in *'uses: NuGet/login@'*) ;; *) echo "$name: the job that publishes does not log in with NuGet/login" ;; esac
+  login=$(login_step_id "$jobs")
+  case "$jobs" in
+    *"NUGET_API_KEY: \${{ steps.${login:-<no id>}.outputs.NUGET_API_KEY }}"*) ;;
+    *) echo "$name: the push does not take its key from the login step" ;;
+  esac
+  case $'\n'"$jobs" in *$'\n    environment: nuget'$'\n'*) ;; *) echo "$name: the job that publishes does not run in the nuget environment" ;; esac
+  # A job's own `permissions:` replaces the workflow's whole, so the workflow's grant counts only
+  # for a job that declares none.
+  case $'\n'"$jobs" in
+    *$'\n    permissions:'*) granted=$jobs ;;
+    *) granted=$jobs$'\n'$(workflow_permissions "$file") ;;
+  esac
+  case "$granted" in
+    *'id-token: write'*) ;;
+    *) echo "$name: neither the job nor the workflow grants id-token: write" ;;
+  esac
+}
+
+workflows="$root/.github/workflows"
+problems=$( { check_workflow "$workflows/ci.yml" ci.yml; check_workflow "$workflows/publish-release.yml" publish-release.yml; } )
+if [ -n "$problems" ]; then
+  echo "$problems" | sed 's/^/FAIL: /' >&2
+  failures=$((failures + $(echo "$problems" | wc -l)))
+else
+  echo "ok: both workflows that publish log in through trusted publishing and read no stored key"
+fi
+
+# workflow_control <what it breaks> <workflow> <the line that must fail> <sed expression>: the same
+# kind of control as the script's, over a broken copy of a workflow.
+workflow_control() {
+  local real_workflow="$workflows/$2" broken="$work/$2" found
+  sed -e "$4" "$real_workflow" > "$broken"
+  if cmp -s "$real_workflow" "$broken"; then
+    echo "FAIL: the control '$1' changed nothing: its edit no longer matches $2" >&2
+    failures=$((failures + 1))
+    return
+  fi
+  found=$(check_workflow "$broken" "$2")
+  case $'\n'"$found" in
+    *$'\n'"$2: $3"*) echo "ok: a $2 that $1 fails" ;;
+    *)
+      echo "FAIL: a $2 that $1 passes" >&2
+      failures=$((failures + 1))
+      ;;
+  esac
+}
+
+workflow_control "pushes with a stored key" ci.yml "reads a stored key" \
+  's/NUGET_API_KEY: \${{ steps\.nuget\.outputs\.NUGET_API_KEY }}/NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}/'
+workflow_control "never logs in" ci.yml "the job that publishes does not log in" \
+  's/uses: NuGet\/login@/uses: NuGet\/elsewhere@/'
+workflow_control "publishes outside the nuget environment" publish-release.yml "the job that publishes does not run in the nuget environment" \
+  's/^    environment: nuget$/    environment: release/'
+workflow_control "grants no OIDC token" publish-release.yml "neither the job nor the workflow grants id-token: write" \
+  's/^  id-token: write.*$/  id-token: none/'
+workflow_control "gives the job permissions of its own without the token" publish-release.yml \
+  "neither the job nor the workflow grants id-token: write" \
+  's/^    environment: nuget$/    environment: nuget\
+    permissions:\
+      contents: read/'
+workflow_control "pushes with another step's key" ci.yml "the push does not take its key from the login step" \
+  's/^        id: nuget$/        id: login/'
+
+# The other way round: a comment that names the secret reads nothing, and must not fail the guard.
+sed -e 's/^      # No key is stored: a stored one expires/      # secrets.NUGET_API_KEY is gone: a stored one expires/' \
+  "$workflows/ci.yml" > "$work/ci.yml"
+if cmp -s "$workflows/ci.yml" "$work/ci.yml"; then
+  echo "FAIL: the comment control changed nothing: its edit no longer matches ci.yml" >&2
+  failures=$((failures + 1))
+elif found=$(check_workflow "$work/ci.yml" ci.yml); [ -n "$found" ]; then
+  echo "FAIL: a ci.yml that names the stored key in a comment fails: $found" >&2
+  failures=$((failures + 1))
+else
+  echo "ok: a ci.yml that names the stored key in a comment only passes"
+fi
+
 if [ "$failures" -gt 0 ]; then
   echo "check-publish-packages.sh: $failures failure(s)" >&2
   exit 1
 fi
-echo "check-publish-packages.sh: the script holds, and each control fails the case that guards it"
+echo "check-publish-packages.sh: the script and the workflows hold, and each control fails the case that guards it"

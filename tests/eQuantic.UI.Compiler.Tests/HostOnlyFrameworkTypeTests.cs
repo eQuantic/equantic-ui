@@ -352,4 +352,25 @@ public class HostOnlyFrameworkTypeTests
             .Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("FlexNode"),
                 "the SAME call, reached by naming the shape, is what the runtime has no twin for");
     }
+
+    /// <summary>
+    /// An <c>UploadedFile</c> crosses, and its content does not (#1214): the page holds the upload's
+    /// id, name, type, size and policy, and only a Server Action's parameter reads or deletes the file.
+    /// The two members are <c>[ServerOnly]</c> on a type that crosses, which is the member-level fence,
+    /// so client code that reaches for the content is stopped at the build rather than in the browser.
+    /// </summary>
+    [Theory]
+    [InlineData("_ = new UploadedFile(\"id\", \"a.stl\", \"model/stl\", 1, \"models\").OpenRead();")]
+    [InlineData("_ = new UploadedFile(\"id\", \"a.stl\", \"model/stl\", 1, \"models\").Delete();")]
+    public void AnUploadedFilesContent_IsTheServers(string statement)
+    {
+        Diagnostics(statement).Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("HOST ONLY"));
+    }
+
+    [Fact]
+    public void AndWhatThePageKnowsOfTheUpload_Crosses()
+    {
+        Diagnostics("var known = new UploadedFile(\"id\", \"a.stl\", \"model/stl\", 1, \"models\").Name;")
+            .Should().BeEmpty("the page shows the file it uploaded, and hands it to a Server Action");
+    }
 }

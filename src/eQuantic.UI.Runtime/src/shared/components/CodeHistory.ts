@@ -25,12 +25,12 @@ export class CodeHistory {
         if ($eq.collections.count(step.edits) === 0) return;
         this._future.splice(0);
         if (this._runEnds != null && this._past.length > 0 && CodeHistory.continues(this._runEnds, step)) {
-            this._past[this._past.length - 1] = CodeHistory.joined(this._past[this._past.length - 1], step);
-            this._runEnds = CodeHistory.ends(this._past[this._past.length - 1]);
+            (($0) => ($0[$0.length - 1] = CodeHistory.joined((($0) => $0[$0.length - 1])(this._past), step)))(this._past);
+            this._runEnds = CodeHistory.ends((($0) => $0[$0.length - 1])(this._past));
             return;
         }
         this._past.push(step);
-        if (this._past.length > this.limit) this._past.splice(0, 1);
+        if (this._past.length > this.limit) $eq.collections.listRemoveAt(this._past, 0);
         this._runEnds = CodeHistory.runs(step) ? CodeHistory.ends(step) : null;
     }
 
@@ -80,8 +80,8 @@ export class CodeHistory {
             selections = [];
             made = [];
             if (this._past.length === 0) return null;
-            let step = this._past[this._past.length - 1];
-            this._past.splice(this._past.length - 1, 1);
+            let step = (($0) => $0[$0.length - 1])(this._past);
+            $eq.collections.listRemoveAt(this._past, this._past.length - 1);
             this._future.push(step);
             this.break();
             let next = document;
@@ -107,8 +107,8 @@ export class CodeHistory {
             selections = [];
             made = [];
             if (this._future.length === 0) return null;
-            let step = this._future[this._future.length - 1];
-            this._future.splice(this._future.length - 1, 1);
+            let step = (($0) => $0[$0.length - 1])(this._future);
+            $eq.collections.listRemoveAt(this._future, this._future.length - 1);
             this._past.push(step);
             this.break();
             let next = document;

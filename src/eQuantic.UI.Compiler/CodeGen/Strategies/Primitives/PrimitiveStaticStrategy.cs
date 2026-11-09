@@ -411,13 +411,16 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
             };
         }
 
-        if (home == SpecialType.System_Int64)
+        if (home is SpecialType.System_Int64 or SpecialType.System_IntPtr or SpecialType.System_UInt64 or SpecialType.System_UIntPtr)
         {
             // A long IS a BigInt on this side, so the shared Math.* table cannot serve — BigInt
             // has no Math. Templates keep every argument single-evaluation; Sign answers a NUMBER
             // (C#'s long.Sign returns int). The 64-bit bit surface rides $eq.bits, which counts
             // and rotates the two's-complement bits .NET sees. BigMul stays fenced: it returns an
-            // Int128, a type with no twin.
+            // Int128, a type with no twin. A ulong is a BigInt too and never negative, so every template
+            // answers it as it answers a long but the rotations, which hand back a signed long.
+            if (home is SpecialType.System_UInt64 or SpecialType.System_UIntPtr && name is "RotateLeft" or "RotateRight")
+                return null;
             return name switch
             {
                 "Abs" => "({0} < 0n ? -{0} : {0})",

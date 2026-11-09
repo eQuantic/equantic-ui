@@ -331,16 +331,35 @@ public static class ConformanceRunner
     /// </summary>
     public static void AssertVocabularyStatementsSameAsDotNet(string csharpStatements)
     {
-        const string prelude = "using eQuantic.UI.Primitives;";
-        var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
-        var program = ImportOfWhatItNames(jsBlock) + Log(jsBlock);
-
-        var actual = JsExecutor.Run(program);
-        var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
+        var (jsBlock, actual, expected) = RunVocabularyStatements(csharpStatements);
 
         actual.Should().Be(
             expected,
             $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) must behave identically to .NET");
+    }
+
+    /// <summary>
+    /// As <see cref="AssertVocabularyStatementsSameAsDotNet"/>, for a block whose .NET answer holds the
+    /// host's newline, as <see cref="AssertStatementsSameAsDotNetExceptTheHostsNewline"/> does for one
+    /// that names no vocabulary: an <c>ArgumentOutOfRangeException</c>'s message writes its actual value
+    /// after <c>Environment.NewLine</c>, which is <c>\r\n</c> on Windows.
+    /// </summary>
+    public static void AssertVocabularyStatementsSameAsDotNetExceptTheHostsNewline(string csharpStatements, string why)
+    {
+        var (jsBlock, actual, expected) = RunVocabularyStatements(csharpStatements);
+        if (actual == expected) return;
+
+        Folded(actual).Should().Be(Folded(expected),
+            $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) differs from .NET by MORE than the "
+            + $"host's newline, which is the only difference this overload excuses: {why}");
+    }
+
+    private static (string JsBlock, string Actual, string Expected) RunVocabularyStatements(string csharpStatements)
+    {
+        const string prelude = "using eQuantic.UI.Primitives;";
+        var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
+        var program = ImportOfWhatItNames(jsBlock) + Log(jsBlock);
+        return (jsBlock, JsExecutor.Run(program), DotNetEvaluator.EvaluateToJson(csharpStatements, prelude));
     }
 
     /// <summary>

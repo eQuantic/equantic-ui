@@ -209,4 +209,56 @@ public class DrawingTests
         backend.Render(builder.Build(), surface);
         Golden.GoldenImage.Match(surface, "drawing-gradient");
     }
+    /// <summary>Two input triangles splitting a 200dp square along its diagonal (#674), the upper one
+    /// with a hover.</summary>
+    private static Drawing InputMap(Color hover) => new(new VectorDrawing(0, 0, 100, 100,
+    [
+        new VectorShape("M0 0 L100 0 L0 100 Z", VectorPaint.Solid(Color.FromRgb(203, 213, 225)))
+        {
+            Label = "Matosinhos", OnPressed = () => { }, Hover = new StyleDiff { Background = new ColorToken(hover) },
+        },
+        new VectorShape("M100 0 L100 100 L0 100 Z", VectorPaint.Solid(Color.FromRgb(203, 213, 225)))
+        {
+            Label = "Porto", OnPressed = () => { },
+        },
+    ]), width: 200, height: 200);
+
+    /// <summary>The pointer over an input shape paints its hover, and the shape beside it keeps its own
+    /// fill: the hover is drawn, not only tracked.</summary>
+    [SkippableFact]
+    public void TheShapeUnderThePointerIsPaintedInItsHover()
+    {
+        var hover = Color.FromRgb(148, 163, 184);
+        var host = new PhotonHost(InputMap(hover), PhotonTheme.Instance, ThemeMode.Light, 200, 200)
+        {
+            IconRasterizer = PlatformRasterizer(),
+        };
+        host.RenderFrame(new DisplayListBuilder());
+
+        host.PointerMove(40, 40);
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+
+        Textures(builder).Select(texture => texture.Paint.Color).Should().Equal(hover, Color.FromRgb(203, 213, 225));
+    }
+
+    /// <summary>The keyboard's focus strokes the focused shape's outline in the focus colour, one more
+    /// raster after its fill, and none around the shape that is not focused.</summary>
+    [SkippableFact]
+    public void TheFocusedShapeIsStrokedInTheFocusColour()
+    {
+        var host = new PhotonHost(InputMap(Color.FromRgb(148, 163, 184)), PhotonTheme.Instance, ThemeMode.Light, 200, 200)
+        {
+            IconRasterizer = PlatformRasterizer(),
+        };
+        host.RenderFrame(new DisplayListBuilder());
+
+        host.FocusNext();
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+
+        var ring = PhotonTheme.Instance.FocusRing.Resolve(ThemeMode.Light);
+        Textures(builder).Select(texture => texture.Paint.Color).Should().Equal(
+            Color.FromRgb(203, 213, 225), ring, Color.FromRgb(203, 213, 225));
+    }
 }

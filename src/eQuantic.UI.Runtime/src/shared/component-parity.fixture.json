@@ -131,7 +131,7 @@
             {
               "tag": "div",
               "attrs": {
-                "class": "eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp"
+                "class": "eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-akjizx eq-m92pvu eq-mc2xdp"
               },
               "events": [],
               "children": [
@@ -193,7 +193,7 @@
             {
               "tag": "div",
               "attrs": {
-                "class": "eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp"
+                "class": "eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-akjizx eq-m92pvu eq-mc2xdp"
               },
               "events": [],
               "children": [
@@ -718,6 +718,56 @@
         "eq-drag-released"
       ],
       "children": []
+    }
+  ],
+  "drop-target": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-akjizx eq-g7fowl",
+        "data-eq-drop": "on"
+      },
+      "events": [
+        "dragenter",
+        "dragleave",
+        "dragover",
+        "drop"
+      ],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "drop-target-disabled": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-g7fowl",
+        "data-eq-drop": "off"
+      },
+      "events": [
+        "dragenter",
+        "dragleave",
+        "dragover",
+        "drop"
+      ],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
     }
   ],
   "pinned-scrolled": [
@@ -33575,7 +33625,7 @@
         {
           "tag": "div",
           "attrs": {
-            "class": "eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp"
+            "class": "eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-akjizx eq-m92pvu eq-mc2xdp"
           },
           "events": [],
           "children": [
@@ -33606,7 +33656,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp"
+                    "class": "eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp"
                   },
                   "events": [],
                   "children": [
@@ -33657,6 +33707,67 @@
               ]
             }
           ]
+        }
+      ]
+    }
+  ],
+  "drawing-with-input-shapes": [
+    {
+      "tag": "svg",
+      "attrs": {
+        "class": "eq-16go7cf eq-16x7aca eq-1uxs8ty",
+        "fill": "none",
+        "preserveAspectRatio": "none",
+        "role": "group",
+        "viewBox": "0 0 100 100"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "path",
+          "attrs": {
+            "aria-label": "Porto",
+            "aria-pressed": "true",
+            "class": "eq-16b9owy eq-19ho0rm eq-1imlfss eq-1kq9y11 eq-gr7cq7 eq-shape eq-x0paz7",
+            "d": "M0 0 L100 0 L0 100 Z",
+            "fill": "#111827",
+            "role": "button",
+            "tabindex": "0"
+          },
+          "events": [
+            "click",
+            "keydown"
+          ],
+          "children": []
+        },
+        {
+          "tag": "path",
+          "attrs": {
+            "aria-label": "Matosinhos",
+            "class": "eq-1imlfss eq-1kq9y11 eq-shape",
+            "d": "M100 0 L100 100 L0 100 Z",
+            "fill": "currentColor",
+            "role": "button",
+            "tabindex": "0"
+          },
+          "events": [
+            "click",
+            "keydown"
+          ],
+          "children": []
+        },
+        {
+          "tag": "path",
+          "attrs": {
+            "d": "M0 0 L100 100",
+            "fill": "none",
+            "stroke": "currentColor",
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round",
+            "stroke-width": "1"
+          },
+          "events": [],
+          "children": []
         }
       ]
     }

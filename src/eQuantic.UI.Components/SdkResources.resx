@@ -253,4 +253,55 @@
   <data name="UnfoldLines" xml:space="preserve">
     <value>Unfold lines {0} to {1}</value>
   </data>
+  <data name="UploadDropHere" xml:space="preserve">
+    <value>Drop files here, or choose them</value>
+  </data>
+  <data name="UploadDropOneHere" xml:space="preserve">
+    <value>Drop a file here, or choose it</value>
+  </data>
+  <data name="UploadChooseFiles" xml:space="preserve">
+    <value>Choose files</value>
+  </data>
+  <data name="UploadChooseFile" xml:space="preserve">
+    <value>Choose a file</value>
+  </data>
+  <data name="UploadAccepts" xml:space="preserve">
+    <value>{0}, up to {1}</value>
+  </data>
+  <data name="UploadAcceptsAny" xml:space="preserve">
+    <value>Any file, up to {0}</value>
+  </data>
+  <data name="UploadWaiting" xml:space="preserve">
+    <value>Waiting</value>
+  </data>
+  <data name="UploadSending" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="UploadPaused" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="UploadCompleted" xml:space="preserve">
+    <value>Uploaded</value>
+  </data>
+  <data name="UploadCancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="UploadPause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="UploadResume" xml:space="preserve">
+    <value>Resume</value>
+  </data>
+  <data name="UploadCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="UploadProgress" xml:space="preserve">
+    <value>Uploading {0}</value>
+  </data>
+  <data name="UploadAnnounceCompleted" xml:space="preserve">
+    <value>{0} uploaded.</value>
+  </data>
+  <data name="UploadAnnounceFailed" xml:space="preserve">
+    <value>{0} was not uploaded: {1}</value>
+  </data>
 </root>

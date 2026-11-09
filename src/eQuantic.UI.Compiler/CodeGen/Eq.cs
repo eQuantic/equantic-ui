@@ -61,6 +61,30 @@ public static class Eq
     /// <summary><c>Convert.ToDouble(string)</c> and <c>Convert.ToSingle(string)</c>: a null text is 0, any other reads as Parse does.</summary>
     public const string RealConvert = "$eq.num.realConvert";
     public const string Long = "$eq.num.long";
+    /// <summary><c>Convert.To&lt;integer&gt;</c> of an integer of another width: its range checked, in .NET's words (#401).</summary>
+    public const string IntegerFrom = "$eq.num.integerFrom";
+    /// <summary><c>Convert.To&lt;integer&gt;</c> of a double or a float: rounded half to even, then .NET's checks.</summary>
+    public const string IntegerFromDouble = "$eq.num.integerFromDouble";
+    /// <summary><c>Convert.To&lt;integer&gt;</c> of a decimal: <c>decimal.Round</c>, then the range.</summary>
+    public const string IntegerFromDecimal = "$eq.num.integerFromDecimal";
+    /// <summary><c>Convert.To&lt;integer&gt;</c> of an <c>object</c>, by what it holds when the call runs.</summary>
+    public const string IntegerFromObject = "$eq.num.integerFromObject";
+    /// <summary><c>Convert.ToDouble</c> and <c>ToSingle</c> of an <c>object</c>, by what it holds when the call runs.</summary>
+    public const string RealFromObject = "$eq.num.realFromObject";
+    /// <summary><c>Convert.ToChar</c> of an integer: its code unit, in the char's range.</summary>
+    public const string CharFrom = "$eq.num.charFrom";
+    /// <summary><c>Convert.ToChar(string)</c>: a text of exactly one char.</summary>
+    public const string CharFromText = "$eq.num.charFromText";
+    /// <summary><c>Convert.ToChar</c> of an <c>object</c>, by what it holds when the call runs.</summary>
+    public const string CharFromObject = "$eq.num.charFromObject";
+    /// <summary><c>Convert.ToBoolean</c> of an <c>object</c>, by what it holds when the call runs.</summary>
+    public const string BoolFromObject = "$eq.bool.fromObject";
+    /// <summary>An explicit cast of a double or a float to an int, which saturates (#1015).</summary>
+    public const string Saturate = "$eq.num.saturate";
+    /// <summary>The same cast to a uint.</summary>
+    public const string SaturateUnsigned = "$eq.num.saturateUnsigned";
+    /// <summary>The same cast to a long or a ulong, a BigInt here.</summary>
+    public const string SaturateLong = "$eq.num.saturateLong";
     /// <summary>The typed boundary: a server value (SSR state, a Server Action result) coerced
     /// ONCE to its runtime type, by the spec the compiler computed from the C# type.</summary>
     public const string Hydrate = "$eq.hydrate";
@@ -476,6 +500,14 @@ public static class Eq
     public const string ListAddRange = "$eq.collections.addRange";
     /// <summary><c>List&lt;T&gt;.InsertRange</c>: as <see cref="ListAddRange"/>, the index checked as .NET checks it.</summary>
     public const string ListInsertRange = "$eq.collections.insertRange";
+    /// <summary><c>List&lt;T&gt;.Insert</c> and <c>IList&lt;T&gt;.Insert</c>: the index checked as .NET checks it (#1160).</summary>
+    public const string ListInsert = "$eq.collections.listInsert";
+    /// <summary><c>List&lt;T&gt;.RemoveAt</c> and <c>IList&lt;T&gt;.RemoveAt</c>: the index checked as .NET checks it (#1160).</summary>
+    public const string ListRemoveAt = "$eq.collections.listRemoveAt";
+    /// <summary><c>List&lt;T&gt;.RemoveRange</c>: the range checked as .NET checks it (#1160).</summary>
+    public const string ListRemoveRange = "$eq.collections.listRemoveRange";
+    /// <summary><c>List&lt;T&gt;.GetRange</c>: a new list of the range, checked as .NET checks it (#1160).</summary>
+    public const string ListGetRange = "$eq.collections.listGetRange";
     /// <summary><c>List&lt;T&gt;.RemoveAll</c>: .NET's single pass, answering how many it removed.</summary>
     public const string ListRemoveAll = "$eq.collections.removeAll";
     /// <summary><c>List&lt;T&gt;.CopyTo(array)</c> and <c>CopyTo(array, arrayIndex)</c>, into the array handed.</summary>
@@ -599,6 +631,20 @@ public static class Eq
     /// <summary>Whether a value is of an exception type, by the type's full name: the test a typed
     /// <c>catch</c>, a type pattern and an <c>as</c> write.</summary>
     public const string ExceptionIs = "$eq.exceptions.is";
+
+    /// <summary>The argument guards of .NET's argument exceptions, one function per method, named as the
+    /// method in camelCase (<c>$eq.guard.throwIfNegative</c>): the arguments in parameter order, then
+    /// what the compiler hands of the type, its equality or its ordering, and its text.</summary>
+    public const string Guard = "$eq.guard";
+
+    /// <summary><c>value.GetType()</c> as a runtime type the comparison reads, refused through null.</summary>
+    public const string TypesOf = "$eq.types.of";
+
+    /// <summary><c>typeof(X)</c> of a class twin, closed over the type arguments C# names.</summary>
+    public const string TypesNamed = "$eq.types.named";
+
+    /// <summary>Whether two runtime types are one, as <c>Type</c>'s <c>==</c> answers it.</summary>
+    public const string TypesSame = "$eq.types.same";
 
     /// <summary>A <c>throw</c> expression: throws its one argument, which is evaluated where C#
     /// evaluates the exception, in the caller's own function.</summary>

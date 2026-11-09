@@ -5,9 +5,10 @@
 # the top of the list. 0.2.0-preview.61 stopped after 33 of 50 packages on three 500s from
 # nuget.org, and five reruns died on packages that were already there. This workflow takes the run
 # that built the release and its tag, refuses a run that is not that tag's own, pushes the packages
-# it is given, or every one nuget.org does not list yet, with the loop the pipeline itself runs (scripts/publish-packages.sh), and then
-# writes the tag's release page (scripts/release-page.sh). No new version is cut, and the key never
-# leaves the repository's secrets.
+# it is given, or every one nuget.org does not list yet, with the loop the pipeline itself runs
+# (scripts/publish-packages.sh), and then writes the tag's release page (scripts/release-page.sh).
+# No new version is cut, and no key is stored: the run logs in to nuget.org through its trusted
+# publishing policy for this file, as the pipeline does for ci.yml (#1224).
 #
 # Run it only after the tag's publish-nuget has failed. Running it twice changes nothing: what is
 # listed is skipped, and a page that exists is edited.
@@ -39,11 +40,15 @@ concurrency:
 permissions:
   actions: read
   contents: write
+  id-token: write   # the OIDC token nuget.org's trusted publishing exchanges for a key (#1224)
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    # The policy for this workflow names the `nuget` environment, and a key is issued only to a job
+    # that runs in it.
+    environment: nuget
     steps:
       - uses: actions/checkout@v4
         with:
@@ -86,6 +91,15 @@ jobs:
           run-id: ${{ inputs.run-id }}
           github-token: ${{ github.token }}
 
+      # The key lives an hour from here, so the login runs right before the push, after the run
+      # was checked and its packages downloaded. NUGET_USER is the nuget.org profile name of the
+      # policies' creator, an organization secret, never an e-mail address.
+      - name: Log in to nuget.org
+        id: nuget
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       # The inputs reach the shell through the environment, never written into the script: a tag
       # and a package id are text a person typed, and `${{ }}` is substituted before the shell
       # reads the line. The ids are split on spaces on purpose, with globbing off, and the script
@@ -93,7 +107,7 @@ jobs:
       - name: Publish to nuget.org
         shell: bash
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget.outputs.NUGET_API_KEY }}
           EQ_TAG: ${{ inputs.tag }}
           EQ_PACKAGES: ${{ inputs.packages }}
         run: |

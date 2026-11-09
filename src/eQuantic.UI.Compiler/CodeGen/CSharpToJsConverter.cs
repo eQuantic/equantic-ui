@@ -395,6 +395,8 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<DateTimeOffsetStrategy>();
         _strategyRegistry.Register<StringBuilderStrategy>();
         _strategyRegistry.Register<CancellationStrategy>();
+        _strategyRegistry.Register<ArgumentGuardStrategy>(); // the ThrowIf guards of the argument exceptions (#1202)
+        _strategyRegistry.Register<RuntimeTypeEqualityStrategy>(); // GetType() == GetType() and typeof (#1202)
         _strategyRegistry.Register<QueueStackStrategy>();
         _strategyRegistry.Register<DictionaryStrategy>(); // Priority 25 - every dictionary, a runtime class
         _strategyRegistry.Register<RegexStrategy>();
@@ -575,6 +577,12 @@ public class CSharpToJsConverter
             _context.SetCached(expression, result);
             return result;
         }
+
+        // A keyword on the left of a member is a type's name, as `String` is, and the fences answer for
+        // what is read off it, at the call: `string.Copy(s)` said EQ1001 for the keyword as well as EQ2004
+        // for the call, where `String.Copy(s)` said one thing (#953).
+        if (expression is PredefinedTypeSyntax { Parent: MemberAccessExpressionSyntax })
+            return JsExpr.Opaque(expression.ToString());
 
         _context.Report(expression, ConversionSeverity.Error, "EQ1001",
             $"C# expression '{expression.Kind()}' has no transpilation strategy — it cannot be emitted as JavaScript. " +

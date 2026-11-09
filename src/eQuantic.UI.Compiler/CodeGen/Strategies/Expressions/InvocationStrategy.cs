@@ -42,18 +42,30 @@ public class InvocationStrategy : IExpressionIrStrategy
             || !method.Locations.Any(location => location.IsInSource))
             return call;
 
+        // A target counted from the end is held before the call, as C# evaluates it: what it reads is a
+        // template no value can be assigned to, and the receiver would run again after the call.
+        var parts = new List<JsExpr>();
         var assignments = byReference
             .Where(entry => entry.Target.Length > 0)
-            .Select(entry => $"{entry.Target} = $o.{entry.Field}, ");
-        return JsExpr.Callish($"($o => ({string.Concat(assignments)}$o.$))({JsExprWriter.Write(call)})");
+            .Select(entry =>
+            {
+                if (entry.Held is null) return $"{entry.Target} = $o.{entry.Field}, ";
+                parts.Add(entry.Held);
+                return $"{Place.ThroughHeld("{" + (parts.Count - 1) + "}")} = $o.{entry.Field}, ";
+            })
+            .ToList();
+        string Unwrapped(string result) => $"($o => ({string.Concat(assignments)}$o.$))({result})";
+        if (parts.Count == 0) return JsExpr.Callish(Unwrapped(JsExprWriter.Write(call)));
+        parts.Add(call);
+        return JsExpr.Template(Unwrapped("{" + (parts.Count - 1) + "}"), parts);
     }
 
     /// <summary>Each `out`/`ref` argument: what it assigns to, and the field of the result object it
     /// takes that from (the callee's parameter name). `out _` discards, so it has no target.</summary>
-    private static List<(string Target, string Field, bool IsOut)> ByReferenceArguments(
+    private static List<(string Target, string Field, bool IsOut, JsExpr? Held)> ByReferenceArguments(
         InvocationExpressionSyntax invocation, ConversionContext context)
     {
-        var result = new List<(string, string, bool)>();
+        var result = new List<(string, string, bool, JsExpr?)>();
         var symbol = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
         var arguments = invocation.ArgumentList.Arguments;
         for (var index = 0; index < arguments.Count; index++)
@@ -76,9 +88,40 @@ public class InvocationStrategy : IExpressionIrStrategy
                 : symbol is not null && index < symbol.Parameters.Length
                     ? symbol.Parameters[index].Name.ToJsIdentifier()
                     : $"$out{index}";
-            result.Add((target, field, isOut));
+            var held = Place.HeldFor(argument.Expression, context);
+            if (held is not null && !HeldInItsPlace(invocation, index, context))
+            {
+                context.Unhandled(argument, "out or ref argument counted from the end, after an argument or a receiver that "
+                    + "runs code: its element is taken before the call. Assign the element after the call");
+            }
+            result.Add((target, field, isOut, held));
         }
         return result;
+    }
+
+    /// <summary>
+    /// Whether holding the element of the argument at <paramref name="index"/> before the call takes it
+    /// where C# takes it, after the call's receiver and the arguments written before it. It does when
+    /// those run no code, and when the element's own receiver and offset run none either or nothing they
+    /// run can reach them: a name read ahead of a call could be changed by it. A property runs code.
+    /// </summary>
+    private static bool HeldInItsPlace(InvocationExpressionSyntax invocation, int index, ConversionContext context)
+    {
+        bool Reads(ExpressionSyntax expression) => expression switch
+        {
+            ThisExpressionSyntax or BaseExpressionSyntax or LiteralExpressionSyntax => true,
+            IdentifierNameSyntax name => context.SemanticHelper.GetSymbol(name) is not IPropertySymbol,
+            MemberAccessExpressionSyntax member => context.SemanticHelper.GetSymbol(member) is not IPropertySymbol && Reads(member.Expression),
+            PrefixUnaryExpressionSyntax hat when hat.IsKind(SyntaxKind.IndexExpression) => Reads(hat.Operand),
+            ElementAccessExpressionSyntax { ArgumentList.Arguments: [var key] } access => Reads(access.Expression) && Reads(key.Expression),
+            ParenthesizedExpressionSyntax parenthesized => Reads(parenthesized.Expression),
+            _ => false,
+        };
+        static bool Fixed(ExpressionSyntax expression) => expression is ThisExpressionSyntax or BaseExpressionSyntax or LiteralExpressionSyntax;
+
+        var before = invocation.ArgumentList.Arguments.Take(index).Select(argument => argument.Expression).ToList();
+        if (invocation.Expression is MemberAccessExpressionSyntax call) before.Insert(0, call.Expression);
+        return before.All(Reads) && (Reads(invocation.ArgumentList.Arguments[index].Expression) || before.All(Fixed));
     }
 
     private JsExpr ConvertCall(InvocationExpressionSyntax invocation, ConversionContext context)

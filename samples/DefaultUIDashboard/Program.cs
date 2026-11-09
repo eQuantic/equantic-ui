@@ -33,6 +33,9 @@ builder.Services.AddUI(options =>
            // What the server publishes, heard by the live screen: the topics a page may subscribe
            // to, each with who may hear it. Anyone may hear the console's quotes.
            .UseServerEvents(events => events.Topic("console:{feed}", rule => rule.AllowAnonymous()))
+           // The files the uploads screen takes: 3D models and notes, under the policy the page reads
+           // too, sent in parts to the endpoint this maps and received by the page's Server Action.
+           .UseUploads(uploads => uploads.Accept(eQuantic.Console.SampleUploads.Models))
            // The document (its surface, text, face, selection and scrollbars) is the theme's, so
            // the shell says only what the page is.
            .ConfigureHtmlShell(shell => shell

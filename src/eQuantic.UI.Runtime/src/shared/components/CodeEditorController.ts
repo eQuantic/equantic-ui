@@ -290,7 +290,7 @@ export class CodeEditorController {
                     let keeps = i === primary ? next : merged.length - 1 === primaryAt ? last : next;
                     let backwards = CodePosition.opLessThan(keeps.focus, keeps.anchor);
                     let range = backwards ? new CodeRange(end, last.start) : new CodeRange(last.start, end);
-                    merged[merged.length - 1] = new CodeCaret(range, i === primary ? caret.advance : merged[merged.length - 1].advance);
+                    (merged[merged.length - 1] = new CodeCaret(range, i === primary ? caret.advance : merged[merged.length - 1].advance));
                     if (i === primary) primaryAt = merged.length - 1;
                     continue;
                 }
@@ -487,7 +487,7 @@ export class CodeEditorController {
         let origin = this._grid.origin.y;
         let lineHeight = this._grid.cell.height;
         if (lineHeight <= 0) return;
-        let topRow = (Math.trunc(Math.floor(Math.fround(Math.max(0, Math.fround(this._view.y - origin)) / lineHeight))) | 0);
+        let topRow = $eq.num.saturate(Math.floor(Math.fround(Math.max(0, Math.fround(this._view.y - origin)) / lineHeight)));
         let within = Math.fround(Math.fround(this._view.y - origin) - Math.fround(Math.fround(topRow) * lineHeight));
         let line = before?.lineAtRow(topRow) ?? Math.min(topRow, this._document.lineCount - 1);
         let row = this._grid.rows?.rowOf(line) ?? line;
@@ -564,7 +564,7 @@ export class CodeEditorController {
     characterAt(point: Point) {
         let rows = this.grid.rows?.rowCount ?? this._document.lineCount;
         if (point.x < this.grid.origin.x || point.y < this.grid.origin.y) return null;
-        let row = (Math.trunc(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height))) | 0);
+        let row = $eq.num.saturate(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height)));
         if (row >= rows) return null;
         let map: any; 
         if ((map = this.grid.rows) != null && map.rowAt(row).kind !== 'line') return null;
@@ -991,7 +991,7 @@ export class CodeEditorController {
     onPlaceholder(point: Point) {
         let rows: any; 
         if (!((rows = this.grid.rows) != null)) return false;
-        let row = (Math.trunc(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height))) | 0);
+        let row = $eq.num.saturate(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height)));
         return row >= 0 && row < rows.rowCount && rows.rowAt(row).kind === 'placeholder';
     }
 
@@ -1100,7 +1100,7 @@ export class CodeEditorController {
             let carets: CodeCaret[] = $eq.collections.listCopy(this._others);
             primary = 0;
             while (primary < carets.length && CodePosition.opLessThan(carets[primary].selection.start, this._selection.start)) primary++;
-            carets.splice(primary, 0, new CodeCaret(this._selection, this._desiredAdvance));
+            $eq.collections.listInsert(carets, primary, new CodeCaret(this._selection, this._desiredAdvance));
             return carets;
         })();
         return { $: $r, primary };
@@ -1893,7 +1893,7 @@ export class CodeEditorController {
             for (let i = 0; i < carets.length; i++) {
                 let selection = carets[i].selection;
                 if (CodePosition.opLessThan(at, selection.start) || CodePosition.opLessThan(selection.end, at)) continue;
-                carets.splice(i, 1);
+                $eq.collections.listRemoveAt(carets, i);
                 let next = i === primary ? i > 0 ? i - 1 : 0 : primary > i ? primary - 1 : primary;
                 this._others.splice(0);
                 for (let k = 0; k < carets.length; k++) if (k !== next) this._others.push(carets[k]);

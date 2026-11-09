@@ -116,6 +116,16 @@ public readonly record struct VectorPaint(VectorPaintKind Kind, Color Color)
 /// masks and filters are still not expressible here and are dropped at parse time rather than
 /// half-rendered.
 /// </para>
+/// <para>
+/// A shape with <see cref="OnPressed"/> is an INPUT as well as a picture: a concelho on a map, a
+/// seat on a plan. It takes a press where its path is painted (its fill rule decides what is inside,
+/// never its bounding box), it is a stop of the keyboard's focus order and answers Enter and Space,
+/// it shows <see cref="Hover"/> under the pointer, and it is announced by <see cref="Label"/> with
+/// <see cref="Selected"/> as its state. It is one input per shape, laid on the drawing's own grid, so
+/// it scales with the drawing where a <see cref="Pressable"/> laid over it would not. Flutter reaches
+/// the same with a <c>CustomPainter</c> whose <c>hitTest</c> asks <c>Path.contains</c> and whose
+/// <c>semanticsBuilder</c> names each region (#674).
+/// </para>
 /// </summary>
 public readonly record struct VectorShape(
     string Path,
@@ -123,7 +133,51 @@ public readonly record struct VectorShape(
     VectorPaint Stroke = default,
     float StrokeWidth = 1,
     bool EvenOdd = false,
-    float Opacity = 1);
+    float Opacity = 1)
+{
+    private readonly StyleDiff? _hover;
+
+    /// <summary>What assistive tech announces for the shape: "Matosinhos". A shape that takes a press
+    /// and has no label is announced by nothing a person can tell apart from its neighbours, so give
+    /// every input one.</summary>
+    public string? Label { get; init; }
+
+    /// <summary>Called when the shape is pressed, by a pointer inside its path or by Enter or Space
+    /// while it has the focus. Null keeps the shape a picture: no press, no focus, no hover.</summary>
+    public Action? OnPressed { get; init; }
+
+    /// <summary>The shape's toggle state, announced as pressed or not: the concelho a map picked. Null
+    /// states none. It is a state, not a paint: the fill says what the person sees, and this says
+    /// what assistive tech hears, as <see cref="Pressable.Selected"/> does.</summary>
+    public bool? Selected { get; init; }
+
+    /// <summary>
+    /// The paint while the pointer is over the shape, laid over its own. A shape is not a box, so a
+    /// diff reaches it through the members that mean something on a path: <see cref="StyleDiff.Background"/>
+    /// is its fill, <see cref="StyleDiff.BorderColor"/> and <see cref="StyleDiff.BorderWidth"/> its
+    /// stroke, and <see cref="StyleDiff.Opacity"/> its opacity. A diff that sets any other member is
+    /// refused here, because a path has no elevation, gradient layer, backdrop, transform or shadow
+    /// list to apply it to, and a member silently ignored is a hover that looks right on nobody's
+    /// screen.
+    /// </summary>
+    public StyleDiff? Hover
+    {
+        get => _hover;
+        init
+        {
+            if (value is { } diff && (diff.Elevation is not null || diff.Gradient is not null
+                || diff.BackdropBlur is not null || diff.Transform is not null || diff.Shadows is not null))
+                throw new ArgumentException(
+                    "A shape's hover can change its fill (Background), its stroke (BorderColor, BorderWidth) "
+                    + "and its opacity, and nothing else: a path has no elevation, gradient layer, backdrop, "
+                    + "transform or shadow list.", nameof(Hover));
+            _hover = value;
+        }
+    }
+
+    /// <summary>Whether the shape takes a press, and with it the focus and the hover.</summary>
+    public bool IsInput => OnPressed is not null;
+}
 
 /// <summary>
 /// A piece of vector artwork, target-neutral: a viewBox and the shapes inside it. This is what a

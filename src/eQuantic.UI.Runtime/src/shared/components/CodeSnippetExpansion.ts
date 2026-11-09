@@ -148,7 +148,7 @@ export class CodeSnippetExpansion {
                 this._writing.push(index);
                 this._enclosing.push(index);
                 this.write(children);
-                this._enclosing.splice(this._enclosing.length - 1, 1);
+                $eq.collections.listRemoveAt(this._enclosing, this._enclosing.length - 1);
                 $eq.collections.remove(this._writing, index);
             } else this.append(this.defaultOf(index));
             this._places.push(new CodeSnippetPlace(index, start, this.end, $eq.collections.listCopy(this._enclosing), part.choices));

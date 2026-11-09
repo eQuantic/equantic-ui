@@ -271,7 +271,7 @@ export class CodeEditor extends StatefulComponent {
         if (!CodeEditor.sameProviders(this.diagnosticProviders, this._diagnosers)) {
             for (const provider of this._diagnosers) {
                 let at = CodeEditor.indexOfInstance(editor.diagnostics.providers, provider);
-                if (at >= 0) editor.diagnostics.providers.splice(at, 1);
+                if (at >= 0) $eq.collections.listRemoveAt(editor.diagnostics.providers, at);
             }
             this._diagnosers = [...this.diagnosticProviders];
             for (const provider of this._diagnosers) $eq.collections.add(editor.diagnostics.providers, provider);
@@ -280,7 +280,7 @@ export class CodeEditor extends StatefulComponent {
         if (!CodeEditor.sameProviders(this.hoverProviders, this._explainers)) {
             for (const provider of this._explainers) {
                 let at = CodeEditor.indexOfInstance(editor.hover.providers, provider);
-                if (at >= 0) editor.hover.providers.splice(at, 1);
+                if (at >= 0) $eq.collections.listRemoveAt(editor.hover.providers, at);
             }
             this._explainers = [...this.hoverProviders];
             for (const provider of this._explainers) $eq.collections.add(editor.hover.providers, provider);
@@ -289,7 +289,7 @@ export class CodeEditor extends StatefulComponent {
         if (!CodeEditor.sameProviders(this.signatureProviders, this._signers)) {
             for (const provider of this._signers) {
                 let at = CodeEditor.indexOfInstance(editor.signatureHelp.providers, provider);
-                if (at >= 0) editor.signatureHelp.providers.splice(at, 1);
+                if (at >= 0) $eq.collections.listRemoveAt(editor.signatureHelp.providers, at);
             }
             this._signers = [...this.signatureProviders];
             for (const provider of this._signers) $eq.collections.add(editor.signatureHelp.providers, provider);
@@ -298,7 +298,7 @@ export class CodeEditor extends StatefulComponent {
         if (!CodeEditor.sameProviders(this.symbolProviders, this._declarers)) {
             for (const provider of this._declarers) {
                 let at = CodeEditor.indexOfInstance(editor.symbols.providers, provider);
-                if (at >= 0) editor.symbols.providers.splice(at, 1);
+                if (at >= 0) $eq.collections.listRemoveAt(editor.symbols.providers, at);
             }
             this._declarers = [...this.symbolProviders];
             for (const provider of this._declarers) $eq.collections.add(editor.symbols.providers, provider);
@@ -306,7 +306,7 @@ export class CodeEditor extends StatefulComponent {
         if (!CodeEditor.sameProviders(this.definitionProviders, this._definers)) {
             for (const provider of this._definers) {
                 let at = CodeEditor.indexOfInstance(editor.definitions.providers, provider);
-                if (at >= 0) editor.definitions.providers.splice(at, 1);
+                if (at >= 0) $eq.collections.listRemoveAt(editor.definitions.providers, at);
             }
             this._definers = [...this.definitionProviders];
             for (const provider of this._definers) $eq.collections.add(editor.definitions.providers, provider);
@@ -315,7 +315,7 @@ export class CodeEditor extends StatefulComponent {
         if (!CodeEditor.sameProviders(this.referenceProviders, this._referrers)) {
             for (const provider of this._referrers) {
                 let at = CodeEditor.indexOfInstance(editor.references.providers, provider);
-                if (at >= 0) editor.references.providers.splice(at, 1);
+                if (at >= 0) $eq.collections.listRemoveAt(editor.references.providers, at);
             }
             this._referrers = [...this.referenceProviders];
             for (const provider of this._referrers) $eq.collections.add(editor.references.providers, provider);
@@ -323,7 +323,7 @@ export class CodeEditor extends StatefulComponent {
         if (!CodeEditor.sameProviders(this.foldProviders, this._folders)) {
             for (const provider of this._folders) {
                 let at = CodeEditor.indexOfInstance(editor.folding.providers, provider);
-                if (at >= 0) editor.folding.providers.splice(at, 1);
+                if (at >= 0) $eq.collections.listRemoveAt(editor.folding.providers, at);
             }
             this._folders = [...this.foldProviders];
             for (const provider of this._folders) $eq.collections.add(editor.folding.providers, provider);
@@ -336,11 +336,11 @@ export class CodeEditor extends StatefulComponent {
         let list = editor.keyBindings;
         let at = CodeEditor.lastBlockAt(list, this._bindings);
         if (at >= 0) {
-            for (let i = 0; i < this._bindings.length; i++) list.splice(at, 1);
+            for (let i = 0; i < this._bindings.length; i++) $eq.collections.listRemoveAt(list, at);
         } else {
             for (let i = this._bindings.length - 1; i >= 0; i--) {
                 let last = CodeEditor.lastIndexOf(list, this._bindings[i]);
-                if (last >= 0) list.splice(last, 1);
+                if (last >= 0) $eq.collections.listRemoveAt(list, last);
             }
         }
         this._bindings = [...this.keyBindings];
@@ -388,7 +388,7 @@ export class CodeEditor extends StatefulComponent {
         let providers = completion.providers;
         for (const provider of this._put) {
             let at = CodeEditor.indexOfInstance(providers, provider);
-            if (at >= 0) providers.splice(at, 1);
+            if (at >= 0) $eq.collections.listRemoveAt(providers, at);
         }
         this._put = this.completions == null ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()] : [...this.completions];
         this._handed = this.completions == null ? null : this._put;

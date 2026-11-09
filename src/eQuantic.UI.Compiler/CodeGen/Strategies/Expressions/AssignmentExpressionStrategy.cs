@@ -321,8 +321,7 @@ internal static class NullConditionalAssignment
             && Place.Of(entry, JsExpr.Identifier(t), context) is { } place)
         {
             if (!assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)) return null;
-            var write = JsExprWriter.Write(place.Write(context.Converter.ConvertIr(assignment.Right)));
-            return $"({parameter} => {t} == null ? null : {write})({receiver})";
+            return Guard(parameter, t, JsExprWriter.Write(place.Write(context.Converter.ConvertIr(assignment.Right))), receiver);
         }
 
         var target = assignment.Left switch
@@ -338,7 +337,17 @@ internal static class NullConditionalAssignment
         var op = assignment.OperatorToken.Text;
         var right = context.Converter.ConvertExpression(assignment.Right);
         var targetType = context.SemanticHelper.GetType(assignment.Left);
-        return $"({parameter} => {t} == null ? null : ({AssignBody(target, op, right, targetType, context)}))({receiver})";
+        return Guard(parameter, t, $"({AssignBody(target, op, right, targetType, context)})", receiver);
+    }
+
+    /// <summary>The write behind the guard, over the receiver read once. A value that awaits runs behind
+    /// the guard too, as C# skips it for a null receiver, so the arrow is async and the assignment awaits
+    /// it, in the method around it, at every level of a chain.</summary>
+    private static string Guard(string parameter, string t, string write, string receiver)
+    {
+        var suspends = JsExprWriter.Suspends(JsExpr.Callish(write));
+        var arrow = $"{parameter} => {(suspends ? "[" : "")}{t} == null ? null : {write}{(suspends ? "]" : "")}";
+        return suspends ? JsExprWriter.Awaited(arrow, receiver) : $"({arrow})({receiver})";
     }
 
     /// <summary>
@@ -361,8 +370,7 @@ internal static class NullConditionalAssignment
         };
         if (inner is null) return null;
 
-        var outer = context.Converter.ConvertExpression(receiver);
-        return $"({parameter} => {t} == null ? null : {inner})({outer})";
+        return Guard(parameter, t, inner, context.Converter.ConvertExpression(receiver));
     }
 
     private static string? NestedFrom(string receiver, ConditionalAccessExpressionSyntax tail,
@@ -378,7 +386,7 @@ internal static class NullConditionalAssignment
             ConditionalAccessExpressionSyntax deeper => NestedFrom(innerReceiver, deeper, context, depth + 1),
             _ => null,
         };
-        return inner is null ? null : $"({parameter} => {t} == null ? null : {inner})({receiver})";
+        return inner is null ? null : Guard(parameter, t, inner, receiver);
     }
 
     /// <summary>The member path of a <c>?.</c> tail (<c>a?.B.C</c> → <c>.b.c</c>), rooted at the

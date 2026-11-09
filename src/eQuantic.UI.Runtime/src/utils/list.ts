@@ -12,6 +12,8 @@
  *    and `FindLastIndex`'s ranges, which `findIndex` took for its predicate;
  *  - `AddRange` and `InsertRange`, one element at a time, where a spread passed an engine's cap on a
  *    call's arguments, and `InsertRange`'s index checked (#1060);
+ *  - `Insert`, `RemoveAt`, `RemoveRange` and `GetRange`, their positions checked, where a `splice` or
+ *    a `slice` clamped them to the array or counted a negative one from its end (#1160);
  *  - `RemoveAll`, which answers how many it removed, asking the predicate once per element in order;
  *  - `CopyTo`, which writes into the array it is handed, where `[...list]` made a copy nothing read.
  *
@@ -446,6 +448,70 @@ export function insertRange<T>(list: T[], index: number, collection: Iterable<T>
   const tail = list.splice(index);
   for (let i = 0, count = items.length; i < count; i++) list.push(items[i]);
   for (let i = 0, count = tail.length; i < count; i++) list.push(tail[i]);
+}
+
+// ---- Insert, RemoveAt, RemoveRange, GetRange ----------------------------------------------------
+
+const INSERT_INDEX = 'Index must be within the bounds of the List.';
+
+/**
+ * `List<T>.Insert(index, item)` and `IList<T>.Insert`, the index checked as .NET checks it: from 0 to
+ * the count, the count itself appending. It was `splice(index, 0, item)`, which appended for an index
+ * past the end and inserted before the last for a negative one, where .NET refuses both (#1160). A
+ * list's face over a twin calls the twin's own `insert`.
+ */
+export function insert<T>(list: T[] | { insert(index: number, item: T): void }, index: number, item: T): void {
+  receiver(list);
+  if (!Array.isArray(list)) {
+    list.insert(index, item);
+    return;
+  }
+  if (index < 0 || index > list.length) throw outOfRange('index', INSERT_INDEX);
+  list.splice(index, 0, item);
+}
+
+/**
+ * `List<T>.RemoveAt(index)` and `IList<T>.RemoveAt`, the index checked as .NET checks it: it was
+ * `splice(index, 1)`, which removed nothing for an index past the end and the last element for -1
+ * (#1160). A list's face over a twin calls the twin's own `removeAt`.
+ */
+export function removeAt<T>(list: T[] | { removeAt(index: number): void }, index: number): void {
+  receiver(list);
+  if (!Array.isArray(list)) {
+    list.removeAt(index);
+    return;
+  }
+  if (index < 0 || index >= list.length) throw outOfRange('index', INDEX_LESS);
+  list.splice(index, 1);
+}
+
+/** The range `List<T>.RemoveRange` and `GetRange` take, checked as .NET checks it, in its order. */
+function requireRange(list: readonly unknown[], index: number, count: number): void {
+  if (index < 0) throw outOfRange('index', NON_NEGATIVE);
+  if (count < 0) throw outOfRange('count', NON_NEGATIVE);
+  if (list.length - index < count) throw exception('System.ArgumentException', INVALID_OFF_LEN);
+}
+
+/**
+ * `List<T>.RemoveRange(index, count)`: it was `splice(index, count)`, which removed what the list
+ * held of a range past its end and counted a negative index from the end, where .NET refuses both
+ * (#1160).
+ */
+export function removeRange<T>(list: T[], index: number, count: number): void {
+  receiver(list);
+  requireRange(list, index, count);
+  if (count > 0) list.splice(index, count);
+}
+
+/**
+ * `List<T>.GetRange(index, count)`: a new list of the range, checked as {@link removeRange} checks it.
+ * It was `slice(index, index + count)`, which answered what the list held of a range past its end,
+ * and read the index twice.
+ */
+export function getRange<T>(list: readonly T[], index: number, count: number): T[] {
+  receiver(list);
+  requireRange(list, index, count);
+  return list.slice(index, index + count);
 }
 
 // ---- RemoveAll, CopyTo ---------------------------------------------------------------------------

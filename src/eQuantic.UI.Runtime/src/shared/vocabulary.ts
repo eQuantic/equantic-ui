@@ -25,7 +25,9 @@ import type {
   TypeStyleValue,
 } from './nodes';
 import { CanvasPointer } from './canvas-pointer';
+import type { PickedFile } from './picked-file';
 export { CanvasPointer };
+import { floatText } from './css-values';
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
 import {
@@ -959,6 +961,24 @@ export class Hoverable extends VisualNode {
   }
 }
 
+/** Mirror of the C# `DropTarget` — an area a person drops files onto. */
+export class DropTarget extends VisualNode {
+  readonly nodeKind = 'dropTarget';
+  child: VisualChild;
+  onDropped: (files: PickedFile[]) => void;
+  /** true while files are carried over the area, false when they leave or land. */
+  onDragOverChanged: ((over: boolean) => void) | null = null;
+  /** A disabled area takes nothing, and says so. */
+  enabled = true;
+
+  constructor(child: VisualChild, onDropped: (files: PickedFile[]) => void, config?: EqConfig) {
+    super();
+    this.child = child;
+    this.onDropped = onDropped;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `Overlay` (Phase C): the viewport layer above the page. */
 export class Overlay extends VisualNode {
   readonly nodeKind = 'overlay';
@@ -1406,7 +1426,7 @@ export class RangeValue {
    * no number by definition — lost them too.
    */
   get number(): string {
-    return `${parseFloat(this.now.toFixed(4))}`;
+    return floatText(Math.fround(this.now), 4);
   }
 }
 
@@ -1560,7 +1580,9 @@ export class CameraPreview extends VisualNode {
 
 /**
  * Mirror of the C# `WebFrame` node: an embedded, isolated web document. `sandbox` carries the
- * [Flags] NUMBER (1 scripts · 2 same-origin · 4 forms · 8 popups) exactly as the C# enum crosses;
+ * [Flags] NUMBER (1 scripts · 2 same-origin · 4 forms · 8 popups · 16 payment · 32 camera ·
+ * 64 microphone · 128 location · 256 fullscreen · 512 copy to clipboard · 1024 passkeys) exactly as
+ * the C# enum crosses;
  * scripts-only until told otherwise, filling the parent unless given explicit dp.
  */
 export class WebFrame extends VisualNode {
@@ -1826,7 +1848,7 @@ export class VectorPaint {
   }
 }
 
-/** Mirror of the C# `VectorShape`. */
+/** Mirror of the C# `VectorShape`: a picture, and with `onPressed` an input as well (#674). */
 export class VectorShape {
   path: string;
   fill: VectorPaint;
@@ -1834,6 +1856,14 @@ export class VectorShape {
   strokeWidth: number;
   evenOdd: boolean;
   opacity: number;
+  /** What assistive tech announces for the shape (C# `VectorShape.Label`). */
+  label: string | null;
+  /** Called on a press inside the path, or Enter or Space while focused; null keeps it a picture. */
+  onPressed: (() => void) | null;
+  /** The toggle state announced as pressed or not; null states none. */
+  selected: boolean | null;
+  /** The paint under the pointer: its fill, its stroke and its opacity. */
+  hover: StyleDiff | null;
 
   constructor(
     path: string,
@@ -1850,7 +1880,26 @@ export class VectorShape {
     this.strokeWidth = strokeWidth;
     this.evenOdd = evenOdd;
     this.opacity = opacity;
+    this.label = null;
+    this.onPressed = null;
+    this.selected = null;
+    this.hover = null;
     if (config) Object.assign(this, config);
+    // The C# `Hover` init's refusal, word for word, so a diff a path cannot apply fails the same way
+    // on both targets.
+    // Read back through its declared type: the null above is what the narrowing saw, not the config.
+    const diff = this.hover as StyleDiff | null;
+    if (diff && (diff.elevation != null || diff.gradient != null || diff.backdropBlur != null
+      || diff.transform != null || diff.shadows != null))
+      throw new RangeError(
+        "A shape's hover can change its fill (Background), its stroke (BorderColor, BorderWidth) "
+        + 'and its opacity, and nothing else: a path has no elevation, gradient layer, backdrop, '
+        + 'transform or shadow list.');
+  }
+
+  /** Whether the shape takes a press, and with it the focus and the hover (C# `IsInput`). */
+  get isInput(): boolean {
+    return this.onPressed != null;
   }
 }
 

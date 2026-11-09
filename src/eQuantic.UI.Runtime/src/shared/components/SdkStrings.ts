@@ -197,6 +197,50 @@ export class SdkStrings {
         return $eq.str('SdkResources', 'ShowAsChart');
     }
 
+    static get uploadDropHere(): string {
+        return $eq.str('SdkResources', 'UploadDropHere');
+    }
+
+    static get uploadDropOneHere(): string {
+        return $eq.str('SdkResources', 'UploadDropOneHere');
+    }
+
+    static get uploadChooseFiles(): string {
+        return $eq.str('SdkResources', 'UploadChooseFiles');
+    }
+
+    static get uploadChooseFile(): string {
+        return $eq.str('SdkResources', 'UploadChooseFile');
+    }
+
+    static get uploadWaiting(): string {
+        return $eq.str('SdkResources', 'UploadWaiting');
+    }
+
+    static get uploadPaused(): string {
+        return $eq.str('SdkResources', 'UploadPaused');
+    }
+
+    static get uploadCompleted(): string {
+        return $eq.str('SdkResources', 'UploadCompleted');
+    }
+
+    static get uploadCancelled(): string {
+        return $eq.str('SdkResources', 'UploadCancelled');
+    }
+
+    static get uploadPause(): string {
+        return $eq.str('SdkResources', 'UploadPause');
+    }
+
+    static get uploadResume(): string {
+        return $eq.str('SdkResources', 'UploadResume');
+    }
+
+    static get uploadCancel(): string {
+        return $eq.str('SdkResources', 'UploadCancel');
+    }
+
     static lineNumbered(number: number) {
         return $eq.text.stringFormat($eq.str('SdkResources', 'LineNumbered'), $eq.text.asNumber(number, 'int32'));
     }
@@ -325,6 +369,30 @@ export class SdkStrings {
 
     static count(count: number) {
         return $eq.text.stringFormat($eq.str('SdkResources', 'StatusCount'), $eq.text.asNumber(count, 'int32'));
+    }
+
+    static uploadAccepts(formats: string, size: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'UploadAccepts'), formats, size);
+    }
+
+    static uploadAcceptsAny(size: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'UploadAcceptsAny'), size);
+    }
+
+    static uploadSending(sent: string, size: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'UploadSending'), sent, size);
+    }
+
+    static uploadProgress(fileName: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'UploadProgress'), fileName);
+    }
+
+    static uploadAnnounceCompleted(fileName: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'UploadAnnounceCompleted'), fileName);
+    }
+
+    static uploadAnnounceFailed(fileName: string, reason: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'UploadAnnounceFailed'), fileName, reason);
     }
 }
 

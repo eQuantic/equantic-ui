@@ -279,4 +279,43 @@ public static class SdkStrings
     // A chart's footer: the switch to its table view (the WCAG twin of every chart) and back.
     public static string ShowAsTable => SdkResources.ShowAsTable;
     public static string ShowAsChart => SdkResources.ShowAsChart;
+
+    // FileUpload: the area's invitation, what it accepts, each file's state, and what it announces.
+    public static string UploadDropHere => SdkResources.UploadDropHere;
+    public static string UploadDropOneHere => SdkResources.UploadDropOneHere;
+    public static string UploadChooseFiles => SdkResources.UploadChooseFiles;
+    public static string UploadChooseFile => SdkResources.UploadChooseFile;
+
+    /// <summary>What an upload area accepts: "STL, OBJ, up to 250 MB".</summary>
+    public static string UploadAccepts(string formats, string size) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.UploadAccepts, formats, size);
+
+    /// <summary>What an upload area without formats accepts: "Any file, up to 250 MB".</summary>
+    public static string UploadAcceptsAny(string size) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.UploadAcceptsAny, size);
+
+    public static string UploadWaiting => SdkResources.UploadWaiting;
+
+    /// <summary>How far a file got: "3.2 MB of 12 MB".</summary>
+    public static string UploadSending(string sent, string size) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.UploadSending, sent, size);
+
+    public static string UploadPaused => SdkResources.UploadPaused;
+    public static string UploadCompleted => SdkResources.UploadCompleted;
+    public static string UploadCancelled => SdkResources.UploadCancelled;
+    public static string UploadPause => SdkResources.UploadPause;
+    public static string UploadResume => SdkResources.UploadResume;
+    public static string UploadCancel => SdkResources.UploadCancel;
+
+    /// <summary>What a file's progress bar is for: "Uploading bracket.stl".</summary>
+    public static string UploadProgress(string fileName) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.UploadProgress, fileName);
+
+    /// <summary>What an upload area announces when a file arrived: "bracket.stl uploaded."</summary>
+    public static string UploadAnnounceCompleted(string fileName) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.UploadAnnounceCompleted, fileName);
+
+    /// <summary>What an upload area announces when a file did not arrive, with why.</summary>
+    public static string UploadAnnounceFailed(string fileName, string reason) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.UploadAnnounceFailed, fileName, reason);
 }

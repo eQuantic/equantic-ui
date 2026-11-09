@@ -20,7 +20,7 @@ This page says where.
 ## Building
 
 You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and nothing else — no Node.js, no
-npm. The TypeScript runtime is built by an embedded Bun the build extracts itself, and the Photon
+npm. The TypeScript runtime is built by an embedded Bun the build unpacks itself, and the Photon
 shaders are committed (only framework developers changing a shader run `scripts/generate-shaders.sh`).
 The one exception is outside the build: the change workflow runs the OpenSpec CLI, which needs
 Node >= 20.19, and `./scripts/openspec.sh` installs the pinned version from its lockfile on first
@@ -54,7 +54,7 @@ grep -rn "NoWarn\|WarningsNotAsErrors" --include="*.csproj" --include="*.props" 
 ```
 
 The TypeScript runtime has its own suite, and the same rule holds — no Node, no npm. One MSBuild
-target runs it through the embedded Bun the build extracts, on every OS: it installs the pinned
+target runs it through the embedded Bun the build unpacks, on every OS: it installs the pinned
 dependencies from `bun.lock`, type-checks with `tsc` (the check that makes an exhaustive `switch`
 fail to compile when a case is missing — the bundle is produced without it), then runs `vitest run`
 once and exits:

@@ -55,6 +55,9 @@ import {
   intRem,
   longDiv,
   longRem,
+  saturate,
+  saturateLong,
+  saturateUnsigned,
   singleFromLong,
   substring,
 } from './utils/overflow';
@@ -66,6 +69,17 @@ import {
   toHexString,
   toHexStringLower,
 } from './utils/convert-encoding';
+import {
+  booleanFromObject,
+  charFrom,
+  charFromObject,
+  charFromText,
+  integerFrom,
+  integerFromDecimal,
+  integerFromDouble,
+  integerFromObject,
+  realFromObject,
+} from './utils/number-convert';
 import {
   intConvert,
   intParse,
@@ -179,6 +193,8 @@ import {
   findLast,
   findLastIndex,
   indexOf as listIndexOf,
+  getRange as listGetRange,
+  insert as listInsert,
   insertRange,
   lastIndexOf as listLastIndexOf,
   listCapacity,
@@ -188,6 +204,8 @@ import {
   listSortBy,
   order,
   removeAll,
+  removeAt as listRemoveAt,
+  removeRange as listRemoveRange,
   stringOrder,
 } from './utils/list';
 import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
@@ -222,6 +240,22 @@ import {
   values as enumValues,
   zero as enumZero,
 } from './utils/enums';
+import { closing, closingLike, sameClosure } from './utils/closures';
+import {
+  throwIfEqual,
+  throwIfGreaterThan,
+  throwIfGreaterThanOrEqual,
+  throwIfLessThan,
+  throwIfLessThanOrEqual,
+  throwIfNegative,
+  throwIfNegativeOrZero,
+  throwIfNotEqual,
+  throwIfNull,
+  throwIfNullOrEmpty,
+  throwIfNullOrWhiteSpace,
+  throwIfZero,
+} from './utils/guards';
+import { named as namedType, of as typeOfValue, same as sameType } from './utils/runtime-types';
 import { lockGate, newObject } from './utils/net-object';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
@@ -245,46 +279,6 @@ import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
  */
 export const withPatch = <T extends object>(value: T, patch: Partial<T>): T =>
   Object.assign(closingLike(Object.create(Object.getPrototypeOf(value)) as T, value), value, patch);
-
-/**
- * The closed type a generic record or struct was built as, by instance (#651). C# compares a
- * record's EqualityContract, its closed type, so `Box<int>` never equals `Box<double>`; the twin is one
- * `Box` class for every type argument, and both values were a `Box` holding 1. Where C# names the
- * type arguments, the build marks the value with them; held aside, so its JSON and its members are
- * the value's alone.
- */
-const closures = new WeakMap<object, string>();
-
-/** `value` as built for the closed type `typeArguments` names. */
-export const closing = <T extends object>(value: T, typeArguments: string): T => {
-  closures.set(value, typeArguments);
-  return value;
-};
-
-/**
- * `copy` as built for the closed type `source` was built as: a copy of a generic record or struct is a
- * value of its source's type. A struct's `$clone` and a record's `with` build the copy without its
- * constructor, so the copy went unmarked, and a boxed `Pair<double>` equalled a `Pair<int>` (#751).
- * Called on the bare copy, before a member or a patch is written to it: .NET's copy is of its closed
- * type from its allocation, so a copy constructor or an `init` accessor that compares the copy must
- * not meet an unmarked one (found by Copilot's review of #752).
- */
-export const closingLike = <T extends object>(copy: T, source: object): T => {
-  const closure = closures.get(source);
-  if (closure !== undefined) closures.set(copy, closure);
-  return copy;
-};
-
-/**
- * Whether two values of one generic record or struct are of one closed type. A value built where the
- * type arguments were only known at run time (inside generic code), or rebuilt from the wire, carries
- * no mark: it is not taken for another type, only the two marked differently are.
- */
-export const sameClosure = (value: object, other: object): boolean => {
-  const mine = closures.get(value);
-  const theirs = closures.get(other);
-  return mine === undefined || theirs === undefined || mine === theirs;
-};
 
 /**
  * C# `value[range]` where an endpoint may count from the END and may be ZERO. The direct shapes
@@ -392,8 +386,21 @@ export const $eq = {
     realParse,
     realTryParse,
     realConvert,
+    /** `Convert.To<number>` of what is not text, as .NET converts it (#401). */
+    integerFrom,
+    integerFromDouble,
+    integerFromDecimal,
+    integerFromObject,
+    realFromObject,
+    charFrom,
+    charFromText,
+    charFromObject,
     long,
     checked,
+    /** An explicit cast of a double or a float to an integer, which saturates (#1015). */
+    saturate,
+    saturateUnsigned,
+    saturateLong,
     divRem,
     divRemLong,
     intDiv,
@@ -563,6 +570,11 @@ export const $eq = {
     /** `List<T>.AddRange` and `InsertRange`, one element at a time, never a spread past an engine's cap (#1060). */
     addRange,
     insertRange,
+    /** `List<T>.Insert`, `RemoveAt`, `RemoveRange` and `GetRange`, each position checked as .NET checks it (#1160). */
+    listInsert,
+    listRemoveAt,
+    listRemoveRange,
+    listGetRange,
     removeAll,
     copyTo,
     copyRangeTo,
@@ -585,7 +597,7 @@ export const $eq = {
     pair,
   },
   /** `bool.Parse`, `bool.TryParse` and `Convert.ToBoolean(string)`, as .NET reads the text. */
-  bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert },
+  bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert, fromObject: booleanFromObject },
   /** `Convert.ToBase64String`, `ToBase64CharArray`, `ToHexString` and `ToHexStringLower`, as .NET
    * encodes the bytes (#716). */
   convert: { toBase64String, toBase64CharArray, toHexString, toHexStringLower },
@@ -665,6 +677,27 @@ export const $eq = {
     Exception,
     construct: constructException,
   },
+  /**
+   * The argument guards of .NET's argument exceptions (`ArgumentNullException.ThrowIfNull`, …), each
+   * with .NET's checks and words; the compiler hands the parameter's name, the type's equality or
+   * ordering, and how a value of it is written in the current culture.
+   */
+  guard: {
+    throwIfNull,
+    throwIfNullOrEmpty,
+    throwIfNullOrWhiteSpace,
+    throwIfZero,
+    throwIfNegative,
+    throwIfNegativeOrZero,
+    throwIfEqual,
+    throwIfNotEqual,
+    throwIfGreaterThan,
+    throwIfGreaterThanOrEqual,
+    throwIfLessThan,
+    throwIfLessThanOrEqual,
+  },
+  /** `a.GetType() == b.GetType()` and against `typeof(X)`, where the browser knows the runtime type. */
+  types: { of: typeOfValue, named: namedType, same: sameType },
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },
 } as const;

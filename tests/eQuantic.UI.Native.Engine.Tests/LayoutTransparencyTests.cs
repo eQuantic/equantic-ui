@@ -59,6 +59,7 @@ public class LayoutTransparencyTests
         new CodeSurface(c, new CodeEditorController()),
         new DragDismiss(c),
         new Draggable(c),
+        new DropTarget(c, _ => { }),
         new Flexible(c),
         new Hoverable(c, _ => { }),
         new InFlow(c),
