@@ -21,7 +21,8 @@ render of an old module could draw the old text back, and an edit to a handler d
   page that reconnects to another run reloads, which dotnet watch's script did after a restart.
   `rebuilt` says the modules are new and whether the server's markup holds the edit (`hydrate`) or not
   (`mount`). `failed` carries the errors of a rebuild that did not compile, which the development
-  overlay shows over the page, where dotnet watch's script showed the compiler's.
+  overlay shows over the page, where dotnet watch's script showed the compiler's. A change to a file under
+  the app's `wwwroot` reloads the page through the stream as well, as dotnet watch's script did.
 - The server counts the edits applied to it through .NET's `MetadataUpdateHandler`. A rebuild
   announces itself once the edit of the save it answers has arrived, waiting up to five seconds from
   the save when dotnet watch runs the server, so the page reloads once, into markup that holds the

@@ -36,6 +36,11 @@ show them over itself without reloading.
 - **WHEN** a page's stream reconnects to a run of the server with another name
 - **THEN** the page reloads once
 
+#### Scenario: A static file of the app changes
+
+- **WHEN** a file under the app's `wwwroot` changes, outside eqc's output
+- **THEN** the stream says the page hydrates, and the page reloads once
+
 #### Scenario: A save that does not compile
 
 - **WHEN** a rebuild fails
