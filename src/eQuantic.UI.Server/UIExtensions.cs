@@ -1067,9 +1067,10 @@ public static class UIExtensions
                .Set("MetadataTags", metadata.RenderTags())
                .SetOrEmpty("FontPreloads", fonts.Preloads)
                .Set("BuildId", BuildId)
-               .Set("ThemeStyles", themeStyles)
+               // A style element's text, which nothing in it can end (#1295).
+               .Set("ThemeStyles", StyleElementText.Of(themeStyles))
                // One element per AddStyles call, so a malformed chunk cannot swallow the next one.
-               .SetOrEmpty("AppStyles", string.Join("\n        ", shell.Styles.Select(css => $"<style>{css}</style>")))
+               .SetOrEmpty("AppStyles", string.Join("\n        ", shell.Styles.Select(css => $"<style>{StyleElementText.Of(css)}</style>")))
                .Set("HeadTags", string.Join("\n    ", headTags))
                .Set("SsrEnabled", ssrEnabled.ToString().ToLowerInvariant())
                .Set("SsrContent", ssrContent)

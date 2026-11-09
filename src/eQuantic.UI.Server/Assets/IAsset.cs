@@ -75,6 +75,7 @@ public record InlineStyleAsset(string Content, string? Id = null) : IAsset
     public string Render()
     {
         var idAttr = !string.IsNullOrWhiteSpace(Id) ? $" id=\"{HttpUtility.HtmlAttributeEncode(Id)}\"" : "";
-        return $"<style{idAttr}>{Content}</style>";
+        // What the sheet holds can never end the element (#1295).
+        return $"<style{idAttr}>{StyleElementText.Of(Content)}</style>";
     }
 }
