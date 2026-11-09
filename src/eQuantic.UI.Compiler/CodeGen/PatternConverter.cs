@@ -349,7 +349,7 @@ public static class PatternConverter
     /// <summary>Whether a relational pattern's input may be null: a nullable value type, or a reference type
     /// the relation reads a number out of. Without a model the input is taken as a value, as it was.</summary>
     private static bool MayBeNull(RelationalPatternSyntax relational, ConversionContext context) =>
-        context.SemanticHelper.GetOperation(relational) is IPatternOperation { InputType: var input }
+        context.SemanticHelper.GetOperation(relational) is IPatternOperation { InputType: { } input }
         && (input.IsNullableValue() || !input.IsValueType);
 
     public static string TypeCheck(TypeSyntax typeSyntax, string access, ConversionContext context)

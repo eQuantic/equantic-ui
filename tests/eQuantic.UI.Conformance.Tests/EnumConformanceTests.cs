@@ -142,6 +142,7 @@ public class EnumConformanceTests
     [InlineData("var a = Huge.A; return (long)~a;")]                                           // "-2"
     [InlineData("var x = UFlags.A; return (uint)~x;")]                                         // 4294967294
     [InlineData("var s = Small.A; return (byte)~s;")]                                          // 254
+    [InlineData("var b = Big.Low; var t = Big.Top; return (ulong)~b + \"|\" + (ulong)~t + \"|\" + (~b).ToString(\"X\");")] // "18446744073709551614|9223372036854775807|FFFFFFFFFFFFFFFE"
     [InlineData("var t = UFlags.Top; return (uint)(t & UFlags.Top);")]                          // 2147483648
     [InlineData("var h = Huge.Top; h |= Huge.A; return h.ToString();")]                        // "A, Top"
     [InlineData("var h = Huge.Top | Huge.B; return (h & ~Huge.B).ToString();")]                // "Top"
