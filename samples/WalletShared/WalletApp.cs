@@ -1,16 +1,17 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
-using Microsoft.Extensions.Configuration;
 
 namespace eQuantic.Wallet;
 
 /// <summary>
-/// eQUANTIC WALLET — the six-screen iOS sample from the handoff. No custom widgets: every screen is
-/// catalog components over the shared token core, which is the whole point of the exercise.
+/// eQUANTIC WALLET — the six-screen iOS sample from the handoff. No components of its own: every
+/// screen is catalog components over the shared token core, which is the whole point of the exercise.
 /// <para>
-/// Written in the write-once vocabulary, so the same trees serve the browser — including the two
-/// gestures: the transactions list pulls to refresh and its first row swipes to reveal, both on the
-/// same <see cref="eQuantic.UI.Primitives.Draggable"/> the vocabulary now carries.
+/// Written in the write-once vocabulary, so the same trees serve every target. This class library is
+/// referenced by two heads and copied into neither: <c>samples/WalletMobile</c> draws it on macOS,
+/// iOS and Android, and <c>samples/WalletWeb</c> in the browser, including the two gestures: the
+/// transactions list pulls to refresh and its first row swipes to reveal, both on the same
+/// <see cref="eQuantic.UI.Primitives.Draggable"/> the vocabulary carries.
 /// </para>
 /// <para>
 /// SIGNPOST — this file predates the declarative factory surface and composes nodes imperatively
@@ -40,16 +41,15 @@ public sealed class WalletApp : StatefulComponent
     private readonly IWalletLedger _ledger;
 
     /// <summary>
-    /// Both arguments come from the container. The ledger is the app's own service; the
-    /// configuration is the one the host already assembled from appsettings.json, the environment
-    /// and the command line — so `--screen cards` opens on the cards screen with nothing parsed here.
+    /// What the app is handed, and nothing about where it runs. The ledger is the app's own service,
+    /// and the screen is the one it opens on. Each head says where they come from: the native head
+    /// resolves the ledger from its container and reads the screen from its configuration
+    /// (`--screen cards` opens on the cards screen), and the web head builds both in its page.
     /// </summary>
-    public WalletApp(IWalletLedger ledger, IConfiguration configuration)
+    public WalletApp(IWalletLedger ledger, WalletScreen screen = WalletScreen.Home)
     {
         _ledger = ledger;
-        _screen = Enum.TryParse<WalletScreen>(configuration["screen"], ignoreCase: true, out var screen)
-            ? screen
-            : WalletScreen.Home;
+        _screen = screen;
         _tab = Math.Max(0, Array.FindIndex(WalletData.Tabs, tab => tab.Screen == _screen));
     }
 

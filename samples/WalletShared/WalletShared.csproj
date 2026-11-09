@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      The Wallet's screens, its data and its ledger, written once and shared by two heads: WalletMobile
+      draws them on macOS, iOS and Android, and WalletWeb in the browser. It is an ordinary .NET class
+      library and names no target: what a head needs of its platform (the device's capabilities, the
+      command line, the server) stays in that head.
+
+      It writes components, so it references the vocabulary and the component library. These are
+      project references because this sample builds beside the SDK's source: an app outside this
+      repository writes one PackageReference, to eQuantic.UI.Components, at the version its SDK has.
+    -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../../src/eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj" />
+        <ProjectReference Include="../../src/eQuantic.UI.Components/eQuantic.UI.Components.csproj" />
+    </ItemGroup>
+
+    <!-- The declarative factories in scope in every file, as both SDKs put them in an app's own. -->
+    <ItemGroup>
+        <Using Include="eQuantic.UI.Components.UI" Static="true" />
+    </ItemGroup>
+
+</Project>

@@ -14,5 +14,11 @@
         <ApplicationTitle>Wallet</ApplicationTitle>
     </PropertyGroup>
 
+    <!-- The screens, written once in a class library the web head references too. This head keeps
+         only what is its own: the device it asks for, the entitlements and the command line. -->
+    <ItemGroup>
+        <ProjectReference Include="../WalletShared/WalletShared.csproj" />
+    </ItemGroup>
+
     <Import Project="../../src/eQuantic.UI.Sdk.Native/Sdk/Sdk.targets" />
 </Project>

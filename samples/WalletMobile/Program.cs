@@ -4,7 +4,8 @@ using eQuantic.Wallet;
 using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
-/// eQUANTIC WALLET — the same C# on a phone and on a desktop, described once. The half of
+/// eQUANTIC WALLET — the same C# on a phone and on a desktop, described once, and in the browser
+/// through <c>samples/WalletWeb</c>: both heads draw the screens of <c>samples/WalletShared</c>. The half of
 /// <c>Program</c> that is this app's; the SDK writes the other half, which is the <c>Main</c> the
 /// platforms that have one need. An Android app has none at all — the system launches an Activity —
 /// which is why what an app describes is a METHOD rather than an entry point.
@@ -44,6 +45,14 @@ public partial class Program
             photon.Height = 844;
         });
 
-        return builder.Build().UseRoot<WalletApp>();
+        // The screen to open on, from the configuration the host already assembled out of
+        // appsettings.json, the environment and the command line: `--screen cards` opens on the
+        // cards screen. The shared screens take the value and know nothing of where it came from.
+        var screen = Enum.TryParse<WalletScreen>(builder.Configuration["screen"], ignoreCase: true, out var named)
+            ? named
+            : WalletScreen.Home;
+
+        var app = builder.Build();
+        return app.UseRoot(() => ActivatorUtilities.CreateInstance<WalletApp>(app.Services, screen));
     }
 }
