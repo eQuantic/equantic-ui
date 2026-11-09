@@ -10,6 +10,12 @@ on:
     tags: ["v*", "ext-v*"]
   pull_request:
     branches: ["main"]
+  # GitHub's merge queue (#1308): a reviewed, green pull request waits in the queue, which runs this
+  # workflow on the pull request together with every one ahead of it and merges the group when the
+  # required jobs pass. Every job those checks name runs here; the publishing jobs, which run on a
+  # push to main or a tag, do not. There is no concurrency group, so no queue run cancels another.
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
     inputs:
       version:
@@ -21,8 +27,10 @@ jobs:
   # A commit message says something about the change and nothing about what composed it. Three
   # squash messages on main ended with the scaffolding of the tool that wrote them before anything
   # compared, so this compares. On a pull request it reads the branch's commits, which is
-  # prevention; on a push to main it reads what was actually squashed, which is the only place that
-  # message exists — and by then the merge has happened, so the job going red IS the report.
+  # prevention; in a merge queue's run it reads the squash commits the queue composed, before they
+  # reach main, which is prevention of the merge-time message itself (#1308); on a push to main it
+  # reads what was actually squashed, and by then the merge has happened, so the job going red IS
+  # the report.
   commit-messages:
     runs-on: ubuntu-latest
     steps:
@@ -36,12 +44,10 @@ jobs:
         run: ./scripts/check-commit-messages.sh --self-test
 
       - name: No commit message carries what a tool left behind
-        # Through the environment rather than interpolated into the command: a ref is data, and
-        # `${{ }}` substitution happens before the shell ever sees it.
-        env:
-          EQ_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          EQ_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: ./scripts/check-commit-messages.sh --range "$EQ_BASE" "$EQ_HEAD"
+        # The range comes from the event itself, read by the script (GITHUB_EVENT_NAME, the event's
+        # JSON and GITHUB_SHA), where its self-test holds an event of every kind. An expression here
+        # chose it once, and under a merge group it gave an empty base: the group's last commit alone.
+        run: ./scripts/check-commit-messages.sh --event
 
   # Every OpenSpec change and spec, validated strictly by the CLI tools/openspec/package-lock.json
   # pins, through the same script a developer runs. The plain `openspec validate --all --strict`
