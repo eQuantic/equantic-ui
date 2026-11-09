@@ -4,3 +4,9 @@ eQuantic.UI.Images.ImageOptimizationOptions.Qualities.set -> void
 eQuantic.UI.Images.ImageOptimizationOptions.MaxCacheSize.get -> long
 eQuantic.UI.Images.ImageOptimizationOptions.MaxCacheSize.set -> void
 eQuantic.UI.Images.ImageOptimizationOptions.QualityFor(int requested) -> int
+*REMOVED*eQuantic.UI.Images.ImageCache.GetAsync(string! url, int width, int quality, string! format) -> System.Threading.Tasks.Task<byte[]?>!
+eQuantic.UI.Images.ImageCache.GetAsync(string! source, int width, int quality, string! format) -> System.Threading.Tasks.Task<byte[]?>!
+*REMOVED*eQuantic.UI.Images.ImageCache.GetOrCreateAsync(string! url, int width, int quality, string! format, System.Func<System.Threading.Tasks.Task<byte[]!>!>! factory) -> System.Threading.Tasks.Task<byte[]!>!
+eQuantic.UI.Images.ImageCache.GetOrCreateAsync(string! source, int width, int quality, string! format, System.Func<System.Threading.Tasks.Task<byte[]!>!>! factory) -> System.Threading.Tasks.Task<byte[]!>!
+*REMOVED*eQuantic.UI.Images.ImageCache.SetAsync(string! url, int width, int quality, string! format, byte[]! data) -> System.Threading.Tasks.Task!
+eQuantic.UI.Images.ImageCache.SetAsync(string! source, int width, int quality, string! format, byte[]! data) -> System.Threading.Tasks.Task!

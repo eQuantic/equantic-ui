@@ -11,7 +11,7 @@ Measured on main, the four middleware tests this change adds all fail there.
 ## What Changes
 
 - **The key is the file**: the path it resolves to under the web root, with its size and its time, so a
-  file replaced on disk is a new entry. Case is folded where the file system folds it.
+  file replaced on disk is a new entry. Its case is folded, since a mount may fold it on any system.
 - **The quality is one of a set**: `Qualities` (`50, 75, 90, 100`), a request's `q` rounded to the nearest;
   `DefaultQuality` must be one of them, or the app stops at start.
 - **The cache has a cap**: `MaxCacheSize` (512 MiB). Past it the oldest copies are removed until it holds

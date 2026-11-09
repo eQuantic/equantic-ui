@@ -120,10 +120,10 @@ public static class ImageOptimizationMiddleware
         {
             // Get or create optimized image (with caching and dedup)
             // Keyed by the file, not by how the url spelled it: /a.png, //a.png and /./a.png were three
-            // decodes and three copies of one file (#1289). Its size and its time name the version, so a
-            // file replaced on disk is a new entry.
-            var relative = Path.GetRelativePath(webRootFull, resolvedPath).Replace('\\', '/');
-            if (!OperatingSystem.IsLinux()) relative = relative.ToLowerInvariant();
+            // decodes and three copies of one file (#1289). The case is folded on every system, since a
+            // mount may fold it on Linux too, and the size and the time name the version, so a file replaced
+            // on disk is a new entry and two files a case apart are never one.
+            var relative = Path.GetRelativePath(webRootFull, resolvedPath).Replace('\\', '/').ToLowerInvariant();
             var source = $"{relative}|{fileInfo.Length}|{fileInfo.LastWriteTimeUtc.Ticks}";
             var data = await cache.GetOrCreateAsync(source, width, quality, outputFormat, async () =>
             {

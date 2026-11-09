@@ -38,9 +38,9 @@ public class ImageCache : IDisposable
     /// <summary>
     /// Tries to get a cached optimized image. Returns null if not found or expired.
     /// </summary>
-    public async Task<byte[]?> GetAsync(string url, int width, int quality, string format)
+    public async Task<byte[]?> GetAsync(string source, int width, int quality, string format)
     {
-        var path = GetCachePath(url, width, quality, format);
+        var path = GetCachePath(source, width, quality, format);
 
         if (!File.Exists(path))
             return null;
@@ -49,7 +49,13 @@ public class ImageCache : IDisposable
         var age = DateTime.UtcNow - File.GetLastWriteTimeUtc(path);
         if (age.TotalSeconds > _options.CacheTtlSeconds)
         {
-            try { File.Delete(path); } catch { /* ignore cleanup errors */ }
+            try
+            {
+                var length = new FileInfo(path).Length;
+                File.Delete(path);
+                Interlocked.Add(ref _size, -length);
+            }
+            catch { /* ignore cleanup errors */ }
             return null;
         }
 
@@ -59,9 +65,9 @@ public class ImageCache : IDisposable
     /// <summary>
     /// Stores an optimized image in the cache.
     /// </summary>
-    public async Task SetAsync(string url, int width, int quality, string format, byte[] data)
+    public async Task SetAsync(string source, int width, int quality, string format, byte[] data)
     {
-        var path = GetCachePath(url, width, quality, format);
+        var path = GetCachePath(source, width, quality, format);
         var dir = Path.GetDirectoryName(path)!;
 
         Directory.CreateDirectory(dir);
@@ -121,14 +127,14 @@ public class ImageCache : IDisposable
     /// Limits total concurrent optimizations to prevent resource exhaustion.
     /// </summary>
     public async Task<byte[]> GetOrCreateAsync(
-        string url, int width, int quality, string format,
+        string source, int width, int quality, string format,
         Func<Task<byte[]>> factory)
     {
-        var cached = await GetAsync(url, width, quality, format);
+        var cached = await GetAsync(source, width, quality, format);
         if (cached != null)
             return cached;
 
-        var key = ComputeKey(url, width, quality, format);
+        var key = ComputeKey(source, width, quality, format);
         var semaphore = _locks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
 
         // Limit total concurrent optimizations
@@ -139,12 +145,12 @@ public class ImageCache : IDisposable
             try
             {
                 // Double-check after acquiring lock
-                cached = await GetAsync(url, width, quality, format);
+                cached = await GetAsync(source, width, quality, format);
                 if (cached != null)
                     return cached;
 
                 var data = await factory();
-                await SetAsync(url, width, quality, format, data);
+                await SetAsync(source, width, quality, format, data);
                 return data;
             }
             finally
@@ -203,9 +209,9 @@ public class ImageCache : IDisposable
         }
     }
 
-    private string GetCachePath(string url, int width, int quality, string format)
+    private string GetCachePath(string source, int width, int quality, string format)
     {
-        var key = ComputeKey(url, width, quality, format);
+        var key = ComputeKey(source, width, quality, format);
         var ext = format switch
         {
             "image/webp" => "webp",
@@ -216,9 +222,9 @@ public class ImageCache : IDisposable
         return Path.Combine(_options.CacheDirectory, $"{key}.{ext}");
     }
 
-    private static string ComputeKey(string url, int width, int quality, string format)
+    private static string ComputeKey(string source, int width, int quality, string format)
     {
-        var input = $"{url}|{width}|{quality}|{format}";
+        var input = $"{source}|{width}|{quality}|{format}";
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(input));
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
