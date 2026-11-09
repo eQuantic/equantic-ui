@@ -14,19 +14,122 @@
 #   scripts/checkout-wiki.sh <destination>   clone into <destination>, which must not exist
 #   scripts/checkout-wiki.sh --self-test     prove every path against a local fixture wiki
 #
+# A merge queue's run (#1308) holds the code of every pull request in its group, and their wiki
+# branches reach master only after they merge, so it reads master with each one's wiki branch merged
+# onto it, in the group's order: the wiki as it will be once the group merges. The group's pull
+# requests are read from its commits through the API: a squash commit's subject ends with ` (#N)`, a
+# merge commit's starts with `Merge pull request #N`, and the last one must be the pull request the
+# queue's ref names, or the run fails instead of guessing. A fork's pull request is left out, as on a
+# pull request's run, and two wiki branches that conflict fail the run.
+#
 # EQ_WIKI_BRANCH  the pull request's head ref, empty outside a pull request and for a pull request
 #                 from a fork, whose branch name can repeat one of this repository's (ci.yml). It is
 #                 text someone else wrote, so it is only ever compared and passed as one argument,
 #                 never interpolated into a command.
+# EQ_QUEUE_BASE   a merge group's base and head commits and its head ref
+# EQ_QUEUE_HEAD   (`refs/heads/gh-readonly-queue/main/pr-<N>-<sha>`), empty outside a merge group.
+# EQ_QUEUE_REF    The pull requests behind them are asked of the API with `gh`, for GITHUB_REPOSITORY.
 # EQ_WIKI_URL     the wiki's repository; the self-test points it at its fixture.
 set -euo pipefail
 
 readonly DEFAULT_URL="https://github.com/eQuantic/equantic-ui.wiki.git"
 
+# The wiki branches of the pull requests a merge group puts on main, one a line, in the group's order,
+# a fork's left out. Fails when the group's commits name no pull request, or end with another one than
+# the queue's ref names.
+queue_branches() {
+  local repo=${GITHUB_REPOSITORY:-} base=${EQ_QUEUE_BASE:-} head=${EQ_QUEUE_HEAD:-} ref=${EQ_QUEUE_REF:-}
+  if [ -z "$repo" ] || [ -z "$base" ] || [ -z "$head" ]; then
+    echo "::error::A merge group's run needs GITHUB_REPOSITORY, EQ_QUEUE_BASE and EQ_QUEUE_HEAD." >&2
+    return 1
+  fi
+
+  local subjects
+  if ! subjects=$(gh api "repos/$repo/compare/$base...$head" --jq '.commits[].commit.message | split("\n")[0]'); then
+    echo "::error::The merge group's commits could not be read ($base...$head)." >&2
+    return 1
+  fi
+
+  # An array and a separate last element: the macOS runner's bash is 3.2, which has no negative index.
+  local numbers=() last="" subject
+  while IFS= read -r subject; do
+    subject=${subject%$'\r'}
+    if [[ $subject =~ \(#([0-9]+)\)$ ]] || [[ $subject =~ ^Merge\ pull\ request\ \#([0-9]+)\  ]]; then
+      numbers+=("${BASH_REMATCH[1]}")
+      last=${BASH_REMATCH[1]}
+    fi
+  done <<< "$subjects"
+
+  local named=""
+  if [[ $ref =~ /pr-([0-9]+)-[0-9a-fA-F]+$ ]]; then named=${BASH_REMATCH[1]}; fi
+  if [ -z "$last" ] || [ "$last" != "$named" ]; then
+    echo "::error::The merge group's commits end with pull request '${last:-none}', and its ref names '${named:-none}'." >&2
+    return 1
+  fi
+
+  local number line owner branch
+  for number in "${numbers[@]}"; do
+    if ! line=$(gh api "repos/$repo/pulls/$number" --jq '[.head.repo.full_name // "", .head.ref] | @tsv'); then
+      echo "::error::Pull request #$number of the merge group could not be read." >&2
+      return 1
+    fi
+    IFS=$'\t' read -r owner branch <<< "$line"
+    if [ "$owner" = "$repo" ]; then printf '%s\n' "$branch"; fi
+  done
+}
+
+# Clones the wiki into $1 for a merge group: its default branch, with the wiki branch of every pull
+# request in the group merged onto it in order. Nothing is left behind when it fails.
+queue_checkout() {
+  local destination=$1
+  local url=${EQ_WIKI_URL:-$DEFAULT_URL}
+  local branches heads
+
+  branches=$(queue_branches) || return 1
+  if ! heads=$(git ls-remote --heads "$url"); then
+    echo "::error::The wiki's branches could not be listed at $url." >&2
+    return 1
+  fi
+  git clone --quiet -- "$url" "$destination" || return 1
+  git -C "$destination" config user.name "eQuantic CI"
+  git -C "$destination" config user.email "ci@equantic.invalid"
+  git -C "$destination" config commit.gpgsign false
+
+  local branch merged="" sha ref found
+  while IFS= read -r branch; do
+    [ -n "$branch" ] || continue
+    found=""
+    while IFS=$'\t' read -r sha ref; do
+      ref=${ref%$'\r'}
+      if [ "$ref" = "refs/heads/$branch" ]; then found=yes; fi
+    done <<< "$heads"
+    [ -n "$found" ] || continue
+    if ! git -C "$destination" fetch --quiet origin "refs/heads/$branch" \
+      || ! git -C "$destination" merge --quiet --no-edit --no-ff FETCH_HEAD > /dev/null; then
+      echo "::error::The wiki branch '$branch' does not merge with the others in the group." >&2
+      rm -rf "$destination"
+      return 1
+    fi
+    merged="$merged '$branch'"
+  done <<< "$branches"
+
+  if [ -n "$merged" ]; then
+    echo "A merge group: the wiki is read at its default branch with$merged merged onto it."
+  else
+    echo "A merge group with no wiki branch, so the wiki is read at its default branch."
+  fi
+  echo "Checked out: $(git -C "$destination" rev-parse --abbrev-ref HEAD) at $(git -C "$destination" rev-parse --short HEAD)."
+}
+
 # Clones the wiki into $1, at EQ_WIKI_BRANCH when the wiki has a branch of exactly that name, and at
-# its default branch otherwise, then says which one it read.
+# its default branch otherwise, then says which one it read. A merge group reads it as queue_checkout
+# says.
 checkout() {
   local destination=$1
+  if [ -n "${EQ_QUEUE_HEAD:-}" ]; then
+    queue_checkout "$destination"
+    return
+  fi
   local url=${EQ_WIKI_URL:-$DEFAULT_URL}
   local branch=${EQ_WIKI_BRANCH:-}
   local heads
@@ -85,6 +188,31 @@ self_test() {
   printf 'branch\n' > "$fixture/Page.md"
   git -C "$fixture" commit --quiet -am "a pull request's pages"
   git -C "$fixture" checkout --quiet master
+  # Two more pull requests' pages, for a merge group: one that adds a page beside the first's, and one
+  # that changes the first's line another way, which cannot merge with it.
+  git -C "$fixture" checkout --quiet -b feat/second
+  printf 'second\n' > "$fixture/Second.md"
+  git -C "$fixture" add Second.md
+  git -C "$fixture" commit --quiet -m "another pull request's page"
+  git -C "$fixture" checkout --quiet master
+  git -C "$fixture" checkout --quiet -b feat/conflict
+  printf 'conflict\n' > "$fixture/Page.md"
+  git -C "$fixture" commit --quiet -am "the same line, another way"
+  git -C "$fixture" checkout --quiet master
+
+  # `gh api` stands in with the answers each case writes, already as its --jq prints them, and refuses
+  # a call for another repository or another range, so the arguments are checked too.
+  mkdir -p "$work/stub"
+  cat > "$work/stub/gh" <<'STUB'
+#!/usr/bin/env bash
+[ "$1" = api ] || exit 2
+case "$2" in
+  "repos/eQuantic/equantic-ui/compare/base1...head1") cat "$EQ_STUB/subjects" ;;
+  repos/eQuantic/equantic-ui/pulls/*) number=${2##*/}; [ -f "$EQ_STUB/pull-$number" ] || exit 1; cat "$EQ_STUB/pull-$number" ;;
+  *) exit 1 ;;
+esac
+STUB
+  chmod +x "$work/stub/gh"
 
   local failures=0 runs=0
   expect() {
@@ -110,6 +238,73 @@ self_test() {
   expect "a run outside a pull request reads the default branch" "" "master"
   expect "a name that is only the tail of a branch is not that branch" "some-change" "master"
   expect "a name that is not a ref at all reads the default branch" '$(touch pwned) `id` ;x' "master"
+
+  # A merge group (#1308): the pull requests its commits name, each one's head from the API. The pages
+  # read are asserted, a fork's branch is never merged, and a failure leaves nothing behind.
+  queue() {
+    local name=$1 ref=$2 want_page=$3 want_second=$4
+    runs=$((runs + 1))
+    rm -rf "$work/out"
+    if ! PATH="$work/stub:$PATH" EQ_STUB="$work/answers" GITHUB_REPOSITORY="eQuantic/equantic-ui" \
+      EQ_WIKI_URL="file://$fixture" EQ_QUEUE_BASE=base1 EQ_QUEUE_HEAD=head1 EQ_QUEUE_REF="$ref" \
+      bash "$self" "$work/out" > /dev/null 2>&1; then
+      if [ "$want_page" = "(fails)" ] && [ ! -e "$work/out" ]; then
+        echo "ok: $name"
+      elif [ "$want_page" = "(fails)" ]; then
+        echo "FAIL: $name: it failed and left a directory behind" >&2
+        failures=$((failures + 1))
+      else
+        echo "FAIL: $name: the checkout failed" >&2
+        failures=$((failures + 1))
+      fi
+      return
+    fi
+    if [ "$want_page" = "(fails)" ]; then
+      echo "FAIL: $name: the checkout succeeded" >&2
+      failures=$((failures + 1))
+      return
+    fi
+    local page second
+    page=$(cat "$work/out/Page.md" 2> /dev/null) || page="(no page)"
+    second=$(cat "$work/out/Second.md" 2> /dev/null) || second="(no page)"
+    if [ "$page" = "$want_page" ] && [ "$second" = "$want_second" ]; then
+      echo "ok: $name"
+    else
+      echo "FAIL: $name: read Page '$page' and Second '$second', expected '$want_page' and '$want_second'" >&2
+      failures=$((failures + 1))
+    fi
+  }
+  # The group's commits for the next case; the pull requests' answers stay, as the API's would.
+  answers() {
+    mkdir -p "$work/answers"
+    printf '%s\n' "$@" > "$work/answers/subjects"
+  }
+  pull() { printf '%s\t%s\n' "$2" "$3" > "$work/answers/pull-$1"; }
+
+  answers "🔧 chore: the first (#1)" "✨ feat: the second (#2)"
+  pull 1 eQuantic/equantic-ui fix/some-change
+  pull 2 eQuantic/equantic-ui feat/second
+  queue "a merge group reads master with each pull request's pages merged" \
+    "refs/heads/gh-readonly-queue/main/pr-2-abc123" "branch" "second"
+
+  answers "🔧 chore: the first (#1)" "Merge pull request #3 from someone/feat/second" "✨ feat: the fourth (#4)"
+  pull 3 someone/fork feat/second
+  pull 4 eQuantic/equantic-ui '$(touch pwned) `id` ;x'
+  queue "a fork's pull request in a group is not merged, and a name that is not a branch is not run" \
+    "refs/heads/gh-readonly-queue/main/pr-4-abc123" "branch" "(no page)"
+
+  answers "🔧 chore: the first (#1)" "✨ feat: the second (#2)"
+  queue "a group whose commits do not end with the pull request its ref names fails" \
+    "refs/heads/gh-readonly-queue/main/pr-9-abc123" "(fails)" ""
+
+  answers "🔧 chore: a commit no pull request wrote"
+  queue "a group whose commits name no pull request fails" \
+    "refs/heads/gh-readonly-queue/main/pr-1-abc123" "(fails)" ""
+
+  answers "🔧 chore: the first (#1)" "🐛 fix: the fifth (#5)"
+  pull 5 eQuantic/equantic-ui feat/conflict
+  queue "two wiki branches that conflict fail, and leave nothing behind" \
+    "refs/heads/gh-readonly-queue/main/pr-5-abc123" "(fails)" ""
 
   # A wiki that cannot be reached fails, and leaves nothing behind that a guard could read as master.
   runs=$((runs + 1))

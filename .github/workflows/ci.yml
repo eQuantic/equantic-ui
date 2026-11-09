@@ -369,6 +369,12 @@ jobs:
           # another pull request's pages. Through the environment: a branch name is text someone
           # else wrote, and `${{ }}` substitution happens before the shell ever sees it.
           EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
+          # A merge queue's run reads master with the wiki branch of every pull request in its group
+          # merged onto it (#1308); the script asks the API for them, with the run's token.
+          EQ_QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+          EQ_QUEUE_HEAD: ${{ github.event.merge_group.head_sha }}
+          EQ_QUEUE_REF: ${{ github.event.merge_group.head_ref }}
+          GH_TOKEN: ${{ github.token }}
         run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
 
       - name: Test
@@ -505,6 +511,12 @@ jobs:
           # another pull request's pages. Through the environment: a branch name is text someone
           # else wrote, and `${{ }}` substitution happens before the shell ever sees it.
           EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
+          # A merge queue's run reads master with the wiki branch of every pull request in its group
+          # merged onto it (#1308); the script asks the API for them, with the run's token.
+          EQ_QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+          EQ_QUEUE_HEAD: ${{ github.event.merge_group.head_sha }}
+          EQ_QUEUE_REF: ${{ github.event.merge_group.head_ref }}
+          GH_TOKEN: ${{ github.token }}
         run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
 
       - name: Test
