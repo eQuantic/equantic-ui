@@ -3,10 +3,11 @@
 
 export * from '../../eQuantic.UI.Runtime/src/index';
 
-import { installErrorOverlay } from '../../eQuantic.UI.Runtime/src/dev/error-overlay';
+import { errorOverlay, installErrorOverlay } from '../../eQuantic.UI.Runtime/src/dev/error-overlay';
 import {
   capturePageState,
   replayPageState,
+  restorePageState,
   type PageState,
 } from '../../eQuantic.UI.Runtime/src/dev/hot-reload-state';
 import {
@@ -102,6 +103,13 @@ let hmrReplay = false;
 let hmrState: Record<string, PageState> | null = null;
 
 /**
+ * Whether the markup the server sent agrees with the page's modules, which hydration adopts as it is.
+ * False only after a hot reload the server's markup does not hold: rendered by code older than the
+ * modules the rebuild wrote, as when no edit reaches the server on a save (#1275).
+ */
+let servedMarkupAgrees = true;
+
+/**
  * Bootstraps the eQuantic application
  */
 export async function boot(): Promise<void> {
@@ -125,7 +133,13 @@ export async function boot(): Promise<void> {
       if (saved) {
         sessionStorage.removeItem('__eq_hmr__');
         hmrReplay = true;
-        const parsed = JSON.parse(saved) as { url: string; pages: Record<string, PageState> };
+        const parsed = JSON.parse(saved) as {
+          url: string;
+          pages: Record<string, PageState>;
+          hydrate?: boolean;
+        };
+        // What the stream said when it asked for this reload: whether the server holds the edit.
+        servedMarkupAgrees = parsed.hydrate === true;
         // The captured fields stay out of the server's payload: copied in, the first render's
         // adoption wrote back a field the replay had left at its initializer, and the root's own
         // server members went with the entry they replaced (Copilot's second round on #672).
@@ -243,7 +257,7 @@ export async function boot(): Promise<void> {
     // is; then the whole page switches to the browser's own at once (#623). Lowered at the browser's
     // from the start, each component kept the server's density until it next re-rendered, and then
     // snapped: under a mouse a page showed a mix of both.
-    const hydrating = servedContent && config.ssr !== false && !hmrReplay;
+    const hydrating = servedContent && config.ssr !== false && servedMarkupAgrees;
     const atHydration = densityForHydration(config.density, hydrating, ownDensity);
     if (atHydration) setPhotonDensity(atHydration);
     await loadAndMountPage(root, pageName, config);
@@ -392,29 +406,41 @@ async function loadAndMountPage(
   }
 
   const component = asPage(new ComponentClass());
+  const hydrates =
+    hasSSRContent && config.ssr !== false && !!component.getVirtualNode && servedMarkupAgrees;
 
-  // A hot reload's replay hands the page the fields it held before the refresh, before it builds. The
-  // server-data door above takes only what the hydration manifest lists, and a write-once page's own
-  // state is in none of it, so its counter went back to its initializer (#664).
+  // A hot reload's replay hands the page the fields it held before the refresh. The server-data door
+  // above takes only what the hydration manifest lists, and a write-once page's own state is in none
+  // of it, so its counter went back to its initializer (#664).
+  let replay: (() => void) | null = null;
   if (hmrReplay && hmrState) {
     const page: object = component instanceof EscapeHatchPage ? component.page : component;
     const key = `${componentIdentity(page)}#0`;
     const saved = hmrState[key];
     // Once: the fields are the ones the page held before this reload, and nothing later may be handed them.
     hmrState = null;
-    if (saved) replayPageState(page, saved, key);
+    if (saved && hydrates) {
+      // AFTER the page hydrates: the server rendered it with its own state, so the fields the reload
+      // carried are a change made since, which the next render draws. Restored before it, they built
+      // a tree the server's markup did not hold (#1275).
+      replay = () => {
+        restorePageState(page, saved);
+        (component as unknown as { _scheduleRender?: () => void })._scheduleRender?.();
+      };
+    } else if (saved) replayPageState(page, saved, key);
   }
 
   // Hydration: attach events to existing SSR HTML. Prefer the component's own hydrate() so its render
   // manager owns the tree — that lets the first SPA navigation away diff against it (getCurrentTree) and
   // preserve a shared shell. Fall back to a direct reconciler hydrate for older component shapes.
-  // After a hot-reload refresh the SSR HTML is the one thing KNOWN to be stale: it was rendered
-  // by the server's still-running old assembly, while the page bundle that just loaded is the new
-  // code. Hydration ADOPTS the DOM it finds — which kept the pre-edit pixels on screen and made
-  // the whole feature read as broken ("I saved, it reloaded, nothing changed"). A replay boot
-  // renders CLIENT-side instead: the new code paints, with the fields the replay handed the page
-  // above (replayPageState).
-  if (hasSSRContent && config.ssr !== false && component.getVirtualNode && !hmrReplay) {
+  // After a hot-reload refresh whose server did not take the edit, the SSR HTML is the one thing
+  // KNOWN to be stale: rendered by code older than the page bundle that just loaded. Hydration
+  // ADOPTS the DOM it finds, which kept the pre-edit pixels on screen and made the whole feature
+  // read as broken ("I saved, it reloaded, nothing changed"). Such a boot renders CLIENT-side: the
+  // new code paints, with the fields the replay handed the page above (replayPageState). When the
+  // server took the edit, which dotnet watch makes the ordinary case, the markup agrees and is
+  // hydrated (#1275). The method is asked again only so the compiler sees it is there.
+  if (hydrates && component.getVirtualNode) {
     if (isDev()) {
       console.log(`Hydrating: ${pageName}`);
     }
@@ -427,6 +453,7 @@ async function loadAndMountPage(
       }
     }
     currentComponent = component;
+    replay?.();
     return;
   }
 
@@ -619,10 +646,17 @@ function escapeHtml(unsafe: string): string {
 }
 
 /**
- * Phase 3 hot reload (v1): listen on the SSE endpoint the server maps when it streams rebuilds; on a
- * rebuild, capture the live page state (the stateful page's data fields) and reload — the boot
- * replays it into the page before it builds (replayPageState). Called only when the server said it
- * streams them.
+ * Phase 3 hot reload (v1): listen on the SSE endpoint the server maps when it streams rebuilds, the
+ * page's ONE source of reloads (#1275). It says three things:
+ * - `server`, first on every connection: which run of the server this is. A page that reconnects to
+ *   another run reloads, since the server restarted (dotnet watch's answer to an edit it cannot
+ *   apply) and its markup and modules are both the new build's.
+ * - `rebuilt`: the modules are new, and `hydrate` when the server's markup holds the edit too, or
+ *   `mount` when the page must draw over it.
+ * - `failed`: the errors of a rebuild that did not compile, shown over the page.
+ * A reload captures the live page state first, and the boot replays it into the page (replayPageState).
+ * dotnet watch's own refresh script, which reloaded the page a second time with the old modules, is
+ * kept out of the page by the server while this runs. Called only when the server said it streams.
  */
 function initHotReload(): void {
   if (typeof EventSource === 'undefined') return;
@@ -632,39 +666,65 @@ function initHotReload(): void {
     // whole point of the API — closing on the first hiccup left hot reload silently dead minutes
     // into every session. A server restarted without the endpoint answers 404, and the browser
     // abandons a non-200 stream on its own (readyState CLOSED, no retries) — nothing leaks.
-    source.onmessage = () => {
-      // The marker is written UNCONDITIONALLY: it is what tells the next boot to render with the
-      // NEW code instead of hydrating the stale SSR. Gating it on captured state left every
-      // write-once page (which keeps no _state bag) hydrating old HTML after the reload —
-      // the pixels never changed, and the whole feature read as broken.
-      let data: PageState = { fields: {}, specs: {} };
-      // The PAGE, not its host: an escape-hatch page is mounted through EscapeHatchPage, and what it
-      // holds — and the key it is named by — are the hosted page's own. Its fields are what crosses,
-      // the ones its C# declares: a `_state` bag, which this read before, is something no write-once
-      // page has (#664).
-      const pageRoot: object | null =
-        currentComponent instanceof EscapeHatchPage ? currentComponent.page : currentComponent;
+    let run: string | null = null;
+    source.addEventListener('server', (event) => {
+      const named = (event as MessageEvent<string>).data;
+      if (run !== null && run !== named) reloadForEdit(true);
+      run = named;
+    });
+    source.addEventListener('rebuilt', (event) =>
+      reloadForEdit((event as MessageEvent<string>).data === 'hydrate'),
+    );
+    source.addEventListener('failed', (event) => {
       try {
-        if (pageRoot) data = capturePageState(pageRoot);
+        errorOverlay.showBuildErrors(JSON.parse((event as MessageEvent<string>).data) as string[]);
       } catch {
-        /* reload without state rather than not at all */
+        /* the errors are in the terminal that runs the server as well */
       }
-      try {
-        // UNDER THE ROOT'S KEY, because __INITIAL_STATE__ is keyed by component now: any component
-        // the page composes may declare server data, so a flat map cannot say whose field is whose.
-        // The captured bag is the root page's, and the root is the first component expanded — `#0` —
-        // named by its identity, the same one the walk reads (#278).
-        const rootKey = `${pageRoot ? componentIdentity(pageRoot) : ''}#0`;
-        sessionStorage.setItem(
-          '__eq_hmr__',
-          JSON.stringify({ url: location.href, pages: { [rootKey]: data } }),
-        );
-      } catch {
-        /* private mode etc. — the reload still shows the new code, only via hydration */
-      }
-      location.reload();
-    };
+    });
   } catch {
     /* no SSE in this host */
   }
+}
+
+/** Whether this page has asked for its reload: a second event before it lands asks for nothing. */
+let reloading = false;
+
+/**
+ * Reloads the page for an edit, with what it holds: the marker tells the next boot to replay the
+ * page's fields, and whether the server's markup holds the edit, so it hydrates or draws over it.
+ */
+function reloadForEdit(hydrate: boolean): void {
+  if (reloading) return;
+  reloading = true;
+  // The marker is written UNCONDITIONALLY: it is what tells the next boot whether the server's markup
+  // can be hydrated. Gating it on captured state left every write-once page (which keeps no _state
+  // bag) hydrating old HTML after the reload — the pixels never changed, and the whole feature read
+  // as broken.
+  let data: PageState = { fields: {}, specs: {} };
+  // The PAGE, not its host: an escape-hatch page is mounted through EscapeHatchPage, and what it
+  // holds — and the key it is named by — are the hosted page's own. Its fields are what crosses,
+  // the ones its C# declares: a `_state` bag, which this read before, is something no write-once
+  // page has (#664).
+  const pageRoot: object | null =
+    currentComponent instanceof EscapeHatchPage ? currentComponent.page : currentComponent;
+  try {
+    if (pageRoot) data = capturePageState(pageRoot);
+  } catch {
+    /* reload without state rather than not at all */
+  }
+  try {
+    // UNDER THE ROOT'S KEY, because __INITIAL_STATE__ is keyed by component now: any component
+    // the page composes may declare server data, so a flat map cannot say whose field is whose.
+    // The captured bag is the root page's, and the root is the first component expanded — `#0` —
+    // named by its identity, the same one the walk reads (#278).
+    const rootKey = `${pageRoot ? componentIdentity(pageRoot) : ''}#0`;
+    sessionStorage.setItem(
+      '__eq_hmr__',
+      JSON.stringify({ url: location.href, pages: { [rootKey]: data }, hydrate }),
+    );
+  } catch {
+    /* private mode etc. — the reload still shows the new code, by hydrating the server's markup */
+  }
+  location.reload();
 }
