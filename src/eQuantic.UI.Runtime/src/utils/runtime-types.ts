@@ -51,7 +51,10 @@ export function named(type: { readonly prototype: object }, closure?: string): R
   return closed(type.prototype, closure);
 }
 
-/** Whether two runtime types are one: a value marked with no type arguments is not taken for another. */
+/**
+ * Whether two runtime types are one. A value with no mark, built where its type arguments were known only at
+ * run time, is one with every closed type of its own class: the browser cannot tell which it was built as.
+ */
 export function same(type: RuntimeType, other: RuntimeType): boolean {
   if (type === other) return true;
   if (typeof type === 'string' || typeof other === 'string') return false;

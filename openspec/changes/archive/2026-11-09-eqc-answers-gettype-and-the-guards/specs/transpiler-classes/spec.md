@@ -8,7 +8,8 @@ struct whose twin is a class of its own (the app's, the vocabulary's, the transp
 exception. The receivers SHALL be evaluated once, in the order they are written, and a null one SHALL
 throw a NullReferenceException before the next is evaluated. A generic type's values SHALL be told apart
 by their type arguments wherever the build marked them; a value built where its type arguments are known
-only at run time SHALL NOT be taken for another type. A receiver whose type does not let the browser tell
+only at run time carries no mark, and SHALL compare equal to every closed type of its own definition,
+because the browser cannot tell which one it was built as. A receiver whose type does not let the browser tell
 its runtime type apart (a number, a string, a bool, a char, an enum, an array, a tuple, a delegate,
 `object`, an interface, or a type parameter with no class constraint that does) SHALL be refused with
 EQ2004, and so SHALL a `typeof` of such a type and every other use of `GetType()`.
