@@ -395,6 +395,8 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<DateTimeOffsetStrategy>();
         _strategyRegistry.Register<StringBuilderStrategy>();
         _strategyRegistry.Register<CancellationStrategy>();
+        _strategyRegistry.Register<ArgumentGuardStrategy>(); // the ThrowIf guards of the argument exceptions (#1202)
+        _strategyRegistry.Register<RuntimeTypeEqualityStrategy>(); // GetType() == GetType() and typeof (#1202)
         _strategyRegistry.Register<QueueStackStrategy>();
         _strategyRegistry.Register<DictionaryStrategy>(); // Priority 25 - every dictionary, a runtime class
         _strategyRegistry.Register<RegexStrategy>();
