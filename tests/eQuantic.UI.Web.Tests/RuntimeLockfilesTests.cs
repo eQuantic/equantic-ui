@@ -60,24 +60,30 @@ public class RuntimeLockfilesTests
             string.Join(", ", onlyInNpm));
     }
 
+    /// <summary>The sections of a manifest that a lockfile resolves.</summary>
+    private static readonly string[] Sections =
+        ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"];
+
     [Fact]
     public void BothLockfiles_RecordTheManifestsRanges()
     {
         var runtime = RuntimeDirectory();
-        var manifest = Ranges(Root(Path.Combine(runtime, "package.json"), default).GetProperty("devDependencies"));
+        var manifest = Root(Path.Combine(runtime, "package.json"), default);
+        var bun = Root(Path.Combine(runtime, "bun.lock"), BunLockOptions)
+            .GetProperty("workspaces").GetProperty("");
+        var npm = Root(Path.Combine(runtime, "package-lock.json"), default)
+            .GetProperty("packages").GetProperty("");
 
-        var bunLock = Root(Path.Combine(runtime, "bun.lock"), BunLockOptions);
-        var bun = Ranges(bunLock.GetProperty("workspaces").GetProperty("").GetProperty("devDependencies"));
-
-        var packageLock = Root(Path.Combine(runtime, "package-lock.json"), default);
-        var npm = Ranges(packageLock.GetProperty("packages").GetProperty("").GetProperty("devDependencies"));
-
-        manifest.Should().NotBeEmpty("package.json declares the runtime's test tooling");
-        bun.Should().Equal(manifest,
-            "bun.lock was resolved from the manifest as it is; run `bun install` in src/eQuantic.UI.Runtime");
-        npm.Should().Equal(manifest,
-            "package-lock.json was resolved from the manifest as it is; run "
-            + "`npm install --package-lock-only` in src/eQuantic.UI.Runtime");
+        Ranges(manifest, "devDependencies").Should().NotBeEmpty("package.json declares the runtime's test tooling");
+        foreach (var section in Sections)
+        {
+            var declared = Ranges(manifest, section);
+            Ranges(bun, section).Should().Equal(declared,
+                $"bun.lock records package.json's `{section}` as they are; run `bun install` in src/eQuantic.UI.Runtime");
+            Ranges(npm, section).Should().Equal(declared,
+                $"package-lock.json records package.json's `{section}` as they are; run "
+                + "`npm install --package-lock-only` in src/eQuantic.UI.Runtime");
+        }
     }
 
     /// <summary>
@@ -121,11 +127,14 @@ public class RuntimeLockfilesTests
         return resolved;
     }
 
-    private static List<KeyValuePair<string, string>> Ranges(JsonElement dependencies) =>
-        dependencies.EnumerateObject()
-            .Select(dependency => KeyValuePair.Create(dependency.Name, dependency.Value.GetString()!))
-            .OrderBy(dependency => dependency.Key, StringComparer.Ordinal)
-            .ToList();
+    /// <summary>A section's ranges by name, empty when the section is absent.</summary>
+    private static List<KeyValuePair<string, string>> Ranges(JsonElement owner, string section) =>
+        owner.TryGetProperty(section, out var dependencies)
+            ? dependencies.EnumerateObject()
+                .Select(dependency => KeyValuePair.Create(dependency.Name, dependency.Value.GetString()!))
+                .OrderBy(dependency => dependency.Key, StringComparer.Ordinal)
+                .ToList()
+            : [];
 
     private static JsonElement Root(string path, JsonDocumentOptions options)
     {
