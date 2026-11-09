@@ -149,8 +149,18 @@ internal sealed class AnnouncedTree
             if (!_owners.ContainsKey(child)) yield return child;
         if (Attribute(node, "aria-owns") is not { } ids) yield break;
         foreach (var id in ids.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-            if (_byId.TryGetValue(id, out var owned) && _owners.TryGetValue(owned, out var owner) && ReferenceEquals(owner, node))
+            if (_byId.TryGetValue(id, out var owned) && _owners.TryGetValue(owned, out var owner) && ReferenceEquals(owner, node)
+                && !HiddenWhereItIs(owned))
                 yield return owned;
+    }
+
+    /// <summary>Whether an element a subtree hides sits in it: ownership moves where it is read, not
+    /// whether it is, so an element inside a hidden subtree stays out of the tree its owner reads.</summary>
+    private bool HiddenWhereItIs(HtmlNode node)
+    {
+        for (var at = _parents.GetValueOrDefault(node); at is not null; at = _parents.GetValueOrDefault(at))
+            if (Hidden(at)) return true;
+        return false;
     }
 
     private void Walk(HtmlNode node)

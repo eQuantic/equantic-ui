@@ -334,7 +334,14 @@ public class SemanticsParityTests(ITestOutputHelper output)
     private static IReadOnlyList<Said> OnTheWeb(Subject subject)
     {
         using var tester = new ComponentTester(Theme, width: Width);
-        tester.Pump(subject.Build());
+        // Built in the culture both sides read in, as the Photon side builds it: a constructor that formats
+        // would otherwise read the machine's.
+        var (culture, uiCulture) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
+        CultureInfo.CurrentCulture = CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
+        VisualNode built;
+        try { built = subject.Build(); }
+        finally { (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture) = (culture, uiCulture); }
+        tester.Pump(built);
         if (subject.Open)
         {
             var trigger = tester.Semantics.Single(stop => stop.Expanded == false);
