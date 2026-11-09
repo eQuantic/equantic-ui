@@ -191,17 +191,13 @@ String.Concat(Object) arg0  type  string.Concat of one argument is lowered to a 
 String.Concat(Object[]) args  type  string.Concat of one argument is lowered to a spread of it, which reads a null through null, and an object that is no sequence too
 String.Concat(String[]) values  type  string.Concat of one argument is lowered to a spread of it, which reads a null through null, and an object that is no sequence too
 String.Contains(String) value  type  lowered to the string's own search, which reads a null as the text "null": refusing it by name is a guard at every call, which is a design decision
-String.EndsWith(String) value  type  lowered to the string's own search, which reads a null as the text "null": refusing it by name is a guard at every call, which is a design decision
 String.Format(IFormatProvider,String,Object[]) args  type  a params array handed whole is spread at the call, so a null one is read through null before the twin sees it
 String.Format(String,Object[]) args  type  a params array handed whole is spread at the call, so a null one is read through null before the twin sees it
-String.IndexOf(String) value  type  lowered to the string's own search, which reads a null as the text "null": refusing it by name is a guard at every call, which is a design decision
 String.IndexOfAny(Char[]) anyOf  type  lowered to a loop over the array, which reads a null array through null: refusing it by name is a guard at every call, which is a design decision
 String.IndexOfAny(Char[],Int32) anyOf  type  lowered to a loop over the array, which reads a null array through null: refusing it by name is a guard at every call, which is a design decision
 String.Insert(Int32,String) value  type  lowered to a concatenation, which writes a null as "null": refusing it by name is a guard at every call, which is a design decision
 String.Intern(String) str  type  lowered to its argument, interning having no meaning here, so a null passes through
-String.LastIndexOf(String) value  type  lowered to the string's own search, which reads a null as the text "null": refusing it by name is a guard at every call, which is a design decision
 String.LastIndexOfAny(Char[]) anyOf  type  lowered to a loop over the array, which reads a null array through null: refusing it by name is a guard at every call, which is a design decision
 String.ReplaceLineEndings(String) replacementText  type  lowered to String.replace, which takes a null replacement as the text "null": refusing it by name is a guard at every call, which is a design decision
-String.StartsWith(String) value  type  lowered to the string's own search, which reads a null as the text "null": refusing it by name is a guard at every call, which is a design decision
 StringBuilder.AppendFormat(IFormatProvider,String,Object[]) args  type  a params array handed whole is spread at the call, so a null one is read through null before the twin sees it
 StringBuilder.AppendFormat(String,Object[]) args  type  a params array handed whole is spread at the call, so a null one is read through null before the twin sees it
