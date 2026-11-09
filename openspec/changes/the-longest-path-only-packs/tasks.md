@@ -1,9 +1,9 @@
 ## 1. The longest path only packs
 
-- [x] 1.1 `scripts/macos-tests.sh` derives the classes that ask for macOS from their files, runs them, and fails on a project that ran none
-- [x] 1.2 Its self-test: every marker listed, a file with no test, a plain test, another system's fact and a build output not; an empty derivation fails; proved both ways
-- [x] 1.3 `build-packages` runs no test, and `test (macos-latest)` runs the derived classes; publishing waits for it
-- [x] 1.4 The derived classes run on a Mac: every project ran tests, and none failed
+- [x] 1.1 `scripts/macos-tests.sh` derives the projects that reference the Apple track or hold a test asking for macOS, runs them whole, and fails on a project that ran none
+- [x] 1.2 Its self-test: a project referencing the Apple track and one with a test asking for macOS listed, a file with no test, a factory, a build output and another system's fact not; an empty derivation fails saying so; the TRX count; proved both ways
+- [x] 1.3 `build-packages` runs no test, and `test (macos-latest)` runs the derived projects with the workloads; publishing waits for it, and the docs name it among the required checks
+- [x] 1.4 The derived projects run on a Mac: every one ran tests, and none failed
 
 ## 2. A superseded run is cancelled
 

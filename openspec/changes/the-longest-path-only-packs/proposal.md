@@ -13,12 +13,13 @@ waited three to seven minutes for one.
 ## What Changes
 
 - `build-packages` builds, packs and checks the packages, and runs no test.
-- A new job, `test (macos-latest)`, runs the test classes that ask for macOS in their own file (a
-  MacFact, MacTheory or MacFontFact, `OperatingSystem.IsMacOS()`, `OSPlatform.OSX`,
-  `[SupportedOSPlatform("macos")]`), derived by `scripts/macos-tests.sh` from the tests and never
-  listed. A file declares one type and takes its name, so the file names the class. A project whose
-  filter runs no test fails, and a derivation that finds nothing fails. Publishing waits for it, as it
-  waits for the other test legs.
+- A new job, `test (macos-latest)`, runs whole, with the Apple workloads installed, the test projects
+  that hold what only a Mac answers, derived by `scripts/macos-tests.sh` and never listed: one that
+  references the Apple track, or one whose test asks for macOS in its file. A project is the unit
+  because a fact asks for a Mac in more ways than a scan of one file can see: a Metal device it probes,
+  a workload it looks for, a helper in another file, a class nested in another. A project that runs no
+  test fails, and a derivation that finds nothing fails. Publishing waits for it, and the ruleset
+  requires it beside the other two `test` legs.
 - The Ubuntu and Windows legs still run every project.
 - `ci.yml` gets a `concurrency` group: a pull request's runs share one keyed on its number, with
   `cancel-in-progress`, so a new push cancels the run of the head it replaces; every other event gets
@@ -29,6 +30,7 @@ whole suite keeps running on two systems, and macOS runs what only it can answer
 
 ## Impact
 
-`.github/workflows/ci.yml`, `scripts/macos-tests.sh` (new), `docs/ARCHITECTURE-AUDIT.md`, the
-`working-agreement` spec and two ledger entries. The ruleset should add `test (macos-latest)` to its
-required checks when this merges.
+`.github/workflows/ci.yml`, `scripts/macos-tests.sh` (new), `docs/ARCHITECTURE-AUDIT.md`, the Workflow
+section of CLAUDE.md and AGENTS.md, CONTRIBUTING.md, the pull request template, the `working-agreement`
+spec and two ledger entries. Ruleset 21198869 adds `test (macos-latest)` to its required checks when
+this merges.

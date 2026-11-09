@@ -254,7 +254,7 @@ jobs:
     # macOS: the package set includes the iOS/Android shells, whose target frameworks need
     # platform workloads that only install on a Mac. It builds, packs and checks the packages, and
     # runs no test: the suite ran here a third time, 13 minutes 38 seconds on the run's longest path,
-    # for the few facts only a Mac answers, which `test-macos` now runs alone (#1311).
+    # for the facts only a Mac answers, which `test-macos` now runs beside it (#1311).
     runs-on: macos-latest
 
     steps:
@@ -317,8 +317,7 @@ jobs:
             name=$(basename "$(dirname "$csproj")")
             case " $SEPARATE " in *" $name "*) continue;; esac
             case "$name" in eQuantic.UI.Runtime.*) continue;; esac
-            # tr, not ${var,,}: the macOS runner's bash is 3.2, which has no case conversion —
-            # the same reason the Test step avoids globstar.
+            # tr, not ${var,,}: the macOS runner's bash is 3.2, which has no case conversion.
             packable=$(dotnet msbuild "$csproj" -getProperty:IsPackable -nologo 2>/dev/null | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
             if [ "$packable" = "false" ]; then continue; fi
             echo "::group::pack $name"
@@ -403,8 +402,8 @@ jobs:
   # So the same suite runs on Linux and Windows too. No filter and no hand-picked subset: the point
   # is to LEARN which projects are OS-specific rather than to assume. What fails is a defect or a
   # fence, and a fence is a Skip whose text names the OS and the reason — never a filter here,
-  # which would hide the fact in a file nobody reads while running the tests. macOS runs the facts
-  # only a Mac answers, in `test-macos` below, chosen by what each test class says in its own file.
+  # which would hide the fact in a file nobody reads while running the tests. macOS runs the projects
+  # that hold what only a Mac answers, in `test-macos` below, derived from the tests themselves.
   test:
     needs: test-runtime
     runs-on: ${{ matrix.os }}
@@ -459,9 +458,9 @@ jobs:
           # Sorted, because `find` returns filesystem order: without it, WHICH project hides the
           # others changes from one machine to the next.
           #
-          # find, not globstar: the same reason the macOS leg avoids it, and the Windows leg runs
-          # this through Git Bash, whose bash is not the one on the PATH of the other two. Process
-          # substitution rather than a pipe, so the loop body is not a subshell and `status` survives.
+          # find, not globstar: the Windows leg runs this through Git Bash, whose bash is not the one
+          # on the Linux leg's PATH. Process substitution rather than a pipe, so the loop body is not a
+          # subshell and `status` survives.
           status=0
           ran=0
           failed=""
@@ -489,11 +488,12 @@ jobs:
           exit $status
 
 
-  # The facts only a Mac answers (#1311): CoreText, CoreGraphics, Metal, AppKit and the Objective-C
-  # runtime, which Linux and Windows skip. They ran inside `build-packages` with the whole suite, the
-  # third run of it, on the run's longest path. Which classes run is derived from the tests, never
-  # listed here: a class that asks for macOS in its own file (a MacFact, `OperatingSystem.IsMacOS()`,
-  # `[SupportedOSPlatform("macos")]`), and a project that ran none of them fails the step.
+  # What only a Mac answers (#1311): CoreText, CoreGraphics, Metal, AppKit, the Objective-C runtime and
+  # the Apple workloads, which Linux and Windows skip. It ran inside `build-packages` with the whole
+  # suite, a third run of it, on the run's longest path. Which projects run is derived from the tests,
+  # never listed here: one that references the Apple track, or whose test asks for macOS, runs WHOLE,
+  # since a fact asks for a Mac in more ways than a scan of its file can see (a Metal device it probes,
+  # a workload it looks for, a helper elsewhere); a project that runs no test fails the step.
   test-macos:
     name: test (macos-latest)
     needs: test-runtime
@@ -505,6 +505,11 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      # The native suite's workload facts (an Android font packed once, the iOS platform version)
+      # skip without them, as they did nowhere while this suite ran in build-packages, which installs them.
+      - name: Install mobile workloads (the native suite's workload facts)
+        run: dotnet workload install ios android
 
       - name: The derivation still discriminates
         run: ./scripts/macos-tests.sh --self-test
