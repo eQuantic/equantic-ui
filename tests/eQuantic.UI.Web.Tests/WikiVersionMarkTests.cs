@@ -14,8 +14,8 @@ namespace eQuantic.UI.Web.Tests;
 /// <para>
 /// A mark carries the symbol it claims, as an HTML comment the renderer drops:
 /// <c>*Since **0.2.0-preview.16*** &lt;!-- since: class InFlow --&gt;</c>. Prose cannot be checked;
-/// a search string can. This finds the commit that introduced it and the earliest tag containing
-/// that commit, which is the release it went out in.
+/// a search string can. <see cref="FirstReleases"/> finds the first release whose files hold it,
+/// which is the release it went out in.
 /// </para>
 /// </summary>
 public class WikiVersionMarkTests
@@ -28,20 +28,11 @@ public class WikiVersionMarkTests
         return here?.FullName;
     }
 
-    /// <summary>
-    /// git in <paramref name="root"/>, each argument passed as one. Ten minutes: a pickaxe search over
-    /// every ref takes three seconds on a laptop, and this case as a whole takes 34 to 39 minutes on CI's
-    /// runners, so one search there can be far slower. A git that hangs still fails the case rather than
-    /// holding the test host (#971).
-    /// </summary>
+    /// <summary>git in <paramref name="root"/>, each argument passed as one, held to a deadline so
+    /// that a git that hangs fails the case rather than holding the test host (#971).</summary>
     private static string Git(string root, params string[] arguments) =>
-        ChildProcess.Run("git", arguments, TimeSpan.FromMinutes(10), root).Output.Trim();
+        ChildProcess.Run("git", arguments, TimeSpan.FromMinutes(1), root).Output.Trim();
 
-    /// <summary>
-    /// The release a symbol went out in: the FIRST commit whose diff contains it, then the earliest
-    /// tag reachable from there. Null when it has not shipped yet — a mark on unreleased work is a
-    /// promise, and this test is about what is true.
-    /// </summary>
     /// <summary>
     /// A version mark, in either spelling the wiki has used.
     /// <para>
@@ -56,49 +47,6 @@ public class WikiVersionMarkTests
         + @"since:\s*(?<symbol>[^>]+?)"
         + @"|eq:since\s+\S+\s+symbol=""(?<name>[^""]+)""(?:\s+src=""(?<src>[^""]+)"")?"
         + @")\s*-->";
-
-    private static string? ShippedIn(string root, string search)
-    {
-        // `text @ path` narrows the search — a member name is rarely unique across a framework that
-        // has both a Core and a Primitives component model, and `OnMount` matched the older one.
-        string[] path = [];
-        if (search.Split(" @ ") is [var text, var scope])
-        {
-            search = text;
-            path = ["--", scope];
-        }
-
-        var commits = Git(root, ["log", "--all", "--reverse", "--format=%H", $"-S{search}", .. path])
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries);
-
-        // The first commit a RELEASE contains, not simply the first commit. Every change reaches
-        // main as a SQUASH, so the branch commit that introduced a symbol is older than the commit
-        // that shipped it and no tag will ever contain it. Reading `commits[0]` alone therefore
-        // answered "not released yet" for every symbol whose branch still exists on the remote —
-        // and null is the answer this guard reads as "nothing to check", so the newest marks, the
-        // ones most likely to be wrong, were the ones silently skipped.
-        foreach (var commit in commits)
-        {
-            var tags = Git(root, "tag", "--contains", commit)
-                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                .Where(tag => tag.StartsWith("v0.", StringComparison.Ordinal))
-                .Select(tag => (Tag: tag, Order: PreviewOrder(tag)))
-                .Where(entry => entry.Order >= 0)
-                .OrderBy(entry => entry.Order)
-                .ToList();
-
-            if (tags.Count > 0) return tags[0].Tag[1..];
-        }
-
-        return null;
-    }
-
-    /// <summary>Sorts preview.9 BEFORE preview.10 — the whole point of the check is off-by-one
-    /// version numbers, and a lexical sort has its own.</summary>
-    private static int PreviewOrder(string tag) =>
-        Regex.Match(tag, @"preview\.(\d+)$") is { Success: true } match
-            ? int.Parse(match.Groups[1].Value)
-            : -1;
 
     [Fact]
     public void EveryVersionMark_NamesTheReleaseItActuallyShippedIn()
@@ -118,14 +66,13 @@ public class WikiVersionMarkTests
         Git(root!, "tag", "--list", "v0.2.0-preview.*").Should().NotBeEmpty(
             "the guard compares against tags; fetch them before running it");
 
-        var wrong = new List<string>();
+        var marks = new List<(string Page, string Claimed, string Symbol)>();
         var checkedMarks = 0;
         foreach (var page in Directory.GetFiles(wiki, "*.md"))
         {
             var text = File.ReadAllText(page);
             foreach (Match mark in Regex.Matches(text, MarkPattern))
             {
-                var claimed = mark.Groups["version"].Value.Trim();
                 // The structured spelling names the symbol in an attribute and may add the path in
                 // another; the older one puts both in one string as `symbol @ path`.
                 var symbol = mark.Groups["symbol"].Success
@@ -137,11 +84,17 @@ public class WikiVersionMarkTests
                 // pins. Rare and VISIBLE, like every other exception list here: it says "unchecked"
                 // rather than guessing a symbol that would make the test agree with itself.
                 if (symbol.StartsWith('?')) continue;
-                var actual = ShippedIn(root!, symbol);
-                if (actual is not null && actual != claimed)
-                    wrong.Add($"{Path.GetFileName(page)}: `{symbol}` says {claimed}, shipped in {actual}");
+                marks.Add((Path.GetFileName(page), mark.Groups["version"].Value.Trim(), symbol));
             }
         }
+
+        // Every mark in one reading of the releases, never one search per mark (#999).
+        var releases = FirstReleases.Read(root!, marks.Select(mark => mark.Symbol));
+        var wrong = marks
+            .Select(mark => (Mark: mark, Actual: releases.Of(mark.Symbol)))
+            .Where(entry => entry.Actual is not null && entry.Actual != entry.Mark.Claimed)
+            .Select(entry => $"{entry.Mark.Page}: `{entry.Mark.Symbol}` says {entry.Mark.Claimed}, shipped in {entry.Actual}")
+            .ToList();
 
         // A guard that parses NOTHING passes, and that is the failure this whole file exists to
         // prevent — pointed at itself. The mark spelling changed once under exactly these feet;
