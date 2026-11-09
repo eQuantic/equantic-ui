@@ -128,7 +128,7 @@ public class ContentSecurityPolicyTests
         var options = new UIOptions().UseApexCharts();
 
         options.HtmlShell.HeadTags.Should().ContainSingle(tag => tag.Content != null && tag.Content.Contains("data-apex-init"))
-            .Which.Content.Should().Contain("cfg.chart.nonce=n.nonce",
+            .Which.Content.Should().Contain("cfg.chart.nonce=nonce",
                 "ApexCharts writes its CSS in a style element it creates, which a strict style-src refuses without the nonce");
     }
 

@@ -71,8 +71,8 @@ public sealed class HtmlTag
     }
 
     /// <summary>The rendered element. Attribute VALUES are HTML-encoded; <see cref="Content"/> is not
-    /// (it is a script/style body by construction). A <c>script</c> or a <c>style</c> carries
-    /// <paramref name="nonce"/> when one is given; any other element ignores it.</summary>
+    /// (it is a script/style body by construction). A <c>script</c>, a <c>style</c> or a stylesheet
+    /// <c>link</c> carries <paramref name="nonce"/> when one is given; any other element ignores it.</summary>
     public string Render(string? nonce)
     {
         var html = new StringBuilder("<").Append(TagName);
