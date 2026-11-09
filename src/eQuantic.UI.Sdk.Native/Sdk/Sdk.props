@@ -19,7 +19,6 @@
             The app author has no way to know this and no reason to; the SDK knows.
         -->
         <EnableConfigurationBindingGenerator Condition="'$(EnableConfigurationBindingGenerator)' == ''">true</EnableConfigurationBindingGenerator>
-
     </PropertyGroup>
 
     <!-- The DECLARATIVE factory surface, available in every file without an import, exactly as on

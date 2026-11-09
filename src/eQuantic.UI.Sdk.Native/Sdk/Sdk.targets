@@ -135,8 +135,9 @@
         with, is never set on its build, so the runtime refused the hook while dotnet watch waited for
         it. A publish sets _IsPublishing, so what ships is trimmed exactly as before.
         HERE, for the desktop head alone and above .NET's own targets, which default the hook off for a
-        trimmed app. The phones need nothing: .NET for iOS keeps the hook on for Debug itself, measured
-        on a trimmed net10.0-ios consumer with and without this block.
+        trimmed app. Never on a phone: .NET for iOS decides the hook for its own Debug build, which it
+        links, and set from here as well it broke that link (IL2026 on the startup hook provider,
+        measured on WalletMobile's iOS head when this block lived in Sdk.props and reached every head).
     -->
     <PropertyGroup Condition="'$(_EqPlatform)' == '' AND '$(StartupHookSupport)' == '' AND '$(Configuration)' == 'Debug' AND '$(_IsPublishing)' != 'true'">
         <StartupHookSupport>true</StartupHookSupport>
