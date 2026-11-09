@@ -1,4 +1,4 @@
-- **2026-10-30 · A string search says its comparison, and text is written as .NET writes it**: bugs under #849
+- **2026-11-09 · A string search says its comparison, and text is written as .NET writes it**: bugs under #849
   ([#532](https://github.com/eQuantic/equantic-ui/issues/532),
   [#533](https://github.com/eQuantic/equantic-ui/issues/533),
   [#965](https://github.com/eQuantic/equantic-ui/issues/965),
