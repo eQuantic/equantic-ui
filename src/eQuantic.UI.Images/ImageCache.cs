@@ -98,16 +98,43 @@ public class ImageCache : IDisposable
     {
         lock (_trimGate)
         {
-            var files = new DirectoryInfo(_options.CacheDirectory).EnumerateFiles().OrderBy(file => file.LastWriteTimeUtc).ToList();
+            // Each copy read on its own: one removed while the folder is walked (expired by a read, evicted by
+            // the timer) is skipped, never a failure of the request that wrote the last copy.
+            var files = new List<(FileInfo File, long Length, DateTime Written)>();
+            try
+            {
+                if (!Directory.Exists(_options.CacheDirectory)) return;
+                foreach (var file in new DirectoryInfo(_options.CacheDirectory).EnumerateFiles())
+                {
+                    try
+                    {
+                        files.Add((file, file.Length, file.LastWriteTimeUtc));
+                    }
+                    catch (IOException)
+                    {
+                    }
+                }
+            }
+            catch (IOException)
+            {
+                return;
+            }
+
             var total = files.Sum(file => file.Length);
+            // The tally counts an overwritten copy twice: under the cap, it is only corrected.
+            if (total <= _options.MaxCacheSize)
+            {
+                Interlocked.Exchange(ref _size, total);
+                return;
+            }
+
             var target = _options.MaxCacheSize / 10 * 9;
             var removed = 0;
-            foreach (var file in files)
+            foreach (var (file, length, _) in files.OrderBy(file => file.Written))
             {
                 if (total <= target) break;
                 try
                 {
-                    var length = file.Length;
                     file.Delete();
                     total -= length;
                     removed++;

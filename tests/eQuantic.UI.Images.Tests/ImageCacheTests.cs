@@ -196,4 +196,27 @@ public class ImageCacheTests : IDisposable
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
         }
     }
+
+    [Fact]
+    public async Task ACopyWrittenAgain_IsNotCountedTwice_SoNothingUnderTheCapIsRemoved()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"equantic-cache-again-{Guid.NewGuid():N}");
+        try
+        {
+            using var cache = new ImageCache(new ImageOptimizationOptions { CacheDirectory = directory, MaxCacheSize = 100 });
+            await cache.SetAsync("a.jpg", 640, 75, "image/webp", new byte[55]);
+            File.SetLastWriteTimeUtc(Directory.GetFiles(directory).Single(), DateTime.UtcNow.AddMinutes(-2));
+            await cache.SetAsync("b.jpg", 640, 75, "image/webp", new byte[40]);
+
+            // 95 bytes on disk, under the cap; the tally reads 135 once b is written again.
+            await cache.SetAsync("b.jpg", 640, 75, "image/webp", new byte[40]);
+
+            (await cache.GetAsync("a.jpg", 640, 75, "image/webp")).Should().NotBeNull();
+            (await cache.GetAsync("b.jpg", 640, 75, "image/webp")).Should().NotBeNull();
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
 }
