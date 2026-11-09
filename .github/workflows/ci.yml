@@ -17,6 +17,16 @@ on:
         required: false
         default: ""
 
+# A new push to a pull request cancels the run of the head it replaces (#1309): every run holds macOS
+# runners, the scarcest kind, and a stale one made every other pull request wait for them. Only a pull
+# request's runs share a group, keyed on its number; a run on main, on a tag or by hand gets a group of
+# its own run, so nothing ever cancels it or queues it behind another. The reasons live here and not
+# inside the expressions, where a `#` is not a comment but a parse error that fails the whole workflow
+# before any job starts.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('ci-pull-request-{0}', github.event.pull_request.number) || format('ci-run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # A commit message says something about the change and nothing about what composed it. Three
   # squash messages on main ended with the scaffolding of the tool that wrote them before anything
@@ -242,8 +252,9 @@ jobs:
   build-packages:
     needs: build-platform-runtimes
     # macOS: the package set includes the iOS/Android shells, whose target frameworks need
-    # platform workloads that only install on a Mac (and the full native test suite runs here
-    # instead of skipping its Apple-framework facts).
+    # platform workloads that only install on a Mac. It builds, packs and checks the packages, and
+    # runs no test: the suite ran here a third time, 13 minutes 38 seconds on the run's longest path,
+    # for the few facts only a Mac answers, which `test-macos` now runs alone (#1311).
     runs-on: macos-latest
 
     steps:
@@ -341,75 +352,6 @@ jobs:
           grep -q 'function boot' packed-runtime.js
           echo "$package ships the served runtime ($(wc -c < packed-runtime.js) bytes)."
 
-      # The wiki is a SEPARATE repository, and the version-mark guard reads it from beside this
-      # one. Without this the guard passes here having checked nothing, and a wrong "Since
-      # 0.2.0-preview.N" reaches the site — which mirrors the wiki — unchallenged.
-      # The version-mark guard compares each release's tree with the one before it, so it needs the
-      # release tags and none of the history between them: depth one is enough. Without them it
-      # would answer "unreleased" for everything and pass having checked nothing. The release tags
-      # only, not every branch as well, which the guard never reads (#999).
-      - name: Fetch the release tags (for the version-mark guard)
-        shell: bash
-        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
-
-      - name: Check out the wiki (for the docs guards)
-        shell: bash
-        continue-on-error: true
-        env:
-          # A pull request that changes what the wiki must say carries its pages on a wiki branch
-          # named like its own, and the guards read that branch; anything else reads master (#406).
-          # Only this repository's pull requests: a branch name is unique here, and only here can
-          # anyone push a wiki branch, while a fork's branch can repeat one of ours and would read
-          # another pull request's pages. Through the environment: a branch name is text someone
-          # else wrote, and `${{ }}` substitution happens before the shell ever sees it.
-          EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
-        run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
-
-      - name: Test
-        shell: bash
-        env:
-          # Conformance must FAIL (not skip) if no JS engine works on the runner.
-          EQ_REQUIRE_JS: "1"
-        run: |
-          set -uo pipefail
-          # EVERY project reports, and the step fails at the END. `set -e` with a plain loop stops
-          # at the first red project, so the ones after it never run — and the report reads as one
-          # failure when it is an unknown number. The same reason the matrix sets fail-fast: false,
-          # one level further in. Measured: Web.Tests went red on both legs and hid eight projects.
-          #
-          # Sorted, because `find` returns filesystem order: without it, WHICH project hides the
-          # others changes from one machine to the next.
-          #
-          # find, not globstar: macOS ships bash 3.2, which has no globstar. Process substitution
-          # rather than a pipe, so the loop body is not a subshell and `status` survives it.
-          status=0
-          ran=0
-          failed=""
-          while IFS= read -r test_project; do
-            echo "::group::$test_project"
-            ran=$((ran + 1))
-            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 15m --blame-hang-dump-type none || {
-              status=1
-              failed="$failed$test_project"$'\n'
-            }
-            echo "::endgroup::"
-          done < <(find tests -name "*.csproj" | sort)
-
-          # An empty list is not a pass. Without this the step is green when `find` matches nothing —
-          # a renamed folder, a wrong working directory — having tested exactly nothing, which is the
-          # same silence this whole job exists to break.
-          if [ "$ran" -eq 0 ]; then
-            echo "::error::Found no test projects under tests/. That is not a green suite."
-            exit 1
-          fi
-          echo "Ran $ran test projects on ${{ runner.os }}."
-
-          if [ "$status" -ne 0 ]; then
-            echo "::error::These test projects failed on ${{ runner.os }}:"
-            printf '%s' "$failed"
-          fi
-          exit $status
-
       - name: Collect All NuGet Packages
         shell: bash
         run: |
@@ -461,7 +403,8 @@ jobs:
   # So the same suite runs on Linux and Windows too. No filter and no hand-picked subset: the point
   # is to LEARN which projects are OS-specific rather than to assume. What fails is a defect or a
   # fence, and a fence is a Skip whose text names the OS and the reason — never a filter here,
-  # which would hide the fact in a file nobody reads while running the tests.
+  # which would hide the fact in a file nobody reads while running the tests. macOS runs the facts
+  # only a Mac answers, in `test-macos` below, chosen by what each test class says in its own file.
   test:
     needs: test-runtime
     runs-on: ${{ matrix.os }}
@@ -545,6 +488,29 @@ jobs:
           fi
           exit $status
 
+
+  # The facts only a Mac answers (#1311): CoreText, CoreGraphics, Metal, AppKit and the Objective-C
+  # runtime, which Linux and Windows skip. They ran inside `build-packages` with the whole suite, the
+  # third run of it, on the run's longest path. Which classes run is derived from the tests, never
+  # listed here: a class that asks for macOS in its own file (a MacFact, `OperatingSystem.IsMacOS()`,
+  # `[SupportedOSPlatform("macos")]`), and a project that ran none of them fails the step.
+  test-macos:
+    name: test (macos-latest)
+    needs: test-runtime
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: The derivation still discriminates
+        run: ./scripts/macos-tests.sh --self-test
+
+      - name: Run the tests that need a Mac
+        run: ./scripts/macos-tests.sh --run
 
   # NOTHING HERE HAD EVER BUILT A MOBILE APP.
   #
@@ -825,7 +791,7 @@ jobs:
   # GitHub Packages is a convenience feed for every main push — a light ubuntu job so the heavy
   # macOS build job never dies on the upload (exit 137).
   publish-github:
-    needs: [build-packages, gate-templates, test, samples]
+    needs: [build-packages, gate-templates, test, test-macos, samples]
     # The cross-OS suite is a GATE, not a report: `needs.test` below. Without it a red Linux or
     # Windows leg sat beside a green macOS build and the packages published anyway — coverage that
     # cannot stop anything is a comment with a check's authority.
@@ -862,6 +828,7 @@ jobs:
       && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       && needs.build-packages.result == 'success'
       && needs.test.result == 'success'
+      && needs.test-macos.result == 'success'
       && needs.samples.result == 'success'
       && (needs.gate-templates.result == 'success' || needs.gate-templates.result == 'skipped')
     runs-on: ubuntu-latest
@@ -896,7 +863,7 @@ jobs:
   # scaffold and BUILD (and on the web template, PUBLISH) against the exact packages being
   # released. The native template gates on macOS only (its icon pipeline needs CoreGraphics).
   gate-templates:
-    needs: [build-packages, test, samples]
+    needs: [build-packages, test, test-macos, samples]
     # `refs/tags/v` matches by PREFIX, so any tag beginning with v enters here — the extension's
     # releases are tagged `ext-v*` for exactly that reason.
     if: startsWith(github.ref, 'refs/tags/v')

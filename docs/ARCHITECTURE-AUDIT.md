@@ -20,7 +20,7 @@ rot. What holds each claim here:
 | the wiki speaks the tree's current names | `WikiVocabularyTests` — both languages, allowances checked both ways |
 | every document at the top of `docs/` has a row in its index, and every local link there resolves | `DocsIndexTests` — the folder held to its README; nine dangling rows the day it was written (#216) |
 | a custom `[Fact]` in the tree is applied somewhere | `AFenceNobodyAppliesTests` — scans the source across `tests/`, since after the deletion no custom `Fact` remained to reflect over (#154) |
-| the suite runs where the code runs | `ci.yml` — `build-packages` on macOS and the `test` job on Ubuntu and Windows, every project under `tests/` (#139) |
+| the suite runs where the code runs | `ci.yml` — the `test` job on Ubuntu and Windows, every project under `tests/` (#139), and `test-macos` on macOS, every class that asks for macOS in its own file, derived by `scripts/macos-tests.sh` (#1311) |
 
 **Until 2026-09-14 the suite ran on one operating system**, and the record stays because the cost
 was measured. `ci.yml` had exactly one `dotnet test`, in `build-packages`, on `macos-latest`; the
@@ -35,7 +35,9 @@ defects in the design-origin tests, a POSIX path literal and the same test compa
 string literal's escaping to a raw path; and `tests/eQuantic.UI.Heroicons.Tests` and
 `tests/eQuantic.UI.Lucide.Tests`, which were not in `eQuantic.UI.sln`, so a developer's `dotnet test` at
 the root ran eight projects while CI's `find` over `tests/` ran ten — the two instruments agreed by
-accident. Both are in the solution now.
+accident. Both are in the solution now. Since #1311 macOS no longer runs the whole suite a third
+time inside `build-packages`, 13 minutes 38 seconds on the run's longest path: it runs the classes
+that ask for a Mac, which the other two runners skip, and a project that ran none of them fails.
 
 **Then, for three hours on the same day, the suite ran nowhere — and nothing said so.** #139 put
 three lines of prose inside `publish-github`'s `if: |` condition; a literal block scalar has no
