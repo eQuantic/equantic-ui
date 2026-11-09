@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The app icon a launcher shows: the mark's bead on the mark's plate, filling the square edge to
+     edge and opaque, since every platform masks it and composites it against its own background. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="plate" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1E1B4B"/>
+      <stop offset="1" stop-color="#4338CA"/>
+    </linearGradient>
+    <radialGradient id="bead" cx="35%" cy="30%" r="70%">
+      <stop offset="0" stop-color="#C7D2FE"/>
+      <stop offset="1" stop-color="#6366F1"/>
+    </radialGradient>
+  </defs>
+  <rect x="0" y="0" width="64" height="64" fill="url(#plate)"/>
+  <circle cx="32" cy="32" r="20" fill="url(#bead)"/>
+  <path d="M22 32 L29 39 L42 24" stroke="#E0E7FF" stroke-width="4" fill="none"/>
+</svg>
