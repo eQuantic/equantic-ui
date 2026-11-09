@@ -218,6 +218,49 @@ public class HotReloadStreamTests
         read.Should().NotContain("event: rebuilt");
     }
 
+    /// <summary>
+    /// The app's own static files reload the page, which dotnet watch's refresh script did before it was
+    /// kept out of the page, and the page hydrates, since nothing a file holds is in the markup. eqc's
+    /// output is the rebuild's to announce, never a file change of its own.
+    /// </summary>
+    [Fact]
+    public async Task AStaticFileOfTheApp_ReloadsThePage_AndEqcsOutputDoesNot()
+    {
+        var root = Directory.CreateTempSubdirectory("eq-assets-").FullName;
+        Directory.CreateDirectory(Path.Combine(root, "wwwroot", "_equantic"));
+        using var service = new HotReloadService(root, () => Exits(0), TimeSpan.FromSeconds(30), new ServerEdits(false, TimeSpan.Zero));
+        service.Start();
+        var (page, listening, leave) = await ListenAsync(service);
+
+        await File.WriteAllTextAsync(Path.Combine(root, "wwwroot", "_equantic", "Page.js"), "export {};");
+        await Task.Delay(1500);
+        var afterModule = page.Heard;
+        await File.WriteAllTextAsync(Path.Combine(root, "wwwroot", "logo.svg"), "<svg/>");
+        var read = await UntilAsync(page, "event: rebuilt");
+        leave.Cancel();
+        await listening;
+
+        afterModule.Should().NotContain("event: rebuilt", "a module eqc wrote is announced by the rebuild that wrote it");
+        read.Should().EndWith("event: rebuilt\ndata: hydrate\n\n");
+    }
+
+    /// <summary>
+    /// An app that stops is not held by a rebuild waiting for an edit that will never arrive: dotnet
+    /// watch stops an app it restarts, and the wait gave way only at its limit.
+    /// </summary>
+    [Fact]
+    public void Stopping_EndsTheWaitForAnEdit()
+    {
+        var edits = new ServerEdits(arriveOnSave: true, TimeSpan.FromMinutes(1));
+        using var stopping = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
+
+        var clock = Stopwatch.StartNew();
+        var arrived = edits.ArrivedAfter(edits.Taken, Stopwatch.GetTimestamp(), stopping.Token);
+
+        arrived.Should().BeFalse();
+        clock.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(10), "the wait ends when the app stops, not at its limit");
+    }
+
     /// <summary>MSBuild's error lines, each once, and the end of the output when it wrote none.</summary>
     [Fact]
     public void TheErrorsOfAFailedRebuild_AreMSBuildsErrorLines_OrTheEndOfWhatItSaid()

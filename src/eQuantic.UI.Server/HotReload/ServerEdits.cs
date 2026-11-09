@@ -57,6 +57,11 @@ internal sealed class ServerEdits
         }
     }
 
+    private void Wake()
+    {
+        lock (_gate) Monitor.PulseAll(_gate);
+    }
+
     /// <summary>One more edit was applied to this process.</summary>
     internal void Take()
     {
@@ -70,15 +75,17 @@ internal sealed class ServerEdits
     /// <summary>
     /// Whether an edit arrived after <paramref name="seen"/> had been taken. When every save brings
     /// one, it is waited for until <see cref="ArrivalLimit"/> after <paramref name="savedAt"/>, a
-    /// <see cref="Stopwatch"/> timestamp.
+    /// <see cref="Stopwatch"/> timestamp, or until <paramref name="stopping"/> is cancelled: an app
+    /// that stops is not held by a wait for an edit it will never render.
     /// </summary>
-    internal bool ArrivedAfter(long seen, long savedAt)
+    internal bool ArrivedAfter(long seen, long savedAt, CancellationToken stopping)
     {
+        using var woken = stopping.Register(Wake);
         lock (_gate)
         {
             while (_taken <= seen)
             {
-                if (!ArriveOnSave) return false;
+                if (!ArriveOnSave || stopping.IsCancellationRequested) return false;
                 var left = ArrivalLimit - Stopwatch.GetElapsedTime(savedAt);
                 if (left <= TimeSpan.Zero) return false;
                 Monitor.Wait(_gate, left);

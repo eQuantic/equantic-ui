@@ -727,4 +727,8 @@ function reloadForEdit(hydrate: boolean): void {
     /* private mode etc. — the reload still shows the new code, by hydrating the server's markup */
   }
   location.reload();
+  // A reload the browser did not perform (a prompt to leave, cancelled) leaves this page listening.
+  setTimeout(() => {
+    reloading = false;
+  }, 3000);
 }

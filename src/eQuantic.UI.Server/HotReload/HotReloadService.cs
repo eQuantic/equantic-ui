@@ -33,9 +33,12 @@ public sealed class HotReloadService : IDisposable
     private readonly TimeSpan _limit;
     private readonly ServerEdits _edits;
     private readonly string _run = Guid.NewGuid().ToString("N");
+    private readonly CancellationTokenSource _stopping = new();
     private readonly ConcurrentDictionary<Guid, Channel<string>> _clients = new();
     private readonly object _gate = new();
     private FileSystemWatcher? _watcher;
+    private FileSystemWatcher? _assets;
+    private Timer? _assetsQuiet;
     private Timer? _debounce;
     private Timer? _keepAlive;
     private int _building;
@@ -95,6 +98,25 @@ public sealed class HotReloadService : IDisposable
         _watcher.Renamed += OnSourceChanged;
         _watcher.EnableRaisingEvents = true;
 
+        // The app's own static files reload the page as they are, since dotnet watch's refresh script,
+        // which did that, stays out of a page this stream reloads. The markup is the server's and holds
+        // nothing a file changed, so the page hydrates it. eqc's own output is the rebuild's to announce.
+        var webRoot = Path.Combine(_contentRoot, "wwwroot");
+        if (Directory.Exists(webRoot))
+        {
+            _assetsQuiet = new Timer(_ => AssetChanged(), null, Timeout.Infinite, Timeout.Infinite);
+            _assets = new FileSystemWatcher(webRoot)
+            {
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName,
+            };
+            _assets.Changed += OnAssetChanged;
+            _assets.Created += OnAssetChanged;
+            _assets.Renamed += OnAssetChanged;
+            _assets.Deleted += OnAssetChanged;
+            _assets.EnableRaisingEvents = true;
+        }
+
         // A parked SSE request that never says anything gets idle-dropped by Kestrel and by every
         // proxy in between — a couple of quiet minutes and hot reload was silently over for that
         // tab. A comment frame every 20s is invisible to the client and keeps the pipe warm.
@@ -106,6 +128,28 @@ public sealed class HotReloadService : IDisposable
         var path = e.FullPath.Replace('\\', '/');
         if (path.Contains("/obj/") || path.Contains("/bin/")) return;
         SourceChanged();
+    }
+
+    private void OnAssetChanged(object sender, FileSystemEventArgs e)
+    {
+        var path = e.FullPath.Replace('\\', '/');
+        if (path.Contains("/wwwroot/_equantic/", StringComparison.Ordinal) || path.EndsWith("/wwwroot/_equantic", StringComparison.Ordinal)) return;
+        if (_disposed) return;
+        try
+        {
+            _assetsQuiet?.Change(Quiet, Timeout.InfiniteTimeSpan);
+        }
+        catch (ObjectDisposedException)
+        {
+            // An event still in flight when the app stopped.
+        }
+    }
+
+    /// <summary>A static file of the app changed, once its writes are quiet: the page reloads and hydrates.</summary>
+    internal void AssetChanged()
+    {
+        if (_disposed) return;
+        Send(Frame("rebuilt", "hydrate"));
     }
 
     /// <summary>A source of the app was written: one event of a save, which may be several.</summary>
@@ -193,7 +237,7 @@ public sealed class HotReloadService : IDisposable
                 Console.WriteLine($"[eQuantic.HotReload] rebuilt in {started.Elapsed.TotalSeconds:F1}s — reloading browsers");
                 // Announced once the server holds the edit, when every save brings it one, so the
                 // page reloads ONCE and hydrates markup that agrees with its modules.
-                var held = _edits.ArrivedAfter(burst.EditsSeen, burst.At);
+                var held = _edits.ArrivedAfter(burst.EditsSeen, burst.At, _stopping.Token);
                 if (_disposed) return;
                 Send(Frame("rebuilt", held ? "hydrate" : "mount"));
             }
@@ -285,7 +329,10 @@ public sealed class HotReloadService : IDisposable
             _disposed = true;
             rebuild = _rebuild;
         }
+        _stopping.Cancel();
         _watcher?.Dispose();
+        _assets?.Dispose();
+        _assetsQuiet?.Dispose();
         _debounce?.Dispose();
         _keepAlive?.Dispose();
         if (rebuild is not null) Stop(rebuild);
