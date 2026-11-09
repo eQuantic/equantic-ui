@@ -9,5 +9,5 @@
   conversion between the underlying types (`EnumConversion`), and every operator C# defines on an enum
   computes on its values at that width (`EnumOperators`), `HasFlag`, `CompareTo` and a relational pattern
   included. The server writes a 64-bit flags enum as its digits and a page's top-level enum field
-  through EqJson, where a flags field crossed by its members' names. Measured on main, 32 of the 47
-  conformance cases first fail there. Proposed and archived through OpenSpec (`transpiler-bcl`).
+  through EqJson, where a flags field crossed by its members' names, and a relational pattern no longer
+  matches a null. Measured on main, 37 of the 54 conformance cases first fail there. Proposed and archived through OpenSpec (`transpiler-bcl`).

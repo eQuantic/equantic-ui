@@ -9,7 +9,7 @@ its value: `(long)Huge.Top` of `[Flags] enum Huge : long { Top = 1L << 62 }` ans
 rounded values, and the server wrote its value as a JSON number the browser rounded. An enum's
 operators were JavaScript's own, which compute in signed 32 bits: `Huge.A | Huge.B` with `B = 1L << 40`
 answered 1, a `uint` flag's high bit read negative, so `(U.A | U.Top).HasFlag(U.Top)` was false, and
-`~` of a byte flag was negative. Measured on main, 32 of the 47 conformance cases this change adds first
+`~` of a byte flag was negative. Measured on main, 37 of the 54 conformance cases this change adds first
 fail there.
 
 ## What Changes
@@ -33,7 +33,9 @@ fail there.
   crossed by its members' names. Hydration reads a 64-bit flags enum, as a value and as a key, as a
   BigInt.
 - Fixed in passing, in the same code: `GetValueOrDefault()` of a nullable enum wrote the member's
-  declared name, and an enum property's default crashed eqc for a `ulong` member past `long`'s range.
+  declared name, an enum property's default crashed eqc for a `ulong` member past `long`'s range, a
+  relational pattern matched a null (`n is < 5` over an empty `int?` was true, JavaScript's
+  `null < 5`), and `Enum.GetName` of a fraction threw no .NET exception.
 
 For a developer using the SDK: nothing they write changes. A 64-bit enum, and every enum's operators,
 answer in the browser what they answer in .NET.
