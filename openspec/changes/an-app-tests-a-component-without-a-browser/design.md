@@ -2,18 +2,18 @@
 
 ## How Flutter solves it
 
-`flutter_test`'s `WidgetTester` mounts a widget into the REAL element tree under a test binding:
+`flutter_test`'s `WidgetTester` mounts what a test hands it into the REAL element tree under a test binding:
 `pumpWidget` builds and lays out the first frame, `pump` draws the next one (what `setState`
 marked), `tap` and `enterText` drive the control a finder locates, and `getSemantics` with
-`matchesSemantics` reads what the platform's screen reader would get. Nothing is mocked below the
-widget: the elements, the states and the build phase are the app's own.
+`matchesSemantics` reads what the platform's screen reader would get. Nothing is mocked below what
+the test mounts: the elements, the states and the build phase are the app's own.
 
 The same pieces exist here (docs/FLUTTER-PARITY.md, the `Element`/`BuildOwner` and `setState` rows):
 
 | Flutter | Here |
 |---|---|
 | `WidgetTester` | `ComponentTester` |
-| `pumpWidget(widget)` / `pump()` | `Pump(root)` / `Pump()` |
+| `pumpWidget(…)` / `pump()` | `Pump(root)` / `Pump()` |
 | `tap(finder)`, `enterText(finder, text)` | `Tap(name)`, `EnterText(name, text)`: the finder is the name a screen reader announces |
 | `BuildOwner` under the test binding | `BuildOwner`, live, as Photon's |
 | `getSemantics` → `SemanticsData` | `Semantics` → `Announcement`, in `SemanticRole` |
