@@ -266,11 +266,7 @@ public class ServerActionsMiddleware
             // beyond 2^53 survive into the client BigInt-backed `long` runtime. The result is written as
             // the type the action declares: written as its runtime type, an entity returned where a
             // summary was declared sent every field it has (#1291).
-            var declared = DeclaredResultType(descriptor.Method);
-            var written = result is null || declared is null
-                ? (JsonElement?)null
-                : JsonSerializer.SerializeToElement(result, declared, Json.EqJson.Options);
-            await context.Response.WriteAsJsonAsync(new { success = true, result = written }, Json.EqJson.Options);
+            await WriteResultAsync(context, result, DeclaredResultType(descriptor.Method));
         }
         catch (UploadNotBoundException ex)
         {
@@ -323,6 +319,23 @@ public class ServerActionsMiddleware
         return returned.IsGenericType && returned.GetGenericTypeDefinition() == typeof(Task<>)
             ? returned.GetGenericArguments()[0]
             : returned;
+    }
+
+    /// <summary>The answer <c>{ success, result }</c>, the result serialized once, as <paramref name="declared"/>.</summary>
+    private static async Task WriteResultAsync(HttpContext context, object? result, Type? declared)
+    {
+        var buffer = new System.Buffers.ArrayBufferWriter<byte>();
+        await using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = Json.EqJson.Options.Encoder }))
+        {
+            writer.WriteStartObject();
+            writer.WriteBoolean("success", true);
+            writer.WritePropertyName("result");
+            if (result is null || declared is null) writer.WriteNullValue();
+            else JsonSerializer.Serialize(writer, result, declared, Json.EqJson.Options);
+            writer.WriteEndObject();
+        }
+        context.Response.ContentType = "application/json; charset=utf-8";
+        await context.Response.Body.WriteAsync(buffer.WrittenMemory, context.RequestAborted);
     }
 
     private static async Task WriteErrorResponse(HttpContext context, string error)

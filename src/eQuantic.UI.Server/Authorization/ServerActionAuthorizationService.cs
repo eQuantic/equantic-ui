@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
@@ -28,13 +29,17 @@ namespace eQuantic.UI.Server.Authorization;
 public class ServerActionAuthorizationService(ILogger<ServerActionAuthorizationService> logger)
     : IServerActionAuthorizationService
 {
+    /// <summary>The metadata each action is decided by, read once: its attributes do not change while the app runs.</summary>
+    private static readonly ConcurrentDictionary<(Type Component, MethodInfo Method), IReadOnlyList<object>> Metadata = new();
+
     /// <inheritdoc />
     public async Task<ServerActionAuthorizationResult> AuthorizeAsync(HttpContext context, ServerActionDescriptor descriptor)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(descriptor);
 
-        var decision = await RequestAuthorization.DecideAsync(context, MetadataOf(descriptor.ComponentType, descriptor.Method));
+        var metadata = Metadata.GetOrAdd((descriptor.ComponentType, descriptor.Method), key => MetadataOf(key.Component, key.Method));
+        var decision = await RequestAuthorization.DecideAsync(context, metadata);
         if (decision.Succeeded)
         {
             logger.LogDebug(

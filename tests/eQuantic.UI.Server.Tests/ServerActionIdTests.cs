@@ -13,7 +13,7 @@ namespace eQuantic.UI.Server.Tests;
 public class ServerActionIdTests
 {
     [Fact]
-    public void TwoComponentsOfOneName_InTwoNamespaces_HaveAnIdEach()
+    public void TwoComponentsOfOneName_InTwoTypes_HaveAnIdEach()
     {
         var registry = new ServerActionRegistry();
         registry.ScanAssembly(typeof(ServerActionIdTests).Assembly);
