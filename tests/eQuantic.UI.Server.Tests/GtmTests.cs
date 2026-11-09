@@ -104,7 +104,7 @@ public class GtmTests
     {
         var options = new UIOptions();
         options.UseGtm("GTM-CLIENT1").UseGtm("GTM-AGENCY1");
-        var all = string.Join("\n", options.HtmlShell.HeadTags);
+        var all = string.Join("\n", options.HtmlShell.HeadTags.Select(tag => tag.Render(nonce: null)));
 
         all.Should().Contain("'GTM-CLIENT1'").And.Contain("'GTM-AGENCY1'");
         CountOf(all, "__EQ_ANALYTICS__").Should().Be(1, "one declaration arms the runtime once");
