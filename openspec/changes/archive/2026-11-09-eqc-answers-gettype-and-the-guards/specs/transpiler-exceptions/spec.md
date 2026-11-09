@@ -46,7 +46,7 @@ refused with EQ2004.
 
 - **WHEN** `ArgumentException.ThrowIfNullOrWhiteSpace("\u0085", "v")` runs
 - **THEN** it throws an ArgumentException with the message "The value cannot be an empty string or
-  composed entirely of whitespace. (Parameter 'v')", as in .NET, and `"​"`, which .NET does not take
+  composed entirely of whitespace. (Parameter 'v')", as in .NET, and `"\u200B"` (a zero-width space), which .NET does not take
   for white space, passes
 
 #### Scenario: A null with no parameter's name

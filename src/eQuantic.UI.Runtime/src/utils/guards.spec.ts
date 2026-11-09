@@ -130,6 +130,6 @@ describe('the null and white guards throw as .NET throws them', () => {
       message: "The value cannot be an empty string or composed entirely of whitespace. (Parameter 'v')",
     });
     expect(thrown(() => guard.throwIfNullOrWhiteSpace('', 'v'))).toMatchObject({ type: 'System.ArgumentException' });
-    expect(thrown(() => guard.throwIfNullOrWhiteSpace('​', 'v'))).toBe('pass');
+    expect(thrown(() => guard.throwIfNullOrWhiteSpace('\u200B', 'v'))).toBe('pass');
   });
 });
