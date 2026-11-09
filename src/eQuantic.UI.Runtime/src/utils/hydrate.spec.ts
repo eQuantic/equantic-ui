@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { closing, sameClosure } from './closing';
+import { closing, sameClosure } from './closures';
 import { hydrate, type HydrationSpec } from './hydrate';
 import { hydrateValue } from './hydrate-value';
 import { Decimal, dec } from './decimal';

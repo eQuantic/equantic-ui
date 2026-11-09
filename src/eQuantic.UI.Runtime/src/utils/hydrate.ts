@@ -13,7 +13,7 @@ import {
   TimeSpan,
 } from './datetime';
 import { adoptMember } from './adopt-member';
-import { closing } from './closing';
+import { closing } from './closures';
 import { Dictionary } from './dictionary';
 import { SortedMap, SortedSet } from './sorted';
 import { comparerOf, type Ordering } from './ordering';
