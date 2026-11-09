@@ -112,12 +112,16 @@ Copilot (three rounds at most, stopping at the first without a defect), and is s
 every review thread is resolved and CI is green.
 
 **Check that CI actually RAN before you read it as green.** Since 2026-09-26 the ruleset requires
-thirteen of the CI's jobs and a branch up to date with `main` (#287), so a pull request whose
-workflow never started stays blocked, and one that `main` moved past has to take `main` and run
-again. Before that it required only a review: a workflow whose `if:` expression did not parse
-failed before it created a single job, with no log to notice, and for an hour seven pull requests
-merged on local runs alone. Two pull requests that each passed alone also broke `main` together
-(#453).
+thirteen of the CI's jobs on a run that saw the `main` a pull request lands on (#287), so a pull
+request whose workflow never started stays blocked. Before that it required only a review: a
+workflow whose `if:` expression did not parse failed before it created a single job, with no log to
+notice, and for an hour seven pull requests merged on local runs alone. Two pull requests that each
+passed alone also broke `main` together (#453).
+
+Once the ruleset merges through GitHub's merge queue (#1308), a reviewed, green pull request enters
+it with `gh pr merge <n>`, and the queue runs CI on it together with every pull request ahead of it
+and squash-merges it when that run is green: nobody merges `main` into a pull request only to bring
+it up to date. Until then, one that `main` moved past has to take `main` and run again.
 
 ```bash
 scripts/ci-doctor.sh
