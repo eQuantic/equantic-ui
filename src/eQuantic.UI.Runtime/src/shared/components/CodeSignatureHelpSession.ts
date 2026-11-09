@@ -16,7 +16,7 @@ export class CodeSignatureHelpSession {
         this.failed = null;
         this._editor = editor;
         editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, (_) => this.moved());
-        editor.changed = $eq.delegates.combine(editor.changed, this.edited.bind(this));
+        editor.changed = $eq.delegates.combine(editor.changed, $eq.delegates.bound(this, this.edited));
     }
 
     _editor!: CodeEditorController;
