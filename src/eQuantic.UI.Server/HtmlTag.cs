@@ -13,7 +13,7 @@ namespace eQuantic.UI.Server;
 /// which is exactly what must not be encoded — so only pass content you author.
 /// </para>
 /// <para>
-/// A <c>script</c> or a <c>style</c> is rendered with the request's nonce, which the shell hands
+/// A <c>script</c>, a <c>style</c> or a stylesheet <c>link</c> is rendered with the request's nonce, which the shell hands
 /// <see cref="Render"/>: an element the shell writes is one a Content-Security-Policy can admit by
 /// that nonce, and an app never writes the attribute itself (#1266).
 /// </para>
@@ -82,7 +82,7 @@ public sealed class HtmlTag
             if (value != null)
                 html.Append("=\"").Append(System.Net.WebUtility.HtmlEncode(value)).Append('"');
         }
-        if (CarriesNonce(TagName)) html.Append(ShellNonce.Attribute(nonce));
+        if (CarriesNonce()) html.Append(ShellNonce.Attribute(nonce));
         html.Append('>');
         if (VoidElements.Contains(TagName)) return html.ToString();
         return html.Append(Content).Append("</").Append(TagName).Append('>').ToString();
@@ -90,8 +90,15 @@ public sealed class HtmlTag
 
     public override string ToString() => Render(nonce: null);
 
-    /// <summary>The elements a Content-Security-Policy admits by nonce: scripts and styles.</summary>
-    internal static bool CarriesNonce(string tagName) =>
-        tagName.Equals("script", StringComparison.OrdinalIgnoreCase)
-        || tagName.Equals("style", StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// The elements a Content-Security-Policy admits by nonce: scripts, styles, and a stylesheet
+    /// link, which <c>style-src</c> governs as it governs a style element (#1268).
+    /// </summary>
+    private bool CarriesNonce() =>
+        TagName.Equals("script", StringComparison.OrdinalIgnoreCase)
+        || TagName.Equals("style", StringComparison.OrdinalIgnoreCase)
+        || (TagName.Equals("link", StringComparison.OrdinalIgnoreCase)
+            && Attributes.TryGetValue("rel", out var rel) && rel is not null
+            && rel.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Contains("stylesheet", StringComparer.OrdinalIgnoreCase));
 }

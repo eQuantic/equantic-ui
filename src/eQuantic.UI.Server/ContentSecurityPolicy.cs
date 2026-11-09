@@ -15,8 +15,10 @@ namespace eQuantic.UI.Server;
 /// governs a document, and the nonce is the page's.
 /// </para>
 /// <para>
-/// <c>style-src</c> is not written yet: the runtime creates style elements of its own and the
-/// realizer writes style attributes, and #1268 brings both inside a policy before one is written.
+/// <c>style-src</c> admits the same nonce, which the shell stamps on its style elements and its
+/// stylesheet links and the runtime on the style elements it creates. A style attribute cannot carry
+/// a nonce, so <c>style-src-attr</c> admits them: they cannot run script, and every element stays
+/// nonce-only (#1268).
 /// </para>
 /// <para>
 /// Under <c>dotnet watch</c> the policy is written as report-only: dotnet watch injects a script of
@@ -79,6 +81,11 @@ internal sealed class ContentSecurityPolicy
         var directives = new List<string>
         {
             $"script-src 'nonce-{NoncePlaceholder}' 'strict-dynamic'",
+            // Style elements and stylesheet links by the same nonce. A style ATTRIBUTE cannot carry
+            // one, and the realizers write them on every page (a pressable's pressed fill, a loop's
+            // endpoints, an editor's caret), so the attribute directive admits them, measured in #1268.
+            $"style-src 'nonce-{NoncePlaceholder}'",
+            "style-src-attr 'unsafe-inline'",
             "object-src 'none'",
             "base-uri 'none'",
             Directive("frame-ancestors", options.FrameAncestors),

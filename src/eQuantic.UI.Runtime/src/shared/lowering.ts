@@ -2524,8 +2524,9 @@ function gradientRegistry(): Element | null {
     container.setAttribute('width', '0');
     container.setAttribute('height', '0');
     container.setAttribute('aria-hidden', 'true');
-    // Out of flow and zero-sized, NEVER display:none — see above.
-    container.setAttribute('style', 'position:absolute;overflow:hidden');
+    // Out of flow and zero-sized, NEVER display:none — see above. Through the CSSOM, which a
+    // Content-Security-Policy does not govern, rather than a style attribute, which it does (#1268).
+    container.style.cssText = 'position:absolute;overflow:hidden';
     document.body.appendChild(container);
   }
 
