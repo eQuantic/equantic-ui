@@ -1,5 +1,6 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Testing;
 using FluentAssertions;
 
 namespace eQuantic.UI.Web.Tests;
@@ -36,6 +37,16 @@ public class ProgressSemanticsTests
     private static HtmlNode Host(VisualNode node) =>
         Walk(Lower(node)).First(n => n.Attributes.GetValueOrDefault("role") == "progressbar");
 
+    /// <summary>What a screen reader announces for the one control <paramref name="node"/> draws, read
+    /// through eQuantic.UI.Testing, the package an app's own tests read it through. The attributes the
+    /// tests below still pin are the realizer's ARIA contract; the announcement is what it amounts to.</summary>
+    private static Announcement Announced(VisualNode node)
+    {
+        using var tester = new ComponentTester(Theme);
+        tester.Pump(node);
+        return tester.Semantics.Single(stop => stop.Role != SemanticRole.StaticText);
+    }
+
     /// <summary>
     /// THE WORDS SURVIVE THE MISSING NUMBER (#243). `aria-valuetext` REPLACES the number for a
     /// reader, so it never depended on there being one — but it was read from inside the value, and
@@ -48,11 +59,11 @@ public class ProgressSemanticsTests
     [Fact]
     public void AnIndeterminateBarStillSaysItsWords()
     {
-        var host = Host(new ProgressBar { Label = "Syncing", ValueText = "Estimating time remaining" });
+        var bar = new ProgressBar { Label = "Syncing", ValueText = "Estimating time remaining" };
 
-        host.Attributes.Should().ContainKey("aria-valuetext")
-            .WhoseValue.Should().Be("Estimating time remaining");
-        host.Attributes.Should().NotContainKey("aria-valuenow",
+        Announced(bar).Should().BeEquivalentTo(new { Name = "Syncing", Value = "Estimating time remaining" },
+            "the words are what a reader says where there is no number");
+        Host(bar).Attributes.Should().NotContainKey("aria-valuenow",
             "indeterminate keeps the role and omits the number — that half was always right");
     }
 
@@ -70,8 +81,15 @@ public class ProgressSemanticsTests
     [Fact]
     public void ADeterminateBarStatesHowFarAlongItIs()
     {
-        var host = Host(new ProgressBar(0.45f) { Label = "Uploading" });
+        var bar = new ProgressBar(0.45f) { Label = "Uploading" };
+        Announced(bar).Should().BeEquivalentTo(new
+        {
+            Role = SemanticRole.ProgressIndicator,
+            Name = "Uploading",
+            Value = "0.45",
+        });
 
+        var host = Host(bar);
         host.Attributes["aria-valuenow"].Should().Be("0.45");
         host.Attributes["aria-valuemin"].Should().Be("0");
         host.Attributes["aria-valuemax"].Should().Be("1");
@@ -88,10 +106,13 @@ public class ProgressSemanticsTests
     [Fact]
     public void AnIndeterminateBarKeepsTheRoleAndDropsOnlyTheNumber()
     {
-        var host = Host(new ProgressBar { Label = "Syncing" });
+        var bar = new ProgressBar { Label = "Syncing" };
+        var stop = Announced(bar);
+        stop.Role.Should().Be(SemanticRole.ProgressIndicator, "the role stays: something is happening");
+        stop.Name.Should().Be("Syncing");
+        stop.Value.Should().BeNull("an indeterminate bar announces no position, which is what indeterminate means");
 
-        host.Attributes["role"].Should().Be("progressbar");
-        host.Attributes["aria-label"].Should().Be("Syncing");
+        var host = Host(bar);
         host.Attributes.Should().NotContainKey("aria-valuenow");
         host.Attributes.Should().NotContainKey("aria-valuemin");
         host.Attributes.Should().NotContainKey("aria-valuemax");

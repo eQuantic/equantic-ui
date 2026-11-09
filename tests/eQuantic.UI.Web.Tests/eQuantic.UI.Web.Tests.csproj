@@ -29,6 +29,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
+    <!-- What a screen reader announces, read through the package an app's own tests use: the web
+         suite's semantics tests are its first consumer (#1245). -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Testing\eQuantic.UI.Testing.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Web.Build\eQuantic.UI.Web.Build.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Charts\eQuantic.UI.Charts.csproj" />
