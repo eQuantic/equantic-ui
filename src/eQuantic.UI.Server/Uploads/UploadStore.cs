@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -23,20 +24,25 @@ internal sealed class UploadStore
     private const string RecordSuffix = ".upload.json";
 
     /// <summary>
-    /// Guards what an owner's count of unfinished uploads reads: the records, which of them are
-    /// finished, and the places creations hold. One lock over the three, so a record that is written
-    /// and the place it held that is given back are one step to every count.
+    /// Guards what the limits read: the records, which of them are finished, the places creations hold,
+    /// and the tallies kept of all three. One lock over them, so a record that is written and the place
+    /// it held that is given back are one step to every count.
     /// </summary>
     private readonly object _gate = new();
     private readonly ConcurrentDictionary<string, UploadRecord> _records = new(StringComparer.Ordinal);
     private readonly HashSet<string> _finished = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, int> _reserved = new(StringComparer.Ordinal);
+    /// <summary>Each owner's uploads, counted as they come and go: a count of the records under the lock on
+    /// every creation grew with every upload the store kept (#1287).</summary>
+    private readonly Dictionary<string, Tally> _owners = new(StringComparer.Ordinal);
+    private readonly Tally _total = new();
+    private readonly UploadsOptions _options;
     private readonly Lazy<Task> _loaded;
     private readonly ILogger<UploadStore> _logger;
 
     public UploadStore(IOptions<UploadsOptions> options, IHostEnvironment environment, ILogger<UploadStore> logger)
     {
         _logger = logger;
+        _options = options.Value;
         Folder = FolderOf(options.Value, environment);
         Directory.CreateDirectory(Folder);
         logger.LogInformation("Uploads are kept in {Folder}", Folder);
@@ -68,15 +74,20 @@ internal sealed class UploadStore
         lock (_gate)
         {
             _records[record.Id] = record;
-            if (reservation?.Take() is { } owner) Unreserve(owner);
+            Count(record, +1, unfinished: true);
+            if (reservation is not null && reservation.Take()) Unreserve(reservation);
         }
     }
 
-    /// <summary>Notes that the last byte of an upload arrived, so it no longer counts as unfinished.</summary>
+    /// <summary>Notes that the last byte of an upload arrived, so it no longer counts as unfinished. It
+    /// still counts as one of its owner's uploads, and its bytes as theirs, until it expires.</summary>
     public async Task FinishAsync(string id)
     {
         await _loaded.Value;
-        lock (_gate) _finished.Add(id);
+        lock (_gate)
+        {
+            if (_finished.Add(id) && _records.TryGetValue(id, out var record)) Count(record, 0, unfinished: true, finishing: true);
+        }
     }
 
     /// <summary>Forgets an upload whose bytes are gone.</summary>
@@ -92,34 +103,92 @@ internal sealed class UploadStore
         && await Tus.GetUploadOffsetAsync(record.Id, cancellationToken) == record.Size;
 
     /// <summary>
-    /// Holds a place among <paramref name="owner"/>'s unfinished uploads for one that is being created,
-    /// or answers null when the owner already has <paramref name="limit"/> of them, counting the places
-    /// other creations hold.
+    /// Holds a place for an upload of <paramref name="size"/> bytes that <paramref name="owner"/> is
+    /// creating, or answers the limit it would pass: the owner's unfinished uploads, the uploads and the
+    /// bytes the owner keeps, finished or not, and the uploads and the bytes the store keeps, everyone's
+    /// together. The places other creations hold count as uploads already made. A limit on uploads answers
+    /// 429, a limit on bytes 413, each naming the limit.
     /// </summary>
-    public async Task<UploadReservation?> ReserveAsync(string owner, int limit)
+    public async Task<(UploadReservation? Reservation, HttpStatusCode Status, string? Refusal)> ReserveAsync(string owner, long size)
     {
         await _loaded.Value;
         lock (_gate)
         {
-            var unfinished = _records.Values.Count(record => record.Owner == owner && !_finished.Contains(record.Id));
-            if (unfinished + _reserved.GetValueOrDefault(owner) >= limit) return null;
-            _reserved[owner] = _reserved.GetValueOrDefault(owner) + 1;
+            var mine = _owners.GetValueOrDefault(owner) ?? new Tally();
+            if (mine.Unfinished + mine.ReservedUploads >= _options.MaxUnfinished)
+                return (null, HttpStatusCode.TooManyRequests, $"At most {_options.MaxUnfinished} uploads may be unfinished at a time.");
+            if (mine.Uploads + mine.ReservedUploads >= _options.MaxUploadsPerOwner)
+                return (null, HttpStatusCode.TooManyRequests, $"At most {_options.MaxUploadsPerOwner} uploads may be kept at a time.");
+            if (mine.Bytes + mine.ReservedBytes + size > _options.MaxBytesPerOwner)
+                return (null, HttpStatusCode.RequestEntityTooLarge, $"Your uploads may take at most {_options.MaxBytesPerOwner} bytes.");
+            if (_total.Uploads + _total.ReservedUploads >= _options.MaxTotalUploads)
+                return (null, HttpStatusCode.TooManyRequests, $"The server keeps at most {_options.MaxTotalUploads} uploads at a time: try again later.");
+            if (_total.Bytes + _total.ReservedBytes + size > _options.MaxTotalBytes)
+                return (null, HttpStatusCode.RequestEntityTooLarge, $"The server's uploads may take at most {_options.MaxTotalBytes} bytes: try again later.");
+
+            foreach (var tally in new[] { TallyOf(owner), _total })
+            {
+                tally.ReservedUploads++;
+                tally.ReservedBytes += size;
+            }
         }
 
-        return new UploadReservation(this, owner);
+        return (new UploadReservation(this, owner, size), HttpStatusCode.Created, null);
     }
 
     /// <summary>Gives back a place <see cref="ReserveAsync"/> held, for a creation that wrote no record.</summary>
-    internal void Release(string owner)
+    internal void Release(UploadReservation reservation)
     {
-        lock (_gate) Unreserve(owner);
+        lock (_gate) Unreserve(reservation);
     }
 
-    private void Unreserve(string owner)
+    private void Unreserve(UploadReservation reservation)
     {
-        var held = _reserved.GetValueOrDefault(owner) - 1;
-        if (held > 0) _reserved[owner] = held;
-        else _reserved.Remove(owner);
+        foreach (var tally in new[] { TallyOf(reservation.Owner), _total })
+        {
+            tally.ReservedUploads--;
+            tally.ReservedBytes -= reservation.Size;
+        }
+        DropIfEmpty(reservation.Owner);
+    }
+
+    /// <summary>Counts a record in or out (<paramref name="sign"/>), or, <paramref name="finishing"/>, counts
+    /// it out of the unfinished only. Called under the lock.</summary>
+    private void Count(UploadRecord record, int sign, bool unfinished, bool finishing = false)
+    {
+        foreach (var tally in new[] { TallyOf(record.Owner), _total })
+        {
+            if (finishing)
+            {
+                tally.Unfinished--;
+                continue;
+            }
+            tally.Uploads += sign;
+            tally.Bytes += sign * record.Size;
+            if (unfinished) tally.Unfinished += sign;
+        }
+        DropIfEmpty(record.Owner);
+    }
+
+    private Tally TallyOf(string owner)
+    {
+        if (!_owners.TryGetValue(owner, out var tally)) _owners[owner] = tally = new Tally();
+        return tally;
+    }
+
+    private void DropIfEmpty(string owner)
+    {
+        if (_owners.TryGetValue(owner, out var tally) && tally is { Uploads: 0, ReservedUploads: 0 }) _owners.Remove(owner);
+    }
+
+    /// <summary>What an owner, or the whole store, keeps and holds places for.</summary>
+    private sealed class Tally
+    {
+        public int Uploads;
+        public long Bytes;
+        public int Unfinished;
+        public int ReservedUploads;
+        public long ReservedBytes;
     }
 
     /// <summary>The upload's content, read from the disk a part at a time.</summary>
@@ -164,7 +233,7 @@ internal sealed class UploadStore
     {
         lock (_gate)
         {
-            _records.TryRemove(id, out _);
+            if (_records.TryRemove(id, out var record)) Count(record, -1, unfinished: !_finished.Contains(id));
             _finished.Remove(id);
         }
 
@@ -188,6 +257,7 @@ internal sealed class UploadStore
                     {
                         _records[id] = record;
                         if (finished) _finished.Add(id);
+                        Count(record, +1, unfinished: !finished);
                     }
                 }
                 else
@@ -209,7 +279,7 @@ internal sealed class UploadStore
     /// app's own under the system's temporary folder: two apps on one machine never share uploads they
     /// did not choose to share.
     /// </summary>
-    private static string FolderOf(UploadsOptions options, IHostEnvironment environment)
+    internal static string FolderOf(UploadsOptions options, IHostEnvironment environment)
     {
         if (!string.IsNullOrWhiteSpace(options.Folder))
             return Path.GetFullPath(options.Folder, environment.ContentRootPath);

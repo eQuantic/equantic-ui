@@ -50,11 +50,11 @@ internal sealed class UploadsApp : IAsyncDisposable
     public TusBrowser Browser(string? user = null, string? origin = null) => new(Client, user, origin);
 
     public static async Task<UploadsApp> StartAsync(string folder, FakeTimeProvider? time = null,
-        IReadOnlyDictionary<string, string?>? configuration = null)
+        IReadOnlyDictionary<string, string?>? configuration = null, string? webRoot = null)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
-            WebRootPath = Directory.CreateTempSubdirectory("eq-uploads-web-").FullName,
+            WebRootPath = webRoot ?? Directory.CreateTempSubdirectory("eq-uploads-web-").FullName,
         });
         builder.WebHost.UseTestServer();
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
