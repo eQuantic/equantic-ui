@@ -1,3 +1,6 @@
+using System.Collections.Immutable;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using eQuantic.UI.Build;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
@@ -84,6 +87,56 @@ public class IconCompilationTests
             .GetText().ToString();
         usings.Should().Contain("global using static eQuantic.UI.Components.UI;");
         usings.Should().NotContain("Acme");
+    }
+
+    /// <summary>
+    /// A runtime's folder on Windows, where its native libraries are <c>.dll</c> beside its assemblies:
+    /// only the assemblies are referenced. Every native one was CS0009 and the icon failed to build on
+    /// Windows alone, where macOS and Linux name theirs <c>.dylib</c> and <c>.so</c>.
+    /// </summary>
+    [Fact]
+    public void AFoldersNativeLibraries_AreNotReferenced_OnlyItsAssemblies()
+    {
+        var folder = Directory.CreateTempSubdirectory("eq-icon-refs-").FullName;
+        try
+        {
+            File.Copy(typeof(FluentAssertions.AssertionExtensions).Assembly.Location, Path.Combine(folder, "Managed.dll"));
+            NativeLibrary.WriteTo(Path.Combine(folder, "coreclr.dll"));
+            File.WriteAllBytes(Path.Combine(folder, "garbage.dll"), [1, 2, 3, 4]);
+
+            var references = IconCompilation.ReferencesIn([folder]);
+
+            references.Select(reference => Path.GetFileName(reference.Display)).Should().Equal("Managed.dll");
+            CSharpCompilation.Create("probe", [], references).GetDiagnostics()
+                .Should().NotContain(diagnostic => diagnostic.Id == "CS0009");
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    /// <summary>A PE image with code and no metadata, as a native library is.</summary>
+    private sealed class NativeLibrary() : PEBuilder(PEHeaderBuilder.CreateLibraryHeader(), deterministicIdProvider: null)
+    {
+        public static void WriteTo(string path)
+        {
+            var blob = new BlobBuilder();
+            new NativeLibrary().Serialize(blob);
+            File.WriteAllBytes(path, blob.ToArray());
+        }
+
+        protected override PEDirectoriesBuilder GetDirectories() => new();
+
+        protected override ImmutableArray<Section> CreateSections() =>
+            [new Section(".text", SectionCharacteristics.ContainsCode | SectionCharacteristics.MemRead | SectionCharacteristics.MemExecute)];
+
+        protected override BlobBuilder SerializeSection(string name, SectionLocation location)
+        {
+            var section = new BlobBuilder();
+            section.WriteBytes(0xC3, 16);
+            return section;
+        }
     }
 
     [Fact]

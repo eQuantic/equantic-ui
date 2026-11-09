@@ -388,17 +388,8 @@ if (trees.Length == 0)
 // The icon may only speak the VOCABULARY — that is the contract on IAppIcon — and the vocabulary
 // ships beside this tool. Resolving from here rather than from the app's own reference list keeps
 // the icon buildable before the app's project references have been built at all.
-var referenceDirs = new[]
-{
-    AppContext.BaseDirectory,
-    Path.GetDirectoryName(typeof(object).Assembly.Location)!,
-};
-var references = referenceDirs
-    .Where(Directory.Exists)
-    .SelectMany(dir => Directory.EnumerateFiles(dir, "*.dll"))
-    .GroupBy(Path.GetFileName)
-    .Select(group => (MetadataReference)MetadataReference.CreateFromFile(group.First()))
-    .ToArray();
+var references = IconCompilation.ReferencesIn(
+    [AppContext.BaseDirectory, Path.GetDirectoryName(typeof(object).Assembly.Location)!]);
 
 // The usings the APP compiles with (#1240), which the SDK hands over as its `Using` items, so the icon
 // is written like any other file of the app: `Box(...)` is the factory there, and without them the

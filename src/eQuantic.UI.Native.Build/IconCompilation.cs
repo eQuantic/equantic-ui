@@ -1,3 +1,4 @@
+using System.Reflection.PortableExecutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -60,4 +61,32 @@ public static class IconCompilation
 
     /// <summary>The name the usings file is parsed under, one using a line, in the order handed.</summary>
     private const string UsingsPath = "AppIcon.GlobalUsings.g.cs";
+
+    /// <summary>
+    /// The assemblies in <paramref name="directories"/> the icon can reference, the first of each file
+    /// name winning. A runtime's folder holds its native libraries beside its assemblies, and on Windows
+    /// they are <c>.dll</c> too (coreclr, clrjit, msquic): handed to Roslyn, each was CS0009 and the
+    /// icon did not build there (#1240). A file is an assembly when its PE image carries metadata.
+    /// </summary>
+    public static IReadOnlyList<MetadataReference> ReferencesIn(IEnumerable<string> directories) =>
+        directories
+            .Where(Directory.Exists)
+            .SelectMany(directory => Directory.EnumerateFiles(directory, "*.dll"))
+            .Where(IsAssembly)
+            .GroupBy(Path.GetFileName)
+            .Select(group => (MetadataReference)MetadataReference.CreateFromFile(group.First()))
+            .ToList();
+
+    private static bool IsAssembly(string path)
+    {
+        try
+        {
+            using var reader = new PEReader(File.OpenRead(path));
+            return reader.HasMetadata;
+        }
+        catch (BadImageFormatException)
+        {
+            return false;
+        }
+    }
 }
