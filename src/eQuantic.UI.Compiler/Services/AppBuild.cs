@@ -23,6 +23,10 @@ public sealed class AppBuild
     /// which is built exactly as it was before there was such a layer.</summary>
     private ReferencedModules? _referenced;
 
+    /// <summary>The compilations of the projects the app references, read for what every source of the
+    /// build is held to (<see cref="InlineHandlers"/>); empty for an app that references none.</summary>
+    private IReadOnlyList<Compilation> _referencedCompilations = [];
+
     /// <param name="options">What the build is handed.</param>
     /// <param name="output">Where the build narrates; the console when null.</param>
     /// <param name="errors">Where diagnostics go, in MSBuild's canonical form; the console's error
@@ -236,6 +240,7 @@ public sealed class AppBuild
                     _output.WriteLine($"   Compiling {built.Count} referenced project(s) from source: " +
                         string.Join(", ", built.Keys.Select(project => project.AssemblyName)));
                     _referenced = new ReferencedModules(built, _primarySourceDir);
+                    _referencedCompilations = built.Values.ToList();
                     _compiler.SetReferencedModules(_referenced);
                     // One catalogue id per resource class for the whole build: two projects may
                     // each have a Strings, and a file sees only its own project's.
@@ -345,6 +350,19 @@ public sealed class AppBuild
         try
         {
             var hasErrors = false;
+
+            // The escape hatch's inline handlers, refused in every source of the build when the app
+            // turned on the Content-Security-Policy (#1269): a strict policy refuses them in the
+            // browser, wherever their markup was written.
+            if (Compilation is { } app)
+            {
+                foreach (var refused in InlineHandlers.Refused(app, new[] { app }.Concat(_referencedCompilations)))
+                {
+                    hasErrors = true;
+                    _errors.WriteLine(FormatDiagnostic(refused, "error"));
+                }
+            }
+
             // Which names are already taken — see EmittedTwins for why a name collision is an error.
             var written = new EmittedTwins();
             var entryPoints = new List<string>();

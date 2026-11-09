@@ -33,3 +33,5 @@ eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportUri.get -> string?
 eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportUri.set -> void
 eQuantic.UI.Server.UIOptions.ContentSecurity.get -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
 eQuantic.UI.Server.UIOptions.UseContentSecurityPolicy(System.Action<eQuantic.UI.Server.ContentSecurityPolicyBuilder!>? configure = null) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.ContentSecurityPolicyAttribute
+eQuantic.UI.Server.ContentSecurityPolicyAttribute.ContentSecurityPolicyAttribute() -> void
