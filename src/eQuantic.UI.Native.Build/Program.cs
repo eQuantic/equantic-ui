@@ -324,12 +324,12 @@ if (args.Length > 0 && args[0] == "bundle")
 var options = ParseArgs(args);
 if (options is null)
 {
-    Console.Error.WriteLine("Usage: eqicon --source <file[;file]> [--out <dir>] [--web <dir> --app <name>] "
+    Console.Error.WriteLine("Usage: eqicon --source <file[;file]> [--using <using>]... [--out <dir>] [--web <dir> --app <name>] "
         + "[--android <res-dir>] [--macos <file.icns>] [--windows <file.ico>] [--size 1024] [--name AppIcon]");
     return 1;
 }
 
-var (sources, outDir, webDir, androidDir, macIcns, windowsIco, appName, size, name) = options.Value;
+var (sources, usings, outDir, webDir, androidDir, macIcns, windowsIco, appName, size, name) = options.Value;
 
 // Nothing to do when every output is already newer than the icon — the SDK calls this on each
 // build, and rasterizing a megapixel to produce identical bytes is a build nobody wants. EVERY
@@ -400,8 +400,11 @@ var references = referenceDirs
     .Select(group => (MetadataReference)MetadataReference.CreateFromFile(group.First()))
     .ToArray();
 
-var compilation = CSharpCompilation.Create("eQuantic.AppIcon", trees, references,
-    new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+// The usings the APP compiles with (#1240), which the SDK hands over as its `Using` items, so the icon
+// is written like any other file of the app: `Box(...)` is the factory there, and without them the
+// same line named the vocabulary's type and failed here alone. One that names nothing the vocabulary
+// has (the web host's ASP.NET namespaces) is dropped, since the icon could not use it anyway.
+var compilation = IconCompilation.Create(trees, usings, references);
 
 using var image = new MemoryStream();
 var emitted = compilation.Emit(image);
@@ -446,30 +449,49 @@ else if (OperatingSystem.IsWindows())
 // platform asks for — the same relationship a phone screen has with its own scale factor. Without
 // that the author would be picking type sizes against a 1024-unit canvas, which is nobody's idea
 // of designing an icon.
-const float canvas = 64f;
 var theme = PhotonTheme.Instance;
-var root = icon.Build(new ComponentContext(theme));
-var host = new PhotonHost(root, theme, ThemeMode.Light, canvas, canvas, measurer)
-{
-    TextRasterizer = measurer as ITextRasterizer,
-    RenderScale = size / canvas,
-    ReducedMotion = true,
-};
-
-var builder = new DisplayListBuilder();
-host.RenderFrame(builder);
-using var backend = new ReferenceBackend();
-using var surface = backend.CreateSurface((int)size, (int)size);
-backend.Render(builder.Build(), surface);
-
-var rgba = new byte[(int)size * (int)size * 4];
-surface.ReadPixelsSrgb(rgba);
+var rgba = Rasterize(icon.Build(new ComponentContext(theme), AppIconUse.Launcher), (int)size);
 // A home screen composites the icon against whatever it is showing, so alpha is not ours to keep.
 for (var i = 3; i < rgba.Length; i += 4) rgba[i] = 255;
 
-Emit(outDir, webDir, androidDir, macIcns, windowsIco, appName, name, (int)size, rgba);
+// The small cut keeps its transparency: it stands on a tab, which shows through it. 256 is four
+// times the largest size it is drawn at, so every size of it is a reduction. An icon with one
+// artwork answers Small with the launcher's square, which is opaque already.
+const int smallSize = 256;
+(int, byte[]) small = (smallSize, Rasterize(icon.Build(new ComponentContext(theme), AppIconUse.Small), smallSize, transparent: true));
+
+Emit(outDir, webDir, androidDir, macIcns, windowsIco, appName, name, (int)size, rgba, small);
 Console.WriteLine($"eqicon: wrote {Where(outDir, webDir, androidDir, macIcns, windowsIco)} from {iconType.FullName}");
 return 0;
+
+// A tree as the icon draws it: on a 64dp canvas, at `pixels` square, straight alpha, on the theme's
+// background or, for a cut that keeps its transparency, on nothing.
+byte[] Rasterize(VisualNode root, int pixels, bool transparent = false)
+{
+    const float canvas = 64f;
+    var host = new PhotonHost(root, theme, ThemeMode.Light, canvas, canvas, measurer)
+    {
+        TextRasterizer = measurer as ITextRasterizer,
+        // Vectors in plain C#, on every machine (#1240): with no rasterizer a Drawing or an Icon is
+        // the engine's placeholder box, and the platform ones exist on macOS and Windows only, while
+        // every container image is built on Linux. One rasterizer everywhere also makes the icon the
+        // same bytes on the machine that builds a release as on the one it was drawn on.
+        IconRasterizer = new PortableIconRasterizer(),
+        RenderScale = pixels / canvas,
+        ReducedMotion = true,
+        Backdrop = transparent ? Color.Transparent : null,
+    };
+
+    var builder = new DisplayListBuilder();
+    host.RenderFrame(builder);
+    using var backend = new ReferenceBackend();
+    using var surface = backend.CreateSurface(pixels, pixels);
+    backend.Render(builder.Build(), surface);
+
+    var image = new byte[pixels * pixels * 4];
+    surface.ReadPixelsSrgb(image);
+    return image;
+}
 
 // Everything this invocation is responsible for producing.
 static IEnumerable<string> Outputs(string? outDir, string? webDir, string? androidDir, string? macIcns,
@@ -485,7 +507,7 @@ static IEnumerable<string> Outputs(string? outDir, string? webDir, string? andro
     yield return Path.Combine(webDir, "icon-512.png");
     yield return Path.Combine(webDir, "icon-192.png");
     yield return Path.Combine(webDir, "apple-touch-icon.png");
-    yield return Path.Combine(webDir, "favicon-32.png");
+    yield return Path.Combine(webDir, "favicon.ico");
     yield return Path.Combine(webDir, "site.webmanifest");
 }
 
@@ -497,14 +519,14 @@ static bool UpToDate(string[] sources, IEnumerable<string> outputs)
 
 // Writes whichever outputs this invocation asked for — a catalog, a web set, or both.
 static void Emit(string? outDir, string? webDir, string? androidDir, string? macIcns, string? windowsIco,
-    string appName, string name, int size, byte[] rgba)
+    string appName, string name, int size, byte[] rgba, (int Size, byte[] Rgba)? small = null)
 {
     if (outDir is not null)
         WriteCatalog(outDir, name, () =>
             File.WriteAllBytes(Path.Combine(outDir, $"{name}.appiconset", $"{name}.png"),
                 PngCodec.Encode(size, size, rgba)));
 
-    if (webDir is not null) WebIcons.Write(webDir, appName, size, rgba);
+    if (webDir is not null) WebIcons.Write(webDir, appName, size, rgba, small);
     if (androidDir is not null) AndroidIcons.Write(androidDir, size, rgba);
     if (macIcns is not null)
     {
@@ -551,7 +573,7 @@ static (int Width, int Height) PngSize(string path)
         BitConverter.ToInt32(header.AsSpan(20, 4).ToArray().Reverse().ToArray()));
 }
 
-static (string[] Sources, string? Out, string? Web, string? Android, string? Mac, string? Windows, string App, float Size, string Name)? ParseArgs(string[] args)
+static (string[] Sources, string[] Usings, string? Out, string? Web, string? Android, string? Mac, string? Windows, string App, float Size, string Name)? ParseArgs(string[] args)
 {
     string? Value(string flag)
     {
@@ -567,8 +589,15 @@ static (string[] Sources, string? Out, string? Web, string? Android, string? Mac
     var windows = Value("--windows");
     if (source is null || (output is null && web is null && android is null && mac is null && windows is null)) return null;
 
+    // Every `--using`, in order: the SDK hands one per `Using` item of the app.
+    var usings = args.Select((arg, index) => (arg, index))
+        .Where(pair => pair.arg == "--using" && pair.index + 1 < args.Length)
+        .Select(pair => args[pair.index + 1].Trim())
+        .Where(spelling => spelling.Length > 0)
+        .ToArray();
+
     return (source.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
-        output, web, android, mac, windows, Value("--app") ?? "App",
+        usings, output, web, android, mac, windows, Value("--app") ?? "App",
         float.TryParse(Value("--size"), out var size) ? size : 1024f,
         Value("--name") ?? "AppIcon");
 }

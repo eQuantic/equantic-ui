@@ -16,7 +16,7 @@ public class AppIconTests
 {
     private sealed class BrandIcon : IAppIcon
     {
-        public VisualNode Build(ComponentContext context)
+        public VisualNode Build(ComponentContext context, AppIconUse use)
         {
             var brand = context.Theme.Colors(Variant.Primary);
             var field = new Box(new BoxStyle
@@ -41,7 +41,7 @@ public class AppIconTests
         const int size = 128;
         const float canvas = 64f;
         var theme = PhotonTheme.Instance;
-        var host = new PhotonHost(new BrandIcon().Build(new ComponentContext(theme)),
+        var host = new PhotonHost(new BrandIcon().Build(new ComponentContext(theme), AppIconUse.Launcher),
             theme, ThemeMode.Light, canvas, canvas)
         {
             RenderScale = size / canvas,

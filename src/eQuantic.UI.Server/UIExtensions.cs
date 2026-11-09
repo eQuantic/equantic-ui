@@ -419,6 +419,27 @@ public static class UIExtensions
             return Task.CompletedTask;
         }).AllowAnonymous();
 
+        // The tab's icon at the address every browser and every crawler asks for, whatever a page
+        // links (#1240): the favicon.ico the build wrote from the app's icon. An app with its own file
+        // in wwwroot keeps it: static files answer before any endpoint, and under MapStaticAssets,
+        // where the file is an endpoint too, this one's order is after it rather than beside it,
+        // which routing would refuse as ambiguous. With no icon the
+        // answer is a bare 404, where the fallback rendered the whole not-found page for every tab.
+        // Not immutable: the address never changes and the icon may, so a browser asks again daily.
+        endpoints.MapGetAndHead("/favicon.ico", async context =>
+        {
+            var root = context.RequestServices.GetService<IWebHostEnvironment>()?.WebRootPath;
+            var favicon = root is null ? null : Path.Combine(root, "_equantic", "icons", "favicon.ico");
+            if (favicon is null || !File.Exists(favicon))
+            {
+                context.Response.StatusCode = 404;
+                return;
+            }
+            context.Response.ContentType = "image/x-icon";
+            context.Response.Headers["Cache-Control"] = "public, max-age=86400";
+            await context.Response.SendFileAsync(favicon);
+        }).AllowAnonymous().WithOrder(1);
+
         // Map Runtime JS (immutable via BuildId in URL, long cache)
         endpoints.MapGetAndHead("/_equantic/runtime.js", async context =>
         {
@@ -625,9 +646,10 @@ public static class UIExtensions
             if (File.Exists(Path.Combine(icons, file))) tags.Add(tag.Render());
         }
 
-        // 32 is the tab, 180 is what iOS Safari pins to a home screen, and the manifest carries the
-        // install icons — each answers a different question, so each gets its own link.
-        Link("favicon-32.png", HtmlTag.Link("icon", "/_equantic/icons/favicon-32.png").Attr("type", "image/png"));
+        // The tab's 16, 32 and 48 in one file at the root (#1240), 180 is what iOS Safari pins to a
+        // home screen, and the manifest carries the install icons — each answers a different
+        // question, so each gets its own link.
+        Link("favicon.ico", HtmlTag.Link("icon", "/favicon.ico").Attr("sizes", "16x16 32x32 48x48"));
         Link("apple-touch-icon.png", HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png"));
         Link("site.webmanifest", HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest"));
         return _iconTags = tags;
