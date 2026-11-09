@@ -31,7 +31,8 @@ public sealed class ServerEventsOptions
 
     /// <summary>How long a stream lives before the server ends it. The page connects again at once and
     /// binds its topics again, each authorized as the request that binds it is then, so a topic bound
-    /// before a sign-out or a role the app took away is heard no longer than this (#1292). Thirty
+    /// before a sign-out or a role the app took away is heard no longer than this (#1292). Each stream
+    /// ends up to a tenth earlier, at random, so streams opened together do not end together. Thirty
     /// minutes by default.</summary>
     public TimeSpan MaxConnectionLifetime { get; set; } = TimeSpan.FromMinutes(30);
 
