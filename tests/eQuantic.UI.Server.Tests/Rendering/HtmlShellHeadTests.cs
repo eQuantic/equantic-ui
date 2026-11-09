@@ -55,7 +55,7 @@ public class HtmlShellHeadTests
             .AddPreconnect(new Uri("https://fonts.gstatic.com"), crossOrigin: true)
             .AddStylesheet(new Uri("https://fonts.googleapis.com/css2?family=Geist&display=swap"));
 
-        shell.HeadTags.Should().Equal(
+        shell.HeadTags.Select(tag => tag.Render()).Should().Equal(
             "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com/\">",
             "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com/\" crossorigin>",
             "<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Geist&amp;display=swap\">");
@@ -67,12 +67,5 @@ public class HtmlShellHeadTests
         shell.DefaultMetadata.RenderTags()
             .Should().Contain("name=\"description\"")
             .And.Contain("Products, libraries &amp; consulting");
-    }
-
-    [Fact]
-    public void RawOverload_StaysAvailableAsTheEscapeHatch()
-    {
-        var shell = new HtmlShellOptions().AddHeadTag("<!-- build marker -->");
-        shell.HeadTags.Should().ContainSingle().Which.Should().Be("<!-- build marker -->");
     }
 }

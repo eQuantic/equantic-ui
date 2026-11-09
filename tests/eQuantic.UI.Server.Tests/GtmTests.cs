@@ -18,7 +18,7 @@ public class GtmTests
     {
         var options = new UIOptions();
         options.UseGtm(containerId, configure);
-        return options.HtmlShell.HeadTags;
+        return options.HtmlShell.HeadTags.Select(tag => tag.Render()).ToList();
     }
 
     [Fact]
