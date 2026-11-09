@@ -46,6 +46,8 @@ function build(options: {
   height?: number;
   request?: TableScrollRequest;
   parent?: HTMLElement;
+  /** Where the viewport's box stands in the window, as the browser would measure it. */
+  top?: number;
 } = {}): Built {
   const scroll = new TableScroll();
   const scrolled: { across: number; down: number }[] = [];
@@ -63,6 +65,8 @@ function build(options: {
   const view = toDom(lowered) as HTMLElement;
   Object.defineProperty(view, 'clientWidth', { value: options.width ?? 900, configurable: true });
   Object.defineProperty(view, 'clientHeight', { value: options.height ?? 600, configurable: true });
+  const top = options.top ?? 0;
+  view.getBoundingClientRect = () => ({ top, left: 0, right: 0, bottom: top, width: 0, height: 0, x: 0, y: top }) as DOMRect;
   (options.parent ?? document.body).appendChild(view);
   commitTableViewports();
   return { scroll, view, lowered, scrolled, viewports };
@@ -236,6 +240,36 @@ describe('TableViewport on the web', () => {
 
     expect(view.style.height).toBe('844px');
     expect(scroll.viewport.height).toBeGreaterThan(0);
+  });
+
+  // #1006: a table below the top of its page ends where the page's visible part ends.
+  const scrollingPage = (scrollTop = 0) => {
+    const page = document.createElement('div');
+    page.style.overflowY = 'auto';
+    Object.defineProperty(page, 'clientHeight', { value: 844, configurable: true });
+    Object.defineProperty(page, 'scrollTop', { value: scrollTop, configurable: true });
+    document.body.appendChild(page);
+    return page;
+  };
+
+  it('takes what is left of the scroller from where it starts, when its own height came out empty', () => {
+    const { view } = build({ height: 0, parent: scrollingPage(), top: 36 });
+
+    expect(view.style.height).toBe('808px');
+  });
+
+  it('takes what is left from where it starts in the content, however far the scroller is scrolled', () => {
+    // Scrolled 100 down, the box that starts 36 into the page's content stands 64 above its top.
+    const { view } = build({ height: 0, parent: scrollingPage(100), top: -64 });
+
+    expect(view.style.height).toBe('808px');
+  });
+
+  it('takes the whole extent the scroller shows when what is left from where it starts is a sliver', () => {
+    // 244 left of 844, under half: a table far down a long page scrolls into view whole.
+    const { view } = build({ height: 0, parent: scrollingPage(), top: 600 });
+
+    expect(view.style.height).toBe('844px');
   });
 
   it("adopts the server's boxes at hydration, then scrolls them", async () => {
