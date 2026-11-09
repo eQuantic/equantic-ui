@@ -6,11 +6,11 @@ namespace eQuantic.UI.Native.Hosting;
 /// <summary>
 /// <see cref="IFileSaver"/> on a desktop: the save panel the shell's <see cref="IFileDialogs"/> already
 /// opens, on the file's name and filtered to its extension, then the bytes written where the person
-/// chose. One realization for every shell that has the panel, registered by
-/// <see cref="PhotonApplication"/> wherever a shell offers <see cref="IFileDialogs"/>, so a shell never
-/// writes its own.
+/// chose. One realization for every shell that has the panel: each desktop shell registers it over its
+/// own <see cref="IFileDialogs"/> (#1022), and a phone, which has no such panel, saves through its
+/// export picker instead (#782).
 /// </summary>
-internal sealed class DialogFileSaver(IFileDialogs dialogs) : IFileSaver
+public sealed class DialogFileSaver(IFileDialogs dialogs) : IFileSaver
 {
     public bool IsAvailable => true;
 

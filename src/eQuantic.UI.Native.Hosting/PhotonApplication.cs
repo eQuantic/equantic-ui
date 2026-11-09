@@ -180,13 +180,6 @@ public sealed class PhotonApplication
             if (!registered.Add(declaration.ProviderType)) continue;
             ((IPhotonCapabilities)Activator.CreateInstance(declaration.ProviderType)!).Register(services);
         }
-
-        // Saving a file the page made is the save panel a shell already has, then a write: offered
-        // wherever a shell offers IFileDialogs, by the framework, so no shell writes its own (#1022).
-        // A phone has no such panel; it saves through its export picker, which #782 realizes.
-        if (services.Any(service => service.ServiceType == typeof(eQuantic.UI.Primitives.IFileDialogs)))
-            services.TryAddSingleton<eQuantic.UI.Primitives.IFileSaver>(provider =>
-                new DialogFileSaver(provider.GetRequiredService<eQuantic.UI.Primitives.IFileDialogs>()));
     }
 
     private static IPhotonRunner FindRunner()

@@ -88,16 +88,19 @@ public sealed class DialogFileSaverTests : IDisposable
         Directory.EnumerateFileSystemEntries(_folder).Should().BeEmpty();
     }
 
-    /// <summary>A shell offers the saver by offering the panel: the framework registers it, so no
-    /// shell writes its own.</summary>
-    [Fact]
-    public async Task AShellWithASavePanel_OffersTheSaver()
+    /// <summary>The Mac offers the saver over the panel it registers, and one an app registered
+    /// first is the panel it uses. The Windows shell registers it the same way, which
+    /// <c>WikiShellRealizationsTests</c> reads from its source on every host.</summary>
+    [SkippableFact]
+    public async Task TheMac_OffersTheSaver_OverItsSavePanel()
     {
+        Skip.IfNot(OperatingSystem.IsMacOS(), "The macOS shell's capabilities register on a Mac.");
         var chosen = Path.Combine(_folder, "kept.txt");
         var services = new ServiceCollection();
         services.AddSingleton<IFileDialogs>(new Panel { Choice = chosen });
 
-        PhotonApplication.RegisterCapabilities(services);
+        // The guard the platform analyzer reads; Skip above already ended the test elsewhere.
+        if (OperatingSystem.IsMacOS()) new eQuantic.UI.Native.Shell.MacOS.MacOSCapabilities().Register(services);
         var saver = services.BuildServiceProvider().GetRequiredService<IFileSaver>();
 
         saver.IsAvailable.Should().BeTrue();
