@@ -40,5 +40,6 @@ answers in .NET, the order its `RemoveWhere` asks in included.
 ## Impact
 
 - **The runtime**: `utils/sorted.ts` (`SortedSet`) and the new `utils/sorted-tree.ts`. The served
-  runtime grows by about 1.8 KB gzipped (+0.56%), within its budget.
+  runtime grows by 1,768 bytes gzipped (0.55%) over main, and its budget is measured again
+  (`served-runtime.json`), since main had already spent half of the recorded one's 1%.
 - **eqc, the server, the public surface and the developer surface**: unchanged.
