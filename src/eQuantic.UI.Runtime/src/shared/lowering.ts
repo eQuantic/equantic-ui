@@ -129,7 +129,7 @@ import { declareScrollViewport } from './scroll-viewports';
 import { declareTableViewport, tableCellPlace } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
-import { localizeDestination } from '../utils/culture-routes';
+import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
 
 /** The C# `Anchored.MotionLiftDp` twin — the open/close nudge toward the anchor. */
@@ -1259,7 +1259,8 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   // The active language rides the href (C# twin: RenderContext.ResolveDestination). An author
   // writes `/pricing` once and the link is right in every language — including after a
   // client-side switch, which re-renders this node with a different active culture.
-  const destination = localizeDestination(node.destination);
+  // A destination whose scheme an href never carries is no href (C# twin, #1286).
+  const destination = writtenDestination(node.destination);
   // The child's width contract, which the C# realizer has always passed through here and this
   // side never did — a Fill child inside a Link filled on the server and hugged in the browser.
   // No fixture caught it because none composed the two; agreement is only proof when something
@@ -1268,7 +1269,7 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   const linkCap = capsAt(node.child);
   const anchor: HtmlNode = {
     tag: 'a',
-    attributes: { class: 'eq-link', href: destination },
+    attributes: destination === null ? { class: 'eq-link' } : { class: 'eq-link', href: destination },
     events: {},
     children: [],
   };
@@ -1285,7 +1286,7 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   // that is what the router's one delegated click listener meets.
   if (node.keepsPosition) anchor.attributes['data-eq-keep-position'] = '';
   // WARM ON HOVER (C# twin): app-internal destinations only — an absolute URL is somebody else's.
-  if (warmsOnHover(destination)) anchor.attributes['data-prefetch'] = '';
+  if (destination !== null && warmsOnHover(destination)) anchor.attributes['data-prefetch'] = '';
   // The page you are ON (C# twin): only the current link says so.
   if (node.current === true) anchor.attributes['aria-current'] = 'page';
   const child = lowerNode(node.child, context, null, path + '/0');
@@ -3642,9 +3643,12 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
           if (run.destination) {
             // A run that links is a link (C# twin): the language rides its href and an
             // app-internal one warms on hover, as a Link's does (#505).
-            const destination = localizeDestination(run.destination);
-            runNode.attributes = { ...runNode.attributes, href: destination };
-            if (warmsOnHover(destination)) runNode.attributes['data-prefetch'] = '';
+            // One whose scheme an href never carries is no href, and the run stays a run (#1286).
+            const destination = writtenDestination(run.destination);
+            if (destination !== null) {
+              runNode.attributes = { ...runNode.attributes, href: destination };
+              if (warmsOnHover(destination)) runNode.attributes['data-prefetch'] = '';
+            }
           }
           return runNode;
         })
