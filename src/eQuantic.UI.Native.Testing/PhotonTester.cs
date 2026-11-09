@@ -30,6 +30,14 @@ namespace eQuantic.UI.Native.Testing;
 /// of boxes: a sentence wraps at the same word on a Mac and on the Linux machine CI runs.
 /// </para>
 /// <para>
+/// ONE UI THREAD A PROCESS, as an app has. The engine's dispatcher and frame ticker belong to the
+/// process, so testers whose trees are mounted at the same time must draw from one thread: a
+/// <c>SetState</c> made off that thread is posted to whichever frame drains next, which on another
+/// thread is another test's. A pump from a second thread while another tester is mounted fails,
+/// naming the rule; run the tests that measure on Photon one at a time (xUnit's
+/// <c>DisableTestParallelization</c>), as Flutter's tests share one binding.
+/// </para>
+/// <para>
 /// A node is found by the NAME a screen reader announces, as <c>ComponentTester</c> finds a control on
 /// the web: the same name finds it on both targets.
 /// </para>
@@ -43,6 +51,11 @@ public sealed class PhotonTester : IDisposable
     private IReadOnlyList<MeasuredNode> _layers = [];
     private Dictionary<int, MeasuredNode> _byPosition = [];
     private bool _disposed;
+
+    /// <summary>The thread every mounted tester draws from, and how many are mounted.</summary>
+    private static readonly object Mounts = new();
+    private static int _uiThread;
+    private static int _mounted;
 
     /// <summary>A tester for one component and the frames it draws.</summary>
     /// <param name="theme">The theme every component builds and paints with; the SDK's when null.</param>
@@ -94,11 +107,25 @@ public sealed class PhotonTester : IDisposable
     public float TypeScale { get; }
 
     /// <summary>The page's layout in the last frame, from the root down.</summary>
-    public MeasuredNode Root => _root ?? throw NothingDrawn();
+    public MeasuredNode Root
+    {
+        get
+        {
+            ThrowIfDisposed();
+            return _root ?? throw NothingDrawn();
+        }
+    }
 
     /// <summary>The layout of each overlay layer the last frame showed (a dialog, a menu, a sheet), in
     /// paint order, topmost last.</summary>
-    public IReadOnlyList<MeasuredNode> Layers => _frame is null ? throw NothingDrawn() : _layers;
+    public IReadOnlyList<MeasuredNode> Layers
+    {
+        get
+        {
+            ThrowIfDisposed();
+            return _frame is null ? throw NothingDrawn() : _layers;
+        }
+    }
 
     /// <summary>Whether a <c>SetState</c> asked for a frame that has not been drawn yet.</summary>
     public bool HasScheduledFrame => _host?.NeedsRender ?? false;
@@ -110,6 +137,7 @@ public sealed class PhotonTester : IDisposable
         ArgumentNullException.ThrowIfNull(root);
         ThrowIfDisposed();
         Unmount();
+        Mount();
         _host = new PhotonHost(root, Theme, Mode, Width, Height, ApproximateTextMeasurer.Instance, TypeScale)
         {
             Density = Density,
@@ -169,6 +197,7 @@ public sealed class PhotonTester : IDisposable
 
     private void Draw()
     {
+        ClaimTheUiThread();
         using var culture = new CultureScope(Culture);
         var builder = new DisplayListBuilder();
         var frame = _host!.RenderFrame(builder);
@@ -201,7 +230,9 @@ public sealed class PhotonTester : IDisposable
         var what = role is null ? "node" : role.ToString();
         throw new InvalidOperationException((matches.Count == 0
             ? $"No {what} in the frame is announced as \"{name}\"."
-            : $"{matches.Count} of the frame's nodes are announced as \"{name}\"; name the role to tell them apart.") + heard);
+            : role is null
+                ? $"{matches.Count} of the frame's nodes are announced as \"{name}\"; name the role to tell them apart."
+                : $"{matches.Count} of the frame's {role} nodes are announced as \"{name}\": the frame cannot tell them apart.") + heard);
     }
 
     /// <summary>The measured node <paramref name="announced"/> was read from: the one its position holds.</summary>
@@ -211,11 +242,45 @@ public sealed class PhotonTester : IDisposable
             : throw new InvalidOperationException(
                 $"{announced.Role} \"{announced.Label}\" was announced from a position the frame laid nothing out at.");
 
+    /// <summary>Counts this tester among the mounted ones, from this thread.</summary>
+    private void Mount()
+    {
+        lock (Mounts)
+        {
+            ClaimTheUiThread();
+            _mounted++;
+        }
+    }
+
+    /// <summary>Makes this thread the one frames are drawn from, unless another tester is mounted and
+    /// draws from another: then the two would share the engine's one dispatcher across threads.</summary>
+    private void ClaimTheUiThread()
+    {
+        lock (Mounts)
+        {
+            var thread = Environment.CurrentManagedThreadId;
+            var others = _mounted - (_host is null ? 0 : 1);
+            if (others > 0 && _uiThread != thread)
+                throw new InvalidOperationException(
+                    "Another PhotonTester is mounted on another thread. Photon has one UI thread a process, as an "
+                    + "app does: run the tests that measure on Photon one at a time (in xUnit, "
+                    + "[assembly: CollectionBehavior(DisableTestParallelization = true)]), and dispose each tester.");
+            _uiThread = thread;
+        }
+    }
+
     private void Unmount()
     {
         if (_host is null) return;
         using var culture = new CultureScope(Culture);
-        _host.Unmount();
+        try
+        {
+            _host.Unmount();
+        }
+        finally
+        {
+            lock (Mounts) _mounted--;
+        }
         _host = null;
         _frame = null;
         _paint = null;
