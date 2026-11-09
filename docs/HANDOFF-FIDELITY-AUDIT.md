@@ -2738,7 +2738,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: A Box is the engine's rrect surfaced as a widget: 1 fill draw + optional border draw + optional shadow draw. … Paint order: shadow → fill (solid or 2-stop linear gradient) → border (inside stroke) → child.
-- **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (EmitVisitor.Chrome.cs:126) and the web stacks them as background-image layers (WebLoweringVisitor.Containers.cs:1300-1307 BackgroundLayers). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
+- **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (EmitVisitor.Chrome.cs:126) and the web stacks them as background-image layers (WebLoweringVisitor.Containers.cs:1275-1282 BackgroundLayers). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
 - **Evidence**:
 
   ```
@@ -2774,7 +2774,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/FlexNode.cs`
 - **Handoff**: wrap — … Line spacing = gap.
-- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1284-1294 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:551 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
+- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1259-1269 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:551 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
 - **Evidence**:
 
   ```
@@ -3346,7 +3346,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/EmptyState.cs`
 - **Handoff**: A11y: shapes hidden; the region announces "loading content" once, then "loaded".
-- **Code**: The returned Box carries no hidden marker — the only place the web realizer emits aria-hidden is the Spacer (WebLoweringVisitor.Containers.cs:1363 LowerSpacer), the icon/vector SVGs (745, 920) and the spinner (677). Boxes and flex containers never get it, so the shapes are present in the a11y tree (empty, but present), and no region announcement mechanism exists at all.
+- **Code**: The returned Box carries no hidden marker — the only place the web realizer emits aria-hidden is the Spacer (WebLoweringVisitor.Containers.cs:1338 LowerSpacer), the icon/vector SVGs (745, 920) and the spinner (677). Boxes and flex containers never get it, so the shapes are present in the a11y tree (empty, but present), and no region announcement mechanism exists at all.
 - **Evidence**:
 
   ```
