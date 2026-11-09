@@ -85,6 +85,10 @@ public class ComponentParityFixtureTests
         // A picture of a DISABLED control: both producers mask the control's states for its subtree.
         ("control-states-disabled-simulated",
             new Simulated(SimulatedState.Pressed | SimulatedState.Focused, DisabledControlStates()), NoPresses),
+        // A picture of a control holding another (#616): both producers picture the OUTER one, and the
+        // inner control's boxes keep their real focus and press rules, as a real press stops there.
+        ("nested-control-simulated",
+            new Simulated(SimulatedState.Pressed | SimulatedState.Focused, NestedControlStates()), NoPresses),
         // A draggable resting OPEN over a box with its own transform, a colour fade and a hover that
         // lifts it (#511): the offset rides `translate` on both producers, beside the box's
         // `transform`, and its glide joins the box's transition list instead of replacing it.
@@ -377,6 +381,15 @@ public class ComponentParityFixtureTests
             Transform = Transform2D.Scale(0.985f), Elevation = 1, Background = Theme.SurfaceSubtle,
         },
     }), () => { });
+
+    private static Pressable NestedControlStates() => new(new Box(new BoxStyle
+    {
+        Width = 80,
+        Height = 48,
+        Background = Theme.Surface,
+        Focus = new StyleDiff { Opacity = 0.9f },
+        Pressed = new StyleDiff { Background = Theme.SurfaceSubtle },
+    }, ControlStates()), () => { });
 
     private static Pressable DisabledControlStates() => new(ControlStates().Child, () => { })
     {

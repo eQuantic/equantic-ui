@@ -3792,19 +3792,25 @@ function lowerPressable(
   const cap = capsAt(pressable.child);
   // A disabled control shows no press and no focus, pictured or real (C# twin, #508): its subtree is
   // lowered with the control's simulated states masked and its boxes writing no focus or press rule.
-  // A hover is the box's own and stays.
+  // A hover is the box's own and stays. A control nested in another one under a picture is masked
+  // the same way, as a real press or focus stops at it (C# twin, #616).
   const outerSimulated = simulatedState;
   const outerDisabled = inDisabledControl;
+  const outerInControl = inControl;
   if (disabled) {
     simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
     inDisabledControl = true;
-  }
+  } else if (inControl) simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
+  inControl = true;
+  // What THIS control is pictured as: its ring below reads it (C# `pictured`).
+  const pictured = simulatedState;
   let child: HtmlNode | null;
   try {
     child = lowerNode(pressable.child, context, null, path + '/0');
   } finally {
     simulatedState = outerSimulated;
     inDisabledControl = outerDisabled;
+    inControl = outerInControl;
   }
 
   // HTML forbids a button inside a button (and an anchor inside an anchor): the parser closes the
@@ -3901,7 +3907,7 @@ function lowerPressable(
     // eq-focused carries the ring :focus-visible draws (see the generated stylesheet), so a simulated
     // focus cannot drift from a real one. A simulated PRESS needs no marker: its boxes lay their
     // Pressed diff inline.
-    prependClass(node, 'eq-pressable' + (simulatedState & SIMULATED_FOCUSED ? ' eq-focused' : ''));
+    prependClass(node, 'eq-pressable' + (pictured & SIMULATED_FOCUSED ? ' eq-focused' : ''));
     if (child) liftThroughBoxlessWrappers(child);
   }
 
@@ -4473,6 +4479,8 @@ const SIMULATED_FOCUSED = 4;
 let simulatedState = 0;
 /** True while a DISABLED control's subtree is lowered (C# `_inDisabledControl`, #508). */
 let inDisabledControl = false;
+/** True while an enabled control's subtree is lowered under a Simulated node (C# `_inControl`, #616). */
+let inControl = false;
 
 /**
  * Draws the subtree in the given states (the C# `LowerSimulated`). `:hover` and `:focus-visible`
@@ -4486,13 +4494,16 @@ function lowerSimulated(
   path: string,
 ): HtmlNode | null {
   const previous = simulatedState;
+  const previousInControl = inControl;
   // Nested previews COMBINE: a hovered card holding a pressed button is two nodes, and the inner
   // one must not turn the outer's hover off.
   simulatedState = previous | node.state;
+  inControl = false;
   try {
     return lowerNode(node.child, context, horizontalAxis, path + '/0');
   } finally {
     simulatedState = previous;
+    inControl = previousInControl;
   }
 }
 

@@ -22,9 +22,11 @@ internal sealed partial class WebLoweringVisitor
         bool? horizontalAxis)
     {
         var previous = _simulated;
+        var previousInControl = _inControl;
         // Nested previews COMBINE rather than replace: a hovered card containing a pressed button
         // is two nodes, and the inner one must not turn the outer's hover off.
         _simulated = previous | simulated.State;
+        _inControl = false;
         try
         {
             return Lower(simulated.Child, horizontalAxis);
@@ -32,6 +34,7 @@ internal sealed partial class WebLoweringVisitor
         finally
         {
             _simulated = previous;
+            _inControl = previousInControl;
         }
     }
 
@@ -469,14 +472,23 @@ internal sealed partial class WebLoweringVisitor
         // A disabled control shows no press and no focus, pictured or real (#508): its subtree is
         // lowered with the CONTROL's simulated states masked and its boxes writing no focus or press
         // rule, so neither a picture nor an enabled control around it reaches them. A hover is the
-        // box's own state and stays.
+        // box's own state and stays. A control NESTED in another one under a picture is masked the
+        // same way: the picture is the outer control's, and a real press or focus of it stops at the
+        // inner control too (#616, the state selectors).
         var outerSimulated = _simulated;
         var outerDisabled = _inDisabledControl;
+        var outerInControl = _inControl;
         if (pressable.Disabled)
         {
             _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
             _inDisabledControl = true;
         }
+        else if (_inControl)
+            _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
+        _inControl = true;
+        // What THIS control is pictured as: its ring below reads it, so a nested control under a
+        // picture of the one around it draws no ring either.
+        var pictured = _simulated;
         HtmlElement? child;
         try
         {
@@ -486,6 +498,7 @@ internal sealed partial class WebLoweringVisitor
         {
             _simulated = outerSimulated;
             _inDisabledControl = outerDisabled;
+            _inControl = outerInControl;
         }
 
         // A Pressable AROUND a control — a Menu making its trigger open the panel — is ordinary
@@ -530,7 +543,7 @@ internal sealed partial class WebLoweringVisitor
             // substituted, so a simulated control still behaves like the control it is picturing. A
             // simulated PRESS needs no marker: its boxes lay their Pressed diff inline.
             element.ClassName = "eq-pressable"
-                + (_simulated.HasFlag(SimulatedState.Focused) ? " eq-focused" : "");
+                + (pictured.HasFlag(SimulatedState.Focused) ? " eq-focused" : "");
             if (child is not null) LiftThroughBoxlessWrappers(child);
         }
 

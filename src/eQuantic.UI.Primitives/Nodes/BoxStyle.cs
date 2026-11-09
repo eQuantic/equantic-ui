@@ -157,7 +157,8 @@ public readonly record struct BoxStyle
     /// Spec S5: style DIFF applied while the CONTROL this box is inside has keyboard focus (the
     /// <see cref="Pressable"/> around it, which is what takes focus; a box never does). On the web
     /// the control's <c>:focus-visible</c>, on Photon the focus walk's control. <c>null</c> = none.
-    /// The focus ring is drawn beside it either way (#508).
+    /// The focus ring is drawn beside it either way (#508). The control is the NEAREST one: a box of
+    /// a control nested in the focused one is that inner control's, and stays as it is (#616).
     /// </summary>
     public StyleDiff? Focus { get; init; }
 
@@ -167,7 +168,9 @@ public readonly record struct BoxStyle
     /// held press). The handoff's <c>:active { transform: scale(.985) }</c>, and its pressed fill: a
     /// pressed fill is the <see cref="StyleDiff.Background"/> of the box it fills (spec §01, a real
     /// token swap on the same rrect, never an overlay), the one mechanism on both targets (#616).
-    /// Pressed beats focus, and focus beats hover, member by member. <c>null</c> = none (#508).
+    /// Pressed beats focus, and focus beats hover, member by member. <c>null</c> = none (#508). The
+    /// control is the NEAREST one: pressing a row leaves the button in it unpressed, and pressing
+    /// the button leaves the row (#616).
     /// </summary>
     public StyleDiff? Pressed { get; init; }
 

@@ -69,12 +69,24 @@ public class PressedFillPlacementRealizerTests
     /// is false.</summary>
     private static bool Writes(string css, HtmlNode node, string declaration, bool pressed) =>
         Classes(node).Any(cls => Regex.IsMatch(css,
-            (pressed ? @"\.eq-pressable\.eq-pressable:active " : @"(?:^|\})")
-            + $@"\.{Regex.Escape(cls)}\{{{declaration}\}}"));
+            (pressed ? @"\.eq-pressable\.eq-pressable:active:not\(:where\(:has\(\.eq-pressable:active\)\)\) " : @"(?:^|\})")
+            + $@"\.{Regex.Escape(cls)}" + (pressed ? @"(?::not\([^{}]*\))?" : "")
+            + $@"\{{{declaration}\}}"));
 
     /// <summary>A colour declaration, through the theme's custom property when the token is named.</summary>
     private static string Colour(string property, ColorToken token) =>
         $@"{property}:[^{{}};]*{Regex.Escape(TokenCss.Value(token))}[^{{}};]*";
+
+    /// <summary>A selected row's fill IS its state, and a press does not wash it away.</summary>
+    [Fact]
+    public void APressedSelectedRow_KeepsItsSelection()
+    {
+        var sink = new StyleSink();
+        WebRealizer.Lower(new ListItem("Wallet", onPressed: () => { }) { Selected = true }, Theme, 1f, sink);
+
+        sink.Css.Should().NotMatchRegex(@"\.eq-pressable\.eq-pressable:active[^{}]*\{background",
+            "a selected row takes no pressed fill");
+    }
 
     [Theory]
     [MemberData(nameof(Cases))]

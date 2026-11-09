@@ -247,15 +247,28 @@ public sealed class StyleSink
     /// The selector a state family's rule takes for a class. A hover is the box's OWN state, so it
     /// is the class's own pseudo-class. A focus and a press happen to the CONTROL, and only an
     /// enabled control carries <c>eq-pressable</c>, so they select every box inside one in that
-    /// state. The order of the three is their SPECIFICITY, never their order in the sheet, which the
+    /// state, and NOT a box of a control nested in it (#616): a button in a pressed row is not
+    /// pressed. A press reaches the ANCESTORS of what is pressed (<c>:active</c> matches them), so the
+    /// pressed control is the active one holding no active control, and a box under a control that
+    /// is not active is under a control nobody pressed; a pressed button leaves its row as it is, as
+    /// on Photon, whose host presses the one control under the pointer. A focus is the one element's,
+    /// so a box under a control inside the focused one is that inner control's. Photon's twin scopes
+    /// its press and focus to the nearest control the same way.
+    /// <para>
+    /// The order of the three is their SPECIFICITY, never their order in the sheet, which the
     /// server sorts by class and the browser fills in the order it lowers: hover (0,2,0) under focus
     /// (0,3,0) under pressed (0,4,0), the control's class written twice for it — the handoff's
-    /// "pressed beats hover". The TypeScript twin is <c>stateSelector</c>.
+    /// "pressed beats hover". The nesting rule rides in a <c>:where()</c>, which weighs nothing, so
+    /// it leaves that order as it is. The TypeScript twin is <c>stateSelector</c>.
+    /// </para>
     /// </summary>
     internal static string StateSelector(string family, string className) => family switch
     {
-        ControlFocus => $".eq-pressable:focus-visible .{className}",
-        ControlPressed => $".eq-pressable.eq-pressable:active .{className}",
+        ControlFocus =>
+            $".eq-pressable:focus-visible .{className}:not(:where(.eq-pressable:focus-visible .eq-pressable .{className}))",
+        ControlPressed =>
+            $".eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .{className}"
+            + $":not(:where(.eq-pressable:not(:active) .{className}))",
         _ => $".{className}{family}",
     };
 

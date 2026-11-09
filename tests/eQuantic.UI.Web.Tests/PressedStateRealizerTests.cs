@@ -45,16 +45,74 @@ public class PressedStateRealizerTests
         throw new InvalidOperationException($"no rule of the element writes {declaration}");
     }
 
-    internal static (int, int, int) Specificity(string selector)
+    /// <summary>
+    /// A selector's specificity, as Selectors Level 4 computes it: <c>:where()</c> weighs nothing,
+    /// <c>:not()</c>, <c>:is()</c> and <c>:has()</c> weigh their heaviest argument, and the state
+    /// families carry both (#616), so a regex count would not do.
+    /// </summary>
+    private static (int, int, int) Specificity(string selector)
     {
-        // :where(...) contributes nothing, whatever it holds.
-        var counted = Regex.Replace(selector, @":where\([^)]*\)", "");
-        var ids = Regex.Count(counted, @"#[\w-]+");
-        var classes = Regex.Count(counted, @"\.[\w-]+") + Regex.Count(counted, @"\[[^\]]*\]")
-            + Regex.Count(counted, @"(?<!:):(?!:)[\w-]+");
-        var types = Regex.Count(counted, @"(?:^|[\s>+~])[a-zA-Z][\w-]*");
-        return (ids, classes, types);
+        var at = 0;
+        return Selector(selector, ref at);
+
+        static (int, int, int) Selector(string text, ref int at)
+        {
+            int ids = 0, classes = 0, types = 0;
+            var startOfCompound = true;
+            while (at < text.Length && text[at] != ')' && text[at] != ',')
+            {
+                var c = text[at];
+                if (c is ' ' or '>' or '+' or '~') { at++; startOfCompound = true; continue; }
+                if (c == '#') { ids++; at++; Ident(text, ref at); }
+                else if (c == '.') { classes++; at++; Ident(text, ref at); }
+                else if (c == '[') { classes++; at = text.IndexOf(']', at) + 1; }
+                else if (c == '*') at++;
+                else if (c == ':' && at + 1 < text.Length && text[at + 1] == ':') { types++; at += 2; Ident(text, ref at); }
+                else if (c == ':')
+                {
+                    at++;
+                    var name = Ident(text, ref at);
+                    if (at < text.Length && text[at] == '(')
+                    {
+                        at++;
+                        var heaviest = (0, 0, 0);
+                        while (true)
+                        {
+                            var argument = Selector(text, ref at);
+                            if (Compare(argument, heaviest) > 0) heaviest = argument;
+                            if (text[at] == ',') { at++; continue; }
+                            at++; // ')'
+                            break;
+                        }
+                        if (name is "not" or "is" or "has")
+                        { ids += heaviest.Item1; classes += heaviest.Item2; types += heaviest.Item3; }
+                        else if (name != "where") classes++;
+                    }
+                    else classes++;
+                }
+                else { if (startOfCompound) types++; Ident(text, ref at); }
+                startOfCompound = false;
+            }
+            return (ids, classes, types);
+        }
+
+        static string Ident(string text, ref int at)
+        {
+            var from = at;
+            while (at < text.Length && (char.IsLetterOrDigit(text[at]) || text[at] is '-' or '_')) at++;
+            return text[from..at];
+        }
     }
+
+    [Theory]
+    [InlineData(".eq-x", 0, 1, 0)]
+    [InlineData(".eq-x:hover", 0, 2, 0)]
+    [InlineData(".eq-pressable:focus-visible .eq-x:not(:where(.eq-pressable:focus-visible .eq-pressable .eq-x))", 0, 3, 0)]
+    [InlineData(".eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-x:not(:where(.eq-pressable:not(:active) .eq-x))", 0, 4, 0)]
+    [InlineData(".a:not(.b, #c) li", 1, 1, 1)]
+    [InlineData(":where(.eq-pressable > :first-child)", 0, 0, 0)]
+    public void TheSpecificityReader_CountsAsTheBrowserDoes(string selector, int ids, int classes, int types) =>
+        Specificity(selector).Should().Be((ids, classes, types));
 
     private static int Compare((int, int, int) a, (int, int, int) b) =>
         a.Item1 != b.Item1 ? a.Item1.CompareTo(b.Item1)
@@ -75,7 +133,7 @@ public class PressedStateRealizerTests
         var surface = (HtmlElement)button.Children[0];
         var pressed = TokenCss.Value(Theme.Colors(Variant.Primary).Pressed);
         RuleWriting(css, surface, $@"background-color:[^{{}}]*{Regex.Escape(pressed)}[^{{}}]*")
-            .Selector.Should().StartWith(".eq-pressable.eq-pressable:active .",
+            .Selector.Should().StartWith(".eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .",
                 "the surface's own Pressed diff, in the pressed family");
     }
 
@@ -132,7 +190,7 @@ public class PressedStateRealizerTests
     {
         var (_, css) = Lower(new Pressable(new Box(new BoxStyle { Background = Theme.Surface }), () => { }));
 
-        css.Should().NotMatchRegex(@"\.eq-pressable\.eq-pressable:active \.eq-[0-9a-z]+\{background");
+        css.Should().NotMatchRegex(@"\.eq-pressable\.eq-pressable:active[^{}]*\{background");
     }
 
     [Fact]

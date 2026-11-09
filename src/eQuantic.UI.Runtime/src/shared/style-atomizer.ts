@@ -472,12 +472,18 @@ export const CONTROL_PRESSED = 'pressed';
 
 /**
  * The C# `StyleSink.StateSelector`: a hover is the box's own pseudo-class, and a focus and a press
- * are its control's, selecting every box inside an enabled control in that state. Specificity orders
- * them (hover 0,2,0 under focus 0,3,0 under pressed 0,4,0), never their order in the sheet.
+ * are its control's, selecting every box inside an enabled control in that state and not a box of a
+ * control nested in it (#616). Specificity orders them (hover 0,2,0 under focus 0,3,0 under pressed
+ * 0,4,0), never their order in the sheet; the nesting rule rides in a `:where()`, which weighs nothing.
  */
 export function stateSelector(family: string, className: string): string {
-  if (family === CONTROL_FOCUS) return `.eq-pressable:focus-visible .${className}`;
-  if (family === CONTROL_PRESSED) return `.eq-pressable.eq-pressable:active .${className}`;
+  if (family === CONTROL_FOCUS)
+    return `.eq-pressable:focus-visible .${className}:not(:where(.eq-pressable:focus-visible .eq-pressable .${className}))`;
+  if (family === CONTROL_PRESSED)
+    return (
+      `.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .${className}` +
+      `:not(:where(.eq-pressable:not(:active) .${className}))`
+    );
   return `.${className}${family}`;
 }
 

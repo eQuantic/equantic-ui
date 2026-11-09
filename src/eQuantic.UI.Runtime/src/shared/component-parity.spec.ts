@@ -203,6 +203,21 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       ),
       () => {},
     );
+  // The C# NestedControlStates: a control holding another (#616).
+  const nestedControlStates = () =>
+    new Pressable(
+      new Box(
+        new BoxStyle({
+          width: 80,
+          height: 48,
+          background: photonTheme.surface,
+          focus: new StyleDiff({ opacity: 0.9 }),
+          pressed: new StyleDiff({ background: photonTheme.surfaceSubtle }),
+        }),
+        controlStates(),
+      ),
+      () => {},
+    );
   // The C# LiftCard of the pressable-through-wrappers case.
   const liftCard = () =>
     new Box(new BoxStyle({ width: 40, height: 40, background: photonTheme.surface }));
@@ -279,6 +294,7 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         new Pressable(controlStates().child, () => {}, { disabled: true }),
       ),
     ),
+    'nested-control-simulated': still(new Simulated(2 | 4, nestedControlStates())),
     'draggable-open': still(
       new Draggable(
         new Box(
