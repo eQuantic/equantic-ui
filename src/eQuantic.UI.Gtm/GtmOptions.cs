@@ -49,22 +49,29 @@ public sealed class GtmOptions
     /// <c>IConsent</c> as the document event <c>eq:consent</c>. A visitor who declines or never answers
     /// downloads no tag manager at all, which is what "no cookie until consent" means in practice, and
     /// one who declines after granting turns every signal back to <c>denied</c> on the page (#1294).
-    /// Off by default: an installer that already ran without asking keeps running; turning this on is
-    /// the app's decision, paired with a consent component.
+    /// On by default, paired with a consent component: an app whose visitors are asked nothing says so,
+    /// with <see cref="WithoutConsent"/>.
     /// </summary>
-    public bool RequireConsent { get; set; }
+    public bool RequireConsent { get; set; } = true;
 
-    /// <summary>The Consent Mode signals a grant turns on (#1294). All four by default, since one
-    /// question asks for them; an app whose consent question covers analytics alone says
-    /// <see cref="GtmConsentSignals.AnalyticsStorage"/>.</summary>
-    public GtmConsentSignals ConsentGrants { get; set; } = GtmConsentSignals.All;
+    /// <summary>The Consent Mode signals a grant turns on (#1294). <c>analytics_storage</c> alone by
+    /// default; the advertising signals are granted only when the app names them, so its consent card
+    /// asks for them.</summary>
+    public GtmConsentSignals ConsentGrants { get; set; } = GtmConsentSignals.AnalyticsStorage;
 
-    /// <summary>Gates the container on the visitor's consent (<see cref="RequireConsent"/>), a grant
-    /// turning on <paramref name="grants"/>.</summary>
-    public GtmOptions WithConsent(GtmConsentSignals grants = GtmConsentSignals.All)
+    /// <summary>Names the Consent Mode signals a visitor's grant turns on (<see cref="ConsentGrants"/>):
+    /// an app whose consent card asks for advertising too names those signals here.</summary>
+    public GtmOptions WithConsentGrants(GtmConsentSignals grants)
     {
-        RequireConsent = true;
         ConsentGrants = grants;
+        return this;
+    }
+
+    /// <summary>Loads the container on every page without asking the visitor first
+    /// (<see cref="RequireConsent"/> off): for an app whose visitors no consent rule covers.</summary>
+    public GtmOptions WithoutConsent()
+    {
+        RequireConsent = false;
         return this;
     }
 

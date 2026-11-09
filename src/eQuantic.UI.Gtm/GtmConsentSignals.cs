@@ -1,8 +1,8 @@
 namespace eQuantic.UI.Gtm;
 
 /// <summary>
-/// The Google Consent Mode signals a visitor's grant turns on, when <see cref="GtmOptions.WithConsent"/>
-/// gates the container (#1294). The ones a grant leaves out stay <c>denied</c>, and a denial turns every
+/// The Google Consent Mode signals a visitor's grant turns on, when the container waits for consent
+/// (<see cref="GtmOptions.WithConsentGrants"/>, #1294). The ones a grant leaves out stay <c>denied</c>, and a denial turns every
 /// one of them back to <c>denied</c>. Google's own names, because this package transcribes Google Tag
 /// Manager.
 /// </summary>
@@ -24,6 +24,6 @@ public enum GtmConsentSignals
     /// <summary><c>ad_personalization</c>: personalized advertising.</summary>
     AdPersonalization = 8,
 
-    /// <summary>All four, which is what one "accept" asked for before this could be chosen.</summary>
+    /// <summary>All four: analytics and advertising.</summary>
     All = AnalyticsStorage | AdStorage | AdUserData | AdPersonalization,
 }

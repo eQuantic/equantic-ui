@@ -145,10 +145,11 @@ public class GtmTests
         return count;
     }
 
+    /// <summary>#1294: a plain UseGtm waits for the visitor's consent, every signal denied until then.</summary>
     [Fact]
-    public void WithConsent_LoadsTheContainerOnlyOnAGrantedAnswer()
+    public void ByDefault_TheContainerLoadsOnlyOnAGrantedAnswer()
     {
-        var all = string.Join("\n", HeadOf(gtm => gtm.WithConsent()));
+        var all = string.Join("\n", HeadOf());
 
         // Google Consent Mode defaults to DENIED before any container exists to read them.
         all.Should().Contain("gtag('consent','default',{ad_storage:'denied'");
@@ -164,10 +165,12 @@ public class GtmTests
         all.Should().Contain("window.__EQ_ANALYTICS__={dataLayer:\"dataLayer\"}");
     }
 
+    /// <summary>#1294: an app whose visitors are asked nothing says so, and the container loads on every
+    /// page as it did before consent was the default.</summary>
     [Fact]
-    public void WithoutConsent_TheContainerLoadsUnconditionally_AsBefore()
+    public void WithoutConsent_TheContainerLoadsUnconditionally()
     {
-        var all = string.Join("\n", HeadOf());
+        var all = string.Join("\n", HeadOf(gtm => gtm.WithoutConsent()));
         all.Should().NotContain("eq-consent");
         all.Should().NotContain("'consent','default'");
     }
@@ -177,19 +180,29 @@ public class GtmTests
     [Fact]
     public void TheConsentCookie_IsTheOneTheServerReads()
     {
-        var all = string.Join("\n", HeadOf(gtm => gtm.WithConsent()));
+        var all = string.Join("\n", HeadOf());
         all.Should().Contain("\"" + ConsentCookie.Name + "\"").And.Contain("\"" + ConsentCookie.SecureName + "\"");
     }
 
     /// <summary>#1294: a denial after a grant turns every signal back to denied, and a grant turns on
-    /// only the signals the app named.</summary>
+    /// analytics alone unless the app names more.</summary>
     [Fact]
-    public void WithConsent_ADenialTurnsTheSignalsBackOff_AndAGrantTurnsOnOnlyWhatTheAppNamed()
+    public void ADenialTurnsTheSignalsBackOff_AndAGrantTurnsOnAnalyticsAlone()
     {
-        var all = string.Join("\n", HeadOf(gtm => gtm.WithConsent(GtmConsentSignals.AnalyticsStorage)));
+        var all = string.Join("\n", HeadOf());
 
         all.Should().Contain("else if(state==='denied')gtag('consent','update',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied'})");
         all.Should().Contain("gtag('consent','update',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted'})");
+    }
+
+    /// <summary>#1294: an app whose consent card asks for advertising names those signals, and a grant
+    /// turns them on.</summary>
+    [Fact]
+    public void AnAppThatNamesTheAdvertisingSignals_GrantsThemOnAGrant()
+    {
+        var all = string.Join("\n", HeadOf(gtm => gtm.WithConsentGrants(GtmConsentSignals.All)));
+
+        all.Should().Contain("gtag('consent','update',{ad_storage:'granted',ad_user_data:'granted',ad_personalization:'granted',analytics_storage:'granted'})");
     }
 
     /// <summary>#1294: a configured name is written by the JSON writer, so a line break or a quote in it

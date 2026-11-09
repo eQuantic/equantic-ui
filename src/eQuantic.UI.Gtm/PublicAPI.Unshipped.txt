@@ -1,6 +1,7 @@
 #nullable enable
 *REMOVED*eQuantic.UI.Gtm.GtmOptions.WithConsent() -> eQuantic.UI.Gtm.GtmOptions!
-eQuantic.UI.Gtm.GtmOptions.WithConsent(eQuantic.UI.Gtm.GtmConsentSignals grants = eQuantic.UI.Gtm.GtmConsentSignals.All) -> eQuantic.UI.Gtm.GtmOptions!
+eQuantic.UI.Gtm.GtmOptions.WithConsentGrants(eQuantic.UI.Gtm.GtmConsentSignals grants) -> eQuantic.UI.Gtm.GtmOptions!
+eQuantic.UI.Gtm.GtmOptions.WithoutConsent() -> eQuantic.UI.Gtm.GtmOptions!
 eQuantic.UI.Gtm.GtmOptions.ConsentGrants.get -> eQuantic.UI.Gtm.GtmConsentSignals
 eQuantic.UI.Gtm.GtmOptions.ConsentGrants.set -> void
 eQuantic.UI.Gtm.GtmConsentSignals
