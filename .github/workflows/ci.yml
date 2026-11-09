@@ -511,6 +511,20 @@ jobs:
       - name: Install mobile workloads (the native suite's workload facts)
         run: dotnet workload install ios android
 
+      # Web.Tests is one of the projects that run here, whole, and its docs guards read the release
+      # tags and the wiki exactly as on the other legs: without them the guards FAIL on CI by design
+      # rather than pass having read nothing. The same two steps as `test` above, for the same reasons.
+      - name: Fetch the release tags (for the version-mark guard)
+        shell: bash
+        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
+
+      - name: Check out the wiki (for the docs guards)
+        shell: bash
+        continue-on-error: true
+        env:
+          EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
+        run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
+
       - name: The derivation still discriminates
         run: ./scripts/macos-tests.sh --self-test
 
