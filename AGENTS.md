@@ -124,8 +124,8 @@ is not the owner's.
    after the third in any case: a defect found later is still fixed and proved, and anything else
    is sorted as in any round, without asking for another. When the account's GitHub credits are
    exhausted and Copilot cannot review, skip this step.
-4. **Squash-merge on green CI, composing nothing.** The ruleset requires fourteen of the CI's jobs
-   (#1311 added `test (macos-latest)`) and a branch up to date with `main` (#287), so when `main` moved after the CI ran, merge `main`
+4. **Squash-merge on green CI, composing nothing.** The ruleset requires the CI's jobs (the list is
+   the `working-agreement` spec's) and a branch up to date with `main` (#287), so when `main` moved after the CI ran, merge `main`
    into the pull request first: CI runs again, and it costs no Copilot round. Then
    `gh pr merge <n> --squash` takes the repository's squash default, the pull request's title and
    its commits' messages, so the commit's subject IS the title that was already read and its body is

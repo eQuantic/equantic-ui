@@ -112,7 +112,7 @@ Copilot (three rounds at most, stopping at the first without a defect), and is s
 every review thread is resolved and CI is green.
 
 **Check that CI actually RAN before you read it as green.** Since 2026-09-26 the ruleset requires
-the CI's jobs, fourteen since #1311 added `test (macos-latest)`, and a branch up to date with `main` (#287), so a pull request whose
+the CI's jobs (the list is in `openspec/specs/working-agreement/spec.md`) and a branch up to date with `main` (#287), so a pull request whose
 workflow never started stays blocked, and one that `main` moved past has to take `main` and run
 again. Before that it required only a review: a workflow whose `if:` expression did not parse
 failed before it created a single job, with no log to notice, and for an hour seven pull requests
