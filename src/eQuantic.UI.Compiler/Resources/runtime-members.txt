@@ -20,8 +20,10 @@ StatelessComponent	disposeQuietly
 StatelessComponent	getCurrentTree
 StatelessComponent	getVirtualNode
 StatelessComponent	hydrate
+StatelessComponent	key
 StatelessComponent	mount
 StatelessComponent	mountReconcile
+StatelessComponent	nodeKind
 StatelessComponent	render
 StatelessComponent	serviceProvider
 StatefulComponent	_instances

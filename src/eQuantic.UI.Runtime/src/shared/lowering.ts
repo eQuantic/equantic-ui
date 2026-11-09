@@ -34,7 +34,7 @@ import {
   setFailureRenderer,
 } from './component-boundary';
 import { getActivePass } from './instance-store';
-import { getPhotonTheme, setInFlow } from './photon-context';
+import { getPhotonTheme, photonComponentContext, setInFlow } from './photon-context';
 import { declareInView } from './in-view';
 import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
 import {
@@ -153,6 +153,15 @@ export function renderContainedFailure(componentName: string, error: unknown): H
   return lowerVisualNode(describeComponentFailure(componentName, error, theme), {
     textPrimary: theme.textPrimary,
   });
+}
+
+/**
+ * The context a component builds with: the one the lowering was handed, or the ambient one when it was
+ * handed none. A component with or without state builds here, and the stateless one used to render
+ * itself with the ambient context, so a lowering called with a bare context still builds it as before.
+ */
+function componentContextOf(context: LoweringContext): unknown {
+  return context.componentContext ?? photonComponentContext();
 }
 
 /** Lowers an abstract node tree to an HtmlNode the reconciler renders. */
@@ -360,17 +369,15 @@ function lowerNodeKind(
   path: string,
 ): HtmlNode | null {
   // MIXING SEAM, and it is ahead of the switch rather than in a default arm because the switch no
-  // longer HAS one: a WEB component (transpiled shared component or low-level HtmlElement) composed
-  // inside an abstract tree is typed as a VisualNodeValue at the call site and is not one — it
-  // carries no nodeKind at all, and renders itself. So the test is for the discriminator's ABSENCE,
-  // which is the truth about these objects, rather than for a case the union does not have.
+  // longer HAS one: a WEB component (the low-level HtmlElement, the DOM escape hatch) composed inside
+  // an abstract tree is typed as a VisualNodeValue at the call site and is not one: as in C#, where
+  // `HtmlElement` is an `IComponent` and no node, it carries no nodeKind at all, and renders itself.
+  // So the test is for the discriminator's ABSENCE, which is the truth about these objects, rather
+  // than for a case the union does not have.
   const foreign = node as { nodeKind?: string; render?: () => HtmlNode };
   if (foreign.nodeKind === undefined) {
-    // NOTHING TO SAY ABOUT THE WALK. A write-once StatelessComponent twin declares no `nodeKind`
-    // (only StatefulComponent does) so it arrives here rather than in the switch, and its own
-    // render() takes its key — the same key the C# realizer consumed by entering it. An
-    // HtmlElement arriving here has no such render and takes none, which is right: the realizer
-    // does not enter one either.
+    // NOTHING TO SAY ABOUT THE WALK: the realizer does not enter an HtmlElement either. A component
+    // with or without state is a `UiComponent`, a node of kind `component`, and takes the arm below.
     return typeof foreign.render === 'function' ? plainNode(foreign.render()) : null;
   }
 
@@ -501,7 +508,7 @@ function lowerNodeKind(
       // nothing else. Without this the mount threw, nothing reached the root, and the page was white.
       let built: unknown;
       try {
-        built = resolved.build(context.componentContext);
+        built = resolved.build(componentContextOf(context));
       } catch (error) {
         const name =
           (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
@@ -4521,16 +4528,11 @@ function lowerSimulated(
  * takes, which is the decision `child.nodeKind === 'positioned'` was getting wrong.
  */
 /**
- * A component the walk can go THROUGH, either family.
+ * A component the walk can go THROUGH: one that builds its own node.
  *
- * `nodeKind === 'component'` is only the ABSTRACT family's badge. The web family — what a
- * transpiled stateless component extends — deliberately carries no nodeKind, because the
- * lowering's default branch recognises it by that absence and lets it render itself. Everywhere
- * else the two are interchangeable; here they were not, and a `Positioned` returned by a stateless
- * component laid out in FLOW while the identical stateful one was placed.
- *
- * The test is the build both families declare, which is also the thing this walk needs: the offsets
- * live in the node a component BUILDS, and a render cannot be asked for them.
+ * Every `UiComponent`, with or without state, carries `nodeKind === 'component'`. The build is
+ * tested too because it is the thing this walk needs, the offsets living in the node a component
+ * BUILDS, and a value that only declares one still answers it.
  */
 function buildsItsOwnNode(node: unknown): boolean {
   const candidate = node as { nodeKind?: string; build?: unknown } | null | undefined;
@@ -4559,7 +4561,7 @@ function resolveStackChild(
     );
 
     try {
-      node = resolved.build(context.componentContext) as VisualNodeValue;
+      node = resolved.build(componentContextOf(context)) as VisualNodeValue;
     } catch (error) {
       const name =
         (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
