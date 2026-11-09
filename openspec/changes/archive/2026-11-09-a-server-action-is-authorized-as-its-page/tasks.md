@@ -19,4 +19,4 @@
 
 - [x] 4.1 The wiki's Security page in every language it is written in
 - [x] 4.2 A ledger entry under `docs/ledger/`
-- [ ] 4.3 The suites, each read by its exit code
+- [x] 4.3 The suites, each read by its exit code
