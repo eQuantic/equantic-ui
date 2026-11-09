@@ -73,6 +73,10 @@ public class StringMethodStrategy : IConversionStrategy
 
         if (methodName == "Split")
             return SplitCall(invocation, context);
+        if (SearchesByTheCulture(invocation, methodName, context))
+            return context.Unhandled(invocation,
+                $"string.{methodName} with no StringComparison (.NET searches by the current culture here, which has no "
+                + "search in the browser: pass StringComparison.Ordinal or OrdinalIgnoreCase)");
         if (methodName is "IndexOf" or "LastIndexOf" && invocation.ArgumentList.Arguments.Count > 1
             && context.SemanticHelper.GetSymbol(invocation) is null && SpelledSearch(invocation.ArgumentList.Arguments) is null)
             return context.Unhandled(invocation, $"string.{methodName} whose overload the spelling cannot settle");
@@ -118,6 +122,23 @@ public class StringMethodStrategy : IConversionStrategy
             _ => $"{caller}.{methodName.ToCamelCase()}({JoinArgs(args)})"
         };
     }
+
+    /// <summary>
+    /// Whether a call is a string search with no comparison, which .NET runs by the current culture
+    /// through ICU: <c>StartsWith</c>, <c>EndsWith</c>, and <c>IndexOf</c> and <c>LastIndexOf</c> of a
+    /// string, with a start and a count or without. The browser has no such search, and these were
+    /// JavaScript's ordinal ones, so <c>"\u00ADab".StartsWith("ab")</c> answered false where .NET answers
+    /// true (#532). They are refused as a culture comparison written out is (#528), the rule .NET's own
+    /// CA1310 asks of a library. A char's search and <c>Contains</c> are ordinal in .NET, and stay.
+    /// </summary>
+    private static bool SearchesByTheCulture(InvocationExpressionSyntax invocation, string methodName, ConversionContext context) =>
+        methodName is "StartsWith" or "EndsWith" or "IndexOf" or "LastIndexOf"
+        && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol
+        {
+            ContainingType.SpecialType: SpecialType.System_String,
+            Parameters: [{ Type.SpecialType: SpecialType.System_String }, .. var rest],
+        }
+        && rest.All(parameter => parameter.Type.SpecialType == SpecialType.System_Int32);
 
     /// <summary>
     /// <c>ToUpper</c> and <c>ToLower</c>, and their invariant pair, by .NET's casing (#848): a code unit
