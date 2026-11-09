@@ -11,15 +11,17 @@ namespace eQuantic.UI.Web.Tests;
 /// Each release is compared with the one before it, the first with the empty tree, and every search
 /// is counted in the same pass over what changed: a search's count in a release is its count in the
 /// release before plus what the diff between them added, less what it removed, and the first release
-/// where the count is above zero is the release the search shipped in. Sixty-seven diffs answer every
-/// mark at once.
+/// where the count is above zero is the release the search shipped in. One diff per release answers
+/// every mark at once.
 /// </para>
 /// <para>
 /// The guard used to ask git once per mark, a pickaxe search over every ref, and on CI every ref is a
 /// commit fetched at depth one, a root whose diff is its whole tree, so each search read about three
 /// hundred trees: 159 marks took 34 to 39 minutes on CI's runners, and then more than the hour CI
-/// gives a case. Release to release, CI's shallow checkout and a full clone read the same trees, and
-/// both were measured to answer every mark as the pickaxe searches did.
+/// gives a case. Release to release, CI's shallow checkout and a full clone read the same trees and
+/// give the same answers. Measured against the pickaxe searches, every answer matched on CI's checkout,
+/// and on a full clone all but one: a name added and renamed on the same day, whose commits a release
+/// held and whose text no release tree ever did, which this answers as never shipped.
 /// </para>
 /// </summary>
 internal sealed class FirstReleases
@@ -31,8 +33,8 @@ internal sealed class FirstReleases
     private const string Sha256EmptyTree = "6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321";
 
     /// <summary>
-    /// Each git call's deadline. The longest is the first release's diff, its whole tree: 29 MB, read
-    /// in about three seconds on a laptop. A git that hangs fails the case rather than holding the
+    /// Each git call's deadline. The longest is the first release's diff, its whole tree, read in
+    /// about three seconds on a laptop. A git that hangs fails the case rather than holding the
     /// test host (#971), and well inside the fifteen minutes CI gives a case.
     /// </summary>
     private static readonly TimeSpan Deadline = TimeSpan.FromMinutes(3);
