@@ -5,7 +5,6 @@
 - [x] 1.3 An adaptive node's arm the element does not hold lowers as a tree drawn once
 - [x] 1.4 `WebRealizer.LowerFrame`, declared in the Web project's `PublicAPI.Unshipped.txt`
 - [x] 1.5 Proof: the first frame of every component parity case at every size class is `Lower`'s markup save the unmeasured mark; a nested counter keeps its count across frames and the server's lowering draws it at zero; a layer shown keeps its instance, a closed panel unmounts at the frame's end, and a component with no position is refused. Each half of the mechanism dropped in turn fails its own test
-
 - [x] 1.6 A discovery round names the kept instance to the server's expansion scope
 - [x] 1.7 `Element.VisitChildren`, one method per kind, proved through eqc on the real text; `ComponentElement.MarkNeedsBuild` public
 
@@ -26,7 +25,7 @@
 ## 4. Documentation
 
 - [ ] 4.1 A `Testing` page on the wiki, in English and in its Portuguese, Spanish, French and German twins, on a wiki branch named like the pull request's, showing the three shapes as the tests write them
-- [ ] 4.2 `docs/ELEMENT-TREE-PLAN.md`: the test host among the owners of 3.6, the prefetch rebuild of the tester beside 3.7, and what E4 inherits from `LowerFrame`
+- [ ] 4.2 `docs/ELEMENT-TREE-PLAN.md`: the test host among the owners of 3.6, and what E4 inherits (`LowerFrame`, the kept instance a round names, the visitor and the mark)
 - [ ] 4.3 A ledger entry under `docs/ledger/` citing #1245
 - [ ] 4.4 Proof: the docs guards pass against the wiki branch (`EQ_WIKI_DIR` on a worktree of it)
 
