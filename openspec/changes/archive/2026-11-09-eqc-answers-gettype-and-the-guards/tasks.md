@@ -16,7 +16,7 @@
 - [x] 3.1 A conformance test (`tests/eQuantic.UI.Conformance.Tests/ArgumentGuardConformanceTests.cs`): every guard throwing and passing, in the invariant culture and in pt-BR, NaN, negative zero, nulls, a string's order, a missing and an empty parameter name, arguments named out of order, `ParamName`, `ActualValue` and the message, both sides executed.
 - [x] 3.2 A conformance test (`tests/eQuantic.UI.Conformance.Tests/RuntimeTypeConformanceTests.cs`): classes, a base against a derived class, records, structs, generic classes and records under two closed types and one built in generic code, exceptions, `typeof` on either side, `!=`, a null receiver and the order of evaluation, both sides executed.
 - [x] 3.3 Refusal cases in both conformance classes, through the build: a numeric, `object`, an array, an interface, a string and an unconstrained type parameter receiver, a `typeof` that does not qualify, `GetType().Name`, and a guard over `nint` and over a `Guid`.
-- [x] 3.4 The element engine's `Element.CanUpdate` and `NodeElement`'s guard build through eqc with no diagnostic (the E3a probe, run against the engine's files: `Element` builds, and what `NodeElement` still meets is its message's `GetType().Name`, which E3a rewrites).
+- [x] 3.4 The element engine's `Element.CanUpdate` and `NodeElement`'s guard build through eqc with no diagnostic (the E3a probe, run against the engine's files with `[ServerOnly]` lifted, since a server-only type compiles to nothing and the probe would pass having read it: `Element` builds, and what `NodeElement` still meets is its message's `GetType().Name`, which E3a rewrites. Measured again on 2026-11-09 on this branch merged with main; the engine's own pin, which E3a adds, is what keeps it).
 
 ## 4. Documentation
 
