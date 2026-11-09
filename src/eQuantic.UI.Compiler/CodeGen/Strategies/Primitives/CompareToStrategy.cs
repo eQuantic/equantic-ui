@@ -30,10 +30,11 @@ public class CompareToStrategy : IExpressionIrStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var access = (MemberAccessExpressionSyntax)invocation.Expression;
-        var left = Expressions.BinaryExpressionStrategy.EnumValue(access.Expression,
-            context.Converter.ConvertIr(access.Expression), context);
-        var right = Expressions.BinaryExpressionStrategy.EnumValue(invocation.ArgumentList.Arguments[0].Expression,
-            context.Converter.ConvertIr(invocation.ArgumentList.Arguments[0].Expression), context);
+        var argument = invocation.ArgumentList.Arguments[0].Expression;
+        // An enum compares by its value at its width (Types.EnumOperators), anything else as itself.
+        var left = Types.EnumOperators.Value(context.Converter.ConvertIr(access.Expression),
+            context.SemanticHelper.GetType(access.Expression), context);
+        var right = Types.EnumOperators.Value(context.Converter.ConvertIr(argument), context.SemanticHelper.GetType(argument), context);
 
         // A string compares by the current culture, as string.Compare(a, b) does. The ordinal
         // three-way put every capital before every small letter, so a sort written with CompareTo

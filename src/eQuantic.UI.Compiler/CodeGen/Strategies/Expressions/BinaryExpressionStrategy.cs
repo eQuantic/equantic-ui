@@ -307,10 +307,6 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         return JsExpr.Binary(leftIr, op, rightIr);
     }
 
-    /// <summary>An enum operand as its underlying value, at its width; anything else as itself.</summary>
-    internal static JsExpr EnumValue(ExpressionSyntax operand, JsExpr converted, ConversionContext context) =>
-        Types.EnumOperators.Value(converted, context.SemanticHelper.GetType(operand), context);
-
     /// <summary>
     /// C#'s own operator over Nullable&lt;T&gt; operands, for any number T (#372). The decimal and long
     /// branches compute on their runtime types and never saw a null: <c>null + 1m</c> called

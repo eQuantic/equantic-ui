@@ -24,8 +24,8 @@ internal static class EnumConversion
     {
         var source = from.UnwrapNullable();
         var target = to.UnwrapNullable();
-        var sourceEnum = EnumOf(source);
-        var targetEnum = EnumOf(target);
+        var sourceEnum = EnumOperators.EnumOf(source);
+        var targetEnum = EnumOperators.EnumOf(target);
         if (sourceEnum is null && targetEnum is null) return null;
         if (targetEnum is not null && constant is not null && Integral(constant) is { } held)
             return JsExpr.Literal(EnumShape.HeldLiteral(targetEnum, held));
@@ -43,10 +43,6 @@ internal static class EnumConversion
         // A nullable converted to a nullable lets null pass, and converts only a value.
         return from.IsNullableValue() && to.IsNullableValue() ? NullableLift.Unary(translated, Converted, context) : Converted(translated);
     }
-
-    /// <summary>The enum a type is, or null.</summary>
-    private static INamedTypeSymbol? EnumOf(ITypeSymbol? type) =>
-        type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType ? enumType : null;
 
     /// <summary>A constant's integral value, an enum's included, or null for one that is no integer.</summary>
     private static decimal? Integral(object constant) => constant switch
