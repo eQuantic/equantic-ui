@@ -105,6 +105,12 @@ public sealed class HotReloadService : IDisposable
     {
         var path = e.FullPath.Replace('\\', '/');
         if (path.Contains("/obj/") || path.Contains("/bin/")) return;
+        SourceChanged();
+    }
+
+    /// <summary>A source of the app was written: one event of a save, which may be several.</summary>
+    internal void SourceChanged()
+    {
         // Each event of a save restarts the wait, so a burst of writes is one rebuild.
         if (_disposed) return;
         // The burst's first event, taken before the edit of its save can reach the server.
