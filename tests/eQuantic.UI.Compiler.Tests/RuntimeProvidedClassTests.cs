@@ -58,6 +58,8 @@ public class RuntimeProvidedClassTests
     [InlineData("class Legacy : MissingBase { public object CreateState() => null; }", false)]
     [InlineData("class Legacy : MissingBase { public int Build(int c) => c; }", true)]
     [InlineData("class Legacy : StatefulComponent { public object CreateState() => null; }", true)]
+    [InlineData("class Legacy : StatefulComponent<int> { }", true)]
+    [InlineData("class Legacy : eQuantic.UI.Components.StatelessComponent<int> { }", true)]
     public void TheScanFilesAClass_AsTheParserWritesIt(string source, bool component)
     {
         var dir = CreateTempDirectory();
@@ -67,6 +69,8 @@ public class RuntimeProvidedClassTests
             var resolver = new ComponentDependencyResolver();
             resolver.ScanSourceDirectories([dir]);
 
+            // A module either way, so the scan read the file: what it is filed as is the question.
+            resolver.IsModule("Legacy").Should().BeTrue();
             resolver.GetAllPlainClasses().Contains("Legacy").Should().Be(!component);
         }
         finally
