@@ -45,17 +45,26 @@ public sealed class GtmOptions
     /// <summary>
     /// Load the container only AFTER the visitor consents (GDPR / LGPD). The head declares Google
     /// Consent Mode defaults of <c>denied</c>, and the container script is fetched only when the
-    /// shared <c>eq-consent</c> cookie says <c>granted</c> — or the moment the visitor grants it,
-    /// announced by <c>IConsent</c> as the document event <c>eq:consent</c>. A visitor who declines
-    /// or never answers downloads no tag manager at all, which is what "no cookie until consent"
-    /// means in practice. Off by default: an installer that already ran without asking keeps
-    /// running; turning this on is the app's decision, paired with a consent component.
+    /// shared consent cookie says <c>granted</c> — or the moment the visitor grants it, announced by
+    /// <c>IConsent</c> as the document event <c>eq:consent</c>. A visitor who declines or never answers
+    /// downloads no tag manager at all, which is what "no cookie until consent" means in practice, and
+    /// one who declines after granting turns every signal back to <c>denied</c> on the page (#1294).
+    /// Off by default: an installer that already ran without asking keeps running; turning this on is
+    /// the app's decision, paired with a consent component.
     /// </summary>
     public bool RequireConsent { get; set; }
 
-    public GtmOptions WithConsent()
+    /// <summary>The Consent Mode signals a grant turns on (#1294). All four by default, since one
+    /// question asks for them; an app whose consent question covers analytics alone says
+    /// <see cref="GtmConsentSignals.AnalyticsStorage"/>.</summary>
+    public GtmConsentSignals ConsentGrants { get; set; } = GtmConsentSignals.All;
+
+    /// <summary>Gates the container on the visitor's consent (<see cref="RequireConsent"/>), a grant
+    /// turning on <paramref name="grants"/>.</summary>
+    public GtmOptions WithConsent(GtmConsentSignals grants = GtmConsentSignals.All)
     {
         RequireConsent = true;
+        ConsentGrants = grants;
         return this;
     }
 

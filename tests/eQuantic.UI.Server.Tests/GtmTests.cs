@@ -28,10 +28,10 @@ public class GtmTests
 
         var all = string.Join("\n", head);
         all.Should().Contain("googletagmanager.com/gtm.js?id='+i");
-        all.Should().Contain("'GTM-ABC1234'");
+        all.Should().Contain("\"GTM-ABC1234\"");
         // The declaration is what flips the runtime's IAnalytics from no-op to dataLayer pushes —
         // and it must be a HEAD script, so it runs before the app bundle boots.
-        all.Should().Contain("window.__EQ_ANALYTICS__={dataLayer:'dataLayer'}");
+        all.Should().Contain("window.__EQ_ANALYTICS__={dataLayer:\"dataLayer\"}");
         // The navigations a tag manager cannot see: the router's own event becomes page_view,
         // under GA4's own field names so existing tags pick them up unchanged.
         all.Should().Contain("eq:navigate");
@@ -46,10 +46,10 @@ public class GtmTests
         var head = HeadOf(gtm => gtm.DataLayerName = "eqData");
 
         var all = string.Join("\n", head);
-        all.Should().Contain("{dataLayer:'eqData'}");
-        all.Should().Contain("'script','eqData'");
-        all.Should().Contain("window['eqData'].push");
-        all.Should().NotContain("'script','dataLayer'");
+        all.Should().Contain("{dataLayer:\"eqData\"}");
+        all.Should().Contain("'script',\"eqData\"");
+        all.Should().Contain("window[\"eqData\"].push");
+        all.Should().NotContain("'script',\"dataLayer\"");
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class GtmTests
         options.UseGtm("GTM-CLIENT1").UseGtm("GTM-AGENCY1");
         var all = string.Join("\n", options.HtmlShell.HeadTags);
 
-        all.Should().Contain("'GTM-CLIENT1'").And.Contain("'GTM-AGENCY1'");
+        all.Should().Contain("\"GTM-CLIENT1\"").And.Contain("\"GTM-AGENCY1\"");
         CountOf(all, "__EQ_ANALYTICS__").Should().Be(1, "one declaration arms the runtime once");
         CountOf(all, "eq:navigate").Should().Be(1, "one listener, or every navigation counts twice");
     }
@@ -132,7 +132,7 @@ public class GtmTests
             .WithEnvironment("abc", "env-9"));
 
         var all = string.Join("\n", head);
-        all.Should().Contain("'script','eqData'");
+        all.Should().Contain("'script',\"eqData\"");
         all.Should().NotContain("eq:navigate");
         all.Should().Contain("gtm_auth=abc").And.Contain("gtm_preview=env-9");
     }
@@ -155,13 +155,13 @@ public class GtmTests
         all.Should().Contain("analytics_storage:'denied'");
         // The container is fetched only when the shared cookie says granted, or when the browser
         // announces a grant — the event IConsent's web realization dispatches.
-        all.Should().Contain("eq-consent=([^;]*)");
-        all.Should().Contain("m[1]==='granted'");
+        all.Should().Contain("\"" + ConsentCookie.SecureName + "\"").And.Contain("\"" + ConsentCookie.Name + "\"");
+        all.Should().Contain("==='granted')answer('granted')");
         all.Should().Contain("addEventListener('eq:consent'");
         all.Should().Contain("googletagmanager.com/gtm.js?id='+i");
         // And the installer declaration still arms IAnalytics: pushes land in the dataLayer array,
         // which the container replays when it finally loads.
-        all.Should().Contain("window.__EQ_ANALYTICS__={dataLayer:'dataLayer'}");
+        all.Should().Contain("window.__EQ_ANALYTICS__={dataLayer:\"dataLayer\"}");
     }
 
     [Fact]
@@ -178,6 +178,27 @@ public class GtmTests
     public void TheConsentCookie_IsTheOneTheServerReads()
     {
         var all = string.Join("\n", HeadOf(gtm => gtm.WithConsent()));
-        all.Should().Contain(ConsentCookie.Name + "=([^;]*)");
+        all.Should().Contain("\"" + ConsentCookie.Name + "\"").And.Contain("\"" + ConsentCookie.SecureName + "\"");
+    }
+
+    /// <summary>#1294: a denial after a grant turns every signal back to denied, and a grant turns on
+    /// only the signals the app named.</summary>
+    [Fact]
+    public void WithConsent_ADenialTurnsTheSignalsBackOff_AndAGrantTurnsOnOnlyWhatTheAppNamed()
+    {
+        var all = string.Join("\n", HeadOf(gtm => gtm.WithConsent(GtmConsentSignals.AnalyticsStorage)));
+
+        all.Should().Contain("else if(state==='denied')gtag('consent','update',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied'})");
+        all.Should().Contain("gtag('consent','update',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted'})");
+    }
+
+    /// <summary>#1294: a configured name is written by the JSON writer, so a line break or a quote in it
+    /// stays inside its string.</summary>
+    [Fact]
+    public void AConfiguredNameStaysInsideItsString()
+    {
+        var all = string.Join("\n", HeadOf(gtm => gtm.DataLayerName = "a'b\u2028c</script>"));
+
+        all.Should().NotContain("a'b").And.NotContain("\u2028").And.NotContain("c</script>");
     }
 }
