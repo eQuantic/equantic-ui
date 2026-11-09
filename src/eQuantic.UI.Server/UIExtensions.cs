@@ -121,6 +121,11 @@ public static class UIExtensions
         // Add authorization service for Server Actions
         // TryAdd allows users to override with their own implementation
         services.TryAddSingleton<IServerActionAuthorizationService, ServerActionAuthorizationService>();
+        // An action and a page are decided by the app's policy provider and evaluator, which ASP.NET Core
+        // registers with AddAuthorization: an app that only marked an action [Authorize] never called it,
+        // and its action would be refused for want of them. It adds what is missing and changes nothing
+        // the app registered (#1285).
+        services.AddAuthorization();
         // A refused CLIENT NAVIGATION into a page that requires authorization is answered 401 or 403,
         // which the router acts on, instead of a challenge a fetch cannot follow (#673).
         // It WRAPS the handler the app registered before AddUI, so the app's own answers stand for

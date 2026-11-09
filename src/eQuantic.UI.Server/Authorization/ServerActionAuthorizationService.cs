@@ -1,168 +1,74 @@
-using System;
-using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
-// Use aliases to avoid ambiguity with Microsoft.AspNetCore.Authorization
-using AuthorizeAttribute = eQuantic.UI.Primitives.AuthorizeAttribute;
-using AllowAnonymousAttribute = eQuantic.UI.Primitives.AllowAnonymousAttribute;
-using IAuthorizationService = Microsoft.AspNetCore.Authorization.IAuthorizationService;
 
 namespace eQuantic.UI.Server.Authorization;
 
 /// <summary>
-/// Default implementation of <see cref="IServerActionAuthorizationService"/>.
-/// Integrates with ASP.NET Core's authorization infrastructure.
+/// Default implementation of <see cref="IServerActionAuthorizationService"/>: an action is authorized by
+/// the rule a page is (<see cref="RequestAuthorization"/>), over the attributes of its component and of its
+/// method, the SDK's and ASP.NET Core's alike.
 /// </summary>
-public class ServerActionAuthorizationService : IServerActionAuthorizationService
+/// <remarks>
+/// The closest attribute wins: an <c>[AllowAnonymous]</c> on the method opens it whatever its component
+/// requires, and an <c>[Authorize]</c> on the method closes it whatever <c>[AllowAnonymous]</c> its
+/// component carries, where ASP.NET Core's middleware lets an <c>[AllowAnonymous]</c> anywhere open the
+/// endpoint. The two differ only where this one refuses. An action that names no requirement is under the
+/// app's <c>FallbackPolicy</c>, as an endpoint is: an app that sets one protects every action it does not
+/// open, and one that sets none leaves an action open, as it leaves an endpoint.
+/// <para>
+/// The page a component is drawn in is not something the request can prove, so an action is not
+/// authorized by it: a component that serves a protected page carries the page's requirement itself, or
+/// the app's fallback policy covers it.
+/// </para>
+/// </remarks>
+public class ServerActionAuthorizationService(ILogger<ServerActionAuthorizationService> logger)
+    : IServerActionAuthorizationService
 {
-    private readonly IAuthorizationService? _authorizationService;
-    private readonly ILogger<ServerActionAuthorizationService> _logger;
-
-    public ServerActionAuthorizationService(
-        IServiceProvider serviceProvider,
-        ILogger<ServerActionAuthorizationService> logger)
-    {
-        // IAuthorizationService is optional - may not be configured in simple apps
-        _authorizationService = serviceProvider.GetService<IAuthorizationService>();
-        _logger = logger;
-    }
-
     /// <inheritdoc />
-    public async Task<ServerActionAuthorizationResult> AuthorizeAsync(
-        HttpContext context,
-        ServerActionDescriptor descriptor)
+    public async Task<ServerActionAuthorizationResult> AuthorizeAsync(HttpContext context, ServerActionDescriptor descriptor)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(descriptor);
 
-        var method = descriptor.Method;
-        var componentType = descriptor.ComponentType;
-
-        // Check for [AllowAnonymous] on method - takes precedence over everything
-        if (method.GetCustomAttribute<AllowAnonymousAttribute>() != null)
+        var decision = await RequestAuthorization.DecideAsync(context, MetadataOf(descriptor.ComponentType, descriptor.Method));
+        if (decision.Succeeded)
         {
-            _logger.LogDebug(
-                "Server Action {ActionId} allows anonymous access (method-level)",
-                descriptor.ActionId);
+            logger.LogDebug(
+                "Server Action {ActionId} authorized for {User}",
+                AllowedRequestOrigins.ForLog(descriptor.ActionId),
+                context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.User.Identity?.Name ?? "an anonymous caller");
             return ServerActionAuthorizationResult.Success();
         }
-
-        // Check for [AllowAnonymous] on class (only if no method-level [Authorize])
-        var methodAuthorize = method.GetCustomAttribute<AuthorizeAttribute>();
-        if (methodAuthorize == null &&
-            componentType.GetCustomAttribute<AllowAnonymousAttribute>() != null)
-        {
-            _logger.LogDebug(
-                "Server Action {ActionId} allows anonymous access (class-level)",
-                descriptor.ActionId);
-            return ServerActionAuthorizationResult.Success();
-        }
-
-        // Collect authorization requirements
-        var authorizeAttributes = GetAuthorizeAttributes(method, componentType);
-
-        // If no authorization attributes, action is public by default
-        if (!authorizeAttributes.Any())
-        {
-            _logger.LogDebug(
-                "Server Action {ActionId} has no authorization requirements",
-                descriptor.ActionId);
-            return ServerActionAuthorizationResult.Success();
-        }
-
-        // From here, authorization is required
-        var user = context.User;
-
-        // Check authentication first
-        if (user?.Identity?.IsAuthenticated != true)
-        {
-            _logger.LogWarning(
-                "Unauthorized access attempt to Server Action {ActionId} - user not authenticated",
-                descriptor.ActionId);
-            return ServerActionAuthorizationResult.Unauthenticated();
-        }
-
-        // Process each authorization attribute
-        foreach (var attr in authorizeAttributes)
-        {
-            var result = await EvaluateAuthorizeAttributeAsync(context, user, attr, descriptor.ActionId);
-            if (!result.Succeeded)
-            {
-                return result;
-            }
-        }
-
-        _logger.LogDebug(
-            "Server Action {ActionId} authorized for user {UserId}",
-            descriptor.ActionId,
-            user.FindFirstValue(ClaimTypes.NameIdentifier) ?? user.Identity?.Name ?? "unknown");
-
-        return ServerActionAuthorizationResult.Success();
+        return decision.Challenged
+            ? ServerActionAuthorizationResult.Unauthenticated()
+            : ServerActionAuthorizationResult.Forbidden(ReasonOf(decision.AuthorizationFailure));
     }
 
-    private static AuthorizeAttribute[] GetAuthorizeAttributes(MethodInfo method, Type componentType)
+    /// <summary>
+    /// The metadata an action is decided by: its component's, then its method's, the method's
+    /// <c>[Authorize]</c> setting its component's <c>[AllowAnonymous]</c> aside.
+    /// </summary>
+    internal static List<object> MetadataOf(Type component, MethodInfo method)
     {
-        // Method-level attributes take precedence and are combined with class-level
-        var methodAttributes = method.GetCustomAttributes<AuthorizeAttribute>().ToArray();
-        var classAttributes = componentType.GetCustomAttributes<AuthorizeAttribute>().ToArray();
-
-        // If method has specific attributes, use those combined with class attributes
-        // This allows additive authorization (class requires auth, method requires specific role)
-        return methodAttributes.Concat(classAttributes).Distinct().ToArray();
+        var own = RequestAuthorization.MetadataOf(method);
+        var closes = own.OfType<IAuthorizeData>().Any() && !own.OfType<IAllowAnonymous>().Any();
+        var metadata = RequestAuthorization.MetadataOf(component);
+        if (closes) metadata.RemoveAll(entry => entry is IAllowAnonymous);
+        metadata.AddRange(own);
+        return metadata;
     }
 
-    private async Task<ServerActionAuthorizationResult> EvaluateAuthorizeAttributeAsync(
-        HttpContext context,
-        ClaimsPrincipal user,
-        AuthorizeAttribute attribute,
-        string actionId)
+    /// <summary>What a refusal failed on, for the server's log: the requirements and the handlers' reasons.</summary>
+    private static string ReasonOf(AuthorizationFailure? failure)
     {
-        // Check roles
-        if (!string.IsNullOrWhiteSpace(attribute.Roles))
-        {
-            var roles = attribute.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var hasRole = roles.Any(role => user.IsInRole(role));
-
-            if (!hasRole)
-            {
-                _logger.LogWarning(
-                    "Access denied to Server Action {ActionId} - user lacks required roles: {Roles}",
-                    actionId,
-                    attribute.Roles);
-                return ServerActionAuthorizationResult.RolesFailed(attribute.Roles);
-            }
-        }
-
-        // Check policy
-        if (!string.IsNullOrWhiteSpace(attribute.Policy))
-        {
-            if (_authorizationService == null)
-            {
-                _logger.LogError(
-                    "Authorization policy '{Policy}' specified for Server Action {ActionId} but IAuthorizationService is not available. " +
-                    "Ensure services.AddAuthorization() is called.",
-                    attribute.Policy,
-                    actionId);
-                return ServerActionAuthorizationResult.Forbidden(
-                    $"Authorization service not configured for policy '{attribute.Policy}'.");
-            }
-
-            var policyResult = await _authorizationService.AuthorizeAsync(user, null, attribute.Policy);
-            if (!policyResult.Succeeded)
-            {
-                _logger.LogWarning(
-                    "Access denied to Server Action {ActionId} - policy '{Policy}' not satisfied",
-                    actionId,
-                    attribute.Policy);
-                return ServerActionAuthorizationResult.PolicyFailed(attribute.Policy);
-            }
-        }
-
-        return ServerActionAuthorizationResult.Success();
+        if (failure is null) return "The app registers no authorization services: call AddAuthorization.";
+        var reasons = failure.FailedRequirements.Select(requirement => requirement.ToString() ?? requirement.GetType().Name)
+            .Concat(failure.FailureReasons.Select(reason => reason.Message))
+            .ToArray();
+        return reasons.Length > 0 ? string.Join("; ", reasons) : "The policy was not met.";
     }
 }
