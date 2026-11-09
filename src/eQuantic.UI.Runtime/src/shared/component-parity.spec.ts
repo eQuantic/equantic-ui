@@ -194,11 +194,14 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
           elevation: 2,
           hover: new StyleDiff({ elevation: 3 }),
           focus: new StyleDiff({ borderColor: photonTheme.focusRing, borderWidth: 2, opacity: 0.95 }),
-          pressed: new StyleDiff({ transform: Transform2D.scale(0.985), elevation: 1 }),
+          pressed: new StyleDiff({
+            transform: Transform2D.scale(0.985),
+            elevation: 1,
+            background: photonTheme.surfaceSubtle,
+          }),
         }),
       ),
       () => {},
-      { pressedBackground: photonTheme.surfaceSubtle },
     );
   // The C# LiftCard of the pressable-through-wrappers case.
   const liftCard = () =>
@@ -273,10 +276,7 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'control-states-disabled-simulated': still(
       new Simulated(
         2 | 4,
-        new Pressable(controlStates().child, () => {}, {
-          disabled: true,
-          pressedBackground: photonTheme.surfaceSubtle,
-        }),
+        new Pressable(controlStates().child, () => {}, { disabled: true }),
       ),
     ),
     'draggable-open': still(

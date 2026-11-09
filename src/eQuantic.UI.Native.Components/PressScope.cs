@@ -117,7 +117,6 @@ internal sealed class PressScope
     /// is drawn again, a frame realized with a live owner (see <see cref="InViewState"/>).</summary>
     public bool ReportsInView { get; init; }
 
-    public ColorToken? PendingFill { get; set; }
     public bool PendingFocusRing { get; set; }
 
     /// <summary>

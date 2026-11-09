@@ -59,8 +59,8 @@ export class Button extends StatelessComponent {
         content.add(label);
         let pressedFill = (() => { const $s = this.variant; if ($s === 'link') return null; if (($s === 'outline' || $s === 'ghost')) return theme.surfaceSubtle; return colors.pressed; })();
         let hoverFill = (() => { const $s = this.variant; if ($s === 'link') return null; if (($s === 'outline' || $s === 'ghost')) return theme.surfaceSubtle; return colors.hover; })();
-        let container = new Box(new BoxStyle({ height: height, width: this.expand ? SizeValue.fill : SizeValue.hug, minWidth: 64, padding: EdgeInsets.symmetric(padX, 0), background: fill, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: borderColor, hover: inert || hoverFill == null ? null : new StyleDiff({ background: hoverFill }) }), content);
-        return new Pressable(container, inert ? null : this.onPressed, { disabled: inert, label: this.label, pressedBackground: inert ? null : pressedFill, initialFocus: this.initialFocus });
+        let container = new Box(new BoxStyle({ height: height, width: this.expand ? SizeValue.fill : SizeValue.hug, minWidth: 64, padding: EdgeInsets.symmetric(padX, 0), background: fill, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: borderColor, hover: inert || hoverFill == null ? null : new StyleDiff({ background: hoverFill }), pressed: inert || pressedFill == null ? null : new StyleDiff({ background: pressedFill }) }), content);
+        return new Pressable(container, inert ? null : this.onPressed, { disabled: inert, label: this.label, initialFocus: this.initialFocus });
     }
 }
 

@@ -521,27 +521,17 @@ internal sealed partial class WebLoweringVisitor
         };
 
         // Interaction states (spec §01): mechanics live in the GENERATED stylesheet — every enabled
-        // pressable carries the class (the :focus-visible double ring is an accessibility DEFAULT);
-        // the pressed swap additionally needs its token value as a per-element custom property.
+        // pressable carries the class (the :focus-visible double ring is an accessibility DEFAULT).
+        // A pressed FILL is no mechanic of the control's: it is the Pressed diff of the box it fills,
+        // an atomic rule in the pressed family like every other member of that diff (#616).
         if (!pressable.Disabled)
         {
-            // eq-pressed carries the same declaration :active does, and eq-focused the ring
-            // :focus-visible draws — see TokenCss. They are added, not substituted, so a simulated
-            // control still behaves like the control it is picturing.
-            // eq-press-fill marks a control that HAS a pressed fill: the stylesheet's swap selects it,
-            // so a control without one keeps its own fill while pressed.
+            // eq-focused carries the ring :focus-visible draws — see TokenCss. It is added, not
+            // substituted, so a simulated control still behaves like the control it is picturing. A
+            // simulated PRESS needs no marker: its boxes lay their Pressed diff inline.
             element.ClassName = "eq-pressable"
-                + (pressable.PressedBackground is not null ? " eq-press-fill" : "")
-                + (_simulated.HasFlag(SimulatedState.Pressed) ? " eq-pressed" : "")
                 + (_simulated.HasFlag(SimulatedState.Focused) ? " eq-focused" : "");
             if (child is not null) LiftThroughBoxlessWrappers(child);
-            if (pressable.PressedBackground is { } pressedFill)
-            {
-                element.Style!.CustomProperties = new Dictionary<string, string>
-                {
-                    ["--eq-pressed-bg"] = TokenCss.Value(pressedFill),
-                };
-            }
         }
 
         // §10 initial focus: the marker the trap controller prefers over the first focusable —

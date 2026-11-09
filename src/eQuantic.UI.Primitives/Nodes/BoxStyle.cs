@@ -164,9 +164,10 @@ public readonly record struct BoxStyle
     /// <summary>
     /// Style DIFF applied while the CONTROL this box is inside is pressed: a pointer held down on it
     /// on both targets, and a held key on the web (Photon activates on the key's way down and has no
-    /// held press). The handoff's <c>:active { transform: scale(.985) }</c>. Pressed beats focus,
-    /// and focus beats hover, member by member. <c>Pressable.PressedBackground</c> stays the
-    /// strongest fill. <c>null</c> = none (#508).
+    /// held press). The handoff's <c>:active { transform: scale(.985) }</c>, and its pressed fill: a
+    /// pressed fill is the <see cref="StyleDiff.Background"/> of the box it fills (spec §01, a real
+    /// token swap on the same rrect, never an overlay), the one mechanism on both targets (#616).
+    /// Pressed beats focus, and focus beats hover, member by member. <c>null</c> = none (#508).
     /// </summary>
     public StyleDiff? Pressed { get; init; }
 

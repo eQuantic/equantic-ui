@@ -3894,25 +3894,14 @@ function lowerPressable(
   }
 
   // Interaction states (spec §01): mechanics live in the generated stylesheet — every enabled
-  // pressable carries the class (:focus-visible double ring is an a11y DEFAULT); the pressed swap
-  // additionally ships its token value as a custom property at the style TAIL (the C# cross-pin).
+  // pressable carries the class (:focus-visible double ring is an a11y DEFAULT). A pressed FILL is
+  // no mechanic of the control's: it is the Pressed diff of the box it fills, an atomic rule in the
+  // pressed family like every other member of that diff (#616, the C# twin).
   if (!disabled) {
-    // eq-pressed carries the same declaration :active does, and eq-focused the ring :focus-visible
-    // draws (see the generated stylesheet), so a simulated state cannot drift from a real one.
-    // eq-press-fill marks a control that HAS a pressed fill (C# twin): the stylesheet's swap selects
-    // it, so a control without one keeps its own fill while pressed.
-    prependClass(
-      node,
-      'eq-pressable' +
-        (pressable.pressedBackground ? ' eq-press-fill' : '') +
-        (simulatedState & SIMULATED_PRESSED ? ' eq-pressed' : '') +
-        (simulatedState & SIMULATED_FOCUSED ? ' eq-focused' : ''),
-    );
-    if (pressable.pressedBackground) {
-      const tail = `--eq-pressed-bg: ${tokenValue(pressable.pressedBackground)}`;
-      const existing = node.attributes['style'];
-      node.attributes['style'] = existing ? `${existing}; ${tail}` : tail;
-    }
+    // eq-focused carries the ring :focus-visible draws (see the generated stylesheet), so a simulated
+    // focus cannot drift from a real one. A simulated PRESS needs no marker: its boxes lay their
+    // Pressed diff inline.
+    prependClass(node, 'eq-pressable' + (simulatedState & SIMULATED_FOCUSED ? ' eq-focused' : ''));
     if (child) liftThroughBoxlessWrappers(child);
   }
 

@@ -113,8 +113,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     }
 
     /// <summary>
-    /// The press and focus reads every node makes before its own door runs: a Pressable arms the
-    /// token swap and the first descendant Box consumes it, so this cannot live in any one door.
+    /// The press and focus reads every node makes before its own door runs: a Pressable arms its
+    /// focus ring, which the first descendant Box draws, and lends its press and focus to every box
+    /// of its subtree, so this cannot live in any one door. A pressed FILL is no part of it: it is the
+    /// <c>Pressed</c> diff of the box it fills, laid over that box's style like any state (#616).
     /// </summary>
     private void Dispatch(in EmitState s)
     {
@@ -126,13 +128,6 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         // disabled while held is still tracked here, and the CURRENT node is what decides (#508).
         var disabledControl = node.Source is Pressable { Disabled: true };
         var pressTracked = !disabledControl && press.IsPressed(node);
-        if (pressTracked && node.Source is Pressable { PressedBackground: { } pressedFill })
-            press.PendingFill = pressedFill;
-        // A SIMULATED press takes the fill from the Pressable being pictured — the host is tracking
-        // nothing, so there is no tracked node to read it from.
-        else if ((press.Simulated & SimulatedState.Pressed) != 0
-            && node.Source is Pressable { Disabled: false, PressedBackground: { } simulatedFill })
-            press.PendingFill = simulatedFill;
         var focusTracked = !disabledControl
             && (press.Focused is not null || press.FocusedId != 0)
             && press.IsFocused(node);

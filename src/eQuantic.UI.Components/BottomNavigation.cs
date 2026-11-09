@@ -66,6 +66,9 @@ public sealed class BottomNavigation : StatelessComponent
                 Height = 26,
                 Background = isActive ? primary.Subtle : null,
                 CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
+                // The press shows on the pill, where the handoff puts it ("Press-down shows the pill")
+                // and where the hover lives too, never on the whole column.
+                Pressed = new StyleDiff { Background = theme.SurfaceSubtle },
             }, pillContent);
 
             var column = new Column(gap: 2)
@@ -83,7 +86,6 @@ public sealed class BottomNavigation : StatelessComponent
             row.Add(new Flexible(new Pressable(column, OnSelect is null ? null : () => OnSelect(index))
             {
                 Label = item.Label,
-                PressedBackground = theme.SurfaceSubtle,
                 // The pill and the tint say "you are here" to everyone who can see them. This says
                 // it to everyone else: aria-current="page" on the web, the selected trait on both
                 // mobiles.

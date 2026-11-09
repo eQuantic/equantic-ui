@@ -212,6 +212,26 @@ export function effectiveStyle(node: { attributes: Record<string, string | undef
   return parts.join('; ');
 }
 
+/**
+ * TEST SEAM, effectiveStyle's twin for a STATE: the declarations an element takes while one family
+ * applies (`':hover'`, {@link CONTROL_FOCUS}, {@link CONTROL_PRESSED}), resolved as effectiveStyle
+ * resolves them. Specs assert what a pressed box turns into, not the hash of the rule that does it.
+ */
+export function stateStyle(node: { attributes: Record<string, string | undefined> }, family: string): string {
+  const parts: string[] = [];
+  for (const cls of (node.attributes['class'] ?? '').split(' ')) {
+    const rule = ruleTexts.get(cls);
+    if (!rule) continue;
+    const tag = rule.indexOf('\u0001');
+    if (tag < 0 || rule.slice(0, tag) !== family) continue;
+    const declaration = rule.slice(tag + 1);
+    const colon = declaration.indexOf(':');
+    parts.push(`${declaration.slice(0, colon)}: ${resolveVars(declaration.slice(colon + 1))}`);
+  }
+  parts.sort();
+  return parts.join('; ');
+}
+
 /** Collapse `var(--x, fallback)` to the fallback — the value the browser computes when the token
  * stylesheet defines --x to the same color (specs assert computed intent, not plumbing). */
 function resolveVars(value: string): string {

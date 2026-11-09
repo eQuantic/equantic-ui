@@ -362,7 +362,8 @@ public class ComponentParityFixtureTests
     }
 
     /// <summary>The control of the control-states cases: a raised surface with a hover, a focus and a
-    /// press, each changing what the others do not, and the pressed fill it has always had.</summary>
+    /// press, each changing what the others do not, and the pressed fill it has always had, in its
+    /// own Pressed diff since #616.</summary>
     private static Pressable ControlStates() => new(new Box(new BoxStyle
     {
         Width = 40,
@@ -371,16 +372,15 @@ public class ComponentParityFixtureTests
         Elevation = 2,
         Hover = new StyleDiff { Elevation = 3 },
         Focus = new StyleDiff { BorderColor = Theme.FocusRing, BorderWidth = 2, Opacity = 0.95f },
-        Pressed = new StyleDiff { Transform = Transform2D.Scale(0.985f), Elevation = 1 },
-    }), () => { })
-    {
-        PressedBackground = Theme.SurfaceSubtle,
-    };
+        Pressed = new StyleDiff
+        {
+            Transform = Transform2D.Scale(0.985f), Elevation = 1, Background = Theme.SurfaceSubtle,
+        },
+    }), () => { });
 
     private static Pressable DisabledControlStates() => new(ControlStates().Child, () => { })
     {
         Disabled = true,
-        PressedBackground = Theme.SurfaceSubtle,
     };
 
     private static eQuantic.UI.Spreadsheets.Spreadsheet Sheet()

@@ -1,1 +1,3 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Primitives.Pressable.PressedBackground.get -> eQuantic.UI.Primitives.ColorToken?
+*REMOVED*eQuantic.UI.Primitives.Pressable.PressedBackground.init -> void
