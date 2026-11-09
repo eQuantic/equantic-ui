@@ -1,1 +1,6 @@
 #nullable enable
+eQuantic.UI.Server.ServerEventsBuilder.ConfigureEndpoints(System.Action<Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!>! configure) -> eQuantic.UI.Server.ServerEventsBuilder!
+eQuantic.UI.Server.ServerEventsOptions.MaxConnectionLifetime.get -> System.TimeSpan
+eQuantic.UI.Server.ServerEventsOptions.MaxConnectionLifetime.set -> void
+eQuantic.UI.Server.ServerEventsOptions.MaxConnections.get -> int
+eQuantic.UI.Server.ServerEventsOptions.MaxConnections.set -> void

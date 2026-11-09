@@ -316,7 +316,8 @@ public class UIOptions
         {
             ServerEvents = new ServerEventsBuilder();
             RegisterServices(ServerEvents.Register);
-            RegisterEndpoints(endpoints => endpoints.MapServerEvents());
+            var events = ServerEvents;
+            RegisterEndpoints(endpoints => endpoints.MapServerEvents(events.EndpointConventions));
         }
         configure(ServerEvents);
         return this;
