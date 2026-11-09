@@ -10,7 +10,7 @@
 
 - [x] 2.1 `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`. Verify: `tsc` is clean and vitest passes on happy-dom 21
 - [x] 2.2 Bundle `Resources/boot.ts` as `BundleRuntime` does, before and after. Verify: `runtime.js` and its map are byte-identical
-- [ ] 2.3 Restore Web Animations' handled finished promise in the test environment. Verify: `spreadsheet-read-aloud-web.spec.ts` fails the run with three unhandled AbortErrors on happy-dom 21 alone and passes with the setup file, and `test-environment.spec.ts` fails without the setup file and passes with it
+- [x] 2.3 Restore Web Animations' handled finished promise in the test environment. Verify: `spreadsheet-read-aloud-web.spec.ts` fails the run with three unhandled AbortErrors on happy-dom 21 alone and passes with the setup file, and `test-environment.spec.ts` fails without the setup file and passes with it
 
 ## 3. Documentation
 
