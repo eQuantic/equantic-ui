@@ -186,7 +186,8 @@ internal sealed class UploadProtocol
 
     /// <summary>
     /// The file's name as the server keeps it: without any folder a device put before it, on either kind
-    /// of separator; without control characters, and with the characters a file system refuses written as
+    /// of separator; without control characters or the format ones that turn how it reads (a right-to-left
+    /// override shows <c>exe.pdf</c> for <c>fdp.exe</c>), and with the characters a file system refuses written as
     /// <c>_</c>; without the dots and spaces Windows drops from its end; never <c>.</c> or <c>..</c>; never
     /// a name Windows keeps for a device; and no longer than 255 characters, its extension kept. A name
     /// that kept them was one an app writing it to disk could be led by (#1293).
@@ -195,14 +196,15 @@ internal sealed class UploadProtocol
     {
         if (Text(metadata, "filename") is not { } sent) return null;
         var name = sent[(sent.LastIndexOfAny(['/', '\\']) + 1)..];
-        name = new string(name.Where(c => !char.IsControl(c))
+        name = new string(name.Where(c => !char.IsControl(c) && char.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.Format)
             .Select(c => c is '<' or '>' or ':' or '"' or '|' or '?' or '*' ? '_' : c).ToArray()).Trim().TrimEnd('.', ' ');
         if (name.Length == 0 || name is "." or "..") return null;
         var stem = name.Split('.')[0];
         if (DeviceNames.Contains(stem)) name = "_" + name;
         if (name.Length > 255)
         {
-            var extension = Path.GetExtension(name);
+            // An extension longer than a short one is no extension to keep: the name is cut where it ends.
+            var extension = Path.GetExtension(name) is { Length: <= 16 } kept ? kept : "";
             name = name[..(255 - extension.Length)] + extension;
         }
         return name;

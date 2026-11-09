@@ -73,20 +73,29 @@ internal static class UploadOwner
         {
             HttpOnly = true,
             SameSite = SameSiteMode.Lax,
-            // Secure but for plain HTTP to this machine, a developer's: a request that reached the app as
-            // HTTP from a proxy that ended TLS, with no forwarded headers to say so, wrote it without, and the
-            // cookie that names the uploads went out in clear on the next plain request (#1293).
-            Secure = context.Request.IsHttps || !IsLoopback(context.Request.Host.Host),
+            // Secure but for plain HTTP to this machine or to an address of the local network, a developer's
+            // (a phone on the dev server): a request that reached the app as HTTP from a proxy that ended TLS,
+            // with no forwarded headers to say so, carries the site's public name, and was written without,
+            // so the cookie that names the uploads went out in clear on the next plain request (#1293).
+            Secure = context.Request.IsHttps || !IsLocal(context.Request.Host.Host),
             IsEssential = true,
             MaxAge = lifetime,
             Path = "/",
         });
     }
 
-    private static bool IsLoopback(string host) =>
-        host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
-        || host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase)
-        || (System.Net.IPAddress.TryParse(host.Trim('[', ']'), out var address) && System.Net.IPAddress.IsLoopback(address));
+    /// <summary>Whether <paramref name="host"/> is this machine, or an address of a private network.</summary>
+    private static bool IsLocal(string host)
+    {
+        if (host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (!System.Net.IPAddress.TryParse(host.Trim('[', ']'), out var address)) return false;
+        if (System.Net.IPAddress.IsLoopback(address) || address.IsIPv6LinkLocal || address.IsIPv6UniqueLocal) return true;
+        var bytes = address.MapToIPv4().GetAddressBytes();
+        return address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork || address.IsIPv4MappedToIPv6
+            ? bytes[0] == 10 || (bytes[0] == 172 && bytes[1] is >= 16 and <= 31) || (bytes[0] == 192 && bytes[1] == 168) || (bytes[0] == 169 && bytes[1] == 254)
+            : false;
+    }
 
     private static string? UserId(ClaimsPrincipal user) =>
         user.Identity?.IsAuthenticated == true

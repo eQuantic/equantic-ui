@@ -38,13 +38,14 @@ public sealed class UploadsLimitsTests : IDisposable
     [Fact]
     public async Task TheStoresBytes_AreBoundedToo_413()
     {
-        await using var app = await Start(nameof(UploadsOptions.MaxTotalBytes), "12");
-        await app.Browser().UploadAsync(Content(10), "a.txt", "small", partSize: 10);
+        // The quota is the largest policy's size, the least the app may start with.
+        await using var app = await Start(nameof(UploadsOptions.MaxTotalBytes), "1048576");
+        await app.Browser().UploadAsync(Content(1_048_570), "a.stl", "models", partSize: 1_048_570);
 
-        using var next = await app.Browser().CreateAsync(5, "small", "b.txt");
+        using var next = await app.Browser().CreateAsync(10, "small", "b.txt");
 
         next.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
-        (await next.Content.ReadAsStringAsync()).Should().Be("The server's uploads may take at most 12 bytes: try again later.");
+        (await next.Content.ReadAsStringAsync()).Should().Be("The server's uploads may take at most 1048576 bytes: try again later.");
     }
 
     [Fact]
@@ -68,14 +69,14 @@ public sealed class UploadsLimitsTests : IDisposable
     [Fact]
     public async Task AnOwnersBytes_AreBounded_413()
     {
-        await using var app = await Start(nameof(UploadsOptions.MaxBytesPerOwner), "12");
+        await using var app = await Start(nameof(UploadsOptions.MaxBytesPerOwner), "1048576");
         var browser = app.Browser();
-        await browser.UploadAsync(Content(10), "a.txt", "small", partSize: 10);
+        await browser.UploadAsync(Content(1_048_570), "a.stl", "models", partSize: 1_048_570);
 
-        using var next = await browser.CreateAsync(5, "small", "b.txt");
+        using var next = await browser.CreateAsync(10, "small", "b.txt");
 
         next.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
-        (await next.Content.ReadAsStringAsync()).Should().Be("Your uploads may take at most 12 bytes.");
+        (await next.Content.ReadAsStringAsync()).Should().Be("Your uploads may take at most 1048576 bytes.");
         using (var others = await app.Browser().CreateAsync(5, "small", "b.txt")) others.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
@@ -112,6 +113,7 @@ public sealed class UploadsLimitsTests : IDisposable
     [InlineData("CON.txt", "_CON.txt")]
     [InlineData("lpt1", "_lpt1")]
     [InlineData("report. . ", "report")]
+    [InlineData("invoice\u202Efdp.txt", "invoicefdp.txt")]
     public async Task TheName_IsOneAFileSystemTakesAsItIs(string sent, string kept)
     {
         await using var app = await UploadsApp.StartAsync(_folder);
@@ -122,6 +124,56 @@ public sealed class UploadsLimitsTests : IDisposable
 
         status.Should().Be(HttpStatusCode.OK, answer);
         answer.Split('|')[1].Should().Be(kept);
+    }
+
+    [Fact]
+    public async Task AnEmptyFile_FinishedAsItIsCreated_IsNotCountedUnfinished()
+    {
+        await using var app = await Start(nameof(UploadsOptions.MaxUnfinished), "1");
+        var browser = app.Browser();
+        using (var first = await browser.CreateAsync(0, "small", "empty.txt")) first.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        using var second = await browser.CreateAsync(5, "small", "next.txt");
+
+        second.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task ANameWithALongExtension_IsCut_NotFailed()
+    {
+        await using var app = await UploadsApp.StartAsync(_folder);
+        var browser = app.Browser();
+        var location = await browser.UploadAsync(Content(5), "a." + new string('x', 300), "small", partSize: 5);
+
+        var (status, answer) = await browser.InvokeAsync("Receive", new { id = TusBrowser.IdOf(location) });
+
+        status.Should().Be(HttpStatusCode.OK, answer);
+        answer.Split('|')[1].Should().HaveLength(255).And.StartWith("a.xxx");
+    }
+
+    [Fact]
+    public async Task APolicyLargerThanTheByteQuota_StopsTheApp()
+    {
+        // The models policy accepts larger files than this quota allows.
+        var start = () => Start(nameof(UploadsOptions.MaxBytesPerOwner), "8");
+
+        (await start.Should().ThrowAsync<OptionsValidationException>())
+            .Which.Message.Should().Contain("The upload policy 'models'").And.Contain("MaxBytesPerOwner");
+    }
+
+    [Theory]
+    [InlineData("http://192.168.1.20/")]
+    [InlineData("http://10.0.0.5/")]
+    public async Task OverPlainHttpToTheLocalNetwork_TheCookieIsNotSecure_SoAPhoneOnTheDevServerKeepsIt(string address)
+    {
+        await using var app = await UploadsApp.StartAsync(_folder);
+        app.Client.BaseAddress = new Uri(address);
+        var browser = app.Browser();
+
+        using var created = await browser.CreateAsync(5, "small", "a.txt");
+
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        browser.LastSetCookie.Should().NotContain("secure");
     }
 
     [Theory]

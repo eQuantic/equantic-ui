@@ -74,7 +74,8 @@ internal sealed class UploadStore
         lock (_gate)
         {
             _records[record.Id] = record;
-            Count(record, +1, unfinished: true);
+            // One finished in its own creation (an empty file) was marked before its record was written.
+            Count(record, +1, unfinished: !_finished.Contains(record.Id));
             if (reservation is not null && reservation.Take()) Unreserve(reservation);
         }
     }

@@ -34,6 +34,15 @@ internal sealed class UploadsOptionsValidator(IHostEnvironment environment, ISer
         if (options.Expiry <= TimeSpan.Zero || options.Expiry > LongestExpiry)
             failures.Add(Failure(nameof(UploadsOptions.Expiry), options.Expiry,
                 $"longer than zero and no longer than {LongestExpiry.TotalDays:0} days"));
+        // A policy that accepts a file larger than a byte quota could never store one: every upload under it
+        // would be refused at run time, so the app stops at start, naming it.
+        if (services.GetService<UploadPolicies>() is { LargestSize: > 0 } policies)
+        {
+            foreach (var policy in policies.All.Where(policy => policy.MaxSize > Math.Min(options.MaxBytesPerOwner, options.MaxTotalBytes)))
+                failures.Add($"The upload policy '{policy.Name}' accepts files of {policy.MaxSize} bytes, more than " +
+                             $"{UploadsOptions.SectionName}:{(options.MaxBytesPerOwner <= options.MaxTotalBytes ? nameof(UploadsOptions.MaxBytesPerOwner) : nameof(UploadsOptions.MaxTotalBytes))} " +
+                             $"allows ({Math.Min(options.MaxBytesPerOwner, options.MaxTotalBytes)}): raise it, or lower the policy's size.");
+        }
         if (UnderTheWebRoot(UploadStore.FolderOf(options, environment)) is { } root)
             failures.Add($"{UploadsOptions.SectionName}:{nameof(UploadsOptions.Folder)} is under the web root {root}, " +
                          "where the static files would serve every upload and the cookie of the person who sent it: choose a folder outside it.");
