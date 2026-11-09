@@ -29,6 +29,10 @@ internal sealed partial class WebLoweringVisitor
         // exactly why it would never have been noticed.
         ComponentExpansionScope.Ambient?.Enter(component);
 
+        // From what its position built, in a frame of a live tree, as Visit(UiComponent) does.
+        if (_frame is { } frame)
+            return frame.BuiltBy(component) is { } built ? ResolveForPositioning(built) : child;
+
         // Through the boundary's bound rather than a hop count of this method's own: the loop
         // it replaces stopped ITSELF spinning after eight hops and then handed a still
         // unresolved component back, which `LowerStack` lowered straight into the same chain.
@@ -452,7 +456,10 @@ internal sealed partial class WebLoweringVisitor
                 panel.Style.PointerEvents = "none";
             }
         }
-        if (Lower(anchored.Panel, horizontalAxis: null) is { } content)
+        // A layer of a live tree is SHOWN before it lowers, so its components build in the slot
+        // that keeps them; a frame that lowers no panel leaves the slot to be taken out at its end.
+        var layer = _frame?.Show(anchored, anchored.Panel) ?? anchored.Panel;
+        if (Lower(layer, horizontalAxis: null) is { } content)
             panel.Children.Add(content);
         return panel;
     }
@@ -720,7 +727,8 @@ internal sealed partial class WebLoweringVisitor
                 element.Style.PointerEvents = "none";
             }
         }
-        if (Lower(overlay.Child, horizontalAxis: null) is { } child)
+        var layer = _frame?.Show(overlay, overlay.Child) ?? overlay.Child;
+        if (Lower(layer, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;
     }
@@ -1159,7 +1167,7 @@ internal sealed partial class WebLoweringVisitor
 
         void AddVariant(VisualNode variant, string gate)
         {
-            if (place(variant) is not { } lowered) return;
+            if (Arm(variant, place) is not { } lowered) return;
             var gated = new RealizedElement("div") { AdaptiveGate = gate };
             gated.Children.Add(lowered);
             wrapper.Children.Add(gated);
@@ -1167,7 +1175,7 @@ internal sealed partial class WebLoweringVisitor
 
         // A lone Compact needs no gating — it IS the tree at every size.
         if (adaptive.Medium is null && adaptive.Expanded is null)
-            return place(adaptive.Compact) ?? wrapper;
+            return Arm(adaptive.Compact, place) ?? wrapper;
 
         // Ranges chain off the DECLARED variants and the node's own thresholds (a design that
         // switches at 1024 gets 1024 gates, not the spec's 600/840).
@@ -1179,6 +1187,28 @@ internal sealed partial class WebLoweringVisitor
         if (adaptive.Expanded is { } expanded)
             AddVariant(expanded, AdaptiveGates.ExpandedFrom(adaptive.ExpandedFrom));
         return wrapper;
+    }
+
+    /// <summary>
+    /// One arm of an adaptive node. In a frame of a live tree, the element holds only the arm its
+    /// size class resolves, as Photon draws one: that arm lowers from its positions, and the others
+    /// lower as a tree drawn once does, built where they stand. Those are the arms the page's own
+    /// media rules hide at this size, and a change of size replaces the arm's subtree on both
+    /// targets, so no instance they would have kept is ever shown.
+    /// </summary>
+    private HtmlElement? Arm(VisualNode arm, Func<VisualNode, HtmlElement?> place)
+    {
+        if (_frame is not { } frame || frame.Holds(arm)) return place(arm);
+
+        _frame = null;
+        try
+        {
+            return place(arm);
+        }
+        finally
+        {
+            _frame = frame;
+        }
     }
 
     /// <summary>Spec S4: CSS Grid — tracks as "px | Nfr | auto" or one auto-fill repeat, the gap pair, spans per child.</summary>
