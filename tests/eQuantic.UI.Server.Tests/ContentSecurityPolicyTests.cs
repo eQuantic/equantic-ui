@@ -73,8 +73,8 @@ public class ContentSecurityPolicyTests
         var document = await response.Content.ReadAsStringAsync();
 
         response.Headers.GetValues(Enforcing).Should().ContainSingle().Which.Should().Be(
-            $"script-src 'nonce-{NonceOf(document)}' 'strict-dynamic'; object-src 'none'; base-uri 'none'; "
-            + "frame-ancestors 'self'; connect-src 'self'",
+            $"script-src 'nonce-{NonceOf(document)}' 'strict-dynamic'; style-src 'nonce-{NonceOf(document)}'; "
+            + "style-src-attr 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'; connect-src 'self'",
             "the page's scripts carry the nonce the policy names, and nothing else is admitted");
         response.Headers.GetValues("X-Content-Type-Options").Should().Equal("nosniff");
         response.Headers.GetValues("Referrer-Policy").Should().Equal("strict-origin-when-cross-origin");
