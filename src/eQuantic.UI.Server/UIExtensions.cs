@@ -804,9 +804,12 @@ public static class UIExtensions
         if (RedirectToLanguageUrl(context, options)) return;
 
         var shell = options.HtmlShell;
-        // Per-request copy of the head tags. The HtmlShell is a singleton, so mutating
-        // shell.HeadTags directly is not thread-safe and leaks tags across requests.
-        var headTags = new List<string>(shell.HeadTags);
+        // The request's nonce, on every script and style the shell writes (#1266): the template's
+        // own, the app's head tags and CSS, and the page's assets.
+        var nonce = ShellNonce.Of(context);
+        // The head tags rendered for THIS request: the HtmlShell is a singleton, so this list is the
+        // request's own, and what the page adds below never reaches the next request.
+        var headTags = shell.HeadTags.Select(tag => tag.Render(nonce)).ToList();
 
         // The theme's stylesheet, on EVERY page: the theme the app chose (options.UseTheme), or
         // Photon's, the one the browser runtime falls back to. It carries the document's rules and
@@ -882,7 +885,7 @@ public static class UIExtensions
             // with none of its classes defined.
             if (adopted.Assets != null)
             {
-                foreach (var tag in adopted.Assets.RenderTags())
+                foreach (var tag in adopted.Assets.RenderTags(nonce))
                 {
                     if (!headTags.Contains(tag))
                         headTags.Add(tag);
@@ -1061,7 +1064,9 @@ public static class UIExtensions
         var html = template.Render(ctx =>
         {
             // Variables
-            ctx.Set("HtmlClass", shell.HtmlClass)
+            // The nonce first: a value written before it can never be read as its placeholder.
+            ctx.Set("Nonce", nonce)
+               .Set("HtmlClass", shell.HtmlClass)
                .Set("HtmlLang", htmlLang)
                .Set("Title", System.Web.HttpUtility.HtmlEncode(metadata.Title ?? string.Empty))
                .Set("MetadataTags", metadata.RenderTags())
@@ -1069,7 +1074,8 @@ public static class UIExtensions
                .Set("BuildId", BuildId)
                .Set("ThemeStyles", themeStyles)
                // One element per AddStyles call, so a malformed chunk cannot swallow the next one.
-               .SetOrEmpty("AppStyles", string.Join("\n        ", shell.Styles.Select(css => $"<style>{css}</style>")))
+               .SetOrEmpty("AppStyles", string.Join("\n        ",
+                   shell.Styles.Select(css => $"<style{ShellNonce.Attribute(nonce)}>{css}</style>")))
                .Set("HeadTags", string.Join("\n    ", headTags))
                .Set("SsrEnabled", ssrEnabled.ToString().ToLowerInvariant())
                .Set("SsrContent", ssrContent)

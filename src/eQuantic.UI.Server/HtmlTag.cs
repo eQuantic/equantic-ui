@@ -12,6 +12,11 @@ namespace eQuantic.UI.Server;
 /// else wraps <see cref="Content"/>. Content is written VERBATIM — it is the script/style body,
 /// which is exactly what must not be encoded — so only pass content you author.
 /// </para>
+/// <para>
+/// A <c>script</c> or a <c>style</c> is rendered with the request's nonce, which the shell hands
+/// <see cref="Render"/>: an element the shell writes is one a Content-Security-Policy can admit by
+/// that nonce, and an app never writes the attribute itself (#1266).
+/// </para>
 /// </summary>
 public sealed class HtmlTag
 {
@@ -66,8 +71,9 @@ public sealed class HtmlTag
     }
 
     /// <summary>The rendered element. Attribute VALUES are HTML-encoded; <see cref="Content"/> is not
-    /// (it is a script/style body by construction).</summary>
-    public string Render()
+    /// (it is a script/style body by construction). A <c>script</c> or a <c>style</c> carries
+    /// <paramref name="nonce"/> when one is given; any other element ignores it.</summary>
+    public string Render(string? nonce = null)
     {
         var html = new StringBuilder("<").Append(TagName);
         foreach (var (name, value) in Attributes)
@@ -76,10 +82,16 @@ public sealed class HtmlTag
             if (value != null)
                 html.Append("=\"").Append(System.Net.WebUtility.HtmlEncode(value)).Append('"');
         }
+        if (CarriesNonce(TagName)) html.Append(ShellNonce.Attribute(nonce));
         html.Append('>');
         if (VoidElements.Contains(TagName)) return html.ToString();
         return html.Append(Content).Append("</").Append(TagName).Append('>').ToString();
     }
 
     public override string ToString() => Render();
+
+    /// <summary>The elements a Content-Security-Policy admits by nonce: scripts and styles.</summary>
+    internal static bool CarriesNonce(string tagName) =>
+        tagName.Equals("script", StringComparison.OrdinalIgnoreCase)
+        || tagName.Equals("style", StringComparison.OrdinalIgnoreCase);
 }
