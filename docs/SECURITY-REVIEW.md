@@ -30,7 +30,7 @@ line that moves fails the suite rather than misleading the next reader.
 | File-serving routes | Path traversal is refused on every route | #1296 (low) |
 | The GTM installer | The container id is validated, consent defaults to denied when asked for | #1294 (low) |
 | The image optimizer | Local files only, size limits, `Vary: Accept` | #1289 (medium) |
-| Response headers | Nothing is set | Framing, `nosniff` and `Referrer-Policy` belong to #1267 |
+| Response headers | Nothing: none of them is written | Framing, `nosniff` and `Referrer-Policy` belong to #1267 |
 
 ## The shell and what it writes
 
