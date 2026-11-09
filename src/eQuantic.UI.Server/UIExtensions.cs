@@ -468,11 +468,13 @@ public static class UIExtensions
             var name = (string?)context.GetRouteValue("name");
             var environment = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
             var path = AssetPaths.Resolve(Path.Combine(environment.WebRootPath, "_equantic"), name, ".js");
-            // Not under the web root: the local directory, as a development run lays it out. Found
-            // there, the module is served as one found under the web root is, and its status is 200: a
-            // browser refuses to run a module answered 404 (#1296).
-            var localPath = AssetPaths.Resolve(
-                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js");
+            // Not under the web root: the local directory, as a development run lays it out, and only in
+            // Development, where it is the build the developer is running. Found there, the module is
+            // served as one found under the web root is, and its status is 200: a browser refuses to
+            // run a module answered 404 (#1296).
+            var localPath = environment.IsDevelopment()
+                ? AssetPaths.Resolve(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js")
+                : null;
             var found = path is not null && File.Exists(path) ? path
                 : localPath is not null && File.Exists(localPath) ? localPath
                 : null;
