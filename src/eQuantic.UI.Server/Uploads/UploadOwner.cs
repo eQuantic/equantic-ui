@@ -73,12 +73,20 @@ internal static class UploadOwner
         {
             HttpOnly = true,
             SameSite = SameSiteMode.Lax,
-            Secure = context.Request.IsHttps,
+            // Secure but for plain HTTP to this machine, a developer's: a request that reached the app as
+            // HTTP from a proxy that ended TLS, with no forwarded headers to say so, wrote it without, and the
+            // cookie that names the uploads went out in clear on the next plain request (#1293).
+            Secure = context.Request.IsHttps || !IsLoopback(context.Request.Host.Host),
             IsEssential = true,
             MaxAge = lifetime,
             Path = "/",
         });
     }
+
+    private static bool IsLoopback(string host) =>
+        host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+        || host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase)
+        || (System.Net.IPAddress.TryParse(host.Trim('[', ']'), out var address) && System.Net.IPAddress.IsLoopback(address));
 
     private static string? UserId(ClaimsPrincipal user) =>
         user.Identity?.IsAuthenticated == true
