@@ -91,9 +91,11 @@ public class CompareToStrategy : IExpressionIrStrategy
         // Guid is deliberately ABSENT: Guid.CompareTo orders by the struct's COMPONENTS, which is
         // not the string order a guid rides as here — a sort that disagrees across the seam is
         // worse than a fence.
-        // An enum compares by its underlying value, a number once the member name is looked up.
-        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
-            return SpecialType.System_Int32;
+        // An enum compares by its underlying value, its member's key looked up: a number, a 64-bit enum's a
+        // BigInt, which takes the ordered three-way as a long does (#551). A flags enum kept the call, a
+        // method no number has.
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            return Types.EnumShape.IsWide(enumType) ? SpecialType.System_Int64 : SpecialType.System_Int32;
         return type?.SpecialType switch
         {
             // Decimal is deliberately ABSENT: it rides as a runtime Decimal object, and the old

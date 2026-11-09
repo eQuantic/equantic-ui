@@ -48,6 +48,17 @@ public static class PatternConverter
                 return ConstantMatch(constant, constant.Expression, access, context);
 
             case RelationalPatternSyntax relational:
+                // An ENUM's relation compares the values (#555): a non-flags enum is held as its member's
+                // key, which compared alphabetically, and a 64-bit one's constant is a BigInt.
+                if (context.SemanticHelper.GetType(relational.Expression) is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType
+                    && context.SemanticHelper.TryGetConstantValue(relational.Expression, out var bound) && bound is not null)
+                {
+                    var value = JsExprWriter.WriteIn(Strategies.Types.EnumShape.ValueOf(enumType, JsExpr.Opaque(access), context),
+                        JsPrecedence.Relational);
+                    var limit = Strategies.Types.EnumShape.ValueLiteral(enumType,
+                        System.Convert.ToDecimal(bound, System.Globalization.CultureInfo.InvariantCulture));
+                    return $"{value} {relational.OperatorToken.Text} {limit}";
+                }
                 return $"{access} {relational.OperatorToken.Text} {context.Converter.ConvertExpression(relational.Expression)}";
 
             case DeclarationPatternSyntax declaration:

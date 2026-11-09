@@ -4,6 +4,10 @@ import { exception } from './exceptions';
  * An enum as .NET reads it, from the shape the compiler writes at each call: an enum has no object of
  * its own in the browser, where a value is its member's camelCase name, or its number for a flags
  * enum. `Enum.Parse<Status>("Pending")` named an object `Status` that no module declares, and threw.
+ *
+ * A value is held at the underlying type's width: a number for a type of 32 bits or fewer, and a
+ * BigInt for a `long` or a `ulong`, as the SDK holds every 64-bit integer (`utils/long.ts`). A member
+ * past 2^53 was a number that is not its value (#551).
  */
 export interface EnumShape {
   /** The declared names, in declaration order. */
@@ -11,8 +15,8 @@ export interface EnumShape {
   /** What the browser holds for each member, by position: its camelCase name. A flags enum writes
    * none, since what it holds is the member's value. */
   readonly keys?: readonly string[];
-  /** Each member's value, by position. */
-  readonly values: readonly number[];
+  /** Each member's value, by position: a BigInt for a 64-bit enum, a number for any other. */
+  readonly values: readonly EnumValue[];
   /** A [Flags] enum, whose value is its number and whose text names its set flags. */
   readonly flags: boolean;
   /** The hex digits the `X` format writes: twice the underlying type's size in bytes. */
@@ -21,9 +25,22 @@ export interface EnumShape {
   readonly unsigned?: boolean;
 }
 
+/** A value of an enum: a number, or a BigInt for a 64-bit one. */
+export type EnumValue = number | bigint;
+
 /** The underlying type's width in bits, which bounds a number `Parse` reads. */
 function bits(shape: EnumShape): bigint {
   return BigInt(shape.digits * 4);
+}
+
+/** Whether the underlying type is a `long` or a `ulong`, whose values are BigInts. */
+function wide(shape: EnumShape): boolean {
+  return shape.digits === 16;
+}
+
+/** A value as the shape holds its values: a BigInt for a 64-bit enum, a number for any other. */
+function atWidth(value: EnumValue, shape: EnumShape): EnumValue {
+  return wide(shape) ? BigInt(value) : Number(value);
 }
 
 /** Whether a number fits the underlying type, as `Enum.Parse` requires of one it reads. */
@@ -34,22 +51,27 @@ function fits(value: bigint, shape: EnumShape): boolean {
 }
 
 /** What the browser holds for each member: its key, or, for a flags enum, its value. */
-function keys(shape: EnumShape): readonly (string | number)[] {
+function keys(shape: EnumShape): readonly (string | EnumValue)[] {
   return shape.keys ?? shape.values;
 }
 
-/** The value .NET holds, from what the browser holds: a key's member's value, or a number as it is. */
-function valueOf(held: unknown, shape: EnumShape): number {
-  if (typeof held === 'number') return held;
+/**
+ * The value .NET holds, from what the browser holds: a key's member's value, or a value as it is, at
+ * the underlying type's width. Text that is no key is the digits a value no member names crossed as.
+ */
+function valueOf(held: unknown, shape: EnumShape): EnumValue {
+  if (typeof held === 'number' || typeof held === 'bigint') return atWidth(held, shape);
   const at = keys(shape).indexOf(held as string);
-  return at < 0 ? Number(held) : shape.values[at];
+  if (at >= 0) return shape.values[at];
+  return wide(shape) && /^[+-]?\d+$/.test(String(held).trim()) ? BigInt(String(held).trim()) : Number(held);
 }
 
-/** What the browser holds for a value: the first member with it, or the number no member names. */
-function hold(value: number, shape: EnumShape): string | number {
-  if (shape.flags) return value;
-  const at = shape.values.indexOf(value);
-  return at < 0 ? value : keys(shape)[at];
+/** What the browser holds for a value: the first member with it, or the value no member names. */
+function hold(value: EnumValue, shape: EnumShape): string | EnumValue {
+  const held = atWidth(value, shape);
+  if (shape.flags) return held;
+  const at = shape.values.indexOf(held);
+  return at < 0 ? held : keys(shape)[at];
 }
 
 /**
@@ -84,10 +106,10 @@ export function text(held: unknown, shape: EnumShape, format?: string | null): s
  * the highest value as .NET searches them. The bits are BigInt's, which a 32-bit operator would cut:
  * a uint's high bit read negative, and a long's flags above bit 31 vanished.
  */
-function names(shape: EnumShape, value: number, flags: boolean): string {
+function names(shape: EnumShape, value: EnumValue, flags: boolean): string {
   const exact = shape.values.indexOf(value);
   if (exact >= 0) return shape.names[exact];
-  if (!flags || value === 0) return String(value);
+  if (!flags || BigInt(value) === 0n) return String(value);
   const order = shape.values
     .map((member, at) => ({ member: BigInt(member), at }))
     .filter(({ member }) => member !== 0n)
@@ -114,12 +136,12 @@ function unsigned(value: bigint): bigint {
  * for any enum), or a number; surrounding white space ignored; case kept unless `ignoreCase`.
  * Undefined where .NET refuses it.
  */
-function read(input: string, shape: EnumShape, ignoreCase: boolean): number | undefined {
+function read(input: string, shape: EnumShape, ignoreCase: boolean): EnumValue | undefined {
   const trimmed = input.trim();
   if (trimmed.length === 0) return undefined;
   if (/^[+-]?\d+$/.test(trimmed)) {
     const number = BigInt(trimmed);
-    return fits(number, shape) ? Number(number) : undefined;
+    return fits(number, shape) ? atWidth(number, shape) : undefined;
   }
   let value = 0n;
   for (const part of trimmed.split(',')) {
@@ -130,11 +152,11 @@ function read(input: string, shape: EnumShape, ignoreCase: boolean): number | un
     if (at < 0) return undefined;
     value |= BigInt(shape.values[at]);
   }
-  return Number(value);
+  return atWidth(value, shape);
 }
 
 /** `Enum.Parse`: the value text names, which throws where .NET throws. */
-export function parse(input: string, shape: EnumShape, ignoreCase = false): string | number {
+export function parse(input: string, shape: EnumShape, ignoreCase = false): string | EnumValue {
   if (input == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'value')");
   const value = read(input, shape, ignoreCase);
   if (value === undefined) throw exception('System.ArgumentException', `Requested value '${input}' was not found.`);
@@ -145,14 +167,14 @@ export function parse(input: string, shape: EnumShape, ignoreCase = false): stri
  * `Enum.TryParse`: the value text names, or undefined where .NET answers false, whose out argument
  * then holds the enum's default, `zero`.
  */
-export function tryParse(input: string | null | undefined, shape: EnumShape, ignoreCase = false): string | number | undefined {
+export function tryParse(input: string | null | undefined, shape: EnumShape, ignoreCase = false): string | EnumValue | undefined {
   if (input == null) return undefined;
   const value = read(input, shape, ignoreCase);
   return value === undefined ? undefined : hold(value, shape);
 }
 
 /** The enum's default, `default(TEnum)`: the value 0, as the browser holds it. */
-export function zero(shape: EnumShape): string | number {
+export function zero(shape: EnumShape): string | EnumValue {
   return hold(0, shape);
 }
 
@@ -180,7 +202,10 @@ export function name(given: unknown, shape: EnumShape, as: 'held' | 'number' | '
       'System.ArgumentException',
       "The value passed in must be an enum base or an underlying type for an enum, such as an Int32. (Parameter 'value')",
     );
-  const value = as === 'number' || typeof given === 'number' || typeof given === 'bigint' ? Number(given) : valueOf(given, shape);
+  const value =
+    as === 'number' || typeof given === 'number' || typeof given === 'bigint'
+      ? atWidth(given as EnumValue, shape)
+      : valueOf(given, shape);
   const at = shape.values.indexOf(value);
   return at < 0 ? null : shape.names[at];
 }
@@ -191,7 +216,7 @@ export function declaredNames(shape: EnumShape): string[] {
 }
 
 /** `GetValues`: the values, in their order, as the browser holds them. */
-export function values(shape: EnumShape): (string | number)[] {
+export function values(shape: EnumShape): (string | EnumValue)[] {
   return byValue(shape).map((at) => hold(shape.values[at], shape));
 }
 
@@ -205,26 +230,53 @@ export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number
   if (as === 'object') {
     if (typeof given === 'string') return shape.names.includes(given) || keys(shape).includes(given);
     // An integral number of the underlying type, as .NET requires; a bool, a fraction or any other
-    // object is a type .NET refuses with "Unknown enum type.".
+    // object is a type .NET refuses with "Unknown enum type.". A 64-bit integer is a BigInt here and
+    // any narrower one a number, so a 64-bit enum given an int, or another given a long, is the other
+    // type .NET refuses in words of its own.
     if ((typeof given !== 'number' || !Number.isInteger(given)) && typeof given !== 'bigint')
       throw exception('System.InvalidOperationException', 'Unknown enum type.');
-    return shape.values.includes(Number(given));
+    if ((typeof given === 'bigint') !== wide(shape)) {
+      throw exception(
+        'System.ArgumentException',
+        'Enum underlying type and the object must be same type or object must be a String. ' +
+          `Type passed in was '${typeof given === 'bigint' ? 'System.Int64' : 'System.Int32'}'; the enum underlying type was '${underlying(shape)}'.`,
+      );
+    }
+    return shape.values.includes(atWidth(given, shape));
   }
   if (as === 'name') return shape.names.includes(given as string);
-  const value = as === 'number' ? Number(given) : valueOf(given, shape);
+  const value = as === 'number' ? atWidth(given as EnumValue, shape) : valueOf(given, shape);
   return shape.values.includes(value);
+}
+
+/** The underlying type's full name, from its width and its sign. */
+function underlying(shape: EnumShape): string {
+  const signed = { 2: 'SByte', 4: 'Int16', 8: 'Int32', 16: 'Int64' }[shape.digits] ?? 'Int32';
+  const unsigned = { 2: 'Byte', 4: 'UInt16', 8: 'UInt32', 16: 'UInt64' }[shape.digits] ?? 'UInt32';
+  return `System.${shape.unsigned ? unsigned : signed}`;
 }
 
 /**
  * A cast from `object` to the enum, an unboxing: a boxed member is held as its key, and a boxed number
  * of the underlying type is the member with that value, as the runtime unboxes one. A null and anything
  * else are refused as .NET refuses them: `(Status)(object)"Pending"` passed the text through. A boxed
- * string spelled as a member's key cannot be told from the member, both being that string here.
+ * string spelled as a member's key cannot be told from the member, both being that string here. A
+ * 64-bit integer is a BigInt here and any narrower one a number: a 64-bit enum unboxes the first and a
+ * narrower one the second, as .NET unboxes only the underlying type (`(Huge)(object)1` is refused).
  */
-export function unbox(given: unknown, shape: EnumShape, name: string): string | number {
+export function unbox(given: unknown, shape: EnumShape, name: string): string | EnumValue {
   if (given == null) throw exception('System.NullReferenceException', 'Object reference not set to an instance of an object.');
-  if (typeof given === 'number') return hold(given, shape);
+  if (typeof given === (wide(shape) ? 'bigint' : 'number')) return hold(given as EnumValue, shape);
   if (typeof given === 'string' && keys(shape).includes(given)) return given;
-  const type = typeof given === 'string' ? 'System.String' : typeof given === 'boolean' ? 'System.Boolean' : 'System.Object';
+  const type =
+    typeof given === 'string'
+      ? 'System.String'
+      : typeof given === 'boolean'
+        ? 'System.Boolean'
+        : typeof given === 'bigint'
+          ? 'System.Int64'
+          : typeof given === 'number'
+            ? 'System.Int32'
+            : 'System.Object';
   throw exception('System.InvalidCastException', `Unable to cast object of type '${type}' to type '${name}'.`);
 }
