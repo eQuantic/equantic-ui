@@ -2,7 +2,7 @@
 
 - [x] 1.1 `RequestAuthorization`: the attributes as the middleware reads them, decided by the app's provider and evaluator
 - [x] 1.2 `PageAuthorization` and `ServerActionAuthorizationService` on it; `AddUI` registers authorization
-- [x] 1.3 A test per row of #1285, each failing on main
+- [x] 1.3 A test per rule, each failing on main
 
 ## 2. The id
 

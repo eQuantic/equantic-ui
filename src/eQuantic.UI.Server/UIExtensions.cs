@@ -124,7 +124,7 @@ public static class UIExtensions
         // An action and a page are decided by the app's policy provider and evaluator, which ASP.NET Core
         // registers with AddAuthorization: an app that only marked an action [Authorize] never called it,
         // and its action would be refused for want of them. It adds what is missing and changes nothing
-        // the app registered (#1285).
+        // the app registered (#1320).
         services.AddAuthorization();
         // A refused CLIENT NAVIGATION into a page that requires authorization is answered 401 or 403,
         // which the router acts on, instead of a challenge a fetch cannot follow (#673).

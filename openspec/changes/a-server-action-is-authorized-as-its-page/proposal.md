@@ -1,24 +1,17 @@
 ## Why
 
-Closes #1285, #1290 and #1291, Bugs the security review (#1265) found at the Server Action endpoint.
+Closes #1320, a security fix in Server Actions tracked in a private advisory, and #1290 and #1291, Bugs the
+security review (#1265) found at the Server Action endpoint.
 
-- **#1285 (high).** A page and its actions were authorized by two rules. The page's route carried its
-  `[Authorize]` as endpoint metadata, decided by ASP.NET Core's middleware; an action was decided by a
-  rule of its own, which read only the SDK's `[Authorize]`, checked roles against the default scheme's
-  user, evaluated a policy with no resource, never asked the app's `FallbackPolicy`, and threw on two
-  `[Authorize]` on one method. A page marked with ASP.NET Core's `[Authorize(Roles = "Admin")]` refused a
-  navigation and ran its actions for an anonymous POST.
+- **#1320.** A page and its actions are to be authorized by the same rules: the SDK's and ASP.NET Core's
+  attributes, their authentication schemes, and the app's fallback policy.
 - **#1290.** An action's id was its component's simple name and the method's, and the registry kept the
-  last of two under one id without a word, so a call could run the other method under the other
-  method's authorization.
-- **#1291.** The smaller gaps: a 403 named the roles and policies required, a 404 echoed the id, the id
-  reached the log with its line breaks, malformed arguments answered 500 and logged an error, an
-  `UploadedFile` inside a value was read as the caller wrote it, the 1 MB cap was skipped where an earlier
-  middleware had read the body, a result went out as its runtime type, and a body of any content type was
-  read.
+  last of two under one id without a word.
+- **#1291.** The smaller gaps: what a refusal says, what the log receives, how malformed arguments are
+  answered, an `UploadedFile` inside a value, the body's cap, the result's type, and the body's content type.
 
 Measured on main, 16 of the 20 tests this change adds fail there; the other four are the cases that
-must keep passing (the right role, an open action, one method registered twice, a value whose file is null).
+must keep passing.
 
 ## What Changes
 

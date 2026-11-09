@@ -9,14 +9,8 @@ namespace eQuantic.UI.Server.Authorization;
 /// <summary>
 /// The one rule a page and a Server Action are authorized by: their attributes read as ASP.NET Core's
 /// authorization middleware reads an endpoint's, and decided by the app's own policy provider and
-/// evaluator (#1285).
-/// <para>
-/// A Server Action was authorized by a rule of its own, which read the SDK's <c>[Authorize]</c> only,
-/// checked roles against the default scheme's user, and let an action that named no requirement run
-/// for anyone: ASP.NET Core's <c>[Authorize]</c> on a page refused a navigation and ran the page's
-/// actions for an anonymous POST, a page that required another scheme ran its actions for the default
-/// scheme's user, and the app's <c>FallbackPolicy</c> was never asked.
-/// </para>
+/// evaluator (#1320). An action had a rule of its own, which read fewer attributes than a page's and did
+/// not ask the app's schemes or its fallback policy; both read this one now.
 /// </summary>
 internal static class RequestAuthorization
 {
