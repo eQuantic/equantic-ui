@@ -42,7 +42,9 @@ host is the one docs/ELEMENT-TREE-PLAN.md 3.6 already lists.
 
 `LayoutNode` is the engine's render tree: its setters are internal to the engine, a host that recycles
 frames hands its instances to the next frame, and it carries host state (the position, presence, drag
-offset). A test holding one would read whatever the next frame wrote into it. `MeasuredNode` copies
+offset). The tester runs the host as every production shell does, recycling frames, so the nodes
+of one frame are written over by the frame after the next, and a test holding one would read
+whatever that frame wrote into it. `MeasuredNode` copies
 what the frame measured: the node laid out, its box in dp (absolute, as the layout computes it), the
 lines its text measured, and its children. The text keeps the engine's `TextMeasurement`, which is
 already immutable: a second type would hold a copy.

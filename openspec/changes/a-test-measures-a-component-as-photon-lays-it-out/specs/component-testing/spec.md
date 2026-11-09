@@ -24,9 +24,11 @@ frame is drawn.
 
 #### Scenario: A measurement held across a frame keeps what it measured
 
-- **WHEN** a test keeps the root of a counter's first frame, taps nothing, marks the counter with a
-  `SetState` that lengthens its text, and pumps the next frame
-- **THEN** the kept root still reads the first frame's box, and the new root reads the new one
+- **WHEN** a test keeps the measurement of a counter's text from its first frame, then twice marks the
+  counter with a `SetState` that changes the text's length and pumps a frame, the second of which
+  reuses the first frame's nodes, as a host that recycles frames does
+- **THEN** the kept measurement still reads the first frame's box and line, and the newest root reads
+  the newest text
 
 ### Requirement: The same measurement on every OS, and the one the native goldens are held to
 
