@@ -37,6 +37,9 @@ positions. Six sites in the C# realizer write them, and six in the runtime's low
   through the CSSOM is not possible in server-rendered markup, which is styled before any script
   runs. A style attribute cannot run script, and the directive admits attributes only: an injected
   `<style>` element is still refused.
+  What removing it would cost, so it is not read as an omission: the six sites in each realizer
+  would write classes (a class per caret position and per pressed fill) or wait for the CSSOM after
+  hydration, and both realizers' hydration contract would change with them.
 - **A library that creates its own style element is handed the nonce.** ApexCharts writes its CSS
   in a style element it creates unless its `chart.nonce` option is set, so its initializer sets it to
   the page's. Chart.js draws on a canvas and needs nothing.
