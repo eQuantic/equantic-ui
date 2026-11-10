@@ -69,19 +69,47 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
     /// <summary>
     /// The return type C# declared, as the method's own annotation is: the parameters always said theirs,
     /// and without this TypeScript inferred the DERIVED type a body returns, so a variable the function
-    /// initialized refused the sibling C# lets it take (#793). A named type alone, as a local's annotation:
-    /// an async function returns a promise of it, and what is not named keeps what TypeScript infers. A
-    /// reference type C# lets be null keeps it too: written with <c>?</c>, or where nullable annotations are
-    /// off, as <c>Base Find() { return null; }</c> in a <c>#nullable disable</c> file, which the
-    /// annotation refused.
+    /// initialized refused the sibling C# lets it take (#793). A named type alone, as a local's annotation,
+    /// and an async function's <c>Task&lt;T&gt;</c> as a promise of it; what is not named keeps what
+    /// TypeScript infers. A null C# lets the function return keeps it too, since the twin writes it as
+    /// null: a return written with <c>?</c>, one where nullable annotations are off, as
+    /// <c>Base Find() { return null; }</c> in a <c>#nullable disable</c> file, and a null or a default the
+    /// body forgives with <c>!</c>.
     /// </summary>
     private static string Returns(LocalFunctionStatementSyntax localFn, bool isAsync, ConversionContext context)
     {
-        if (!context.TypeAnnotations || isAsync || localFn.ReturnType is NullableTypeSyntax) return "";
+        if (!context.TypeAnnotations || localFn.ReturnType is NullableTypeSyntax) return "";
         // The symbol's return, which carries the nullable annotation the type's syntax alone does not.
         if (context.SemanticHelper.GetDeclaredSymbol(localFn) is not IMethodSymbol { ReturnType: var returned }) return "";
+        if (isAsync)
+        {
+            // What the body returns is the task's argument; a Task with none returns nothing to name.
+            if (returned is not INamedTypeSymbol { Name: "Task", Arity: 1 } task
+                || task.ContainingNamespace?.ToDisplayString() != "System.Threading.Tasks") return "";
+            returned = task.TypeArguments[0];
+        }
         if (returned is { IsReferenceType: true, NullableAnnotation: not NullableAnnotation.NotAnnotated }) return "";
-        return TsNamedType.For(returned, context) is { } name and not "any" ? $": {name}" : "";
+        if (ForgivesANull(localFn)) return "";
+        if (TsNamedType.For(returned, context) is not { } name || name == "any") return "";
+        return isAsync ? $": Promise<{name}>" : $": {name}";
+    }
+
+    /// <summary>Whether a value the function returns holds a null or a default forgiven with <c>!</c>
+    /// (<c>=&gt; null!</c>, <c>return default!;</c>), read in the function itself and not in a lambda or a
+    /// local function nested in it, which return to someone else.</summary>
+    private static bool ForgivesANull(LocalFunctionStatementSyntax localFn)
+    {
+        IEnumerable<ExpressionSyntax> returned = localFn.ExpressionBody is { } arrow
+            ? [arrow.Expression]
+            : localFn.Body?.DescendantNodes(node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                  .OfType<ReturnStatementSyntax>().Select(statement => statement.Expression).OfType<ExpressionSyntax>()
+              ?? [];
+        return returned.SelectMany(expression => expression.DescendantNodesAndSelf(
+                node => node is not AnonymousFunctionExpressionSyntax))
+            .OfType<PostfixUnaryExpressionSyntax>()
+            .Any(forgiven => forgiven.IsKind(SyntaxKind.SuppressNullableWarningExpression)
+                && forgiven.Operand is LiteralExpressionSyntax { RawKind: (int)SyntaxKind.NullLiteralExpression or (int)SyntaxKind.DefaultLiteralExpression }
+                    or DefaultExpressionSyntax);
     }
 
     /// <summary>

@@ -64,8 +64,25 @@ public sealed class ATwinSaysItsDeclaredTypeTests
         Shape Find() { return null; } _ = Find();
         #nullable restore
         """)]
+    // A null the body forgives with `!` is one C# compiles under a non-nullable return, and the twin
+    // writes it as null, which `(): Shape` refused (found by the review of the pull request).
+    [InlineData("Shape Find() => null!; _ = Find();")]
+    [InlineData("Shape Find(bool b) { if (b) return new Circle(); return default!; } _ = Find(true);")]
     public void AReturnCSharpLetsBeNull_IsNotRefusedIt(string body) =>
-        Compile(body).Should().Contain("const find = () =>");
+        Compile(body).Should().Contain("const find = (").And.NotContain("): Shape =>");
+
+    /// <summary>An async local function returns a promise of what it declared, where TypeScript inferred
+    /// a promise of the derived type its body returned (found by the review of the pull request).</summary>
+    [Fact]
+    public void AnAsyncLocalFunction_SaysThePromiseOfTheTypeItDeclares()
+    {
+        var host = Compile("""
+            async System.Threading.Tasks.Task<Shape> Load() { await System.Threading.Tasks.Task.Delay(1); return new Circle(); }
+            _ = Load();
+            """);
+
+        host.Should().Contain("const load = async (): Promise<Shape> =>");
+    }
 
     [Fact]
     public void AnObjectInitializersTemporary_IsTheTypeItHolds()
