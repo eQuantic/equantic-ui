@@ -39,6 +39,13 @@ no rule of its own and no growth in the atomic sheet. Two consequences are held 
 A token an app builds outside its theme, with More legs, resolves to Standard on the web, since it
 reaches no variable. On Photon it steps up. Every colour a component reads comes from the theme.
 
+## What is left for later
+
+- The macOS window reads the mode and the level when it opens, as it read the mode before this
+  change; following a change while it runs is #1382. iOS and Android follow both.
+- A code block's inverse slab builds its colours from the dark leg alone and loses the More pair,
+  which the runtime's `ColorToken` twin would have to carry first: #1383.
+
 ## Measured on the strictest ground
 
 `DesignTokenTests` and `DesignTokenApcaTests` run once per level. At More, text is measured on the
