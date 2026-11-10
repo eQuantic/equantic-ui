@@ -88,8 +88,6 @@ eQuantic.UI.Primitives.ChipTheme.Gap.get -> float?
 eQuantic.UI.Primitives.ChipTheme.Gap.init -> void
 eQuantic.UI.Primitives.ChipTheme.IconSize.get -> float?
 eQuantic.UI.Primitives.ChipTheme.IconSize.init -> void
-eQuantic.UI.Primitives.ChipTheme.Label.get -> eQuantic.UI.Primitives.TypeStyle?
-eQuantic.UI.Primitives.ChipTheme.Label.init -> void
 eQuantic.UI.Primitives.ChipTheme.PaddingX.get -> float?
 eQuantic.UI.Primitives.ChipTheme.PaddingX.init -> void
 eQuantic.UI.Primitives.ChipTheme.PressOpacity.get -> float?
@@ -276,3 +274,11 @@ static eQuantic.UI.Primitives.SelectionControlsTheme.operator !=(eQuantic.UI.Pri
 static eQuantic.UI.Primitives.SelectionControlsTheme.operator ==(eQuantic.UI.Primitives.SelectionControlsTheme? left, eQuantic.UI.Primitives.SelectionControlsTheme? right) -> bool
 eQuantic.UI.Primitives.SelectionControlsTheme.RadioSize.get -> eQuantic.UI.Primitives.DensityValue?
 eQuantic.UI.Primitives.SelectionControlsTheme.RadioSize.init -> void
+eQuantic.UI.Primitives.ChipTheme.LabelLineHeight.get -> float?
+eQuantic.UI.Primitives.ChipTheme.LabelLineHeight.init -> void
+eQuantic.UI.Primitives.ChipTheme.LabelSize.get -> float?
+eQuantic.UI.Primitives.ChipTheme.LabelSize.init -> void
+eQuantic.UI.Primitives.ChipTheme.LabelTracking.get -> float?
+eQuantic.UI.Primitives.ChipTheme.LabelTracking.init -> void
+eQuantic.UI.Primitives.ChipTheme.LabelWeight.get -> eQuantic.UI.Primitives.FontWeight?
+eQuantic.UI.Primitives.ChipTheme.LabelWeight.init -> void

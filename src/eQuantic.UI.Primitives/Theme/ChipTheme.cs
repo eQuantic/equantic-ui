@@ -22,8 +22,17 @@ public sealed record ChipTheme
     /// <summary>The gap between the glyphs and the label (6).</summary>
     public float? Gap { get; init; }
 
-    /// <summary>The label's type (13 over 16, semi-bold).</summary>
-    public TypeStyle? Label { get; init; }
+    /// <summary>The label's point size (13).</summary>
+    public float? LabelSize { get; init; }
+
+    /// <summary>The label's line height (16).</summary>
+    public float? LabelLineHeight { get; init; }
+
+    /// <summary>The label's weight (semi-bold).</summary>
+    public FontWeight? LabelWeight { get; init; }
+
+    /// <summary>The label's tracking (0).</summary>
+    public float? LabelTracking { get; init; }
 
     /// <summary>The corner radius (the theme's full shape: a pill).</summary>
     public float? Radius { get; init; }

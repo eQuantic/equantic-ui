@@ -62,7 +62,8 @@ public sealed class Chip : StatelessComponent
 
         var label = new Text(Label, TypeRole.Caption, textColor, maxLines: 1)
         {
-            StyleOverride = slot?.Label ?? new TypeStyle(13, 16, FontWeight.SemiBold, 0, 1.3f),
+            StyleOverride = new TypeStyle(slot?.LabelSize ?? 13, slot?.LabelLineHeight ?? 16,
+                slot?.LabelWeight ?? FontWeight.SemiBold, slot?.LabelTracking ?? 0, 1.3f),
         };
 
         var content = new Row(gap: slot?.Gap ?? 6) { Main = MainAlign.Center, Height = SizeValue.Fill };
