@@ -114,6 +114,16 @@ public class DateReadingConformanceTests
     [InlineData("2024年1月15日", "ja-JP")]
     [InlineData("2024年1月", "ja-JP")]
     [InlineData("2024年1月15日 9:30", "ja-JP")]
+    // A day's name run onto the date's last word, as a culture whose long date writes no space before it
+    // writes it on Linux's and Windows' data: .NET reads a word only where a word ends, and refuses these.
+    [InlineData("2024年1月15日 月曜日", "ja-JP")]
+    [InlineData("2024年1月15日月曜日", "ja-JP")]
+    [InlineData("2024年1月15日 星期一", "zh-CN")]
+    [InlineData("2024年1月15日星期一", "zh-CN")]
+    // A word a time pattern quotes, after the clock: hsb-DE's short time is `H:mm 'hodź'.`, and bg-BG's long
+    // time in Windows' data is `H:mm:ss 'ч.'`, which .NET reads as one of the culture's date words.
+    [InlineData("15.1.2024 9:30 hodź.", "hsb-DE")]
+    [InlineData("póndźela, 15. januara 2024 9:30 hodź.", "hsb-DE")]
     public void ADateWithItsWords_IsReadAsDotNetReadsIt(string text, string culture)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

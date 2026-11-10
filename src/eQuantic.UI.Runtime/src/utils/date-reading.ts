@@ -124,9 +124,11 @@ function spellings(lists: readonly (readonly string[])[], base: number): { text:
 }
 
 /**
- * The words a culture's date patterns write between a date's parts, .NET's date words: pt-BR's `de`,
- * ru-RU's `г.`, ja-JP's `年`. A quoted literal is one, and so is what is left of a pattern with its parts
- * and its punctuation taken out. A point is no part of one: {@link Cursor.word} reads it after any.
+ * The words a culture's patterns write between a moment's parts, .NET's date words: pt-BR's `de`, ru-RU's
+ * `г.`, ja-JP's `年`, and bg-BG's `ч.` after a clock where Windows' data writes it. A quoted literal of any
+ * pattern .NET scans is one (`DateTimeFormatInfoScanner.GetDateWordsOfDTFI`: the long and short dates, the
+ * year and month, the month and day, the long and short times), and so is what is left of a DATE pattern with
+ * its parts and its punctuation taken out. A point is no part of one: {@link Cursor.word} reads it after any.
  */
 function dateWordsOf(culture: DateTimeFormatData): string[] {
   const words = new Set<string>();
@@ -134,13 +136,15 @@ function dateWordsOf(culture: DateTimeFormatData): string[] {
     const text = word.trim().replace(/\.$/, '').toLowerCase();
     if (text.length > 0) words.add(text);
   };
-  for (const pattern of [culture.longDatePattern, culture.monthDayPattern, culture.yearMonthPattern]) {
-    const bare = pattern.replace(/'([^']*)'/g, (_, quoted: string) => {
+  const quotedOf = (pattern: string): string =>
+    pattern.replace(/'([^']*)'/g, (_, quoted: string) => {
       add(quoted);
       return ' ';
     });
-    bare.split(/[dMyg\s,./-]+/).forEach(add);
-  }
+  const datePatterns = [culture.longDatePattern, culture.shortDatePattern, culture.monthDayPattern, culture.yearMonthPattern];
+  for (const pattern of datePatterns) quotedOf(pattern).split(/[dMyg\s,./-]+/).forEach(add);
+  // A time pattern's own letters are its parts (`H:mm:ss`), never a word: only what it quotes is one.
+  for (const pattern of [culture.longTimePattern, culture.shortTimePattern]) quotedOf(pattern);
   return [...words].sort((a, b) => b.length - a.length);
 }
 
@@ -241,14 +245,14 @@ class Cursor {
     return null;
   }
 
-  /** One of a culture's date `words` here, in any case, with the point it may end with, consumed. A word of a
-   * script with no case runs on into what follows it: ja-JP's `日` into the day's name. */
+  /** One of a culture's date `words` here, in any case and ending where a word ends, with the point it may end
+   * with, consumed. A letter right after it is no boundary, in a script with no case too: .NET's lexer refuses
+   * ja-JP's `2024年1月15日月曜日`, which Linux's and Windows' data write for its long date, and reads
+   * `2024年1月15日 月曜日`. */
   word(words: readonly string[]): boolean {
     for (const word of words) {
       const after = this.at + word.length;
-      const last = word[word.length - 1];
-      const runsOn = last.toLowerCase() === last.toUpperCase();
-      if (this.text.slice(this.at, after).toLowerCase() === word && (runsOn || !isLetter(this.text[after]))) {
+      if (this.text.slice(this.at, after).toLowerCase() === word && !isLetter(this.text[after])) {
         this.at = after;
         this.take(['.']);
         return true;
@@ -345,6 +349,13 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
     cursor.space();
     raw.pm = readDesignator(cursor, shapes);
     if (raw.pm === null) cursor.at = before;
+  }
+
+  // A word a time pattern writes after the clock: hsb-DE's `hodź.`, and bg-BG's `ч.` in Windows' data.
+  if (raw !== null) {
+    const before = cursor.at;
+    cursor.space();
+    if (!cursor.word(shapes.words)) cursor.at = before;
   }
 
   cursor.space();
