@@ -7,7 +7,7 @@
 
 ## 2. Measurement and docs
 
-- [ ] 2.1 `scripts/measure-edit-to-view.cs web` before and after on the dashboard sample; the web's ceiling in `scripts/edit-to-view.budget.json` lowered by what it measured
+- [x] 2.1 `scripts/measure-edit-to-view.cs web` before and after on the dashboard sample; the web's ceiling in `scripts/edit-to-view.budget.json` lowered by what it measured
 - [x] 2.2 A ledger entry under `docs/ledger/` citing #1280
 
 ## 3. Close
