@@ -1,6 +1,7 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Testing;
 using FluentAssertions;
 
 namespace eQuantic.UI.Web.Tests;
@@ -31,17 +32,27 @@ public class CheckStateSemanticsTests
     private static HtmlNode ControlOf(VisualNode node) =>
         Walk(Render(node)).Single(candidate => candidate.Attributes.ContainsKey("role"));
 
+    /// <summary>What a screen reader announces for the one control <paramref name="node"/> draws, read
+    /// through eQuantic.UI.Testing, the package an app's own tests read it through. The attributes the
+    /// tests below still pin are the realizer's ARIA contract; the announcement is what it amounts to.</summary>
+    private static Announcement Announced(VisualNode node)
+    {
+        using var tester = new ComponentTester(Theme);
+        tester.Pump(node);
+        return tester.Semantics.Single(stop => stop.Role != SemanticRole.StaticText);
+    }
+
     [Fact]
     public void ACheckboxSaysItsStateInAriaChecked_NotInItsName()
     {
-        var control = ControlOf(new Checkbox(true, () => { }, "Send me the newsletter"));
+        var checkbox = new Checkbox(true, () => { }, "Send me the newsletter");
+        var stop = Announced(checkbox);
 
-        control.Attributes["role"].Should().Be("checkbox");
-        control.Attributes["aria-checked"].Should().Be("true");
-        control.Attributes.Should().NotContainKey("aria-pressed", "checked-ness is not pressed-ness");
-        // The name is what the control is FOR. The visible label already provides it; there is no
-        // aria-label repeating the state.
-        control.Attributes.GetValueOrDefault("aria-label", "").Should().NotContainAny("Checked", "Unchecked");
+        stop.Role.Should().Be(SemanticRole.Checkbox);
+        stop.Checked.Should().Be(SemanticCheck.On);
+        // The name is what the control is FOR, and never its state.
+        stop.Name.Should().Be("Send me the newsletter");
+        ControlOf(checkbox).Attributes.Should().NotContainKey("aria-pressed", "checked-ness is not pressed-ness");
     }
 
     /// <summary>The name never CHANGES with the state — a control whose name toggles reads as a
@@ -49,10 +60,11 @@ public class CheckStateSemanticsTests
     [Fact]
     public void TheNameIsStableAcrossTheToggle()
     {
-        string NameOf(bool @checked) =>
-            ControlOf(new Checkbox(@checked, () => { }, "Terms")).Attributes.GetValueOrDefault("aria-label", "") ?? "";
+        // The ACCESSIBLE name, which a reader computes from aria-label or from what the control holds:
+        // comparing two aria-label attributes passed while both were absent.
+        string NameOf(bool @checked) => Announced(new Checkbox(@checked, () => { }, "Terms")).Name;
 
-        NameOf(false).Should().Be(NameOf(true));
+        NameOf(false).Should().Be("Terms").And.Be(NameOf(true));
     }
 
     /// <summary>"mixed" is the third state ARIA gives a checkbox and nothing else — the "select
@@ -60,19 +72,18 @@ public class CheckStateSemanticsTests
     [Fact]
     public void AnIndeterminateCheckboxIsMixed()
     {
-        var control = ControlOf(new Checkbox(false, () => { }, "Select all") { Indeterminate = true });
-
-        control.Attributes["aria-checked"].Should().Be("mixed");
+        Announced(new Checkbox(false, () => { }, "Select all") { Indeterminate = true })
+            .Checked.Should().Be(SemanticCheck.Mixed);
     }
 
     [Fact]
     public void ASwitchIsASwitch_AndNeverMixed()
     {
-        var control = ControlOf(new Switch(true, () => { }) { Label = "Dark mode" });
+        var stop = Announced(new Switch(true, () => { }) { Label = "Dark mode" });
 
-        control.Attributes["role"].Should().Be("switch");
-        control.Attributes["aria-checked"].Should().Be("true");
-        control.Attributes["aria-label"].Should().Be("Dark mode", "the name says what it is FOR, not its state");
+        stop.Role.Should().Be(SemanticRole.Switch);
+        stop.Checked.Should().Be(SemanticCheck.On);
+        stop.Name.Should().Be("Dark mode", "the name says what it is FOR, not its state");
     }
 
     /// <summary>Unlike a radio, a check keeps its own Tab stop: it is not one choice inside a
