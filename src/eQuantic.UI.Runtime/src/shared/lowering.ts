@@ -3756,6 +3756,26 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as FlexibleNode).child);
     case 'loopMotion':
       return fills((node as LoopMotionNode).child);
+    // The rest of the wrappers the vocabulary calls layout-transparent (C# `IsLayoutTransparent`,
+    // which the C# `Fills` reads): a kind missing here answers "does not fill", silently.
+    case 'safeArea':
+      return fills((node as unknown as SafeAreaNode).child as VisualNodeValue);
+    case 'draggable':
+      return fills((node as unknown as DraggableNode).child as VisualNodeValue);
+    case 'dragDismiss':
+      return fills((node as unknown as DragDismissNode).child as VisualNodeValue);
+    case 'link':
+      return fills((node as unknown as LinkNode).child as VisualNodeValue);
+    case 'pinned':
+      return fills((node as unknown as PinnedNode).child as VisualNodeValue);
+    case 'presence':
+      return fills((node as unknown as PresenceNode).child as VisualNodeValue);
+    case 'shortcut':
+      return fills((node as unknown as ShortcutNode).child as VisualNodeValue);
+    case 'codeSurface':
+      return fills((node as unknown as CodeSurfaceNode).child as VisualNodeValue);
+    case 'sheetSurface':
+      return fills((node as unknown as SheetSurfaceNode).child as VisualNodeValue);
     default:
       return { width: false, height: false };
   }
@@ -4703,7 +4723,23 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
   });
 
   const child = lowerNode(node.child, context, null, path + '/0');
-  if (child) wrapper.children.push(child);
+  if (child) {
+    // C# twin: transparent to its child's size, read off what the child lowered to (a component's
+    // fill is only known once it has built), with the insets inside the box it takes.
+    const fillsWidth = atomicDeclaration(child, 'width') === '100%';
+    const fillsHeight = atomicDeclaration(child, 'height') === '100%';
+    if (fillsWidth || fillsHeight) {
+      mergeAtomicDeclaration(wrapper, 'box-sizing', 'border-box');
+      if (fillsWidth) {
+        // The whole width contract: the fill AND its cap (C# twin).
+        mergeAtomicDeclaration(wrapper, 'width', '100%');
+        const cap = atomicDeclaration(child, 'max-width');
+        if (cap !== undefined) mergeAtomicDeclaration(wrapper, 'max-width', cap);
+      }
+      if (fillsHeight) mergeAtomicDeclaration(wrapper, 'height', '100%');
+    }
+    wrapper.children.push(child);
+  }
   return wrapper;
 }
 
