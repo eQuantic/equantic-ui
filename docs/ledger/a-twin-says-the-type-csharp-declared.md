@@ -1,4 +1,4 @@
-- **2026-10-30 · A twin says the type C# declared**: a local function carries its declared return type, where
+- **2026-10-30 · A twin says the type C# declared**: a local function carries its declared return type (an async one, the promise of it), where
   TypeScript inferred the derived type its body returned and a variable it initialized refused a sibling
   ([#793](https://github.com/eQuantic/equantic-ui/issues/793)), and an object initializer's temporary is declared as the
   type it holds, where `any` left a lambda subscribed to the local's event with nothing to infer from

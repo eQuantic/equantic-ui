@@ -11,7 +11,9 @@ subscribed to its event had nothing to infer from (TS7006).
 ## What Changes
 
 - A local function says its declared return type where the type has a name in TypeScript, the rule a local's annotation
-  already followed, now in `TsNamedType` for the three who read it.
+  already followed, now in `TsNamedType` for the three who read it. An async one returning `Task<T>` says a promise of
+  it. A null C# lets the function return keeps the return unannotated, since the twin writes it as null: one written
+  with `?`, one where nullable annotations are off, and a null or a default the body forgives with `!`.
 - An object initializer's temporary is declared as the type it holds.
 - Nothing a developer using the SDK writes or meets changes: an app's module is bundled by bun, which reads no types.
   What moves is the emitted TypeScript, and the JavaScript is the same. No requirement moves, so no spec does.
