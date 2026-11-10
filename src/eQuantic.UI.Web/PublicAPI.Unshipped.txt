@@ -1,3 +1,5 @@
 #nullable enable
 *REMOVED*static eQuantic.UI.Web.RenderContext.ResolveDestination(string! destination) -> string!
 static eQuantic.UI.Web.RenderContext.ResolveDestination(string! destination) -> string?
+static eQuantic.UI.Web.WebRealizer.LowerFrame(eQuantic.UI.Primitives.Element! root, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> eQuantic.UI.Web.HtmlElement!
+eQuantic.UI.Web.StyleSink.HidesAt(string! className, float widthDp) -> bool
