@@ -1,0 +1,46 @@
+namespace eQuantic.UI.Primitives;
+
+/// <summary>
+/// The Chip's slot (<c>docs/ELEMENT-TREE-PLAN.md</c> §3.10), every member OPTIONAL. A member left null
+/// is the next step of the slot order: for the height, the slot's own <see cref="Controls"/> at the small
+/// rung, then the theme's <see cref="IAppTheme.Controls"/>, then <see cref="Sizing"/>; for the rest, the
+/// component's default. The selected and tag tints a kind takes from <see cref="IAppTheme.Colors"/> stay
+/// there, and the hover of a filter chip is still the midpoint of its fill toward the border.
+/// <para>
+/// <em>How does Flutter solve it?</em> <c>ChipThemeData</c>: the chip's padding, shape, label style and
+/// colours, nullable, on <c>ThemeData</c>.
+/// </para>
+/// </summary>
+public sealed record ChipTheme
+{
+    /// <summary>A ladder for chips alone, ahead of the theme's: a chip is as tall as a small control.</summary>
+    public ControlsTheme? Controls { get; init; }
+
+    /// <summary>The horizontal padding (12).</summary>
+    public float? PaddingX { get; init; }
+
+    /// <summary>The gap between the glyphs and the label (6).</summary>
+    public float? Gap { get; init; }
+
+    /// <summary>The label's type (13 over 16, semi-bold).</summary>
+    public TypeStyle? Label { get; init; }
+
+    /// <summary>The corner radius (the theme's full shape: a pill).</summary>
+    public float? Radius { get; init; }
+
+    /// <summary>The fill of an unselected filter chip and of an input or suggestion chip
+    /// (<see cref="IAppTheme.SurfaceSubtle"/>).</summary>
+    public ColorToken? Fill { get; init; }
+
+    /// <summary>A selected filter chip's border width (1).</summary>
+    public float? SelectedBorderWidth { get; init; }
+
+    /// <summary>The opacity of the pressed colour over a selected filter chip (0.24).</summary>
+    public float? PressOpacity { get; init; }
+
+    /// <summary>The size of a selected filter chip's check (16).</summary>
+    public float? IconSize { get; init; }
+
+    /// <summary>The size of an input chip's remove glyph (20).</summary>
+    public float? RemoveIconSize { get; init; }
+}

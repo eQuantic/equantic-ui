@@ -5,7 +5,7 @@
 `IAppTheme` SHALL answer five slots that answer null by default:
 - `IconButton`, which styles the IconButton;
 - `Input`, which styles TextInput, SearchField, Select and TimePicker;
-- `Selection`, which styles Checkbox, RadioGroup, Switch and Slider;
+- `SelectionControls`, which styles Checkbox, RadioGroup, Switch and Slider;
 - `Segmented`, which styles SegmentedControl and Stepper;
 - `Chip`, which styles the Chip.
 
@@ -18,7 +18,7 @@ A value that varies by density SHALL be read at `context.Density` at every step.
 
 #### Scenario: A slot reaches the web's lowering
 
-- **WHEN** a page under `PhotonTheme.Instance.With(selection: new SelectionTheme { Box = new DensityValue { Comfortable = 30 } })` holds a `Checkbox`
+- **WHEN** a page under `PhotonTheme.Instance.With(selectionControls: new SelectionControlsTheme { Box = new DensityValue { Comfortable = 30 } })` holds a `Checkbox`
 - **THEN** the checkbox's box lowers 30 wide and 30 tall on the web
 
 #### Scenario: A slot reaches Photon's layout
@@ -28,7 +28,7 @@ A value that varies by density SHALL be read at `context.Density` at every step.
 
 #### Scenario: A member left null is the component's own
 
-- **WHEN** a theme answers `Selection` with only `Box` named
+- **WHEN** a theme answers `SelectionControls` with only `Box` named
 - **THEN** the checkbox's border and corner are the ones it draws with no slot
 
 #### Scenario: The density picks its side

@@ -2,7 +2,7 @@
 
 ## 1. The vocabulary
 
-- [ ] 1.1 `DensityValue`, and the five records `IconButtonTheme`, `InputTheme`, `SelectionTheme`, `SegmentedTheme` and `ChipTheme`, one per file, every member nullable data. Verify: the records compile into `PublicAPI.Unshipped.txt`, and `ThemeSlotsTests` reads every property of each
+- [ ] 1.1 `DensityValue`, and the five records `IconButtonTheme`, `InputTheme`, `SelectionControlsTheme`, `SegmentedTheme` and `ChipTheme`, one per file, every member nullable data. Verify: the records compile into `PublicAPI.Unshipped.txt`, and `ThemeSlotsTests` reads every property of each
 - [ ] 1.2 The five default members of `IAppTheme`, forwarded by `OverriddenTheme` and taken by `With`, after E6a's. Verify: `OverriddenThemeTests` finds no member left to the interface
 
 ## 2. The components read their slots

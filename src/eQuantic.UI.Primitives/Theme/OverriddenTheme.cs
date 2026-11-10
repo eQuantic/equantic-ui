@@ -6,7 +6,9 @@ namespace eQuantic.UI.Primitives;
 /// wrapped theme answers each one as it would alone; <c>OverriddenThemeTests</c> fails on a member of
 /// <see cref="IAppTheme"/> this class leaves to the interface.
 /// </summary>
-internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, ButtonTheme? button) : IAppTheme
+internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, ButtonTheme? button,
+    IconButtonTheme? iconButton, InputTheme? input, SelectionControlsTheme? selectionControls, SegmentedTheme? segmented,
+    ChipTheme? chip) : IAppTheme
 {
     public ColorToken Background => inner.Background;
     public ColorToken Surface => inner.Surface;
@@ -38,4 +40,9 @@ internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, 
     public ControlsTheme? Controls => controls ?? inner.Controls;
     public ButtonTheme? Button => button ?? inner.Button;
     public ColorToken Code(CodeTokenKind kind) => inner.Code(kind);
+    public IconButtonTheme? IconButton => iconButton ?? inner.IconButton;
+    public InputTheme? Input => input ?? inner.Input;
+    public SelectionControlsTheme? SelectionControls => selectionControls ?? inner.SelectionControls;
+    public SegmentedTheme? Segmented => segmented ?? inner.Segmented;
+    public ChipTheme? Chip => chip ?? inner.Chip;
 }

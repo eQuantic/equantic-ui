@@ -28,7 +28,7 @@ draws a Photon text field, checkbox, switch and chip in Material's colours.
 |---|---|
 | `IconButtonTheme? IconButton` | IconButton |
 | `InputTheme? Input` | TextInput, SearchField, Select, TimePicker |
-| `SelectionTheme? Selection` | Checkbox, RadioGroup, Switch, Slider |
+| `SelectionControlsTheme? SelectionControls` | Checkbox, RadioGroup, Switch, Slider |
 | `SegmentedTheme? Segmented` | SegmentedControl, Stepper |
 | `ChipTheme? Chip` | Chip |
 
@@ -58,6 +58,10 @@ and `ControlMetrics.AtDensity` reads one at `context.Density`.
   56dp text field with its 1dp outline and 2dp focus outline, the 18dp checkbox, the 20dp radio, the
   52 by 32 switch, the 40dp segmented button, and the 32dp chip with its label in Label large.
 - `theme.With(…)` takes one parameter per new slot, after E6a's two.
+
+The plan's table of `docs/ELEMENT-TREE-PLAN.md` §3.10 called the selection slot `Selection`. That
+name is already taken on `IAppTheme` by the colour of selected text, so the slot is
+`SelectionControls`, and the table changes with it.
 
 ## Parts reached
 

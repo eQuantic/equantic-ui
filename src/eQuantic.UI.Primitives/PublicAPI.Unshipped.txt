@@ -76,4 +76,201 @@ override eQuantic.UI.Primitives.SizeLadder.ToString() -> string!
 static eQuantic.UI.Primitives.SizeLadder.operator !=(eQuantic.UI.Primitives.SizeLadder? left, eQuantic.UI.Primitives.SizeLadder? right) -> bool
 static eQuantic.UI.Primitives.SizeLadder.operator ==(eQuantic.UI.Primitives.SizeLadder? left, eQuantic.UI.Primitives.SizeLadder? right) -> bool
 eQuantic.UI.Primitives.AppThemeExtensions
-static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null) -> eQuantic.UI.Primitives.IAppTheme!
+eQuantic.UI.Primitives.ChipTheme
+eQuantic.UI.Primitives.ChipTheme.<Clone>$() -> eQuantic.UI.Primitives.ChipTheme!
+eQuantic.UI.Primitives.ChipTheme.ChipTheme() -> void
+eQuantic.UI.Primitives.ChipTheme.Controls.get -> eQuantic.UI.Primitives.ControlsTheme?
+eQuantic.UI.Primitives.ChipTheme.Controls.init -> void
+eQuantic.UI.Primitives.ChipTheme.Equals(eQuantic.UI.Primitives.ChipTheme? other) -> bool
+eQuantic.UI.Primitives.ChipTheme.Fill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ChipTheme.Fill.init -> void
+eQuantic.UI.Primitives.ChipTheme.Gap.get -> float?
+eQuantic.UI.Primitives.ChipTheme.Gap.init -> void
+eQuantic.UI.Primitives.ChipTheme.IconSize.get -> float?
+eQuantic.UI.Primitives.ChipTheme.IconSize.init -> void
+eQuantic.UI.Primitives.ChipTheme.Label.get -> eQuantic.UI.Primitives.TypeStyle?
+eQuantic.UI.Primitives.ChipTheme.Label.init -> void
+eQuantic.UI.Primitives.ChipTheme.PaddingX.get -> float?
+eQuantic.UI.Primitives.ChipTheme.PaddingX.init -> void
+eQuantic.UI.Primitives.ChipTheme.PressOpacity.get -> float?
+eQuantic.UI.Primitives.ChipTheme.PressOpacity.init -> void
+eQuantic.UI.Primitives.ChipTheme.Radius.get -> float?
+eQuantic.UI.Primitives.ChipTheme.Radius.init -> void
+eQuantic.UI.Primitives.ChipTheme.RemoveIconSize.get -> float?
+eQuantic.UI.Primitives.ChipTheme.RemoveIconSize.init -> void
+eQuantic.UI.Primitives.ChipTheme.SelectedBorderWidth.get -> float?
+eQuantic.UI.Primitives.ChipTheme.SelectedBorderWidth.init -> void
+eQuantic.UI.Primitives.DensityValue
+eQuantic.UI.Primitives.DensityValue.<Clone>$() -> eQuantic.UI.Primitives.DensityValue!
+eQuantic.UI.Primitives.DensityValue.Comfortable.get -> float?
+eQuantic.UI.Primitives.DensityValue.Comfortable.init -> void
+eQuantic.UI.Primitives.DensityValue.Compact.get -> float?
+eQuantic.UI.Primitives.DensityValue.Compact.init -> void
+eQuantic.UI.Primitives.DensityValue.DensityValue() -> void
+eQuantic.UI.Primitives.DensityValue.Equals(eQuantic.UI.Primitives.DensityValue? other) -> bool
+eQuantic.UI.Primitives.IAppTheme.Chip.get -> eQuantic.UI.Primitives.ChipTheme?
+eQuantic.UI.Primitives.IAppTheme.IconButton.get -> eQuantic.UI.Primitives.IconButtonTheme?
+eQuantic.UI.Primitives.IAppTheme.Input.get -> eQuantic.UI.Primitives.InputTheme?
+eQuantic.UI.Primitives.IAppTheme.Segmented.get -> eQuantic.UI.Primitives.SegmentedTheme?
+eQuantic.UI.Primitives.IAppTheme.SelectionControls.get -> eQuantic.UI.Primitives.SelectionControlsTheme?
+eQuantic.UI.Primitives.IconButtonTheme
+eQuantic.UI.Primitives.IconButtonTheme.<Clone>$() -> eQuantic.UI.Primitives.IconButtonTheme!
+eQuantic.UI.Primitives.IconButtonTheme.Controls.get -> eQuantic.UI.Primitives.ControlsTheme?
+eQuantic.UI.Primitives.IconButtonTheme.Controls.init -> void
+eQuantic.UI.Primitives.IconButtonTheme.Equals(eQuantic.UI.Primitives.IconButtonTheme? other) -> bool
+eQuantic.UI.Primitives.IconButtonTheme.GlyphColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.IconButtonTheme.GlyphColor.init -> void
+eQuantic.UI.Primitives.IconButtonTheme.IconButtonTheme() -> void
+eQuantic.UI.Primitives.IconButtonTheme.IconSize.get -> eQuantic.UI.Primitives.SizeLadder?
+eQuantic.UI.Primitives.IconButtonTheme.IconSize.init -> void
+eQuantic.UI.Primitives.IconButtonTheme.OutlineColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.IconButtonTheme.OutlineColor.init -> void
+eQuantic.UI.Primitives.IconButtonTheme.OutlineWidth.get -> float?
+eQuantic.UI.Primitives.IconButtonTheme.OutlineWidth.init -> void
+eQuantic.UI.Primitives.IconButtonTheme.QuietFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.IconButtonTheme.QuietFill.init -> void
+eQuantic.UI.Primitives.IconButtonTheme.Radius.get -> float?
+eQuantic.UI.Primitives.IconButtonTheme.Radius.init -> void
+eQuantic.UI.Primitives.IconButtonTheme.TonalPressOpacity.get -> float?
+eQuantic.UI.Primitives.IconButtonTheme.TonalPressOpacity.init -> void
+eQuantic.UI.Primitives.InputTheme
+eQuantic.UI.Primitives.InputTheme.<Clone>$() -> eQuantic.UI.Primitives.InputTheme!
+eQuantic.UI.Primitives.InputTheme.BorderColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.InputTheme.BorderColor.init -> void
+eQuantic.UI.Primitives.InputTheme.BorderWidth.get -> float?
+eQuantic.UI.Primitives.InputTheme.BorderWidth.init -> void
+eQuantic.UI.Primitives.InputTheme.CaptionGap.get -> float?
+eQuantic.UI.Primitives.InputTheme.CaptionGap.init -> void
+eQuantic.UI.Primitives.InputTheme.CaptionRole.get -> eQuantic.UI.Primitives.TypeRole?
+eQuantic.UI.Primitives.InputTheme.CaptionRole.init -> void
+eQuantic.UI.Primitives.InputTheme.Controls.get -> eQuantic.UI.Primitives.ControlsTheme?
+eQuantic.UI.Primitives.InputTheme.Controls.init -> void
+eQuantic.UI.Primitives.InputTheme.DisabledFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.InputTheme.DisabledFill.init -> void
+eQuantic.UI.Primitives.InputTheme.Equals(eQuantic.UI.Primitives.InputTheme? other) -> bool
+eQuantic.UI.Primitives.InputTheme.Fill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.InputTheme.Fill.init -> void
+eQuantic.UI.Primitives.InputTheme.FocusBorderWidth.get -> float?
+eQuantic.UI.Primitives.InputTheme.FocusBorderWidth.init -> void
+eQuantic.UI.Primitives.InputTheme.Gap.get -> float?
+eQuantic.UI.Primitives.InputTheme.Gap.init -> void
+eQuantic.UI.Primitives.InputTheme.IconSize.get -> float?
+eQuantic.UI.Primitives.InputTheme.IconSize.init -> void
+eQuantic.UI.Primitives.InputTheme.InputTheme() -> void
+eQuantic.UI.Primitives.InputTheme.LabelGap.get -> float?
+eQuantic.UI.Primitives.InputTheme.LabelGap.init -> void
+eQuantic.UI.Primitives.InputTheme.LabelRole.get -> eQuantic.UI.Primitives.TypeRole?
+eQuantic.UI.Primitives.InputTheme.LabelRole.init -> void
+eQuantic.UI.Primitives.InputTheme.PaddingX.get -> float?
+eQuantic.UI.Primitives.InputTheme.PaddingX.init -> void
+eQuantic.UI.Primitives.InputTheme.PanelBorderColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.InputTheme.PanelBorderColor.init -> void
+eQuantic.UI.Primitives.InputTheme.PanelElevation.get -> int?
+eQuantic.UI.Primitives.InputTheme.PanelElevation.init -> void
+eQuantic.UI.Primitives.InputTheme.PickerGap.get -> float?
+eQuantic.UI.Primitives.InputTheme.PickerGap.init -> void
+eQuantic.UI.Primitives.InputTheme.PickerPaddingX.get -> float?
+eQuantic.UI.Primitives.InputTheme.PickerPaddingX.init -> void
+eQuantic.UI.Primitives.InputTheme.Radius.get -> float?
+eQuantic.UI.Primitives.InputTheme.Radius.init -> void
+eQuantic.UI.Primitives.InputTheme.SearchFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.InputTheme.SearchFill.init -> void
+eQuantic.UI.Primitives.InputTheme.SearchRadius.get -> float?
+eQuantic.UI.Primitives.InputTheme.SearchRadius.init -> void
+eQuantic.UI.Primitives.SegmentedTheme
+eQuantic.UI.Primitives.SegmentedTheme.<Clone>$() -> eQuantic.UI.Primitives.SegmentedTheme!
+eQuantic.UI.Primitives.SegmentedTheme.BorderColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SegmentedTheme.BorderColor.init -> void
+eQuantic.UI.Primitives.SegmentedTheme.BorderWidth.get -> float?
+eQuantic.UI.Primitives.SegmentedTheme.BorderWidth.init -> void
+eQuantic.UI.Primitives.SegmentedTheme.Controls.get -> eQuantic.UI.Primitives.ControlsTheme?
+eQuantic.UI.Primitives.SegmentedTheme.Controls.init -> void
+eQuantic.UI.Primitives.SegmentedTheme.Equals(eQuantic.UI.Primitives.SegmentedTheme? other) -> bool
+eQuantic.UI.Primitives.SegmentedTheme.IconSize.get -> float?
+eQuantic.UI.Primitives.SegmentedTheme.IconSize.init -> void
+eQuantic.UI.Primitives.SegmentedTheme.Inset.get -> float?
+eQuantic.UI.Primitives.SegmentedTheme.Inset.init -> void
+eQuantic.UI.Primitives.SegmentedTheme.SegmentedTheme() -> void
+eQuantic.UI.Primitives.SegmentedTheme.ThumbElevation.get -> int?
+eQuantic.UI.Primitives.SegmentedTheme.ThumbElevation.init -> void
+eQuantic.UI.Primitives.SegmentedTheme.ThumbFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SegmentedTheme.ThumbFill.init -> void
+eQuantic.UI.Primitives.SegmentedTheme.TrackFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SegmentedTheme.TrackFill.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme
+eQuantic.UI.Primitives.SelectionControlsTheme.<Clone>$() -> eQuantic.UI.Primitives.SelectionControlsTheme!
+eQuantic.UI.Primitives.SelectionControlsTheme.BorderColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SelectionControlsTheme.BorderColor.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.BorderWidth.get -> float?
+eQuantic.UI.Primitives.SelectionControlsTheme.BorderWidth.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.Box.get -> eQuantic.UI.Primitives.DensityValue?
+eQuantic.UI.Primitives.SelectionControlsTheme.Box.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.CheckboxRadius.get -> float?
+eQuantic.UI.Primitives.SelectionControlsTheme.CheckboxRadius.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.Equals(eQuantic.UI.Primitives.SelectionControlsTheme? other) -> bool
+eQuantic.UI.Primitives.SelectionControlsTheme.LabelGap.get -> float?
+eQuantic.UI.Primitives.SelectionControlsTheme.LabelGap.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.RadioDot.get -> eQuantic.UI.Primitives.DensityValue?
+eQuantic.UI.Primitives.SelectionControlsTheme.RadioDot.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.RadioRowHeight.get -> float?
+eQuantic.UI.Primitives.SelectionControlsTheme.RadioRowHeight.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SelectionControlsTheme() -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderMinWidth.get -> float?
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderMinWidth.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderRestTrack.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderRestTrack.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderThumbBorder.get -> float?
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderThumbBorder.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderThumbBorderColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderThumbBorderColor.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderThumbElevation.get -> int?
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderThumbElevation.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderThumbSize.get -> float?
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderThumbSize.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderTrackHeight.get -> float?
+eQuantic.UI.Primitives.SelectionControlsTheme.SliderTrackHeight.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchHeight.get -> eQuantic.UI.Primitives.DensityValue?
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchHeight.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchInset.get -> float?
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchInset.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchOffTrack.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchOffTrack.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchThumb.get -> eQuantic.UI.Primitives.DensityValue?
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchThumb.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchThumbElevation.get -> int?
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchThumbElevation.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchWidth.get -> eQuantic.UI.Primitives.DensityValue?
+eQuantic.UI.Primitives.SelectionControlsTheme.SwitchWidth.init -> void
+eQuantic.UI.Primitives.SelectionControlsTheme.ThumbFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SelectionControlsTheme.ThumbFill.init -> void
+override eQuantic.UI.Primitives.ChipTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.ChipTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.ChipTheme.ToString() -> string!
+override eQuantic.UI.Primitives.DensityValue.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.DensityValue.GetHashCode() -> int
+override eQuantic.UI.Primitives.DensityValue.ToString() -> string!
+override eQuantic.UI.Primitives.IconButtonTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.IconButtonTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.IconButtonTheme.ToString() -> string!
+override eQuantic.UI.Primitives.InputTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.InputTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.InputTheme.ToString() -> string!
+override eQuantic.UI.Primitives.SegmentedTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.SegmentedTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.SegmentedTheme.ToString() -> string!
+override eQuantic.UI.Primitives.SelectionControlsTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.SelectionControlsTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.SelectionControlsTheme.ToString() -> string!
+static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null, eQuantic.UI.Primitives.IconButtonTheme? iconButton = null, eQuantic.UI.Primitives.InputTheme? input = null, eQuantic.UI.Primitives.SelectionControlsTheme? selectionControls = null, eQuantic.UI.Primitives.SegmentedTheme? segmented = null, eQuantic.UI.Primitives.ChipTheme? chip = null) -> eQuantic.UI.Primitives.IAppTheme!
+static eQuantic.UI.Primitives.ChipTheme.operator !=(eQuantic.UI.Primitives.ChipTheme? left, eQuantic.UI.Primitives.ChipTheme? right) -> bool
+static eQuantic.UI.Primitives.ChipTheme.operator ==(eQuantic.UI.Primitives.ChipTheme? left, eQuantic.UI.Primitives.ChipTheme? right) -> bool
+static eQuantic.UI.Primitives.DensityValue.operator !=(eQuantic.UI.Primitives.DensityValue? left, eQuantic.UI.Primitives.DensityValue? right) -> bool
+static eQuantic.UI.Primitives.DensityValue.operator ==(eQuantic.UI.Primitives.DensityValue? left, eQuantic.UI.Primitives.DensityValue? right) -> bool
+static eQuantic.UI.Primitives.IconButtonTheme.operator !=(eQuantic.UI.Primitives.IconButtonTheme? left, eQuantic.UI.Primitives.IconButtonTheme? right) -> bool
+static eQuantic.UI.Primitives.IconButtonTheme.operator ==(eQuantic.UI.Primitives.IconButtonTheme? left, eQuantic.UI.Primitives.IconButtonTheme? right) -> bool
+static eQuantic.UI.Primitives.InputTheme.operator !=(eQuantic.UI.Primitives.InputTheme? left, eQuantic.UI.Primitives.InputTheme? right) -> bool
+static eQuantic.UI.Primitives.InputTheme.operator ==(eQuantic.UI.Primitives.InputTheme? left, eQuantic.UI.Primitives.InputTheme? right) -> bool
+static eQuantic.UI.Primitives.SegmentedTheme.operator !=(eQuantic.UI.Primitives.SegmentedTheme? left, eQuantic.UI.Primitives.SegmentedTheme? right) -> bool
+static eQuantic.UI.Primitives.SegmentedTheme.operator ==(eQuantic.UI.Primitives.SegmentedTheme? left, eQuantic.UI.Primitives.SegmentedTheme? right) -> bool
+static eQuantic.UI.Primitives.SelectionControlsTheme.operator !=(eQuantic.UI.Primitives.SelectionControlsTheme? left, eQuantic.UI.Primitives.SelectionControlsTheme? right) -> bool
+static eQuantic.UI.Primitives.SelectionControlsTheme.operator ==(eQuantic.UI.Primitives.SelectionControlsTheme? left, eQuantic.UI.Primitives.SelectionControlsTheme? right) -> bool
