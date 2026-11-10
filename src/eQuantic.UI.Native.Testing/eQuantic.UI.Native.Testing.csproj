@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <PackageId>eQuantic.UI.Native.Testing</PackageId>
+    <Description>Component tests for eQuantic.UI apps that ship through Photon, in any .NET test framework: lay a component out as the native shells do, with no window and no GPU, and read each node's box and its text's lines, the same on every OS. The native half of eQuantic.UI.Testing, experimental as the native track is.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The host the shells drive, and through it the realizer, the layout and the vocabulary: the
+         tester draws frames with PhotonHost, headless. The reference backend paints a frame on the
+         CPU, the output every GPU backend is held to. It takes no test framework, so an xUnit, NUnit
+         or MSTest project asserts on what it answers. -->
+    <ProjectReference Include="..\eQuantic.UI.Native.Components\eQuantic.UI.Native.Components.csproj" />
+    <ProjectReference Include="..\eQuantic.UI.Native.Engine.Reference\eQuantic.UI.Native.Engine.Reference.csproj" />
+  </ItemGroup>
+
+</Project>

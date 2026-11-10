@@ -59,6 +59,11 @@ public static class HydrationSpec
                 return null;
         }
 
+        // A 64-bit [Flags] enum crosses as its digits, as a long does, and is held as a BigInt (#551): it
+        // arrived as text. Any other enum arrives as the browser holds it, a member's key or a number.
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            return enumType.IsFlagsEnum() && Strategies.Types.EnumShape.IsWide(enumType) ? "'long'" : null;
+
         if (type is IArrayTypeSymbol array)
             return List(array.ElementType, referenced, visiting);
 
@@ -265,12 +270,14 @@ public static class HydrationSpec
     /// How the property name System.Text.Json writes for a key of this type becomes the key (a
     /// <c>HydrationKey</c> of <c>utils/hydrate.ts</c>): a number, a bool, or a compat scalar by its tag.
     /// Null where the name IS the key: a string, a char, a <c>Guid</c>, an enum's camelCase name. A
-    /// <c>[Flags]</c> enum's key is its number's text (EqJson), and a number here (#442).
+    /// <c>[Flags]</c> enum's key is its number's text (EqJson), and a number here (#442), a 64-bit
+    /// one's a BigInt, as a long's key is (#551).
     /// </summary>
     private static string? KeyTag(ITypeSymbol key)
     {
         var type = key.UnwrapNullable() ?? key;
-        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } flags && flags.IsFlagsEnum()) return "'number'";
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } flags && flags.IsFlagsEnum())
+            return Strategies.Types.EnumShape.IsWide(flags) ? "'long'" : "'number'";
         switch (type.SpecialType)
         {
             case SpecialType.System_Boolean:
