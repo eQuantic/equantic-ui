@@ -186,6 +186,33 @@ public class WrapperLayoutTransparencyTests
             new Box(new BoxStyle { Width = 80, Height = SizeValue.Fill }, new Text("rail"));
     }
 
+    /// <summary>
+    /// Around an AdaptiveNode, which lowers to display:contents gates with every arm mounted: the area
+    /// fills an axis when EVERY arm does, since the page's media rules show one at a time. The
+    /// Wallet's page is that shape (a bar on a phone, a rail on a desktop), and its rail stopped at
+    /// the last destination because the area around the two arms hugged.
+    /// </summary>
+    [Fact]
+    public void ASafeAreaAroundAnAdaptiveNode_FillsWhereEveryArmFills()
+    {
+        static VisualNode Arm(bool fills) => new Column(gap: 0)
+        {
+            Width = SizeValue.Fill,
+            Height = fills ? SizeValue.Fill : SizeValue.Hug,
+        };
+
+        var both = new Column(gap: 0) { Height = SizeValue.Fill };
+        both.Add(new SafeArea(new AdaptiveNode(Arm(fills: true), Arm(fills: true)), SafeEdges.Top));
+        var one = new Column(gap: 0) { Height = SizeValue.Fill };
+        one.Add(new SafeArea(new AdaptiveNode(Arm(fills: true), Arm(fills: false)), SafeEdges.Top));
+
+        Render(both).Children.Should().ContainSingle().Which.Attributes.GetValueOrDefault("style", "")
+            .Should().Contain("height: 100%").And.Contain("width: 100%");
+        Render(one).Children.Should().ContainSingle().Which.Attributes.GetValueOrDefault("style", "")
+            .Should().NotContain("height: 100%", "an arm that hugs would stand in an area taller than it")
+            .And.Contain("width: 100%");
+    }
+
     [Fact]
     public void ASafeAreaAroundAChildThatHugs_HugsToo()
     {
