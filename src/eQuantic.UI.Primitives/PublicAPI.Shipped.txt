@@ -245,7 +245,7 @@ eQuantic.UI.Primitives.BoxStyle.Width.get -> eQuantic.UI.Primitives.SizeValue
 eQuantic.UI.Primitives.BoxStyle.Width.init -> void
 eQuantic.UI.Primitives.BuildOwner
 eQuantic.UI.Primitives.BuildOwner.Build(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.ComponentContext! context, eQuantic.UI.Primitives.WindowSizeClass sizeClass, bool rebuildAll) -> eQuantic.UI.Primitives.Element!
-eQuantic.UI.Primitives.BuildOwner.BuildOwner() -> void
+eQuantic.UI.Primitives.BuildOwner.BuildOwner(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent) -> void
 eQuantic.UI.Primitives.BuildOwner.BuildRequested -> System.Action?
 eQuantic.UI.Primitives.BuildOwner.EndFrame() -> void
 eQuantic.UI.Primitives.BuildOwner.HasDirty.get -> bool
@@ -2556,7 +2556,7 @@ override sealed eQuantic.UI.Primitives.WebFrame.Accept<TState, TResult>(eQuantic
 override sealed eQuantic.UI.Primitives.WebFrame.NodeKind.get -> string!
 static eQuantic.UI.Primitives.BoxStyle.operator !=(eQuantic.UI.Primitives.BoxStyle left, eQuantic.UI.Primitives.BoxStyle right) -> bool
 static eQuantic.UI.Primitives.BoxStyle.operator ==(eQuantic.UI.Primitives.BoxStyle left, eQuantic.UI.Primitives.BoxStyle right) -> bool
-static eQuantic.UI.Primitives.BuildOwner.Structural() -> eQuantic.UI.Primitives.BuildOwner!
+static eQuantic.UI.Primitives.BuildOwner.Structural(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent) -> eQuantic.UI.Primitives.BuildOwner!
 static eQuantic.UI.Primitives.CalendarNames.DayNamesLong.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static eQuantic.UI.Primitives.CalendarNames.DayNamesShort.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static eQuantic.UI.Primitives.CalendarNames.FirstDayOfWeek.get -> int
@@ -2583,8 +2583,10 @@ static eQuantic.UI.Primitives.ComponentBoundary.Diagnostics.get -> bool
 static eQuantic.UI.Primitives.ComponentBoundary.Diagnostics.set -> void
 static eQuantic.UI.Primitives.ComponentBoundary.Enter(eQuantic.UI.Primitives.UiComponent! component) -> eQuantic.UI.Primitives.ComponentBoundary.Expansion
 static eQuantic.UI.Primitives.ComponentBoundary.ExpandContained<TState, TResult>(this eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, TState state, System.Func<eQuantic.UI.Primitives.VisualNode!, TState, TResult>! realize) -> TResult
+static eQuantic.UI.Primitives.ComponentBoundary.Owner() -> eQuantic.UI.Primitives.BuildOwner!
 static eQuantic.UI.Primitives.ComponentBoundary.Report.get -> System.Action<eQuantic.UI.Primitives.UiComponent!, System.Exception!>?
 static eQuantic.UI.Primitives.ComponentBoundary.Report.set -> void
+static eQuantic.UI.Primitives.ComponentBoundary.StructuralOwner() -> eQuantic.UI.Primitives.BuildOwner!
 static eQuantic.UI.Primitives.CornerRadii.operator !=(eQuantic.UI.Primitives.CornerRadii left, eQuantic.UI.Primitives.CornerRadii right) -> bool
 static eQuantic.UI.Primitives.CornerRadii.operator ==(eQuantic.UI.Primitives.CornerRadii left, eQuantic.UI.Primitives.CornerRadii right) -> bool
 static eQuantic.UI.Primitives.CuratedIcons.Resolve(eQuantic.UI.Primitives.Icons glyph) -> eQuantic.UI.Primitives.IconGlyph

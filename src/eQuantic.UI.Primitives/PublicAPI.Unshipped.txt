@@ -1,7 +1,1 @@
 #nullable enable
-eQuantic.UI.Primitives.BuildOwner.BuildOwner(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent) -> void
-static eQuantic.UI.Primitives.BuildOwner.Structural(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent) -> eQuantic.UI.Primitives.BuildOwner!
-static eQuantic.UI.Primitives.ComponentBoundary.Owner() -> eQuantic.UI.Primitives.BuildOwner!
-static eQuantic.UI.Primitives.ComponentBoundary.StructuralOwner() -> eQuantic.UI.Primitives.BuildOwner!
-*REMOVED*eQuantic.UI.Primitives.BuildOwner.BuildOwner() -> void
-*REMOVED*static eQuantic.UI.Primitives.BuildOwner.Structural() -> eQuantic.UI.Primitives.BuildOwner!

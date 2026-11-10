@@ -28,11 +28,11 @@ eQuantic.UI.Server.Assets.AssetCollection.Add(eQuantic.UI.Server.Assets.IAsset! 
 eQuantic.UI.Server.Assets.AssetCollection.AssetCollection() -> void
 eQuantic.UI.Server.Assets.AssetCollection.Assets.get -> System.Collections.Generic.IEnumerable<eQuantic.UI.Server.Assets.IAsset!>!
 eQuantic.UI.Server.Assets.AssetCollection.HasAssets.get -> bool
-eQuantic.UI.Server.Assets.AssetCollection.RenderTags() -> System.Collections.Generic.IEnumerable<string!>!
+eQuantic.UI.Server.Assets.AssetCollection.RenderTags(string? nonce) -> System.Collections.Generic.IEnumerable<string!>!
 eQuantic.UI.Server.Assets.IAsset
 eQuantic.UI.Server.Assets.IAsset.Id.get -> string?
 eQuantic.UI.Server.Assets.IAsset.Key.get -> string!
-eQuantic.UI.Server.Assets.IAsset.Render() -> string!
+eQuantic.UI.Server.Assets.IAsset.Render(string? nonce) -> string!
 eQuantic.UI.Server.Assets.IComponentAssetProvider<TComponent>
 eQuantic.UI.Server.Assets.IComponentAssetProvider<TComponent>.ConfigureAssets(eQuantic.UI.Server.Assets.AssetBuilder! assets) -> void
 eQuantic.UI.Server.Assets.IRequireAssets
@@ -46,7 +46,7 @@ eQuantic.UI.Server.Assets.InlineScriptAsset.Id.init -> void
 eQuantic.UI.Server.Assets.InlineScriptAsset.InlineScriptAsset(eQuantic.UI.Server.Assets.InlineScriptAsset! original) -> void
 eQuantic.UI.Server.Assets.InlineScriptAsset.InlineScriptAsset(string! Content, string? Id = null) -> void
 eQuantic.UI.Server.Assets.InlineScriptAsset.Key.get -> string!
-eQuantic.UI.Server.Assets.InlineScriptAsset.Render() -> string!
+eQuantic.UI.Server.Assets.InlineScriptAsset.Render(string? nonce) -> string!
 eQuantic.UI.Server.Assets.InlineStyleAsset
 eQuantic.UI.Server.Assets.InlineStyleAsset.Content.get -> string!
 eQuantic.UI.Server.Assets.InlineStyleAsset.Content.init -> void
@@ -56,7 +56,7 @@ eQuantic.UI.Server.Assets.InlineStyleAsset.Id.init -> void
 eQuantic.UI.Server.Assets.InlineStyleAsset.InlineStyleAsset(eQuantic.UI.Server.Assets.InlineStyleAsset! original) -> void
 eQuantic.UI.Server.Assets.InlineStyleAsset.InlineStyleAsset(string! Content, string? Id = null) -> void
 eQuantic.UI.Server.Assets.InlineStyleAsset.Key.get -> string!
-eQuantic.UI.Server.Assets.InlineStyleAsset.Render() -> string!
+eQuantic.UI.Server.Assets.InlineStyleAsset.Render(string? nonce) -> string!
 eQuantic.UI.Server.Assets.ScriptAsset
 eQuantic.UI.Server.Assets.ScriptAsset.Deconstruct(out string! Src, out bool Defer, out string? Id) -> void
 eQuantic.UI.Server.Assets.ScriptAsset.Defer.get -> bool
@@ -64,7 +64,7 @@ eQuantic.UI.Server.Assets.ScriptAsset.Defer.init -> void
 eQuantic.UI.Server.Assets.ScriptAsset.Id.get -> string?
 eQuantic.UI.Server.Assets.ScriptAsset.Id.init -> void
 eQuantic.UI.Server.Assets.ScriptAsset.Key.get -> string!
-eQuantic.UI.Server.Assets.ScriptAsset.Render() -> string!
+eQuantic.UI.Server.Assets.ScriptAsset.Render(string? nonce) -> string!
 eQuantic.UI.Server.Assets.ScriptAsset.ScriptAsset(eQuantic.UI.Server.Assets.ScriptAsset! original) -> void
 eQuantic.UI.Server.Assets.ScriptAsset.ScriptAsset(string! Src, bool Defer = true, string? Id = null) -> void
 eQuantic.UI.Server.Assets.ScriptAsset.Src.get -> string!
@@ -76,7 +76,7 @@ eQuantic.UI.Server.Assets.StylesheetAsset.Href.init -> void
 eQuantic.UI.Server.Assets.StylesheetAsset.Id.get -> string?
 eQuantic.UI.Server.Assets.StylesheetAsset.Id.init -> void
 eQuantic.UI.Server.Assets.StylesheetAsset.Key.get -> string!
-eQuantic.UI.Server.Assets.StylesheetAsset.Render() -> string!
+eQuantic.UI.Server.Assets.StylesheetAsset.Render(string? nonce) -> string!
 eQuantic.UI.Server.Assets.StylesheetAsset.StylesheetAsset(eQuantic.UI.Server.Assets.StylesheetAsset! original) -> void
 eQuantic.UI.Server.Assets.StylesheetAsset.StylesheetAsset(string! Href, string? Id = null) -> void
 eQuantic.UI.Server.Authorization.IServerActionAuthorizationService
@@ -116,14 +116,13 @@ eQuantic.UI.Server.HotReload.HotReloadService.Start() -> void
 eQuantic.UI.Server.HtmlShellOptions
 eQuantic.UI.Server.HtmlShellOptions.AddDescription(string! description) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.AddHeadTag(eQuantic.UI.Server.HtmlTag! tag) -> eQuantic.UI.Server.HtmlShellOptions!
-eQuantic.UI.Server.HtmlShellOptions.AddHeadTag(string! rawHtml) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.AddPreconnect(System.Uri! origin, bool crossOrigin = false) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.AddScript(System.Uri! src, bool defer = true) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.AddStyles(string! css) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.AddStylesheet(System.Uri! href) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.ConfigureMetadata(System.Action<eQuantic.UI.Server.Metadata.SeoBuilder!>! configure) -> eQuantic.UI.Server.HtmlShellOptions!
 eQuantic.UI.Server.HtmlShellOptions.DefaultMetadata.get -> eQuantic.UI.Server.Metadata.MetadataCollection!
-eQuantic.UI.Server.HtmlShellOptions.HeadTags.get -> System.Collections.Generic.List<string!>!
+eQuantic.UI.Server.HtmlShellOptions.HeadTags.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Server.HtmlTag!>!
 eQuantic.UI.Server.HtmlShellOptions.HtmlClass.get -> string!
 eQuantic.UI.Server.HtmlShellOptions.HtmlClass.set -> void
 eQuantic.UI.Server.HtmlShellOptions.HtmlShellOptions() -> void
@@ -139,7 +138,7 @@ eQuantic.UI.Server.HtmlTag.Attributes.init -> void
 eQuantic.UI.Server.HtmlTag.Content.get -> string?
 eQuantic.UI.Server.HtmlTag.Content.init -> void
 eQuantic.UI.Server.HtmlTag.HtmlTag(string! tagName) -> void
-eQuantic.UI.Server.HtmlTag.Render() -> string!
+eQuantic.UI.Server.HtmlTag.Render(string? nonce) -> string!
 eQuantic.UI.Server.HtmlTag.TagName.get -> string!
 eQuantic.UI.Server.HtmlTag.TagName.init -> void
 eQuantic.UI.Server.HtmlTemplateEngine

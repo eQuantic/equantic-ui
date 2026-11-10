@@ -1795,6 +1795,7 @@ eQuantic.UI.Compiler.Parser.ComponentParser.ParseSource(string! sourceCode, stri
 eQuantic.UI.Compiler.Parser.ComponentParser.SetSemanticModelProvider(eQuantic.UI.Compiler.Services.SemanticModelProvider! provider) -> void
 eQuantic.UI.Compiler.Services.AppBuild
 eQuantic.UI.Compiler.Services.AppBuild.AppBuild(eQuantic.UI.Compiler.Services.AppBuildOptions! options, System.IO.TextWriter? output = null, System.IO.TextWriter? errors = null) -> void
+eQuantic.UI.Compiler.Services.AppBuild.BundleElapsed.get -> System.TimeSpan
 eQuantic.UI.Compiler.Services.AppBuild.Compilation.get -> Microsoft.CodeAnalysis.Compilation?
 eQuantic.UI.Compiler.Services.AppBuild.CompileAndBundle() -> bool
 eQuantic.UI.Compiler.Services.AppBuild.IntermediateDirectory.get -> string!
