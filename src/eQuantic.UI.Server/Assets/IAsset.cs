@@ -63,7 +63,7 @@ public record StylesheetAsset(string Href, string? Id = null) : IAsset
     {
         var href = HttpUtility.HtmlAttributeEncode(Href);
         var idAttr = !string.IsNullOrWhiteSpace(Id) ? $" id=\"{HttpUtility.HtmlAttributeEncode(Id)}\"" : "";
-        return $"<link rel=\"stylesheet\" href=\"{href}\"{idAttr}>";
+        return $"<link rel=\"stylesheet\" href=\"{href}\"{idAttr}{ShellNonce.Attribute(nonce)}>";
     }
 }
 
