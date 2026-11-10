@@ -649,7 +649,10 @@ suite compares, and CI reports the page modules' on every pull request):
    it as the bare module `@equantic/runtime` through the shell's import map, and the Server serves its
    own embedded copy at that route. That copy is a BUILD OUTPUT: the Server's `BundleRuntime` writes
    `wwwroot/runtime.js` from `Resources/boot.ts` before every build, and it is never committed — a
-   committed copy lagged the runtime's source twice without anything noticing (#273)
+   committed copy lagged the runtime's source twice without anything noticing (#273). It carries no
+   module of the runtime's `src/dev/`: the dev loop (the error overlay, the capture and replay of a
+   page's fields around a hot reload) is `runtime.dev.js`, the same boot from `Resources/boot.dev.ts`,
+   which the server names in the import map instead in Development and under hot reload (#1359)
 2. **`<Component>.js`**, and a **`.js.map`** only where a developer is debugging — one module per
    page or component, flat. The map carries the C# it came from, so `EQuanticSourceMaps` is `full`
    in Debug and `none` everywhere else (`external` writes one without the C# for an error reporter),
