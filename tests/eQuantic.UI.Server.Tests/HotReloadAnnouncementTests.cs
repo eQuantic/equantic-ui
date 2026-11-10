@@ -25,6 +25,7 @@ public class HotReloadAnnouncementTests
         System.Console.SetOut(captured);
         try
         {
+            service.SourceChanged();
             service.Rebuild();
         }
         finally

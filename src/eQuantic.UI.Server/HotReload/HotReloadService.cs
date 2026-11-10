@@ -208,8 +208,12 @@ public sealed class HotReloadService : IDisposable
     private void RebuildOnce()
     {
         // The saves this rebuild answers; one after this line opens the next burst, rebuilt after it.
-        var burst = Interlocked.Exchange(ref _burstWritten, 0) is var ticks and > 0
-            ? new DateTime(ticks, DateTimeKind.Utc) : DateTime.UtcNow;
+        // None is a call for a save the last rebuild answered: its events straddled that rebuild's start,
+        // and the debounce asked again. Rebuilt, it had no write time but now, found no edit after it, and
+        // told the page the first one had reloaded to mount, which drew over the markup it hydrated (#1373).
+        var ticks = Interlocked.Exchange(ref _burstWritten, 0);
+        if (ticks == 0) return;
+        var burst = new DateTime(ticks, DateTimeKind.Utc);
         try
         {
             if (_disposed) return;

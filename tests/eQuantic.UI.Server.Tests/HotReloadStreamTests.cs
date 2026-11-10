@@ -160,6 +160,37 @@ public class HotReloadStreamTests
         read.Should().EndWith("event: rebuilt\ndata: hydrate\n\n", "the edit was applied after the file was written");
     }
 
+    /// <summary>
+    /// A save is announced once. The events of one save can straddle the start of its rebuild, so the
+    /// debounce asked for a rebuild again after the first had taken the save: that one had no save to read
+    /// a write time from, waited for an edit after it was asked, found none and said the page mounts, and
+    /// the page the first had reloaded into hydrating markup reloaded again and drew over it (#1373).
+    /// </summary>
+    [Fact]
+    public async Task ASecondCallForTheSaveTheLastRebuildAnswered_AnnouncesNothing()
+    {
+        var root = Directory.CreateTempSubdirectory("eq-stream-").FullName;
+        var edits = new ServerEdits(arriveOnSave: true, TimeSpan.FromSeconds(1));
+        using var service = new HotReloadService(root, Exits(true), TimeSpan.FromSeconds(30), edits);
+        var (page, listening, leave) = await ListenAsync(service);
+
+        var saved = Path.Combine(root, "Screen.cs");
+        await File.WriteAllTextAsync(saved, "class Screen { }");
+        await Task.Delay(50);
+        edits.Take();
+        service.SourceChanged(saved);
+        service.Rebuild();
+        // The same save's second call, after its rebuild took it: nothing was saved since.
+        service.Rebuild();
+        // Past the time an edit may take, when the second call would have said the page mounts.
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        leave.Cancel();
+        await listening;
+
+        page.Heard.Split("event: rebuilt").Length.Should().Be(2, "one save, one announcement");
+        page.Heard.Should().EndWith("event: rebuilt\ndata: hydrate\n\n");
+    }
+
     /// <summary>An edit applied before the file was written belongs to an earlier save, and is not this one's.</summary>
     [Fact]
     public async Task AnEditAppliedBeforeTheFileWasWritten_IsNotItsSaves()
@@ -193,6 +224,7 @@ public class HotReloadStreamTests
         using var service = Service(Exits(true), edits);
         var (page, listening, leave) = await ListenAsync(service);
 
+        service.SourceChanged();
         var rebuild = Task.Run(service.Rebuild);
         await Task.Delay(500);
         var before = page.Heard;
@@ -217,6 +249,7 @@ public class HotReloadStreamTests
         var (page, listening, leave) = await ListenAsync(service);
 
         var clock = Stopwatch.StartNew();
+        service.SourceChanged();
         service.Rebuild();
         var took = clock.Elapsed;
         // The frame is written by the stream's own loop: waited for, never assumed written.
@@ -240,6 +273,7 @@ public class HotReloadStreamTests
         var (page, listening, leave) = await ListenAsync(service);
 
         var clock = Stopwatch.StartNew();
+        service.SourceChanged();
         service.Rebuild();
         var took = clock.Elapsed;
         // The frame is written by the stream's own loop: waited for, never assumed written.
@@ -262,6 +296,7 @@ public class HotReloadStreamTests
         using var service = Service(Exits(false, error), new ServerEdits(arriveOnSave: false, TimeSpan.Zero));
         var (page, listening, leave) = await ListenAsync(service);
 
+        service.SourceChanged();
         service.Rebuild();
         var read = await UntilAsync(page, "event: failed");
         leave.Cancel();
