@@ -26,31 +26,7 @@ namespace eQuantic.UI.Server.Authorization;
 internal static class PageAuthorization
 {
     /// <summary>The authorization metadata of a page type, in the shapes the middleware reads.</summary>
-    public static object[] MetadataFor(Type pageType)
-    {
-        var metadata = new List<object>();
-        foreach (var attribute in pageType.GetCustomAttributes(inherit: true))
-        {
-            switch (attribute)
-            {
-                case Primitives.AuthorizeAttribute authorize:
-                    metadata.Add(new AuthorizeAttribute
-                    {
-                        Policy = authorize.Policy,
-                        Roles = authorize.Roles,
-                        AuthenticationSchemes = authorize.AuthenticationSchemes,
-                    });
-                    break;
-                case Primitives.AllowAnonymousAttribute:
-                    metadata.Add(new AllowAnonymousAttribute());
-                    break;
-                case IAuthorizeData or IAllowAnonymous:
-                    metadata.Add(attribute);
-                    break;
-            }
-        }
-        return [.. metadata];
-    }
+    public static object[] MetadataFor(Type pageType) => [.. RequestAuthorization.MetadataOf(pageType)];
 
     /// <summary>
     /// Whether the request may see a page it reaches WITHOUT the page's own route: the 404 page the
@@ -61,21 +37,8 @@ internal static class PageAuthorization
     /// requirement is under the app's <c>FallbackPolicy</c>, and the request is the policy's resource.
     /// A page that requires authorization where the app configured none is refused, never drawn.
     /// </summary>
-    public static async Task<bool> AllowsAsync(HttpContext context, Type pageType)
-    {
-        var metadata = MetadataFor(pageType);
-        if (metadata.OfType<IAllowAnonymous>().Any()) return true;
-        var requirements = metadata.OfType<IAuthorizeData>().ToArray();
-
-        var provider = context.RequestServices.GetService<IAuthorizationPolicyProvider>();
-        var evaluator = context.RequestServices.GetService<IPolicyEvaluator>();
-        if (provider is null || evaluator is null) return requirements.Length == 0;
-        // No requirement combines into the fallback policy, or into none when the app set none.
-        var policy = await AuthorizationPolicy.CombineAsync(provider, requirements);
-        if (policy is null) return true;
-        var authentication = await evaluator.AuthenticateAsync(policy, context);
-        return (await evaluator.AuthorizeAsync(policy, authentication, context, resource: context)).Succeeded;
-    }
+    public static async Task<bool> AllowsAsync(HttpContext context, Type pageType) =>
+        (await RequestAuthorization.DecideAsync(context, MetadataFor(pageType))).Succeeded;
 
     /// <summary>The page's requirement on the endpoint that serves it.</summary>
     public static TBuilder WithPageAuthorization<TBuilder>(this TBuilder builder, Type pageType)

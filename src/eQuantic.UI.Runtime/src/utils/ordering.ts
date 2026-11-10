@@ -22,9 +22,9 @@ export type Ordering = 'value' | 'real' | 'text' | 'comparable' | EnumOrder;
 
 /**
  * A non-flags enum's members, by the camelCase name a value crosses as, and the value .NET orders it
- * by. A flags enum is a number here and orders as a `value`.
+ * by: a number, or a BigInt for a 64-bit enum. A flags enum is its value here and orders as a `value`.
  */
-export type EnumOrder = Readonly<Record<string, number>>;
+export type EnumOrder = Readonly<Record<string, number | bigint>>;
 
 interface Comparable {
   compareTo(other: unknown): number;
@@ -80,9 +80,14 @@ function byText(a: unknown, b: unknown): number {
 }
 
 function byEnum(values: EnumOrder): (a: unknown, b: unknown) => number {
-  // A value no member names is a number already (an undeclared one, cast in): it orders as itself.
-  const valueOf = (name: unknown): number =>
-    Object.prototype.hasOwnProperty.call(values, name as string) ? values[name as string] : Number(name);
+  // A value no member names is held as itself (an undeclared one, cast in), a 64-bit enum's a BigInt,
+  // and orders as itself; Number() rounded one past 2^53.
+  const valueOf = (name: unknown): number | bigint =>
+    Object.prototype.hasOwnProperty.call(values, name as string)
+      ? values[name as string]
+      : typeof name === 'bigint'
+        ? name
+        : Number(name);
   return (a, b) => {
     if (a == null) return b == null ? 0 : -1;
     if (b == null) return 1;

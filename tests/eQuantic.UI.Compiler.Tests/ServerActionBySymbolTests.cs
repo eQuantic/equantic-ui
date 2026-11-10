@@ -30,12 +30,12 @@ public sealed class ServerActionBySymbolTests
 
     public static TheoryData<string, string, string> Spellings() => new()
     {
-        { "an alias", $"    [Rpc] public System.Threading.Tasks.Task<bool> Archived() => {Body};", "Home/Archived" },
-        { "an alias naming the action", $"    [Rpc(Name = \"Stored\")] public System.Threading.Tasks.Task<bool> Archived() => {Body};", "Home/Stored" },
+        { "an alias", $"    [Rpc] public System.Threading.Tasks.Task<bool> Archived() => {Body};", "App.Screens.Home/Archived" },
+        { "an alias naming the action", $"    [Rpc(Name = \"Stored\")] public System.Threading.Tasks.Task<bool> Archived() => {Body};", "App.Screens.Home/Stored" },
         { "a partial method's definition",
             $"    [ServerAction] public partial System.Threading.Tasks.Task<bool> Archived();\n\n    public partial System.Threading.Tasks.Task<bool> Archived() => {Body};",
-            "Home/Archived" },
-        { "the plain spelling", $"    [ServerAction] public System.Threading.Tasks.Task<bool> Archived() => {Body};", "Home/Archived" },
+            "App.Screens.Home/Archived" },
+        { "the plain spelling", $"    [ServerAction] public System.Threading.Tasks.Task<bool> Archived() => {Body};", "App.Screens.Home/Archived" },
     };
 
     [Theory]
