@@ -21,4 +21,4 @@
 ## 5. The handoff's primary button, and the documentation
 
 - [x] 5.1 The equantic.tech primary button (the site's, built in its own repository) composed from the three: its band, arrow and label. Verify: in Chromium, both themes, rest and hover, with the label's contrast against the surface; on Photon, the arrow, the foreground and the fraction each have their host test
-- [ ] 5.2 The wiki's Styling page in its five languages, the `WidgetStateProperty` row of `docs/FLUTTER-PARITY.md`, and one ledger entry citing #614, with the migration line
+- [x] 5.2 The wiki's Styling page in its five languages, the `WidgetStateProperty` row of `docs/FLUTTER-PARITY.md`, and one ledger entry citing #614, with the migration line
