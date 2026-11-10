@@ -70,13 +70,15 @@ test.describe('The dashboard under the strict Content-Security-Policy', () => {
     await watchViolations(page);
     const routes = await routesOf(page);
 
-    const offences: string[] = [];
+    // What the home page's own load raised is the home page's, not the first route's.
+    const offences = (await violationsOf(page)).map((violation) => `/: ${violation}`);
     for (const route of routes.filter((route) => route !== '/')) {
       // A link the router owns: the page is not reloaded, so the runtime builds the screen, and the
       // styles and scripts it adds are judged by the policy the first document was served with.
       // A screen that does not draw the navigation is left for the home page, which links every
       // route, so no route is skipped in silence.
-      const link = page.locator(`a[href="${route}"]`).first();
+      // The route was read with its query and fragment cut off, so a link that carries one counts.
+      const link = page.locator(`a[href="${route}"], a[href^="${route}?"], a[href^="${route}#"]`).first();
       if (await link.count() === 0) {
         await page.goto('/');
         for (const violation of await violationsOf(page)) offences.push(`/: ${violation}`);
