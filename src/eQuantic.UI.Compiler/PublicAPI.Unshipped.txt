@@ -20,3 +20,7 @@ eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Deconstruct(out string! Name, out string
 eQuantic.UI.Compiler.CodeGen.Ir.JsConst.JsConst(string! Name, string! Annotation, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Initializer) -> void
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Const(string! name, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! initializer, string! annotation = "") -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 eQuantic.UI.Compiler.Services.AppBuild.BundleElapsed.get -> System.TimeSpan
+eQuantic.UI.Compiler.Services.AppBuildOptions.Serve.get -> bool
+eQuantic.UI.Compiler.Services.AppBuildOptions.Serve.init -> void
+*REMOVED*eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.get -> bool
+*REMOVED*eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.init -> void
