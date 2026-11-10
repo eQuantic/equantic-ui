@@ -9,7 +9,8 @@
 ## 2. Proved against the real thing
 
 - [x] 2.1 Measure both bundles. Verify: `runtime.js` 1,272,696 bytes and 315,199 gzip, `runtime.dev.js` 1,303,187 and 324,027
-- [ ] 2.2 Hot reload and the error overlay under the dev runtime. Verify: the web edit-to-view measurement hydrates every save on the dashboard sample, and the overlay shows an uncaught error in Development
+- [x] 2.2 Hot reload and the error overlay under the dev runtime. Verify: the web edit-to-view measurement hydrated 4 of 4 saves on the dashboard sample with the page loading runtime.dev.js, and in Development an uncaught error opened the overlay (`#equantic-error-overlay`) on a page whose only runtime was runtime.dev.js
+- [x] 2.3 The served runtime's budget records it. Verify: `ServedRuntimeBudgetTests` regenerated, 324,551 bytes of gzip to 315,740, in a commit of its own
 
 ## 3. Documentation
 
