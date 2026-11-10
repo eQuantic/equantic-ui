@@ -12,7 +12,7 @@
 
 ## 3. Proof and documentation
 
-- [ ] 3.1 Each new case fails on the code as it was
-- [ ] 3.2 The Web, Server, Compiler, Conformance and runtime suites pass whole
+- [x] 3.1 Each new case fails on the code as it was: 12 link cases in C#, the parity case in the browser, and the 2 atomic-sheet cases
+- [x] 3.2 The Web, Server, Compiler, Conformance and runtime suites pass whole: Server 458, Compiler 2809, Conformance 7374, runtime 2930, Web 1339 of 1340 (the one is the wiki master's favicon page, which needs a main this branch takes at its turn)
 - [x] 3.3 The wiki's Components, Markdown and Styling pages in all five languages, on the wiki branch named like this one
 - [x] 3.4 One ledger entry for each issue, as files of their own under `docs/ledger/`
