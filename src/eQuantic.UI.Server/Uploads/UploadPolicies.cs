@@ -13,6 +13,9 @@ internal sealed class UploadPolicies
         LargestSize = _byName.Count == 0 ? 0 : _byName.Values.Max(policy => policy.MaxSize);
     }
 
+    /// <summary>Every policy the app accepts uploads under.</summary>
+    public IEnumerable<UploadPolicy> All => _byName.Values;
+
     /// <summary>The largest file any policy accepts, in bytes; zero when the app accepts none.</summary>
     public long LargestSize { get; }
 

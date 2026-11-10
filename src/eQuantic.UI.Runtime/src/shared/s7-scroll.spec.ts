@@ -90,4 +90,37 @@ describe('scroll anchoring', () => {
       expect(style).toContain('overflow-anchor: none');
     }
   });
+
+  // A size fixed on the line's axis is not squeezed (#1186). The SAME cases S7ScrollRealizerTests pins.
+  it('a scroller fixed on the line\'s axis is not squeezed', () => {
+    const size = (value: number | null) =>
+      value === null ? { kind: 'hug', value: 0 } : { kind: 'fixed', value };
+    const style = (nodeKind: 'row' | 'column', width: number | null, height: number | null) =>
+      effectiveStyle(
+        lowerVisualNode(
+          {
+            nodeKind,
+            gap: 0,
+            main: 'start',
+            cross: 'start',
+            children: [
+              {
+                nodeKind: 'scrollView',
+                axis: 'both',
+                child: { nodeKind: 'box', style: {} },
+                width: size(width),
+                height: size(height),
+              },
+            ],
+          } as unknown as VisualNodeValue,
+          ctx,
+        ).children[0],
+      );
+
+    expect(style('row', 540, null)).toContain('flex-shrink: 0');
+    expect(style('column', null, 540)).toContain('flex-shrink: 0');
+    expect(style('row', null, 540)).not.toContain('flex-shrink');
+    expect(style('column', 540, null)).not.toContain('flex-shrink');
+    expect(style('row', null, null)).not.toContain('flex-shrink');
+  });
 });
