@@ -129,7 +129,10 @@ is not the owner's.
    through GitHub's merge queue (#1308), a reviewed, green pull request enters the queue with
    `gh pr merge <n>`: the queue runs CI on it together with every pull request ahead of it, merges it
    with a squash when that run is green, and nobody merges `main` into a pull request only to bring
-   it up to date. Until the queue is on, when `main` moved after the CI ran, merge `main` into the
+   it up to date. A pull request's own run skips the four macOS jobs, which hold the scarcest
+   runners and report as skipped, satisfying their checks: the queue's run is the one that runs them
+   (#1385), and a pull request that changes the Apple track asks for them on its branch first with
+   `gh workflow run ci.yml --ref <branch>`. Until the queue is on, when `main` moved after the CI ran, merge `main` into the
    pull request first (CI runs again, and it costs no Copilot round), then `gh pr merge <n> --squash`.
    Either way the squash takes the repository's default, the pull request's title and its commits'
    messages, so the commit's subject IS the title that was already read and its body is what the
