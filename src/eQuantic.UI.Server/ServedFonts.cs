@@ -139,7 +139,7 @@ internal sealed class ServedFonts
             if (Locate(file.Assembly, file.Resource) is not { } located)
             {
                 _logger?.LogWarning(
-                    "The face '{Family}' names the resource '{Resource}' in '{Assembly}', and the app's deployment holds no such resource: the family is not served, and text set in it falls back.",
+                    "The face '{Family}' names the resource '{Resource}' in '{Assembly}', and no assembly of exactly that name outside the platform's holds it in the app's deployment: the family is not served, and text set in it falls back.",
                     family.Name, file.Resource, file.Assembly);
                 return "";
             }
