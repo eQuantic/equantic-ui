@@ -360,6 +360,27 @@ public class FontServingTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    /// <summary>
+    /// The loader matches a name in any case, so a platform assembly spelled otherwise is refused before
+    /// it loads, not after: a browser's request never brings one of the platform's assemblies into the app
+    /// (the secondary review of #1393).
+    /// </summary>
+    [Theory]
+    [InlineData("microsoft.visualbasic.core")]
+    [InlineData("SYSTEM.NET.MAIL")]
+    public async Task APlatformAssemblySpelledInAnotherCase_IsNotLoaded(string name)
+    {
+        static bool Loaded(string name) => AppDomain.CurrentDomain.GetAssemblies()
+            .Any(assembly => string.Equals(assembly.GetName().Name, name, StringComparison.OrdinalIgnoreCase));
+        Loaded(name).Should().BeFalse("nothing else in the test host loads it");
+        await using var app = await Serve(PhotonTheme.Instance);
+
+        var response = await app.GetTestClient().GetAsync($"/_equantic/fonts/{name}/eQuantic.UI.Fonts/TestFace-Regular.ttf");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Loaded(name).Should().BeFalse("a name a browser sends never loads a platform assembly");
+    }
+
     /// <summary>The prefix the identity route takes is the one both SDKs embed a face under: written in
     /// two places, so this holds them together.</summary>
     [Theory]

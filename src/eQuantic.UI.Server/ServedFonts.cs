@@ -250,9 +250,11 @@ internal sealed class ServedFonts
         .OfType<FontFamily>();
 
     /// <summary>The platform's own assemblies embed no face an app ships, and a name a browser sends never
-    /// loads one.</summary>
+    /// loads one, in any case, since the loader matches a name in any case.</summary>
     private static bool IsPlatform(string name) =>
-        name is "netstandard" or "mscorlib" or "System"
-        || name.StartsWith("System.", StringComparison.Ordinal)
-        || name.StartsWith("Microsoft.", StringComparison.Ordinal);
+        name.Equals("netstandard", StringComparison.OrdinalIgnoreCase)
+        || name.Equals("mscorlib", StringComparison.OrdinalIgnoreCase)
+        || name.Equals("System", StringComparison.OrdinalIgnoreCase)
+        || name.StartsWith("System.", StringComparison.OrdinalIgnoreCase)
+        || name.StartsWith("Microsoft.", StringComparison.OrdinalIgnoreCase);
 }
