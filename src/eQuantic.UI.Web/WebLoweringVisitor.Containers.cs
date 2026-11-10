@@ -599,7 +599,7 @@ internal sealed partial class WebLoweringVisitor
     /// (the browser owns physics, momentum and the scrollbar); the cross axis stays hidden so content
     /// never leaks. The programmatic Offset is a native-side concept (browser scroll state lives in
     /// the DOM).</summary>
-    private HtmlElement LowerScrollView(ScrollView scroll)
+    private HtmlElement LowerScrollView(ScrollView scroll, bool? horizontalAxis)
     {
         var element = new RealizedElement("div")
         {
@@ -624,6 +624,11 @@ internal sealed partial class WebLoweringVisitor
                 MinWidth = "0",
                 MinHeight = "0",
                 MaxWidth = "100%",
+                // That lets a line squeeze it, and a size the app fixed on the line's axis is not
+                // squeezed: fixed is fixed, on both targets (see Rigid, #1186). On the other axis the
+                // line has nothing to take, and a hugging scroller still gives way.
+                FlexShrink = (horizontalAxis is true && scroll.Width.Kind == SizeKind.Fixed)
+                    || (horizontalAxis is false && scroll.Height.Kind == SizeKind.Fixed) ? "0" : null,
                 // The offset is the app's and the reader's, never the browser's guess. Scroll
                 // anchoring moved it whenever a windowed list swapped the rows above what was on
                 // screen, and a match the code editor's find had brought into view slid back out.
@@ -1155,11 +1160,31 @@ internal sealed partial class WebLoweringVisitor
     /// degraded into the flow (#671). The wrapper is still the node's element, so it carries the
     /// node's own key, bookmark and origin. Photon's twin is the container reading the one arm its
     /// window resolves.
+    /// <para>
+    /// A component stands where it stands and builds in its own visit, once, so the rule waits for
+    /// what it builds (<see cref="_placing"/>): an AdaptiveNode out of a component is placed like one
+    /// written there, and anything else ends the wait in <see cref="Lower"/> (#738).
+    /// </para>
     /// </summary>
-    private HtmlElement? Place(VisualNode child, Func<VisualNode, HtmlElement?> rule) =>
-        child is AdaptiveNode adaptive
-            ? Decorate(adaptive, LowerAdaptive(adaptive, arm => Place(arm, rule)))
-            : rule(child);
+    private HtmlElement? Place(VisualNode child, Func<VisualNode, HtmlElement?> rule)
+    {
+        if (child is AdaptiveNode adaptive) return PlaceArms(adaptive, rule);
+        if (child is not UiComponent) return rule(child);
+
+        var outer = _placing;
+        _placing = rule;
+        try
+        {
+            return rule(child);
+        }
+        finally
+        {
+            _placing = outer;
+        }
+    }
+
+    private HtmlElement? PlaceArms(AdaptiveNode adaptive, Func<VisualNode, HtmlElement?> rule) =>
+        Decorate(adaptive, LowerAdaptive(adaptive, arm => Place(arm, rule)));
 
     /// <summary>Spec S6: every DECLARED variant renders, each inside a gate whose fixed media rules
     /// show it only in its size-class range (display:contents keeps gates transparent to flex/grid).
