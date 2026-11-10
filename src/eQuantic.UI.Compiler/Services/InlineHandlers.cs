@@ -48,7 +48,8 @@ internal static class InlineHandlers
             {
                 switch (name.Identifier.ValueText)
                 {
-                    case "OnClientClick" or "OnLoad" when IsMember(model, name, HtmlElement):
+                    // Written, never read: a read puts nothing in the markup.
+                    case "OnClientClick" or "OnLoad" when IsMember(model, name, HtmlElement) && IsWritten(name):
                         refused.Add(Error(name, $"'{name.Identifier.ValueText}' writes a handler as text"));
                         break;
                     case "CustomAttributes" when IsMember(model, name, DynamicElement):
@@ -82,6 +83,16 @@ internal static class InlineHandlers
         model.GetSymbolInfo(name).Symbol is IPropertySymbol property
         && Lineage(property.ContainingType).Any(declaring => declaring.ToDisplayString() == type);
 
+    /// <summary>The expression that names the property: <c>x.Name</c> when it is reached through a
+    /// receiver, the bare name in an initializer or inside the element's own type.</summary>
+    private static ExpressionSyntax Accessed(IdentifierNameSyntax name) =>
+        name.Parent is MemberAccessExpressionSyntax access && access.Name == name ? access : name;
+
+    /// <summary>Whether the property is assigned there, the only use that writes the attribute.</summary>
+    private static bool IsWritten(IdentifierNameSyntax name) =>
+        Accessed(name) is var member
+        && member.Parent is AssignmentExpressionSyntax assignment && assignment.Left == member;
+
     private static IEnumerable<INamedTypeSymbol> Lineage(INamedTypeSymbol? type)
     {
         for (; type is not null; type = type.BaseType) yield return type;
@@ -95,7 +106,9 @@ internal static class InlineHandlers
     private static IEnumerable<ExpressionSyntax> HandlerKeys(SemanticModel model, IdentifierNameSyntax name)
     {
         var keys = new List<ExpressionSyntax>();
-        if (name.Parent is AssignmentExpressionSyntax assignment && assignment.Left == name)
+        var member = Accessed(name);
+        // An initializer's `CustomAttributes = …` and a statement's `element.CustomAttributes = …` alike.
+        if (member.Parent is AssignmentExpressionSyntax assignment && assignment.Left == member)
         {
             foreach (var initializer in assignment.Right.DescendantNodesAndSelf().OfType<InitializerExpressionSyntax>())
             foreach (var entry in initializer.Expressions)
@@ -111,9 +124,6 @@ internal static class InlineHandlers
                 }
             }
         }
-        var member = name.Parent is MemberAccessExpressionSyntax memberAccess && memberAccess.Name == name
-            ? (ExpressionSyntax)memberAccess
-            : name;
         if (member.Parent is ElementAccessExpressionSyntax index && index.Expression == member)
             keys.AddRange(index.ArgumentList.Arguments.Take(1).Select(argument => argument.Expression));
         if (member.Parent is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Add" } add

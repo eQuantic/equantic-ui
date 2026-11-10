@@ -74,6 +74,15 @@ public class InlineHandlerUnderAPolicyTests
                 CustomAttributes = new() { { Load, "x()" }, { "role", "note" } },
             };
 
+            public static DynamicElement Assigned()
+            {
+                var element = new DynamicElement { TagName = "div" };
+                element.CustomAttributes = new() { ["onkeydown"] = "key()" };
+                return element;
+            }
+
+            public static string? Read(DynamicElement element) => element.OnClientClick ?? element.OnLoad;
+
             public static DynamicElement Indexed()
             {
                 var element = new DynamicElement { TagName = "div", CustomAttributes = new() };
@@ -86,7 +95,7 @@ public class InlineHandlerUnderAPolicyTests
         """;
 
     private static readonly string[] Refused =
-        ["'OnClientClick'", "'OnLoad'", "\"onmouseover\"", "\"onload\"", "\"onfocus\"", "\"onblur\""];
+        ["'OnClientClick'", "'OnLoad'", "\"onmouseover\"", "\"onload\"", "\"onkeydown\"", "\"onfocus\"", "\"onblur\""];
 
     [Theory]
     [InlineData(false)]
@@ -105,7 +114,8 @@ public class InlineHandlerUnderAPolicyTests
 
         built.Failed.Should().BeTrue("a strict policy refuses every one of these in the browser");
         var refusals = built.Errors.Split('\n').Where(line => line.Contains("error EQ2115")).ToList();
-        refusals.Should().HaveCount(Refused.Length, "one refusal per handler, and none for a data or an aria attribute");
+        refusals.Should().HaveCount(Refused.Length,
+            "one refusal per handler written, and none for a data or an aria attribute or for a handler only read");
         foreach (var handler in Refused)
             refusals.Should().ContainSingle(line => line.Contains(handler), $"{handler} writes a handler as text");
         refusals.Should().OnlyContain(line => line.Contains("Banners.cs("), "each refusal points at the line that set it");
