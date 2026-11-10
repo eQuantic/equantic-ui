@@ -39,7 +39,12 @@ internal static class StringCatalogs
             .ToList();
 
         var uses = compiler.ResourceUses;
-        if (uses.Count == 0 && libraryResources.Count == 0) return;
+        var stringsDir = Path.Combine(outputDirectory, "strings");
+        if (uses.Count == 0 && libraryResources.Count == 0)
+        {
+            Prune(stringsDir, new HashSet<string>(StringComparer.Ordinal));
+            return;
+        }
 
         var neutral = new SortedDictionary<string, string>(StringComparer.Ordinal);
         var cultures = new SortedDictionary<string, SortedDictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
@@ -99,13 +104,29 @@ internal static class StringCatalogs
         // culture the request is in (CultureBridge, #471). Written here, it travelled only with a
         // catalog, from the build machine's ICU, and for the UI culture rather than the format one.
 
-        var stringsDir = Path.Combine(outputDirectory, "strings");
         Directory.CreateDirectory(stringsDir);
         var options = new JsonSerializerOptions { WriteIndented = false };
-        File.WriteAllText(Path.Combine(stringsDir, "neutral.json"), JsonSerializer.Serialize(neutral, options));
+        var produced = new HashSet<string>(StringComparer.Ordinal) { "neutral.json" };
+        OutputFile.Write(Path.Combine(stringsDir, "neutral.json"), JsonSerializer.Serialize(neutral, options));
         foreach (var (culture, strings) in cultures)
-            File.WriteAllText(Path.Combine(stringsDir, culture + ".json"), JsonSerializer.Serialize(strings, options));
+        {
+            OutputFile.Write(Path.Combine(stringsDir, culture + ".json"), JsonSerializer.Serialize(strings, options));
+            produced.Add(culture + ".json");
+        }
+        Prune(stringsDir, produced);
         output.WriteLine($"🌐 Strings: {neutral.Count} keys → neutral" +
             (cultures.Count > 0 ? " + " + string.Join(", ", cultures.Keys) : ""));
+    }
+
+    /// <summary>
+    /// Removes each catalogue this compile did not produce, after it wrote the rest: a culture taken
+    /// out leaves no catalogue behind. By its name, never by its time, since a catalogue whose text did
+    /// not change is not written again (#1279).
+    /// </summary>
+    private static void Prune(string stringsDir, IReadOnlySet<string> produced)
+    {
+        if (!Directory.Exists(stringsDir)) return;
+        foreach (var catalogue in Directory.GetFiles(stringsDir, "*.json"))
+            if (!produced.Contains(Path.GetFileName(catalogue))) File.Delete(catalogue);
     }
 }

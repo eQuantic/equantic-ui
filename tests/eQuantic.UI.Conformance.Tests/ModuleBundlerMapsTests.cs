@@ -7,12 +7,12 @@ using Xunit;
 namespace eQuantic.UI.Conformance.Tests;
 
 /// <summary>
-/// The maps the bundler finds in its output folder, through the REAL bundler and bun. eqc's folder is
-/// replaced in place (the generated-files spec): a file it does not write is removed after it has
-/// written, never before, so the folder holds every file while a compile runs and a compile that
-/// fails leaves it as it found it. The SDK's prune of that folder is pinned with a stand-in compiler
-/// (EqcOutputIsBuildOutputTests); the maps are the part eqc itself removes, and it removed every one
-/// of them before bun started (Copilot's third review of #666).
+/// The modules, chunks and maps the bundler finds in its output folder, through the REAL bundler and
+/// bun. eqc's folder is replaced in place (the generated-files spec): a file it does not write is
+/// removed after it has written, never before, so the folder holds every file while a compile runs
+/// and a compile that fails leaves it as it found it. The bundler is that folder's one prune since
+/// #1279, and it goes by what the bundle wrote, never by a file's time. It once removed every map
+/// before bun started (Copilot's third review of #666).
 /// </summary>
 public class ModuleBundlerMapsTests
 {
@@ -69,6 +69,32 @@ public class ModuleBundlerMapsTests
 
             File.Exists(Path.Combine(output, "Page.js")).Should().BeTrue();
             File.Exists(map).Should().BeFalse("a Release bundle leaves no Debug bundle's map behind");
+        });
+    }
+
+    /// <summary>
+    /// A module or a chunk this bundle no longer writes is removed after it wrote, and the runtime the
+    /// SDK copies beside them stays. This is the folder's one prune since the SDK's, which went by a
+    /// file's time, gave way (#1279): a module whose text did not change is not written again by eqc,
+    /// and the eqc a running app keeps compiles with no MSBuild around it (#1276).
+    /// </summary>
+    [SkippableFact]
+    public void ABundle_RemovesTheModulesItDidNotWrite_AndLeavesTheRuntime()
+    {
+        Bundling((bun, ts, output) =>
+        {
+            var gone = Earlier(output, "DeletedComponent.js", "export const gone = 1;");
+            var chunk = Earlier(output, "Shared-abc123.js", "export const shared = 1;");
+            var runtime = Earlier(output, "runtime.js", "export const runtime = 1;");
+            var entry = Path.Combine(ts, "Page.ts");
+            File.WriteAllText(entry, "export const page = 1;\n");
+
+            ModuleBundler.Bundle(bun, ts, [entry], output, ts, SourceMapMode.None).Should().BeNull();
+
+            File.Exists(Path.Combine(output, "Page.js")).Should().BeTrue("the module bun wrote stays");
+            File.Exists(gone).Should().BeFalse("its component is gone, and this bundle did not write it");
+            File.Exists(chunk).Should().BeFalse("a chunk bun renamed leaves no old name behind");
+            File.Exists(runtime).Should().BeTrue("the runtime is the SDK's, never the bundle's to remove");
         });
     }
 

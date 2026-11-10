@@ -533,14 +533,13 @@ public sealed class AppBuild
                 // with one pointing at a different C# file.
                 if (claim == TwinClaim.Repeat) return;
 
-                File.WriteAllText(tsPath, result.TypeScript);
-
-                if (!string.IsNullOrEmpty(result.SourceMap))
-                {
-                    var mapPath = tsPath + ".map";
-                    File.WriteAllText(mapPath, result.SourceMap);
-                    File.AppendAllText(tsPath, $"\n//# sourceMappingURL={result.ComponentName}.ts.map");
-                }
+                // Written only when its text changed (#1279): a save that changes one screen writes that
+                // screen's module and leaves the others, and their times, as they were.
+                var hasMap = !string.IsNullOrEmpty(result.SourceMap);
+                OutputFile.Write(tsPath, hasMap
+                    ? result.TypeScript + $"\n//# sourceMappingURL={result.ComponentName}.ts.map"
+                    : result.TypeScript);
+                if (hasMap) OutputFile.Write(tsPath + ".map", result.SourceMap!);
 
                 // A PAGE is always an entry point, wherever its file sits: the server loads
                 // it by name, so a page that is only transpiled is a 404 the build never
