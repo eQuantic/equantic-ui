@@ -17,10 +17,12 @@ inline handler wherever its markup was written, so a `[ServerOnly]` member that 
 boundary's checks, which ask only of the code that crosses (#816).
 
 - `OnClientClick` and `OnLoad`, by symbol: a property declared by `HtmlElement` or a type derived
-  from it.
+  from it, where it is WRITTEN. A read (a component that forwards or inspects it) puts nothing in the
+  markup and is left alone.
 - `CustomAttributes` keys, when they are constants that start with `on`: an initializer's
-  `["onclick"] = …` or `{ "onclick", … }`, an index `.CustomAttributes["onclick"]`, and an
-  `.Add("onclick", …)`. A key computed at run time cannot be judged at build time and is left alone.
+  `["onclick"] = …` or `{ "onclick", … }`, whether the dictionary is assigned in an object initializer
+  or through its element (`element.CustomAttributes = new() { … }`), an index
+  `.CustomAttributes["onclick"]`, and an `.Add("onclick", …)`. A key computed at run time cannot be judged at build time and is left alone.
   Every HTML attribute that starts with `on` is an event handler, so the prefix refuses nothing else.
 
 ## Proof
@@ -28,3 +30,9 @@ boundary's checks, which ask only of the code that crosses (#816).
 Through the real `AppBuild`, an app on disk with the attribute and six handlers in the app and, in
 the other case, in a referenced library: six EQ2115 errors, each at its line, none for a `data-`,
 an `aria-` or a `role` attribute. Without the policy, none.
+
+## Report-only still refuses at build time
+
+The build cannot see the environment: report-only is read from `EQuantic:ContentSecurityPolicy` at
+run time, and the same assembly serves every environment. An app that turned the policy on is
+refused its inline handlers in every build, so the one it deploys with the policy enforced holds none.
