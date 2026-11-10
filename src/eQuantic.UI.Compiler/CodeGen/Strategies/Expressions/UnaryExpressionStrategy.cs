@@ -82,7 +82,11 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             if (prefix.OperatorToken.Text == "-")
                 return Negated(context.Converter.ConvertIr(prefix.Operand), prefix, context);
             if (prefix.OperatorToken.Text == "~")
-                return Complemented(context.Converter.ConvertIr(prefix.Operand), prefix, context);
+            {
+                var complementable = context.Converter.ConvertIr(prefix.Operand);
+                return Types.EnumOperators.Complement(prefix, complementable, context)
+                    ?? Complemented(complementable, prefix, context);
+            }
             return JsExpr.Prefix(prefix.OperatorToken.Text,
                 context.Converter.ConvertIr(prefix.Operand));
         }
@@ -173,11 +177,11 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
     /// JavaScript's own step would compute another; null where it computes C#'s.</summary>
     private static Func<JsExpr, JsExpr>? StepRule(ITypeSymbol? type, string delta, SyntaxNode node, ConversionContext context)
     {
-        // An enum steps its value, as its arithmetic computes it: `mode + 1`, the name behind the value
-        // where one has it (Types.EnumShape). JavaScript's step read the name as a number, NaN.
-        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
-            return current => Types.EnumShape.Held(enumType,
-                JsExpr.Binary(Types.EnumShape.ValueOf(enumType, current, context), delta, JsExpr.Literal("1")), context);
+        // An enum steps its value, as its arithmetic computes it, in the underlying type's width: `mode + 1`,
+        // the name behind the value where one has it (Types.EnumOperators). JavaScript's step read the name
+        // as a number, NaN, and a 64-bit enum's BigInt took a number.
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum })
+            return Types.EnumOperators.Step(type, delta, node, context);
 
         if (type is { SpecialType: SpecialType.System_Char })
             return current => JsExpr.Callish(
