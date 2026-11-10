@@ -47,8 +47,8 @@ export class ListItem extends StatelessComponent {
         row.add(new Flexible(content));
         let trailing: any; 
         if ((trailing = this.trailing) != null) row.add(trailing);
-        let body = new Box(new BoxStyle({ width: SizeValue.fill, minHeight: this.minHeight, background: this.selected ? theme.colors('primary').subtle : null, hover: this.onPressed == null || this.selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row);
-        return this.onPressed == null ? body : new Pressable(body, this.disabled ? null : this.onPressed, { disabled: this.disabled, label: this.title, pressedBackground: theme.surfaceSubtle, role: this.selected ? 'destination' : 'button', selected: this.selected ? true : null });
+        let body = new Box(new BoxStyle({ width: SizeValue.fill, minHeight: this.minHeight, background: this.selected ? theme.colors('primary').subtle : null, hover: this.onPressed == null || this.selected ? null : new StyleDiff({ background: theme.surfaceSubtle }), pressed: this.onPressed == null || this.selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row);
+        return this.onPressed == null ? body : new Pressable(body, this.disabled ? null : this.onPressed, { disabled: this.disabled, label: this.title, role: this.selected ? 'destination' : 'button', selected: this.selected ? true : null });
     }
 
     static slotWidth(leading: VisualNode, declared: number) {
