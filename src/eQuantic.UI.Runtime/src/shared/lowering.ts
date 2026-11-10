@@ -3802,6 +3802,26 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as FlexibleNode).child);
     case 'loopMotion':
       return fills((node as LoopMotionNode).child);
+    // The rest of the wrappers the vocabulary calls layout-transparent (C# `IsLayoutTransparent`,
+    // which the C# `Fills` reads): a kind missing here answers "does not fill", silently.
+    case 'safeArea':
+      return fills((node as unknown as SafeAreaNode).child as VisualNodeValue);
+    case 'draggable':
+      return fills((node as unknown as DraggableNode).child as VisualNodeValue);
+    case 'dragDismiss':
+      return fills((node as unknown as DragDismissNode).child as VisualNodeValue);
+    case 'link':
+      return fills((node as unknown as LinkNode).child as VisualNodeValue);
+    case 'pinned':
+      return fills((node as unknown as PinnedNode).child as VisualNodeValue);
+    case 'presence':
+      return fills((node as unknown as PresenceNode).child as VisualNodeValue);
+    case 'shortcut':
+      return fills((node as unknown as ShortcutNode).child as VisualNodeValue);
+    case 'codeSurface':
+      return fills((node as unknown as CodeSurfaceNode).child as VisualNodeValue);
+    case 'sheetSurface':
+      return fills((node as unknown as SheetSurfaceNode).child as VisualNodeValue);
     default:
       return { width: false, height: false };
   }
@@ -4749,8 +4769,46 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
   });
 
   const child = lowerNode(node.child, context, null, path + '/0');
-  if (child) wrapper.children.push(child);
+  if (child) {
+    // C# twin: transparent to its child's size, read off what the child lowered to (a component's
+    // fill is only known once it has built), with the insets inside the box it takes.
+    const asked = asksForAll(child);
+    if (asked.width || asked.height) {
+      mergeAtomicDeclaration(wrapper, 'box-sizing', 'border-box');
+      if (asked.width) {
+        // The whole width contract: the fill AND its cap (C# twin).
+        mergeAtomicDeclaration(wrapper, 'width', '100%');
+        if (asked.cap !== undefined) mergeAtomicDeclaration(wrapper, 'max-width', asked.cap);
+      }
+      if (asked.height) mergeAtomicDeclaration(wrapper, 'height', '100%');
+      // FILL means the parent's extent, never more (C# twin, as lowerFlex writes it).
+      if (asked.width) mergeAtomicDeclaration(wrapper, 'min-width', '0');
+      if (asked.height) mergeAtomicDeclaration(wrapper, 'min-height', '0');
+    }
+    wrapper.children.push(child);
+  }
   return wrapper;
+}
+
+/**
+ * C# `AsksForAll`: the axes a lowered element asks its parent for all of, and its width cap, read
+ * through every element that draws no box (a display:contents wrapper, an adaptive node's gate),
+ * where every arm has to ask it — the page's media rules show one arm at a time, and the parent
+ * cannot know which.
+ */
+function asksForAll(node: HtmlNode): { width: boolean; height: boolean; cap?: string } {
+  const gate = (node.attributes['class'] ?? '').split(' ').some(isAdaptiveGate);
+  if (gate || atomicDeclaration(node, 'display') === 'contents') {
+    const inner = node.children.filter((child) => child.textContent === undefined).map(asksForAll);
+    if (inner.length === 0) return { width: false, height: false };
+    if (inner.length === 1) return inner[0];
+    return { width: inner.every((arm) => arm.width), height: inner.every((arm) => arm.height) };
+  }
+  return {
+    width: atomicDeclaration(node, 'width') === '100%',
+    height: atomicDeclaration(node, 'height') === '100%',
+    cap: atomicDeclaration(node, 'max-width'),
+  };
 }
 
 /**
