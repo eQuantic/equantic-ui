@@ -282,9 +282,11 @@ public sealed class AppBuild
         if (previous._built is { } built && built.Any(pair => !IsAsWritten(pair.Value, pair.Key.SourceFiles())))
             return false;
 
-        var trees = warm.SyntaxTrees.Where(tree => tree.FilePath.Length > 0)
-            .GroupBy(tree => tree.FilePath, StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+        // A file the compilation holds twice is one a tree replaced by path would leave half stale.
+        var byPath = warm.SyntaxTrees.Where(tree => tree.FilePath.Length > 0)
+            .GroupBy(tree => tree.FilePath, StringComparer.Ordinal).ToList();
+        if (byPath.Any(group => group.Count() > 1)) return false;
+        var trees = byPath.ToDictionary(group => group.Key, group => group.Single(), StringComparer.Ordinal);
         var compilation = warm;
         var replaced = 0;
         foreach (var file in files)
