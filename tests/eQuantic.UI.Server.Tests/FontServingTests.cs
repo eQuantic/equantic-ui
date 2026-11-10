@@ -1,6 +1,10 @@
 using System.Net;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
+using System.Runtime.Loader;
 using eQuantic.UI.Primitives;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
@@ -54,6 +58,20 @@ public class FontServingTests
             page.Add(new Text("The theme's", TypeRole.BodyM) { StyleOverride = context.Theme.Type(TypeRole.BodyM) with { Family = TestFace } });
             return page;
         }
+    }
+
+    /// <summary>The assembly a family names only as text, which nothing references and no list of the host's carries.</summary>
+    private const string TextOnly = "eQuantic.Fonts.NamedAsText";
+
+    /// <summary>A family over a face in <see cref="TextOnly"/>, named by its name alone (#1080).</summary>
+    private static readonly FontFamily NamedAsText = new("Named As Text",
+        new FontFile(TextOnly, "eQuantic.UI.Fonts/TestFace-Regular.ttf", 400, 400));
+
+    [Page("/named-as-text-page")]
+    public sealed class NamedAsTextPage : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Text("Handgloves", TypeRole.BodyM) { StyleOverride = context.Theme.Type(TypeRole.BodyM) with { Family = NamedAsText } };
     }
 
     /// <summary>A catalog, as the SDK writes one for an app: public static families.</summary>
@@ -227,6 +245,37 @@ public class FontServingTests
             .Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"));
     }
 
+    /// <summary>
+    /// A single-file app's host lists none of the assemblies its bundle carries, and a family that names its
+    /// assembly only as text leaves no reference for a walk to follow, while the loader still resolves the
+    /// name (#1080). The face is declared on the page and served by every instance, as Photon reads it: by
+    /// loading the assembly the identity names. Here the loader resolves the name from bytes no list
+    /// carries, as a single-file app's resolves it from its bundle.
+    /// </summary>
+    [Fact]
+    public async Task AFamilyThatNamesItsAssemblyOnlyAsText_IsDeclared_AndServedByEveryInstance_ThoughNoListCarriesIt()
+    {
+        var image = AssemblyEmbedding(TextOnly, "eQuantic.UI.Fonts/TestFace-Regular.ttf", Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"));
+        Func<AssemblyLoadContext, AssemblyName, Assembly?> resolve = (context, name) =>
+            name.Name == TextOnly ? context.LoadFromStream(new MemoryStream(image)) : null;
+        AssemblyLoadContext.Default.Resolving += resolve;
+        try
+        {
+            await using var rendering = await Serve(PhotonTheme.Instance);
+            var faces = Element(await rendering.GetTestClient().GetStringAsync("/named-as-text-page"), "eq-faces");
+            faces.Should().Contain("font-family: \"Named As Text\"", "the page names the family, and its face loads by its assembly's name");
+            var url = System.Text.RegularExpressions.Regex.Match(faces, "url\\(\"(?<url>[^\"]+)\"\\)").Groups["url"].Value;
+
+            await using var fresh = await Serve(PhotonTheme.Instance);
+            (await fresh.GetTestClient().GetByteArrayAsync(url))
+                .Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"), "an instance that never rendered the page serves what it declared");
+        }
+        finally
+        {
+            AssemblyLoadContext.Default.Resolving -= resolve;
+        }
+    }
+
     /// <summary>A family built by hand over a font no eQuantic build embedded as a face, and the theme does
     /// not name, is declared on no page: no instance but the one that read it could serve its URL.</summary>
     [Fact]
@@ -333,6 +382,26 @@ public class FontServingTests
         app.MapUI();
         await app.StartAsync();
         return app;
+    }
+
+    /// <summary>
+    /// The image of an assembly named <paramref name="name"/> that holds nothing but <paramref name="bytes"/>,
+    /// embedded as <paramref name="resource"/>: an assembly no build of this repository writes, so no list the
+    /// host keeps names it.
+    /// </summary>
+    private static byte[] AssemblyEmbedding(string name, string resource, byte[] bytes)
+    {
+        var builder = new PersistedAssemblyBuilder(new AssemblyName(name), typeof(object).Assembly);
+        builder.DefineDynamicModule(name);
+        var metadata = builder.GenerateMetadata(out var il, out var fieldData);
+        var resources = new BlobBuilder();
+        resources.WriteInt32(bytes.Length);
+        resources.WriteBytes(bytes);
+        metadata.AddManifestResource(ManifestResourceAttributes.Public, metadata.GetOrAddString(resource), default, 0);
+        var image = new BlobBuilder();
+        new ManagedPEBuilder(PEHeaderBuilder.CreateLibraryHeader(), new MetadataRootBuilder(metadata), il, fieldData,
+            managedResources: resources).Serialize(image);
+        return image.ToArray();
     }
 
     private static byte[] Resource(string name)
