@@ -61,6 +61,10 @@ npm run package      # compiles, publishes the design host into host/, writes eq
 
 `npm test` downloads a VS Code, loads the extension into it on the dashboard sample, and drives it.
 
+It takes Node.js 22 or later, the version CI uses: the packaging tool's own dependencies
+(`@vscode/vsce`, through `@azure/identity`) declare it, and on 20 npm prints a wall of `EBADENGINE`
+warnings.
+
 ## Publishing it
 
 `npm run package` writes the `.vsix`; putting it on the Marketplace needs two things this repository
