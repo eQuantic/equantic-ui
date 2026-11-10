@@ -2802,7 +2802,10 @@ public class TypeScriptEmitter
                     Services.RuntimeProvidedTypeScanner.Collect(inherited, inheritedModel, asComponent: false, runtimeProvided,
                         referencedEnums, appTypes: null, hostOnly: hostOnlyInSignatures);
         }
-        else if (_dependencyResolver != null)
+        // A class with no model, and one in a host with no project's compilation, whose model is of this
+        // file alone and binds no [RuntimeProvided] type of another: the scan of the resolver answers, as it
+        // does for a component. What the module does not name is taken out below.
+        if (_dependencyResolver != null && (semanticModel == null || _converter.ProjectCompilation is null))
             runtimeProvided.UnionWith(_dependencyResolver.GetRuntimeProvidedTypes());
         // Names the CONVERSION introduced that the runtime provides — a reduced extension call sent
         // home (`VisualNodeExtensions.centered(node)`). The scanner above walks SYNTAX, and the home
