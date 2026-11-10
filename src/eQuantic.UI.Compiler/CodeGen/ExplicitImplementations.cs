@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -68,11 +69,13 @@ internal static class ExplicitImplementations
     };
 
     /// <summary>What each type settled, by name and side: every call site asks it of the method it binds
-    /// (<see cref="TwinMethodName.ExplicitBeside"/>), and settling binds the bodies of the explicit ones.</summary>
+    /// (<see cref="TwinMethodName.ExplicitBeside"/>), and settling binds the bodies of the explicit ones,
+    /// which may be another file's: a compile that takes what another settled notes those files as its
+    /// own reads (#1281).</summary>
     private static readonly ConditionalWeakTable<INamedTypeSymbol, ConcurrentDictionary<(string Name, bool IsStatic), Settled>> Cache = new();
 
     /// <summary>The explicit implementations of one name and side a type writes, and the ones it leaves out.</summary>
-    private sealed record Settled(IReadOnlyList<ISymbol> Written, HashSet<ISymbol> LeftOut);
+    private sealed record Settled(IReadOnlyList<ISymbol> Written, HashSet<ISymbol> LeftOut, string[] Read);
 
     /// <summary>
     /// What <paramref name="type"/> does with its explicit implementations of one name and side: the ones
@@ -87,15 +90,17 @@ internal static class ExplicitImplementations
     /// an explicit implementation the type writes, which takes the name (#708): so those are settled last,
     /// once every other one is.
     /// </summary>
-    private static Settled Settle(INamedTypeSymbol type, string name, bool isStatic) =>
-        Cache.GetValue(type = type.OriginalDefinition, _ => new()).GetOrAdd((name, isStatic), _ =>
+    private static Settled Settle(INamedTypeSymbol type, string name, bool isStatic)
+    {
+        var settled = Cache.GetValue(type = type.OriginalDefinition, _ => new()).GetOrAdd((name, isStatic), _ =>
         {
+            using var reads = SourceReads.Begin();
             // On the definition, whichever construction asked first, and without a member kept on the
             // server, which no twin holds.
             var group = type.GetMembers()
                 .Where(member => IsExplicit(member) && member.IsStatic == isStatic && NameOf(member) == name
                     && !IterableTwin.LeavesOut(member) && !StaysOnTheServer(member))
-                .OrderBy(member => member.Locations.FirstOrDefault()?.SourceSpan.Start ?? 0)
+                .OrderBy(member => member.ReadLocations().FirstOrDefault()?.SourceSpan.Start ?? 0)
                 .Select(member => (Member: member, Reached: Reached(member, compilation: null, exact: true)))
                 .Select(entry => (entry.Member, Reached: entry.Reached is { } reached && CanHold(reached, entry.Member, name) ? reached : null))
                 .ToList();
@@ -111,8 +116,12 @@ internal static class ExplicitImplementations
             foreach (var (member, reached) in toOwn)
                 if (Holds(reached!, type, name, besideWritten))
                     leftOut.Add(member.OriginalDefinition);
-            return new Settled(group.Select(entry => entry.Member).Where(member => !leftOut.Contains(member.OriginalDefinition)).ToList(), leftOut);
+            return new Settled(group.Select(entry => entry.Member).Where(member => !leftOut.Contains(member.OriginalDefinition)).ToList(),
+                leftOut, reads.Files.ToArray());
         });
+        SourceReads.Note(settled.Read);
+        return settled;
+    }
 
     /// <summary>Whether the explicit implementation <paramref name="reached"/> hands back, through the group's
     /// own hand-offs, to <paramref name="member"/>, which reached it: then neither holds the name.</summary>
@@ -214,7 +223,7 @@ internal static class ExplicitImplementations
     /// </summary>
     private static HandOff? Step(ISymbol member, Compilation? compilation, bool exact)
     {
-        if (member.DeclaringSyntaxReferences is not [var reference]) return null;
+        if (member.ReadDeclarations() is not [var reference]) return null;
         var declaration = reference.GetSyntax();
         // A component's server action runs its body on the server, and the browser calls its stub, and a
         // member kept on the server is in no twin, its call refused where it is written (EQ2010): neither

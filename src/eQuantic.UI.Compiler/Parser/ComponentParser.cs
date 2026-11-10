@@ -602,7 +602,7 @@ public class ComponentParser
     {
         if (method.AttributeLists.Count == 0 && !method.Modifiers.Any(SyntaxKind.PartialKeyword)) return null;
         return SymbolOf(method, model) is { } symbol
-            ? PlainClassModule.ServerActionMark(symbol)?.ApplicationSyntaxReference?.GetSyntax() as AttributeSyntax
+            ? PlainClassModule.ServerActionMark(symbol)?.ReadApplication()?.GetSyntax() as AttributeSyntax
             : PartsOf(method).SelectMany(part => part.AttributeLists).SelectMany(list => list.Attributes)
                 .FirstOrDefault(attribute => attribute.IsNamed("ServerAction"));
     }

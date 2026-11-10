@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
@@ -142,7 +143,7 @@ internal static class LocalFunctionName
     /// <summary>The name a reference to <paramref name="localFunction"/> reaches.</summary>
     public static string Of(IMethodSymbol localFunction) =>
         // The DEFINITION's syntax: a generic one is referenced constructed (`Id<int>`).
-        localFunction.OriginalDefinition.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is LocalFunctionStatementSyntax declaration
+        localFunction.OriginalDefinition.ReadDeclarations().FirstOrDefault()?.GetSyntax() is LocalFunctionStatementSyntax declaration
             ? Named(declaration)
             : Cased(localFunction.Name);
 

@@ -1,6 +1,7 @@
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -99,7 +100,7 @@ internal static class DefaultInterfaceMembers
             .Where(name => !name.Ancestors().OfType<InvocationExpressionSyntax>().Any(invocation => invocation.IsNameOf(model)));
 
     private static MemberDeclarationSyntax? DeclarationOf(ISymbol member) =>
-        member.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as MemberDeclarationSyntax;
+        member.ReadDeclarations().FirstOrDefault()?.GetSyntax() as MemberDeclarationSyntax;
 
     /// <summary>
     /// Whether the runtime carries <paramref name="contract"/>'s defaults (the runtime's
