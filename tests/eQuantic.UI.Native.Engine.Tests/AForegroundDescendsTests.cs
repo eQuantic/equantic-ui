@@ -100,4 +100,24 @@ public class AForegroundDescendsTests
         Paints(hovered, Bright).Should().BeTrue("hovered, they brighten together");
         Paints(hovered, Quiet).Should().BeFalse("both of them");
     }
+
+    /// <summary>A pinned header's scrolled diff hands its foreground down, as the web writes it as
+    /// <c>color</c> under the scrolled marker.</summary>
+    [Fact]
+    public void APinnedHeadersScrolledForeground_Descends()
+    {
+        static ScrollView Page(float offset) => new(new Column(gap: 0)
+        {
+            new Pinned(new Box(new BoxStyle { Width = 200, Height = 40 }, new Text("Header", TypeRole.Label)))
+            {
+                ScrolledStyle = new StyleDiff { Background = Own, Foreground = Bright },
+            },
+            new Box(new BoxStyle { Width = 200, Height = 1000 }),
+        })
+        { Height = 200, Offset = offset };
+        DisplayList At(float offset) => Frame(new PhotonHost(Page(offset), Theme, ThemeMode.Light, 200, 200));
+
+        Paints(At(0), Bright).Should().BeFalse("at the top the header is not scrolled");
+        Paints(At(20), Bright).Should().BeTrue("scrolled, its label takes the scrolled foreground");
+    }
 }

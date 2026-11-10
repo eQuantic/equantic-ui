@@ -31,7 +31,7 @@ its own pointer, because a child inside a button has no pointer region of its ow
   control's own surface, the box the `Pressable` wraps, where the control's hover and the box's are
   the same (the list is task 1.1), so none of them changes where it applies.
 - **A foreground that descendants inherit.** `BoxStyle.Foreground` and `StyleDiff.Foreground`
-  (`ColorToken?`): the colour a `Text`, an `Icon` and a `Vector` inside the box take when they
+  (`ColorToken?`): the colour a `Text`, an `Icon`, a `Vector` and a `Spinner` inside the box take when they
   name none of their own, resolved per state like any member, so `Hover = new StyleDiff { Foreground
   = theme.TextInverse }` brightens the label and the arrow together. With no ancestor that names
   one, the theme's `TextPrimary`, as today. On the web the box writes `color` and a text or an icon

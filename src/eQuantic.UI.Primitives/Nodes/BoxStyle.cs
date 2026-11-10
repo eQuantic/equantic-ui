@@ -42,7 +42,7 @@ public readonly record struct BoxStyle
     /// <summary>
     /// The colour the text and the icons inside take when they name none of their own: Flutter's
     /// <c>DefaultTextStyle</c> and <c>IconTheme</c>, which a control resolves per state and hands
-    /// down. A <see cref="Text"/>, an <see cref="Icon"/> or a <see cref="Vector"/> with no
+    /// down. A <see cref="Text"/>, an <see cref="Icon"/>, a <see cref="Vector"/> or a <see cref="Spinner"/> with no
     /// <c>Color</c> is drawn in the foreground of the nearest box above it that states one, and in
     /// the theme's <c>TextPrimary</c> when none does. A state's diff can change it, so a label and its
     /// arrow brighten together under the pointer (#614). <c>null</c> = take the one above.

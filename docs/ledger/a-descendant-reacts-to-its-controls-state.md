@@ -4,8 +4,8 @@
   inside a disabled one, still hovers itself. Measured first: every hover a component here states
   inside a control sits on the control's own surface, so none changed where it applies, and the
   parity fixture swapped one class per such box. `BoxStyle.Foreground` and `StyleDiff.Foreground`,
-  Flutter's `DefaultTextStyle` and `IconTheme`, hand a colour down to the text, icons and vectors
-  that name none, resolved for the box's state; a text with no colour writes none on the web and
+  Flutter's `DefaultTextStyle` and `IconTheme`, hand a colour down to the text, icons, vectors and
+  spinners that name none, resolved for the box's state; a text with no colour writes none on the web and
   inherits it, and the control's button inherits too. `Transform2D.FractionalTranslate`, Flutter's
   `FractionalTranslation`, moves a box by fractions of its own size. In Chromium the equantic.tech
   primary button built from the three draws its label in the surface's foreground in both themes

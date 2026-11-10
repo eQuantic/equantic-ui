@@ -60,4 +60,15 @@ public class AHoverInsideAControlRealizerTests
 
         HoverRule(css).Should().StartWith(":where(.eq-pressable:hover) ", "the nested control's hover was not pictured");
     }
+
+    /// <summary>An enabled control inside a disabled one: the outer boxes hover themselves, and the
+    /// inner control's take the inner control's hover.</summary>
+    [Fact]
+    public void AnEnabledControlInsideADisabledOne_TakesItsOwnControlsHover()
+    {
+        var inner = new Pressable(Arrow(), () => { });
+        var css = Css(new Pressable(new Row(gap: 0) { new Text("Row", TypeRole.Label), inner }, () => { }) { Disabled = true });
+
+        HoverRule(css).Should().StartWith(":where(.eq-pressable:hover) ", "the arrow's nearest control is enabled");
+    }
 }

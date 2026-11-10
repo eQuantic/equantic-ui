@@ -25,7 +25,7 @@ hovered.
 ### Requirement: A foreground descends to the text and icons that name none
 
 A box MAY state a `Foreground`, and its `Hover`, `Focus` and `Pressed` diffs MAY state one too. A
-`Text`, an `Icon` and a `Vector` that name no colour of their own SHALL be drawn in the foreground
+`Text`, an `Icon`, a `Vector` and a `Spinner` that name no colour of their own SHALL be drawn in the foreground
 of the nearest box above them that states one, resolved for that box's state, and in the theme's
 `TextPrimary` when no box above them states one, on the web and on Photon.
 

@@ -91,4 +91,17 @@ public class AHoverInsideAControlTests
         host.PointerMove(100, 20);
         FillIn(Frame(host), Inner).Transform.M32.Should().Be(rest, "the outer control is hovered, not the nested one");
     }
+
+    /// <summary>A control is tracked for hover only when a box of its own hovers with it, so a pointer
+    /// crossing plain controls changes nothing the host has to draw again.</summary>
+    [Fact]
+    public void AControlWithNothingThatHovers_TakesNoHoverRegion()
+    {
+        static IReadOnlyList<HoverRegion> Regions(VisualNode node) =>
+            PhotonRealizer.Realize(node, 400, 100, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder()).HoverRegions;
+
+        Regions(new Pressable(new Box(new BoxStyle { Width = 40, Height = 40, Background = Label }), () => { }))
+            .Should().BeEmpty("nothing in it hovers");
+        Regions(Button()).Should().Contain(region => region.Node is Pressable, "its arrow hovers with it");
+    }
 }

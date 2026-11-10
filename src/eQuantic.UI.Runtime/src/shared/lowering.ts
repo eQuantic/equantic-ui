@@ -407,7 +407,7 @@ function lowerNodeKind(
     case 'column':
       return lowerFlex(node as FlexNodeValue, context, path);
     case 'text':
-      return lowerText(node as TextNode, context);
+      return lowerText(node as TextNode);
     case 'textEntry':
       return lowerTextEntry(node as TextEntryNode, context);
     case 'overlay':
@@ -3590,7 +3590,7 @@ function faceStack(family: string, mono: boolean): string {
   return `"${family}", ` + (mono ? MONO_STACK : SANS_STACK);
 }
 
-function lowerText(text: TextNode, _context: LoweringContext): HtmlNode {
+function lowerText(text: TextNode): HtmlNode {
   // A family the node names that ships files is declared in the document the first time text is set
   // in it (#1056), as the server declares it in the head of a page it renders.
   if (isWellFormedFace(text.styleOverride?.family?.name)) declareFamily(text.styleOverride!.family);
