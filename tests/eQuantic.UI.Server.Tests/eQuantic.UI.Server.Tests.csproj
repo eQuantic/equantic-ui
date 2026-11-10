@@ -44,6 +44,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Gtm\eQuantic.UI.Gtm.csproj" />
+    <ProjectReference Include="..\..\src\eQuantic.UI.Charts.ApexCharts\eQuantic.UI.Charts.ApexCharts.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Material\eQuantic.UI.Material.csproj" />
     <!-- The dashboard sample, so DashboardDocumentTests reads the documents it SERVES rather than an
          approximation: the app as it runs, from its own Program. It also builds the sample on every

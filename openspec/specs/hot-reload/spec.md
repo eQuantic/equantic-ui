@@ -289,3 +289,95 @@ app rather than by restarting it. A publish SHALL leave the hook as trimming dec
   is edited
 - **THEN** dotnet watch applies the edit to the running app instead of restarting it, and the window
   draws the frame with the edit
+
+### Requirement: A save is rebuilt after the editor's burst, and none is dropped
+
+The server SHALL start a rebuild once the app's sources have been quiet for 50ms, each change of the
+same save restarting that wait. A save that arrives while a rebuild runs SHALL be rebuilt when that
+rebuild ends, by one more rebuild however many saves arrived.
+
+#### Scenario: Saves during a rebuild
+
+- **WHEN** two saves arrive while a rebuild runs
+- **THEN** one more rebuild runs when it ends, so the rebuilds number two, where the server used to
+  run one and keep the browser on the earlier edit
+
+#### Scenario: The wait after a save
+
+- **WHEN** `scripts/measure-edit-to-view.cs web` times an edit of the dashboard sample
+- **THEN** its "wait" part, from the save to the server starting its rebuild, is under 100ms
+
+### Requirement: A save reloads the page once, into markup that holds the edit
+
+The rebuild stream SHALL be the page's one source of reloads: while it runs, the page SHALL keep
+dotnet watch's refresh script from connecting. A rebuild SHALL announce itself once the edit of the
+save it answers has reached the server, when dotnet watch runs the server, and SHALL say whether the
+server's markup holds the edit. The page SHALL hydrate markup that holds the edit and replay its
+fields after hydrating it, and SHALL draw over markup that does not.
+
+#### Scenario: One reload per save
+
+- **WHEN** `scripts/measure-edit-to-view.cs web` times an edit of the dashboard sample
+- **THEN** each save reloads the page once, the reloaded document hydrates the server's markup, and it
+  raises no hydration warning, or the run fails
+
+#### Scenario: The edit reaches the server after the rebuild
+
+- **WHEN** a rebuild ends before the edit of its save has reached the server, and dotnet watch runs it
+- **THEN** the rebuild announces itself once the edit arrives, and says the page hydrates
+
+#### Scenario: No edit reaches the server
+
+- **WHEN** a rebuild ends and no edit reaches the server within five seconds of the save, or the server
+  runs outside dotnet watch
+- **THEN** the rebuild says the page mounts, and the page draws over the server's markup
+
+### Requirement: The stream says which run of the server a page talks to, and why a rebuild failed
+
+Every connection to the rebuild stream SHALL open by naming the run of the server, and a page that
+reconnects to another run SHALL reload. A rebuild that fails SHALL send its errors, and the page SHALL
+show them over itself without reloading.
+
+#### Scenario: The server restarts
+
+- **WHEN** a page's stream reconnects to a run of the server with another name
+- **THEN** the page reloads once
+
+#### Scenario: A static file of the app changes
+
+- **WHEN** a file under the app's `wwwroot` changes, outside eqc's output
+- **THEN** the stream says the page hydrates, and the page reloads once
+
+#### Scenario: A save that does not compile
+
+- **WHEN** a rebuild fails
+- **THEN** the page shows MSBuild's error lines in the development overlay and keeps running the code
+  it has
+
+### Requirement: A save is compiled by an eqc the server keeps running
+
+The server SHALL ask the project's MSBuild how to start eqc once for a run, as the app starts, and
+SHALL keep that eqc running, asking it to compile on each save. No MSBuild SHALL run for a save. The
+server SHALL own the process: eqc SHALL end when its standard input does, a stop or a compile past
+its limit SHALL kill it, and the next save SHALL start it again.
+
+#### Scenario: A save
+
+- **WHEN** `scripts/measure-edit-to-view.cs web` times an edit of the dashboard sample
+- **THEN** its "msbuild" part is a few milliseconds, and eqc's part pays no process start
+
+#### Scenario: eqc died
+
+- **WHEN** the running eqc exits between two saves
+- **THEN** the next save starts it again, with what MSBuild said at the start of the run, and compiles
+
+#### Scenario: A compile past its limit, or a stop
+
+- **WHEN** a compile takes longer than its limit, or the app stops while one runs
+- **THEN** eqc is killed, and the compile answers that it did not run
+
+#### Scenario: A broken edit, then its fix
+
+- **WHEN** a save does not compile, and the next one does
+- **THEN** the first sends its errors to the development overlay, and the second reloads the page with
+  the fix, with no restart of the app or of eqc
