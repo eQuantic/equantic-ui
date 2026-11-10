@@ -19,7 +19,8 @@ public class ConflictMarkerTests
         if (WikiClone.Absent()) return;
         var wiki = WikiClone.Location!;
         var pages = Directory.EnumerateFiles(wiki, "*.md", SearchOption.AllDirectories)
-            .Where(path => !Path.GetRelativePath(wiki, path).StartsWith(".git", StringComparison.Ordinal))
+            // Git's own directory, and nothing else whose name only starts like it.
+            .Where(path => Path.GetRelativePath(wiki, path).Split(Path.DirectorySeparatorChar)[0] != ".git")
             .ToList();
 
         pages.Should().Contain(path => path.Contains($"{Path.DirectorySeparatorChar}locale{Path.DirectorySeparatorChar}"),
