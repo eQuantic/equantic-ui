@@ -86,7 +86,7 @@ internal sealed class TusBrowser(HttpClient client, string? user = null, string?
     {
         var request = Request(HttpMethod.Post, "/api/_equantic/actions");
         request.Content = new StringContent(
-            JsonSerializer.Serialize(new { actionId = $"UploadReceivingActions/{action}", arguments = new[] { argument } }),
+            JsonSerializer.Serialize(new { actionId = $"{typeof(UploadReceivingActions).FullName}/{action}", arguments = new[] { argument } }),
             Encoding.UTF8, "application/json");
         using var response = await client.SendAsync(request);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;

@@ -41,6 +41,11 @@ internal sealed partial class WebLoweringVisitor(
     /// press, pictured or real, so neither a picture nor a control around it reaches them (#508).</summary>
     private bool _inDisabledControl;
 
+    /// <summary>True while the subtree of an enabled control is lowered under a <see cref="Simulated"/>
+    /// node: a control nested in it is another control, and the picture's press and focus stop at it,
+    /// as the real ones do (#616). A <see cref="Simulated"/> node starts it over.</summary>
+    private bool _inControl;
+
     /// <summary>
     /// The single dispatch every node passes through — and therefore the one place the design-mode
     /// origin is attached, once, rather than in each of the branches below.
@@ -280,21 +285,13 @@ internal sealed partial class WebLoweringVisitor(
             table.Height.Kind is not (SizeKind.Fixed or SizeKind.WindowMinus)),
         // A drawing at its parent's width fills across; its height follows from its aspect.
         Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
-        Pressable pressable => Fills(pressable.Child),
-        Hoverable hoverable => Fills(hoverable.Child),
-        DropTarget target => Fills(target.Child),
-        Adjustable adjustable => Fills(adjustable.Child),
-        Progress progress => Fills(progress.Child),
-        LiveRegion live => Fills(live.Child),
-        Flexible flexible => Fills(flexible.Child),
-        LoopMotion motion => Fills(motion.Child),
-        // The three the TypeScript `fills` already walked and this side did not. A wrapper missing
-        // here does not fail — it answers (false, false), which reads as "the child does not fill"
-        // and is indistinguishable from the truth until a child actually does. `Progress(InView(Box
-        // { Width = Fill }))` served a hugging host and hydrated into a filling one.
-        Simulated simulated => Fills(simulated.Child),
-        InFlow inFlow => Fills(inFlow.Child),
-        InView inView => Fills(inView.Child),
+        // Every wrapper the vocabulary calls layout-transparent, by its one rule rather than a list.
+        // A wrapper missing from a list does not fail — it answers (false, false), which reads as
+        // "the child does not fill" and is indistinguishable from the truth until a child actually
+        // does: `Progress(InView(Box { Width = Fill }))` served a hugging host and hydrated into a
+        // filling one, and a SafeArea around a page or a rail hugged on the web while Photon filled.
+        // The TypeScript `fills` lists the same kinds, pinned by FillsThroughEveryWrapperTests.
+        SingleChildNode wrapper when wrapper.IsLayoutTransparent() => Fills(wrapper.Child),
         _ => (false, false),
     };
     /// <summary>

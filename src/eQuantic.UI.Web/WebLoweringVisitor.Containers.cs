@@ -518,7 +518,26 @@ internal sealed partial class WebLoweringVisitor
         };
 
         if (Lower(safeArea.Child, horizontalAxis: null) is { } child)
+        {
+            // Transparent to its child's size, as Photon measures it: the insets go around whatever
+            // the child takes, so a child that fills makes the area fill, the insets inside it. Read
+            // off what the child LOWERED to, because the child is a component as often as not (a
+            // rail, a page), and only what it built says whether it fills. Without it the area hugged
+            // on the web: a page beside an overlay stood at its content's width, and a rail stopped
+            // at its last destination instead of reaching the bottom of the window.
+            // The whole width contract, as every wrapper carries it: a fill AND its cap, or a capped
+            // child would sit at the start of a full-width area with nothing to centre it.
+            var fillsWidth = child.Style?.Width == "100%";
+            var fillsHeight = child.Style?.Height == "100%";
+            if (fillsWidth || fillsHeight)
+            {
+                element.Style.BoxSizing = "border-box";
+                element.Style.Width = fillsWidth ? "100%" : null;
+                element.Style.MaxWidth = fillsWidth ? child.Style!.MaxWidth : null;
+                element.Style.Height = fillsHeight ? "100%" : null;
+            }
             element.Children.Add(child);
+        }
         return element;
     }
 

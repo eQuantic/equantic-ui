@@ -145,4 +145,93 @@ public class WrapperLayoutTransparencyTests
         lowered.Attributes.GetValueOrDefault("style", "").Should().Contain("width: 100%");
         lowered.Attributes.GetValueOrDefault("style", "").Should().NotContain("max-width");
     }
+
+    /// <summary>
+    /// A SafeArea carries its child's fill and cap on both axes, the insets inside the box it takes,
+    /// as Photon measures it (the child's size, plus the insets around it). On the web it hugged:
+    /// the Wallet's cards page stood at its content's width beside the dialog over it, its title
+    /// bar's action in the middle of the window, and its rail stopped at the last destination.
+    /// </summary>
+    [Fact]
+    public void ASafeAreaCarriesItsChildsWholeContract()
+    {
+        var column = new Column(gap: 0) { Height = SizeValue.Fill };
+        column.Add(new SafeArea(CappedCard()));
+
+        var style = Render(column).Children.Should().ContainSingle().Which.Attributes.GetValueOrDefault("style", "");
+
+        style.Should().Contain("width: 100%").And.Contain("max-width: 980px").And.Contain("height: 100%");
+        style.Should().Contain("box-sizing: border-box", "the insets go inside the 100%, not past it");
+    }
+
+    /// <summary>
+    /// Through a COMPONENT, which is what a SafeArea usually holds (a rail, a page): only what the
+    /// component built says whether it fills, so the area reads it off what its child lowered to.
+    /// </summary>
+    [Fact]
+    public void ASafeAreaCarriesTheFillOfWhatAComponentBuilt()
+    {
+        var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        row.Add(new SafeArea(new TallStrip(), SafeEdges.Start | SafeEdges.Bottom));
+
+        var style = Render(row).Children.Should().ContainSingle().Which.Attributes.GetValueOrDefault("style", "");
+
+        style.Should().Contain("height: 100%", "the strip the component builds fills the row's height");
+        style.Should().NotContain("width: 100%", "and states its own width, which the area does not stretch");
+    }
+
+    private sealed class TallStrip : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Box(new BoxStyle { Width = 80, Height = SizeValue.Fill }, new Text("rail"));
+    }
+
+    [Fact]
+    public void ASafeAreaAroundAChildThatHugs_HugsToo()
+    {
+        var row = new Row(gap: 0) { Width = SizeValue.Fill };
+        row.Add(new SafeArea(new Text("x")));
+
+        var style = Render(row).Children.Should().ContainSingle().Which.Attributes.GetValueOrDefault("style", "");
+
+        style.Should().NotContain("width: 100%").And.NotContain("height: 100%").And.NotContain("box-sizing");
+    }
+
+    /// <summary>
+    /// The browser's `fills` walks every wrapper the vocabulary calls layout-transparent, the rule the
+    /// C# `Fills` reads. It cannot read the rule, so its cases are compared to it here: a kind left
+    /// out answers "does not fill", which is what a child that does not fill answers, and the served
+    /// page and the hydrated one lay the same tree out differently, with nothing failing.
+    /// </summary>
+    [Fact]
+    public void TheBrowsersFills_WalksEveryTransparentWrapper()
+    {
+        var lowering = File.ReadAllText(Path.Combine(RepositoryRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "lowering.ts"));
+        var start = lowering.IndexOf("function fills(node: VisualNodeValue)", StringComparison.Ordinal);
+        start.Should().BeGreaterThan(0, "lowering.ts declares the browser's fills");
+        var end = lowering.IndexOf("default:", start, StringComparison.Ordinal);
+        var walked = System.Text.RegularExpressions.Regex.Matches(lowering[start..end], @"case '([A-Za-z]+)':")
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+
+        var transparent = typeof(SingleChildNode).Assembly.GetTypes()
+            .Where(type => type.IsSubclassOf(typeof(SingleChildNode)) && !type.IsAbstract)
+            .Select(type => (SingleChildNode)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(type))
+            .Where(wrapper => wrapper.IsLayoutTransparent())
+            .Select(wrapper => wrapper.NodeKind)
+            .ToList();
+
+        transparent.Should().NotBeEmpty();
+        transparent.Where(kind => !walked.Contains(kind)).Should().BeEmpty(
+            "every wrapper the vocabulary calls layout-transparent passes its child's fill through, on "
+            + "the server and in the browser alike");
+    }
+
+    private static string RepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "eQuantic.UI.sln")))
+            directory = directory.Parent;
+        return directory?.FullName ?? throw new InvalidOperationException("the repository root holds eQuantic.UI.sln");
+    }
 }
