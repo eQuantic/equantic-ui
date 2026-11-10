@@ -3,7 +3,8 @@
 The written hardening review #306 asked for, measured on `main` at `2d97110f1` (2026-11-09) and filed
 as #1265. It says what was reviewed, what each part was checked against, what holds and what does
 not. Every finding is an issue of its own: a Bug under #1174 with its points, or, for the two rated
-high, an issue whose details wait in a private security advisory for the preview that fixes them.
+high, an issue whose details are in a security advisory published with the preview that fixes them,
+0.2.0-preview.68. What has been fixed since is in [Since the review](#since-the-review).
 
 The Content-Security-Policy is not reviewed here: it does not exist yet, and #1266 to #1270 build it.
 The dependency side is not reviewed again either: #1177, #1178, #1179, #1180 and #1259 moved the
@@ -14,9 +15,10 @@ the one the runtime installs.
 
 The code was read, not run, area by area, against the question a reviewer asks of each: what a
 request can reach, what it can make the server write, and what it can make the server spend. Every
-finding below was checked again against the code before it was filed. The two rated high are
-tracked in private security advisories until a preview carrying their fixes is released, so this
-review names them and their area and nothing more (#1319, #1320). The evidence blocks are held to
+finding below was checked again against the code before it was filed. The two rated high were
+tracked in private security advisories until 0.2.0-preview.68 carried their fixes, and their details
+are the advisories', so this review names them and their area and nothing more (#1319, #1320). The
+evidence blocks are held to
 the code by `DocsIndexTests`, so a line that moves fails the suite rather than misleading the next
 reader.
 
@@ -45,30 +47,33 @@ quotes. Metadata values are attribute-encoded as well.
 src/eQuantic.UI.Web/Dom/HtmlRenderer.cs:244  sb.Append(HttpUtility.HtmlAttributeEncode(value));
 ```
 
-**#1319, high.** A defect in how the shell writes its template, tracked in a private security
-advisory until the preview that fixes it is released.
+**#1319, high, fixed in 0.2.0-preview.68.** A defect in how the shell writes its template:
+[GHSA-222h-8rr5-gfrx](https://github.com/eQuantic/equantic-ui/security/advisories/GHSA-222h-8rr5-gfrx).
+Every version up to 0.2.0-preview.67 is affected, and an app upgrades to 0.2.0-preview.68 or later.
 
-**#1286, medium.** No URL scheme is checked anywhere. A destination is rewritten only when it is a
-rooted path, so a `javascript:` link from a `Link`, a `TextRun` or a Markdown link is written as it
-came, and the router hands it to the browser.
+**#1286, medium, fixed in 0.2.0-preview.68 (#1338).** No URL scheme was checked anywhere. A
+destination was rewritten only when it was a rooted path, so a `javascript:` link from a `Link`, a
+`TextRun` or a Markdown link was written as it came, and the router handed it to the browser. Now a
+destination whose scheme an href never carries is written with no href at all.
 
 ```text
-src/eQuantic.UI.Web/Dom/RenderContext.cs:62  public static string ResolveDestination(string destination) =>
+src/eQuantic.UI.Web/Dom/RenderContext.cs:65  !LinkScheme.Allows(destination) ? null
 ```
 
-**#1288, medium.** The shell carries the visitor's theme, density, culture and page state, and is
-written with no `Cache-Control`, while the JSON copy of the same state is sent `no-store`.
+**#1288, medium, fixed in 0.2.0-preview.68 (#1321).** The shell carries the visitor's theme, density,
+culture and page state, and was written with no `Cache-Control`, while the JSON copy of the same state
+was sent `no-store`. Now both answers of a page's route are sent `no-store`, from one place.
 
 ```text
-src/eQuantic.UI.Server/UIExtensions.cs:1091  context.Response.ContentType = "text/html";
-src/eQuantic.UI.Server/UIExtensions.cs:699  context.Response.Headers["Cache-Control"] = "no-store";
+src/eQuantic.UI.Server/UIExtensions.cs:850  context.Response.Headers.CacheControl = "no-store";
 ```
 
-**#1295, low.** The atomic sheet writes a style value as it came inside its `<style>` element, which a
-string of the `HtmlStyle` escape hatch can end.
+**#1295, low, fixed in 0.2.0-preview.68 (#1338).** The atomic sheet wrote a style value as it came
+inside its `<style>` element, which a string of the `HtmlStyle` escape hatch could end. Now what the
+sheet holds can never end the element.
 
 ```text
-src/eQuantic.UI.Server/Assets/IAsset.cs:78  return $"<style{idAttr}>{Content}</style>";
+src/eQuantic.UI.Server/Assets/IAsset.cs:80  return $"<style{idAttr}{ShellNonce.Attribute(nonce)}>{StyleElementText.Of(Content)}</style>";
 ```
 
 ## Server Actions
@@ -76,30 +81,32 @@ src/eQuantic.UI.Server/Assets/IAsset.cs:78  return $"<style{idAttr}>{Content}</s
 **Holds.** Only public instance methods carrying `[ServerAction]`, on the scanned components, are
 registered, and a call resolves by exact id. Arguments deserialize only into the declared types, from
 an allow-list of primitives, collections and the scanned assemblies, with no `$type` handling and a
-depth of 32. The body is capped at 1 MB, by `Content-Length` and by the server's body-size feature for
-a chunked body. A request whose `Origin` is not the app's own, or whose `Sec-Fetch-Site` is
+depth of 32. The body is capped, at 1 MB unless the app sets another limit, by `Content-Length` and by
+the server's body-size feature for a chunked body. A request whose `Origin` is not the app's own, or whose `Sec-Fetch-Site` is
 `cross-site` or `same-site`, is refused before anything else runs, and authorization runs before the
 component is built and before its arguments are read.
 
 ```text
-src/eQuantic.UI.Server/ServerActionRegistry.cs:43  var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-src/eQuantic.UI.Server/ServerActionsMiddleware.cs:383  return _allowedAssemblies.Contains(type.Assembly);
-src/eQuantic.UI.Server/ServerActionsMiddleware.cs:44  private const long MaxRequestBodySize = 1_048_576;
+src/eQuantic.UI.Server/ServerActionRegistry.cs:55  var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+src/eQuantic.UI.Server/ServerActionsMiddleware.cs:450  return _allowedAssemblies.Contains(type.Assembly);
+src/eQuantic.UI.Server/ServerActionsOptions.cs:24  public long MaxRequestBodySize { get; set; } = 1_048_576;
 src/eQuantic.UI.Server/ServerActionOrigins.cs:35  return request.Headers["Sec-Fetch-Site"].ToString() is not ("cross-site" or "same-site");
 ```
 
-**#1320, high.** A defect in how Server Actions are authorized, tracked in a private security
-advisory until the preview that fixes it is released.
+**#1320, high, fixed in 0.2.0-preview.68.** A defect in how Server Actions are authorized:
+[GHSA-f5p8-xvhw-4j43](https://github.com/eQuantic/equantic-ui/security/advisories/GHSA-f5p8-xvhw-4j43).
+Every version up to 0.2.0-preview.67 is affected, and an app upgrades to 0.2.0-preview.68 or later.
 
-**#1290, low.** The id is the type's simple name and the method's, and the registry keeps the last
-one registered under it.
+**#1290, low, fixed in 0.2.0-preview.68 (#1316).** The id was the type's simple name and the method's,
+and the registry kept the last one registered under it. Now the id is the component's full name, and
+two methods under one id stop the app at start, naming both.
 
 ```text
-src/eQuantic.UI.Server/ServerActionRegistry.cs:49  var actionId = $"{type.Name}/{attr.Name ?? method.Name}";
-src/eQuantic.UI.Server/ServerActionRegistry.cs:19  _actions[actionId] = descriptor;
+src/eQuantic.UI.Server/ServerActionRegistry.cs:64  var actionId = $"{ComponentIdentity.Of(type)}/{attr.Name ?? method.Name}";
+src/eQuantic.UI.Server/ServerActionRegistry.cs:24  if (_actions.TryGetValue(actionId, out var held) && held.Method != descriptor.Method)
 ```
 
-**#1291, low.** The smaller gaps: a 403 body that names the roles required, an action id logged with
+**#1291, low, fixed in 0.2.0-preview.68 (#1316).** The smaller gaps: a 403 body that names the roles required, an action id logged with
 its line breaks, malformed JSON answered 500, an `UploadedFile` inside a DTO that skips its binding, a
 cap skipped silently when the body was already read, and a result serialized as its runtime type.
 
@@ -109,20 +116,23 @@ cap skipped silently when the body was already read, and a result serialized as 
 runs before the store is touched. The size is checked against the declared length at creation, the
 bytes stream to disk, the origin is checked, and the SDK never serves an upload back.
 
-**#1287, medium.** A request without the owner cookie is a new owner every time, the limit on
-unfinished uploads is counted per owner, and a finished upload never counts, so nothing bounds what
-an anonymous client can store.
+**#1287, medium, fixed in 0.2.0-preview.68 (#1326).** A request without the owner cookie is a new owner
+every time, the limit on unfinished uploads was counted per owner, and a finished upload never
+counted, so nothing bounded what an anonymous client could store. Now finished uploads count, per
+owner and across the server, in uploads and in bytes.
 
 ```text
 src/eQuantic.UI.Server/Uploads/UploadOwner.cs:48  var made = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16));
-src/eQuantic.UI.Server/Uploads/UploadStore.cs:104  var unfinished = _records.Values.Count(record => record.Owner == owner && !_finished.Contains(record.Id));
+src/eQuantic.UI.Server/Uploads/UploadStore.cs:125  if (_total.Uploads + _total.ReservedUploads >= _options.MaxTotalUploads)
 ```
 
-**#1293, low.** The type is the client's, the name keeps `..`, a folder under the web root is not
-refused, and the owner cookie is `Secure` only when the request reached the app over HTTPS.
+**#1293, low, fixed in 0.2.0-preview.68 (#1326).** The type was the client's, the name kept `..`, a
+folder under the web root was not refused, and the owner cookie was `Secure` only when the request
+reached the app over HTTPS. Now it is `Secure` everywhere but plain HTTP to this machine or in
+Development.
 
 ```text
-src/eQuantic.UI.Server/Uploads/UploadOwner.cs:76  Secure = context.Request.IsHttps,
+src/eQuantic.UI.Server/Uploads/UploadOwner.cs:81  Secure = context.Request.IsHttps || !(IsLoopback(context.Request.Host.Host) || IsDevelopment(context)),
 ```
 
 ## Server events
@@ -148,8 +158,8 @@ receives a keep-alive and `reload`, and rebuilds start from the file watcher, ne
 unbounded channel.
 
 ```text
-src/eQuantic.UI.Server/UIOptions.cs:87  HotReload ?? (environment.IsDevelopment() || dotnetWatch == "1");
-src/eQuantic.UI.Server/HotReload/HotReloadService.cs:146  var channel = Channel.CreateUnbounded<string>();
+src/eQuantic.UI.Server/UIOptions.cs:88  HotReload ?? (environment.IsDevelopment() || dotnetWatch == "1");
+src/eQuantic.UI.Server/HotReload/HotReloadService.cs:275  var channel = Channel.CreateUnbounded<string>();
 ```
 
 ## File-serving routes
@@ -176,7 +186,7 @@ cookie is not `Secure`, and the strings are quoted by hand, the pattern #526 rem
 Whether the plain `UseGtm(...)` should ask for consent by default is a product decision recorded there.
 
 ```text
-src/eQuantic.UI.Gtm/GtmExtensions.cs:148  value.Replace("\\", "\\\\").Replace("'", "\\'").Replace("</", "<\\/");
+src/eQuantic.UI.Gtm/GtmExtensions.cs:160  value.Replace("\\", "\\\\").Replace("'", "\\'").Replace("</", "<\\/");
 ```
 
 ## The image optimizer
@@ -185,21 +195,25 @@ src/eQuantic.UI.Gtm/GtmExtensions.cs:148  value.Replace("\\", "\\\\").Replace("'
 checked before decoding, ten optimizations at once, and `Vary: Accept`.
 
 ```text
-src/eQuantic.UI.Images/ImageOptimizationMiddleware.cs:91  if (!resolvedPath.StartsWith(webRootFull, StringComparison.OrdinalIgnoreCase))
+src/eQuantic.UI.Images/ImageOptimizationMiddleware.cs:92  if (!resolvedPath.StartsWith(webRootFull, StringComparison.OrdinalIgnoreCase))
 ```
 
-**#1289, medium.** The cache is keyed on the url as the request spelled it, and on any quality from 1
-to 100, with no size cap, so one file costs a decode and a cached copy per spelling.
+**#1289, medium, fixed in 0.2.0-preview.68 (#1336).** The cache was keyed on the url as the request
+spelled it, and on any quality from 1 to 100, with no size cap, so one file cost a decode and a cached
+copy per spelling. Now the key is the file itself, as found under the web root, and a quality is
+settled to the ones the options allow.
 
 ```text
-src/eQuantic.UI.Images/ImageCache.cs:167  var input = $"{url}|{width}|{quality}|{format}";
+src/eQuantic.UI.Images/ImageOptimizationMiddleware.cs:127  var source = $"{relative}|{fileInfo.Length}|{fileInfo.LastWriteTimeUtc.Ticks}";
+src/eQuantic.UI.Images/ImageOptimizationMiddleware.cs:82  quality = options.QualityFor(quality);
 ```
 
 ## Response headers
 
-No `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `frame-ancestors`,
-`Referrer-Policy` or `Strict-Transport-Security` is written anywhere in `src`, so every page can be
-framed by any origin. They are not filed separately: #1267 writes the policy and the headers beside
+On 2026-11-09, no `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`,
+`frame-ancestors`, `Referrer-Policy` or `Strict-Transport-Security` was written anywhere in `src`, so
+every page could be framed by any origin, until an app turns on the policy that
+[Since the review](#since-the-review) describes. They are not filed separately: #1267 writes the policy and the headers beside
 it. HSTS is ASP.NET Core's own `UseHsts`, the app's call.
 
 ## What was not reviewed
@@ -207,3 +221,28 @@ it. HSTS is ASP.NET Core's own `UseHsts`, the app's call.
 How a deployed app orders its middleware (the template and the samples call no `UseAuthorization`),
 the chart libraries' own handling of labels, and the native track, whose surfaces are not served over
 HTTP.
+
+## Since the review
+
+The findings above are as measured on 2026-11-09. Their fixes, by the release that carries them:
+
+| Finding | Fixed by | Release |
+|---|---|---|
+| #1319 (high), the shell's template | #1321 | 0.2.0-preview.68 |
+| #1320 (high), Server Actions' authorization | #1316 | 0.2.0-preview.68 |
+| #1286 (medium), a `javascript:` destination | #1338 | 0.2.0-preview.68 |
+| #1287 (medium), anonymous uploads | #1326 | 0.2.0-preview.68 |
+| #1288 (medium), the shell's `Cache-Control` | #1321 | 0.2.0-preview.68 |
+| #1289 (medium), the image cache's key | #1336 | 0.2.0-preview.68 |
+| #1290 and #1291 (low), Server Actions | #1316 | 0.2.0-preview.68 |
+| #1293 (low), uploads | #1326 | 0.2.0-preview.68 |
+| #1295 (low), the atomic sheet | #1338 | 0.2.0-preview.68 |
+| #1292 (low), server events | #1358, open | |
+| #1294 (low), GTM's consent | #1360, open | |
+| #1296 and #1297 (low), the routes and hot reload | #1361, open | |
+
+The response headers the review found missing came with the Content-Security-Policy, also in
+0.2.0-preview.68: an app turns it on with `UseContentSecurityPolicy` (#1267), every script and style
+the SDK writes carries the request's nonce (#1266, #1268), the policy brings `nosniff` and
+`Referrer-Policy`, and only the app's own origin may frame a page unless it says otherwise. The build
+refuses an escape-hatch inline handler under it (EQ2115, #1269), and #1270 proves it in a browser.
