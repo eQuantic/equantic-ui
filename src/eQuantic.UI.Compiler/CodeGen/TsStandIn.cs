@@ -31,9 +31,10 @@ internal static class TsStandIn
         switch (type.TypeKind)
         {
             case TypeKind.Enum:
-                // [Flags] members COMBINE, so they cross as the number the bitwise operators need.
+                // [Flags] members COMBINE, so they cross as the number the bitwise operators need, a
+                // 64-bit enum's a BigInt, as a long is held (#551).
                 if (type.GetAttributes().Any(attribute => attribute.AttributeClass?.Name == "FlagsAttribute"))
-                    return "number";
+                    return type is INamedTypeSymbol flags ? Strategies.Types.EnumShape.FlagsTsType(flags) : "number";
                 if (TypeScriptEmitter.VocabularyUnionFor(type) is not { } union) return "string";
                 imports?.Add(union);
                 return union;

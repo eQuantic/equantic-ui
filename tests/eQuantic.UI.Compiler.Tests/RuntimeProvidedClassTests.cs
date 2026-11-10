@@ -12,6 +12,73 @@ namespace eQuantic.UI.Compiler.Tests;
 /// </summary>
 public class RuntimeProvidedClassTests
 {
+    /// <summary>The plain-class path reads the same fallback (#1170): its module wrote the call with no
+    /// import, a ReferenceError in the browser, where the same call in a component imports the helper.</summary>
+    [Fact]
+    public void RuntimeProvidedStaticHelper_FallbackImportsRuntime_FromAPlainClass()
+    {
+        var dir = CreateTempDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "PretendHelper.cs"), """
+                [RuntimeProvided]
+                public static class PretendHelper
+                {
+                    public static int MinWidth() => 64;
+                }
+                """);
+            var probePath = Path.Combine(dir, "Probe.cs");
+            File.WriteAllText(probePath, """
+                public class Probe
+                {
+                    public int Measure() => PretendHelper.MinWidth();
+                }
+                """);
+            var resolver = new ComponentDependencyResolver();
+            resolver.ScanSourceDirectories([dir]);
+
+            var compiler = new ComponentCompiler { SymbolsAreAuthoritative = false };
+            compiler.SetDependencyResolver(resolver);
+            var probe = compiler.CompileFile(probePath).Single(result => result.ComponentName == "Probe");
+
+            probe.Success.Should().BeTrue(string.Join("; ", probe.Errors.Select(error => error.Message)));
+            ImportLineFor(probe.TypeScript, "PretendHelper").Should().Contain("from \"@equantic/runtime\"");
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    /// <summary>The parser and the scan read one rule where a base does not bind (#1170): this class was
+    /// written as a plain class and filed by the scan as a component.</summary>
+    [Theory]
+    [InlineData("class Legacy : MissingBase { private int Build(int c) => c; }", false)]
+    [InlineData("class Legacy : MissingBase { public static int Render() => 1; }", false)]
+    [InlineData("class Legacy : MissingBase { public object CreateState() => null; }", false)]
+    [InlineData("class Legacy : MissingBase { public int Build(int c) => c; }", true)]
+    [InlineData("class Legacy : StatefulComponent { public object CreateState() => null; }", true)]
+    [InlineData("class Legacy : StatefulComponent<int> { }", true)]
+    [InlineData("class Legacy : eQuantic.UI.Components.StatelessComponent<int> { }", true)]
+    public void TheScanFilesAClass_AsTheParserWritesIt(string source, bool component)
+    {
+        var dir = CreateTempDirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "Legacy.cs"), source);
+            var resolver = new ComponentDependencyResolver();
+            resolver.ScanSourceDirectories([dir]);
+
+            // A module either way, so the scan read the file: what it is filed as is the question.
+            resolver.IsModule("Legacy").Should().BeTrue();
+            resolver.GetAllPlainClasses().Contains("Legacy").Should().Be(!component);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
     [Fact]
     public void RuntimeProvidedStaticHelper_FallbackImportsRuntime_NotLocalModule()
     {
