@@ -52,7 +52,7 @@ export class Spreadsheet extends StatefulComponent {
             this._columns = new LeadingSpans(document.columnSpans, numbers);
         }
         let cellType = theme.type(Spreadsheet.cellType);
-        let $n0: any; 
+        let $n0: SheetGrid; 
         this.controller.grid = ($n0 = new SheetGrid(this._scroll, numbers, Spreadsheet.headerHeight), $n0.measure = (text: string) => context.measureText(text, cellType), $n0.lineHeight = cellType.lineHeight, $n0.cellPadding = Spreadsheet.cellPadding, $n0.resizeGrip = Spreadsheet.grip, $n0);
         let revealed = this.controller.revealCell;
         let ranges = this.controller.ranges;
