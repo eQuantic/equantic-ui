@@ -25,7 +25,7 @@ export class ListDetail extends StatelessComponent {
     }
 
     build(_context: BuildContext) {
-        const pane = (title: string | null, body: VisualNode, leading?: IconButton | null) => {
+        const pane = (title: string | null, body: VisualNode, leading?: IconButton | null): VisualNode => {
             let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
             if (!(title == null)) column.add(new AppBar(title, { leading: leading }));
             column.add(new Flexible(body));
@@ -34,7 +34,7 @@ export class ListDetail extends StatelessComponent {
         const back = () => {
             return this.onBack == null ? null : new IconButton(new Icon(IconGlyph.fromIcons('chevronLeft')), SdkStrings.back, 'standard', 'medium', this.onBack);
         };
-        const withBack = (detail: VisualNode) => {
+        const withBack = (detail: VisualNode): VisualNode => {
             let goBack: any; 
             return (goBack = this.onBack) != null ? new Shortcut(detail, KeyChord.escape, goBack) : detail;
         };
