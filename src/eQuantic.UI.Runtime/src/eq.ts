@@ -257,7 +257,7 @@ import {
 } from './utils/guards';
 import { named as namedType, of as typeOfValue, same as sameType } from './utils/runtime-types';
 import { lockGate, newObject } from './utils/net-object';
-import { resolveService } from './utils/services';
+import { provideService, resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
@@ -518,7 +518,7 @@ export const $eq = {
    * sorted family (SortedSet / SortedDictionary / SortedList).
    */
   /** What a transpiled constructor resolves its dependencies through — see utils/services. */
-  services: { resolve: resolveService },
+  services: { resolve: resolveService, provide: provideService },
   collections: {
     queue,
     stack,

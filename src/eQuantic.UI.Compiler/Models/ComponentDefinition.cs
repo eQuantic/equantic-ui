@@ -327,6 +327,13 @@ public class ParameterDefinition
     /// <summary>The interface's own name — the key both sides agree on, since a C# type does not
     /// exist at run time in the browser but its name does.</summary>
     public string? ServiceKey { get; set; }
+
+    /// <summary>The interface itself, when the model knew it: what tells an app's own service from the
+    /// SDK's, whose implementation the runtime provides (#1335).</summary>
+    internal Microsoft.CodeAnalysis.ITypeSymbol? ServiceType { get; set; }
+
+    /// <summary>The parameter as written, where a diagnostic about it points.</summary>
+    internal Microsoft.CodeAnalysis.CSharp.Syntax.ParameterSyntax? Node { get; set; }
 }
 
 
