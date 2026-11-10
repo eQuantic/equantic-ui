@@ -31,8 +31,29 @@ public class AppBuildArgumentsTests
     {
         AppBuildOptions.ReadArguments(["src", "out", "--refs", "refs.txt"])
             .Should().Equal(["src", "out", "--refs", "refs.txt"]);
-        AppBuildOptions.ReadArguments(["@file", "out"]).Should().Equal(["@file", "out"],
-            "only a command line of one argument names a file");
+        AppBuildOptions.ReadArguments(["src", "@file"]).Should().Equal(["src", "@file"],
+            "only the first argument names a file");
+    }
+
+    /// <summary>
+    /// The arguments after the file follow its own: the server of an app in development starts eqc with
+    /// the file the build wrote and <c>--serve</c> after it, so it serves the build's own arguments
+    /// (#1276).
+    /// </summary>
+    [Fact]
+    public void TheArgumentsAfterTheFile_FollowItsOwn()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"eq-arguments-{Guid.NewGuid():N}.rsp");
+        File.WriteAllLines(file, ["src", "out", "--refs", "refs.txt"]);
+        try
+        {
+            AppBuildOptions.ReadArguments(["@" + file, "--serve"])
+                .Should().Equal(["src", "out", "--refs", "refs.txt", "--serve"]);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
     }
 
     [Fact]
@@ -57,7 +78,7 @@ public class AppBuildArgumentsTests
             "--generated", "/app/generated",
             "--bun", "/tools/bun",
             "--source-maps", "external",
-            "--watch",
+            "--serve",
         ]);
 
         options.SourceDirectories.Should().Equal(["/app", "/components", "/charts"]);
@@ -69,21 +90,21 @@ public class AppBuildArgumentsTests
         options.GeneratedDirectory.Should().Be("/app/generated");
         options.BunPath.Should().Be("/tools/bun");
         options.SourceMaps.Should().Be(SourceMapMode.External);
-        options.Watch.Should().BeTrue();
+        options.Serve.Should().BeTrue();
     }
 
     [Fact]
-    public void AnAssemblyNamedLikeTheWatchFlag_IsANameAndNoFlag()
+    public void AnAssemblyNamedLikeTheServeFlag_IsANameAndNoFlag()
     {
-        // Found anywhere in the list, `--watch` as an assembly's name put the CLI in watch mode, and
+        // Found anywhere in the list, a flag as an assembly's name put the CLI in a mode that stays, and
         // the SDK's build compiled once and then waited forever (found in review of #843).
-        var named = AppBuildOptions.FromArguments(["src", "out", "--assembly-name", "--watch"]);
-        var watching = AppBuildOptions.FromArguments(["src", "out", "--watch", "--assembly-name", "App"]);
+        var named = AppBuildOptions.FromArguments(["src", "out", "--assembly-name", "--serve"]);
+        var serving = AppBuildOptions.FromArguments(["src", "out", "--serve", "--assembly-name", "App"]);
 
-        named.AssemblyName.Should().Be("--watch");
-        named.Watch.Should().BeFalse();
-        watching.Watch.Should().BeTrue();
-        watching.AssemblyName.Should().Be("App");
+        named.AssemblyName.Should().Be("--serve");
+        named.Serve.Should().BeFalse();
+        serving.Serve.Should().BeTrue();
+        serving.AssemblyName.Should().Be("App");
     }
 
     [Fact]
