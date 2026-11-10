@@ -467,33 +467,35 @@ public static class UIExtensions
         // Literal routes, one per runtime: a pattern would match as broadly as /_equantic/{name}.js below,
         // and the two would be ambiguous.
         foreach (var file in new[] { "runtime.js", DevRuntimeFile })
-        endpoints.MapGetAndHead("/_equantic/" + file, async context =>
         {
-            // The dev runtime is answered only where the dev loop is: a production server ships it in
-            // its assembly and never serves it.
-            if (file == DevRuntimeFile && !ServesDevLoop(context))
+            endpoints.MapGetAndHead("/_equantic/" + file, async context =>
             {
-                context.Response.StatusCode = 404;
-                return;
-            }
-            context.Response.ContentType = "application/javascript";
-            context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
-            var assembly = typeof(UIExtensions).Assembly;
-            var resourceName = "eQuantic.UI.Server." + file;
-            using var stream = assembly.GetManifestResourceStream(resourceName);
+                // The dev runtime is answered only where the dev loop is: a production server ships it in
+                // its assembly and never serves it.
+                if (file == DevRuntimeFile && !ServesDevLoop(context))
+                {
+                    context.Response.StatusCode = 404;
+                    return;
+                }
+                context.Response.ContentType = "application/javascript";
+                context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+                var assembly = typeof(UIExtensions).Assembly;
+                var resourceName = "eQuantic.UI.Server." + file;
+                using var stream = assembly.GetManifestResourceStream(resourceName);
 
-            if (stream == null)
-            {
-                context.Response.StatusCode = 404;
-                var resources = string.Join(", ", assembly.GetManifestResourceNames());
-                await context.Response.WriteAsync($"console.error('Runtime embedded resource not found: {resourceName}. Available: {resources}');");
-                return;
-            }
-            await stream.CopyToAsync(context.Response.Body);
-        })
-        // The SDK's own code is public: a sign-in page under an app's fallback policy has to load it
-        // to come alive (#673). What a page may show is the page's route's to decide.
-        .AllowAnonymous();
+                if (stream == null)
+                {
+                    context.Response.StatusCode = 404;
+                    var resources = string.Join(", ", assembly.GetManifestResourceNames());
+                    await context.Response.WriteAsync($"console.error('Runtime embedded resource not found: {resourceName}. Available: {resources}');");
+                    return;
+                }
+                await stream.CopyToAsync(context.Response.Body);
+            })
+            // The SDK's own code is public: a sign-in page under an app's fallback policy has to load it
+            // to come alive (#673). What a page may show is the page's route's to decide.
+            .AllowAnonymous();
+        }
 
         // Debug/Fallback: Manually serve component files if StaticFiles misses them
         endpoints.MapGetAndHead("/_equantic/{name}.js", async context =>
@@ -604,18 +606,20 @@ public static class UIExtensions
             // and the overlay names it so. The overlay asks for it as `<frame's URL>.map`. Development
             // alone, under the same condition as the overlay; its sources are names, it carries no text.
             foreach (var map in new[] { "runtime.js.map", DevRuntimeFile + ".map" })
-            endpoints.MapGetAndHead("/_equantic/" + map, async context =>
             {
-                using var stream = typeof(UIExtensions).Assembly.GetManifestResourceStream("eQuantic.UI.Server." + map);
-                if (stream is null)
+                endpoints.MapGetAndHead("/_equantic/" + map, async context =>
                 {
-                    context.Response.StatusCode = 404;
-                    return;
-                }
-                context.Response.ContentType = "application/json";
-                context.Response.Headers.CacheControl = "no-cache";
-                await stream.CopyToAsync(context.Response.Body);
-            }).AllowAnonymous();
+                    using var stream = typeof(UIExtensions).Assembly.GetManifestResourceStream("eQuantic.UI.Server." + map);
+                    if (stream is null)
+                    {
+                        context.Response.StatusCode = 404;
+                        return;
+                    }
+                    context.Response.ContentType = "application/json";
+                    context.Response.Headers.CacheControl = "no-cache";
+                    await stream.CopyToAsync(context.Response.Body);
+                }).AllowAnonymous();
+            }
 
             // The stage-one source maps (TS intermediate → C#, C# text embedded) for the error
             // overlay's second hop, mapped where the overlay installs, in Development alone: the
