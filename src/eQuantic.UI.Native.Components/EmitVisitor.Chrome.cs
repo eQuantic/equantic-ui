@@ -463,7 +463,9 @@ internal sealed partial class EmitVisitor
     {
         if (node.Source is not Box box) return null;
         var style = EffectiveStyle(box, s with { Node = node });
-        var transform = style.Transform ?? IdentityTransform;
+        // A fraction is of the box as laid out, so it becomes units here, before the glide: the
+        // transition then animates one offset, whatever mix of the two the states declare (#614).
+        var transform = (style.Transform ?? IdentityTransform).Resolved(node.Bounds.Width, node.Bounds.Height);
         if (style.Transition is { } glide && s.Motion.Transitions is { } store
             && (glide.Channels & StyleChannels.Transform) != 0)
             transform = GlideTransform(store, node.Element, transform, s.Motion.TimeMs, glide, s.Motion.Reduced);

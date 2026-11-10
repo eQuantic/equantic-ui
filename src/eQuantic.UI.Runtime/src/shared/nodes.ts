@@ -316,6 +316,9 @@ export interface TransformValue {
   rotationDegrees?: number;
   scaleX?: number;
   scaleY?: number;
+  /** Fractions of the box's own width and height (C# `TranslateFractionX`, #614). */
+  translateFractionX?: number;
+  translateFractionY?: number;
 }
 
 /** Wire shape of the C# `LinearGradient`: two token stops on a straight axis, plus the optional

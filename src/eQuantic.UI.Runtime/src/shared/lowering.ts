@@ -211,15 +211,26 @@ export function px(dp: number): string {
 function transformValue(t: TransformValue): string | undefined {
   const tx = t.translateX ?? 0;
   const ty = t.translateY ?? 0;
+  const fx = t.translateFractionX ?? 0;
+  const fy = t.translateFractionY ?? 0;
   const rot = t.rotationDegrees ?? 0;
   const sx = t.scaleX ?? 1;
   const sy = t.scaleY ?? 1;
   const parts: string[] = [];
-  if (tx !== 0 || ty !== 0) parts.push(`translate(${px(tx)}, ${px(ty)})`);
+  if (tx !== 0 || ty !== 0 || fx !== 0 || fy !== 0)
+    parts.push(`translate(${offsetValue(tx, fx)}, ${offsetValue(ty, fy)})`);
   if (rot !== 0) parts.push(`rotate(${num(rot)}deg)`);
   if (sx !== 1 || sy !== 1)
     parts.push(sx === sy ? `scale(${num(sx)})` : `scale(${num(sx)}, ${num(sy)})`);
   return parts.length > 0 ? parts.join(' ') : undefined;
+}
+
+/** One axis of a translation (C# `TokenCss.Offset`): units, a percentage of the element's own size,
+ * or their sum. */
+function offsetValue(units: number, fraction: number): string {
+  if (fraction === 0) return px(units);
+  const percent = `${num(Math.fround(fraction * 100))}%`;
+  return units === 0 ? percent : `calc(${percent} + ${px(units)})`;
 }
 
 function radiusValue(radii: CornerRadiiValue): string {

@@ -80,7 +80,8 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         };
         var style = styled ?? default;
         var opacityNow = style.Opacity ?? 1f;
-        var transformNow = style.Transform ?? IdentityTransform;
+        // A fraction is of the box as laid out: units from here on, the glide included (#614).
+        var transformNow = (style.Transform ?? IdentityTransform).Resolved(node.Bounds.Width, node.Bounds.Height);
         if (styled is not null && style.Transition is { } glide && s.Motion.Transitions is { } store)
         {
             if ((glide.Channels & StyleChannels.Opacity) != 0)
