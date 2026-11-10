@@ -75,8 +75,9 @@ tools/trim raw/mac-tour.mov 12.14 19.0 1100 748 effectcraft/footage/mac.mp4
 tools/trim raw/web-tour-1000.mp4 18.98 19.0 1280 800 effectcraft/footage/web1000.mp4
 ```
 
-The start times are this recording's; a new recording has its own. `tools/sheet` lays frames of the
-four side by side to check they show the same screen at the same time.
+The start times are this recording's; a new recording has its own. `tools/sheet <clip> <png> <columns>
+<cell width> <seconds>...` makes a contact sheet of one clip: sheets of the four at the same seconds
+show whether they reach each screen together.
 
 ### 3. The code card and the models
 
