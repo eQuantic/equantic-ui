@@ -275,6 +275,20 @@ public sealed class AppBuild
     /// </summary>
     public bool LoadFrom(AppBuild previous)
     {
+        // A file an editor's save removes or holds for a moment, between the look and the read, is a
+        // cold load's to read, never a failure of the process that serves the compiles.
+        try
+        {
+            return LoadWarm(previous);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    private bool LoadWarm(AppBuild previous)
+    {
         if (previous.Compilation is not { } warm || previous._sourceFiles is not { } before) return false;
         if (previous._inputs != Inputs()) return false;
         var files = CollectSourceFiles(TextWriter.Null).Where(File.Exists).ToList();

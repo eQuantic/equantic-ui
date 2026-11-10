@@ -126,4 +126,25 @@ public class AWarmBuildTests
         wasWarm.Should().BeFalse("a referenced project's compilation is not kept across its own edits");
         warm.Module("Tag").Should().Contain("Eleven coins");
     }
+
+    /// <summary>
+    /// A file an editor's save holds for a moment, between the look and the read, sends the build to a
+    /// cold load: the served eqc that asked for a warm one is never taken down by it.
+    /// </summary>
+    [Fact]
+    public void AFileHeldWhileTheBuildReadsIt_LoadsCold_AndThrowsNothing()
+    {
+        using var solution = Shop();
+        var cold = solution.Build();
+        var held = solution.FileOf("Shop", "Prices.cs");
+
+        bool wasWarm;
+        using (new FileStream(held, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            var rebuild = () => solution.Rebuild(cold);
+            wasWarm = rebuild.Should().NotThrow().Subject.Warm;
+        }
+
+        wasWarm.Should().BeFalse("a file it could not read is a cold load's to read");
+    }
 }
