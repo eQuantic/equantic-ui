@@ -4726,21 +4726,38 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
   if (child) {
     // C# twin: transparent to its child's size, read off what the child lowered to (a component's
     // fill is only known once it has built), with the insets inside the box it takes.
-    const fillsWidth = atomicDeclaration(child, 'width') === '100%';
-    const fillsHeight = atomicDeclaration(child, 'height') === '100%';
-    if (fillsWidth || fillsHeight) {
+    const asked = asksForAll(child);
+    if (asked.width || asked.height) {
       mergeAtomicDeclaration(wrapper, 'box-sizing', 'border-box');
-      if (fillsWidth) {
+      if (asked.width) {
         // The whole width contract: the fill AND its cap (C# twin).
         mergeAtomicDeclaration(wrapper, 'width', '100%');
-        const cap = atomicDeclaration(child, 'max-width');
-        if (cap !== undefined) mergeAtomicDeclaration(wrapper, 'max-width', cap);
+        if (asked.cap !== undefined) mergeAtomicDeclaration(wrapper, 'max-width', asked.cap);
       }
-      if (fillsHeight) mergeAtomicDeclaration(wrapper, 'height', '100%');
+      if (asked.height) mergeAtomicDeclaration(wrapper, 'height', '100%');
     }
     wrapper.children.push(child);
   }
   return wrapper;
+}
+
+/**
+ * C# `AsksForAll`: the axes a lowered element asks its parent for all of, and its width cap, read
+ * through the display:contents wrapper an adaptive node lowers to, where every arm has to ask it —
+ * the page's media rules show one arm at a time, and the parent cannot know which.
+ */
+function asksForAll(node: HtmlNode): { width: boolean; height: boolean; cap?: string } {
+  if (atomicDeclaration(node, 'display') === 'contents') {
+    const arms = node.children.flatMap((gate) => gate.children).map(asksForAll);
+    return arms.length === 0
+      ? { width: false, height: false }
+      : { width: arms.every((arm) => arm.width), height: arms.every((arm) => arm.height) };
+  }
+  return {
+    width: atomicDeclaration(node, 'width') === '100%',
+    height: atomicDeclaration(node, 'height') === '100%',
+    cap: atomicDeclaration(node, 'max-width'),
+  };
 }
 
 /**

@@ -527,18 +527,40 @@ internal sealed partial class WebLoweringVisitor
             // at its last destination instead of reaching the bottom of the window.
             // The whole width contract, as every wrapper carries it: a fill AND its cap, or a capped
             // child would sit at the start of a full-width area with nothing to centre it.
-            var fillsWidth = child.Style?.Width == "100%";
-            var fillsHeight = child.Style?.Height == "100%";
+            var (fillsWidth, fillsHeight, cap) = AsksForAll(child);
             if (fillsWidth || fillsHeight)
             {
                 element.Style.BoxSizing = "border-box";
                 element.Style.Width = fillsWidth ? "100%" : null;
-                element.Style.MaxWidth = fillsWidth ? child.Style!.MaxWidth : null;
+                element.Style.MaxWidth = fillsWidth ? cap : null;
                 element.Style.Height = fillsHeight ? "100%" : null;
             }
             element.Children.Add(child);
         }
         return element;
+    }
+
+    /// <summary>
+    /// The axes a lowered element asks its parent for all of (`100%`), and its width cap: read
+    /// through the display:contents wrapper an <see cref="AdaptiveNode"/> lowers to, where every arm
+    /// has to ask it, because the page's media rules show one arm at a time and the parent cannot
+    /// know which. Photon lays out the one arm its window resolves; an area around arms that all
+    /// fill fills there whichever it is (the Wallet's page, with a bar on a phone and a rail on a
+    /// desktop). The TypeScript twin is <c>asksForAll</c>.
+    /// </summary>
+    private static (bool Width, bool Height, string? Cap) AsksForAll(HtmlElement element)
+    {
+        if (element.Style?.Display == Display.Contents)
+        {
+            var arms = element.Children.OfType<HtmlElement>()
+                .SelectMany(gate => gate.Children.OfType<HtmlElement>())
+                .Select(AsksForAll)
+                .ToList();
+            return arms.Count == 0
+                ? (false, false, null)
+                : (arms.All(arm => arm.Width), arms.All(arm => arm.Height), null);
+        }
+        return (element.Style?.Width == "100%", element.Style?.Height == "100%", element.Style?.MaxWidth);
     }
 
     /// <summary>
