@@ -9,7 +9,8 @@ namespace eQuantic.UI.Images;
 /// Filesystem-based cache for optimized images with TTL support.
 /// Thread-safe: uses per-key semaphores to prevent duplicate optimization.
 /// Limits concurrent optimizations to prevent resource exhaustion.
-/// Periodically evicts expired entries to prevent unbounded disk growth.
+/// Periodically evicts expired entries, and keeps the copies on disk under
+/// <see cref="ImageOptimizationOptions.MaxCacheSize"/>, the oldest removed first (#1289).
 /// </summary>
 public class ImageCache : IDisposable
 {
@@ -18,6 +19,9 @@ public class ImageCache : IDisposable
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
     private readonly SemaphoreSlim _concurrencyLimiter = new(10, 10);
     private readonly Timer _evictionTimer;
+    private readonly object _trimGate = new();
+    /// <summary>The bytes the copies take, measured at start and after each trim, and added to by each copy.</summary>
+    private long _size;
     private bool _disposed;
 
     public ImageCache(ImageOptimizationOptions options, ILogger<ImageCache>? logger = null)
@@ -28,14 +32,15 @@ public class ImageCache : IDisposable
         // Run eviction every CacheTtlSeconds (minimum 60s to avoid excessive I/O)
         var evictionInterval = TimeSpan.FromSeconds(Math.Max(options.CacheTtlSeconds, 60));
         _evictionTimer = new Timer(_ => EvictExpiredEntries(), null, evictionInterval, evictionInterval);
+        _size = Measure();
     }
 
     /// <summary>
     /// Tries to get a cached optimized image. Returns null if not found or expired.
     /// </summary>
-    public async Task<byte[]?> GetAsync(string url, int width, int quality, string format)
+    public async Task<byte[]?> GetAsync(string source, int width, int quality, string format)
     {
-        var path = GetCachePath(url, width, quality, format);
+        var path = GetCachePath(source, width, quality, format);
 
         if (!File.Exists(path))
             return null;
@@ -44,7 +49,13 @@ public class ImageCache : IDisposable
         var age = DateTime.UtcNow - File.GetLastWriteTimeUtc(path);
         if (age.TotalSeconds > _options.CacheTtlSeconds)
         {
-            try { File.Delete(path); } catch { /* ignore cleanup errors */ }
+            try
+            {
+                var length = new FileInfo(path).Length;
+                File.Delete(path);
+                Interlocked.Add(ref _size, -length);
+            }
+            catch { /* ignore cleanup errors */ }
             return null;
         }
 
@@ -54,13 +65,103 @@ public class ImageCache : IDisposable
     /// <summary>
     /// Stores an optimized image in the cache.
     /// </summary>
-    public async Task SetAsync(string url, int width, int quality, string format, byte[] data)
+    public async Task SetAsync(string source, int width, int quality, string format, byte[] data)
     {
-        var path = GetCachePath(url, width, quality, format);
+        var path = GetCachePath(source, width, quality, format);
         var dir = Path.GetDirectoryName(path)!;
 
         Directory.CreateDirectory(dir);
         await File.WriteAllBytesAsync(path, data);
+        if (Interlocked.Add(ref _size, data.Length) > _options.MaxCacheSize) Trim();
+    }
+
+    /// <summary>The bytes the copies on disk take.</summary>
+    private long Measure()
+    {
+        try
+        {
+            if (!Directory.Exists(_options.CacheDirectory)) return 0;
+            long total = 0;
+            foreach (var file in new DirectoryInfo(_options.CacheDirectory).EnumerateFiles())
+            {
+                // One removed while the folder is walked is skipped, not a reason to count nothing.
+                try
+                {
+                    total += file.Length;
+                }
+                catch (IOException)
+                {
+                }
+            }
+            return total;
+        }
+        catch (IOException)
+        {
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Removes the oldest copies until the cache takes nine tenths of its cap, so a run of new copies does
+    /// not trim on every one.
+    /// </summary>
+    private void Trim()
+    {
+        lock (_trimGate)
+        {
+            // Each copy read on its own: one removed while the folder is walked (expired by a read, evicted by
+            // the timer) is skipped, never a failure of the request that wrote the last copy.
+            var files = new List<(FileInfo File, long Length, DateTime Written)>();
+            try
+            {
+                if (!Directory.Exists(_options.CacheDirectory)) return;
+                foreach (var file in new DirectoryInfo(_options.CacheDirectory).EnumerateFiles())
+                {
+                    try
+                    {
+                        files.Add((file, file.Length, file.LastWriteTimeUtc));
+                    }
+                    catch (IOException)
+                    {
+                    }
+                }
+            }
+            catch (IOException)
+            {
+                return;
+            }
+
+            var total = files.Sum(file => file.Length);
+            // The tally counts an overwritten copy twice: under the cap, it is only corrected.
+            if (total <= _options.MaxCacheSize)
+            {
+                Interlocked.Exchange(ref _size, total);
+                return;
+            }
+
+            // Nine tenths of the cap, never truncated to nothing for a small one.
+            var target = _options.MaxCacheSize - _options.MaxCacheSize / 10;
+            var removed = 0;
+            var oldestFirst = files.OrderBy(file => file.Written).ToList();
+            for (var at = 0; at < oldestFirst.Count; at++)
+            {
+                var (file, length, _) = oldestFirst[at];
+                // The newest copy, the one just written, stays when what is left fits the cap.
+                if (total <= target || (at == oldestFirst.Count - 1 && total <= _options.MaxCacheSize)) break;
+                try
+                {
+                    file.Delete();
+                    total -= length;
+                    removed++;
+                }
+                catch (IOException)
+                {
+                    // A copy being read is left for the next trim.
+                }
+            }
+            Interlocked.Exchange(ref _size, total);
+            if (removed > 0) _logger?.LogInformation("Image cache trim: removed {Count} entries to stay under {Max} bytes", removed, _options.MaxCacheSize);
+        }
     }
 
     /// <summary>
@@ -68,14 +169,14 @@ public class ImageCache : IDisposable
     /// Limits total concurrent optimizations to prevent resource exhaustion.
     /// </summary>
     public async Task<byte[]> GetOrCreateAsync(
-        string url, int width, int quality, string format,
+        string source, int width, int quality, string format,
         Func<Task<byte[]>> factory)
     {
-        var cached = await GetAsync(url, width, quality, format);
+        var cached = await GetAsync(source, width, quality, format);
         if (cached != null)
             return cached;
 
-        var key = ComputeKey(url, width, quality, format);
+        var key = ComputeKey(source, width, quality, format);
         var semaphore = _locks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
 
         // Limit total concurrent optimizations
@@ -86,12 +187,12 @@ public class ImageCache : IDisposable
             try
             {
                 // Double-check after acquiring lock
-                cached = await GetAsync(url, width, quality, format);
+                cached = await GetAsync(source, width, quality, format);
                 if (cached != null)
                     return cached;
 
                 var data = await factory();
-                await SetAsync(url, width, quality, format, data);
+                await SetAsync(source, width, quality, format, data);
                 return data;
             }
             finally
@@ -141,6 +242,7 @@ public class ImageCache : IDisposable
             if (evicted > 0)
             {
                 _logger?.LogInformation("Image cache eviction: removed {Count} expired entries", evicted);
+                Interlocked.Exchange(ref _size, Measure());
             }
         }
         catch (Exception ex)
@@ -149,9 +251,9 @@ public class ImageCache : IDisposable
         }
     }
 
-    private string GetCachePath(string url, int width, int quality, string format)
+    private string GetCachePath(string source, int width, int quality, string format)
     {
-        var key = ComputeKey(url, width, quality, format);
+        var key = ComputeKey(source, width, quality, format);
         var ext = format switch
         {
             "image/webp" => "webp",
@@ -162,9 +264,9 @@ public class ImageCache : IDisposable
         return Path.Combine(_options.CacheDirectory, $"{key}.{ext}");
     }
 
-    private static string ComputeKey(string url, int width, int quality, string format)
+    private static string ComputeKey(string source, int width, int quality, string format)
     {
-        var input = $"{url}|{width}|{quality}|{format}";
+        var input = $"{source}|{width}|{quality}|{format}";
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(input));
         return Convert.ToHexString(hash).ToLowerInvariant();
     }

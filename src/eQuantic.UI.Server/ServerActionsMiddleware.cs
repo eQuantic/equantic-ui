@@ -35,13 +35,18 @@ public class ServerActionsMiddleware
     private readonly ILogger<ServerActionsMiddleware> _logger;
     private readonly HashSet<Assembly> _allowedAssemblies;
     private readonly AllowedRequestOrigins _origins;
+    private readonly IOptionsMonitor<ServerActionsOptions> _actions;
 
     private const string ActionsPath = "/api/_equantic/actions";
 
     /// <summary>
-    /// Maximum allowed request body size in bytes (1 MB).
+    /// How an action's arguments are read: as the wire writes them, an <see cref="Primitives.UploadedFile"/>
+    /// refused anywhere but as an action's own parameter (<see cref="UploadedFileArgumentConverter"/>).
     /// </summary>
-    private const long MaxRequestBodySize = 1_048_576;
+    private static readonly JsonSerializerOptions ArgumentOptions = new(Json.EqJson.Options)
+    {
+        Converters = { new UploadedFileArgumentConverter() },
+    };
 
     public ServerActionsMiddleware(
         RequestDelegate next,
@@ -64,6 +69,7 @@ public class ServerActionsMiddleware
         _allowedAssemblies.UnionWith(options.AllowedDeserializationAssemblies);
         // A reloaded appsettings.json changes the allowed origins without a restart.
         _origins = new AllowedRequestOrigins(actions);
+        _actions = actions;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -91,13 +97,27 @@ public class ServerActionsMiddleware
             return;
         }
 
+        // A JSON body, which a page's fetch sends: another content type is one a plain form can post
+        // without a preflight, so it is refused before anything of it is read, beside the origin check (#1291).
+        if (!context.Request.HasJsonContentType())
+        {
+            _logger.LogWarning(
+                "Server Action request refused - its content type is {ContentType}, not JSON",
+                AllowedRequestOrigins.ForLog(context.Request.ContentType ?? "none"));
+            context.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;
+            await WriteErrorResponse(context, "A Server Action takes a JSON body.");
+            return;
+        }
+
+        var maxRequestBodySize = _actions.CurrentValue.MaxRequestBodySize;
+
         // Validate Content-Length to prevent oversized payloads
-        if (context.Request.ContentLength > MaxRequestBodySize)
+        if (context.Request.ContentLength > maxRequestBodySize)
         {
             _logger.LogWarning(
                 "Server Action request rejected - payload too large: {Size} bytes (max: {MaxSize})",
                 context.Request.ContentLength,
-                MaxRequestBodySize);
+                maxRequestBodySize);
 
             context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
             await WriteErrorResponse(context, "Request payload too large.");
@@ -105,12 +125,13 @@ public class ServerActionsMiddleware
         }
 
         // Content-Length is absent for chunked / Transfer-Encoding requests, so the check
-        // above does not catch them. Enforce a hard cap that Kestrel applies while reading
-        // the body (it throws BadHttpRequestException once the limit is exceeded).
+        // above does not catch them. Kestrel stops reading at the cap where its feature is still
+        // writable, and the body is read through the cap in every case: a middleware that started
+        // reading it first leaves the feature read-only, and the cap was skipped (#1291).
         var maxBodySizeFeature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
         if (maxBodySizeFeature is { IsReadOnly: false })
         {
-            maxBodySizeFeature.MaxRequestBodySize = MaxRequestBodySize;
+            maxBodySizeFeature.MaxRequestBodySize = maxRequestBodySize;
         }
 
         ServerActionRequest? request;
@@ -120,7 +141,7 @@ public class ServerActionsMiddleware
             context.Request.EnableBuffering();
 
             request = await JsonSerializer.DeserializeAsync<ServerActionRequest>(
-                context.Request.Body,
+                new BoundedReadStream(context.Request.Body, maxRequestBodySize),
                 new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
@@ -130,7 +151,7 @@ public class ServerActionsMiddleware
         }
         catch (BadHttpRequestException ex)
         {
-            _logger.LogWarning(ex, "Server Action request body exceeded the {MaxSize}-byte limit", MaxRequestBodySize);
+            _logger.LogWarning(ex, "Server Action request body exceeded the {MaxSize}-byte limit", maxRequestBodySize);
             context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
             await WriteErrorResponse(context, "Request payload too large.");
             return;
@@ -152,13 +173,16 @@ public class ServerActionsMiddleware
 
         // Sanitize action ID to prevent injection
         var actionId = SanitizeActionId(request.ActionId);
+        // The caller's own text, so it reaches a plain-text log without a line break of its own (#1291).
+        var loggedId = AllowedRequestOrigins.ForLog(actionId);
 
         var descriptor = _registry.GetAction(actionId);
         if (descriptor == null)
         {
-            _logger.LogWarning("Server Action not found: {ActionId}", actionId);
+            _logger.LogWarning("Server Action not found: {ActionId}", loggedId);
             context.Response.StatusCode = StatusCodes.Status404NotFound;
-            await WriteErrorResponse(context, $"Action not found: {actionId}");
+            // The id is not echoed: the response says nothing the request did not (#1291).
+            await WriteErrorResponse(context, "Action not found.");
             return;
         }
 
@@ -170,7 +194,7 @@ public class ServerActionsMiddleware
             {
                 _logger.LogWarning(
                     "Unauthenticated access attempt to Server Action {ActionId}",
-                    actionId);
+                    loggedId);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await WriteErrorResponse(context, "Authentication required.");
             }
@@ -178,10 +202,11 @@ public class ServerActionsMiddleware
             {
                 _logger.LogWarning(
                     "Forbidden access attempt to Server Action {ActionId}: {Reason}",
-                    actionId,
+                    loggedId,
                     authResult.FailureReason);
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                await WriteErrorResponse(context, authResult.FailureReason ?? "Access denied.");
+                // The reason names the roles and policies the action requires: it stays in the log (#1291).
+                await WriteErrorResponse(context, "Access denied.");
             }
             return;
         }
@@ -200,10 +225,22 @@ public class ServerActionsMiddleware
             // was constructed with is the ROOT one — and a server action is exactly where the
             // scoped things live: the DbContext the action queries, the unit of work it commits,
             // the tenant it belongs to. .NET refuses to resolve those from the root by design.
-            var component = ActivatorUtilities.CreateInstance(context.RequestServices, descriptor.ComponentType);
+            // Deserialize and validate arguments. A malformed one is the caller's, answered 400 with a warning:
+            // it answered 500 and logged an error, so any caller could fill the log (#1291).
+            object?[] args;
+            try
+            {
+                args = await DeserializeArgumentsAsync(context, request.Arguments, descriptor.ParameterTypes);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning("Server Action {ActionId} refused its arguments: {Reason}", loggedId, ex.Message);
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await WriteErrorResponse(context, "The action's arguments are not what it takes.");
+                return;
+            }
 
-            // Deserialize and validate arguments
-            var args = await DeserializeArgumentsAsync(context, request.Arguments, descriptor.ParameterTypes);
+            var component = ActivatorUtilities.CreateInstance(context.RequestServices, descriptor.ComponentType);
 
             // Invoke the method
             object? result;
@@ -223,17 +260,19 @@ public class ServerActionsMiddleware
 
             _logger.LogDebug(
                 "Server Action {ActionId} executed successfully",
-                actionId);
+                loggedId);
 
             // EqJson serializes Int64/UInt64 as strings (the eQuantic long wire protocol) so values
-            // beyond 2^53 survive into the client BigInt-backed `long` runtime.
-            await context.Response.WriteAsJsonAsync(new { success = true, result }, Json.EqJson.Options);
+            // beyond 2^53 survive into the client BigInt-backed `long` runtime. The result is written as
+            // the type the action declares: written as its runtime type, an entity returned where a
+            // summary was declared sent every field it has (#1291).
+            await WriteResultAsync(context, result, DeclaredResultType(descriptor.Method));
         }
         catch (UploadNotBoundException ex)
         {
             // The page named an upload it may not receive, or one not finished: the action never ran, and
             // the reason is one the page shows.
-            _logger.LogWarning("Server Action {ActionId} refused its file: {Reason}", actionId, ex.Message);
+            _logger.LogWarning("Server Action {ActionId} refused its file: {Reason}", loggedId, ex.Message);
             context.Response.StatusCode = ex.StatusCode;
             await WriteErrorResponse(context, ex.Message);
         }
@@ -242,7 +281,7 @@ public class ServerActionsMiddleware
             // Log the full exception but return sanitized message to client
             _logger.LogError(ex,
                 "Server Action {ActionId} failed with exception",
-                actionId);
+                loggedId);
 
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
@@ -269,6 +308,34 @@ public class ServerActionsMiddleware
             .Replace("..", "")
             .Replace("\\", "")
             .Trim();
+    }
+
+    /// <summary>The type an action declares it answers: the <c>T</c> of a <c>Task&lt;T&gt;</c>, its return type
+    /// otherwise, and none for <c>void</c> or a bare <c>Task</c>.</summary>
+    private static Type? DeclaredResultType(MethodInfo method)
+    {
+        var returned = method.ReturnType;
+        if (returned == typeof(void) || returned == typeof(Task)) return null;
+        return returned.IsGenericType && returned.GetGenericTypeDefinition() == typeof(Task<>)
+            ? returned.GetGenericArguments()[0]
+            : returned;
+    }
+
+    /// <summary>The answer <c>{ success, result }</c>, the result serialized once, as <paramref name="declared"/>.</summary>
+    private static async Task WriteResultAsync(HttpContext context, object? result, Type? declared)
+    {
+        var buffer = new System.Buffers.ArrayBufferWriter<byte>();
+        await using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = Json.EqJson.Options.Encoder }))
+        {
+            writer.WriteStartObject();
+            writer.WriteBoolean("success", true);
+            writer.WritePropertyName("result");
+            if (result is null || declared is null) writer.WriteNullValue();
+            else JsonSerializer.Serialize(writer, result, declared, Json.EqJson.Options);
+            writer.WriteEndObject();
+        }
+        context.Response.ContentType = "application/json; charset=utf-8";
+        await context.Response.Body.WriteAsync(buffer.WrittenMemory, context.RequestAborted);
     }
 
     private static async Task WriteErrorResponse(HttpContext context, string error)
@@ -320,7 +387,7 @@ public class ServerActionsMiddleware
 
             // EqJson.Options accepts Int64/UInt64 as either string (the eQuantic long wire
             // protocol) or number, so large values from the client BigInt runtime survive.
-            result[i] = arguments[i].Deserialize(paramType, Json.EqJson.Options);
+            result[i] = arguments[i].Deserialize(paramType, ArgumentOptions);
         }
 
         return result;

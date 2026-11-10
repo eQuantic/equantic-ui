@@ -122,6 +122,12 @@ public sealed class ListItem : StatelessComponent
             Hover = OnPressed is null || Selected
                 ? null
                 : new StyleDiff { Background = theme.SurfaceSubtle },
+            // Pressed for the same rows and the same reason: a press that washed a selected row to
+            // SurfaceSubtle erased the selection for as long as the finger stayed down (#616). A
+            // disabled row shows none because its control is disabled.
+            Pressed = OnPressed is null || Selected
+                ? null
+                : new StyleDiff { Background = theme.SurfaceSubtle },
         }, row);
 
         return OnPressed is null
@@ -130,7 +136,6 @@ public sealed class ListItem : StatelessComponent
             {
                 Disabled = Disabled,
                 Label = Title,
-                PressedBackground = theme.SurfaceSubtle,
                 // Stated only when the row IS one: a plain list row that announced "not current"
                 // for every entry would be noise on every list in the app.
                 Role = Selected ? PressableRole.Destination : PressableRole.Button,
