@@ -127,6 +127,44 @@ public class RequestScopedDependencyTests
         (await passkeys.CreateAsync("{}")).Should().Be(new PasskeyResult(PasskeyOutcome.Unavailable, null));
     }
 
+    /// <summary>A page that offers a file it made, as eQuantic.Auth offers its recovery codes.</summary>
+    [Page("/file-saver-test")]
+    private sealed class RecoveryCodesPage(IFileSaver saver) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Text(saver.IsAvailable ? "Download the codes" : "Copy the codes", TypeRole.Heading);
+    }
+
+    /// <summary>
+    /// A page taking <see cref="IFileSaver"/> renders on the server, and a call there FAILS with the
+    /// reason rather than doing nothing (#1022): a save that answered without a file would tell the
+    /// page the person has one they never received.
+    /// </summary>
+    [Fact]
+    public async Task APageTakingTheFileSaver_RendersOnTheServer_AndACallThereSaysWhyItCannot()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddUI(o => o.ScanAssembly(typeof(RequestScopedDependencyTests).Assembly));
+        var root = services.BuildServiceProvider(validateScopes: true);
+
+        using var scope = root.CreateScope();
+        var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+        var service = scope.ServiceProvider.GetRequiredService<IServerRenderingService>();
+
+        var result = await service.RenderPageAsync(typeof(RecoveryCodesPage), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("Copy the codes", "the server has no person to offer a file to");
+        var saver = scope.ServiceProvider.GetRequiredService<IFileSaver>();
+        var text = () => saver.SaveTextAsync("codes.txt", "ABCD-1234").AsTask();
+        var bytes = () => saver.SaveBytesAsync("codes.bin", [1, 2, 3]).AsTask();
+        (await text.Should().ThrowAsync<InvalidOperationException>())
+            .WithMessage("A file is offered to a person in their browser, in answer to a press*");
+        (await bytes.Should().ThrowAsync<InvalidOperationException>())
+            .WithMessage("*Call IFileSaver from a press handler.");
+    }
+
     private static ServerRenderingService CreateService(out ServiceProvider root)
     {
         var options = new UIOptions();

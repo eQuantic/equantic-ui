@@ -55,19 +55,53 @@ export class ErrorOverlay {
     if (event.key === 'Escape') this.clear();
   };
 
-  private render(error: ErrorInfo) {
+  /**
+   * The errors of a rebuild that did not compile, as the build wrote them (#1275). Shown in any
+   * environment: only a page the rebuild stream reaches is handed them, and the stream runs in
+   * Development or under dotnet watch, whose own refresh script showed the compiler's errors over the
+   * page until the stream kept it out. The page keeps running the code it has, and the rebuild that
+   * compiles reloads it, and this card with it.
+   */
+  showBuildErrors(errors: readonly string[]) {
+    const overlay = this.element();
+    // An exception's stack still being named belongs to a card this one replaces.
+    this.rendering++;
+    overlay.innerHTML = `
+      <style>${STYLES}</style>
+      <div class="card">
+        <div class="header">
+          <div class="header-title"><i>!</i><span>Build Failed</span></div>
+          <button class="close-btn" data-eq-dismiss>Dismiss (Esc)</button>
+        </div>
+        <div class="content">
+          <div class="error-message">The last save does not compile. The page runs the code from before it.</div>
+          <div class="section-label">Errors</div>
+          <div class="stack-trace">${errors.map((line) => `<div class="stack-line">${this.escapeHtml(line)}</div>`).join('')}</div>
+        </div>
+        <div class="footer">Dev Mode Overlay &bull; Fix the errors above and save: the page reloads.</div>
+      </div>
+    `;
+    overlay.querySelector('[data-eq-dismiss]')?.addEventListener('click', () => this.clear());
+  }
+
+  /** The overlay's element, created on the first card and kept until it is dismissed. */
+  private element(): HTMLDivElement {
     if (!this.overlay) {
       this.overlay = document.createElement('div');
       this.overlay.id = 'equantic-error-overlay';
       document.body.appendChild(this.overlay);
       document.addEventListener('keydown', this.onKey);
     }
+    return this.overlay;
+  }
 
+  private render(error: ErrorInfo) {
+    const overlay = this.element();
     const rendering = ++this.rendering;
 
     // The call stack is drawn once its frames are named, never before: what the browser hands over is
     // JavaScript, and a developer who wrote C# is not shown it even while the maps load.
-    this.overlay.innerHTML = `
+    overlay.innerHTML = `
       <style>${STYLES}</style>
       <div class="card">
         <div class="header">
@@ -85,7 +119,7 @@ export class ErrorOverlay {
         <div class="footer">Dev Mode Overlay &bull; Fix the error above to resume.</div>
       </div>
     `;
-    this.overlay.querySelector('[data-eq-dismiss]')?.addEventListener('click', () => this.clear());
+    overlay.querySelector('[data-eq-dismiss]')?.addEventListener('click', () => this.clear());
 
     void this.nameStack(error, rendering);
   }
