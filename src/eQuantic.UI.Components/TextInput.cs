@@ -103,14 +103,20 @@ public sealed class TextInput : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var height = ControlMetrics.Height(context, Size);
+        // The theme's Input slot, then its control ladder, then the component's own (§3.10).
+        var slot = theme.Input;
+        var height = ControlMetrics.Height(context, Size, slot?.Controls);
 
         var hasError = !string.IsNullOrEmpty(Error);
         var borderColor = hasError
             ? theme.Colors(Variant.Destructive).Base
-            : _focused ? theme.Colors(Variant.Primary).Base : theme.BorderStrong;
-        var borderWidth = _focused ? 2f : 1f;
-        var paddingX = _focused ? 13f : 14f; // spec: the 2dp focus border compensates with -1dp padding
+            : _focused ? theme.Colors(Variant.Primary).Base : slot?.BorderColor ?? theme.BorderStrong;
+        var restBorder = slot?.BorderWidth ?? 1f;
+        var focusBorder = slot?.FocusBorderWidth ?? 2f;
+        var borderWidth = _focused ? focusBorder : restBorder;
+        // spec: the thicker focus border takes its extra width from the padding, so the text stays put
+        var restPadding = slot?.PaddingX ?? 14f;
+        var paddingX = _focused ? restPadding - (focusBorder - restBorder) : restPadding;
 
         // The caption is both the VISIBLE helper/error line below and the entry's accessible
         // description — one string, two renderings, so what a screen reader hears is exactly
@@ -119,10 +125,10 @@ public sealed class TextInput : StatefulComponent
 
         // Fill the container's content box so Cross=Center centers within the 48dp frame —
         // a hug-height row would sit at the top of the Box on both targets.
-        var row = new Row(gap: 10) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
+        var row = new Row(gap: slot?.Gap ?? 10) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
         if (Leading is { } leading)
         {
-            row.Add(new Icon(leading, IconSize.Dense, theme.TextMuted)); // spec B9: 20dp leading glyph
+            row.Add(new Icon(leading, slot?.IconSize ?? IconSize.Dense, theme.TextMuted)); // spec B9: 20dp leading glyph
         }
         // The field keeps what was typed on its position until the page builds it again (#996), and
         // this component holds the field but not the value: it rebuilds on its own when the focus
@@ -159,23 +165,23 @@ public sealed class TextInput : StatefulComponent
         {
             Width = SizeValue.Fill,
             Height = height,
-            Background = Disabled ? theme.SurfaceSubtle : theme.Surface,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
+            Background = Disabled ? (slot?.DisabledFill ?? theme.SurfaceSubtle) : (slot?.Fill ?? theme.Surface),
+            CornerRadius = new CornerRadii(slot?.Radius ?? theme.Shape(ShapeScale.Medium)),
             BorderWidth = borderWidth,
             BorderColor = borderColor,
             Padding = EdgeInsets.Symmetric(paddingX, 0),
         }, row);
 
-        var top = new Column(gap: 6) { Width = SizeValue.Fill };
-        if (Label.Length > 0) top.Add(new Text(Label, TypeRole.Label, theme.TextSecondary));
+        var top = new Column(gap: slot?.LabelGap ?? 6) { Width = SizeValue.Fill };
+        if (Label.Length > 0) top.Add(new Text(Label, slot?.LabelRole ?? TypeRole.Label, theme.TextSecondary));
         top.Add(container);
 
         // The helper/error line is ALWAYS reserved — swaps never shift the form (spec B9).
         var captionColor = hasError ? theme.Colors(Variant.Destructive).Base : theme.TextMuted;
 
-        var column = new Column(gap: 5) { Width = SizeValue.Fill };
+        var column = new Column(gap: slot?.CaptionGap ?? 5) { Width = SizeValue.Fill };
         column.Add(top);
-        column.Add(new Text(caption, TypeRole.Caption, captionColor, maxLines: 1));
+        column.Add(new Text(caption, slot?.CaptionRole ?? TypeRole.Caption, captionColor, maxLines: 1));
         return column;
     }
 }

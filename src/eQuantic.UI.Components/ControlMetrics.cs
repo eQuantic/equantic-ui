@@ -55,4 +55,13 @@ internal static class ControlMetrics
     /// <summary>The rung for <paramref name="size"/> on <paramref name="density"/>'s side of the ladder.</summary>
     private static float? RungAt(DensityLadder? ladder, SizeVariant size, Density density) =>
         Rung(density == Density.Compact ? ladder?.Compact : ladder?.Comfortable, size);
+
+    /// <summary>The rung of a family's own ladder for <paramref name="size"/>, or null for none: a value
+    /// a control varies by size on a ladder of its own rather than the theme's (an icon button's glyph).</summary>
+    public static float? AtSize(SizeLadder? ladder, SizeVariant size) => Rung(ladder, size);
+
+    /// <summary>The side of <paramref name="value"/> for <paramref name="density"/>, or null for none: a
+    /// value a control varies by density alone (a checkbox's box, a switch's track).</summary>
+    public static float? AtDensity(DensityValue? value, Density density) =>
+        density == Density.Compact ? value?.Compact : value?.Comfortable;
 }
