@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The same mark cut for a tab: the bead alone on a transparent ground, with a heavier check, since
+     at sixteen pixels on someone else's background the launcher's plate and fine check are a smudge. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <radialGradient id="bead" cx="35%" cy="30%" r="70%">
+      <stop offset="0" stop-color="#C7D2FE"/>
+      <stop offset="1" stop-color="#6366F1"/>
+    </radialGradient>
+  </defs>
+  <circle cx="16" cy="16" r="15" fill="url(#bead)"/>
+  <path d="M9 16.5 L14 21.5 L23.5 10.5" stroke="#FFFFFF" stroke-width="4" fill="none"/>
+</svg>

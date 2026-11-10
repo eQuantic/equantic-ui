@@ -7,9 +7,9 @@ namespace eQuantic.UI.Server.Authorization;
 /// Service responsible for authorizing Server Action invocations.
 /// </summary>
 /// <remarks>
-/// This service integrates with ASP.NET Core's authorization infrastructure
-/// to validate access to Server Actions based on <see cref="eQuantic.UI.Primitives.AuthorizeAttribute"/>
-/// and <see cref="eQuantic.UI.Primitives.AllowAnonymousAttribute"/> decorations.
+/// The default one (<see cref="ServerActionAuthorizationService"/>) decides an action by the rule a page is
+/// decided by: the SDK's <see cref="eQuantic.UI.Primitives.AuthorizeAttribute"/> and ASP.NET Core's
+/// <c>[Authorize]</c>, their schemes, and the app's <c>FallbackPolicy</c>.
 /// </remarks>
 public interface IServerActionAuthorizationService
 {
@@ -30,9 +30,10 @@ public interface IServerActionAuthorizationService
 /// </summary>
 public sealed class ServerActionAuthorizationResult
 {
-    private ServerActionAuthorizationResult(bool succeeded, string? failureReason = null)
+    private ServerActionAuthorizationResult(bool succeeded, bool unauthenticated, string? failureReason)
     {
         Succeeded = succeeded;
+        IsUnauthenticated = unauthenticated;
         FailureReason = failureReason;
     }
 
@@ -42,49 +43,36 @@ public sealed class ServerActionAuthorizationResult
     public bool Succeeded { get; }
 
     /// <summary>
-    /// Gets the reason for authorization failure, if applicable.
+    /// What the refusal failed on, for the server's log. It names the roles and policies the action
+    /// requires, so it is never written to the response (#1291).
     /// </summary>
     public string? FailureReason { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the user is not authenticated.
+    /// Gets a value indicating whether the caller is not authenticated: the action answers 401.
     /// </summary>
-    public bool IsUnauthenticated => FailureReason?.Contains("not authenticated") == true;
+    public bool IsUnauthenticated { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the user is authenticated but not authorized.
+    /// Gets a value indicating whether the caller is authenticated but not authorized: the action answers 403.
     /// </summary>
     public bool IsForbidden => !Succeeded && !IsUnauthenticated;
 
     /// <summary>
     /// Creates a successful authorization result.
     /// </summary>
-    public static ServerActionAuthorizationResult Success() => new(true);
+    public static ServerActionAuthorizationResult Success() => new(true, false, null);
 
     /// <summary>
     /// Creates a failed authorization result due to missing authentication.
     /// </summary>
     public static ServerActionAuthorizationResult Unauthenticated() =>
-        new(false, "User is not authenticated.");
+        new(false, true, "User is not authenticated.");
 
     /// <summary>
     /// Creates a failed authorization result due to insufficient permissions.
     /// </summary>
-    /// <param name="reason">The specific reason for the authorization failure.</param>
+    /// <param name="reason">What the refusal failed on, for the server's log.</param>
     public static ServerActionAuthorizationResult Forbidden(string reason) =>
-        new(false, reason);
-
-    /// <summary>
-    /// Creates a failed authorization result due to policy evaluation failure.
-    /// </summary>
-    /// <param name="policyName">The name of the policy that failed.</param>
-    public static ServerActionAuthorizationResult PolicyFailed(string policyName) =>
-        new(false, $"Authorization policy '{policyName}' was not satisfied.");
-
-    /// <summary>
-    /// Creates a failed authorization result due to missing required roles.
-    /// </summary>
-    /// <param name="requiredRoles">The roles that were required but not present.</param>
-    public static ServerActionAuthorizationResult RolesFailed(string requiredRoles) =>
-        new(false, $"User does not have any of the required roles: {requiredRoles}.");
+        new(false, false, reason);
 }
