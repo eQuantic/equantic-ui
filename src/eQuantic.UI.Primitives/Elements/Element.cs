@@ -52,6 +52,19 @@ public abstract class Element
     /// <summary>The position at <paramref name="slot"/>, or null when that slot holds nothing.</summary>
     public abstract Element? ChildAt(int slot);
 
+    /// <summary>
+    /// Hands <paramref name="visitor"/> every child position this one keeps, in slot order, passing
+    /// over a slot that holds nothing (a layer not shown yet): Flutter's <c>visitChildren</c>. The
+    /// way a reader outside the engine walks a tree, because only the element knows how many slots
+    /// it has; reading <see cref="ChildAt"/> until an empty one cannot tell an empty slot from the end.
+    /// <para>
+    /// ONE method by this name, and each kind overrides it and adds no other: the runtime twin the
+    /// engine is transpiled into (E3) has one method per name, and the overloads of a visitor are what
+    /// stopped it once (EQ1007). A plain loop and a delegate, for the same reason.
+    /// </para>
+    /// </summary>
+    public abstract void VisitChildren(Action<Element> visitor);
+
     /// <summary>The tree this position belongs to.</summary>
     internal BuildOwner Owner { get; private set; } = null!;
 

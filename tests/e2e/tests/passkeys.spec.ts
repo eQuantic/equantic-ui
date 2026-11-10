@@ -86,7 +86,7 @@ test.describe('Passkeys', () => {
     // The first answer the page hands its server meets an outage.
     let refused = false;
     await page.route(actions, async (route) => {
-      if (!refused && actionOf(route.request()) === 'PasskeyScreen/FinishRegistration') {
+      if (!refused && actionOf(route.request()) === 'eQuantic.Console.PasskeyScreen/FinishRegistration') {
         refused = true;
         await route.fulfill({ status: 503, body: 'down for a moment' });
         return;

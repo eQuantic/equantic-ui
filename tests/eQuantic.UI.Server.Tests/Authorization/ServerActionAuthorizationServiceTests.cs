@@ -11,8 +11,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 // Use our custom attributes explicitly to avoid ambiguity
 using AuthorizeAttribute = eQuantic.UI.Primitives.AuthorizeAttribute;
 using AllowAnonymousAttribute = eQuantic.UI.Primitives.AllowAnonymousAttribute;
-using IAuthorizationService = Microsoft.AspNetCore.Authorization.IAuthorizationService;
-using AuthorizationResult = Microsoft.AspNetCore.Authorization.AuthorizationResult;
+using AuthorizationOptions = Microsoft.AspNetCore.Authorization.AuthorizationOptions;
 
 namespace eQuantic.UI.Server.Tests.Authorization;
 
@@ -93,9 +92,14 @@ public class ServerActionAuthorizationServiceTests
         };
     }
 
-    private static HttpContext CreateHttpContext(ClaimsPrincipal? user = null)
+    /// <summary>A request whose services are the app's: ASP.NET Core's authorization, configured as the
+    /// test says, or none at all.</summary>
+    private static HttpContext CreateHttpContext(
+        ClaimsPrincipal? user = null, Action<AuthorizationOptions>? configure = null, bool authorization = true)
     {
-        var context = new DefaultHttpContext();
+        var services = new ServiceCollection().AddLogging();
+        if (authorization) services.AddAuthorization(configure ?? (_ => { }));
+        var context = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() };
         if (user != null)
         {
             context.User = user;
@@ -125,18 +129,11 @@ public class ServerActionAuthorizationServiceTests
         return new ClaimsPrincipal(new ClaimsIdentity());
     }
 
-    private ServerActionAuthorizationService CreateService(IAuthorizationService? authService = null)
-    {
-        var services = new ServiceCollection();
+    private ServerActionAuthorizationService CreateService() => new(_logger);
 
-        if (authService != null)
-        {
-            services.AddSingleton(authService);
-        }
-
-        var serviceProvider = services.BuildServiceProvider();
-        return new ServerActionAuthorizationService(serviceProvider, _logger);
-    }
+    /// <summary>The app's "CanEditUsers" policy: a claim the test's user may carry.</summary>
+    private static void CanEditUsers(AuthorizationOptions options) =>
+        options.AddPolicy("CanEditUsers", policy => policy.RequireClaim("permission", "edit-users"));
 
     #endregion
 
@@ -297,14 +294,9 @@ public class ServerActionAuthorizationServiceTests
     public async Task AuthorizeAsync_PolicyAuthorize_DeniesWhenPolicyFails()
     {
         // Arrange
-        var mockAuthService = new Mock<IAuthorizationService>();
-        mockAuthService
-            .Setup(x => x.AuthorizeAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<object?>(), It.IsAny<string>()))
-            .ReturnsAsync(AuthorizationResult.Failed());
-
-        var service = CreateService(mockAuthService.Object);
+        var service = CreateService();
         var descriptor = CreateDescriptor<PolicyBasedComponent>("EditUserAction");
-        var context = CreateHttpContext(CreateAuthenticatedUser("1"));
+        var context = CreateHttpContext(CreateAuthenticatedUser("1"), CanEditUsers);
 
         // Act
         var result = await service.AuthorizeAsync(context, descriptor);
@@ -312,21 +304,18 @@ public class ServerActionAuthorizationServiceTests
         // Assert
         result.Succeeded.Should().BeFalse();
         result.IsForbidden.Should().BeTrue();
-        result.FailureReason.Should().Contain("CanEditUsers");
+        result.FailureReason.Should().Contain("edit-users");
     }
 
     [Fact]
     public async Task AuthorizeAsync_PolicyAuthorize_AllowsWhenPolicySucceeds()
     {
         // Arrange
-        var mockAuthService = new Mock<IAuthorizationService>();
-        mockAuthService
-            .Setup(x => x.AuthorizeAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<object?>(), "CanEditUsers"))
-            .ReturnsAsync(AuthorizationResult.Success());
-
-        var service = CreateService(mockAuthService.Object);
+        var service = CreateService();
         var descriptor = CreateDescriptor<PolicyBasedComponent>("EditUserAction");
-        var context = CreateHttpContext(CreateAuthenticatedUser("1"));
+        var editor = CreateAuthenticatedUser("1");
+        ((ClaimsIdentity)editor.Identity!).AddClaim(new Claim("permission", "edit-users"));
+        var context = CreateHttpContext(editor, CanEditUsers);
 
         // Act
         var result = await service.AuthorizeAsync(context, descriptor);
@@ -339,9 +328,9 @@ public class ServerActionAuthorizationServiceTests
     public async Task AuthorizeAsync_PolicyAuthorize_FailsWhenAuthorizationServiceNotAvailable()
     {
         // Arrange
-        var service = CreateService(authService: null); // No IAuthorizationService
+        var service = CreateService();
         var descriptor = CreateDescriptor<PolicyBasedComponent>("EditUserAction");
-        var context = CreateHttpContext(CreateAuthenticatedUser("1"));
+        var context = CreateHttpContext(CreateAuthenticatedUser("1"), authorization: false);
 
         // Act
         var result = await service.AuthorizeAsync(context, descriptor);
@@ -349,7 +338,7 @@ public class ServerActionAuthorizationServiceTests
         // Assert
         result.Succeeded.Should().BeFalse();
         result.IsForbidden.Should().BeTrue();
-        result.FailureReason.Should().Contain("not configured");
+        result.FailureReason.Should().Contain("AddAuthorization");
     }
 
     #endregion

@@ -119,7 +119,11 @@ public class EveryProgramTheSdksStartTests
                     ("ApplicationTitle", Title)),
                 new XElement("ItemGroup",
                     new XElement("BunPackage", new XAttribute("Include", "dayjs"), new XAttribute("Version", "1.11.13")),
-                    new XElement("BunPackage", new XAttribute("Include", "@scope/odd"), new XAttribute("Version", "2.0.0"))),
+                    new XElement("BunPackage", new XAttribute("Include", "@scope/odd"), new XAttribute("Version", "2.0.0")),
+                    // The app's usings, which reach its icon (#1240): one plain, one static, one aliased.
+                    new XElement("Using", new XAttribute("Include", "App.Screens")),
+                    new XElement("Using", new XAttribute("Include", "App.UI"), new XAttribute("Static", "true")),
+                    new XElement("Using", new XAttribute("Include", "App.Base"), new XAttribute("Alias", "Base"))),
                 UsingTasks(shipped),
                 StandIn("ResolveBunZipPath"),
                 StandIn("ResolveBunPath"),
@@ -129,6 +133,7 @@ public class EveryProgramTheSdksStartTests
                 Target(shipped, "InstallBunPackages"),
                 Target(shipped, "_EQuanticVectorInputs"),
                 Target(shipped, "EQuanticVectors"),
+                Target(shipped, "_EQuanticAppIconInputs"),
                 Target(shipped, "EQuanticWebAppIcon"),
                 Target(shipped, "_EQuanticCompilerArguments"),
                 Target(shipped, "CompileEQuanticUI"))).Save(probe);
@@ -139,7 +144,8 @@ public class EveryProgramTheSdksStartTests
             Calls(record).Should().Equal([
                 Call("git", "-C", framework, "describe", "--always", "--dirty", "--abbrev=8"),
                 Call("dotnet", directory + "/tools $x/eqicon.dll", "--source", directory + "/icon `i`.png",
-                    "--web", directory + "/wwwroot/_equantic/icons", "--app", Title),
+                    "--web", directory + "/wwwroot/_equantic/icons", "--app", Title,
+                    "--using", "App.Screens", "--using", "static App.UI", "--using", "Base = App.Base"),
                 Call(Bun, "add", "dayjs@1.11.13"),
                 Call(Bun, "add", "@scope/odd@2.0.0"),
                 Call("dotnet", directory + "/tools $x/eqicon.dll", "vectors", "--assets", directory + "/Assets $a",
@@ -333,6 +339,7 @@ public class EveryProgramTheSdksStartTests
                     ("EQuanticNotaryPassword", password),
                     ("EQuanticPackageFormat", "Dmg")),
                 UsingTasks(shipped),
+                Target(shipped, "_EQuanticAppIconInputs"),
                 Target(shipped, "EQuanticResolveMacPackaging"),
                 Target(shipped, "EQuanticMacAppBundle"),
                 Target(shipped, "EQuanticMacAppPackage"))).Save(probe);
@@ -405,6 +412,7 @@ public class EveryProgramTheSdksStartTests
                     ("_EqCapabilityPlist", "$(MSBuildProjectDirectory)/obj/eQuantic/Capabilities.plist")),
                 new XElement("ItemGroup", new XElement("IntermediateAssembly", new XAttribute("Include", "obj/Cash$Flow.dll"))),
                 UsingTasks(shipped),
+                Target(shipped, "_EQuanticAppIconInputs"),
                 Target(shipped, "EQuanticAndroidIcon"),
                 Target(shipped, "EQuanticCapabilityManifest"),
                 Target(shipped, "EQuanticAppIcon"))).Save(probe);
