@@ -10,6 +10,6 @@
 ## 2. Proof and documentation
 
 - [x] 2.1 Each new case fails on the code as it was: the denial and the named signals, a plain cookie over HTTPS, and a name written by hand (3 of the 28 GTM and consent cases)
-- [ ] 2.2 The Server, Web and runtime suites pass whole
+- [x] 2.2 The Server, Web and runtime suites pass whole (the runtime 2906 locally; Server and Web on CI, the machine standing at a load near 100)
 - [x] 2.3 The wiki's Analytics page in all five languages, on the wiki branch named like this one
 - [x] 2.4 One ledger entry citing #1294, as a file of its own under `docs/ledger/`

@@ -175,8 +175,8 @@ public class GtmTests
         all.Should().NotContain("'consent','default'");
     }
 
-    /// <summary>The cookie name is spelled in two packages on purpose (Gtm stays dependency-free);
-    /// this is what keeps the two spellings one.</summary>
+    /// <summary>The installer's head script names the cookies the server reads, both of them, from
+    /// <see cref="ConsentCookie"/> itself.</summary>
     [Fact]
     public void TheConsentCookie_IsTheOneTheServerReads()
     {

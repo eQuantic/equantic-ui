@@ -1,6 +1,7 @@
 /**
  * The web realization of C# `IConsent` — the visitor's answer to non-essential tracking, held in
- * ONE cookie (`eq-consent`) that every side reads: this class in the browser, `SsrConsent` on the
+ * `__Host-eq-consent` on a page served over HTTPS and in `eq-consent` over HTTP, the one cookie every
+ * side reads for that page: this class in the browser, `SsrConsent` on the
  * server (so the first paint already knows, and no banner flashes for a visitor who answered last
  * week), and the GTM installer's head script, which loads the container only on a granted answer.
  *
