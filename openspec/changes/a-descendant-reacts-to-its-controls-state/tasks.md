@@ -11,8 +11,8 @@
 
 ## 3. A foreground descends
 
-- [ ] 3.1 `BoxStyle.Foreground` and `StyleDiff.Foreground`, and the text and icons that name no colour take it on both targets. Verify: the scenarios on both targets, the parity fixture, and the transpiled pins regenerated
-- [ ] 3.2 The pressable's button and the link inherit their colour. Verify: a text in a button in dark mode draws `TextPrimary`'s dark value in Chromium
+- [x] 3.1 `BoxStyle.Foreground` and `StyleDiff.Foreground`, and the text and icons that name no colour take it on both targets. Verify: the scenarios on both targets, the parity fixture, and the transpiled pins regenerated
+- [x] 3.2 The pressable's button and the link inherit their colour. Verify: in Chromium, a label with no colour inside the control's button draws its surface's foreground in both themes, the button writing `color: inherit`
 
 ## 4. A fractional translation
 
@@ -20,5 +20,5 @@
 
 ## 5. The handoff's primary button, and the documentation
 
-- [ ] 5.1 The primary button's sheen band, arrow and label. Verify: in Chromium and on Photon
+- [x] 5.1 The equantic.tech primary button (the site's, built in its own repository) composed from the three: its band, arrow and label. Verify: in Chromium, both themes, rest and hover, with the label's contrast against the surface; on Photon, the arrow, the foreground and the fraction each have their host test
 - [ ] 5.2 The wiki's Styling page in its five languages, the `WidgetStateProperty` row of `docs/FLUTTER-PARITY.md`, and one ledger entry citing #614, with the migration line
