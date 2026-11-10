@@ -85,9 +85,8 @@ public class UsingStaticFenceTests
     public void AFlagsMemberPastLongsRange_IsItsValue_BareAndQualified()
     {
         // Read through long, a ulong member past long's range crashed the compile, on the qualified
-        // path and, since #485, on the bare one too. The value is written as it is. Combining such
-        // members with `|` is a 64-bit operation JavaScript's own operator does not do, the same gap
-        // a long flags enum's members past 32 bits have (#555), so this case only reads the member.
+        // path and, since #485, on the bare one too. The value is written as it is, a BigInt, as the
+        // browser holds every value of a 64-bit enum (#551): a number past 2^53 had lost its low digits.
         var result = Compile("""
             using static App.Wide;
             using eQuantic.UI.Primitives;
@@ -104,7 +103,7 @@ public class UsingStaticFenceTests
             """, "Widest");
 
         result.Errors.Should().BeEmpty();
-        result.TypeScript.Should().Contain("let top = 9223372036854775808;").And.Contain("top === 9223372036854775808");
+        result.TypeScript.Should().Contain("let top = 9223372036854775808n;").And.Contain("top === 9223372036854775808n");
     }
 
     private static CompilationResult Compile(string source, string component)

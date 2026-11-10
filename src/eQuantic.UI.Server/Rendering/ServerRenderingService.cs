@@ -833,26 +833,14 @@ public class ServerRenderingService : IServerRenderingService
                     continue;
                 }
 
-                // Convert enums to lowercase string (matching JS compilation)
-                if (value.GetType().IsEnum)
-                {
-                    var enumName = value.ToString() ?? "";
-                    _logger.LogDebug("[SSR Enum] Converting enum {FieldName}: {Value} -> '{EnumName}'", hydrated.Name, value, enumName);
-
-                    if (!string.IsNullOrEmpty(enumName))
-                    {
-                        var jsEnumValue = char.ToLowerInvariant(enumName[0]) + enumName.Substring(1);
-                        stateDict[hydrated.Name] = jsEnumValue;
-                    }
-                    else
-                    {
-                        stateDict[hydrated.Name] = "0";
-                    }
-                }
+                // An ENUM crosses as EqJson writes it, as the browser holds it, wherever it sits: a member's
+                // camelCase key, a [Flags] enum's value, a 64-bit enum's as its digits. A top-level field
+                // wrote every enum by its camelCase name, so a flags value crossed as "read, Write", which
+                // no value equals, and a 64-bit flag as its member's name (#551).
                 // A COLLECTION WITH ITS OWN COMPARER does not cross either: the wire carries its
                 // elements, and the browser rebuilds it with the element type's default equality or
                 // order, so a case-insensitive set would answer differently there.
-                else if (ForeignComparer.Of(value, hydrated.Declared) is { } foreign)
+                if (ForeignComparer.Of(value, hydrated.Declared) is { } foreign)
                 {
                     if (_reportedServices.TryAdd((type, hydrated.Name), 0))
                         _logger.LogWarning(
