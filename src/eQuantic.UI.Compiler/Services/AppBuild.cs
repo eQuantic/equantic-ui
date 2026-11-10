@@ -351,7 +351,7 @@ public sealed class AppBuild
         var changed = replaced.Select(edit => Path.GetFullPath(edit.File)).ToHashSet(StringComparer.Ordinal);
         return previous.Values
             .Where(compiled => compiled.Succeeded && !changed.Contains(compiled.File)
-                && !compiled.Read.Any(file => changed.Contains(Path.GetFullPath(file))))
+                && !compiled.Read.Overlaps(changed))
             .ToDictionary(compiled => compiled.File, StringComparer.Ordinal);
     }
 

@@ -117,6 +117,10 @@ public class ComponentCompiler
             result.Success = false;
     }
 
+    /// <summary>The resource strings the file in <see cref="CompileRecorded"/> reads, as its compile
+    /// hands them over; null outside it.</summary>
+    private List<Services.ResourceUse>? _usesSeen;
+
     /// <summary>
     /// Track L D3: aggregate the rewritten resx reads — catalogs are emitted from exactly this set,
     /// so call sites and catalogs cannot disagree.
@@ -131,10 +135,6 @@ public class ComponentCompiler
     /// in the tail one of them reaches.
     /// </para>
     /// </summary>
-    /// <summary>The resource strings the file in <see cref="CompileRecorded"/> reads, as its compile
-    /// hands them over; null outside it.</summary>
-    private List<Services.ResourceUse>? _usesSeen;
-
     private void CollectResourceUses(IEnumerable<Services.ResourceUse> uses)
     {
         foreach (var use in uses)
@@ -297,7 +297,8 @@ public class ComponentCompiler
         try
         {
             var results = CompileFile(filePath).ToList();
-            return new Services.FileCompile(Path.GetFullPath(filePath), results, reads.Files.ToArray(), uses, discovered);
+            return new Services.FileCompile(Path.GetFullPath(filePath), results,
+                reads.Files.Select(Path.GetFullPath).ToHashSet(StringComparer.Ordinal), uses, discovered);
         }
         finally
         {

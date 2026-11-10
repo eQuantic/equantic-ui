@@ -123,9 +123,16 @@ public class SyntaxReadsTests
     {
         var root = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Compiler");
         var options = new CSharpParseOptions(LanguageVersion.Preview);
+        // …and the files its project links from beside it (`src/Shared`), which compile into it as well.
+        var linked = System.Xml.Linq.XDocument.Load(Path.Combine(root, "eQuantic.UI.Compiler.csproj"))
+            .Descendants("Compile")
+            .Select(item => (string?)item.Attribute("Include"))
+            .OfType<string>()
+            .Select(include => Path.GetFullPath(Path.Combine(root, include)));
         return Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories)
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
                            && !file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .Concat(linked)
             .Select(file => (file, CSharpSyntaxTree.ParseText(File.ReadAllText(file), options, path: file)));
     }
 
