@@ -716,7 +716,6 @@ interface PressableConfig {
   disabled?: boolean;
   label?: string | null;
   key?: string | null;
-  pressedBackground?: ColorTokenValue | null;
   /** Selection for a toggling/picking button — lowers to aria-pressed. */
   selected?: boolean | null;
   /** Partly selected — checkbox role only; wins over selected. */
@@ -737,7 +736,6 @@ export class Pressable extends VisualNode {
   onPressed: (() => void) | null;
   disabled = false;
   label: string | null = null;
-  pressedBackground: ColorTokenValue | null = null;
   selected: boolean | null = null;
   /** Partly selected — checkbox role only; wins over selected. */
   mixed = false;
