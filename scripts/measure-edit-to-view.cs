@@ -208,7 +208,7 @@ string WhyItDrewOver(JsonNode state, JsonNode reloaded, double saved)
         .Select(f => f!["data"]!.GetValue<string>());
     var said = lines.Where(l => l.At > saved && l.Text.Contains("[eQuantic.HotReload] the page", StringComparison.Ordinal))
         .Select(l => l.Text.Trim());
-    return $"The streams heard rebuilt: [{string.Join(", ", frames)}]; the reload carried hydrate: "
+    return $"The boot said: {reloaded["drew"]?.GetValue<string>() ?? "nothing"}; the streams heard rebuilt: [{string.Join(", ", frames)}]; the reload carried hydrate: "
         + $"{reloaded["told"]?.ToJsonString() ?? "nothing"}; the server rendered it: {reloaded["ssr"]?.ToJsonString() ?? "unknown"}; "
         + $"the server said: {(said.Any() ? string.Join(" | ", said) : "nothing")}.";
 }
@@ -467,15 +467,17 @@ partial class Program
           });
           // What the boot says in Development as it starts on the server's markup: that it hydrates it,
           // and any warning hydrating it raised. Heard here, before the boot runs, and passed on.
-          const note = (field) => {
+          const note = (field, value = true) => {
             const noted = read();
             const mine = noted.documents.find((d) => d.origin === origin);
-            if (mine) { mine[field] = true; write(noted); }
+            if (mine) { mine[field] = value; write(noted); }
           };
           const log = console.log.bind(console);
           const warn = console.warn.bind(console);
           console.log = (...args) => {
             if (typeof args[0] === 'string' && args[0].startsWith('Hydrating:')) note('hydrated');
+            // The boot's own reason for drawing over, in Development (#1373).
+            if (typeof args[0] === 'string' && args[0].startsWith('Drawing over:')) note('drew', args[0]);
             log(...args);
           };
           console.warn = (...args) => {
