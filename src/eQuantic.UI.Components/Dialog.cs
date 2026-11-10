@@ -46,12 +46,14 @@ public sealed class Dialog : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The surfaces' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
+        var slot = theme.Surfaces;
 
-        var content = new Column(gap: 8);
+        var content = new Column(gap: slot?.DialogTextGap ?? 8);
         content.Add(new Text(Title, TypeRole.Title));
         content.Add(new Text(Body, TypeRole.BodyM, theme.TextSecondary, maxLines: 6));
 
-        var actions = new Row(gap: 8) { Main = MainAlign.End };
+        var actions = new Row(gap: slot?.DialogActionGap ?? 8) { Main = MainAlign.End };
         // §10 initial focus: the SAFE action (the Ghost) takes it, so Enter pressed on reflex
         // cancels instead of committing. Exactly one gets the marker.
         var safe = Actions.FirstOrDefault(action => action.Variant == Variant.Ghost);
@@ -63,7 +65,7 @@ public sealed class Dialog : StatelessComponent
             });
         }
 
-        var body = new Column(gap: 20) { Width = SizeValue.Fill };
+        var body = new Column(gap: slot?.DialogGap ?? 20) { Width = SizeValue.Fill };
         body.Add(content);
         body.Add(actions);
 
@@ -86,11 +88,11 @@ public sealed class Dialog : StatelessComponent
         var elevated = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            MaxWidth = 480,
+            MaxWidth = slot?.DialogMaxWidth ?? 480,
             Background = theme.Surface,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.ExtraLarge)),
-            Elevation = 5,
-            Padding = EdgeInsets.All(Space.S5),
+            CornerRadius = new CornerRadii(theme.Shape(slot?.DialogShape ?? ShapeScale.ExtraLarge)),
+            Elevation = slot?.DialogElevation ?? 5,
+            Padding = slot?.DialogPadding ?? EdgeInsets.All(Space.S5),
         }, body);
         // ASKED TO DRAW IN THE FLOW: the card is the dialog; the scrim, the viewport-sized centring,
         // the portal and the Escape binding are the LAYER that carries it. A page showing a dialog
@@ -103,7 +105,7 @@ public sealed class Dialog : StatelessComponent
             Height = SizeValue.Fill,
             Main = MainAlign.Center,
             Cross = CrossAlign.Center,
-            Padding = EdgeInsets.Symmetric(Space.S6, 0),
+            Padding = EdgeInsets.Symmetric(slot?.DialogGutter ?? Space.S6, 0),
         };
         centering.Add(elevated);
 
