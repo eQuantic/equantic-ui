@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace eQuantic.UI.Server;
@@ -375,6 +376,53 @@ public class UIOptions
     public UIOptions ConfigureHtmlShell(Action<HtmlShellOptions> configure)
     {
         configure(HtmlShell);
+        return this;
+    }
+
+    /// <summary>
+    /// The app's Content-Security-Policy, as C#: what the app's own code needs, beside what its
+    /// features need. An integration declares here what its feature connects to whether or not the app
+    /// turned the policy on, and the header is written only once the app calls
+    /// <see cref="UseContentSecurityPolicy"/>.
+    /// </summary>
+    public ContentSecurityPolicyBuilder ContentSecurity { get; } = new();
+
+    /// <summary>
+    /// Writes a strict Content-Security-Policy on every page (#1267), with
+    /// <c>X-Content-Type-Options: nosniff</c> and <c>Referrer-Policy: strict-origin-when-cross-origin</c>
+    /// on every response. Scripts are admitted by the request's nonce, which the shell stamps on every
+    /// script it writes, so the app states only the origins its own code connects to or is framed by:
+    /// <c>ui.UseContentSecurityPolicy(csp =&gt; csp.AllowConnectionsTo("https://api.example.com"))</c>.
+    /// What varies per environment, report-only among it, is read from
+    /// <c>EQuantic:ContentSecurityPolicy</c>.
+    /// </summary>
+    public UIOptions UseContentSecurityPolicy(Action<ContentSecurityPolicyBuilder>? configure = null)
+    {
+        if (!ContentSecurity.Enabled)
+        {
+            ContentSecurity.Enabled = true;
+            RegisterServices(services =>
+            {
+                // Read lazily, when the options are first asked for, so a feature that declares what it
+                // connects to after this call is still in the policy.
+                services.AddOptions<ContentSecurityPolicyOptions>()
+                    .BindConfiguration(ContentSecurityPolicyOptions.SectionName)
+                    .Configure(policy =>
+                    {
+                        policy.ReportOnly |= ContentSecurity.ReportsOnly;
+                        policy.ReportUri ??= ContentSecurity.ViolationsEndpoint;
+                        foreach (var source in ContentSecurity.ConnectSources) policy.ConnectSources.Add(source);
+                        foreach (var source in ContentSecurity.FrameAncestors) policy.FrameAncestors.Add(source);
+                    })
+                    .ValidateOnStart();
+                services.TryAddEnumerable(ServiceDescriptor.Singleton<
+                    Microsoft.Extensions.Options.IValidateOptions<ContentSecurityPolicyOptions>,
+                    ContentSecurityPolicyOptionsValidator>());
+                services.AddSingleton<ContentSecurityPolicy>();
+                services.AddTransient<IStartupFilter, SecurityHeaders>();
+            });
+        }
+        configure?.Invoke(ContentSecurity);
         return this;
     }
 

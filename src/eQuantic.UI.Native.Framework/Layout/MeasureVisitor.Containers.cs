@@ -78,30 +78,33 @@ internal sealed partial class MeasureVisitor
         float? knownH = stack.Height.Kind == SizeKind.Fixed ? stack.Height.Value
             : (stack.Height.Kind == SizeKind.Fill || stretchedH) && !float.IsPositiveInfinity(maxH) ? maxH : null;
 
+        // The children in the flow first: they decide the stack's size, and a positioned child is
+        // measured against that size, as the web's absolute box is against its grid and Flutter's
+        // positioned child is against its stack. Measured beside them instead, a filling child
+        // anchored top and bottom in a stack that sizes from its content had no edge to fill to,
+        // and a swipeable row's action stood its label's height at the top of a taller row.
+        var measuredChildren = new LayoutNode[stack.Children.Count];
+        var anchoredAt = new List<int>();
         for (var stackIndex = 0; stackIndex < stack.Children.Count; stackIndex++)
         {
             var child = stack.Children[stackIndex];
-            var (roomW, roomH) = child is Positioned anchored
-                ? PositionedRoom(anchored, childMaxW, childMaxH, knownW, knownH)
-                : (childMaxW, childMaxH);
-            var childAt = at?.ChildAt(stackIndex);
+            if (child is Positioned)
+            {
+                anchoredAt.Add(stackIndex);
+                continue;
+            }
             var measured = Measure(
                 child,
-                constraints.ForChild(roomW, roomH).DecidedByContent(stackIndetW, stackIndetH),
-                ctx, childAt);
-            // A component that builds a Positioned is one only once it has built: measured again in
-            // the room its anchors leave, when that room is not the one it was offered.
-            if (child is not Positioned && PositionedOf(child, measured) is { } built)
+                constraints.ForChild(childMaxW, childMaxH).DecidedByContent(stackIndetW, stackIndetH),
+                ctx, at?.ChildAt(stackIndex));
+            measuredChildren[stackIndex] = measured;
+            // A component that builds a Positioned is one only once it has built, and is placed
+            // with the others that are.
+            if (PositionedOf(child, measured) is not null)
             {
-                var (builtW, builtH) = PositionedRoom(built, childMaxW, childMaxH, knownW, knownH);
-                if (builtW != roomW || builtH != roomH)
-                    measured = Measure(
-                        child,
-                        constraints.ForChild(builtW, builtH).DecidedByContent(stackIndetW, stackIndetH),
-                        ctx, childAt);
+                anchoredAt.Add(stackIndex);
+                continue;
             }
-            result.Adopt(measured);
-            if (PositionedOf(child, measured) is not null) continue;
             contentW = MathF.Max(contentW, measured.Bounds.Width);
             contentH = MathF.Max(contentH, measured.Bounds.Height);
         }
@@ -109,6 +112,25 @@ internal sealed partial class MeasureVisitor
         var width = ResolveSelf(stack.Width, maxW, contentW, stretched: stretchedW);
         var height = ResolveSelf(stack.Height, maxH, contentH, stretched: stretchedH);
         result.Bounds = new Rect(0, 0, width, height);
+
+        // The stack's extent is known now, whatever decided it, and a positioned child that fills
+        // spans the room its anchors leave in it. One a component built is measured again only when
+        // that room is not the one it was first offered.
+        foreach (var stackIndex in anchoredAt)
+        {
+            var child = stack.Children[stackIndex];
+            var anchored = child as Positioned ?? PositionedOf(child, measuredChildren[stackIndex])!;
+            var room = PositionedRoom(anchored, childMaxW, childMaxH, knownW ?? width, knownH ?? height);
+            // An axis it spans is decided by the stack now, whatever the parent left open: a row's
+            // action under a hugging box filled nothing while that axis still read as the content's.
+            if (measuredChildren[stackIndex] is null || room.SpansWidth || room.SpansHeight)
+                measuredChildren[stackIndex] = Measure(
+                    child,
+                    constraints.ForChild(room.Width, room.Height).DecidedByContent(
+                        stackIndetW && !room.SpansWidth, stackIndetH && !room.SpansHeight),
+                    ctx, at?.ChildAt(stackIndex));
+        }
+        result.AdoptAll(measuredChildren);
 
         for (var i = 0; i < stack.Children.Count; i++)
         {
@@ -534,35 +556,38 @@ internal sealed partial class MeasureVisitor
     /// The room a positioned child is measured in. A child that FILLS an axis anchored on one side
     /// fills from that edge to the opposite one, and anchored on both, the room between them: the
     /// web pins the opposite edge (`left: 50%; right: 0`) for exactly this, so a filling child in a
-    /// 400dp stack at <c>StartFraction = 0.5</c> is 200 wide on both targets. Only where the stack's
-    /// extent is known before its children are (fixed, or filling a bounded parent); a stack that
-    /// sizes from its content has no edge to fill to yet, and the child takes the room it is offered.
+    /// 400dp stack at <c>StartFraction = 0.5</c> is 200 wide on both targets. The stack's extent is
+    /// the one its flow children resolved, so a stack that sizes from its content has edges too.
     /// </summary>
-    private (float Width, float Height) PositionedRoom(Positioned positioned, float maxW, float maxH,
-        float? knownW, float? knownH)
+    private (float Width, float Height, bool SpansWidth, bool SpansHeight) PositionedRoom(Positioned positioned,
+        float maxW, float maxH, float knownW, float knownH)
     {
         var (fillsW, fillsH) = FillsOf(positioned.Child);
+        var spansW = fillsW && !float.IsPositiveInfinity(knownW) && (positioned.AnchorsStart || positioned.AnchorsEnd);
+        var spansH = fillsH && !float.IsPositiveInfinity(knownH) && (positioned.AnchorsTop || positioned.AnchorsBottom);
         var width = maxW;
         var height = maxH;
-        if (fillsW && knownW is { } w && (positioned.AnchorsStart || positioned.AnchorsEnd))
+        if (spansW)
         {
-            var start = positioned.AnchorsStart ? (positioned.Start ?? 0) + (positioned.StartFraction ?? 0) * w : 0;
-            var end = positioned.AnchorsEnd ? (positioned.End ?? 0) + (positioned.EndFraction ?? 0) * w : 0;
-            width = MathF.Max(0, w - start - end);
+            var start = positioned.AnchorsStart ? (positioned.Start ?? 0) + (positioned.StartFraction ?? 0) * knownW : 0;
+            var end = positioned.AnchorsEnd ? (positioned.End ?? 0) + (positioned.EndFraction ?? 0) * knownW : 0;
+            width = MathF.Max(0, knownW - start - end);
         }
-        if (fillsH && knownH is { } h && (positioned.AnchorsTop || positioned.AnchorsBottom))
+        if (spansH)
         {
-            var top = positioned.AnchorsTop ? (positioned.Top ?? 0) + (positioned.TopFraction ?? 0) * h : 0;
-            var bottom = positioned.AnchorsBottom ? (positioned.Bottom ?? 0) + (positioned.BottomFraction ?? 0) * h : 0;
-            height = MathF.Max(0, h - top - bottom);
+            var top = positioned.AnchorsTop ? (positioned.Top ?? 0) + (positioned.TopFraction ?? 0) * knownH : 0;
+            var bottom = positioned.AnchorsBottom ? (positioned.Bottom ?? 0) + (positioned.BottomFraction ?? 0) * knownH : 0;
+            height = MathF.Max(0, knownH - top - bottom);
         }
-        return (width, height);
+        return (width, height, spansW, spansH);
     }
 
     /// <summary>
-    /// Whether a node fills its parent's width and height, looking through the transparent
-    /// wrappers: the web realizer's <c>Fills</c>, case for case, so the two targets agree on which
-    /// positioned children span.
+    /// Whether a node fills its parent's width and height, looking through every wrapper the
+    /// vocabulary calls layout-transparent (<see cref="LayoutTransparency.IsLayoutTransparent"/>): the
+    /// web realizer's <c>Fills</c> reads the same rule, so the two targets agree on which positioned
+    /// children span. Each kept a list of wrappers by hand, and both had left out a
+    /// <see cref="SafeArea"/>, which takes its child's size on Photon and not on the web.
     /// </summary>
     private static (bool Width, bool Height) FillsOf(VisualNode node) => node switch
     {
@@ -570,17 +595,7 @@ internal sealed partial class MeasureVisitor
         FlexNode flex => (flex.Width.Kind == SizeKind.Fill, flex.Height.Kind == SizeKind.Fill),
         Stack stack => (stack.Width.Kind == SizeKind.Fill, stack.Height.Kind == SizeKind.Fill),
         Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
-        Pressable pressable => FillsOf(pressable.Child),
-        Hoverable hoverable => FillsOf(hoverable.Child),
-        DropTarget target => FillsOf(target.Child),
-        Adjustable adjustable => FillsOf(adjustable.Child),
-        Progress progress => FillsOf(progress.Child),
-        LiveRegion live => FillsOf(live.Child),
-        Flexible flexible => FillsOf(flexible.Child),
-        LoopMotion motion => FillsOf(motion.Child),
-        Simulated simulated => FillsOf(simulated.Child),
-        InFlow inFlow => FillsOf(inFlow.Child),
-        InView inView => FillsOf(inView.Child),
+        SingleChildNode wrapper when wrapper.IsLayoutTransparent() => FillsOf(wrapper.Child),
         _ => (false, false),
     };
 
@@ -606,7 +621,7 @@ internal sealed partial class MeasureVisitor
 
         // Place children into (column, span) slots — auto-flow with span clamping. An AdaptiveNode's
         // place is its arm's, span included (see LaidOutChildren).
-        var children = new LaidOutChildren(grid.Children, ctx);
+        var children = new LaidOutChildren(grid.Children, ctx, at);
         var placements = new (VisualNode Node, int Column, int Span, int Row)[children.Count];
         var col = 0;
         var row = 0;
@@ -641,7 +656,7 @@ internal sealed partial class MeasureVisitor
                 // that instance's state.
                 if (pl.Column == c && pl.Span == 1)
                     widest = MathF.Max(widest, Measure(pl.Node, constraints.ForChild(float.PositiveInfinity, maxH), ctx,
-                        children.At(at, i)).Bounds.Width);
+                        children.At(i)).Bounds.Width);
             }
             widths[c] = widest;
             used += widest;
@@ -660,7 +675,7 @@ internal sealed partial class MeasureVisitor
             var (node, c, span, r) = placements[i];
             var cellW = grid.Gap * (span - 1);
             for (var k = c; k < c + span; k++) cellW += widths[k];
-            var child = Measure(node, constraints.ForChild(cellW, maxH), ctx, children.At(at, i));
+            var child = Measure(node, constraints.ForChild(cellW, maxH), ctx, children.At(i));
             // A Fill-width child pins to the cell (the realizer paints the full extent).
             if (DeclaredSizeKind(SizedBy(child).Source, horizontal: true) == SizeKind.Fill)
                 child.Bounds = child.Bounds with { Width = cellW };

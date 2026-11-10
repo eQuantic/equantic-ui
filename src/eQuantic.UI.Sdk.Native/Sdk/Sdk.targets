@@ -125,6 +125,24 @@
         <_EqDesktopShell Condition="'$(_EqDesktopShell)' == ''">MacOS</_EqDesktopShell>
     </PropertyGroup>
 
+    <!--
+        Hot reload reaches a running desktop app through a startup hook, and an app that publishes
+        trimmed or ahead of time turns startup hooks off for EVERY build, so `dotnet watch` restarted it
+        on each edit instead of applying the edit in place, saying so in a line nobody reads twice.
+        This repository's desktop sample publishes trimmed on purpose, and its reload was a restart
+        from September until #900 measured it (#1258). The hook stays on for a Debug build that is not
+        a publish, which is what `dotnet watch` builds: DotNetWatchBuild, the property it evaluates
+        with, is never set on its build, so the runtime refused the hook while dotnet watch waited for
+        it. A publish sets _IsPublishing, so what ships is trimmed exactly as before.
+        HERE, for the desktop head alone and above .NET's own targets, which default the hook off for a
+        trimmed app. Never on a phone: .NET for iOS decides the hook for its own Debug build, which it
+        links, and set from here as well it broke that link (IL2026 on the startup hook provider,
+        measured on WalletMobile's iOS head when this block lived in Sdk.props and reached every head).
+    -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == '' AND '$(StartupHookSupport)' == '' AND '$(Configuration)' == 'Debug' AND '$(_IsPublishing)' != 'true'">
+        <StartupHookSupport>true</StartupHookSupport>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(_EqPlatform)' == '' AND '$(OutputType)' == 'Exe' AND '$(EQuanticConsole)' != 'true' AND $([MSBuild]::IsOSPlatform('Windows'))">
         <OutputType>WinExe</OutputType>
     </PropertyGroup>

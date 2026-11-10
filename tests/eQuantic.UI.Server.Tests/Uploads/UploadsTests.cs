@@ -44,7 +44,10 @@ public sealed class UploadsTests : IDisposable
         var (status, answer) = await browser.InvokeAsync("Receive", Argument(location));
         status.Should().Be(HttpStatusCode.OK, answer);
         // Every member is the server's record, not what the page wrote beside the id.
-        answer.Should().Be($"{TusBrowser.IdOf(location)}|bracket.stl|model/stl|2500|models|{Convert.ToBase64String(content)}");
+        // The type is the server's, read from the extension as ASP.NET Core's static files read it, and the
+        // device's "model/stl" is never read (#1293).
+        new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider().TryGetContentType("bracket.stl", out var type);
+        answer.Should().Be($"{TusBrowser.IdOf(location)}|bracket.stl|{type ?? "application/octet-stream"}|2500|models|{Convert.ToBase64String(content)}");
         app.Log.Runs.Should().Be(1);
     }
 
