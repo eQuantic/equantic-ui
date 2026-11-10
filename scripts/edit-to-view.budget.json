@@ -1,12 +1,16 @@
 {
   "$comment": [
     "What scripts/measure-edit-to-view.cs holds each target to, in milliseconds: the warm median of each",
-    "part named, and the run fails over it (#900). A target holds a budget once its number meets the",
-    "roadmap's bar of a second. The desktop does. The web does not, by tens of seconds, and the issues",
-    "under #898 own each part of it over the bar: its numbers are reported on every run, and it gets a",
-    "budget here the day it meets the bar."
+    "part named, and the run fails over it (#900). The roadmap's bar is a second. The desktop meets it and",
+    "is held to it. The web does not, by tens of seconds, so its total is held to a CEILING that only comes",
+    "down: set from the first CI run that measured it (a warm median of 22.9s, its warm runs 22.9 to 39.2s)",
+    "with room for the runner's spread. Each slice of #900 lowers it by what it measured, and the run says",
+    "when the median falls under half of it."
   ],
   "desktop": {
     "total": 1000
+  },
+  "web": {
+    "total": 45000
   }
 }
