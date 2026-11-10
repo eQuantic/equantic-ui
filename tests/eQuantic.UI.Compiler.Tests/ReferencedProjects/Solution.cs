@@ -183,7 +183,7 @@ internal sealed class Solution : IDisposable
         var output = new StringWriter();
         var errors = new StringWriter();
         var outputDirectory = Path.Combine(DirectoryOf(app.Name), "wwwroot", "_equantic");
-        var build = new AppBuild(new AppBuildOptions
+        _options = new AppBuildOptions
         {
             SourceDirectories = [DirectoryOf(app.Name)],
             OutputDirectory = outputDirectory,
@@ -197,11 +197,30 @@ internal sealed class Solution : IDisposable
             // One reference per assembly for the whole test process (#481).
             ReferenceReader = TestReferences.Of,
             SourceMaps = SourceMapMode.None,
-        }, output, errors);
+        };
+        var build = new AppBuild(_options, output, errors);
         using var held = whileEqcRuns?.Invoke();
         // A build that cannot stand on what it was handed stops there, having said why.
         var failed = !build.Load() || build.CompileAndBundle();
         return new Built(this, build, failed, output.ToString(), errors.ToString(), outputDirectory);
+    }
+
+    /// <summary>The options the last <see cref="Build"/> handed eqc.</summary>
+    private AppBuildOptions? _options;
+
+    /// <summary>
+    /// The build after <paramref name="previous"/>, as a served eqc runs it (#1278): with the options
+    /// the last build was handed, starting from the compilation it loaded, and loading cold when it
+    /// cannot. The projects are not compiled again: a save writes a file, and nothing else.
+    /// </summary>
+    public (Built Built, bool Warm) Rebuild(Built previous)
+    {
+        var output = new StringWriter();
+        var errors = new StringWriter();
+        var build = new AppBuild(_options!, output, errors);
+        var warm = build.LoadFrom(previous.AppBuild);
+        var failed = !(warm || build.Load()) || build.CompileAndBundle();
+        return (new Built(this, build, failed, output.ToString(), errors.ToString(), previous.OutputDirectory), warm);
     }
 
     /// <summary>One project compiled as MSBuild compiles it, its assembly written under its

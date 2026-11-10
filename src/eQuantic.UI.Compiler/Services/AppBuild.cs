@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace eQuantic.UI.Compiler.Services;
 
@@ -22,6 +23,11 @@ public sealed class AppBuild
     /// <summary>What the projects the app references declare; null for an app that references none,
     /// which is built exactly as it was before there was such a layer.</summary>
     private ReferencedModules? _referenced;
+
+    // What this build loaded, which a later build of the same process starts from (LoadFrom).
+    private IReadOnlyList<string>? _sourceFiles;
+    private IReadOnlyDictionary<ReferencedProject, Compilation>? _built;
+    private string? _inputs;
 
     /// <param name="options">What the build is handed.</param>
     /// <param name="output">Where the build narrates; the console when null.</param>
@@ -67,57 +73,7 @@ public sealed class AppBuild
 
             _output.WriteLine("🔍 Attempting to load project compilation...");
 
-            // Collect source files only from the PRIMARY source directory (user's project)
-            // Skip standard components directory as those are already compiled
-            var allSourceFiles = new List<string>();
-
-            if (Directory.Exists(_primarySourceDir))
-            {
-                _output.WriteLine($"   Scanning project directory: {_primarySourceDir}");
-                var files = ProjectCompilationHelper.GetProjectSourceFiles(_primarySourceDir).ToList();
-                _output.WriteLine($"   Found {files.Count} source files in project");
-                allSourceFiles.AddRange(files);
-
-                // Feed the SDK-generated global usings (obj/*.GlobalUsings.g.cs) to the compilation so the
-                // semantic model resolves BCL types used unqualified — e.g. Dictionary<RecordKey, V> under
-                // <ImplicitUsings> — exactly as the real build does, without hardcoding a namespace list.
-                var globalUsings = ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles(_primarySourceDir).ToList();
-                if (globalUsings.Count > 0)
-                {
-                    _output.WriteLine($"   Including {globalUsings.Count} generated global-usings file(s)");
-                    allSourceFiles.AddRange(globalUsings);
-                }
-
-                // SOURCE-GENERATOR output: part of the program csc compiled, so a page calling into it
-                // must resolve here too — see GetCompilerGeneratedFiles.
-                var generated = ProjectCompilationHelper
-                    .GetCompilerGeneratedFiles(_primarySourceDir, _options.GeneratedDirectory).ToList();
-                if (generated.Count > 0)
-                {
-                    _output.WriteLine($"   Including {generated.Count} compiler-generated file(s)");
-                    allSourceFiles.AddRange(generated);
-                }
-            }
-
-            // Reference-only sources (icon packs etc.): their .cs enter the compilation so the semantic model
-            // can reach constant initializers for inlining, but they are NOT in the source directories so
-            // nothing here is transpiled to a module.
-            var refSourcesFile = _options.ReferenceSourcesFile;
-            if (!string.IsNullOrEmpty(refSourcesFile) && File.Exists(refSourcesFile))
-            {
-                var refSourceCount = 0;
-                foreach (var dir in File.ReadAllLines(refSourcesFile).Select(l => l.Trim()).Where(l => l.Length > 0))
-                {
-                    if (!Directory.Exists(dir)) continue;
-                    foreach (var file in ProjectCompilationHelper.GetProjectSourceFiles(dir))
-                    {
-                        allSourceFiles.Add(file);
-                        refSourceCount++;
-                    }
-                }
-                if (refSourceCount > 0)
-                    _output.WriteLine($"   Including {refSourceCount} reference-source file(s) for constant inlining");
-            }
+            var allSourceFiles = CollectSourceFiles(_output);
 
             if (allSourceFiles.Count > 0)
             {
@@ -232,18 +188,12 @@ public sealed class AppBuild
                     read: _options.ReferenceReader);
 
                 if (built is { Count: > 0 })
-                {
                     _output.WriteLine($"   Compiling {built.Count} referenced project(s) from source: " +
                         string.Join(", ", built.Keys.Select(project => project.AssemblyName)));
-                    _referenced = new ReferencedModules(built, _primarySourceDir);
-                    _compiler.SetReferencedModules(_referenced);
-                    // One catalogue id per resource class for the whole build: two projects may
-                    // each have a Strings, and a file sees only its own project's.
-                    _compiler.SetResourceIds(new ResourceCatalogIds(projectCompilation));
-                }
-
-                Compilation = projectCompilation;
-                _compiler.SetProjectCompilation(projectCompilation);
+                Adopt(projectCompilation, built);
+                // What a later build of the same process starts from (LoadFrom).
+                _sourceFiles = allSourceFiles.Where(File.Exists).ToList();
+                _inputs = Inputs();
                 _output.WriteLine($"📚 Loaded project compilation: {assemblyName} ({allSourceFiles.Count} files, {assemblyPaths.Count} refs)");
 
                 // Log success
@@ -266,6 +216,31 @@ public sealed class AppBuild
             File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n{ex.StackTrace}\n");
         }
 
+        ResolveDependencies(projectCompilation);
+        return true;
+    }
+
+    /// <summary>
+    /// The build's compilation, and what the compiler reads beside it: the projects the app references,
+    /// compiled from their source, and one catalogue id per resource class across all of them.
+    /// </summary>
+    private void Adopt(Compilation compilation, IReadOnlyDictionary<ReferencedProject, Compilation>? built)
+    {
+        if (built is { Count: > 0 })
+        {
+            _referenced = new ReferencedModules(built, _primarySourceDir);
+            _compiler.SetReferencedModules(_referenced);
+            // One catalogue id per resource class for the whole build: two projects may
+            // each have a Strings, and a file sees only its own project's.
+            _compiler.SetResourceIds(new ResourceCatalogIds(compilation));
+        }
+        _built = built;
+        Compilation = compilation;
+        _compiler.SetProjectCompilation(compilation);
+    }
+
+    private void ResolveDependencies(Compilation? projectCompilation)
+    {
         // Initialize dependency resolver by scanning component directories. It is handed the compilation the
         // compiler's model is built from: it asks it for each type's symbol, as the parser does, so who imports
         // a module and who writes it read one answer (#423). Without it the resolver judges a library's base,
@@ -284,7 +259,135 @@ public sealed class AppBuild
         dependencyResolver.GeneratedDirectory = _options.GeneratedDirectory;
         dependencyResolver.ScanSourceDirectories(componentDirectories);
         _compiler.SetDependencyResolver(dependencyResolver);
+    }
+
+    /// <summary>
+    /// Loads the project's compilation from the one <paramref name="previous"/> loaded, in the same
+    /// process, and answers false when it cannot, for the caller to <see cref="Load"/> instead (#1278).
+    /// <para>
+    /// A save changes the text of a file, and loading every reference and every file again cost 3.4s
+    /// of each save's compile. The previous compilation keeps its references, already read and bound,
+    /// and each file whose text changed has its tree replaced IN PLACE, so the compilation holds its
+    /// trees in the order a cold load would. Anything else a cold load would read differently loads
+    /// cold: a file added or removed, a changed input the SDK handed (the references, the projects, the
+    /// reference sources, the restore graph), or a changed file of a project the app references.
+    /// </para>
+    /// </summary>
+    public bool LoadFrom(AppBuild previous)
+    {
+        if (previous.Compilation is not { } warm || previous._sourceFiles is not { } before) return false;
+        if (previous._inputs != Inputs()) return false;
+        var files = CollectSourceFiles(TextWriter.Null).Where(File.Exists).ToList();
+        if (!files.SequenceEqual(before, StringComparer.Ordinal)) return false;
+        if (previous._built is { } built && built.Any(pair => !IsAsWritten(pair.Value, pair.Key)))
+            return false;
+
+        // A file the compilation holds twice is one a tree replaced by path would leave half stale.
+        var byPath = warm.SyntaxTrees.Where(tree => tree.FilePath.Length > 0)
+            .GroupBy(tree => tree.FilePath, StringComparer.Ordinal).ToList();
+        if (byPath.Any(group => group.Count() > 1)) return false;
+        var trees = byPath.ToDictionary(group => group.Key, group => group.Single(), StringComparer.Ordinal);
+        var compilation = warm;
+        var replaced = 0;
+        foreach (var file in files)
+        {
+            if (!trees.TryGetValue(file, out var tree)) return false;
+            var text = File.ReadAllText(file);
+            if (tree.GetText().ToString() == text) continue;
+            compilation = compilation.ReplaceSyntaxTree(tree,
+                CSharpSyntaxTree.ParseText(text, ParseDefaults.Options, path: file));
+            replaced++;
+        }
+
+        _output.WriteLine($"📚 Kept the project compilation: {replaced} file(s) changed since the last compile");
+        Adopt(compilation, previous._built);
+        _sourceFiles = files;
+        _inputs = previous._inputs;
+        ResolveDependencies(compilation);
         return true;
+    }
+
+    /// <summary>Whether a referenced project's compilation holds its files as they are on disk: every
+    /// tree but its friend declarations is one of its files, with the same text, and no file is
+    /// missing. A tree whose file was deleted is not among the files, and must not be passed over.</summary>
+    private static bool IsAsWritten(Compilation compilation, ReferencedProject project)
+    {
+        var files = project.SourceFiles().Where(File.Exists).ToHashSet(StringComparer.Ordinal);
+        var friends = ProjectCompilations.FriendsPath(project);
+        var trees = compilation.SyntaxTrees.Where(tree => tree.FilePath != friends).ToList();
+        return trees.Count == files.Count
+            && trees.All(tree => files.Contains(tree.FilePath) && tree.GetText().ToString() == File.ReadAllText(tree.FilePath));
+    }
+
+    /// <summary>The inputs the SDK hands a build besides the sources, by what they are on disk: a
+    /// build whose inputs changed loads cold.</summary>
+    private string Inputs() =>
+        string.Join('|', new[]
+        {
+            _options.ReferencesFile, _options.ProjectsFile, _options.ReferenceSourcesFile, _options.ProjectAssetsFile,
+        }.Select(file => string.IsNullOrEmpty(file) || !File.Exists(file)
+            ? $"{file}:none"
+            : $"{file}:{File.GetLastWriteTimeUtc(file).Ticks}:{new FileInfo(file).Length}"));
+
+    /// <summary>
+    /// Every file the project's compilation is built from: the project's own sources, the global usings
+    /// and the source generators' output its build wrote, and the reference-only sources. Each build
+    /// reads them again, so a file a save added or removed is seen.
+    /// </summary>
+    private List<string> CollectSourceFiles(TextWriter narration)
+    {
+        // Collect source files only from the PRIMARY source directory (user's project)
+        // Skip standard components directory as those are already compiled
+        var allSourceFiles = new List<string>();
+
+        if (Directory.Exists(_primarySourceDir))
+        {
+            narration.WriteLine($"   Scanning project directory: {_primarySourceDir}");
+            var files = ProjectCompilationHelper.GetProjectSourceFiles(_primarySourceDir).ToList();
+            narration.WriteLine($"   Found {files.Count} source files in project");
+            allSourceFiles.AddRange(files);
+
+            // Feed the SDK-generated global usings (obj/*.GlobalUsings.g.cs) to the compilation so the
+            // semantic model resolves BCL types used unqualified — e.g. Dictionary<RecordKey, V> under
+            // <ImplicitUsings> — exactly as the real build does, without hardcoding a namespace list.
+            var globalUsings = ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles(_primarySourceDir).ToList();
+            if (globalUsings.Count > 0)
+            {
+                narration.WriteLine($"   Including {globalUsings.Count} generated global-usings file(s)");
+                allSourceFiles.AddRange(globalUsings);
+            }
+
+            // SOURCE-GENERATOR output: part of the program csc compiled, so a page calling into it
+            // must resolve here too — see GetCompilerGeneratedFiles.
+            var generated = ProjectCompilationHelper
+                .GetCompilerGeneratedFiles(_primarySourceDir, _options.GeneratedDirectory).ToList();
+            if (generated.Count > 0)
+            {
+                narration.WriteLine($"   Including {generated.Count} compiler-generated file(s)");
+                allSourceFiles.AddRange(generated);
+            }
+        }
+
+        // Reference-only sources (icon packs etc.): their .cs enter the compilation so the semantic model
+        // can reach constant initializers for inlining, but they are NOT in the source directories so
+        // nothing here is transpiled to a module.
+        var refSourcesFile = _options.ReferenceSourcesFile;
+        if (!string.IsNullOrEmpty(refSourcesFile) && File.Exists(refSourcesFile))
+        {
+            var refSourceCount = 0;
+            foreach (var dir in File.ReadAllLines(refSourcesFile).Select(l => l.Trim()).Where(l => l.Length > 0))
+            {
+                if (!Directory.Exists(dir)) continue;
+                foreach (var file in ProjectCompilationHelper.GetProjectSourceFiles(dir))
+                {
+                    allSourceFiles.Add(file);
+                    refSourceCount++;
+                }
+            }
+            if (refSourceCount > 0)
+                narration.WriteLine($"   Including {refSourceCount} reference-source file(s) for constant inlining");
+        }
+        return allSourceFiles;
     }
 
     /// <summary>
