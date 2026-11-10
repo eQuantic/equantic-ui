@@ -227,6 +227,10 @@ internal sealed partial class WebLoweringVisitor(
 
     public HtmlElement? Visit(InFlow inFlow, bool? horizontalAxis) => LowerInFlow(inFlow, horizontalAxis);
 
+    /// <summary>A value for a subtree lowers as its child: the web builds with no element per position
+    /// until #1395, so nothing below reads it from here.</summary>
+    public HtmlElement? Visit(InheritedComponent inherited, bool? horizontalAxis) => Lower(inherited.Child, horizontalAxis);
+
     public HtmlElement? Visit(Simulated simulated, bool? horizontalAxis) =>
         LowerSimulated(simulated, horizontalAxis);
 
