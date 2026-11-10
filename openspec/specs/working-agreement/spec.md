@@ -262,14 +262,14 @@ defect, once per push of fixes, and never after the third round.
 
 ### Requirement: A pull request merges on its own CI, against the current main
 
-The repository's ruleset SHALL require the CI's jobs (`test-runtime`, both `test` legs, `samples`, the
+The repository's ruleset SHALL require the CI's jobs to pass: `test-runtime`, the three `test` jobs of
+Ubuntu and the three of Windows (`conformance`, `web` and `rest`), `test (macos-latest)`, `samples`, the
 three `build-platform-runtimes`, `build-packages`, `commit-messages`, `openspec`, `session-start`,
-`wiki-checkout` and `package-extension`) to pass, so a pull request merges only on a CI run that saw
-the main it lands on: on its own head kept up to date with main, or, once the ruleset merges through
-GitHub's merge queue, on the queue's run of it together with every pull request ahead of it. The CI
-SHALL run every one of those jobs on a merge group, and no job that publishes. Every job in a
-dependency chain SHALL be required, since GitHub counts a job skipped for a failed dependency as
-passed.
+`wiki-checkout` and `package-extension`, so a pull request merges only on a CI run that saw the main it
+lands on: on its own head kept up to date with main, or, once the ruleset merges through GitHub's merge
+queue, on the queue's run of it together with every pull request ahead of it. The CI SHALL run every
+one of those jobs on a merge group, and no job that publishes. Every job in a dependency chain SHALL be
+required, since GitHub counts a job skipped for a failed dependency as passed.
 
 #### Scenario: main moved after the CI ran
 
@@ -286,6 +286,16 @@ passed.
 
 - **WHEN** a workflow fails before it creates a job
 - **THEN** the required checks never report, and the pull request stays blocked
+
+#### Scenario: A red fact only a Mac answers
+
+- **WHEN** a pull request turns a `[MacFact]` red
+- **THEN** `test (macos-latest)` fails and the pull request cannot merge
+
+#### Scenario: A red test in one group
+
+- **WHEN** a pull request turns a Conformance case red on Windows
+- **THEN** `test (windows-latest, conformance)` fails and the pull request cannot merge
 
 ### Requirement: A commit message carries no tool's attribution
 
@@ -656,6 +666,31 @@ over it is never passed unread. The guard SHALL fail when it compared no member.
 - **WHEN** a snippet's theme declares three of `IAppTheme`'s members with their types and elides the rest
 - **THEN** the guard passes
 
+### Requirement: Every test runs where it can answer, once
+
+CI SHALL run every test project under `tests/` on Linux and on Windows, and on macOS, whole, every
+test project that references the Apple track (`Native.Shell.Apple`, `.MacOS`, `.iOS`,
+`Native.Engine.Metal`) or holds a test that asks for macOS in its file (a MacFact, MacTheory or
+MacFontFact, `OperatingSystem.IsMacOS()`, `OSPlatform.OSX` or `[SupportedOSPlatform("macos")]`), with
+the Apple workloads installed. Those projects SHALL be derived from the tests and never listed. A
+project that runs no test SHALL fail the job, as SHALL a derivation that finds no project. The job
+that packs the packages SHALL run no test.
+
+#### Scenario: A new Apple-only fact
+
+- **WHEN** a test class in a project that asked nothing of macOS before gains a `[MacFact]`
+- **THEN** the macOS job runs that project
+
+#### Scenario: A fact that probes the device
+
+- **WHEN** a test in a project that references the Apple track skips unless a Metal device is there
+- **THEN** it runs on macOS, though its file names no operating system
+
+#### Scenario: A project that answers the same everywhere
+
+- **WHEN** no test of a project asks for macOS and it does not reference the Apple track
+- **THEN** it runs on Linux and Windows, and not on macOS
+
 ### Requirement: A new push to a pull request cancels the run it replaces
 
 CI SHALL cancel a pull request's run in progress when the same pull request starts a new one, and
@@ -671,3 +706,72 @@ hand.
 
 - **WHEN** main gets a push while a pull request's runs come and go
 - **THEN** main's run goes to the end
+
+### Requirement: Each system's tests run as parallel groups
+
+CI SHALL run each system's test projects as parallel jobs, one per group: the Conformance project, the
+Web project, and every other project found under `tests/`. The projects SHALL be found and never
+listed, so a new project lands in a group without an edit to the workflow. A group that finds no
+project SHALL fail, and a job SHALL name every red project of its group at its end.
+
+#### Scenario: A new test project
+
+- **WHEN** a project is added under `tests/` and nothing else changes
+- **THEN** it runs in the `rest` group on every system
+
+#### Scenario: A named project renamed away
+
+- **WHEN** the Conformance project is renamed and the grouping is not
+- **THEN** the `conformance` group finds no project and its job fails, saying so
+
+### Requirement: A restore reads its packages from a cache keyed on their versions
+
+The jobs that restore .NET packages SHALL restore them from a cache keyed on the runner's system, the
+job, and a hash of every line that declares a package or a version (the package items and `...Version`
+properties of the project, props and targets files, `global.json` and the `packages.lock.json` files),
+with no fallback to another key's cache. An edit that declares no package SHALL keep the key. The
+repository's own packages (`equantic.*`) SHALL never be kept in the cache.
+
+#### Scenario: A version changes
+
+- **WHEN** a pull request changes the version of a referenced package
+- **THEN** its jobs miss the cache and restore from nuget.org
+
+#### Scenario: A project edit that declares no package
+
+- **WHEN** a pull request adds a property or a `<Compile Remove>` to a project file
+- **THEN** its jobs restore from the same cache as before
+
+#### Scenario: A package this repository built
+
+- **WHEN** a job restores an `equantic.*` package it packed
+- **THEN** that package is not in the cache the next run restores
+
+### Requirement: The lockfile Dependabot watches is the tree that runs
+
+Every tree the pipeline installs SHALL be resolved from a lockfile that GitHub's dependency graph
+reads, or from a lockfile that a check compares, package for package and version for version, with
+one the graph reads. The runtime's `package-lock.json` SHALL resolve the same `name@version` set as
+its `bun.lock`, both SHALL record the ranges of its `package.json`, and the tests SHALL fail naming
+what differs when they do not. The extension's Marketplace publish SHALL run the vsce that its
+`package-lock.json` pinned, installed with `npm ci`, and SHALL NOT resolve a tree of its own at
+publish time.
+
+#### Scenario: A fix updates the runtime's bun.lock and not its mirror
+
+- **WHEN** a change moves `vitest` in `src/eQuantic.UI.Runtime/bun.lock` and leaves
+  `package-lock.json` as it was
+- **THEN** the Web tests fail, naming the `vitest` version found only in each lockfile and the
+  command that resolves the other
+
+#### Scenario: A range moves in the runtime's manifest alone
+
+- **WHEN** a change moves the `vitest` range in `src/eQuantic.UI.Runtime/package.json` and neither
+  lockfile is resolved again
+- **THEN** the Web tests fail, saying the lockfiles were not resolved from the manifest as it is
+
+#### Scenario: The extension is published
+
+- **WHEN** an `ext-v*` tag runs `publish-extension`
+- **THEN** it installs the extension's `package-lock.json` with `npm ci` and publishes the verified
+  archive with the vsce that install put in `node_modules/.bin`

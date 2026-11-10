@@ -189,9 +189,9 @@ export class CodeDiff extends StatefulComponent {
         if ((patch = this.patch) != null) {
             if (!(this._original == null) && (patch === this._openedPatch)) return;
             let source = CodeDiffSource.fromPatch(patch);
-            let $n0: any; 
+            let $n0: CodeEditorController; 
             this._original = ($n0 = new CodeEditorController(undefined, language), $n0.readOnly = true, $n0.document = source.original, $n0);
-            let $n1: any; 
+            let $n1: CodeEditorController; 
             this._modified = ($n1 = new CodeEditorController(undefined, language), $n1.readOnly = true, $n1.document = source.modified, $n1);
             this._openedPatch = patch;
             this._source = source;
@@ -203,7 +203,7 @@ export class CodeDiff extends StatefulComponent {
         }
         let opened = false;
         if (this._original == null || !(this._openedPatch == null) || this.original !== this._openedOriginal) {
-            let $n2: any; 
+            let $n2: CodeEditorController; 
             this._original = ($n2 = new CodeEditorController(this.original, language), $n2.readOnly = true, $n2);
             this._openedOriginal = this.original;
             this._expanded.clear();
@@ -316,10 +316,10 @@ export class CodeDiff extends StatefulComponent {
             let count = modifiedSide ? change.modifiedCount : change.originalCount;
             if (count === 0 || start + count - 1 < first || start > last) continue;
             let end = Math.min(start + count - 1, document.lineCount - 1);
-            let $n5: any; 
+            let $n5: CodeDecoration; 
             marks.push(($n5 = new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line'), $n5.color = line, $n5));
             for (const inner of change.inner) {
-                let $n6: any; 
+                let $n6: CodeDecoration; 
                 marks.push(($n6 = new CodeDecoration(modifiedSide ? inner.modified : inner.original), $n6.color = word, $n6));
             }
         }

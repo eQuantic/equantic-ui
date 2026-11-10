@@ -175,4 +175,71 @@ public class ImageCacheTests : IDisposable
 
         Directory.Exists(nestedDir).Should().BeTrue();
     }
+
+    [Fact]
+    public async Task TheCache_StaysUnderItsCap_TheOldestCopiesRemovedFirst()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"equantic-cache-cap-{Guid.NewGuid():N}");
+        try
+        {
+            using var cache = new ImageCache(new ImageOptimizationOptions { CacheDirectory = directory, MaxCacheSize = 100 });
+            await cache.SetAsync("a.jpg", 640, 75, "image/webp", new byte[60]);
+            File.SetLastWriteTimeUtc(Directory.GetFiles(directory).Single(), DateTime.UtcNow.AddMinutes(-2));
+            await cache.SetAsync("b.jpg", 640, 75, "image/webp", new byte[60]);
+
+            Directory.GetFiles(directory).Sum(file => new FileInfo(file).Length).Should().BeLessThanOrEqualTo(100);
+            (await cache.GetAsync("b.jpg", 640, 75, "image/webp")).Should().NotBeNull();
+            (await cache.GetAsync("a.jpg", 640, 75, "image/webp")).Should().BeNull();
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public async Task ACopyWrittenAgain_IsNotCountedTwice_SoNothingUnderTheCapIsRemoved()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"equantic-cache-again-{Guid.NewGuid():N}");
+        try
+        {
+            using var cache = new ImageCache(new ImageOptimizationOptions { CacheDirectory = directory, MaxCacheSize = 100 });
+            await cache.SetAsync("a.jpg", 640, 75, "image/webp", new byte[55]);
+            File.SetLastWriteTimeUtc(Directory.GetFiles(directory).Single(), DateTime.UtcNow.AddMinutes(-2));
+            await cache.SetAsync("b.jpg", 640, 75, "image/webp", new byte[40]);
+
+            // 95 bytes on disk, under the cap; the tally reads 135 once b is written again.
+            await cache.SetAsync("b.jpg", 640, 75, "image/webp", new byte[40]);
+
+            (await cache.GetAsync("a.jpg", 640, 75, "image/webp")).Should().NotBeNull();
+            (await cache.GetAsync("b.jpg", 640, 75, "image/webp")).Should().NotBeNull();
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Theory]
+    [InlineData(100, 10, 95)]
+    [InlineData(5, 3, 3)]
+    public async Task TheCopyJustWritten_StaysWhenItFits_EvenUnderASmallCap(long cap, int older, int newer)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"equantic-cache-newest-{Guid.NewGuid():N}");
+        try
+        {
+            using var cache = new ImageCache(new ImageOptimizationOptions { CacheDirectory = directory, MaxCacheSize = cap });
+            await cache.SetAsync("a.jpg", 640, 75, "image/webp", new byte[older]);
+            File.SetLastWriteTimeUtc(Directory.GetFiles(directory).Single(), DateTime.UtcNow.AddMinutes(-2));
+
+            await cache.SetAsync("b.jpg", 640, 75, "image/webp", new byte[newer]);
+
+            (await cache.GetAsync("b.jpg", 640, 75, "image/webp")).Should().NotBeNull();
+            Directory.GetFiles(directory).Sum(file => new FileInfo(file).Length).Should().BeLessThanOrEqualTo(cap);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
 }

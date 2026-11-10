@@ -138,4 +138,38 @@ public class ImageOptimizationOptionsTests
         options.Invoking(o => o.Validate()).Should().Throw<ArgumentException>()
             .WithMessage("Invalid format 'image/avif'*");
     }
+
+    [Fact]
+    public void ADefaultQualityOutsideTheQualities_IsRefused()
+    {
+        var options = new ImageOptimizationOptions { Qualities = [50, 90], DefaultQuality = 75 };
+
+        options.Invoking(o => o.Validate()).Should().Throw<ArgumentException>().WithMessage("*DefaultQuality 75*");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(101)]
+    public void AQualityOutOfRange_IsRefused(int quality)
+    {
+        var options = new ImageOptimizationOptions { Qualities = [quality, 75] };
+
+        options.Invoking(o => o.Validate()).Should().Throw<ArgumentException>().WithMessage("*between 1 and 100*");
+    }
+
+    [Fact]
+    public void ACacheWithNoRoom_IsRefused()
+    {
+        var options = new ImageOptimizationOptions { MaxCacheSize = 0 };
+
+        options.Invoking(o => o.Validate()).Should().Throw<ArgumentException>().WithMessage("*MaxCacheSize*");
+    }
+
+    [Theory]
+    [InlineData(74, 75)]
+    [InlineData(83, 90)]
+    [InlineData(60, 50)]
+    [InlineData(1, 50)]
+    public void AQuality_IsTheNearestConfiguredOne(int requested, int answered) =>
+        new ImageOptimizationOptions().QualityFor(requested).Should().Be(answered);
 }

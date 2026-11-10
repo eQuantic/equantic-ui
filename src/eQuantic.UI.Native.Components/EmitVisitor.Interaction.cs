@@ -38,8 +38,10 @@ internal sealed partial class EmitVisitor
     private void EmitSimulated(Simulated simulated, EmitState s)
     {
         var previous = s.Press.Simulated;
+        var previousInControl = s.Press.InControl;
         // Nested previews COMBINE: a hovered card holding a pressed button is two nodes.
         s.Press.Simulated = previous | simulated.State;
+        s.Press.InControl = false;
         try
         {
             foreach (var child in s.Node)
@@ -48,6 +50,7 @@ internal sealed partial class EmitVisitor
         finally
         {
             s.Press.Simulated = previous;
+            s.Press.InControl = previousInControl;
         }
     }
 

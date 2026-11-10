@@ -112,8 +112,8 @@ Copilot (three rounds at most, stopping at the first without a defect), and is s
 every review thread is resolved and CI is green.
 
 **Check that CI actually RAN before you read it as green.** Since 2026-09-26 the ruleset requires
-thirteen of the CI's jobs on a run that saw the `main` a pull request lands on (#287), so a pull
-request whose workflow never started stays blocked. Before that it required only a review: a
+the CI's jobs (the list is in `openspec/specs/working-agreement/spec.md`) on a run that saw the
+`main` a pull request lands on (#287), so a pull request whose workflow never started stays blocked. Before that it required only a review: a
 workflow whose `if:` expression did not parse failed before it created a single job, with no log to
 notice, and for an hour seven pull requests merged on local runs alone. Two pull requests that each
 passed alone also broke `main` together (#453).

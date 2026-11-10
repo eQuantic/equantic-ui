@@ -238,8 +238,8 @@ is not the owner's.
    after the third in any case: a defect found later is still fixed and proved, and anything else
    is sorted as in any round, without asking for another. When the account's GitHub credits are
    exhausted and Copilot cannot review, skip this step.
-4. **Squash-merge on green CI, composing nothing.** The ruleset requires thirteen of the CI's jobs
-   on a run that saw the `main` the pull request lands on (#287). Once ruleset 21198869 merges
+4. **Squash-merge on green CI, composing nothing.** The ruleset requires the CI's jobs (the list is
+   the `working-agreement` spec's) on a run that saw the `main` the pull request lands on (#287). Once ruleset 21198869 merges
    through GitHub's merge queue (#1308), a reviewed, green pull request enters the queue with
    `gh pr merge <n>`: the queue runs CI on it together with every pull request ahead of it, merges it
    with a squash when that run is green, and nobody merges `main` into a pull request only to bring
@@ -375,6 +375,8 @@ The TypeScript runtime is built using **embedded Bun** (bundled in platform-spec
 # Type-check (tsc) and test (vitest run) the runtime through the embedded Bun — no Node, any OS.
 # The build unpacks the bun of the sibling package for this OS and architecture
 # (src/eQuantic.UI.Runtime.<Os><Arch>/tools/bun/*.zip), and the target installs from bun.lock first.
+# bun.lock is the authority. package-lock.json beside it is its mirror, the file Dependabot reads:
+# a dependency moves in both in one change, and RuntimeLockfilesTests fails when they differ.
 dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
 
 # That bun's path, for running it by hand:
