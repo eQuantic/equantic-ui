@@ -15,6 +15,32 @@ namespace eQuantic.UI.Conformance.Tests;
 public class AKeptBundlerTests
 {
     [SkippableFact]
+    public void OneBundler_StartsBunOnce_ForEveryBundleItIsHanded()
+    {
+        Skip.If(OperatingSystem.IsWindows(), "the stand-in that counts bun's starts is a shell script");
+        Bundling((bun, ts, output) =>
+        {
+            // A stand-in for bun that writes a line each time it starts, then is bun.
+            var starts = Path.Combine(Path.GetDirectoryName(output)!, "starts.log");
+            var standIn = Path.Combine(Path.GetDirectoryName(output)!, "bun-stand-in");
+            File.WriteAllText(standIn, $"#!/bin/sh\necho started >> '{starts}'\nexec '{bun}' \"$@\"\n");
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(standIn, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            var entries = Pages(ts);
+
+            using (var bundler = new ModuleBundler(standIn, ts))
+            {
+                bundler.Bundle(entries, output, ts, SourceMapMode.None).Should().BeNull();
+                File.WriteAllText(Path.Combine(ts, "Second.ts"), "import { shared } from './Shared';\nexport const second = shared + 3;\n");
+                bundler.Bundle(entries, output, ts, SourceMapMode.None).Should().BeNull();
+                bundler.Bundle(entries, output, ts, SourceMapMode.None).Should().BeNull();
+            }
+
+            File.ReadAllLines(starts).Should().HaveCount(1, "a bundler hands every bundle to the bun it started first");
+        });
+    }
+
+    [SkippableFact]
     public void ASecondBundle_RewritesNothingThatDidNotChange()
     {
         Bundling((bun, ts, output) =>

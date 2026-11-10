@@ -24,6 +24,10 @@ public sealed class ModuleBundler : IDisposable
 {
     private const string AnswerPrefix = "@bundle ";
 
+    /// <summary>How long a bundle may take before the worker is taken for stuck: a minute is several
+    /// hundred times what the dashboard sample's bundle takes at a load of 200.</summary>
+    private static readonly TimeSpan Deadline = TimeSpan.FromMinutes(1);
+
     private readonly string _bunPath;
     private readonly string _workingDirectory;
 
@@ -73,7 +77,8 @@ public sealed class ModuleBundler : IDisposable
         {
             answer = Ask(request.ToJsonString());
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException or JsonException)
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or JsonException
+                                       or TimeoutException or System.ComponentModel.Win32Exception)
         {
             // A worker that died answers nothing: the next bundle starts another, and this one says why.
             Stop();
@@ -135,8 +140,15 @@ public sealed class ModuleBundler : IDisposable
         var worker = _worker is { HasExited: false } running ? running : Start();
         worker.StandardInput.WriteLine(request);
         worker.StandardInput.Flush();
-        while (worker.StandardOutput.ReadLine() is { } line)
+        // Within a deadline: a bun that hangs would hold a served eqc, and every save after it, forever.
+        var deadline = DateTime.UtcNow + Deadline;
+        while (true)
         {
+            var reading = worker.StandardOutput.ReadLineAsync();
+            var left = deadline - DateTime.UtcNow;
+            if (left <= TimeSpan.Zero || !reading.Wait(left))
+                throw new TimeoutException($"bun did not answer within {Deadline.TotalSeconds:0}s");
+            if (reading.Result is not { } line) break;
             if (line.StartsWith(AnswerPrefix, StringComparison.Ordinal))
                 return JsonNode.Parse(line[AnswerPrefix.Length..])!.AsObject();
         }
