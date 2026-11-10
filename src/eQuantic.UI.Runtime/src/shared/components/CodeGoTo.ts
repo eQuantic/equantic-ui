@@ -453,7 +453,7 @@ export class CodeGoTo {
                     }
                 }
             }
-            let $n8: any; 
+            let $n8: CodeGoToEntry; 
             found.push(($n8 = new CodeGoToEntry(name, symbol.kind, symbol.range, symbol.selectionRange.start), $n8.container = container, $n8.deprecated = symbol.deprecated, $n8.matches = matches, $n8.containerMatches = containerMatches, $n8));
             scores.push(score);
         }
@@ -634,7 +634,7 @@ export class CodeGoTo {
         let where = $eq.text.format(start.line + 1, null, undefined, undefined, 'int32') + ':' + $eq.text.format(start.column + 1, null, undefined, undefined, 'int32');
         let other: any; 
         if ((other = place.document) != null) {
-            let $n12: any; 
+            let $n12: CodeGoToEntry; 
             return ($n12 = new CodeGoToEntry(CodeGoTo.nameOf(other), null, place.range, start), $n12.container = where, $n12.document = other, $n12);
         }
         let at = document.clamp(start);
@@ -646,7 +646,7 @@ export class CodeGoTo {
         let to = (end.line === at.line ? end.column : text.length) - lead;
         let marked: number[] = [];
         for (let column = Math.max(at.column, lead) - lead; column < to && column < name.length; column++) marked.push(column);
-        let $n13: any; 
+        let $n13: CodeGoToEntry; 
         return ($n13 = new CodeGoToEntry(name, null, place.range, start), $n13.container = where, $n13.matches = marked, $n13);
     }
 

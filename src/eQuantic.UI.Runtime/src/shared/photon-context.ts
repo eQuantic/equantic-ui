@@ -348,9 +348,9 @@ export function ambientLoweringContext(): LoweringContext {
  * density, so a stateful component it expanded drew Comfortable in a Compact page, where the server,
  * which builds every bridge at the request's density (#623), drew Compact.
  */
-export function themedLoweringContext(theme: AppTheme): LoweringContext {
+export function themedLoweringContext(theme: AppTheme, typeScale = 1): LoweringContext {
   return {
     textPrimary: theme.textPrimary,
-    componentContext: new ComponentContext(theme, 1, activeDensity),
+    componentContext: new ComponentContext(theme, typeScale, activeDensity),
   };
 }
