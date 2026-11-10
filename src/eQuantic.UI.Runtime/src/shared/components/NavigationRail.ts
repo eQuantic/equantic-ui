@@ -24,6 +24,7 @@ export class NavigationRail extends StatelessComponent {
         if (onSelect !== undefined) this.onSelect = onSelect;
         if (this.selected === undefined) this.selected = 0;
         if (this.alignment === undefined) this.alignment = 'start';
+        this.$items = null!;
         this.items = items;
         this.selected = selected;
         this.onSelect = onSelect;
