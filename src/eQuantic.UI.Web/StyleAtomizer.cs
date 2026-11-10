@@ -214,6 +214,25 @@ public sealed class StyleSink
 
     public bool IsEmpty => _rules.Count == 0;
 
+    /// <summary>
+    /// Whether <paramref name="className"/> takes the element that carries it out of what a screen
+    /// reader reads, at a viewport <paramref name="widthDp"/> wide. An adaptive gate does when its
+    /// arm does not show at that width (<see cref="AdaptiveGates.Shows"/>); a declaration that
+    /// always applies does when it is <c>display:none</c> or <c>visibility:hidden</c>, the two that
+    /// remove an element from the platform's accessibility tree (<c>opacity:0</c> does not). A
+    /// variant that applies only under a state, a pseudo-class or a scroll never does.
+    /// <para>
+    /// The sink answers it because the sink holds the rule a class names: a reader of the markup
+    /// alone would have to parse <see cref="Css"/> back, which is this class's format written twice.
+    /// </para>
+    /// </summary>
+    public bool HidesAt(string className, float widthDp)
+    {
+        if (!_rules.TryGetValue(className, out var rule)) return false;
+        if (rule.StartsWith('\u0002')) return !AdaptiveGates.Shows(className, widthDp);
+        return rule is "display:none" or "visibility:hidden";
+    }
+
     /// <summary>Spec S6: the FIXED gate rules — visible ranges follow the AdaptiveNode fallback
     /// chain (a variant shows until the next DECLARED variant takes over). Raw blobs, one per gate
     /// class, byte-identical to the TS twin.</summary>
@@ -247,15 +266,28 @@ public sealed class StyleSink
     /// The selector a state family's rule takes for a class. A hover is the box's OWN state, so it
     /// is the class's own pseudo-class. A focus and a press happen to the CONTROL, and only an
     /// enabled control carries <c>eq-pressable</c>, so they select every box inside one in that
-    /// state. The order of the three is their SPECIFICITY, never their order in the sheet, which the
+    /// state, and NOT a box of a control nested in it (#616): a button in a pressed row is not
+    /// pressed. A press reaches the ANCESTORS of what is pressed (<c>:active</c> matches them), so the
+    /// pressed control is the active one holding no active control, and a box under a control that
+    /// is not active is under a control nobody pressed; a pressed button leaves its row as it is, as
+    /// on Photon, whose host presses the one control under the pointer. A focus is the one element's,
+    /// so a box under a control inside the focused one is that inner control's. Photon's twin scopes
+    /// its press and focus to the nearest control the same way.
+    /// <para>
+    /// The order of the three is their SPECIFICITY, never their order in the sheet, which the
     /// server sorts by class and the browser fills in the order it lowers: hover (0,2,0) under focus
     /// (0,3,0) under pressed (0,4,0), the control's class written twice for it — the handoff's
-    /// "pressed beats hover". The TypeScript twin is <c>stateSelector</c>.
+    /// "pressed beats hover". The nesting rule rides in a <c>:where()</c>, which weighs nothing, so
+    /// it leaves that order as it is. The TypeScript twin is <c>stateSelector</c>.
+    /// </para>
     /// </summary>
     internal static string StateSelector(string family, string className) => family switch
     {
-        ControlFocus => $".eq-pressable:focus-visible .{className}",
-        ControlPressed => $".eq-pressable.eq-pressable:active .{className}",
+        ControlFocus =>
+            $".eq-pressable:focus-visible .{className}:not(:where(.eq-pressable:focus-visible .eq-pressable .{className}))",
+        ControlPressed =>
+            $".eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .{className}"
+            + $":not(:where(.eq-pressable:not(:active) .{className}))",
         _ => $".{className}{family}",
     };
 
@@ -377,6 +409,26 @@ public static class AdaptiveGates
                 $".{gate}{{display:none}}@media (min-width: {Px(from)}) and (max-width: {Below(until)}){{.{gate}{{display:contents}}}}",
             'm' => $".{gate}{{display:none}}@media (min-width: {Px(from)}){{.{gate}{{display:contents}}}}",
             'x' => $".{gate}{{display:none}}@media (min-width: {Px(from)}){{.{gate}{{display:contents}}}}",
+            _ => throw new ArgumentOutOfRangeException(nameof(gate), gate, "Unknown adaptive gate."),
+        };
+    }
+
+    /// <summary>
+    /// Whether the arm behind <paramref name="gate"/> shows at a viewport <paramref name="widthDp"/>
+    /// wide: the media conditions <see cref="Css"/> writes, read as numbers, arm by arm. The two are
+    /// one table in two forms and change together. A headless reader asks it through
+    /// <see cref="StyleSink.HidesAt"/> rather than parsing gate names of its own, which would be the
+    /// grammar spelled twice.
+    /// </summary>
+    internal static bool Shows(string gate, float widthDp)
+    {
+        var (kind, from, until) = Parse(gate);
+        var width = Units(widthDp);
+        return kind switch
+        {
+            'c' => width < until,
+            'm' when until > 0 => width >= from && width <= until - 200,
+            'm' or 'x' => width >= from,
             _ => throw new ArgumentOutOfRangeException(nameof(gate), gate, "Unknown adaptive gate."),
         };
     }

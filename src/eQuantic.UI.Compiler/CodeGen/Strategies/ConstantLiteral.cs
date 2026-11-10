@@ -65,17 +65,12 @@ internal static class ConstantLiteral
         }
     }
 
-    /// <summary>An enum's constant in the enum's representation: the number for <c>[Flags]</c>, whose
-    /// members exist to be OR-combined, otherwise the camelCase name of the member holding the value.
-    /// A value no member names has no name to be, and stays its number.</summary>
-    private static string EnumValue(object value, ITypeSymbol enumType)
-    {
-        if (!enumType.IsFlagsEnum()
-            && enumType.GetMembers().OfType<IFieldSymbol>()
-                .FirstOrDefault(member => member.HasConstantValue && Equals(member.ConstantValue, value)) is { } named)
-        {
-            return $"'{named.Name.ToCamelCase()}'";
-        }
-        return System.Convert.ToString(value, CultureInfo.InvariantCulture)!;
-    }
+    /// <summary>An enum's constant in the enum's representation (<see cref="Types.EnumShape.HeldLiteral"/>):
+    /// the value for <c>[Flags]</c>, whose members exist to be OR-combined, otherwise the camelCase name of
+    /// the first member holding the value; a value no member names has no name to be, and stays its value,
+    /// a 64-bit enum's a BigInt (#551).</summary>
+    private static string EnumValue(object value, ITypeSymbol enumType) =>
+        enumType is INamedTypeSymbol named
+            ? Types.EnumShape.HeldLiteral(named, System.Convert.ToDecimal(value, CultureInfo.InvariantCulture))
+            : System.Convert.ToString(value, CultureInfo.InvariantCulture)!;
 }
