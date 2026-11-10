@@ -26,6 +26,7 @@ internal sealed class Temporaries
 {
     private readonly List<List<string>> _scopes = [];
     private readonly Dictionary<SyntaxNode, IReadOnlyList<string>> _bound = [];
+    private readonly Dictionary<string, string> _types = [];
     private int _next;
 
     /// <summary>A name no other temporary of the module has. C# has no <c>$</c> in a name, so it is
@@ -36,11 +37,23 @@ internal sealed class Temporaries
     public bool CanBind => _scopes.Count > 0;
 
     /// <summary>Declares <paramref name="name"/> in front of the statement, or in the body, being
-    /// written.</summary>
-    public void Bind(string name)
+    /// written, as a <paramref name="type"/> where one was named. A slot left <c>any</c> makes what is
+    /// read through it <c>any</c> too: a local built by an object initializer took its events' types
+    /// with it, and a lambda subscribed to one had nothing to infer from (TS7006, #1106).</summary>
+    public void Bind(string name, string? type = null)
     {
         var scope = _scopes[^1];
         if (!scope.Contains(name)) scope.Add(name);
+        if (type is not null) _types[name] = type;
+    }
+
+    /// <summary><c>let $n0: Thing; let $n1: any; </c>, each slot as the type it was bound with: the
+    /// declarations of <see cref="In{T}"/>'s temporaries.</summary>
+    public string Declarations(IEnumerable<string> names, bool typeAnnotations)
+    {
+        var declared = names.Distinct(StringComparer.Ordinal)
+            .Select(name => $"let {name}{(typeAnnotations ? $": {_types.GetValueOrDefault(name, "any")}" : "")};").ToList();
+        return declared.Count == 0 ? "" : string.Join(" ", declared) + " ";
     }
 
     /// <summary><paramref name="convert"/> run in a scope of its own: its value, and the temporaries
@@ -91,6 +104,7 @@ internal sealed class Temporaries
     {
         _scopes.Clear();
         _bound.Clear();
+        _types.Clear();
         _next = 0;
     }
 }
