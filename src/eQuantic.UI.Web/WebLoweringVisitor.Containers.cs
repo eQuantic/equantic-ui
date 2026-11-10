@@ -800,6 +800,9 @@ internal sealed partial class WebLoweringVisitor
                 MaxHeight = Size(style.MaxHeight, vertical: true),
                 Padding = style.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(style.Padding),
                 BackgroundColor = style.Background is { } bg ? TokenCss.Value(bg) : null,
+                // The foreground the text and icons inside inherit when they name none (#614): CSS's
+                // own inheritance is DefaultTextStyle's, so it is one declaration here.
+                Color = style.Foreground is { } fg ? TokenCss.Value(fg) : null,
                 // Layers compose like CSS: the FIRST entry paints on top, so a gradient sits over
                 // the grid, and both sit over background-color. background-size must carry one
                 // entry per layer, hence the `auto` placeholder for the gradient.
@@ -1002,6 +1005,7 @@ internal sealed partial class WebLoweringVisitor
     {
         var declarations = new List<(string, string)>();
         if (diff.Background is { } bg) declarations.Add(("background-color", TokenCss.Value(bg)));
+        if (diff.Foreground is { } fg) declarations.Add(("color", TokenCss.Value(fg)));
         // The border along the edges the BASE draws, in the base's own shape: the shorthand for every
         // edge, per-side widths for some. The shorthand put a hover's border on all four edges of a
         // box that draws one, and a width alone wrote nothing, where Photon draws it in the base's
@@ -1051,6 +1055,7 @@ internal sealed partial class WebLoweringVisitor
             switch (property)
             {
                 case "background-color": style.BackgroundColor = value; break;
+                case "color": style.Color = value; break;
                 case "border": style.Border = value; break;
                 case "border-width": style.BorderWidth = value; break;
                 case "border-style": style.BorderStyle = value; break;

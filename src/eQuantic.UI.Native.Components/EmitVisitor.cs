@@ -200,8 +200,12 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     /// says so. Two halves of one decision that used to sit four hundred lines apart.</summary>
     public Nothing Visit(Box node, EmitState s)
     {
-        EmitBoxChrome(node, s);
-        if (node.Style.Clip) EmitClippedBox(node, s); else Descend(s);
+        var style = EffectiveStyle(node, s);
+        EmitStyledChrome(style, node, s);
+        // The foreground descends to the text and icons inside that name none, in the box's state
+        // (#614); a box that states none hands down the one it was given.
+        var inner = style.Foreground is { } foreground ? s with { Foreground = foreground } : s;
+        if (node.Style.Clip) EmitClippedBox(node, inner); else Descend(inner);
         return Nothing.Value;
     }
 

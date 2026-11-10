@@ -518,6 +518,9 @@ internal sealed partial class WebLoweringVisitor
                 Border = "none",
                 Background = "none",
                 FontFamily = "inherit",
+                // The user agent's buttontext would stand between the text and icons inside and the
+                // foreground they inherit (#614).
+                Color = "inherit",
                 Cursor = pressable.Disabled ? null : "pointer",
                 TextAlign = TextAlign.Start,
                 // A Fill child needs the 100% chain to pass through the button (scrim et al.).

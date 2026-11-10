@@ -12,7 +12,6 @@ internal sealed partial class EmitVisitor
 {
     // Everything a box paints is its EFFECTIVE style: its own, with the diff of every state it is in
     // laid over it — every member, not the colours alone (#504, #508).
-    private void EmitBoxChrome(Box box, EmitState s) => EmitStyledChrome(EffectiveStyle(box, s), box, s);
 
     /// <summary>
     /// The chrome a style draws, at the node's bounds: a box's, and a pinned header's while its
@@ -428,6 +427,7 @@ internal sealed partial class EmitVisitor
     internal static BoxStyle Over(in BoxStyle style, StyleDiff diff) => style with
     {
         Background = diff.Background ?? style.Background,
+        Foreground = diff.Foreground ?? style.Foreground,
         BorderColor = diff.BorderColor ?? style.BorderColor,
         BorderWidth = diff.BorderWidth ?? style.BorderWidth,
         Elevation = diff.Elevation ?? style.Elevation,

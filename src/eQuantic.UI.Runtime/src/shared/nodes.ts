@@ -243,6 +243,8 @@ export interface BoxStyleValue {
   maxHeight?: SizeValueValue | number;
   padding?: EdgeInsetsValue;
   background?: ColorTokenValue | null;
+  /** C# `BoxStyle.Foreground` (#614). */
+  foreground?: ColorTokenValue | null;
   cornerRadius?: CornerRadiiValue;
   borderWidth?: number;
   borderColor?: ColorTokenValue;
@@ -287,6 +289,8 @@ export interface BoxStyleValue {
 /** Wire shape of the C# `StyleDiff` — only set members override the base. */
 export interface StyleDiffValue {
   background?: ColorTokenValue | null;
+  /** C# `StyleDiff.Foreground` (#614). */
+  foreground?: ColorTokenValue | null;
   borderColor?: ColorTokenValue | null;
   borderWidth?: number | null;
   elevation?: number | null;

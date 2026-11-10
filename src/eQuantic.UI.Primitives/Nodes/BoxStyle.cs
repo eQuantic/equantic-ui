@@ -39,6 +39,16 @@ public readonly record struct BoxStyle
     /// <summary>Solid background token; <c>null</c> = transparent (layout-only Box).</summary>
     public ColorToken? Background { get; init; }
 
+    /// <summary>
+    /// The colour the text and the icons inside take when they name none of their own: Flutter's
+    /// <c>DefaultTextStyle</c> and <c>IconTheme</c>, which a control resolves per state and hands
+    /// down. A <see cref="Text"/>, an <see cref="Icon"/> or a <see cref="Vector"/> with no
+    /// <c>Color</c> is drawn in the foreground of the nearest box above it that states one, and in
+    /// the theme's <c>TextPrimary</c> when none does. A state's diff can change it, so a label and its
+    /// arrow brighten together under the pointer (#614). <c>null</c> = take the one above.
+    /// </summary>
+    public ColorToken? Foreground { get; init; }
+
     /// <summary>2-stop linear gradient fill (the engine fence's exact gradient primitive) — draws
     /// OVER <see cref="Background"/> when both are set (translucent stops show the solid through,
     /// the CSS background-image/background-color composition). <c>null</c> = no gradient.</summary>

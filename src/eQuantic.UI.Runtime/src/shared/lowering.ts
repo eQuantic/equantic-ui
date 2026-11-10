@@ -3156,6 +3156,8 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     padding:
       style.padding && !isZeroInsets(style.padding) ? paddingValue(style.padding) : undefined,
     'background-color': style.background ? tokenValue(style.background) : undefined,
+    // The foreground the text and icons inside inherit (C# twin, #614).
+    color: style.foreground ? tokenValue(style.foreground) : undefined,
     // Mirror of the C# realizer: the FIRST layer paints on top, so a gradient sits over the grid,
     // and background-size carries one entry per layer (`auto` stands in for the gradient).
     'background-image': backgroundLayers(style),
@@ -3365,6 +3367,7 @@ const NO_COLOR: ColorTokenValue = {
 function diffEntries(diff: StyleDiffValue, style: BoxStyleValue): Record<string, string | undefined> {
   const entries: Record<string, string | undefined> = {};
   if (diff.background) entries['background-color'] = tokenValue(diff.background);
+  if (diff.foreground) entries['color'] = tokenValue(diff.foreground);
   // The border along the edges the BASE draws, in the base's own shape (C# twin, #506): the
   // shorthand for every edge, per-side widths for some, and a width alone in the base's colour.
   if (diff.borderWidth != null) {
@@ -3585,7 +3588,7 @@ function faceStack(family: string, mono: boolean): string {
   return `"${family}", ` + (mono ? MONO_STACK : SANS_STACK);
 }
 
-function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
+function lowerText(text: TextNode, _context: LoweringContext): HtmlNode {
   // A family the node names that ships files is declared in the document the first time text is set
   // in it (#1056), as the server declares it in the head of a page it renders.
   if (isWellFormedFace(text.styleOverride?.family?.name)) declareFamily(text.styleOverride!.family);
@@ -3594,7 +3597,8 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     // inline span inside a block parent it sat on the parent's line box and its body-font strut. The
     // multi-line clamp below replaces it with the box the clamp needs.
     display: 'block',
-    color: tokenValue(text.color ?? context.textPrimary),
+    // No colour of its own: it inherits the box's foreground or the document's (C# twin, #614).
+    color: text.color ? tokenValue(text.color) : undefined,
     // Line alignment inside the paragraph (C# twin) — wrapped lines of a centered headline
     // must center too.
     'text-align': text.align === 'center' ? 'center' : text.align === 'end' ? 'end' : undefined,
@@ -3881,6 +3885,8 @@ function lowerPressable(
     background: 'none',
     border: 'none',
     'font-family': 'inherit',
+    // The user agent's buttontext would stand between the content and its foreground (C# twin, #614).
+    color: 'inherit',
     'text-align': 'start',
     cursor: disabled ? undefined : 'pointer',
     // A Fill child needs the 100% chain to pass through the button (scrim et al.).
