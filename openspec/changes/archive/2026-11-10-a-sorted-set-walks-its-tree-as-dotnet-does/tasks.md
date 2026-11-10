@@ -8,4 +8,4 @@
 
 - [x] 2.1 The wiki's SupportedFeatures page in every language it is written in, on the wiki branch of this pull request
 - [x] 2.2 A ledger entry under `docs/ledger/`, citing #766
-- [ ] 2.3 The suites, each read by its exit code: Compiler, Conformance, Web, Server, and the runtime's `TestRuntime`
+- [x] 2.3 The suites, each read by its exit code: Compiler, Conformance, Web, Server, and the runtime's `TestRuntime`
