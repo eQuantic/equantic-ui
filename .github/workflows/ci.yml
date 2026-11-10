@@ -1007,6 +1007,20 @@ jobs:
         with:
           node-version: 22
 
+      # The extension's manifest and lockfile, and nothing else: the vsce that publishes is the one
+      # package-lock.json pinned, the tree package-extension installed and Dependabot watches. An
+      # `npx @vscode/vsce@^3.9.2` resolved its own tree here, at publish time, unpinned, in the one job
+      # that holds the Marketplace credential (#1180). Checkout runs first because it cleans the
+      # workspace, and the archive below lands in it.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            extensions/vscode/package.json
+            extensions/vscode/package-lock.json
+          sparse-checkout-cone-mode: false
+          # Nothing below runs git, and the install below runs other people's scripts.
+          persist-credentials: false
+
       # The SAME archive the packaging job built and verified, not a rebuild of it. A rebuild is a
       # different artifact, and the one that was checked would not be the one that shipped.
       - name: Download the extension
@@ -1029,6 +1043,19 @@ jobs:
           fi
           echo "publishing $packaged"
 
+      # `npm ci` installs exactly the lockfile, integrity hashes checked, and fails on a drift from the
+      # manifest instead of resolving around it: the same install package-extension ran. It runs the
+      # tree's install scripts, so the Marketplace credentials the job reads are blanked for this step:
+      # an install needs none of them.
+      - name: Install the vsce the lockfile pinned
+        working-directory: extensions/vscode
+        env:
+          VSCE_PAT: ''
+          AZURE_CLIENT_ID: ''
+          AZURE_TENANT_ID: ''
+          AZURE_SUBSCRIPTION_ID: ''
+        run: npm ci --no-audit --no-fund
+
       # Microsoft Entra, when it is configured. `vsce publish --azure-credential` acquires its token
       # through the Azure CLI, so something has to log that CLI in first — on GitHub Actions that is
       # this action with workload identity federation, and no secret is stored.
@@ -1044,11 +1071,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          vsce=extensions/vscode/node_modules/.bin/vsce
           if [ -n "${AZURE_CLIENT_ID:-}" ]; then
-            npx @vscode/vsce@^3.9.2 publish --packagePath equantic-ui.vsix --azure-credential
+            "$vsce" publish --packagePath equantic-ui.vsix --azure-credential
           elif [ -n "${VSCE_PAT:-}" ]; then
             # Retires 2026-12-01. Kept because it is the only path that needs nothing but a secret.
-            npx @vscode/vsce@^3.9.2 publish --packagePath equantic-ui.vsix
+            "$vsce" publish --packagePath equantic-ui.vsix
           else
             echo "::error::No Marketplace credential. Set VSCE_PAT, or AZURE_CLIENT_ID + AZURE_TENANT_ID + AZURE_SUBSCRIPTION_ID for Entra."
             echo "::error::(vsce 3.9.2 has no --oidc; trusted publishing is on the tool's main branch and not released yet.)"

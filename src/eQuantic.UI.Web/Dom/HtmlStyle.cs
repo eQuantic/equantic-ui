@@ -344,7 +344,7 @@ public class HtmlStyle
             .ToList();
 
         // Custom properties come LAST — per-element inputs for generated-stylesheet mechanics
-        // (e.g. --eq-pressed-bg); the tail position is part of the hydration cross-pin.
+        // (e.g. --eq-loop-from); the tail position is part of the hydration cross-pin.
         if (CustomProperties != null)
         {
             foreach (var custom in CustomProperties)
