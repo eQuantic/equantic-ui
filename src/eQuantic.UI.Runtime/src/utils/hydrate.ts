@@ -55,7 +55,11 @@ import type { KeyEquality } from './key-equality';
  * hydrating twice (or hydrating a value that never crossed the wire) is harmless.
  */
 
-/** The scalar compat types whose wire form is a string. */
+/**
+ * The scalar compat types whose wire form is a string, and an enum's that is not a flags one: its member's
+ * name, which the browser holds as it is, or, for a value no member names, its digits, which the browser
+ * holds as a number (`'enum'`), or as a BigInt for one over a long (`'enumLong'`) (#1238).
+ */
 export type HydrationTag =
   | 'decimal'
   | 'long'
@@ -64,7 +68,13 @@ export type HydrationTag =
   | 'timeSpan'
   | 'dateOnly'
   | 'timeOnly'
-  | 'dateTimeOffset';
+  | 'dateTimeOffset'
+  | 'enum'
+  | 'enumLong';
+
+/** An enum's value as EqJson writes one no member names: its digits, a sign in front of a negative one. A
+ * member's name is a C# identifier, which never starts with a digit or a sign. */
+const UNNAMED_ENUM = /^-?\d+$/;
 
 /**
  * How a dictionary's key is revived from the wire: a number, a bool, or a compat scalar by its tag. A
@@ -282,6 +292,10 @@ function scalar(incoming: unknown, tag: HydrationTag): unknown {
       return typeof incoming === 'string' ? timeOnly.parse(incoming) : incoming;
     case 'dateTimeOffset':
       return typeof incoming === 'string' ? dateTimeOffset.parse(incoming) : incoming;
+    case 'enum':
+      return typeof incoming === 'string' && UNNAMED_ENUM.test(incoming) ? Number(incoming) : incoming;
+    case 'enumLong':
+      return typeof incoming === 'string' && UNNAMED_ENUM.test(incoming) ? BigInt(incoming) : incoming;
   }
 }
 
