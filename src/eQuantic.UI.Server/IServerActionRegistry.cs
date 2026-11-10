@@ -35,7 +35,8 @@ public interface IServerActionRegistry
 public class ServerActionDescriptor
 {
     /// <summary>
-    /// Unique action identifier (e.g., "Counter/Increment").
+    /// Unique action identifier: the component's CLR full name and the action's name
+    /// (e.g., "MyApp.Pages.Counter/Increment").
     /// </summary>
     public string ActionId { get; set; } = string.Empty;
     

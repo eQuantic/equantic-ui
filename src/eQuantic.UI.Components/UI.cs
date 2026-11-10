@@ -138,8 +138,8 @@ public static class UI
 
     /// <summary>Press surface with the §08 hit contract; the child owns all visuals. The optional
     /// tail is the SEMANTIC surface a standalone button needs — the accessible name, the
-    /// toggle/pick state (aria-pressed/checked), the disabled bit, the pressed-state fill and the
-    /// disclosure state (aria-expanded), and the composite ROLE (tab, radio, switch — a custom
+    /// toggle/pick state (aria-pressed/checked), the disabled bit and the disclosure state
+    /// (aria-expanded), and the composite ROLE (tab, radio, switch — a custom
     /// navigation's items are radios to assistive tech, and a declarative screen could not say so).
     /// Without it a declarative screen could not name an icon-only button or mark a nav item
     /// selected at all (the OS Cleaner F1 report; the role joined after its full migration).
@@ -150,15 +150,13 @@ public static class UI
     /// <see cref="Primitives.Pressable.InitialFocus"/> — stays initializer-only: it belongs to the
     /// components that own the pattern.</summary>
     public static Pressable Pressable(VisualNode child, Action? onPressed = null,
-        string? label = null, bool? selected = null, bool disabled = false,
-        ColorToken? pressedBackground = null, bool? expanded = null,
+        string? label = null, bool? selected = null, bool disabled = false, bool? expanded = null,
         PressableRole role = PressableRole.Button, bool canRequestFocus = true) =>
         new Pressable(child, onPressed)
         {
             Label = label,
             Selected = selected,
             Disabled = disabled,
-            PressedBackground = pressedBackground,
             Expanded = expanded,
             Role = role,
             CanRequestFocus = canRequestFocus,
