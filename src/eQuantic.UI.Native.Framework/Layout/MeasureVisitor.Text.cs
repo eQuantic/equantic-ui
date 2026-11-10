@@ -322,12 +322,14 @@ internal sealed partial class MeasureVisitor
     /// filling the available width (the field's editable area) — height from the type scale so forms
     /// lay out identically before and after the real caret/IME land (spec B9's fixed contract). A
     /// multi-line field is exactly that many lines TALL whatever it currently holds: its box must not
-    /// grow and shrink as the user types.</summary>
-    private LayoutNode MeasureTextEntry(TextEntry entry, float maxW, LayoutContext ctx)
+    /// grow and shrink as the user types. What it holds is what its position keeps
+    /// (<see cref="FieldText"/>), the text the paint draws, so the two never break lines differently.</summary>
+    private LayoutNode MeasureTextEntry(TextEntry entry, float maxW, LayoutContext ctx, Element? at)
     {
         var result = ctx.Node(entry);
         var style = entry.Resolve(ctx.Theme).AtWindow(ctx.WindowWidth);
-        var shown = entry.Value.Length > 0 ? entry.Value : entry.Placeholder ?? string.Empty;
+        var text = FieldText.Of(at, entry);
+        var shown = text.Length > 0 ? text : entry.Placeholder ?? string.Empty;
         var lines = Math.Max(1, entry.Lines);
         var measurement = ctx.Measurer.Measure(shown, style, ctx.TypeScale, maxW, maxLines: lines);
         result.Text = measurement;
