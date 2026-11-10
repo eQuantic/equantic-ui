@@ -22,9 +22,11 @@ internal sealed partial class WebLoweringVisitor
         bool? horizontalAxis)
     {
         var previous = _simulated;
+        var previousInControl = _inControl;
         // Nested previews COMBINE rather than replace: a hovered card containing a pressed button
         // is two nodes, and the inner one must not turn the outer's hover off.
         _simulated = previous | simulated.State;
+        _inControl = false;
         try
         {
             return Lower(simulated.Child, horizontalAxis);
@@ -32,6 +34,7 @@ internal sealed partial class WebLoweringVisitor
         finally
         {
             _simulated = previous;
+            _inControl = previousInControl;
         }
     }
 
@@ -469,14 +472,23 @@ internal sealed partial class WebLoweringVisitor
         // A disabled control shows no press and no focus, pictured or real (#508): its subtree is
         // lowered with the CONTROL's simulated states masked and its boxes writing no focus or press
         // rule, so neither a picture nor an enabled control around it reaches them. A hover is the
-        // box's own state and stays.
+        // box's own state and stays. A control NESTED in another one under a picture is masked the
+        // same way: the picture is the outer control's, and a real press or focus of it stops at the
+        // inner control too (#616, the state selectors).
         var outerSimulated = _simulated;
         var outerDisabled = _inDisabledControl;
+        var outerInControl = _inControl;
         if (pressable.Disabled)
         {
             _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
             _inDisabledControl = true;
         }
+        else if (_inControl)
+            _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
+        _inControl = true;
+        // What THIS control is pictured as: its ring below reads it, so a nested control under a
+        // picture of the one around it draws no ring either.
+        var pictured = _simulated;
         HtmlElement? child;
         try
         {
@@ -486,6 +498,7 @@ internal sealed partial class WebLoweringVisitor
         {
             _simulated = outerSimulated;
             _inDisabledControl = outerDisabled;
+            _inControl = outerInControl;
         }
 
         // A Pressable AROUND a control — a Menu making its trigger open the panel — is ordinary
@@ -521,27 +534,17 @@ internal sealed partial class WebLoweringVisitor
         };
 
         // Interaction states (spec §01): mechanics live in the GENERATED stylesheet — every enabled
-        // pressable carries the class (the :focus-visible double ring is an accessibility DEFAULT);
-        // the pressed swap additionally needs its token value as a per-element custom property.
+        // pressable carries the class (the :focus-visible double ring is an accessibility DEFAULT).
+        // A pressed FILL is no mechanic of the control's: it is the Pressed diff of the box it fills,
+        // an atomic rule in the pressed family like every other member of that diff (#616).
         if (!pressable.Disabled)
         {
-            // eq-pressed carries the same declaration :active does, and eq-focused the ring
-            // :focus-visible draws — see TokenCss. They are added, not substituted, so a simulated
-            // control still behaves like the control it is picturing.
-            // eq-press-fill marks a control that HAS a pressed fill: the stylesheet's swap selects it,
-            // so a control without one keeps its own fill while pressed.
+            // eq-focused carries the ring :focus-visible draws — see TokenCss. It is added, not
+            // substituted, so a simulated control still behaves like the control it is picturing. A
+            // simulated PRESS needs no marker: its boxes lay their Pressed diff inline.
             element.ClassName = "eq-pressable"
-                + (pressable.PressedBackground is not null ? " eq-press-fill" : "")
-                + (_simulated.HasFlag(SimulatedState.Pressed) ? " eq-pressed" : "")
-                + (_simulated.HasFlag(SimulatedState.Focused) ? " eq-focused" : "");
+                + (pictured.HasFlag(SimulatedState.Focused) ? " eq-focused" : "");
             if (child is not null) LiftThroughBoxlessWrappers(child);
-            if (pressable.PressedBackground is { } pressedFill)
-            {
-                element.Style!.CustomProperties = new Dictionary<string, string>
-                {
-                    ["--eq-pressed-bg"] = TokenCss.Value(pressedFill),
-                };
-            }
         }
 
         // §10 initial focus: the marker the trap controller prefers over the first focusable —

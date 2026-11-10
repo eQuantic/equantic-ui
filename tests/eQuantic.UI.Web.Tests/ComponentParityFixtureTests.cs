@@ -85,6 +85,10 @@ public class ComponentParityFixtureTests
         // A picture of a DISABLED control: both producers mask the control's states for its subtree.
         ("control-states-disabled-simulated",
             new Simulated(SimulatedState.Pressed | SimulatedState.Focused, DisabledControlStates()), NoPresses),
+        // A picture of a control holding another (#616): both producers picture the OUTER one, and the
+        // inner control's boxes keep their real focus and press rules, as a real press stops there.
+        ("nested-control-simulated",
+            new Simulated(SimulatedState.Pressed | SimulatedState.Focused, NestedControlStates()), NoPresses),
         // A draggable resting OPEN over a box with its own transform, a colour fade and a hover that
         // lifts it (#511): the offset rides `translate` on both producers, beside the box's
         // `transform`, and its glide joins the box's transition list instead of replacing it.
@@ -383,7 +387,8 @@ public class ComponentParityFixtureTests
     }
 
     /// <summary>The control of the control-states cases: a raised surface with a hover, a focus and a
-    /// press, each changing what the others do not, and the pressed fill it has always had.</summary>
+    /// press, each changing what the others do not, and the pressed fill it has always had, in its
+    /// own Pressed diff since #616.</summary>
     private static Pressable ControlStates() => new(new Box(new BoxStyle
     {
         Width = 40,
@@ -392,16 +397,24 @@ public class ComponentParityFixtureTests
         Elevation = 2,
         Hover = new StyleDiff { Elevation = 3 },
         Focus = new StyleDiff { BorderColor = Theme.FocusRing, BorderWidth = 2, Opacity = 0.95f },
-        Pressed = new StyleDiff { Transform = Transform2D.Scale(0.985f), Elevation = 1 },
-    }), () => { })
+        Pressed = new StyleDiff
+        {
+            Transform = Transform2D.Scale(0.985f), Elevation = 1, Background = Theme.SurfaceSubtle,
+        },
+    }), () => { });
+
+    private static Pressable NestedControlStates() => new(new Box(new BoxStyle
     {
-        PressedBackground = Theme.SurfaceSubtle,
-    };
+        Width = 80,
+        Height = 48,
+        Background = Theme.Surface,
+        Focus = new StyleDiff { Opacity = 0.9f },
+        Pressed = new StyleDiff { Background = Theme.SurfaceSubtle },
+    }, ControlStates()), () => { });
 
     private static Pressable DisabledControlStates() => new(ControlStates().Child, () => { })
     {
         Disabled = true,
-        PressedBackground = Theme.SurfaceSubtle,
     };
 
     private static eQuantic.UI.Spreadsheets.Spreadsheet Sheet()
