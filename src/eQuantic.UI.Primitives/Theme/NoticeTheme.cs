@@ -51,11 +51,20 @@ public sealed record NoticeTheme
     /// <summary>Between a banner's title and its body (4).</summary>
     public float? BannerGap { get; init; }
 
-    /// <summary>A banner's title (13 over 18, semi-bold).</summary>
-    public TypeStyle? BannerTitle { get; init; }
+    /// <summary>The size of a banner's words, its title's and its body's (13).</summary>
+    /// <remarks>Plain members rather than a <see cref="TypeStyle"/>, as the Button's label is: the
+    /// configuration binder's generator walks every slot through <c>PhotonOptions.Theme</c>, and the code
+    /// it writes for a <see cref="TypeStyle"/> does not compile.</remarks>
+    public float? BannerTextSize { get; init; }
 
-    /// <summary>A banner's body (13 over 18, regular).</summary>
-    public TypeStyle? BannerBody { get; init; }
+    /// <summary>The line height of a banner's words (18).</summary>
+    public float? BannerLineHeight { get; init; }
+
+    /// <summary>A banner's title's weight (semi-bold).</summary>
+    public FontWeight? BannerTitleWeight { get; init; }
+
+    /// <summary>A banner's body's weight (regular).</summary>
+    public FontWeight? BannerBodyWeight { get; init; }
 
     /// <summary>The cookie consent's corners (large).</summary>
     public ShapeScale? ConsentShape { get; init; }

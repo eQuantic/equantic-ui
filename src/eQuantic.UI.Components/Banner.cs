@@ -34,6 +34,8 @@ public sealed class Banner : StatelessComponent
         var tint = context.Theme.Colors(Status);
         // The notices' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
         var slot = context.Theme.Notice;
+        var textSize = slot?.BannerTextSize ?? 13f;
+        var lineHeight = slot?.BannerLineHeight ?? 18f;
         var glyph = Status switch
         {
             Variant.Success => Icons.CheckCircle,
@@ -45,13 +47,13 @@ public sealed class Banner : StatelessComponent
         var column = new Column(gap: slot?.BannerGap ?? Space.S1);
         column.Add(new Text(Title, TypeRole.Caption, tint.OnSubtle, maxLines: 2)
         {
-            StyleOverride = slot?.BannerTitle ?? new TypeStyle(13, 18, FontWeight.SemiBold, 0, 1.3f),
+            StyleOverride = new TypeStyle(textSize, lineHeight, slot?.BannerTitleWeight ?? FontWeight.SemiBold, 0, 1.3f),
         });
         if (Body != null)
         {
             column.Add(new Text(Body, TypeRole.Caption, tint.OnSubtle, maxLines: 4)
             {
-                StyleOverride = slot?.BannerBody ?? new TypeStyle(13, 18, FontWeight.Regular, 0, 1.3f),
+                StyleOverride = new TypeStyle(textSize, lineHeight, slot?.BannerBodyWeight ?? FontWeight.Regular, 0, 1.3f),
             });
         }
         if (PrimaryAction != null || SecondaryAction != null)

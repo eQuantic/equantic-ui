@@ -125,8 +125,6 @@ eQuantic.UI.Primitives.MenuTheme.TooltipText.get -> eQuantic.UI.Primitives.Color
 eQuantic.UI.Primitives.MenuTheme.TooltipText.init -> void
 eQuantic.UI.Primitives.NoticeTheme
 eQuantic.UI.Primitives.NoticeTheme.<Clone>$() -> eQuantic.UI.Primitives.NoticeTheme!
-eQuantic.UI.Primitives.NoticeTheme.BannerBody.get -> eQuantic.UI.Primitives.TypeStyle?
-eQuantic.UI.Primitives.NoticeTheme.BannerBody.init -> void
 eQuantic.UI.Primitives.NoticeTheme.BannerGap.get -> float?
 eQuantic.UI.Primitives.NoticeTheme.BannerGap.init -> void
 eQuantic.UI.Primitives.NoticeTheme.BannerIconGap.get -> float?
@@ -135,8 +133,6 @@ eQuantic.UI.Primitives.NoticeTheme.BannerPadding.get -> eQuantic.UI.Primitives.E
 eQuantic.UI.Primitives.NoticeTheme.BannerPadding.init -> void
 eQuantic.UI.Primitives.NoticeTheme.BannerShape.get -> eQuantic.UI.Primitives.ShapeScale?
 eQuantic.UI.Primitives.NoticeTheme.BannerShape.init -> void
-eQuantic.UI.Primitives.NoticeTheme.BannerTitle.get -> eQuantic.UI.Primitives.TypeStyle?
-eQuantic.UI.Primitives.NoticeTheme.BannerTitle.init -> void
 eQuantic.UI.Primitives.NoticeTheme.ConsentBorderWidth.get -> float?
 eQuantic.UI.Primitives.NoticeTheme.ConsentBorderWidth.init -> void
 eQuantic.UI.Primitives.NoticeTheme.ConsentElevation.get -> int?
@@ -256,3 +252,11 @@ static eQuantic.UI.Primitives.ProgressTheme.operator !=(eQuantic.UI.Primitives.P
 static eQuantic.UI.Primitives.ProgressTheme.operator ==(eQuantic.UI.Primitives.ProgressTheme? left, eQuantic.UI.Primitives.ProgressTheme? right) -> bool
 static eQuantic.UI.Primitives.SurfaceTheme.operator !=(eQuantic.UI.Primitives.SurfaceTheme? left, eQuantic.UI.Primitives.SurfaceTheme? right) -> bool
 static eQuantic.UI.Primitives.SurfaceTheme.operator ==(eQuantic.UI.Primitives.SurfaceTheme? left, eQuantic.UI.Primitives.SurfaceTheme? right) -> bool
+eQuantic.UI.Primitives.NoticeTheme.BannerTextSize.get -> float?
+eQuantic.UI.Primitives.NoticeTheme.BannerTextSize.init -> void
+eQuantic.UI.Primitives.NoticeTheme.BannerLineHeight.get -> float?
+eQuantic.UI.Primitives.NoticeTheme.BannerLineHeight.init -> void
+eQuantic.UI.Primitives.NoticeTheme.BannerTitleWeight.get -> eQuantic.UI.Primitives.FontWeight?
+eQuantic.UI.Primitives.NoticeTheme.BannerTitleWeight.init -> void
+eQuantic.UI.Primitives.NoticeTheme.BannerBodyWeight.get -> eQuantic.UI.Primitives.FontWeight?
+eQuantic.UI.Primitives.NoticeTheme.BannerBodyWeight.init -> void
