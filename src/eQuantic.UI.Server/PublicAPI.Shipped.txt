@@ -88,7 +88,7 @@ eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.IsUnauthenticat
 eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.Succeeded.get -> bool
 eQuantic.UI.Server.Authorization.ServerActionAuthorizationService
 eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.AuthorizeAsync(Microsoft.AspNetCore.Http.HttpContext! context, eQuantic.UI.Server.ServerActionDescriptor! descriptor) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!>!
-eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.ServerActionAuthorizationService(System.IServiceProvider! serviceProvider, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Authorization.ServerActionAuthorizationService!>! logger) -> void
+eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.ServerActionAuthorizationService(Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Authorization.ServerActionAuthorizationService!>! logger) -> void
 eQuantic.UI.Server.ConsentCookie
 eQuantic.UI.Server.CultureRouteConstraint
 eQuantic.UI.Server.CultureRouteConstraint.CultureRouteConstraint(eQuantic.UI.Server.UIOptions! options) -> void
@@ -255,6 +255,8 @@ eQuantic.UI.Server.ServerActionsMiddleware.InvokeAsync(Microsoft.AspNetCore.Http
 eQuantic.UI.Server.ServerActionsMiddleware.ServerActionsMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next, eQuantic.UI.Server.IServerActionRegistry! registry, System.IServiceProvider! serviceProvider, eQuantic.UI.Server.Authorization.IServerActionAuthorizationService! authorizationService, eQuantic.UI.Server.UIOptions! options, Microsoft.Extensions.Options.IOptionsMonitor<eQuantic.UI.Server.ServerActionsOptions!>! actions, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.ServerActionsMiddleware!>! logger) -> void
 eQuantic.UI.Server.ServerActionsOptions
 eQuantic.UI.Server.ServerActionsOptions.AllowedOrigins.get -> System.Collections.Generic.IList<string!>!
+eQuantic.UI.Server.ServerActionsOptions.MaxRequestBodySize.get -> long
+eQuantic.UI.Server.ServerActionsOptions.MaxRequestBodySize.set -> void
 eQuantic.UI.Server.ServerActionsOptions.ServerActionsOptions() -> void
 eQuantic.UI.Server.ServerEventConnectionContext
 eQuantic.UI.Server.ServerEventConnectionContext.<Clone>$() -> eQuantic.UI.Server.ServerEventConnectionContext!
@@ -445,8 +447,6 @@ static eQuantic.UI.Server.Assets.ScriptAsset.operator ==(eQuantic.UI.Server.Asse
 static eQuantic.UI.Server.Assets.StylesheetAsset.operator !=(eQuantic.UI.Server.Assets.StylesheetAsset? left, eQuantic.UI.Server.Assets.StylesheetAsset? right) -> bool
 static eQuantic.UI.Server.Assets.StylesheetAsset.operator ==(eQuantic.UI.Server.Assets.StylesheetAsset? left, eQuantic.UI.Server.Assets.StylesheetAsset? right) -> bool
 static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.Forbidden(string! reason) -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
-static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.PolicyFailed(string! policyName) -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
-static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.RolesFailed(string! requiredRoles) -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
 static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.Success() -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
 static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.Unauthenticated() -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
 static eQuantic.UI.Server.ConsentCookie.Resolve(Microsoft.AspNetCore.Http.HttpContext? context) -> eQuantic.UI.Primitives.ConsentState

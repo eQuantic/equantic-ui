@@ -1,5 +1,6 @@
 #nullable enable
 abstract eQuantic.UI.Primitives.Element.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
+abstract eQuantic.UI.Primitives.Element.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
 abstract eQuantic.UI.Primitives.FlexNode.Cross.get -> eQuantic.UI.Primitives.CrossAlign
 abstract eQuantic.UI.Primitives.FlexNode.Cross.init -> void
 abstract eQuantic.UI.Primitives.PickedFile.ReadAllBytesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<byte[]!>
@@ -147,6 +148,9 @@ eQuantic.UI.Primitives.Anchored.Placement.get -> eQuantic.UI.Primitives.AnchorPl
 eQuantic.UI.Primitives.Anchored.Placement.init -> void
 eQuantic.UI.Primitives.Anchored.ScrimStyle.get -> eQuantic.UI.Primitives.BoxStyle?
 eQuantic.UI.Primitives.Anchored.ScrimStyle.init -> void
+eQuantic.UI.Primitives.AppIconUse
+eQuantic.UI.Primitives.AppIconUse.Launcher = 0 -> eQuantic.UI.Primitives.AppIconUse
+eQuantic.UI.Primitives.AppIconUse.Small = 1 -> eQuantic.UI.Primitives.AppIconUse
 eQuantic.UI.Primitives.AuthorizeAttribute
 eQuantic.UI.Primitives.AuthorizeAttribute.AuthenticationSchemes.get -> string?
 eQuantic.UI.Primitives.AuthorizeAttribute.AuthenticationSchemes.set -> void
@@ -371,6 +375,7 @@ eQuantic.UI.Primitives.ComponentContext.Theme.get -> eQuantic.UI.Primitives.IApp
 eQuantic.UI.Primitives.ComponentContext.TypeScale.get -> float
 eQuantic.UI.Primitives.ComponentElement
 eQuantic.UI.Primitives.ComponentElement.Component.get -> eQuantic.UI.Primitives.UiComponent!
+eQuantic.UI.Primitives.ComponentElement.MarkNeedsBuild() -> void
 eQuantic.UI.Primitives.ConsentState
 eQuantic.UI.Primitives.ConsentState.Denied = 2 -> eQuantic.UI.Primitives.ConsentState
 eQuantic.UI.Primitives.ConsentState.Granted = 1 -> eQuantic.UI.Primitives.ConsentState
@@ -764,7 +769,7 @@ eQuantic.UI.Primitives.HydratesTypeArgumentAttribute.HydratesTypeArgumentAttribu
 eQuantic.UI.Primitives.IAnalytics
 eQuantic.UI.Primitives.IAnalytics.Track(string! eventName, System.Collections.Generic.Dictionary<string!, object?>? data = null) -> void
 eQuantic.UI.Primitives.IAppIcon
-eQuantic.UI.Primitives.IAppIcon.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Primitives.IAppIcon.Build(eQuantic.UI.Primitives.ComponentContext! context, eQuantic.UI.Primitives.AppIconUse use) -> eQuantic.UI.Primitives.VisualNode!
 eQuantic.UI.Primitives.IAppStorage
 eQuantic.UI.Primitives.IAppStorage.Get(string! key) -> string?
 eQuantic.UI.Primitives.IAppStorage.Remove(string! key) -> void
@@ -2377,6 +2382,7 @@ override eQuantic.UI.Primitives.Column.Cross.get -> eQuantic.UI.Primitives.Cross
 override eQuantic.UI.Primitives.Column.Cross.init -> void
 override eQuantic.UI.Primitives.Column.NodeKind.get -> string!
 override eQuantic.UI.Primitives.ComponentElement.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
+override eQuantic.UI.Primitives.ComponentElement.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
 override eQuantic.UI.Primitives.CornerRadii.GetHashCode() -> int
 override eQuantic.UI.Primitives.Curve.GetHashCode() -> int
 override eQuantic.UI.Primitives.DataPalette.Equals(object? obj) -> bool
@@ -2428,6 +2434,7 @@ override eQuantic.UI.Primitives.MotionVector.GetHashCode() -> int
 override eQuantic.UI.Primitives.Navigable.NodeKind.get -> string!
 override eQuantic.UI.Primitives.NetworkState.GetHashCode() -> int
 override eQuantic.UI.Primitives.NodeElement.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
+override eQuantic.UI.Primitives.NodeElement.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
 override eQuantic.UI.Primitives.Overlay.NodeKind.get -> string!
 override eQuantic.UI.Primitives.PasskeyResult.GetHashCode() -> int
 override eQuantic.UI.Primitives.Pinned.NodeKind.get -> string!

@@ -702,6 +702,7 @@ eQuantic.UI.Web.StyleSink.ClassFor(string! property, string! value) -> string!
 eQuantic.UI.Web.StyleSink.ClassFor(string! property, string! value, string? pseudo) -> string!
 eQuantic.UI.Web.StyleSink.ClassForScrolled(string! property, string! value) -> string!
 eQuantic.UI.Web.StyleSink.Css.get -> string!
+eQuantic.UI.Web.StyleSink.HidesAt(string! className, float widthDp) -> bool
 eQuantic.UI.Web.StyleSink.IsEmpty.get -> bool
 eQuantic.UI.Web.StyleSink.StyleSink() -> void
 eQuantic.UI.Web.Styling.ClassBuilder
@@ -823,5 +824,6 @@ static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.get -> eQuantic.UI.Pri
 static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.set -> void
 static eQuantic.UI.Web.WebRealizer.GradientId(eQuantic.UI.Primitives.VectorGradient run) -> string!
 static eQuantic.UI.Web.WebRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> eQuantic.UI.Web.HtmlElement!
+static eQuantic.UI.Web.WebRealizer.LowerFrame(eQuantic.UI.Primitives.Element! root, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> eQuantic.UI.Web.HtmlElement!
 virtual eQuantic.UI.Web.HtmlElement.AddChild(eQuantic.UI.Web.IComponent! child) -> void
 virtual eQuantic.UI.Web.HtmlElement.RemoveChild(eQuantic.UI.Web.IComponent! child) -> void
