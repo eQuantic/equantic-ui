@@ -14,7 +14,7 @@
 ## 3. The proof
 
 - [ ] 3.1 The compiler's and the conformance suites pass
-- [ ] 3.2 The measurement on the dashboard sample, with the load average beside each number
+- [x] 3.2 The measurement on the dashboard sample, with the load average beside each number. Verify: one document per save, every one hydrated, at a load average of 52 to 83. No change of the total is measurable at that load, and none was expected: this slice spares writes, and the time it saves reaches the screen through the incremental bundle (#1280)
 - [ ] 3.3 CI's samples job: a publish right after a shared component changes, and a Release publish with no map
 
 ## 4. Documentation
