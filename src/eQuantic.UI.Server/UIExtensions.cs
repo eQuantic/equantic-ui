@@ -195,8 +195,8 @@ public static class UIExtensions
         });
         // The compression has to be applied as well as registered, and the developer writes nothing for it:
         // it stands in front of the pipeline, so what the runtime's endpoint, the static files and a page
-        // answer all pass through it (#1002).
-        services.AddTransient<IStartupFilter, ResponseCompressionFirst>();
+        // answer all pass through it (#1002). Once, however many times AddUI is called.
+        services.TryAddEnumerable(ServiceDescriptor.Transient<IStartupFilter, ResponseCompressionFirst>());
         services.Configure<BrotliCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
         services.Configure<GzipCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
 
