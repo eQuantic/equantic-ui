@@ -130,9 +130,11 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     /// only the target has was "Property does not exist on type" (#1303): in TypeScript the cast
     /// keeps its type as an assertion, the target named by its twin and imported as any reference to
     /// it is. A generic target is left as it was, as a list's generic item is left to inference, and
-    /// so is a type with no twin to name, one the build keeps on the server included. JavaScript has no assertion and gets the value alone. The
-    /// assertion does not CHECK: a wrong downcast reads what the object holds instead of throwing
-    /// .NET's InvalidCastException, as it did before.
+    /// so is a type with no twin to name, one the build keeps on the server included. JavaScript has
+    /// no assertion and gets the value alone, and the bundler drops an import used only as a type, so
+    /// a base that casts to its own subclass meets no import cycle. The assertion does not CHECK: a
+    /// wrong downcast reads what the object holds instead of throwing .NET's InvalidCastException,
+    /// as it did before.
     /// </summary>
     private static JsExpr TypedForTheChecker(JsExpr value, IConversionOperation operation, ConversionContext context)
     {
