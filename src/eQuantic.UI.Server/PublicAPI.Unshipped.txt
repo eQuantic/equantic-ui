@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Server.ContentSecurityPolicyAttribute
+eQuantic.UI.Server.ContentSecurityPolicyAttribute.ContentSecurityPolicyAttribute() -> void
