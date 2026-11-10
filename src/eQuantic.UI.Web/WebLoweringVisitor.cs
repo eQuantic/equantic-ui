@@ -290,7 +290,7 @@ internal sealed partial class WebLoweringVisitor(
         // "the child does not fill" and is indistinguishable from the truth until a child actually
         // does: `Progress(InView(Box { Width = Fill }))` served a hugging host and hydrated into a
         // filling one, and a SafeArea around a page or a rail hugged on the web while Photon filled.
-        // The TypeScript `fills` lists the same kinds, pinned by FillsThroughEveryWrapperTests.
+        // The TypeScript `fills` lists the same kinds, pinned by TheBrowsersFills_WalksEveryTransparentWrapper.
         SingleChildNode wrapper when wrapper.IsLayoutTransparent() => Fills(wrapper.Child),
         _ => (false, false),
     };

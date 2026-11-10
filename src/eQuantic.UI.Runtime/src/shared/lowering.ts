@@ -4735,6 +4735,9 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
         if (asked.cap !== undefined) mergeAtomicDeclaration(wrapper, 'max-width', asked.cap);
       }
       if (asked.height) mergeAtomicDeclaration(wrapper, 'height', '100%');
+      // FILL means the parent's extent, never more (C# twin, as lowerFlex writes it).
+      if (asked.width) mergeAtomicDeclaration(wrapper, 'min-width', '0');
+      if (asked.height) mergeAtomicDeclaration(wrapper, 'min-height', '0');
     }
     wrapper.children.push(child);
   }
@@ -4743,15 +4746,17 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
 
 /**
  * C# `AsksForAll`: the axes a lowered element asks its parent for all of, and its width cap, read
- * through the display:contents wrapper an adaptive node lowers to, where every arm has to ask it —
- * the page's media rules show one arm at a time, and the parent cannot know which.
+ * through every element that draws no box (a display:contents wrapper, an adaptive node's gate),
+ * where every arm has to ask it — the page's media rules show one arm at a time, and the parent
+ * cannot know which.
  */
 function asksForAll(node: HtmlNode): { width: boolean; height: boolean; cap?: string } {
-  if (atomicDeclaration(node, 'display') === 'contents') {
-    const arms = node.children.flatMap((gate) => gate.children).map(asksForAll);
-    return arms.length === 0
-      ? { width: false, height: false }
-      : { width: arms.every((arm) => arm.width), height: arms.every((arm) => arm.height) };
+  const gate = (node.attributes['class'] ?? '').split(' ').some(isAdaptiveGate);
+  if (gate || atomicDeclaration(node, 'display') === 'contents') {
+    const inner = node.children.filter((child) => child.textContent === undefined).map(asksForAll);
+    if (inner.length === 0) return { width: false, height: false };
+    if (inner.length === 1) return inner[0];
+    return { width: inner.every((arm) => arm.width), height: inner.every((arm) => arm.height) };
   }
   return {
     width: atomicDeclaration(node, 'width') === '100%',

@@ -534,6 +534,10 @@ internal sealed partial class WebLoweringVisitor
                 element.Style.Width = fillsWidth ? "100%" : null;
                 element.Style.MaxWidth = fillsWidth ? cap : null;
                 element.Style.Height = fillsHeight ? "100%" : null;
+                // FILL means the parent's extent, never more, as LowerFlex writes it: a flex item's
+                // automatic minimum would let one long line grow the area past its parent.
+                element.Style.MinWidth = fillsWidth ? "0" : null;
+                element.Style.MinHeight = fillsHeight ? "0" : null;
             }
             element.Children.Add(child);
         }
@@ -541,24 +545,25 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
-    /// The axes a lowered element asks its parent for all of (`100%`), and its width cap: read
-    /// through the display:contents wrapper an <see cref="AdaptiveNode"/> lowers to, where every arm
-    /// has to ask it, because the page's media rules show one arm at a time and the parent cannot
+    /// The axes a lowered element asks its parent for all of (`100%`), and its width cap, read
+    /// through every element that draws no box (<see cref="DrawsNoBox"/>): the display:contents
+    /// wrapper a reporting wrapper lowers to, and an <see cref="AdaptiveNode"/>'s gates, where every
+    /// arm has to ask it, because the page's media rules show one arm at a time and the parent cannot
     /// know which. Photon lays out the one arm its window resolves; an area around arms that all
     /// fill fills there whichever it is (the Wallet's page, with a bar on a phone and a rail on a
     /// desktop). The TypeScript twin is <c>asksForAll</c>.
     /// </summary>
     private static (bool Width, bool Height, string? Cap) AsksForAll(HtmlElement element)
     {
-        if (element.Style?.Display == Display.Contents)
+        if (DrawsNoBox(element))
         {
-            var arms = element.Children.OfType<HtmlElement>()
-                .SelectMany(gate => gate.Children.OfType<HtmlElement>())
-                .Select(AsksForAll)
-                .ToList();
-            return arms.Count == 0
-                ? (false, false, null)
-                : (arms.All(arm => arm.Width), arms.All(arm => arm.Height), null);
+            var inner = element.Children.OfType<HtmlElement>().Select(AsksForAll).ToList();
+            return inner.Count switch
+            {
+                0 => (false, false, null),
+                1 => inner[0],
+                _ => (inner.All(arm => arm.Width), inner.All(arm => arm.Height), null),
+            };
         }
         return (element.Style?.Width == "100%", element.Style?.Height == "100%", element.Style?.MaxWidth);
     }

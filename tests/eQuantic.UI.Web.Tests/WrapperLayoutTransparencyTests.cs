@@ -213,6 +213,24 @@ public class WrapperLayoutTransparencyTests
             .And.Contain("width: 100%");
     }
 
+    /// <summary>
+    /// A wrapper that reports rather than lays out lowers to one display:contents element around its
+    /// child, which is no adaptive gate: the area reads the child itself through it, not the child's
+    /// children. And a fill is the parent's extent, never more: the area carries the min size of 0
+    /// that a filling row writes, so one long line cannot grow it.
+    /// </summary>
+    [Fact]
+    public void ASafeAreaReadsThroughABoxlessWrapper_AndNeverGrowsPastItsParent()
+    {
+        var column = new Column(gap: 0) { Height = SizeValue.Fill };
+        column.Add(new SafeArea(new InView(CappedCard(), _ => { })));
+
+        var style = Render(column).Children.Should().ContainSingle().Which.Attributes.GetValueOrDefault("style", "");
+
+        style.Should().Contain("width: 100%").And.Contain("height: 100%").And.Contain("max-width: 980px");
+        style.Should().Contain("min-width: 0").And.Contain("min-height: 0");
+    }
+
     [Fact]
     public void ASafeAreaAroundAChildThatHugs_HugsToo()
     {
