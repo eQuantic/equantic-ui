@@ -1,7 +1,8 @@
 # consent Specification
 
 ## Purpose
-TBD - created by archiving change gtm-consent-follows-each-answer. Update Purpose after archive.
+Where the visitor's answer to non-essential tracking is kept and read (the browser's `IConsent`, the
+server's first paint, the GTM installer), and what a granted or a denied answer turns on or off.
 
 ## Requirements
 
