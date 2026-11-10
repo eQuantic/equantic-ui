@@ -14,9 +14,9 @@ namespace eQuantic.UI.Compiler.Services;
 /// bundles and hands it every later bundle, so a served eqc (#1276) pays for starting bun once rather
 /// than on every save, which cost more than bun's own work: measured on the dashboard sample, bun
 /// bundled its 22 entry points in 30 to 44 ms inside a process it kept, and took 117 to 215 ms when
-/// started anew from eqc at the same load. The process writes a module, a chunk or a map only when its
-/// text changed, and a map is composed again only when bun's text for it or a map it composes with
-/// changed. Every entry point is bundled every time, with <c>--splitting</c>: a page bundled alone
+/// started anew from eqc at the same load. The process writes a module, a chunk or a map only when it
+/// changed (a map when bun's text for it or a map it composes with did), and only what it wrote is
+/// composed. Every entry point is bundled every time, with <c>--splitting</c>: a page bundled alone
 /// would carry its own copy of a module it shares, and two copies of a module are two of its state.
 /// </para>
 /// </summary>
@@ -26,10 +26,6 @@ public sealed class ModuleBundler : IDisposable
 
     private readonly string _bunPath;
     private readonly string _workingDirectory;
-
-    /// <summary>What each map was composed from the last time it was composed: the map bun wrote, and
-    /// each map of a source it composes with, by its length and the time it was written.</summary>
-    private readonly Dictionary<string, string> _composedFrom = new(StringComparer.Ordinal);
 
     private Process? _worker;
     private Task? _drainErrors;
@@ -94,41 +90,34 @@ public sealed class ModuleBundler : IDisposable
         // it goes by what the bundle produced, never by a file's time, since an unchanged file keeps its
         // own (#1279).
         var produced = new HashSet<string>(StringComparer.Ordinal);
-        var maps = new List<(string Path, bool Written, string[] Sources)>();
+        var written = new List<string>();
         foreach (var output in answer["outputs"]!.AsArray())
         {
             var path = Path.GetFullPath(output!["path"]!.GetValue<string>());
             produced.Add(path);
-            if (!path.EndsWith(".map", StringComparison.Ordinal)) continue;
-            var sources = output["sources"]?.AsArray().Select(source => source!.GetValue<string>()).ToArray() ?? [];
-            maps.Add((path, output["written"]!.GetValue<bool>(), sources));
+            if (path.EndsWith(".map", StringComparison.Ordinal) && output["written"]!.GetValue<bool>()) written.Add(path);
         }
         foreach (var file in Outputs(outputDir))
             if (!produced.Contains(Path.GetFullPath(file))) File.Delete(file);
-        foreach (var path in _composedFrom.Keys.Where(path => !produced.Contains(path)).ToList())
-            _composedFrom.Remove(path);
 
         // A module's map leads to the TypeScript eqc wrote (bun), and that TypeScript's map to the C#
         // (eqc): composed here, so a debugger lands on the C#. This was a script over an npm package that
-        // bun's auto-install fetched on a developer's first Debug build (#356). A map bun left as it was
-        // is composed again only when a map it composes with changed: the TypeScript of a C# file whose
-        // lines moved can be the same text with another map.
+        // bun's auto-install fetched on a developer's first Debug build (#356). Only the maps bun wrote
+        // are composed: one it left as it was holds its composition already, and bun writes a map again
+        // when a map it composes with changed, since the TypeScript of a C# file whose lines moved can be
+        // the same text with another map.
         if (sourceMaps != SourceMapMode.None)
         {
-            foreach (var (mapFile, written, sources) in maps)
+            foreach (var mapFile in written)
             {
-                var from = Fingerprint(mapFile, sources);
-                if (!written && _composedFrom.TryGetValue(mapFile, out var last) && last == from) continue;
                 try
                 {
                     SourceMapComposer.ComposeFile(mapFile);
-                    _composedFrom[mapFile] = from;
                 }
                 catch (Exception ex) when (ex is FormatException or JsonException or IOException)
                 {
                     // A map is a debugging aid, so one that cannot be composed stays as bun wrote it,
                     // leading to the TypeScript, and the build says so.
-                    _composedFrom.Remove(mapFile);
                     warn?.Invoke($"⚠️ {Path.GetFileName(mapFile)} leads to the TypeScript only: {ex.Message}");
                 }
             }
@@ -182,7 +171,6 @@ public sealed class ModuleBundler : IDisposable
     {
         if (_worker is not { } worker) return;
         _worker = null;
-        _composedFrom.Clear();
         try
         {
             // The end of its input is the worker's end, as it is a served eqc's.
@@ -198,20 +186,6 @@ public sealed class ModuleBundler : IDisposable
         {
             worker.Dispose();
         }
-    }
-
-    /// <summary>What <paramref name="mapFile"/> is composed from: bun's map and each map its sources
-    /// carry beside them, by length and time, since eqc writes a TypeScript's map only when its text
-    /// changed (#1279).</summary>
-    private static string Fingerprint(string mapFile, string[] sources)
-    {
-        var directory = Path.GetDirectoryName(mapFile)!;
-        return string.Join("|", sources.Prepend(Path.GetFileName(mapFile)).Select((source, index) =>
-        {
-            var file = index == 0 ? mapFile : Path.GetFullPath(Path.Combine(directory, source)) + ".map";
-            var info = new FileInfo(file);
-            return info.Exists ? $"{file}:{info.Length}:{info.LastWriteTimeUtc.Ticks}" : $"{file}:-";
-        }));
     }
 
     /// <summary>

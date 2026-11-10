@@ -8,16 +8,29 @@
 // files whose text is what is already there.
 //
 // A request: { entrypoints, root, outdir, sourcemap: "none" | "linked" | "external" }.
-// An answer: { ok: true, outputs: [{ path, written, sources? }] } or { ok: false, error }, a map's
-// sources named from the folder it is written to, which is where the composition reads them.
+// An answer: { ok: true, outputs: [{ path, written }] } or { ok: false, error }. eqc composes every map
+// written, whose sources are named from the folder it is written to, where the composition reads them.
 import { createInterface } from "node:readline";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 
-// The text bun last produced for each map, before eqc composes it with the TypeScript's map. The file
-// on disk holds the composed map, so a map is new when bun's own text changed, not when it differs
-// from the file.
+// What each map was last written from: bun's text for it, before eqc composes it with the maps of its
+// sources, and each of those maps by size and time. The file on disk holds the composed map, so a map is
+// written again when bun's text changed or a map it composes with did (the TypeScript of a C# file whose
+// lines moved is the same text with another map), never by comparing it with the file.
 const lastMaps = new Map();
+
+// What each source of a map composes with: the map beside it, as eqc writes a TypeScript's.
+function composedWith(folder, sources) {
+  return sources.map(source => {
+    try {
+      const inner = statSync(resolve(folder, source) + ".map");
+      return `${inner.size}:${inner.mtimeMs}`;
+    } catch {
+      return "-";
+    }
+  }).join("|");
+}
 
 async function bundle(request) {
   const result = await Bun.build({
@@ -33,6 +46,10 @@ async function bundle(request) {
   });
   if (!result.success) return { ok: false, error: result.logs.map(String).join("\n") };
 
+  // The folder as the file system names it: bun runs in a folder named the same way, so a source
+  // named from both climbs no further than it has to (on macOS /var is /private/var).
+  mkdirSync(request.outdir, { recursive: true });
+  const folder = realpathSync(request.outdir);
   const outputs = [];
   for (const artifact of result.outputs) {
     const path = join(request.outdir, artifact.path);
@@ -42,12 +59,13 @@ async function bundle(request) {
       // that folder, which is what the composition reads. Named here as bun names them there.
       const map = JSON.parse(text);
       map.sources = map.sources.map(source =>
-        relative(request.outdir, resolve(process.cwd(), source)).split(sep).join("/"));
+        relative(folder, resolve(process.cwd(), source)).split(sep).join("/"));
       text = JSON.stringify(map);
-      const unchanged = lastMaps.get(path) === text && existsSync(path);
-      lastMaps.set(path, text);
+      const from = text + "\n" + composedWith(folder, map.sources);
+      const unchanged = lastMaps.get(path) === from && existsSync(path);
+      lastMaps.set(path, from);
       if (!unchanged) write(path, text);
-      outputs.push({ path, written: !unchanged, sources: map.sources });
+      outputs.push({ path, written: !unchanged });
       continue;
     }
     const unchanged = existsSync(path) && readFileSync(path, "utf8") === text;
