@@ -1119,10 +1119,13 @@ jobs:
           echo "publishing $packaged"
 
       # `npm ci` installs exactly the lockfile, integrity hashes checked, and fails on a drift from the
-      # manifest instead of resolving around it: the same install package-extension ran.
+      # manifest instead of resolving around it: the same install package-extension ran. With no
+      # install script: every step of this job can ask GitHub for the token the Marketplace takes, so
+      # no package's script runs here. The one the tree carries, @vscode/vsce-sign's, installs a
+      # signing binary that `publish` calls only with `--signTool`.
       - name: Install the vsce the lockfile pinned
         working-directory: extensions/vscode
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund --ignore-scripts
 
       # `--oidc` asks GitHub for the job's token and the Marketplace for the credential, and never
       # falls back to a stored one: a policy that disagrees with this workflow fails here, and the fix

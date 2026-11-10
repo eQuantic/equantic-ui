@@ -6,7 +6,7 @@
 
 ## 2. The publish
 
-- [x] 2.1 `publish-extension` publishes with `--oidc` and reads no secret. Verify: the job's text, and the check below on it
+- [x] 2.1 `publish-extension` publishes with `--oidc`, reads no secret and installs with `--ignore-scripts`. Verify: the job's text, and the check below on it
 - [x] 2.2 `check-publish-packages.sh` reads the job, with a control per case. Verify: the script passes, and each control fails the case it guards
 
 ## 3. Documentation

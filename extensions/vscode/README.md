@@ -61,9 +61,8 @@ npm run package      # compiles, publishes the design host into host/, writes eq
 
 `npm test` downloads a VS Code, loads the extension into it on the dashboard sample, and drives it.
 
-It takes Node.js 22 or later, the version CI uses: the packaging tool's own dependencies
-(`@vscode/vsce` 4 asks for 22) declare it, and on 20 npm prints a wall of `EBADENGINE`
-warnings.
+It takes Node.js 22 or later, the version CI uses: the packaging tool, `@vscode/vsce` 4, declares
+it, and on 20 npm prints a wall of `EBADENGINE` warnings.
 
 ## Publishing it
 
@@ -77,7 +76,7 @@ deliberately does not carry:
   fifteen minutes, so no credential is stored and none expires. What it needs is a Trusted
   Publishing policy on the publisher's page in the Marketplace's publisher management, naming this
   repository and `.github/workflows/ci.yml`. Without one the job fails, and never falls back to a
-  token.
+  token. Since any step of that job could ask for the token, it installs with `--ignore-scripts`.
 
 The icon comes from `assets/equantic-vscode-icon.png` and is copied in on every package, because a
 second copy is a thing that drifts — this one was a stale 100×100 within the same minute the source

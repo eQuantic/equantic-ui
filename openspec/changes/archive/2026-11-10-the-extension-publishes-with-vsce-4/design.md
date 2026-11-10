@@ -21,3 +21,12 @@ the `publish-extension` job too and fails on a secret read there, a publish with
 job not granted `id-token: write`. Each case has a control that breaks a copy of the workflow and must
 fail, so the guard cannot go quiet when the job's text moves. Comments are not read, since the job's
 own comment names the permission.
+
+## No install script beside the token
+
+`id-token: write` lets every step of the job ask GitHub for the token the Marketplace exchanges, an
+install script included. The job used to blank its secrets for `npm ci`; with no secret left, what it
+guards is the token, so the install runs with `--ignore-scripts`. The one script the tree carries,
+`@vscode/vsce-sign`'s, fetches a signing binary that `publish` calls only with `--signTool`: measured
+with `npm ci --ignore-scripts` on the lockfile, `vsce publish --packagePath … --oidc` loads and stops
+at asking for the token, with no binary present.

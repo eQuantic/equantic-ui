@@ -542,6 +542,10 @@ check_extension() {
   if ! printf '%s\n' "$job" | grep -v '^[[:space:]]*#' | grep -q 'vsce publish .*--oidc'; then
     echo "ci.yml: publish-extension does not publish with --oidc"
   fi
+  # The job can mint the token the Marketplace takes, so it runs no package's install script.
+  if ! printf '%s\n' "$job" | grep -v '^[[:space:]]*#' | grep -q 'npm ci .*--ignore-scripts'; then
+    echo "ci.yml: publish-extension runs install scripts beside its token"
+  fi
   # A comment may name the permission, as the job's own does. Only the grant counts.
   if ! printf '%s\n' "$job" | grep -q '^      id-token: write$'; then
     echo "ci.yml: publish-extension is not granted id-token: write"
@@ -581,6 +585,8 @@ extension_control "publishes with a stored token" "publish-extension reads a sto
         run: extensions\/vscode\/node_modules\/.bin\/vsce publish --packagePath equantic-ui.vsix/'
 extension_control "publishes without --oidc" "publish-extension does not publish with --oidc" \
   's/--packagePath equantic-ui\.vsix --oidc$/--packagePath equantic-ui.vsix --azure-credential/'
+extension_control "runs install scripts" "publish-extension runs install scripts beside its token" \
+  's/^        run: npm ci --no-audit --no-fund --ignore-scripts$/        run: npm ci --no-audit --no-fund/'
 extension_control "is granted no OIDC token" "publish-extension is not granted id-token: write" \
   '/^  publish-extension:/,/^  publish-nuget:/s/^      id-token: write$/      id-token: none/'
 
