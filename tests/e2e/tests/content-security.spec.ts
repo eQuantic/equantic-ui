@@ -84,9 +84,14 @@ test.describe('The dashboard under the strict Content-Security-Policy', () => {
         for (const violation of await violationsOf(page)) offences.push(`/: ${violation}`);
       }
       await expect(link, `${route} is linked from the page the navigation starts on`).toHaveCount(1);
+      // A mark on this document: a click that reloaded the page would land in a new one without it,
+      // and would prove a full load rather than the runtime's navigation.
+      await page.evaluate(() => { (window as unknown as { __sameDocument?: true }).__sameDocument = true; });
       await link.click();
       // The path alone: a link that carries a query or a fragment lands on the route with it.
       await page.waitForURL((url) => url.pathname === route);
+      expect(await page.evaluate(() => (window as unknown as { __sameDocument?: true }).__sameDocument),
+        `${route} is reached without reloading the page`).toBe(true);
       for (const violation of await violationsOf(page)) offences.push(`${route}: ${violation}`);
     }
 
