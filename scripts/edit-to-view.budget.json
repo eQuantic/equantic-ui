@@ -5,12 +5,13 @@
     "is held to it. The web does not, by tens of seconds, so its total is held to a CEILING that only comes",
     "down: set from the first CI run that measured it (a warm median of 22.9s, its warm runs 22.9 to 39.2s)",
     "with room for the runner's spread. Each slice of #900 lowers it by what it measured, and the run says",
-    "when the median falls under half of it."
+    "when the median falls under half of it. #1274 took 0.5s off the wait after a save (553ms on CI, under",
+    "100ms after it)."
   ],
   "desktop": {
     "total": 1000
   },
   "web": {
-    "total": 45000
+    "total": 44500
   }
 }
