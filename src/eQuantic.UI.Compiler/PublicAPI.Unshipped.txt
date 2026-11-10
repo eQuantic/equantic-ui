@@ -1,2 +1,3 @@
 #nullable enable
 eQuantic.UI.Compiler.Services.AppBuild.LoadFrom(eQuantic.UI.Compiler.Services.AppBuild! previous) -> bool
+eQuantic.UI.Compiler.Services.AppBuild.CompiledFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!

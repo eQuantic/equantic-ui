@@ -24,6 +24,17 @@ public class ComponentParser
     /// </summary>
     public Dictionary<string, string> DiscoveredResources { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>The resource classes the file a recorded compile parses discovers, in order; null
+    /// outside one (#1281).</summary>
+    internal List<KeyValuePair<string, string>>? DiscoveriesSeen { get; set; }
+
+    /// <summary>A resource class found by its catalog id, with its Designer: the first one of an id is kept.</summary>
+    internal void Discover(string id, string designerPath)
+    {
+        DiscoveriesSeen?.Add(new(id, designerPath));
+        DiscoveredResources.TryAdd(id, designerPath);
+    }
+
     /// <summary>The catalogue ids of the build, where it has more than one compilation; null where a
     /// class's own compilation answers (<see cref="Services.ResourceCatalogIds"/>).</summary>
     internal Services.ResourceCatalogIds? ResourceIds { get; set; }
@@ -149,7 +160,7 @@ public class ComponentParser
                 // seen here and used nowhere the app compiles (its components are transpiled into
                 // runtime.js at the SDK's own build), so the catalog emitter has no reachable use
                 // to learn it from — and D14 promises the SDK's strings ride every app's catalogs.
-                DiscoveredResources.TryAdd(
+                Discover(
                     CatalogIdOf(helperModel, declared),
                     Services.ResourceClasses.DesignerPathFor(declared));
                 continue;
@@ -274,7 +285,7 @@ public class ComponentParser
             if (helperModel?.GetDeclaredSymbol(classDecl) is INamedTypeSymbol declaredPlain
                 && Services.ResourceClasses.IsResourceClass(declaredPlain))
             {
-                DiscoveredResources.TryAdd(
+                Discover(
                     CatalogIdOf(helperModel, declaredPlain),
                     Services.ResourceClasses.DesignerPathFor(declaredPlain));
                 continue;
