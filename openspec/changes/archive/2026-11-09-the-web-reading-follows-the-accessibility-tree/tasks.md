@@ -18,5 +18,5 @@
 
 ## 4. Close
 
-- [ ] 4.1 `openspec validate --all --strict`, the Compiler and Conformance suites through the lock, the solution built with no warning, the samples built
-- [ ] 4.2 `openspec archive the-web-reading-follows-the-accessibility-tree --yes` before the merge
+- [x] 4.1 `openspec validate --all --strict`, the Compiler and Conformance suites through the lock, the solution built with no warning, the samples built
+- [x] 4.2 `openspec archive the-web-reading-follows-the-accessibility-tree --yes` before the merge

@@ -118,25 +118,30 @@ internal sealed class AnnouncedTree
     /// What <c>aria-owns</c> moves. The accessibility tree takes an owned element out of its place in the
     /// document and reads it under the element that owns it, after that element's own children and in the
     /// order the attribute lists them: a table whose rows are written in bands, pinned headers apart from
-    /// the scrolled cells, is read row by row only through it. An element owned twice stays with the first
-    /// owner, and one that would own an element around it is ignored, as ARIA requires.
+    /// the scrolled cells, is read row by row only through it. Owners are read in document order, so an
+    /// element owned twice stays with the first owner the page writes, and a claim that would put an
+    /// element around its own owner, in the document or through another claim, is ignored, as ARIA
+    /// requires.
     /// </summary>
-    private void IndexOwnership(HtmlNode root)
+    private void IndexOwnership(HtmlNode node)
     {
-        foreach (var owner in _parents.Keys.Prepend(root))
+        if (Attribute(node, "aria-owns") is { } ids)
         {
-            if (Attribute(owner, "aria-owns") is not { } ids) continue;
             foreach (var id in ids.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             {
-                if (!_byId.TryGetValue(id, out var owned) || IsAround(owned, owner)) continue;
-                _owners.TryAdd(owned, owner);
+                if (!_byId.TryGetValue(id, out var owned) || IsAround(owned, node)) continue;
+                _owners.TryAdd(owned, node);
             }
         }
+
+        foreach (var child in node.Children) IndexOwnership(child);
     }
 
+    /// <summary>Whether <paramref name="candidate"/> stands around <paramref name="node"/> in the tree a
+    /// reader meets: through the element that owns each step, or the one it sits in.</summary>
     private bool IsAround(HtmlNode candidate, HtmlNode node)
     {
-        for (HtmlNode? at = node; at is not null; at = _parents.GetValueOrDefault(at))
+        for (HtmlNode? at = node; at is not null; at = _owners.GetValueOrDefault(at) ?? _parents.GetValueOrDefault(at))
             if (ReferenceEquals(at, candidate)) return true;
         return false;
     }
@@ -317,7 +322,9 @@ internal sealed class AnnouncedTree
     {
         if (node.Tag == "#text") return node.TextContent ?? "";
         if (!includeHidden && Hidden(node)) return "";
-        var text = string.Concat(node.Children.Select(child => TextOf(child, includeHidden)));
+        // The accessibility tree's children, so a name read from content takes what the element owns
+        // and leaves what another element moved away.
+        var text = string.Concat(ReadingChildren(node).Select(child => TextOf(child, includeHidden)));
         return node.Tag is "div" or "p" or "li" or "section" or "article" ? $" {text} " : text;
     }
 
