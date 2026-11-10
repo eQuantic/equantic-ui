@@ -13,6 +13,7 @@ StatelessComponent	_mounted
 StatelessComponent	_renderManager
 StatelessComponent	_renderScheduled
 StatelessComponent	_scheduleRender
+StatelessComponent	adoptConfig
 StatelessComponent	alignSelf
 StatelessComponent	bookmark
 StatelessComponent	build
@@ -39,6 +40,7 @@ StatefulComponent	_renderManager
 StatefulComponent	_renderScheduled
 StatefulComponent	_scheduleRender
 StatefulComponent	_sharedStateful
+StatefulComponent	adoptConfig
 StatefulComponent	alignSelf
 StatefulComponent	bookmark
 StatefulComponent	build

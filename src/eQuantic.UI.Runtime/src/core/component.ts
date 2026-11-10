@@ -248,6 +248,13 @@ export abstract class UiComponent extends Component {
   abstract build(context: RenderContext): Component | VisualNodeValue;
 
   abstract getVirtualNode(): HtmlNode;
+
+  /**
+   * The C# `UiComponent.AdoptConfig`: a position that keeps its instance hands it the configuration of
+   * the fresh one its parent built. The default copies nothing, as C#'s does, and a component with
+   * configuration of its own overrides it; the element engine calls it on every instance it keeps.
+   */
+  adoptConfig(_next: UiComponent): void {}
 }
 
 export abstract class StatelessComponent extends UiComponent {

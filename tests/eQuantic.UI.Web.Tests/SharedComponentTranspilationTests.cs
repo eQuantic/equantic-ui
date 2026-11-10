@@ -305,6 +305,28 @@ public class SharedComponentTranspilationTests
         return modules;
     }
 
+    /// <summary>
+    /// A library module whose class EXTENDS another module of the library imports that base from the
+    /// base's own module, and everything else through <c>runtime-exports</c> as before. The aggregator
+    /// re-exports the barrel, and a re-export is defined only once the module it names has finished
+    /// loading (vitest's module runner does it statement by statement), so a class evaluated while the
+    /// barrel is still loading reads its base off the aggregator as <c>undefined</c>. No library module
+    /// extended another until the element engine: <c>ComponentElement</c> and <c>NodeElement</c> extend
+    /// <c>Element</c>, and every spec that entered through the barrel failed to load.
+    /// </summary>
+    private static string BaseFromItsModule(string typeScript, IReadOnlySet<string> library)
+    {
+        var extends = Regex.Match(typeScript, @"export (?:abstract )?class \w+ extends (\w+)");
+        if (!extends.Success || !library.Contains(extends.Groups[1].Value)) return typeScript;
+        var baseName = extends.Groups[1].Value;
+        var import = Regex.Match(typeScript, @"^import \{ ([^}]*) \} from ""\.\./runtime-exports"";", RegexOptions.Multiline);
+        if (!import.Success) return typeScript;
+        var others = import.Groups[1].Value.Split(", ").Where(name => name != baseName).ToList();
+        var rewritten = (others.Count > 0 ? $"import {{ {string.Join(", ", others)} }} from \"../runtime-exports\";\n" : "")
+            + $"import {{ {baseName} }} from \"./{baseName}\";";
+        return typeScript.Remove(import.Index, import.Length).Insert(import.Index, rewritten);
+    }
+
     /// <summary>Where the library's modules are committed, embedded in the runtime, each with its map.</summary>
     private static string EmbeddedDir() =>
         Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "components");
@@ -659,7 +681,8 @@ public class SharedComponentTranspilationTests
         var fixtureDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "__fixtures__");
         var embeddedDir = EmbeddedDir();
         string Embedded(string typeScript) =>
-            typeScript.Replace("from \"@equantic/runtime\"", "from \"../runtime-exports\"");
+            BaseFromItsModule(typeScript.Replace("from \"@equantic/runtime\"", "from \"../runtime-exports\""),
+                modules.Keys.Except(Fixtures).ToHashSet());
         // EVERY module the shared library produces is runtime-provided — a hardcoded roster here
         // meant a new component transpiled fine, never reached runtime.js, and only failed in the
         // browser with "does not provide an export named X". What the library declares IS the set.

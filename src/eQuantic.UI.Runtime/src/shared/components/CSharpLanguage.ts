@@ -1,5 +1,6 @@
 import { $eq, CodeLanguageRules } from "../runtime-exports";
 import { CurlyBraceLanguage } from "./CurlyBraceLanguage";
+import { CurlyBraceLanguage } from "./CurlyBraceLanguage";
 
 export class CSharpLanguage extends CurlyBraceLanguage {
     constructor() {

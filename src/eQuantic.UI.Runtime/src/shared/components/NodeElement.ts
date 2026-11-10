@@ -1,4 +1,5 @@
-import { $eq, ChildSlots, Element, NodeSlots, VisualNode } from "../runtime-exports";
+import { $eq, ChildSlots, NodeSlots, VisualNode } from "../runtime-exports";
+import { Element } from "./Element";
 
 export class NodeElement extends Element {
     constructor(configuration: VisualNode) {

@@ -1,4 +1,5 @@
-import { Element, InFlow, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
+import { InFlow, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
+import { Element } from "./Element";
 
 export class ComponentElement extends Element {
     constructor(component: UiComponent) {
