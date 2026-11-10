@@ -17,15 +17,44 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// values), is held as its number, as the runtime's own functions hold it: the key↔value maps fall
 /// back to the value itself, where they answered undefined.
 /// </para>
+/// <para>
+/// A value is held at its underlying type's WIDTH (#551): a number for a type of 32 bits or fewer, and
+/// a BigInt for a <c>long</c> or a <c>ulong</c>, as the SDK holds every 64-bit integer
+/// (<c>utils/long.ts</c>). A member past 2^53 was written as a number that is not its value.
+/// </para>
 /// </summary>
 internal static class EnumShape
 {
     /// <summary>One member: its declared name, the key the browser holds for it, and its value.</summary>
-    internal readonly record struct Member(string Name, string Key, decimal Value)
+    internal readonly record struct Member(string Name, string Key, decimal Value);
+
+    /// <summary>The underlying type's width and sign, which every value of the enum is held at.</summary>
+    internal static (int Bits, bool Unsigned) Width(INamedTypeSymbol enumType) =>
+        IntegerWidth.Of(enumType.EnumUnderlyingType) ?? (32, false);
+
+    /// <summary>Whether the underlying type is a <c>long</c> or a <c>ulong</c>, whose values the browser
+    /// holds as BigInts.</summary>
+    internal static bool IsWide(INamedTypeSymbol enumType) => Width(enumType).Bits == 64;
+
+    /// <summary>A value of the enum as JavaScript writes it: <c>5</c>, or <c>5n</c> for a 64-bit enum.</summary>
+    internal static string ValueLiteral(INamedTypeSymbol enumType, decimal value)
     {
-        /// <summary>The value as JavaScript writes it.</summary>
-        internal string Number => Value.ToString(CultureInfo.InvariantCulture);
+        var digits = value.ToString(CultureInfo.InvariantCulture);
+        return IsWide(enumType) ? digits + "n" : digits;
     }
+
+    /// <summary>
+    /// What the browser holds for a CONSTANT value of the enum: the key of the first member declared
+    /// with it, for an enum that is not a flags one, or the value itself, at the enum's width.
+    /// </summary>
+    internal static string HeldLiteral(INamedTypeSymbol enumType, decimal value) =>
+        !enumType.IsFlagsEnum() && KeyOf(enumType, value) is { } key
+            ? JsStringLiteral.Quote(key)
+            : ValueLiteral(enumType, value);
+
+    /// <summary>The TypeScript a value of a [Flags] enum is annotated with: the number its bits are, or a
+    /// <c>bigint</c> for a 64-bit one.</summary>
+    internal static string FlagsTsType(INamedTypeSymbol enumType) => IsWide(enumType) ? "bigint" : "number";
 
     /// <summary>The members, in declaration order, each carrying the key of the first member with its value (#927).</summary>
     internal static IReadOnlyList<Member> Members(INamedTypeSymbol enumType)
@@ -53,30 +82,28 @@ internal static class EnumShape
         var flags = enumType.IsFlagsEnum();
         var names = string.Join(", ", members.Select(member => JsStringLiteral.Quote(member.Name)));
         var keys = flags ? "" : $"keys: [{string.Join(", ", members.Select(member => JsStringLiteral.Quote(member.Key)))}], ";
-        var values = string.Join(", ", members.Select(member => member.Number));
-        var unsigned = enumType.EnumUnderlyingType?.SpecialType is SpecialType.System_Byte or SpecialType.System_UInt16
-            or SpecialType.System_UInt32 or SpecialType.System_UInt64 ? ", unsigned: true" : "";
+        var values = string.Join(", ", members.Select(member => ValueLiteral(enumType, member.Value)));
+        var unsigned = Width(enumType).Unsigned ? ", unsigned: true" : "";
         return $"{{ names: [{names}], {keys}values: [{values}], flags: {(flags ? "true" : "false")}, digits: {Digits(enumType)}{unsigned} }}";
     }
 
     /// <summary>Each member's key to its value: <c>{ 'low': 0, 'medium': 5 }</c>, what a cast to a
-    /// number and the order of the values read.</summary>
+    /// number and the order of the values read, a 64-bit enum's values as BigInts.</summary>
     internal static string KeyToValue(INamedTypeSymbol enumType) =>
-        "{ " + string.Join(", ", Members(enumType).DistinctBy(member => member.Value).Select(member => $"'{member.Key}': {member.Number}")) + " }";
+        "{ " + string.Join(", ", Members(enumType).DistinctBy(member => member.Value)
+            .Select(member => $"'{member.Key}': {ValueLiteral(enumType, member.Value)}")) + " }";
 
     /// <summary>
-    /// Each member's key to its value as a BigInt, <c>{ 'odd': 9007199254740993n }</c>: a 64-bit enum's
-    /// value exactly, which a number holds only up to 2^53, so its hash reads the value its constant has
-    /// (Copilot's second review of #947).
+    /// Each value to its member's key: <c>{ 0: 'low', 5: 'medium' }</c>, what a cast from a number reads.
+    /// A negative value is quoted, since no literal key can carry its sign, and so is every value of a
+    /// 64-bit enum, which a number key would round: a BigInt indexes the object by its digits.
     /// </summary>
-    internal static string KeyToBigInt(INamedTypeSymbol enumType) =>
-        "{ " + string.Join(", ", Members(enumType).DistinctBy(member => member.Value).Select(member => $"'{member.Key}': {member.Number}n")) + " }";
-
-    /// <summary>Each value to its member's key: <c>{ 0: 'low', 5: 'medium' }</c>, what a cast from a
-    /// number reads. A negative value is quoted, since no literal key can carry its sign.</summary>
     internal static string ValueToKey(INamedTypeSymbol enumType) =>
         "{ " + string.Join(", ", Members(enumType).DistinctBy(member => member.Value).Select(member =>
-            $"{(member.Value < 0 ? $"'{member.Number}'" : member.Number)}: '{member.Key}'")) + " }";
+        {
+            var digits = member.Value.ToString(CultureInfo.InvariantCulture);
+            return $"{(member.Value < 0 || IsWide(enumType) ? $"'{digits}'" : digits)}: '{member.Key}'";
+        })) + " }";
 
     /// <summary>
     /// The number an enum value is: a key's member's value, or the number a value no member names is
@@ -119,12 +146,7 @@ internal static class EnumShape
             : $"{Eq.EnumText}({held}, {Of(enumType)}, {format})";
     }
 
-    /// <summary>The hex digits of the underlying type: two per byte.</summary>
-    private static int Digits(INamedTypeSymbol enumType) => enumType.EnumUnderlyingType?.SpecialType switch
-    {
-        SpecialType.System_Byte or SpecialType.System_SByte => 2,
-        SpecialType.System_Int16 or SpecialType.System_UInt16 => 4,
-        SpecialType.System_Int64 or SpecialType.System_UInt64 => 16,
-        _ => 8,
-    };
+    /// <summary>The hex digits of the underlying type: two per byte, which a 64-bit enum's shape says
+    /// with its 16 that its values are BigInts.</summary>
+    private static int Digits(INamedTypeSymbol enumType) => Width(enumType).Bits / 4;
 }
