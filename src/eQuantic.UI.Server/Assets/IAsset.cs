@@ -63,7 +63,7 @@ public record StylesheetAsset(string Href, string? Id = null) : IAsset
     {
         var href = HttpUtility.HtmlAttributeEncode(Href);
         var idAttr = !string.IsNullOrWhiteSpace(Id) ? $" id=\"{HttpUtility.HtmlAttributeEncode(Id)}\"" : "";
-        return $"<link rel=\"stylesheet\" href=\"{href}\"{idAttr}>";
+        return $"<link rel=\"stylesheet\" href=\"{href}\"{idAttr}{ShellNonce.Attribute(nonce)}>";
     }
 }
 
@@ -76,6 +76,7 @@ public record InlineStyleAsset(string Content, string? Id = null) : IAsset
     public string Render(string? nonce)
     {
         var idAttr = !string.IsNullOrWhiteSpace(Id) ? $" id=\"{HttpUtility.HtmlAttributeEncode(Id)}\"" : "";
-        return $"<style{idAttr}{ShellNonce.Attribute(nonce)}>{Content}</style>";
+        // What the sheet holds can never end the element (#1295).
+        return $"<style{idAttr}{ShellNonce.Attribute(nonce)}>{StyleElementText.Of(Content)}</style>";
     }
 }

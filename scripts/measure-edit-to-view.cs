@@ -201,8 +201,9 @@ return failures.Count == 0 ? 0 : 1;
 async Task<Dictionary<string, double>> MeasureWeb(string marker, double saved)
 {
     // The edit is on screen once the browser runs the code that draws it: a document the server's
-    // rebuild reloaded, drawing the text. A draw before that came from dotnet watch's own refresh, with
-    // the patched server's markup and the old modules, and it is reported apart, as "early".
+    // rebuild reloaded, drawing the text. A draw before that would come from a reload of something
+    // else (dotnet watch's own refresh did that, with the patched server's markup and the old modules,
+    // until #1275), and it is reported apart, as "early".
     JsonNode? state = null;
     JsonNode? settled = null;
     await Until(async () =>
@@ -227,6 +228,17 @@ async Task<Dictionary<string, double>> MeasureWeb(string marker, double saved)
     parts["flips"] = state["timeline"]!.AsArray().Count(t => t!["marker"]!.GetValue<string>() == marker
         && !t["present"]!.GetValue<bool>());
     parts["documents"] = state["documents"]!.AsArray().Count(d => d!["origin"]!.GetValue<double>() > saved);
+
+    // ONE reload per save, the rebuild's, into markup that holds the edit, which the page hydrates
+    // without a warning (#1275). Each of those is a behaviour, not a number to budget, so a run that
+    // breaks one fails whatever its time.
+    var reloaded = state["documents"]!.AsArray().First(d => d!["origin"]!.GetValue<double>() == document)!;
+    if (parts["documents"] != 1)
+        failures.Add($"\"{marker}\": the save reloaded the page {parts["documents"]:F0} times, where once is the rebuild's");
+    if (reloaded["hydrated"]?.GetValue<bool>() != true)
+        failures.Add($"\"{marker}\": the rebuild's document drew over the server's markup instead of hydrating it, so the server did not hold the edit");
+    if (reloaded["warned"]?.GetValue<bool>() == true)
+        failures.Add($"\"{marker}\": the rebuild's document warned while it hydrated, so the server's markup and the modules disagree");
 
     // Every boundary below is read off a clock that was there: eqc's own, and the browser's, whose new
     // document starts the moment the runtime asks for the reload (before the old one is even hidden,
@@ -416,6 +428,23 @@ partial class Program
           // after this runs: a document started by anything else (dotnet watch's own refresh) finds none.
           state.documents.push({ origin, rebuild: sessionStorage.getItem('__eq_hmr__') !== null });
           write(state);
+          // What the boot says in Development as it starts on the server's markup: that it hydrates it,
+          // and any warning hydrating it raised. Heard here, before the boot runs, and passed on.
+          const note = (field) => {
+            const noted = read();
+            const mine = noted.documents.find((d) => d.origin === origin);
+            if (mine) { mine[field] = true; write(noted); }
+          };
+          const log = console.log.bind(console);
+          const warn = console.warn.bind(console);
+          console.log = (...args) => {
+            if (typeof args[0] === 'string' && args[0].startsWith('Hydrating:')) note('hydrated');
+            log(...args);
+          };
+          console.warn = (...args) => {
+            if (args.some((a) => typeof a === 'string' && a.includes('Hydration warnings'))) note('warned');
+            warn(...args);
+          };
           let present = false;
           new MutationObserver(() => {
             const marker = sessionStorage.getItem(key + ':marker');

@@ -53,9 +53,11 @@ public static class ApexChartsServiceExtensions
             options.HtmlShell.AddHeadTag(cdnTag);
         }
 
-        // Add initialization script that discovers data-apex-init markers
+        // Add initialization script that discovers data-apex-init markers. ApexCharts writes its own CSS
+        // in a style element it creates, which a strict policy refuses unless the chart is handed the
+        // page's nonce (`chart.nonce`), so the initializer hands it the one the shell stamped (#1268).
         var initTag = HtmlTag.InlineScript(
-            "document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('script[data-apex-init]').forEach(function(el){var id=el.getAttribute('data-apex-init');var cfg=JSON.parse(el.getAttribute('data-apex-config'));var c=document.getElementById(id);if(c&&typeof ApexCharts!=='undefined')new ApexCharts(c,cfg).render()})});");
+            "document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('script[data-apex-init]').forEach(function(el){var id=el.getAttribute('data-apex-init');var cfg=JSON.parse(el.getAttribute('data-apex-config'));var n=document.querySelector('script[nonce],style[nonce]');var nonce=n&&(n.nonce||n.getAttribute('nonce'));if(nonce){cfg.chart=cfg.chart||{};cfg.chart.nonce=nonce;}var c=document.getElementById(id);if(c&&typeof ApexCharts!=='undefined')new ApexCharts(c,cfg).render()})});");
 
         if (!options.HtmlShell.HeadTags.Any(t => t.Content?.Contains("data-apex-init") == true))
         {

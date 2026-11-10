@@ -32,6 +32,7 @@ msbuild eQuantic.UI.Sdk.Native EQuanticPackageFormat
 msbuild eQuantic.UI.Sdk.Native EQuanticSigningIdentity
 msbuild eQuantic.UI.Sdk.Native EQuanticUIVersion
 msbuild eQuantic.UI.Sdk.Native IsEQuanticDevMode
+config EQuantic:ContentSecurityPolicy
 config EQuantic:ServerActions
 config EQuantic:ServerEvents
 config EQuantic:Uploads

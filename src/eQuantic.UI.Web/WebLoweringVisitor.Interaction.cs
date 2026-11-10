@@ -720,7 +720,8 @@ internal sealed partial class WebLoweringVisitor
                 Height = fills.Height ? "100%" : null,
             },
             AriaLabel = link.Label,
-            RawAttributes = new Dictionary<string, string> { ["href"] = destination },
+            // A destination whose scheme an href never carries is no href (#1286).
+            RawAttributes = destination is null ? new Dictionary<string, string>() : new Dictionary<string, string> { ["href"] = destination },
         };
         // Read by the router when it decides where the new page starts. On the anchor rather than in
         // a side table because the router meets the ANCHOR — a delegated click listener, one for the
@@ -732,7 +733,7 @@ internal sealed partial class WebLoweringVisitor
         // worst case is the work the click was going to do anyway, done slightly earlier.
         //
         // App-internal destinations only: an absolute URL belongs to somebody else's server.
-        if (WarmsOnHover(destination)) element.RawAttributes["data-prefetch"] = "";
+        if (destination is not null && WarmsOnHover(destination)) element.RawAttributes["data-prefetch"] = "";
         // The page you are ON. Only the current link carries it — aria-current="false" on the other
         // nine is legal, useless, and read out loud.
         if (link.Current) element.AriaCurrent = "page";
