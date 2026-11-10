@@ -142,6 +142,7 @@ internal static class HostOnlySymbolExtensions
         if (symbol.ReportIfFulfilledOnTheServer(node, context, through)) return true;
         // What .NET keeps on the host, whatever the call goes through (#816).
         if (declaring.ReportIfServerPlatform(node, context)) return true;
+        if (symbol.ReportIfExceptionWithNoModule(declaring, node, context)) return true;
         // A type of source, this compilation's or a referenced project's, is refused where its name
         // is written (ReportIfKeptOut), never here as well: a page that named a referenced project's
         // [ServerOnly] class was told twice, once at the class and once at its member (#823). What no
@@ -151,6 +152,25 @@ internal static class HostOnlySymbolExtensions
         if (!declaring.IsHostOnly()) return false;
         if (ReachedThroughAClientVisibleType(through)) return false;
         return Report(declaring, symbol.Name, node, context);
+    }
+
+    /// <summary>
+    /// A member an app's exception class declares, reached in a host with no project's compilation, a
+    /// snippet compiled on its own. The module rule has no chain of bases to read there, so such a class
+    /// gets no module: a construction of it is the runtime's exception (<see cref="Strategies.ExceptionTypes.HasTwin(ITypeSymbol?, ConversionContext)"/>),
+    /// thrown and caught by its type, and what the class declares is nowhere. <c>Failure.Count++</c>
+    /// named a class nothing wrote, <c>f.Code</c> read nothing and <c>f.Describe()</c> was not a function
+    /// (#754). What the runtime's exception carries is inherited, and declared by .NET's type.
+    /// </summary>
+    private static bool ReportIfExceptionWithNoModule(this ISymbol symbol, INamedTypeSymbol declaring, SyntaxNode node, ConversionContext context)
+    {
+        if (context.HasProjectCompilation || symbol is IMethodSymbol { MethodKind: MethodKind.Constructor }
+            || !Strategies.ExceptionTypes.HasTwin(declaring))
+            return false;
+        return Refuse(node, "EQ2010",
+            $"'{declaring.ToDisplayString()}.{symbol.Name}' has no module in a snippet compiled on its own: an exception class is "
+            + "written as a class where the build has the project's compilation, and here it is the runtime's exception. "
+            + "Build the project, or keep the value where the runtime's exception carries it, in its message.", context);
     }
 
     /// <summary>

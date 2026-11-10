@@ -186,6 +186,99 @@ public class S6AdaptiveRealizerTests
             "the compact arm asks for no span, and the node's own is not read");
     }
 
+    private sealed class Builds(VisualNode built) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => built;
+    }
+
+    /// <summary>
+    /// The same arms out of a component, through two of them: a line and a grid see through to the
+    /// AdaptiveNode it builds, as a stack does, so wrapping one in a component does not change where
+    /// its arms stand. The flex item used to be the component, and the arm's alignment and span were
+    /// never written (#738).
+    /// CROSS-PIN: <c>s6-adaptive.spec.ts</c> asserts the same on the twin.
+    /// </summary>
+    [Fact]
+    public void AnArmAComponentBuilds_AlignsItselfInItsLine_AndSpansItsGrid()
+    {
+        var row = new Row(cross: CrossAlign.Start);
+        row.Add(new Builds(new Builds(new AdaptiveNode(Marker(), null, new Primitives.Box(new BoxStyle { Width = 10, Height = 10 })
+        {
+            AlignSelf = CrossAlign.End,
+        }))));
+        var grid = new Grid([GridTrack.Flex(), GridTrack.Flex()]);
+        grid.Add(new Builds(new AdaptiveNode(Marker(), null, new Primitives.Box(new BoxStyle { Height = 10 }) { GridSpan = 2 })));
+
+        var line = WebRealizer.Lower(row, PhotonTheme.Instance).Render().Children[0].Children;
+        var cells = WebRealizer.Lower(grid, PhotonTheme.Instance).Render().Children[0].Children;
+
+        line[1].Children.Single().Attributes["style"].Should().Contain("align-self: flex-end");
+        cells[1].Children.Single().Attributes["style"].Should().Contain("grid-column: span 2");
+    }
+
+    /// <summary>What a component builds below an arm is a container of its own, not the line's: the
+    /// rule that crossed the component ends at the first node that is neither.</summary>
+    [Fact]
+    public void AnAdaptiveNodeInsideWhatAComponentBuilds_IsNotTheOuterLinesToPlace()
+    {
+        var inner = new Primitives.Box(new BoxStyle { Width = 10 },
+            new AdaptiveNode(Marker(), null, new Primitives.Box(new BoxStyle { Width = 10, Height = 10 })
+            {
+                AlignSelf = CrossAlign.End,
+            }));
+        var row = new Row(cross: CrossAlign.Start);
+        row.Add(new Builds(inner));
+
+        var html = HtmlRenderer.RenderNode(WebRealizer.Lower(row, PhotonTheme.Instance).Render());
+
+        html.Should().NotContain("align-self", "the arm stands in a box, which has no line to align it");
+    }
+
+    /// <summary>
+    /// A gate answers whether its arm shows at a width as its media query does (<see cref="AdaptiveGates.Css"/>),
+    /// at the boundaries the queries draw: the compact arm up to its threshold and not at it, the
+    /// middle arm from its threshold to 0.02 dp short of the next, and the expanded arm from its own.
+    /// The last but one row is the gap those 0.02 dp leave, where the page shows no arm; the answer
+    /// says so too, rather than rounding it into one.
+    /// </summary>
+    [Theory]
+    [InlineData(599.99f, true, false, false)]
+    [InlineData(600f, false, true, false)]
+    [InlineData(839.98f, false, true, false)]
+    [InlineData(839.99f, false, false, false)]
+    [InlineData(840f, false, false, true)]
+    public void AGate_ShowsWhereItsMediaQueryDoes(float width, bool compact, bool medium, bool expanded)
+    {
+        AdaptiveGates.Shows(AdaptiveGates.CompactUntil(600), width).Should().Be(compact);
+        AdaptiveGates.Shows(AdaptiveGates.MediumFrom(600, 840), width).Should().Be(medium);
+        AdaptiveGates.Shows(AdaptiveGates.ExpandedFrom(840), width).Should().Be(expanded);
+        AdaptiveGates.Shows(AdaptiveGates.MediumFrom(600, 0), width).Should().Be(width >= 600,
+            "an open-ended middle arm shows from its threshold on");
+    }
+
+    /// <summary>
+    /// A SINK says which of its classes take an element out of what a screen reader reads: a gate whose
+    /// arm does not show at the width, and the two declarations that leave the accessibility tree.
+    /// Everything else it wrote is read through, and so is a class it never wrote.
+    /// </summary>
+    [Fact]
+    public void ASink_SaysWhichOfItsClassesHideAnElement()
+    {
+        var sink = new StyleSink();
+        var compact = AdaptiveGates.CompactUntil(600);
+        sink.AddAdaptiveGate(compact);
+
+        sink.HidesAt(compact, 400).Should().BeFalse("the compact arm shows on a phone");
+        sink.HidesAt(compact, 1280).Should().BeTrue("and not on a desk");
+        sink.HidesAt(sink.ClassFor("display", "none"), 1280).Should().BeTrue();
+        sink.HidesAt(sink.ClassFor("visibility", "hidden"), 1280).Should().BeTrue();
+        sink.HidesAt(sink.ClassFor("opacity", "0"), 1280).Should().BeFalse("a transparent element is still read");
+        sink.HidesAt(sink.ClassFor("display", "none", ":hover"), 1280).Should().BeFalse(
+            "a variant applies only in its state");
+        sink.HidesAt(sink.ClassForScrolled("display", "none"), 1280).Should().BeFalse();
+        sink.HidesAt("eq-unwritten", 1280).Should().BeFalse("a class the sink never wrote is not its to answer");
+    }
+
     /// <summary>The CSS identifier grammar, which is what a class selector can name.</summary>
     private static readonly System.Text.RegularExpressions.Regex CssIdentifier =
         new("^-?[_a-zA-Z][_a-zA-Z0-9-]*$");

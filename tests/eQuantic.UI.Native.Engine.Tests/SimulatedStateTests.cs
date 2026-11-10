@@ -83,10 +83,8 @@ public class SimulatedStateTests
             Width = 100,
             Height = 40,
             Background = Theme.Surface,
-        }, null))
-        {
-            PressedBackground = Theme.Colors(Variant.Primary).Base,
-        };
+            Pressed = new StyleDiff { Background = Theme.Colors(Variant.Primary).Base },
+        }, null));
 
         Paints(Draw(pressable), Theme.Colors(Variant.Primary).Base).Should().BeFalse();
         Paints(Draw(new Simulated(SimulatedState.Pressed, pressable)), Theme.Colors(Variant.Primary).Base)

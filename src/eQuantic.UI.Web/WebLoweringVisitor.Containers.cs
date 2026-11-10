@@ -26,7 +26,15 @@ internal sealed partial class WebLoweringVisitor
         // result. The server's traversal therefore did not see a prefetching component inside a
         // Stack at all — no load, no payload entry, and no diagnosis, on a container nobody would
         // think twice about using. Both sides skipped it identically, so nothing drifted, which is
-        // exactly why it would never have been noticed.
+        // exactly why it would never have been noticed. In a frame of a live tree the name goes to
+        // the instance the position keeps, as Visit(UiComponent) gives it.
+        if (_frame is { } frame)
+        {
+            var (kept, built) = frame.At(component);
+            ComponentExpansionScope.Ambient?.Enter(kept);
+            return built is not null ? ResolveForPositioning(built) : child;
+        }
+
         ComponentExpansionScope.Ambient?.Enter(component);
 
         // Through the boundary's bound rather than a hop count of this method's own: the loop
@@ -452,7 +460,10 @@ internal sealed partial class WebLoweringVisitor
                 panel.Style.PointerEvents = "none";
             }
         }
-        if (Lower(anchored.Panel, horizontalAxis: null) is { } content)
+        // A layer of a live tree is SHOWN before it lowers, so its components build in the slot
+        // that keeps them; a frame that lowers no panel leaves the slot to be taken out at its end.
+        var layer = _frame?.Show(anchored, anchored.Panel) ?? anchored.Panel;
+        if (Lower(layer, horizontalAxis: null) is { } content)
             panel.Children.Add(content);
         return panel;
     }
@@ -588,7 +599,7 @@ internal sealed partial class WebLoweringVisitor
     /// (the browser owns physics, momentum and the scrollbar); the cross axis stays hidden so content
     /// never leaks. The programmatic Offset is a native-side concept (browser scroll state lives in
     /// the DOM).</summary>
-    private HtmlElement LowerScrollView(ScrollView scroll)
+    private HtmlElement LowerScrollView(ScrollView scroll, bool? horizontalAxis)
     {
         var element = new RealizedElement("div")
         {
@@ -613,6 +624,11 @@ internal sealed partial class WebLoweringVisitor
                 MinWidth = "0",
                 MinHeight = "0",
                 MaxWidth = "100%",
+                // That lets a line squeeze it, and a size the app fixed on the line's axis is not
+                // squeezed: fixed is fixed, on both targets (see Rigid, #1186). On the other axis the
+                // line has nothing to take, and a hugging scroller still gives way.
+                FlexShrink = (horizontalAxis is true && scroll.Width.Kind == SizeKind.Fixed)
+                    || (horizontalAxis is false && scroll.Height.Kind == SizeKind.Fixed) ? "0" : null,
                 // The offset is the app's and the reader's, never the browser's guess. Scroll
                 // anchoring moved it whenever a windowed list swapped the rows above what was on
                 // screen, and a match the code editor's find had brought into view slid back out.
@@ -720,7 +736,8 @@ internal sealed partial class WebLoweringVisitor
                 element.Style.PointerEvents = "none";
             }
         }
-        if (Lower(overlay.Child, horizontalAxis: null) is { } child)
+        var layer = _frame?.Show(overlay, overlay.Child) ?? overlay.Child;
+        if (Lower(layer, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;
     }
@@ -1143,11 +1160,31 @@ internal sealed partial class WebLoweringVisitor
     /// degraded into the flow (#671). The wrapper is still the node's element, so it carries the
     /// node's own key, bookmark and origin. Photon's twin is the container reading the one arm its
     /// window resolves.
+    /// <para>
+    /// A component stands where it stands and builds in its own visit, once, so the rule waits for
+    /// what it builds (<see cref="_placing"/>): an AdaptiveNode out of a component is placed like one
+    /// written there, and anything else ends the wait in <see cref="Lower"/> (#738).
+    /// </para>
     /// </summary>
-    private HtmlElement? Place(VisualNode child, Func<VisualNode, HtmlElement?> rule) =>
-        child is AdaptiveNode adaptive
-            ? Decorate(adaptive, LowerAdaptive(adaptive, arm => Place(arm, rule)))
-            : rule(child);
+    private HtmlElement? Place(VisualNode child, Func<VisualNode, HtmlElement?> rule)
+    {
+        if (child is AdaptiveNode adaptive) return PlaceArms(adaptive, rule);
+        if (child is not UiComponent) return rule(child);
+
+        var outer = _placing;
+        _placing = rule;
+        try
+        {
+            return rule(child);
+        }
+        finally
+        {
+            _placing = outer;
+        }
+    }
+
+    private HtmlElement? PlaceArms(AdaptiveNode adaptive, Func<VisualNode, HtmlElement?> rule) =>
+        Decorate(adaptive, LowerAdaptive(adaptive, arm => Place(arm, rule)));
 
     /// <summary>Spec S6: every DECLARED variant renders, each inside a gate whose fixed media rules
     /// show it only in its size-class range (display:contents keeps gates transparent to flex/grid).
@@ -1159,7 +1196,7 @@ internal sealed partial class WebLoweringVisitor
 
         void AddVariant(VisualNode variant, string gate)
         {
-            if (place(variant) is not { } lowered) return;
+            if (Arm(adaptive, variant, place) is not { } lowered) return;
             var gated = new RealizedElement("div") { AdaptiveGate = gate };
             gated.Children.Add(lowered);
             wrapper.Children.Add(gated);
@@ -1167,7 +1204,7 @@ internal sealed partial class WebLoweringVisitor
 
         // A lone Compact needs no gating — it IS the tree at every size.
         if (adaptive.Medium is null && adaptive.Expanded is null)
-            return place(adaptive.Compact) ?? wrapper;
+            return Arm(adaptive, adaptive.Compact, place) ?? wrapper;
 
         // Ranges chain off the DECLARED variants and the node's own thresholds (a design that
         // switches at 1024 gets 1024 gates, not the spec's 600/840).
@@ -1179,6 +1216,28 @@ internal sealed partial class WebLoweringVisitor
         if (adaptive.Expanded is { } expanded)
             AddVariant(expanded, AdaptiveGates.ExpandedFrom(adaptive.ExpandedFrom));
         return wrapper;
+    }
+
+    /// <summary>
+    /// One arm of an adaptive node. In a frame of a live tree, the element holds only the arm its
+    /// size class resolves, as Photon draws one: that arm lowers from its positions, and the others
+    /// lower as a tree drawn once does, built where they stand. Those are the arms the page's own
+    /// media rules hide at this size, and a change of size replaces the arm's subtree on both
+    /// targets, so no instance they would have kept is ever shown.
+    /// </summary>
+    private HtmlElement? Arm(AdaptiveNode adaptive, VisualNode arm, Func<VisualNode, HtmlElement?> place)
+    {
+        if (_frame is not { } frame || frame.HoldsArm(adaptive, arm)) return place(arm);
+
+        _frame = null;
+        try
+        {
+            return place(arm);
+        }
+        finally
+        {
+            _frame = frame;
+        }
     }
 
     /// <summary>Spec S4: CSS Grid — tracks as "px | Nfr | auto" or one auto-fill repeat, the gap pair, spans per child.</summary>

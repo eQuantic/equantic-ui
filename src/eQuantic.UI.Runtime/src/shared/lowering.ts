@@ -365,6 +365,20 @@ function lowerNodeKind(
   // carries no nodeKind at all, and renders itself. So the test is for the discriminator's ABSENCE,
   // which is the truth about these objects, rather than for a case the union does not have.
   const foreign = node as { nodeKind?: string; render?: () => HtmlNode };
+
+  // A container's rule waiting for what a component builds (C# `Lower`, #738): an AdaptiveNode is
+  // placed like one written in the container, and anything but another component ends the wait.
+  const rule = placing;
+  if (rule) {
+    if (foreign.nodeKind === 'adaptive') {
+      placing = null;
+      return lowerAdaptive(node as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
+        placeChild(arm, armPath, rule),
+      );
+    }
+    if (!buildsItsOwnNode(node)) placing = null;
+  }
+
   if (foreign.nodeKind === undefined) {
     // NOTHING TO SAY ABOUT THE WALK. A write-once StatelessComponent twin declares no `nodeKind`
     // (only StatefulComponent does) so it arrives here rather than in the switch, and its own
@@ -395,7 +409,7 @@ function lowerNodeKind(
     case 'sheetSurface':
       return lowerSheetSurface(node as unknown as SheetSurfaceNode, context, horizontalAxis, path);
     case 'scrollView':
-      return lowerScrollView(node as ScrollViewNode, context, path);
+      return lowerScrollView(node as ScrollViewNode, context, horizontalAxis, path);
     case 'tableViewport':
       return lowerTableViewport(node as unknown as TableViewportNode, context, path);
     case 'tableViewCell':
@@ -2166,7 +2180,12 @@ function fillsViewport(lowered: HtmlNode | null, horizontal: boolean): HtmlNode 
 }
 
 /** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
-function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: string): HtmlNode {
+function lowerScrollView(
+  node: ScrollViewNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode {
   const horizontal = node.axis === 'horizontal';
   const children: HtmlNode[] = [];
   // Content that fills the viewport is the item of the scroller's flex line, and so is each ARM of an
@@ -2194,6 +2213,12 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
       'min-width': '0',
       'min-height': '0',
       'max-width': '100%',
+      // A size the app fixed on the line's axis is not squeezed (C# twin, #1186).
+      'flex-shrink':
+        (horizontalAxis === true && node.width?.kind === 'fixed') ||
+        (horizontalAxis === false && node.height?.kind === 'fixed')
+          ? '0'
+          : undefined,
       'overflow-y': horizontal ? 'hidden' : 'auto',
       'overflow-x': node.axis === 'vertical' ? 'hidden' : 'auto',
       // The offset is the app's and the reader's, never the browser's guess: scroll anchoring moved
@@ -3438,18 +3463,34 @@ function lowerFlexItem(
  * align-self, a grid's span, a stack's anchor or cell (#670, #671). The wrapper is still the
  * node's element, so it carries the node's own key, bookmark and origin.
  */
+type PlaceRule = (child: VisualNodeValue, path: string) => HtmlNode | null;
+
+/** The rule of the container a component stands in, while it builds (C# `_placing`). */
+let placing: PlaceRule | null = null;
+
 function placeChild(
   child: VisualNodeValue,
   path: string,
-  rule: (child: VisualNodeValue, path: string) => HtmlNode | null,
+  rule: PlaceRule,
 ): HtmlNode | null {
-  if ((child as { nodeKind?: string }).nodeKind !== 'adaptive') return rule(child, path);
-  return decorate(
-    child,
-    lowerAdaptive(child as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
-      placeChild(arm, armPath, rule),
-    ),
-  );
+  if ((child as { nodeKind?: string }).nodeKind === 'adaptive') {
+    return decorate(
+      child,
+      lowerAdaptive(child as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
+        placeChild(arm, armPath, rule),
+      ),
+    );
+  }
+  if (!buildsItsOwnNode(child)) return rule(child, path);
+
+  // A component builds in its own turn, once, so the rule waits for what it builds (C# twin, #738).
+  const outer = placing;
+  placing = rule;
+  try {
+    return rule(child, path);
+  } finally {
+    placing = outer;
+  }
 }
 
 function mainAlign(value: FlexNodeValue['main']): string {
@@ -3805,19 +3846,25 @@ function lowerPressable(
   const cap = capsAt(pressable.child);
   // A disabled control shows no press and no focus, pictured or real (C# twin, #508): its subtree is
   // lowered with the control's simulated states masked and its boxes writing no focus or press rule.
-  // A hover is the box's own and stays.
+  // A hover is the box's own and stays. A control nested in another one under a picture is masked
+  // the same way, as a real press or focus stops at it (C# twin, #616).
   const outerSimulated = simulatedState;
   const outerDisabled = inDisabledControl;
+  const outerInControl = inControl;
   if (disabled) {
     simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
     inDisabledControl = true;
-  }
+  } else if (inControl) simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
+  inControl = true;
+  // What THIS control is pictured as: its ring below reads it (C# `pictured`).
+  const pictured = simulatedState;
   let child: HtmlNode | null;
   try {
     child = lowerNode(pressable.child, context, null, path + '/0');
   } finally {
     simulatedState = outerSimulated;
     inDisabledControl = outerDisabled;
+    inControl = outerInControl;
   }
 
   // HTML forbids a button inside a button (and an anchor inside an anchor): the parser closes the
@@ -3907,25 +3954,14 @@ function lowerPressable(
   }
 
   // Interaction states (spec §01): mechanics live in the generated stylesheet — every enabled
-  // pressable carries the class (:focus-visible double ring is an a11y DEFAULT); the pressed swap
-  // additionally ships its token value as a custom property at the style TAIL (the C# cross-pin).
+  // pressable carries the class (:focus-visible double ring is an a11y DEFAULT). A pressed FILL is
+  // no mechanic of the control's: it is the Pressed diff of the box it fills, an atomic rule in the
+  // pressed family like every other member of that diff (#616, the C# twin).
   if (!disabled) {
-    // eq-pressed carries the same declaration :active does, and eq-focused the ring :focus-visible
-    // draws (see the generated stylesheet), so a simulated state cannot drift from a real one.
-    // eq-press-fill marks a control that HAS a pressed fill (C# twin): the stylesheet's swap selects
-    // it, so a control without one keeps its own fill while pressed.
-    prependClass(
-      node,
-      'eq-pressable' +
-        (pressable.pressedBackground ? ' eq-press-fill' : '') +
-        (simulatedState & SIMULATED_PRESSED ? ' eq-pressed' : '') +
-        (simulatedState & SIMULATED_FOCUSED ? ' eq-focused' : ''),
-    );
-    if (pressable.pressedBackground) {
-      const tail = `--eq-pressed-bg: ${tokenValue(pressable.pressedBackground)}`;
-      const existing = node.attributes['style'];
-      node.attributes['style'] = existing ? `${existing}; ${tail}` : tail;
-    }
+    // eq-focused carries the ring :focus-visible draws (see the generated stylesheet), so a simulated
+    // focus cannot drift from a real one. A simulated PRESS needs no marker: its boxes lay their
+    // Pressed diff inline.
+    prependClass(node, 'eq-pressable' + (pictured & SIMULATED_FOCUSED ? ' eq-focused' : ''));
     if (child) liftThroughBoxlessWrappers(child);
   }
 
@@ -4497,6 +4533,8 @@ const SIMULATED_FOCUSED = 4;
 let simulatedState = 0;
 /** True while a DISABLED control's subtree is lowered (C# `_inDisabledControl`, #508). */
 let inDisabledControl = false;
+/** True while an enabled control's subtree is lowered under a Simulated node (C# `_inControl`, #616). */
+let inControl = false;
 
 /**
  * Draws the subtree in the given states (the C# `LowerSimulated`). `:hover` and `:focus-visible`
@@ -4510,13 +4548,16 @@ function lowerSimulated(
   path: string,
 ): HtmlNode | null {
   const previous = simulatedState;
+  const previousInControl = inControl;
   // Nested previews COMBINE: a hovered card holding a pressed button is two nodes, and the inner
   // one must not turn the outer's hover off.
   simulatedState = previous | node.state;
+  inControl = false;
   try {
     return lowerNode(node.child, context, horizontalAxis, path + '/0');
   } finally {
     simulatedState = previous;
+    inControl = previousInControl;
   }
 }
 
