@@ -365,6 +365,20 @@ function lowerNodeKind(
   // carries no nodeKind at all, and renders itself. So the test is for the discriminator's ABSENCE,
   // which is the truth about these objects, rather than for a case the union does not have.
   const foreign = node as { nodeKind?: string; render?: () => HtmlNode };
+
+  // A container's rule waiting for what a component builds (C# `Lower`, #738): an AdaptiveNode is
+  // placed like one written in the container, and anything but another component ends the wait.
+  const rule = placing;
+  if (rule) {
+    if (foreign.nodeKind === 'adaptive') {
+      placing = null;
+      return lowerAdaptive(node as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
+        placeChild(arm, armPath, rule),
+      );
+    }
+    if (!buildsItsOwnNode(node)) placing = null;
+  }
+
   if (foreign.nodeKind === undefined) {
     // NOTHING TO SAY ABOUT THE WALK. A write-once StatelessComponent twin declares no `nodeKind`
     // (only StatefulComponent does) so it arrives here rather than in the switch, and its own
@@ -395,7 +409,7 @@ function lowerNodeKind(
     case 'sheetSurface':
       return lowerSheetSurface(node as unknown as SheetSurfaceNode, context, horizontalAxis, path);
     case 'scrollView':
-      return lowerScrollView(node as ScrollViewNode, context, path);
+      return lowerScrollView(node as ScrollViewNode, context, horizontalAxis, path);
     case 'tableViewport':
       return lowerTableViewport(node as unknown as TableViewportNode, context, path);
     case 'tableViewCell':
@@ -2153,7 +2167,12 @@ function fillsViewport(lowered: HtmlNode | null, horizontal: boolean): HtmlNode 
 }
 
 /** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
-function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: string): HtmlNode {
+function lowerScrollView(
+  node: ScrollViewNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode {
   const horizontal = node.axis === 'horizontal';
   const children: HtmlNode[] = [];
   // Content that fills the viewport is the item of the scroller's flex line, and so is each ARM of an
@@ -2181,6 +2200,12 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
       'min-width': '0',
       'min-height': '0',
       'max-width': '100%',
+      // A size the app fixed on the line's axis is not squeezed (C# twin, #1186).
+      'flex-shrink':
+        (horizontalAxis === true && node.width?.kind === 'fixed') ||
+        (horizontalAxis === false && node.height?.kind === 'fixed')
+          ? '0'
+          : undefined,
       'overflow-y': horizontal ? 'hidden' : 'auto',
       'overflow-x': node.axis === 'vertical' ? 'hidden' : 'auto',
       // The offset is the app's and the reader's, never the browser's guess: scroll anchoring moved
@@ -3425,18 +3450,34 @@ function lowerFlexItem(
  * align-self, a grid's span, a stack's anchor or cell (#670, #671). The wrapper is still the
  * node's element, so it carries the node's own key, bookmark and origin.
  */
+type PlaceRule = (child: VisualNodeValue, path: string) => HtmlNode | null;
+
+/** The rule of the container a component stands in, while it builds (C# `_placing`). */
+let placing: PlaceRule | null = null;
+
 function placeChild(
   child: VisualNodeValue,
   path: string,
-  rule: (child: VisualNodeValue, path: string) => HtmlNode | null,
+  rule: PlaceRule,
 ): HtmlNode | null {
-  if ((child as { nodeKind?: string }).nodeKind !== 'adaptive') return rule(child, path);
-  return decorate(
-    child,
-    lowerAdaptive(child as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
-      placeChild(arm, armPath, rule),
-    ),
-  );
+  if ((child as { nodeKind?: string }).nodeKind === 'adaptive') {
+    return decorate(
+      child,
+      lowerAdaptive(child as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
+        placeChild(arm, armPath, rule),
+      ),
+    );
+  }
+  if (!buildsItsOwnNode(child)) return rule(child, path);
+
+  // A component builds in its own turn, once, so the rule waits for what it builds (C# twin, #738).
+  const outer = placing;
+  placing = rule;
+  try {
+    return rule(child, path);
+  } finally {
+    placing = outer;
+  }
 }
 
 function mainAlign(value: FlexNodeValue['main']): string {

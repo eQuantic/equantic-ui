@@ -73,12 +73,27 @@ internal static class UploadOwner
         {
             HttpOnly = true,
             SameSite = SameSiteMode.Lax,
-            Secure = context.Request.IsHttps,
+            // Secure but for plain HTTP to this machine, or in Development (a phone on the dev server): a
+            // request that reached the app as HTTP from a proxy that ended TLS, with no forwarded headers to say
+            // so, was written without, and the cookie that names the uploads went out in clear on the next plain
+            // request (#1293). Never by the Host's address: a proxy that passes to a private address sends that
+            // address as the Host by default (nginx), and production would fall into the exception.
+            Secure = context.Request.IsHttps || !(IsLoopback(context.Request.Host.Host) || IsDevelopment(context)),
             IsEssential = true,
             MaxAge = lifetime,
             Path = "/",
         });
     }
+
+    /// <summary>Whether <paramref name="host"/> is this machine.</summary>
+    private static bool IsLoopback(string host) =>
+        host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+        || host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase)
+        || (System.Net.IPAddress.TryParse(host.Trim('[', ']'), out var address) && System.Net.IPAddress.IsLoopback(address));
+
+    private static bool IsDevelopment(HttpContext context) =>
+        context.RequestServices.GetService(typeof(Microsoft.Extensions.Hosting.IHostEnvironment)) is Microsoft.Extensions.Hosting.IHostEnvironment environment
+        && Microsoft.Extensions.Hosting.HostEnvironmentEnvExtensions.IsDevelopment(environment);
 
     private static string? UserId(ClaimsPrincipal user) =>
         user.Identity?.IsAuthenticated == true

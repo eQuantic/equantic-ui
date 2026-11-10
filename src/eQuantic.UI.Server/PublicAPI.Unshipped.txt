@@ -1,1 +1,9 @@
 #nullable enable
+eQuantic.UI.Server.UploadsOptions.MaxUploadsPerOwner.get -> int
+eQuantic.UI.Server.UploadsOptions.MaxUploadsPerOwner.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxBytesPerOwner.get -> long
+eQuantic.UI.Server.UploadsOptions.MaxBytesPerOwner.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxTotalUploads.get -> int
+eQuantic.UI.Server.UploadsOptions.MaxTotalUploads.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxTotalBytes.get -> long
+eQuantic.UI.Server.UploadsOptions.MaxTotalBytes.set -> void
