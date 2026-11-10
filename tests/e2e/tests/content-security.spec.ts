@@ -74,8 +74,14 @@ test.describe('The dashboard under the strict Content-Security-Policy', () => {
     for (const route of routes.filter((route) => route !== '/')) {
       // A link the router owns: the page is not reloaded, so the runtime builds the screen, and the
       // styles and scripts it adds are judged by the policy the first document was served with.
+      // A screen that does not draw the navigation is left for the home page, which links every
+      // route, so no route is skipped in silence.
       const link = page.locator(`a[href="${route}"]`).first();
-      if (await link.count() === 0) continue;
+      if (await link.count() === 0) {
+        await page.goto('/');
+        for (const violation of await violationsOf(page)) offences.push(`/: ${violation}`);
+      }
+      await expect(link, `${route} is linked from the page the navigation starts on`).toHaveCount(1);
       await link.click();
       await page.waitForURL(`**${route}`);
       for (const violation of await violationsOf(page)) offences.push(`${route}: ${violation}`);
