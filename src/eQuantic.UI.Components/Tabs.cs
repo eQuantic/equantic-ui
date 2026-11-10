@@ -59,10 +59,19 @@ public sealed class Tabs : StatelessComponent
                 })
                 : null));
 
-            row.Add(new Flexible(new Pressable(cell, OnSelect is null ? null : () => OnSelect(index))
+            // The handoff's "Pressed: SurfaceSubtle fill on the tab cell": the CELL is the surface the
+            // press fills, so the column sits in a box that is the whole cell and carries the fill.
+            // Without the box the press reached the first box drawn, the 3dp track under the label.
+            var surface = new Box(new BoxStyle
+            {
+                Width = SizeValue.Fill,
+                Height = SizeValue.Fill,
+                Pressed = new StyleDiff { Background = theme.SurfaceSubtle },
+            }, cell);
+
+            row.Add(new Flexible(new Pressable(surface, OnSelect is null ? null : () => OnSelect(index))
             {
                 Label = Labels[i],
-                PressedBackground = theme.SurfaceSubtle,
                 // The underline is paint; the attribute is the answer. Roving under the Tablist
                 // wrapper below, exactly like the RadioGroup's items — but a tab is PICKED, so
                 // the web speaks aria-selected.

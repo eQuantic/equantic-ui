@@ -96,7 +96,7 @@ internal sealed partial class MeasureVisitor
     /// default; what it never shrinks is a size the AUTHOR pinned — so a Fixed extent and a Spacer
     /// stay put.
     /// </summary>
-    private bool Shrinkable(VisualNode child) => child switch
+    private bool Shrinkable(VisualNode child, bool horizontal) => child switch
     {
         Text => false,                       // already asked, above
         Spacer => false,
@@ -107,6 +107,9 @@ internal sealed partial class MeasureVisitor
         Flexible flexible => flexible.Shrink > 0,
         Box box => box.Style.Width.Kind != SizeKind.Fixed,
         FlexNode flex => flex.Width.Kind != SizeKind.Fixed,
+        // A scroller is fixed on the axis it fixed, as the web writes its `flex-shrink: 0` only for the
+        // line's axis: one fixed across a column still shrinks down it.
+        ScrollView scroll => (horizontal ? scroll.Width : scroll.Height).Kind != SizeKind.Fixed,
         // NO WRAPPER ARM, and that is measured rather than left out. #225 assumed four readers
         // needed the transparency statement; this is the one that does not, twice over.
         //
