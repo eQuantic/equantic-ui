@@ -112,12 +112,16 @@ Copilot (three rounds at most, stopping at the first without a defect), and is s
 every review thread is resolved and CI is green.
 
 **Check that CI actually RAN before you read it as green.** Since 2026-09-26 the ruleset requires
-thirteen of the CI's jobs and a branch up to date with `main` (#287), so a pull request whose
-workflow never started stays blocked, and one that `main` moved past has to take `main` and run
-again. Before that it required only a review: a workflow whose `if:` expression did not parse
-failed before it created a single job, with no log to notice, and for an hour seven pull requests
-merged on local runs alone. Two pull requests that each passed alone also broke `main` together
-(#453).
+the CI's jobs (the list is in `openspec/specs/working-agreement/spec.md`) on a run that saw the
+`main` a pull request lands on (#287), so a pull request whose workflow never started stays blocked. Before that it required only a review: a
+workflow whose `if:` expression did not parse failed before it created a single job, with no log to
+notice, and for an hour seven pull requests merged on local runs alone. Two pull requests that each
+passed alone also broke `main` together (#453).
+
+Once the ruleset merges through GitHub's merge queue (#1308), a reviewed, green pull request enters
+it with `gh pr merge <n>`, and the queue runs CI on it together with every pull request ahead of it
+and squash-merges it when that run is green: nobody merges `main` into a pull request only to bring
+it up to date. Until then, one that `main` moved past has to take `main` and run again.
 
 ```bash
 scripts/ci-doctor.sh
@@ -169,10 +173,10 @@ any jobs at all.
 
 ## Documentation
 
-The wiki is bilingual, and it is its own repository
+The wiki reads in five languages, and it is its own repository
 ([equantic-ui.wiki](https://github.com/eQuantic/equantic-ui/wiki), not a folder of this one). Every
-page has an English canonical file and a Portuguese twin under `locale/pt-BR/<Page>-pt-BR.md` there,
-edited in the **same wiki commit**; the documentation site fails its build
+page has an English canonical file and its translations under `locale/<culture>/<Page>-<culture>.md`
+there, Portuguese, Spanish, French and German, edited in the **same wiki commit**; the documentation site fails its build
 when a translation is older than its canonical page. That commit goes on a wiki branch named exactly
 like the pull request's branch: CI reads it for the docs guards (`scripts/checkout-wiki.sh`), and it
 is merged into the wiki's master when the pull request merges. To run the guards locally against

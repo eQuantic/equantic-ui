@@ -44,7 +44,7 @@ public class ComponentLifecycleTests
     [Fact]
     public void AComponentEnteringTheTree_MountsOnce()
     {
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         var component = new Tracked();
 
         Frame(owner, Holding(component));
@@ -60,7 +60,7 @@ public class ComponentLifecycleTests
     [Fact]
     public void TheMount_WaitsForTheFrameToEnd()
     {
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         var component = new Tracked();
 
         owner.Build(Holding(component), Context, WindowSizeClass.Compact, rebuildAll: true);
@@ -76,7 +76,7 @@ public class ComponentLifecycleTests
     [Fact]
     public void ARetainedInstance_DoesNotMountAgain()
     {
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         var first = new Tracked();
         Frame(owner, Holding(first));
 
@@ -97,7 +97,7 @@ public class ComponentLifecycleTests
     [Fact]
     public void APositionThatLeavesTheTree_Unmounts()
     {
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         var component = new Tracked();
         Frame(owner, Holding(component));
 
@@ -113,7 +113,7 @@ public class ComponentLifecycleTests
     public void TheOutgoing_UnmountsBeforeTheIncomingMounts()
     {
         var order = new List<string>();
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         Frame(owner, Holding(new Ordered("leaving", order)));
 
         // The leaving one's position now holds a text; the arriving one takes the next.
@@ -135,7 +135,7 @@ public class ComponentLifecycleTests
     [Fact]
     public void TearingTheTreeDown_UnmountsEverythingStillIn()
     {
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         var a = new Tracked();
         var b = new Tracked();
         Frame(owner, Holding(a, b));
@@ -153,7 +153,7 @@ public class ComponentLifecycleTests
     [Fact]
     public void AStructuralTree_CallsNoHook()
     {
-        var owner = BuildOwner.Structural();
+        var owner = ComponentBoundary.StructuralOwner();
         var component = new Tracked();
 
         Frame(owner, Holding(component));
