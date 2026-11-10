@@ -52,7 +52,7 @@ internal sealed partial class EmitVisitor
             var offsetY = st.Resolve(at, GlideChannel.ElevationOffsetY, target.OffsetY, s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
             var blur = st.Resolve(at, GlideChannel.ElevationBlur, target.Blur, s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
             var spread = st.Resolve(at, GlideChannel.ElevationSpread, target.Spread, s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
-            var shadowColor = st.ResolveColor(at, GlideChannel.ElevationColor, target.Color.Resolve(s.Mode),
+            var shadowColor = st.ResolveColor(at, GlideChannel.ElevationColor, target.Color.Resolve(s.Mode, s.Contrast),
                 s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
             if (blur > 0 || offsetY != 0 || spread != 0)
             {
@@ -67,7 +67,7 @@ internal sealed partial class EmitVisitor
             if (!spec.IsNone)
             {
                 s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
-                    spec.OffsetY, spec.Blur, spec.Spread, spec.Color.Resolve(s.Mode));
+                    spec.OffsetY, spec.Blur, spec.Spread, spec.Color.Resolve(s.Mode, s.Contrast));
             }
         }
 
@@ -85,7 +85,7 @@ internal sealed partial class EmitVisitor
             if (style.Shadow is { IsNone: false } custom)
             {
                 s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
-                    custom.OffsetY, custom.Blur, custom.Spread, custom.Color.Resolve(s.Mode));
+                    custom.OffsetY, custom.Blur, custom.Spread, custom.Color.Resolve(s.Mode, s.Contrast));
             }
             if (style.Shadows is { Count: > 0 } customList)
             {
@@ -93,7 +93,7 @@ internal sealed partial class EmitVisitor
                 {
                     if (entry.IsNone) continue;
                     s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
-                        entry.OffsetY, entry.Blur, entry.Spread, entry.Color.Resolve(s.Mode));
+                        entry.OffsetY, entry.Blur, entry.Spread, entry.Color.Resolve(s.Mode, s.Contrast));
                 }
             }
         }
@@ -114,12 +114,12 @@ internal sealed partial class EmitVisitor
         {
             var at = s.Node.Element;
             if (fill is { } solidFill)
-                fill = new ColorToken(colorClock.ResolveColor(at, GlideChannel.Background, solidFill.Resolve(s.Mode), s.Motion.TimeMs, colorSpec, s.Motion.Reduced));
-            borderColor = new ColorToken(colorClock.ResolveColor(at, GlideChannel.Border, borderColor.Resolve(s.Mode), s.Motion.TimeMs, colorSpec, s.Motion.Reduced));
+                fill = new ColorToken(colorClock.ResolveColor(at, GlideChannel.Background, solidFill.Resolve(s.Mode, s.Contrast), s.Motion.TimeMs, colorSpec, s.Motion.Reduced));
+            borderColor = new ColorToken(colorClock.ResolveColor(at, GlideChannel.Border, borderColor.Resolve(s.Mode, s.Contrast), s.Motion.TimeMs, colorSpec, s.Motion.Reduced));
         }
 
         EmitChrome(s.Node.Bounds, fill, style.CornerRadius,
-            borderColor, borderWidth, s.Theme, s.Mode, s.Builder,
+            borderColor, borderWidth, s.Theme, s.Mode, s.Contrast, s.Builder,
             style.Gradient, style.Pattern, style.Glow, style.BorderSides);
 
         // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
@@ -164,20 +164,20 @@ internal sealed partial class EmitVisitor
         s.Builder.StrokeRRect(
             new RRect(bounds.Inflate(1), new CornerRadii(
                 radii.TopLeft + 1, radii.TopRight + 1, radii.BottomRight + 1, radii.BottomLeft + 1)),
-            2, Paint.Solid(s.Theme.Surface.Resolve(s.Mode)));
+            2, Paint.Solid(s.Theme.Surface.Resolve(s.Mode, s.Contrast)));
         s.Builder.StrokeRRect(
             new RRect(bounds.Inflate(3), new CornerRadii(
                 radii.TopLeft + 3, radii.TopRight + 3, radii.BottomRight + 3, radii.BottomLeft + 3)),
-            2, Paint.Solid(s.Theme.FocusRing.Resolve(s.Mode)));
+            2, Paint.Solid(s.Theme.FocusRing.Resolve(s.Mode, s.Contrast)));
     }
 
     private void EmitFlexBackground(FlexNode flex, EmitState s)
     {
-        EmitChrome(s.Node.Bounds, flex.Background, flex.CornerRadius, default, 0, s.Theme, s.Mode, s.Builder);
+        EmitChrome(s.Node.Bounds, flex.Background, flex.CornerRadius, default, 0, s.Theme, s.Mode, s.Contrast, s.Builder);
     }
 
     private static void EmitChrome(Rect bounds, ColorToken? background, CornerRadii radius,
-        ColorToken borderColor, float borderWidth, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder,
+        ColorToken borderColor, float borderWidth, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder,
         LinearGradient? gradient = null, GridPattern? pattern = null, RadialGradient? glow = null,
         BorderSides sides = BorderSides.All)
     {
@@ -185,7 +185,7 @@ internal sealed partial class EmitVisitor
 
         if (background is { } bg)
         {
-            var color = bg.Resolve(mode);
+            var color = bg.Resolve(mode, contrast);
             if (color.A > 0)
                 builder.FillRRect(new RRect(bounds, radius), Paint.Solid(color));
         }
@@ -194,7 +194,7 @@ internal sealed partial class EmitVisitor
         // realizer's background-image list produces. Hairlines are ordinary fills bounded by the
         // box: no engine primitive and no shader, which is what keeps this write-once today.
         if (pattern is { } grid && grid.Cell > 0 && grid.LineWidth > 0)
-            EmitGridPattern(bounds, grid, mode, builder);
+            EmitGridPattern(bounds, grid, mode, contrast, builder);
 
         // The spotlight sits above the grid and below the linear gradient — the same stacking the
         // web realizer's layer list produces (there the FIRST entry is topmost; here the LAST drawn
@@ -204,7 +204,7 @@ internal sealed partial class EmitVisitor
             builder.FillRRect(new RRect(bounds, radius), Paint.Radial(
                 new Point(bounds.X + bounds.Width * g2.CenterX, bounds.Y + bounds.Height * g2.CenterY),
                 g2.RadiusX, g2.RadiusY,
-                g2.From.Resolve(mode), g2.To.Resolve(mode)));
+                g2.From.Resolve(mode, contrast), g2.To.Resolve(mode, contrast)));
         }
 
         // The gradient draws OVER the solid (CSS background-image/background-color composition):
@@ -230,12 +230,12 @@ internal sealed partial class EmitVisitor
                     new Point(bounds.X + bounds.Width, bounds.Y)),
             };
             builder.FillRRect(new RRect(bounds, radius),
-                Paint.Linear(start, end, g.From.Resolve(mode), g.To.Resolve(mode)));
+                Paint.Linear(start, end, g.From.Resolve(mode, contrast), g.To.Resolve(mode, contrast)));
         }
 
         if (borderWidth > 0 && sides != BorderSides.None)
         {
-            var color = borderColor.Resolve(mode);
+            var color = borderColor.Resolve(mode, contrast);
             if (color.A > 0)
             {
                 // Borders draw INSIDE the bounds (spec fence). The engine stroke is centered, so a
@@ -286,9 +286,9 @@ internal sealed partial class EmitVisitor
     /// construction (each rule is sized to the bounds), and a degenerate cell emits nothing rather
     /// than looping forever.
     /// </summary>
-    private static void EmitGridPattern(Rect bounds, GridPattern pattern, ThemeMode mode, DisplayListBuilder builder)
+    private static void EmitGridPattern(Rect bounds, GridPattern pattern, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder)
     {
-        var color = pattern.Color.Resolve(mode);
+        var color = pattern.Color.Resolve(mode, contrast);
         if (color.A == 0) return;
 
         var paint = Paint.Solid(color);
@@ -336,7 +336,7 @@ internal sealed partial class EmitVisitor
             Color color;
             if (target is { } shown)
             {
-                color = shown.Color.Resolve(s.Mode);
+                color = shown.Color.Resolve(s.Mode, s.Contrast);
                 // New in a list drawn before: start from nothing, then glide to the target.
                 if (known is not null && clock.Target(at, offsetTrack) is null)
                 {

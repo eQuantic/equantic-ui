@@ -1,1 +1,2 @@
 #nullable enable
+static eQuantic.UI.Web.TokenCss.ValueAt(eQuantic.UI.Primitives.ColorToken token, eQuantic.UI.Primitives.ContrastLevel contrast) -> string!

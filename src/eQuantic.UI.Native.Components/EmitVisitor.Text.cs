@@ -12,7 +12,7 @@ internal sealed partial class EmitVisitor
 {
     private void EmitTextNode(Text text, EmitState s)
     {
-        EmitText(s.Node, text, s.Theme, s.Mode, s.Builder, s.Motion);
+        EmitText(s.Node, text, s.Theme, s.Mode, s.Contrast, s.Builder, s.Motion);
         // A LINKED RUN is a navigation surface of its own: the layout knows which pixels the words
         // cover, and nothing else does on a target that draws its own glyphs. The POINTER registers
         // one region per piece, so a link that wraps is pressable on both its lines; the KEYBOARD
@@ -34,7 +34,7 @@ internal sealed partial class EmitVisitor
     // TextPrimary, empty shows the placeholder in the theme's Placeholder. Caret/selection/IME land at M4.
     private void EmitTextEntry(TextEntry entry, EmitState s)
     {
-        EmitEntry(s.Node, entry, s.Theme, s.Mode, s.Builder, s.Input, s.Press, s.Motion);
+        EmitEntry(s.Node, entry, s.Theme, s.Mode, s.Contrast, s.Builder, s.Input, s.Press, s.Motion);
     }
 
     private void EmitCode(CodeSurface surface, EmitState s)
@@ -46,7 +46,7 @@ internal sealed partial class EmitVisitor
     /// <see cref="EmitCarets"/>.</summary>
     private void EmitCodeCaret(CodeSurface surface, EmitState s)
     {
-        EmitCarets(s.Node, surface.Model.Carets, surface.CaretColor, s.Theme, s.Mode, s.Builder, s.Press);
+        EmitCarets(s.Node, surface.Model.Carets, surface.CaretColor, s.Theme, s.Mode, s.Contrast, s.Builder, s.Press);
     }
 
     /// <summary>2dp: thin enough to sit between glyphs, thick enough to see on a scaled display.</summary>
@@ -72,7 +72,7 @@ internal sealed partial class EmitVisitor
     /// assembly.
     /// </para>
     /// </summary>
-    private static void EmitText(LayoutNode node, Text text, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, MotionScope motion)
+    private static void EmitText(LayoutNode node, Text text, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder, MotionScope motion)
     {
         // A RICH paragraph is drawn PIECE BY PIECE — one raster per run per line, each in its own
         // style. Drawn as one raster of the joined text, a sentence lost its bold, its inline code
@@ -80,7 +80,7 @@ internal sealed partial class EmitVisitor
         if (motion.TextRasterizer is { } runRasterizer && node.TextRuns is { Count: > 0 } fragments)
         {
             var cache = motion.TextCache ?? TextRasterCache.Shared;
-            var baseColor = (text.Color ?? theme.TextPrimary).Resolve(mode);
+            var baseColor = (text.Color ?? theme.TextPrimary).Resolve(mode, contrast);
             // Alignment cannot ride the raster here — each fragment is its own one-word raster and
             // the LINE is what gets aligned, so the offset goes on the piece's x. The layout knows
             // which line a piece landed on and the measurement knows that line's width.
@@ -97,7 +97,7 @@ internal sealed partial class EmitVisitor
                     node.Bounds.Y + fragment.Y - raster.PadTop / motion.RenderScale,
                     raster.Texture.Width / motion.RenderScale,
                     raster.Texture.Height / motion.RenderScale);
-                var ink = fragment.Color is { } runColor ? runColor.Resolve(mode) : baseColor;
+                var ink = fragment.Color is { } runColor ? runColor.Resolve(mode, contrast) : baseColor;
                 builder.Texture(rect, ink, raster.Texture);
             }
             return;
@@ -134,23 +134,23 @@ internal sealed partial class EmitVisitor
                         ? new Point(rect.X + rect.Width, rect.Y)
                         : new Point(rect.X, rect.Y);
                     builder.Texture(rect,
-                        Paint.Linear(start, end, g.From.Resolve(mode), g.To.Resolve(mode)),
+                        Paint.Linear(start, end, g.From.Resolve(mode, contrast), g.To.Resolve(mode, contrast)),
                         raster.Texture);
                     return;
                 }
 
-                var color = (text.Color ?? theme.TextPrimary).Resolve(mode);
+                var color = (text.Color ?? theme.TextPrimary).Resolve(mode, contrast);
                 builder.Texture(rect, color, raster.Texture);
                 return;
             }
         }
-        EmitTextPlaceholder(node, text, theme, mode, builder);
+        EmitTextPlaceholder(node, text, theme, mode, contrast, builder);
     }
 
-    private static void EmitTextPlaceholder(LayoutNode node, Text text, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder)
+    private static void EmitTextPlaceholder(LayoutNode node, Text text, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder)
     {
         if (node.Text is not { } measurement) return;
-        var color = (text.Color ?? theme.TextPrimary).Resolve(mode).WithOpacity(0.30f);
+        var color = (text.Color ?? theme.TextPrimary).Resolve(mode, contrast).WithOpacity(0.30f);
         var barHeight = measurement.LineHeight * 0.55f;
 
         for (var i = 0; i < measurement.Lines.Count; i++)
@@ -181,7 +181,7 @@ internal sealed partial class EmitVisitor
     /// what you typed is not a placeholder for a missing feature; it is a field nobody can use.
     /// </para>
     /// </summary>
-    private static void EmitEntry(LayoutNode node, TextEntry entry, IAppTheme theme, ThemeMode mode,
+    private static void EmitEntry(LayoutNode node, TextEntry entry, IAppTheme theme, ThemeMode mode, ContrastLevel contrast,
         DisplayListBuilder builder, InputSink input, PressScope press, MotionScope motion)
     {
         // Clickable even when empty and even without a rasterizer: the region is where the caret
@@ -211,7 +211,7 @@ internal sealed partial class EmitVisitor
             // No platform text service — headless tests, and any surface where glyphs are not
             // available yet. The soft bar is the same stand-in `Text` falls back to; the caret still
             // draws, because where it is remains the useful thing to see.
-            EmitEntryPlaceholder(node, text, theme, mode, builder);
+            EmitEntryPlaceholder(node, text, theme, mode, contrast, builder);
         }
         else if (shown.Length > 0)
         {
@@ -244,12 +244,12 @@ internal sealed partial class EmitVisitor
                 if (shift > 0 || width > node.Bounds.Width)
                 {
                     builder.PushClip(new RRect(node.Bounds, default));
-                    builder.Texture(rect, token.Resolve(mode), raster.Texture);
+                    builder.Texture(rect, token.Resolve(mode, contrast), raster.Texture);
                     builder.PopClip();
                 }
                 else
                 {
-                    builder.Texture(rect, token.Resolve(mode), raster.Texture);
+                    builder.Texture(rect, token.Resolve(mode, contrast), raster.Texture);
                 }
             }
         }
@@ -275,7 +275,7 @@ internal sealed partial class EmitVisitor
                 builder.FillRRect(
                     new RRect(new Rect(node.Bounds.X + from, node.Bounds.Y + caretHeight - 2f, to - from, 1.5f),
                         new CornerRadii(0.75f)),
-                    Paint.Solid(theme.TextPrimary.Resolve(mode)));
+                    Paint.Solid(theme.TextPrimary.Resolve(mode, contrast)));
         }
 
         // The selection band. Drawn AFTER the glyphs and translucent rather than under them and
@@ -291,7 +291,7 @@ internal sealed partial class EmitVisitor
                 builder.FillRRect(
                     new RRect(new Rect(node.Bounds.X + from, node.Bounds.Y, to - from, caretHeight),
                         new CornerRadii(1)),
-                    Paint.Solid(theme.FocusRing.Resolve(mode).WithOpacity(0.28f)));
+                    Paint.Solid(theme.FocusRing.Resolve(mode, contrast).WithOpacity(0.28f)));
         }
 
         // The caret is drawn WITH the selection, not instead of it. The band says which characters
@@ -301,15 +301,15 @@ internal sealed partial class EmitVisitor
         builder.FillRRect(
             new RRect(new Rect(node.Bounds.X + advance - shift, node.Bounds.Y, CaretWidth, caretHeight),
                 new CornerRadii(0)),
-            Paint.Solid(theme.TextPrimary.Resolve(mode)));
+            Paint.Solid(theme.TextPrimary.Resolve(mode, contrast)));
     }
 
-    private static void EmitEntryPlaceholder(LayoutNode node, string text, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder)
+    private static void EmitEntryPlaceholder(LayoutNode node, string text, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder)
     {
         if (node.Text is not { } measurement || measurement.Lines.Count == 0) return;
         var hasValue = text.Length > 0;
         var token = hasValue ? theme.TextPrimary : theme.Placeholder;
-        var color = token.Resolve(mode).WithOpacity(0.30f);
+        var color = token.Resolve(mode, contrast).WithOpacity(0.30f);
         var line = measurement.Lines[0];
         if (line.Width <= 0) return;
 
@@ -353,12 +353,12 @@ internal sealed partial class EmitVisitor
     /// </para>
     /// </summary>
     private static void EmitCarets(LayoutNode node, IReadOnlyList<Rect> carets, ColorToken? caretColor,
-        IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, PressScope press)
+        IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder, PressScope press)
     {
         var editing = press.TextAt is not null && ReferenceEquals(node.Element, press.TextAt);
         if (!editing || !press.CaretVisible || carets.Count == 0) return;
 
-        var ink = Paint.Solid((caretColor ?? theme.TextPrimary).Resolve(mode));
+        var ink = Paint.Solid((caretColor ?? theme.TextPrimary).Resolve(mode, contrast));
         for (var i = 0; i < carets.Count; i++)
         {
             var caret = carets[i];

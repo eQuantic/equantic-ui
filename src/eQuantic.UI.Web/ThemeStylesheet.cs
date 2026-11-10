@@ -40,6 +40,9 @@ public static class ThemeStylesheet
     {
         var css = new StringBuilder();
         css.AppendLine("/* GENERATED from eQuantic.UI.Primitives design tokens — do not edit (docs/SHARED-COMPONENTS-PLAN.md). */");
+        // Every colour variable, as it is declared: the contrast block below writes the ones that
+        // step up at ContrastLevel.More, under the same names.
+        var colors = new List<(string Name, ColorToken Token)>();
         css.AppendLine(":root {");
         css.AppendLine($"  color-scheme: {mode switch
         {
@@ -49,26 +52,26 @@ public static class ThemeStylesheet
         }};");
 
         // Surfaces, text tiers, interaction chrome (§01).
-        AppendColor(css, "background", theme.Background);
-        AppendColor(css, "surface", theme.Surface);
-        AppendColor(css, "surface-subtle", theme.SurfaceSubtle);
-        AppendColor(css, "surface-highlight", theme.SurfaceHighlight);
-        AppendColor(css, "border", theme.Border);
-        AppendColor(css, "border-strong", theme.BorderStrong);
-        AppendColor(css, "text-primary", theme.TextPrimary);
-        AppendColor(css, "text-secondary", theme.TextSecondary);
-        AppendColor(css, "text-muted", theme.TextMuted);
-        AppendColor(css, "text-inverse", theme.TextInverse);
-        AppendColor(css, "focus", theme.FocusRing);
-        AppendColor(css, "link", theme.LinkColor);
-        AppendColor(css, "scrim", theme.Scrim);
+        AppendColor(css, colors, "background", theme.Background);
+        AppendColor(css, colors, "surface", theme.Surface);
+        AppendColor(css, colors, "surface-subtle", theme.SurfaceSubtle);
+        AppendColor(css, colors, "surface-highlight", theme.SurfaceHighlight);
+        AppendColor(css, colors, "border", theme.Border);
+        AppendColor(css, colors, "border-strong", theme.BorderStrong);
+        AppendColor(css, colors, "text-primary", theme.TextPrimary);
+        AppendColor(css, colors, "text-secondary", theme.TextSecondary);
+        AppendColor(css, colors, "text-muted", theme.TextMuted);
+        AppendColor(css, colors, "text-inverse", theme.TextInverse);
+        AppendColor(css, colors, "focus", theme.FocusRing);
+        AppendColor(css, colors, "link", theme.LinkColor);
+        AppendColor(css, colors, "scrim", theme.Scrim);
 
         // The document's chrome (#1038): what the page draws around the components.
-        AppendColor(css, "selection", theme.Selection);
-        if (theme.OnSelection is { } onSelection) AppendColor(css, "on-selection", onSelection);
-        AppendColor(css, "placeholder", theme.Placeholder);
-        AppendColor(css, "scrollbar-thumb", theme.ScrollbarThumb);
-        AppendColor(css, "scrollbar-track", theme.ScrollbarTrack);
+        AppendColor(css, colors, "selection", theme.Selection);
+        if (theme.OnSelection is { } onSelection) AppendColor(css, colors, "on-selection", onSelection);
+        AppendColor(css, colors, "placeholder", theme.Placeholder);
+        AppendColor(css, colors, "scrollbar-thumb", theme.ScrollbarThumb);
+        AppendColor(css, colors, "scrollbar-track", theme.ScrollbarTrack);
 
         // Interactive variants — the five sub-tokens each (§01).
         foreach (var variant in new[]
@@ -78,12 +81,15 @@ public static class ThemeStylesheet
                  })
         {
             var name = variant.ToString().ToLowerInvariant();
-            var colors = theme.Colors(variant);
-            AppendColor(css, $"{name}-base", colors.Base);
-            AppendColor(css, $"{name}-on", colors.OnBase);
-            AppendColor(css, $"{name}-pressed", colors.Pressed);
-            AppendColor(css, $"{name}-subtle", colors.Subtle);
-            AppendColor(css, $"{name}-on-subtle", colors.OnSubtle);
+            var slots = theme.Colors(variant);
+            AppendColor(css, colors, $"{name}-base", slots.Base);
+            AppendColor(css, colors, $"{name}-on", slots.OnBase);
+            AppendColor(css, colors, $"{name}-pressed", slots.Pressed);
+            AppendColor(css, colors, $"{name}-subtle", slots.Subtle);
+            AppendColor(css, colors, $"{name}-on-subtle", slots.OnSubtle);
+            // The derived hover (§10) as a variable of its own, so a filled control's hover steps up
+            // with its fill: the midpoint of Base and Pressed at each contrast level.
+            AppendColor(css, colors, $"{name}-hover", slots.Hover);
         }
 
         // Shape scale (§04) — theme-sourced (Material overrides the ladder) — and spacing (§03).
@@ -122,6 +128,20 @@ public static class ThemeStylesheet
         css.AppendLine($"  --eq-curve-decelerate: cubic-bezier({Cubic(Curve.Decelerate)});");
         css.AppendLine($"  --eq-curve-accelerate: cubic-bezier({Cubic(Curve.Accelerate)});");
         css.AppendLine("}");
+
+        // Contrast levels (§01): the same variables at ContrastLevel.More, under the query the browser
+        // answers from the system's own setting. Every atomic class reads a theme colour through its
+        // variable, so the whole page steps up without a class of its own, and the theme stays free
+        // of the level the way it is free of the mode. Only the tokens whose More pair differs.
+        if (colors.Where(color => color.Token.DiffersAtMore).ToList() is { Count: > 0 } stepped)
+        {
+            css.AppendLine("@media (prefers-contrast: more) {");
+            css.AppendLine("  :root {");
+            foreach (var (name, token) in stepped)
+                css.AppendLine($"    --eq-color-{name}: {TokenCss.ValueAt(token, ContrastLevel.More)};");
+            css.AppendLine("  }");
+            css.AppendLine("}");
+        }
 
         // The DOCUMENT (#1038): the page around the components, from the theme rather than from a
         // block each app wrote. Ordinary selectors on purpose: this sheet comes before the app's own
@@ -435,8 +455,11 @@ public static class ThemeStylesheet
         return css.ToString();
     }
 
-    private static void AppendColor(StringBuilder css, string name, ColorToken token) =>
+    private static void AppendColor(StringBuilder css, List<(string Name, ColorToken Token)> colors, string name, ColorToken token)
+    {
+        colors.Add((name, token));
         css.AppendLine($"  --eq-color-{name}: {TokenCss.Value(token)};");
+    }
 
     /// <summary>
     /// The hit slop for one kind of pointer: a pressable's target, centred on it and at least

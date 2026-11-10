@@ -35,7 +35,7 @@ public class BlockStretchTests
     }
 
     private static LayoutNode Realize(VisualNode root, float width = 400, float height = 200) =>
-        PhotonRealizer.Realize(root, width, height, PhotonTheme.Instance, ThemeMode.Light,
+        PhotonRealizer.Realize(root, width, height, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder()).Root;
 
     [Fact]

@@ -115,6 +115,7 @@ public sealed class PhotonViewController : UIViewController
             ImageLoader = new CoreGraphicsImageLoader(),
             IconRasterizer = new CoreGraphicsIconRasterizer(),
             ReducedMotion = UIAccessibility.IsReduceMotionEnabled,
+            Contrast = Contrast(),
             SmoothScroll = SmoothScroll,
             // What ⌘C, X and V on a keyboard attached to the device copy, cut and paste through.
             Clipboard = new IosClipboard(),
@@ -159,18 +160,25 @@ public sealed class PhotonViewController : UIViewController
         _host.Resize((float)bounds.Width, (float)bounds.Height);
     }
 
-    /// <summary>Following the system means re-rendering when it changes, not only at launch.</summary>
+    /// <summary>Following the system means re-rendering when it changes, not only at launch: the
+    /// mode, unless the app fixed it, and the contrast, which the app never states.</summary>
     public override void TraitCollectionDidChange(UITraitCollection? previous)
     {
         base.TraitCollectionDidChange(previous);
-        if (_host is null || _forcedMode is not null) return;
-        if (_host.Mode == Mode()) return;
-        _host.Mode = Mode();
+        if (_host is null) return;
+        var (mode, contrast) = (Mode(), Contrast());
+        if (_host.Mode == mode && _host.Contrast == contrast) return;
+        _host.Mode = mode;
+        _host.Contrast = contrast;
         _host.Invalidate();
     }
 
     private ThemeMode Mode() => _forcedMode
         ?? (TraitCollection.UserInterfaceStyle == UIUserInterfaceStyle.Dark ? ThemeMode.Dark : ThemeMode.Light);
+
+    /// <summary>Increase Contrast, under Accessibility, Display and Text Size (#340).</summary>
+    private ContrastLevel Contrast() =>
+        TraitCollection.AccessibilityContrast == UIAccessibilityContrast.High ? ContrastLevel.More : ContrastLevel.Standard;
 
     // ---- Touches --------------------------------------------------------------------------------
 

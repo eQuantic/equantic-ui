@@ -35,6 +35,7 @@ internal readonly record struct EmitState(
     PressScope Press,
     IAppTheme Theme,
     ThemeMode Mode,
+    ContrastLevel Contrast,
     DisplayListBuilder Builder,
     MotionScope Motion,
     List<QueuedLayer> Overlays);

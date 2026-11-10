@@ -57,6 +57,10 @@ public sealed class PhotonHost
 
     public ThemeMode Mode { get; set; }
 
+    /// <summary>The contrast level the system asks for, beside <see cref="Mode"/>: the shell reads it
+    /// from the operating system and sets it here, and every token resolves with both.</summary>
+    public ContrastLevel Contrast { get; set; }
+
     /// <summary>
     /// How tight this host wants its controls. A window driven by a MOUSE is Compact — the
     /// toolbars, sidebars and status rails of a desktop app; a touch screen stays Comfortable.
@@ -349,7 +353,7 @@ public sealed class PhotonHost
         var caretIndex = CaretIndex;
         var selection = Selection;
 
-        builder.Clear(Backdrop ?? _theme.Background.Resolve(Mode));
+        builder.Clear(Backdrop ?? _theme.Background.Resolve(Mode, Contrast));
         if (RenderScale != 1f) builder.PushTransform(Matrix2D.Scale(RenderScale, RenderScale));
         if (_lift != 0) builder.PushTransform(Matrix2D.Translation(0, -_lift));
         _lastTimeMs = timeMs;
@@ -374,7 +378,7 @@ public sealed class PhotonHost
         // Taken and cleared as late as possible: whatever the drain, the frame ticker or an edit
         // asked for before this point is in this frame, and anything after it is in the next.
         var rebuildAll = Interlocked.Exchange(ref _rebuildAll, 0) == 1;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedAt,
+        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, Contrast, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedAt,
             _focusVisible ? _focusedId : 0, _textAt, caretIndex, CaretVisible,
             selection.Start, selection.End, density: Density,
             markedText: _marked, composing: _composing,
