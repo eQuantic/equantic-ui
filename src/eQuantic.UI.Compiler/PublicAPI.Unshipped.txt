@@ -22,4 +22,12 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.Primi
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.Priority.get -> int
 const eQuantic.UI.Compiler.CodeGen.Eq.DelegateBound = "$eq.delegates.bound" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.DelegateOver = "$eq.delegates.over" -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Deconstruct(out string! Name, out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Initializer) -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsConst.JsConst(string! Name, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Initializer) -> void
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Const(string! name, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! initializer) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Annotation.get -> string!
+eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Annotation.init -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Deconstruct(out string! Name, out string! Annotation, out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Initializer) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConst.JsConst(string! Name, string! Annotation, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Initializer) -> void
+static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Const(string! name, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! initializer, string! annotation = "") -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 eQuantic.UI.Compiler.Services.AppBuild.BundleElapsed.get -> System.TimeSpan
