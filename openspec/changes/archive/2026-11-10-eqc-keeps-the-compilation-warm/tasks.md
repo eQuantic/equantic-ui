@@ -8,11 +8,11 @@
 
 ## 2. The proof
 
-- [ ] 2.1 The conformance suite passes
-- [ ] 2.2 The measurement on the dashboard sample, with the load average beside each number
+- [x] 2.1 The conformance suite passes. Verify: 7374 tests
+- [x] 2.2 The measurement on the dashboard sample, with the load average beside each number. Verify: eqc's median from 5.5s (load 35 to 38) to 3.6s (load 27 to 31), and six saves in a row hydrated at a load of 42 to 49
 - [ ] 2.3 Lower the web's ceiling by what was measured, once #1261 has set it from CI
 
 ## 3. Documentation
 
-- [ ] 3.1 One entry for the ledger citing #1278, as a file of its own under `docs/ledger/`
-- [ ] 3.2 The wiki's hot reload paragraph in five languages
+- [x] 3.1 One entry for the ledger citing #1278, as a file of its own under `docs/ledger/`
+- [x] 3.2 The wiki's hot reload paragraph in five languages
