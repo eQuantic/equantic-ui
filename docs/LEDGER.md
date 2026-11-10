@@ -4396,6 +4396,62 @@ record of a release, the wiki's Upgrading page is the distillate.
   engine's property stayed null in the browser with no error, and an app's member of that name held two
   values. The name is read by its symbol now, as every other name is. Measured on main, the new
   conformance case fails there. Proposed and archived through OpenSpec (`transpiler-names`).
+- **2026-11-09 · An edit is timed from the save to the screen, on the web and on the desktop**: the
+  roadmap's bar says an edit reaches the screen in under a second, and nothing had ever measured it.
+  `scripts/measure-edit-to-view.cs` runs a sample under `dotnet watch`, changes a text literal of a
+  component on disk, and stops the clock when a browser or the window draws the new text, each part of
+  the path timed on its own clock: eqc reports its phases, and the Photon host reports the frame that
+  draws an edit. CI's samples job runs it last. Its first clean run measured a warm median of 329ms on
+  the desktop, held to the bar of a second, and 22.9s on the web, held to a ceiling of 45s that only
+  comes down as the slices of #900 make each part faster (#1274 to #1281). Measuring it found the
+  desktop sample restarted on every edit, since publishing trimmed turned .NET's startup hook off for
+  every build: the native SDK now keeps it on for the Debug build of a desktop head that is not a
+  publish ([#900](https://github.com/eQuantic/equantic-ui/issues/900),
+  [#1258](https://github.com/eQuantic/equantic-ui/issues/1258)). Proposed through OpenSpec
+  (`openspec/specs/hot-reload`).
+- **2026-11-09 · A new push to a pull request cancels the CI run it replaces**: `ci.yml` had no
+  `concurrency` block, so every push left the previous head's run going to the end, each holding three
+  macOS runners; that afternoon #1251 started six runs, and three other pull requests four each, while
+  every other pull request waited three to seven minutes for a macOS runner. A pull request's runs now
+  share a group keyed on its number and cancel the one in progress; a run on `main`, on a tag or by
+  hand gets a group of its own and is never cancelled
+  ([#1309](https://github.com/eQuantic/equantic-ui/issues/1309)). Proposed and archived through
+  OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-09 · The run's longest path only packs, and macOS runs what only a Mac answers**:
+  `build-packages` set a pull request's wall time (18.2 of 24.0 minutes on run 42675312854) because it
+  ran the whole suite a third time on macOS, 13 minutes 38 seconds, the same projects Ubuntu and Windows
+  had run, for the facts only a Mac answers. It now builds, packs and checks, and a job of its own,
+  `test (macos-latest)`, runs beside it, whole and with the Apple workloads, the projects that reference
+  the Apple track or hold a test asking for macOS, derived by `scripts/macos-tests.sh` from the tests;
+  a project that runs no test fails. Ubuntu and Windows still run every project, and the ruleset
+  requires the new leg ([#1311](https://github.com/eQuantic/equantic-ui/issues/1311)). Proposed and
+  archived through OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-09 · Every script and style the shell writes carries the request's nonce**: a strict
+  Content-Security-Policy admits an inline element only by a nonce or a hash, and the shell gave its
+  own neither: the template's seven elements, the app's CSS, GTM's four scripts, a chart library's
+  CDN script and initializer, and every page's assets, the atomic sheet among them. Each request now
+  has one nonce of 128 random bits, stamped on every script and style the shell writes, chosen over
+  hashes by measure: a hash cannot admit a CDN script the SDK does not serve, and three of the
+  elements change with every response anyway. `HtmlShellOptions.HeadTags` holds `HtmlTag`s rendered
+  per request, and `AddHeadTag(string)` is gone, since text the shell did not build is text it
+  cannot stamp. Where an app wrote `AddHeadTag("<meta name=\"theme-color\" content=\"#3b82f6\">")` it
+  writes `AddHeadTag(HtmlTag.Meta("theme-color", "#3b82f6"))`, and a favicon needs no head tag at
+  all: the icon declared once as an `IAppIcon` writes every favicon link (#1240)
+  ([#1266](https://github.com/eQuantic/equantic-ui/issues/1266)). Proposed and archived through
+  OpenSpec, as the first requirement of `content-security`.
+- **2026-11-09 · The element engine is written in what eqc translates**: the first part of E3a.
+  `ChildSlots` reads a node's children by `NodeKind` in one switch, and a test that mounts one
+  instance of every concrete `VisualNode` through an owner keeps the guarantee the visitor gave; the
+  owner is handed how a component builds, so the engine no longer names the host-only
+  `ComponentBoundary`, whose `Owner()` and `StructuralOwner()` now make every owner (an app's test
+  that wrote `new BuildOwner()`, as the wiki's Capabilities page showed, writes `Owner()`); and the engine
+  goes through eqc with no diagnostic, which `ElementEngineTranspilesTests` holds while it stays
+  `[ServerOnly]`. Generated as the other engines are, its modules failed the runtime's `tsc`: six
+  emission defects of eqc's, one of them silent and reaching app code (a member named `Component`),
+  filed under the bug sweep (#1299, #1303 to #1307), and a browser component model that differs from
+  the one the engine drives, which is E3a-3 (#1301). Photon's frame is unchanged, allocation identical
+  to the byte in every scene ([#1127](https://github.com/eQuantic/equantic-ui/issues/1127)). Proposed
+  and archived through OpenSpec, adding three requirements to `element-tree`.
 
 ## Retired documents
 
