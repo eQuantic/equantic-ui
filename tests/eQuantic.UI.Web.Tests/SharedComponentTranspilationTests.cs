@@ -168,6 +168,77 @@ public class SharedComponentTranspilationTests
     /// never left of a comma as it is, where TypeScript refuses a value it judges free of effects (TS2695,
     /// Copilot's second review of #1157). Never executed: what it proves is the type-check.
     /// </summary>
+    /// <summary>
+    /// The shapes the element engine is written in that eqc's twin failed the runtime's <c>tsc</c> on
+    /// (#1303 to #1307): a downcast reaching a member of the derived type, abstract members of every
+    /// accessibility called through the base, a constructor chained to one with an argument the first
+    /// supplies, a lambda stored in a static field, and a field's collection initializer beside a base
+    /// constructor call. Written to <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line.
+    /// </summary>
+    private const string EmissionShapesSource = """
+        using System;
+        using System.Collections.Generic;
+
+        namespace eQuantic.UI.Web.Tests.Fixtures;
+
+        public abstract class EmittedShape { }
+
+        public sealed class EmittedSquare(int side) : EmittedShape
+        {
+            public int Side { get; } = side;
+        }
+
+        public static class EmittedShapes
+        {
+            public static int SideOf(EmittedShape shape) => ((EmittedSquare)shape).Side;
+        }
+
+        public abstract class EmittedStep
+        {
+            public int Run() => Draw() + Measure() + Layout() + Paint();
+            public abstract int Draw();
+            internal abstract int Measure();
+            private protected abstract int Layout();
+            protected abstract int Paint();
+            public abstract System.Threading.Tasks.Task<int> LoadAsync(int from, int count = 10);
+            public abstract System.Threading.Tasks.Task SaveAsync(params int[] values);
+            public abstract T Pick<T>(T first, T second);
+        }
+
+        public sealed class EmittedRunner
+        {
+            private readonly Func<int, int> _step;
+            public EmittedRunner(Func<int, int> step) : this(step, live: true) { }
+            private EmittedRunner(Func<int, int> step, bool live) { _step = step; Live = live; }
+            public bool Live { get; }
+            public int Run(int value) => _step(value);
+        }
+
+        public sealed class EmittedItem(int depth)
+        {
+            public int Depth { get; } = depth;
+        }
+
+        public static class EmittedItems
+        {
+            private static readonly Comparison<EmittedItem> ByDepth = static (a, b) => a.Depth.CompareTo(b.Depth);
+            public static void Order(List<EmittedItem> items) => items.Sort(ByDepth);
+        }
+
+        public class EmittedBase
+        {
+            public EmittedBase(string name) { Name = name; }
+            public string Name { get; }
+        }
+
+        public sealed class EmittedBag : EmittedBase
+        {
+            private List<string?> _items = new();
+            public EmittedBag(string name) : base(name) { }
+            public int Count => _items.Count;
+        }
+        """;
+
     private const string BoundReceiversSource = """
         using eQuantic.UI.Components;
         using eQuantic.UI.Primitives;
@@ -254,12 +325,14 @@ public class SharedComponentTranspilationTests
         var counterPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "SharedCounter.cs");
         var nestedPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "NestedReconciler.cs");
         var boundPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "BoundReceivers.cs");
+        var shapesPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "EmissionShapes.cs");
         var trees = sourcePaths
             .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path))
             .ToList();
         trees.Add(CSharpSyntaxTree.ParseText(SharedCounterSource, path: counterPath));
         trees.Add(CSharpSyntaxTree.ParseText(NestedReconcilerSource, path: nestedPath));
         trees.Add(CSharpSyntaxTree.ParseText(BoundReceiversSource, path: boundPath));
+        trees.Add(CSharpSyntaxTree.ParseText(EmissionShapesSource, path: shapesPath));
         // The shared sources build with <ImplicitUsings> — mirror the generated global usings, or
         // `Action?` fails to bind (CS0246) and the semantic paths silently degrade.
         trees.Add(SdkImplicitUsings.Tree());
@@ -297,7 +370,8 @@ public class SharedComponentTranspilationTests
             .Select(path => (Path: path, Results: compiler.CompileFile(path)))
             .Append((counterPath, compiler.CompileSource(SharedCounterSource, counterPath)))
             .Append((nestedPath, compiler.CompileSource(NestedReconcilerSource, nestedPath)))
-            .Append((boundPath, compiler.CompileSource(BoundReceiversSource, boundPath)));
+            .Append((boundPath, compiler.CompileSource(BoundReceiversSource, boundPath)))
+            .Append((shapesPath, compiler.CompileSource(EmissionShapesSource, shapesPath)));
         foreach (var (path, results) in compilations)
         {
             foreach (var result in results)
@@ -313,7 +387,12 @@ public class SharedComponentTranspilationTests
 
     /// <summary>The in-test proofs: they are transpiled and executed, but they are not library
     /// surface and must not be embedded in the runtime a consumer ships.</summary>
-    private static readonly string[] Fixtures = ["SharedCounter", "NestedChild", "NestedHost", "BoundReceivers"];
+    private static readonly string[] Fixtures =
+    [
+        "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
+        "EmittedShape", "EmittedSquare", "EmittedShapes", "EmittedStep", "EmittedRunner",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag",
+    ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.
     /// <para>
