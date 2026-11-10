@@ -310,9 +310,12 @@ public class SharedComponentTranspilationTests
     /// base's own module, and everything else through <c>runtime-exports</c> as before. The aggregator
     /// re-exports the barrel, and a re-export is defined only once the module it names has finished
     /// loading (vitest's module runner does it statement by statement), so a class evaluated while the
-    /// barrel is still loading reads its base off the aggregator as <c>undefined</c>. No library module
-    /// extended another until the element engine: <c>ComponentElement</c> and <c>NodeElement</c> extend
-    /// <c>Element</c>, and every spec that entered through the barrel failed to load.
+    /// barrel is still loading reads its base off the aggregator as <c>undefined</c>. The code editor's
+    /// languages never met it, because eqc imports a type of their own engine from its module
+    /// (<c>CSharpLanguage</c> from <c>./CurlyBraceLanguage</c>); the element engine's types live in the
+    /// vocabulary's namespace, which eqc routes to the runtime, so <c>ComponentElement</c> and
+    /// <c>NodeElement</c> read <c>Element</c> through the aggregator, and every spec that entered through
+    /// the barrel failed to load. A base already imported from its module is left as it is.
     /// </summary>
     private static string BaseFromItsModule(string typeScript, IReadOnlySet<string> library)
     {
@@ -321,7 +324,9 @@ public class SharedComponentTranspilationTests
         var baseName = extends.Groups[1].Value;
         var import = Regex.Match(typeScript, @"^import \{ ([^}]*) \} from ""\.\./runtime-exports"";", RegexOptions.Multiline);
         if (!import.Success) return typeScript;
-        var others = import.Groups[1].Value.Split(", ").Where(name => name != baseName).ToList();
+        var names = import.Groups[1].Value.Split(", ");
+        if (!names.Contains(baseName)) return typeScript;
+        var others = names.Where(name => name != baseName).ToList();
         var rewritten = (others.Count > 0 ? $"import {{ {string.Join(", ", others)} }} from \"../runtime-exports\";\n" : "")
             + $"import {{ {baseName} }} from \"./{baseName}\";";
         return typeScript.Remove(import.Index, import.Length).Insert(import.Index, rewritten);
