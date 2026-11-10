@@ -12,7 +12,7 @@
 
 ## 3. Proved against the real thing
 
-- [ ] 3.1 The `samples` job's edit-to-view measurement, over several runs. Verify: every save hydrates. Locally, at a load near 50, 30 saves in five rounds: 29 hydrated, and the cold first save of one round drew over with the server's side all saying hydrate (the frame, the reload's flag, the rendered document, the server's line), before the boot said why; with the boot's reason recorded, 18 of 18 hydrated
+- [x] 3.1 The web edit-to-view measurement, locally at a load near 50. Verify: 30 saves in five rounds, 29 hydrated; the one that drew over had every server-side signal saying hydrate, before the boot said why, and 18 of 18 hydrated once it did. The `samples` job hydrating every save over several runs stays open in #1373, which this change is part of
 
 ## 4. Documentation
 
