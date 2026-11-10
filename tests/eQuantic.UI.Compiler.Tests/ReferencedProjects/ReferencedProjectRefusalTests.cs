@@ -249,6 +249,53 @@ public sealed class ReferencedProjectRefusalTests
         if (written.Length > 0) built.Module("Home").Should().Contain(written, $"{what} is written as text");
     }
 
+    /// <summary>
+    /// Syntax that names a type and writes no reference to it: a cast of a null, a <c>default</c>, a
+    /// delegate's type. Nothing could answer for each of these as an owner answered for a name above, and
+    /// each reached the Domain's <c>Order</c> beside the app's, where the build read its file and refused
+    /// what it does (#830). The modules share one flat namespace, so the page's <c>./Order</c> is the
+    /// app's own: the declaration its own project holds is the one the import means.
+    /// </summary>
+    [Theory]
+    [InlineData("a cast", "var source = (Domain.Order?)null; return source is null ? \"\" : \"x\";")]
+    [InlineData("a default", "var source = default(Domain.Order); return source is null ? \"\" : \"x\";")]
+    [InlineData("a delegate over it", "System.Func<Domain.Order?, string> read = order => order is null ? \"\" : \"x\"; return read(null);")]
+    public void SyntaxThatWritesNoReference_ToALibraryTypeOfTheAppsName_ReachesNothing(string what, string probe)
+    {
+        using var solution = new Solution()
+            .Library("Domain", files: [("Order.cs", DomainOrder)])
+            .App("App", references: ["Domain"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Model/Order.cs", AppOrder),
+                ("Screens/Home.cs",
+                    $$"""
+                    using eQuantic.UI.Primitives;
+                    using App.Model;
+
+                    namespace App.Screens;
+
+                    public sealed class Home : StatefulComponent
+                    {
+                        private Order _order = new(0m);
+
+                        private static string Probe()
+                        {
+                            {{probe}}
+                        }
+
+                        public override VisualNode Build(ComponentContext context) =>
+                            Text(_order.Total.ToString() + Probe(), TypeRole.BodyM, context.Theme.TextPrimary, maxLines: 1);
+                    }
+                    """),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse($"{what} writes no reference to the Domain's Order:\n{built.Errors}");
+        built.Errors.Should().BeEmpty();
+        built.Module("Order").Should().Contain("total").And.NotContain("stored");
+        built.Modules.Should().BeEquivalentTo(["Home", "Order"]);
+    }
+
     [Fact]
     public void AConstantWrittenAsAReference_StillReachesTheClassThatDeclaresIt()
     {
