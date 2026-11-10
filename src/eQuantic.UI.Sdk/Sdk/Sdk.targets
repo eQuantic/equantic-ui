@@ -604,9 +604,10 @@
 
     <!--
         The app icon, from the same source the device SDK uses: `Assets/AppIcon.png` (artwork a
-        designer made) or `Assets/AppIcon.cs` (an IAppIcon the engine draws). A browser asks for the
-        sizes up front and for a manifest describing them, so those are written into wwwroot and the
-        shell links them — an app states its icon ONCE and it appears wherever it belongs.
+        designer made) or `Assets/AppIcon.cs` (an IAppIcon the engine draws, with a small cut for the
+        tab when its brand has one). A browser asks for the sizes up front, for a manifest describing
+        them and for /favicon.ico, so those are written into wwwroot and the server links and answers
+        them — an app states its icon ONCE and it appears wherever it belongs.
         The property names are shared with eQuantic.UI.Sdk.Native on purpose.
     -->
     <PropertyGroup>
@@ -831,13 +832,40 @@
         </ItemGroup>
     </Target>
 
-    <Target Name="EQuanticWebAppIcon" BeforeTargets="Build"
+    <!--
+        What an icon written in C# compiles with besides its own file (#1240), since it is a file of
+        the app and is written like one: the app's `Using` items, so `Box(...)` is the factory there as
+        it is everywhere else, and the app's vector catalog, so the icon draws the brand from the SVG
+        under Assets. eqicon keeps the usings the vocabulary resolves and drops the rest (a web host's
+        ASP.NET namespaces), so the whole list goes over. Each using is spelled as a directive is after
+        its keyword. The same target lives in eQuantic.UI.Sdk.Native, whose icon has no catalog.
+    -->
+    <Target Name="_EQuanticAppIconInputs">
+        <ItemGroup>
+            <_EqIconUsing Include="@(Using)" Spelling="%(Using.Identity)" />
+            <_EqIconUsing Condition="'%(_EqIconUsing.Static)' == 'true'">
+                <Spelling>static %(Identity)</Spelling>
+            </_EqIconUsing>
+            <_EqIconUsing Condition="'%(_EqIconUsing.Alias)' != ''">
+                <Spelling>%(_EqIconUsing.Alias) = %(Identity)</Spelling>
+            </_EqIconUsing>
+            <_EqAppIconInput Include="using" Option="--using" Value="%(_EqIconUsing.Spelling)"
+                Condition="'%(_EqIconUsing.Spelling)' != ''" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_EqAppIconSources>$(EQuanticAppIconSource)</_EqAppIconSources>
+            <_EqAppIconSources Condition="$(EQuanticAppIconSource.EndsWith('.cs')) AND Exists('$(EQuanticVectorsFile)')">$(EQuanticAppIconSource);$(EQuanticVectorsFile)</_EqAppIconSources>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="EQuanticWebAppIcon" BeforeTargets="Build" DependsOnTargets="_EQuanticAppIconInputs"
         Condition="'$(EQuanticAppIconSource)' != ''">
         <ItemGroup>
             <_EqWebIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
-            <_EqWebIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
+            <_EqWebIconArgument Include="source" Option="--source" Value="$(_EqAppIconSources)" />
             <_EqWebIconArgument Include="icons" Option="--web" Value="$(MSBuildProjectDirectory)/wwwroot/_equantic/icons" />
             <_EqWebIconArgument Include="title" Option="--app" Value="$(ApplicationTitle)" />
+            <_EqWebIconArgument Include="@(_EqAppIconInput)" />
         </ItemGroup>
         <RunProgram Program="dotnet" Arguments="@(_EqWebIconArgument)" StandardOutputImportance="normal" />
     </Target>
