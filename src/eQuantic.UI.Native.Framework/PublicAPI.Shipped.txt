@@ -30,6 +30,7 @@
 [EQX0001]eQuantic.UI.Native.Framework.DragClock.Drop(eQuantic.UI.Primitives.Element! at) -> void
 [EQX0001]eQuantic.UI.Native.Framework.DragClock.Release(eQuantic.UI.Primitives.Element! at, float timeMs, float restOffset = 0) -> void
 [EQX0001]eQuantic.UI.Native.Framework.DragClock.Resolve(eQuantic.UI.Primitives.Element? at, float timeMs, float restOffset = 0) -> float
+[EQX0001]eQuantic.UI.Native.Framework.FieldText
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Background = 17 -> eQuantic.UI.Native.Framework.GlideChannel
 [EQX0001]eQuantic.UI.Native.Framework.GlideChannel.Border = 18 -> eQuantic.UI.Native.Framework.GlideChannel
@@ -137,6 +138,9 @@
 [EQX0001]eQuantic.UI.Native.Framework.MeasuredLine.Width.get -> float
 [EQX0001]eQuantic.UI.Native.Framework.MeasuredLine.Width.init -> void
 [EQX0001]eQuantic.UI.Native.Framework.NodeStates
+[EQX0001]eQuantic.UI.Native.Framework.PortableIconRasterizer
+[EQX0001]eQuantic.UI.Native.Framework.PortableIconRasterizer.PortableIconRasterizer() -> void
+[EQX0001]eQuantic.UI.Native.Framework.PortableIconRasterizer.Rasterize(eQuantic.UI.Primitives.IconGlyph glyph, float widthDp, float heightDp, float scale) -> eQuantic.UI.Native.Framework.TextRaster?
 [EQX0001]eQuantic.UI.Native.Framework.PresenceClock
 [EQX0001]eQuantic.UI.Native.Framework.PresenceClock.ActiveExits(float timeMs, bool reducedMotion) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Framework.PresenceClock.ExitFrame>!
 [EQX0001]eQuantic.UI.Native.Framework.PresenceClock.AnyActive.get -> bool
@@ -258,6 +262,8 @@
 [EQX0001]static eQuantic.UI.Native.Framework.AxisConstraint.Of(float max) -> eQuantic.UI.Native.Framework.AxisConstraint
 [EQX0001]static eQuantic.UI.Native.Framework.AxisConstraint.operator !=(eQuantic.UI.Native.Framework.AxisConstraint left, eQuantic.UI.Native.Framework.AxisConstraint right) -> bool
 [EQX0001]static eQuantic.UI.Native.Framework.AxisConstraint.operator ==(eQuantic.UI.Native.Framework.AxisConstraint left, eQuantic.UI.Native.Framework.AxisConstraint right) -> bool
+[EQX0001]static eQuantic.UI.Native.Framework.FieldText.Of(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Primitives.TextEntry! entry) -> string!
+[EQX0001]static eQuantic.UI.Native.Framework.FieldText.Typed(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Primitives.TextEntry! entry, string! text) -> void
 [EQX0001]static eQuantic.UI.Native.Framework.LayoutConstraints.Of(float maxWidth, float maxHeight) -> eQuantic.UI.Native.Framework.LayoutConstraints
 [EQX0001]static eQuantic.UI.Native.Framework.LayoutConstraints.operator !=(eQuantic.UI.Native.Framework.LayoutConstraints left, eQuantic.UI.Native.Framework.LayoutConstraints right) -> bool
 [EQX0001]static eQuantic.UI.Native.Framework.LayoutConstraints.operator ==(eQuantic.UI.Native.Framework.LayoutConstraints left, eQuantic.UI.Native.Framework.LayoutConstraints right) -> bool
