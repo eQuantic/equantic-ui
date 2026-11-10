@@ -4547,6 +4547,40 @@ record of a release, the wiki's Upgrading page is the distillate.
   element of its own, is handed the page's nonce
   ([#1268](https://github.com/eQuantic/equantic-ui/issues/1268)). Proposed and archived through
   OpenSpec, into `content-security`.
+- **2026-11-09 · A link writes an href only for a scheme it may carry**: no URL scheme was checked
+  anywhere, so a `Link`'s, a `TextRun`'s or a Markdown link's destination reached `href` with whatever
+  scheme it carried, in SSR and on the client. The web realizer and its
+  twin now write a destination only with no scheme or with `http`, `https`, `mailto` or `tel`, read as a
+  browser's URL parser reads it, and write the anchor with no `href` for any other
+  ([#1286](https://github.com/eQuantic/equantic-ui/issues/1286)). `RenderContext.ResolveDestination`
+  answers `string?`. Proposed and archived through OpenSpec (`openspec/specs/links`).
+- **2026-11-09 · A page offers a file it made for the person to save**: `IFileSaver` takes a name and
+  the content, as UTF-8 text or as bytes, derives the media type from the name, and answers what the
+  target honestly knows (`Offered`, `Saved`, `Cancelled`). The browser downloads it through a blob
+  and an anchor clicked inside the press; the macOS and Windows shells register one realization over
+  the save panel `IFileDialogs` already opens; the server render takes a page that needs one and
+  throws with the reason when it is called. The dashboard's new recovery codes screen offers its
+  codes as `recovery-codes.txt`, measured in Chromium. The phones save through their export picker,
+  left to #782 ([#1022](https://github.com/eQuantic/equantic-ui/issues/1022)). Proposed and archived
+  through OpenSpec, in `file-saving`.
+- **2026-11-09 · Nothing a style element holds can end the element**: the server wrote the atomic sheet,
+  the theme's sheet and an app's own styles into `<style>` as they came, so a value could end the element
+  it was written in. `StyleElementText` is now the one
+  writer of that text and writes every `</` as `\3c /`, which CSS reads as the same characters inside a
+  string or a `url()` ([#1295](https://github.com/eQuantic/equantic-ui/issues/1295)). Proposed and
+  archived through OpenSpec (`openspec/specs/document-theme`).
+- **2026-11-10 · The Wallet draws alike on every target**: recorded on the web, iOS, Android and
+  macOS, the same screens drew three ways. On the web a `SafeArea` hugged its content where Photon
+  gives it its child's size, so the cards page stood at 481px of 1100 and the rail stopped at its
+  last destination; it now takes the fill and the cap its child lowered to, through an adaptive
+  node's arms, in the C# lowering and its TypeScript twin
+  ([#1342](https://github.com/eQuantic/equantic-ui/issues/1342)). On Photon a `Stack` measured its
+  positioned children before it had a size, so a `SwipeableRow`'s action was a 40dp strip on a
+  78dp row; positioned children are now measured against the size the flow gave the stack
+  ([#1343](https://github.com/eQuantic/equantic-ui/issues/1343)). The three readers that decide
+  whether a node fills now read the vocabulary's layout transparency instead of lists kept by
+  hand, and a test fails when the browser's list leaves a wrapper out. Proving it on Android found
+  #1344: two layers sharing an edge on a fractional pixel bleed through each other there.
 
 ## Retired documents
 
