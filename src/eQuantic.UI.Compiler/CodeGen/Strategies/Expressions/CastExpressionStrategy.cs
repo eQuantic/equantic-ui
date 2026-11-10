@@ -130,7 +130,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     /// only the target has was "Property does not exist on type" (#1303): in TypeScript the cast
     /// keeps its type as an assertion, the target named by its twin and imported as any reference to
     /// it is. A generic target is left as it was, as a list's generic item is left to inference, and
-    /// so is a type with no twin to name. JavaScript has no assertion and gets the value alone. The
+    /// so is a type with no twin to name, one the build keeps on the server included. JavaScript has no assertion and gets the value alone. The
     /// assertion does not CHECK: a wrong downcast reads what the object holds instead of throwing
     /// .NET's InvalidCastException, as it did before.
     /// </summary>
@@ -141,6 +141,9 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         if (!conversion.IsReference || conversion.IsImplicit) return value;
         if (operation.Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } target) return value;
         if (!target.Locations.Any(location => location.IsInSource) && !target.IsRuntimeProvided()) return value;
+        // A type the build writes no module for has no twin to name, and a cast to it still writes
+        // nothing, as it did: the value passes as it is, and the fence stays where the code reads it.
+        if (target.IsKeptOut()) return value;
         return JsExpr.Template("({0} as " + target.IntroduceTwin(context) + ")", value);
     }
 

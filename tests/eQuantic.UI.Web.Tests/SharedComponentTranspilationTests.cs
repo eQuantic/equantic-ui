@@ -225,10 +225,9 @@ public class SharedComponentTranspilationTests
             public static void Order(List<EmittedItem> items) => items.Sort(ByDepth);
         }
 
-        public class EmittedBase
+        public class EmittedBase(string name)
         {
-            public EmittedBase(string name) { Name = name; }
-            public string Name { get; }
+            public string Name { get; } = name;
         }
 
         public sealed class EmittedBag : EmittedBase

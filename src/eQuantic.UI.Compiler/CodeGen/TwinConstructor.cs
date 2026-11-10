@@ -143,6 +143,10 @@ internal sealed class TwinConstructor
                     : optional ? (_annotations ? "undefined!" : "undefined") : null;
                 // Its declared type where the emitter names one.
                 var type = _parameterType?.Invoke(parameter.Type) ?? "any";
+                // A primary constructor's parameter defaults to its type's zero, which for a reference
+                // TypeScript reads as never null is C#'s null all the same: said to be one, as a member
+                // that starts at it is (StartOf), where `name: string = null` was refused (#1347).
+                if (defaulted is "null" && _annotations && !Nullable(type)) defaulted += "!";
                 return _lowering.ParamWithDefault(ParameterName(parameter, single.Primary), type, defaulted,
                     parameter.Modifiers.Any(SyntaxKind.ParamsKeyword));
             }));
