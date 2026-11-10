@@ -166,8 +166,12 @@ public class HotReloadStreamTests
     /// when it arrived, which is after the edit, it made the rebuild wait for an edit that had already
     /// come, and the page drew over (#1373, found by the secondary review of #1378).
     /// </summary>
-    [Fact]
-    public async Task AnEventOfAPathAlreadyGone_DoesNotDateTheSaveAfterItsEdit()
+    [Theory]
+    [InlineData(false)]
+    // The temp file's event first, as an editor's atomic save queues it: the real write time that
+    // follows still dates the save (found by the secondary review of #1378, round 2).
+    [InlineData(true)]
+    public async Task AnEventOfAPathAlreadyGone_DoesNotDateTheSaveAfterItsEdit(bool goneFirst)
     {
         var root = Directory.CreateTempSubdirectory("eq-stream-").FullName;
         var edits = new ServerEdits(arriveOnSave: true, TimeSpan.FromSeconds(1));
@@ -179,8 +183,10 @@ public class HotReloadStreamTests
         await Task.Delay(50);
         edits.Take();
         await Task.Delay(50);
+        var gone = Path.Combine(root, "Screen.cs.tmp.cs");
+        if (goneFirst) service.SourceChanged(gone);
         service.SourceChanged(saved);
-        service.SourceChanged(Path.Combine(root, "Screen.cs.tmp.cs"));
+        if (!goneFirst) service.SourceChanged(gone);
         service.Rebuild();
         leave.Cancel();
         await listening;
