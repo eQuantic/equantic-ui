@@ -129,7 +129,7 @@ import { declareScrollViewport } from './scroll-viewports';
 import { declareTableViewport, tableCellPlace } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
-import { localizeDestination } from '../utils/culture-routes';
+import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
 
 /** The C# `Anchored.MotionLiftDp` twin — the open/close nudge toward the anchor. */
@@ -1273,7 +1273,8 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   // The active language rides the href (C# twin: RenderContext.ResolveDestination). An author
   // writes `/pricing` once and the link is right in every language — including after a
   // client-side switch, which re-renders this node with a different active culture.
-  const destination = localizeDestination(node.destination);
+  // A destination whose scheme an href never carries is no href (C# twin, #1286).
+  const destination = writtenDestination(node.destination);
   // The child's width contract, which the C# realizer has always passed through here and this
   // side never did — a Fill child inside a Link filled on the server and hugged in the browser.
   // No fixture caught it because none composed the two; agreement is only proof when something
@@ -1282,7 +1283,7 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   const linkCap = capsAt(node.child);
   const anchor: HtmlNode = {
     tag: 'a',
-    attributes: { class: 'eq-link', href: destination },
+    attributes: destination === null ? { class: 'eq-link' } : { class: 'eq-link', href: destination },
     events: {},
     children: [],
   };
@@ -1299,7 +1300,7 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   // that is what the router's one delegated click listener meets.
   if (node.keepsPosition) anchor.attributes['data-eq-keep-position'] = '';
   // WARM ON HOVER (C# twin): app-internal destinations only — an absolute URL is somebody else's.
-  if (warmsOnHover(destination)) anchor.attributes['data-prefetch'] = '';
+  if (destination !== null && warmsOnHover(destination)) anchor.attributes['data-prefetch'] = '';
   // The page you are ON (C# twin): only the current link says so.
   if (node.current === true) anchor.attributes['aria-current'] = 'page';
   const child = lowerNode(node.child, context, null, path + '/0');
@@ -3684,9 +3685,12 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
           if (run.destination) {
             // A run that links is a link (C# twin): the language rides its href and an
             // app-internal one warms on hover, as a Link's does (#505).
-            const destination = localizeDestination(run.destination);
-            runNode.attributes = { ...runNode.attributes, href: destination };
-            if (warmsOnHover(destination)) runNode.attributes['data-prefetch'] = '';
+            // One whose scheme an href never carries is no href, and the run stays a run (#1286).
+            const destination = writtenDestination(run.destination);
+            if (destination !== null) {
+              runNode.attributes = { ...runNode.attributes, href: destination };
+              if (warmsOnHover(destination)) runNode.attributes['data-prefetch'] = '';
+            }
           }
           return runNode;
         })
@@ -3798,6 +3802,26 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as FlexibleNode).child);
     case 'loopMotion':
       return fills((node as LoopMotionNode).child);
+    // The rest of the wrappers the vocabulary calls layout-transparent (C# `IsLayoutTransparent`,
+    // which the C# `Fills` reads): a kind missing here answers "does not fill", silently.
+    case 'safeArea':
+      return fills((node as unknown as SafeAreaNode).child as VisualNodeValue);
+    case 'draggable':
+      return fills((node as unknown as DraggableNode).child as VisualNodeValue);
+    case 'dragDismiss':
+      return fills((node as unknown as DragDismissNode).child as VisualNodeValue);
+    case 'link':
+      return fills((node as unknown as LinkNode).child as VisualNodeValue);
+    case 'pinned':
+      return fills((node as unknown as PinnedNode).child as VisualNodeValue);
+    case 'presence':
+      return fills((node as unknown as PresenceNode).child as VisualNodeValue);
+    case 'shortcut':
+      return fills((node as unknown as ShortcutNode).child as VisualNodeValue);
+    case 'codeSurface':
+      return fills((node as unknown as CodeSurfaceNode).child as VisualNodeValue);
+    case 'sheetSurface':
+      return fills((node as unknown as SheetSurfaceNode).child as VisualNodeValue);
     default:
       return { width: false, height: false };
   }
@@ -4745,8 +4769,46 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
   });
 
   const child = lowerNode(node.child, context, null, path + '/0');
-  if (child) wrapper.children.push(child);
+  if (child) {
+    // C# twin: transparent to its child's size, read off what the child lowered to (a component's
+    // fill is only known once it has built), with the insets inside the box it takes.
+    const asked = asksForAll(child);
+    if (asked.width || asked.height) {
+      mergeAtomicDeclaration(wrapper, 'box-sizing', 'border-box');
+      if (asked.width) {
+        // The whole width contract: the fill AND its cap (C# twin).
+        mergeAtomicDeclaration(wrapper, 'width', '100%');
+        if (asked.cap !== undefined) mergeAtomicDeclaration(wrapper, 'max-width', asked.cap);
+      }
+      if (asked.height) mergeAtomicDeclaration(wrapper, 'height', '100%');
+      // FILL means the parent's extent, never more (C# twin, as lowerFlex writes it).
+      if (asked.width) mergeAtomicDeclaration(wrapper, 'min-width', '0');
+      if (asked.height) mergeAtomicDeclaration(wrapper, 'min-height', '0');
+    }
+    wrapper.children.push(child);
+  }
   return wrapper;
+}
+
+/**
+ * C# `AsksForAll`: the axes a lowered element asks its parent for all of, and its width cap, read
+ * through every element that draws no box (a display:contents wrapper, an adaptive node's gate),
+ * where every arm has to ask it — the page's media rules show one arm at a time, and the parent
+ * cannot know which.
+ */
+function asksForAll(node: HtmlNode): { width: boolean; height: boolean; cap?: string } {
+  const gate = (node.attributes['class'] ?? '').split(' ').some(isAdaptiveGate);
+  if (gate || atomicDeclaration(node, 'display') === 'contents') {
+    const inner = node.children.filter((child) => child.textContent === undefined).map(asksForAll);
+    if (inner.length === 0) return { width: false, height: false };
+    if (inner.length === 1) return inner[0];
+    return { width: inner.every((arm) => arm.width), height: inner.every((arm) => arm.height) };
+  }
+  return {
+    width: atomicDeclaration(node, 'width') === '100%',
+    height: atomicDeclaration(node, 'height') === '100%',
+    cap: atomicDeclaration(node, 'max-width'),
+  };
 }
 
 /**

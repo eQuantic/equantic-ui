@@ -1,1 +1,9 @@
 #nullable enable
+eQuantic.UI.Primitives.FileSaveOutcome
+eQuantic.UI.Primitives.FileSaveOutcome.Cancelled = 0 -> eQuantic.UI.Primitives.FileSaveOutcome
+eQuantic.UI.Primitives.FileSaveOutcome.Offered = 1 -> eQuantic.UI.Primitives.FileSaveOutcome
+eQuantic.UI.Primitives.FileSaveOutcome.Saved = 2 -> eQuantic.UI.Primitives.FileSaveOutcome
+eQuantic.UI.Primitives.IFileSaver
+eQuantic.UI.Primitives.IFileSaver.IsAvailable.get -> bool
+eQuantic.UI.Primitives.IFileSaver.SaveBytesAsync(string! name, byte[]! content, string? mimeType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.FileSaveOutcome>
+eQuantic.UI.Primitives.IFileSaver.SaveTextAsync(string! name, string! text, string? mimeType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.FileSaveOutcome>
