@@ -44,21 +44,22 @@ public static class ApexChartsServiceExtensions
     private static void ConfigureApexCharts(UIOptions options, string? version = null)
     {
         var ver = version ?? DefaultVersion;
-        var cdnTag = HtmlTag.Script($"https://cdn.jsdelivr.net/npm/apexcharts@{ver}/dist/apexcharts.min.js").Render();
+        var cdnTag = HtmlTag.Script($"https://cdn.jsdelivr.net/npm/apexcharts@{ver}/dist/apexcharts.min.js");
 
         // Only add if not already present
-        if (!options.HtmlShell.HeadTags.Any(t => t.Contains("apexcharts")))
+        if (!options.HtmlShell.HeadTags.Any(t => t.Attributes.TryGetValue("src", out var src)
+                && src is not null && src.Contains("apexcharts")))
         {
-            options.HtmlShell.HeadTags.Add(cdnTag);
+            options.HtmlShell.AddHeadTag(cdnTag);
         }
 
         // Add initialization script that discovers data-apex-init markers
         var initTag = HtmlTag.InlineScript(
-            "document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('script[data-apex-init]').forEach(function(el){var id=el.getAttribute('data-apex-init');var cfg=JSON.parse(el.getAttribute('data-apex-config'));var c=document.getElementById(id);if(c&&typeof ApexCharts!=='undefined')new ApexCharts(c,cfg).render()})});").Render();
+            "document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('script[data-apex-init]').forEach(function(el){var id=el.getAttribute('data-apex-init');var cfg=JSON.parse(el.getAttribute('data-apex-config'));var c=document.getElementById(id);if(c&&typeof ApexCharts!=='undefined')new ApexCharts(c,cfg).render()})});");
 
-        if (!options.HtmlShell.HeadTags.Any(t => t.Contains("data-apex-init")))
+        if (!options.HtmlShell.HeadTags.Any(t => t.Content?.Contains("data-apex-init") == true))
         {
-            options.HtmlShell.HeadTags.Add(initTag);
+            options.HtmlShell.AddHeadTag(initTag);
         }
     }
 }

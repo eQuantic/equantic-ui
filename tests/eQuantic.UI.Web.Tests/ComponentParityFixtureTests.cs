@@ -574,7 +574,7 @@ public class ComponentParityFixtureTests
                 var once = UnmeasuredMark.Replace(
                     HtmlRenderer.RenderNode(WebRealizer.Lower(drawnOnce, Theme, 1f, new StyleSink()).Render()), "");
 
-                var owner = new BuildOwner();
+                var owner = ComponentBoundary.Owner();
                 var root = owner.Build(framed, new ComponentContext(Theme, 1f, Density.Comfortable, static (_, _) => 0f),
                     sizeClass, rebuildAll: false);
                 var frame = HtmlRenderer.RenderNode(WebRealizer.LowerFrame(root, Theme, 1f, new StyleSink()).Render());

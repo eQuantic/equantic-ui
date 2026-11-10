@@ -35,7 +35,7 @@ public class StyleElementTextTests
         StyleAtomizer.Atomize(new HtmlStyle { BackgroundImage = $"url(\"{Breakout}\")" },
             ThemeVarMap.For(PhotonTheme.Instance), sink);
 
-        var html = new InlineStyleAsset(sink.Css, "eq-atomic").Render();
+        var html = new InlineStyleAsset(sink.Css, "eq-atomic").Render(null);
 
         sink.Css.Should().Contain(Breakout, "the value reached the sheet as it came");
         Closes(html).Should().Be(1, "only the element's own end closes it");
@@ -44,7 +44,7 @@ public class StyleElementTextTests
 
     [Fact]
     public void ACaseFoldedEndTag_StaysInItsElementToo() =>
-        Closes(new InlineStyleAsset("a{content:\"</STYLE ><script>alert(1)</script>\"}").Render()).Should().Be(1);
+        Closes(new InlineStyleAsset("a{content:\"</STYLE ><script>alert(1)</script>\"}").Render(null)).Should().Be(1);
 
     [Fact]
     public async Task AnAppsOwnStyles_CannotEndTheirElement()
