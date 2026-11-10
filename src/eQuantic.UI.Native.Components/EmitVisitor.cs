@@ -113,8 +113,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     }
 
     /// <summary>
-    /// The press and focus reads every node makes before its own door runs: a Pressable arms the
-    /// token swap and the first descendant Box consumes it, so this cannot live in any one door.
+    /// The press and focus reads every node makes before its own door runs: a Pressable arms its
+    /// focus ring, which the first descendant Box draws, and lends its press and focus to every box
+    /// of its subtree, so this cannot live in any one door. A pressed FILL is no part of it: it is the
+    /// <c>Pressed</c> diff of the box it fills, laid over that box's style like any state (#616).
     /// </summary>
     private void Dispatch(in EmitState s)
     {
@@ -126,37 +128,43 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         // disabled while held is still tracked here, and the CURRENT node is what decides (#508).
         var disabledControl = node.Source is Pressable { Disabled: true };
         var pressTracked = !disabledControl && press.IsPressed(node);
-        if (pressTracked && node.Source is Pressable { PressedBackground: { } pressedFill })
-            press.PendingFill = pressedFill;
-        // A SIMULATED press takes the fill from the Pressable being pictured — the host is tracking
-        // nothing, so there is no tracked node to read it from.
-        else if ((press.Simulated & SimulatedState.Pressed) != 0
-            && node.Source is Pressable { Disabled: false, PressedBackground: { } simulatedFill })
-            press.PendingFill = simulatedFill;
         var focusTracked = !disabledControl
             && (press.Focused is not null || press.FocusedId != 0)
             && press.IsFocused(node);
+        // A control nested in another under a picture is not the one pictured, and draws no ring.
+        var nestedInPicture = press.InControl && node.Source is Pressable { Disabled: false };
         if (focusTracked)
             press.PendingFocusRing = true;
-        else if ((press.Simulated & SimulatedState.Focused) != 0 && node.Source is Pressable { Disabled: false })
+        else if ((press.Simulated & SimulatedState.Focused) != 0 && node.Source is Pressable { Disabled: false }
+            && !nestedInPicture)
             press.PendingFocusRing = true;
 
         // The control's press and focus reach EVERY box inside it, for as long as its subtree is
         // drawn (#508): set around its own visit, which draws the subtree, and restored after. The
         // control is an enabled Pressable (a disabled one was ruled out above), as the web's is the
         // element carrying eq-pressable. Anything else that takes focus (a Link) still draws its
-        // ring, and lends its subtree no state.
+        // ring, and lends its subtree no state. A control NESTED in a pressed or focused one sets
+        // its own state for its subtree, so a button in a pressed row is not pressed (#616), the
+        // web's state selectors stopping at the inner control the same way.
+        var enabledControl = !disabledControl && node.Source is Pressable;
         var pressedHere = pressTracked && node.Source is Pressable;
         var focusedHere = focusTracked && node.Source is Pressable;
         // And a disabled control's subtree is drawn with the control's SIMULATED states masked, so a
-        // picture of a disabled control shows no press and no focus either, as the web lowers it. A
+        // picture of a disabled control shows no press and no focus either, as the web lowers it,
+        // and so is a control nested in another under a picture: the picture is the outer one's. A
         // hover is the box's own state and stays.
         var outerPressed = press.InPressedControl;
         var outerFocused = press.InFocusedControl;
         var outerSimulated = press.Simulated;
         var outerDisabled = press.InDisabledControl;
-        if (pressedHere) press.InPressedControl = true;
-        if (focusedHere) press.InFocusedControl = true;
+        var outerInControl = press.InControl;
+        if (enabledControl)
+        {
+            press.InPressedControl = pressedHere;
+            press.InFocusedControl = focusedHere;
+            if (press.InControl) press.Simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
+            press.InControl = true;
+        }
         if (disabledControl)
         {
             press.Simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
@@ -167,6 +175,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         press.InFocusedControl = outerFocused;
         press.Simulated = outerSimulated;
         press.InDisabledControl = outerDisabled;
+        press.InControl = outerInControl;
     }
 
     /// <summary>Paint the children where they were laid out. The default arm of the old dispatch,

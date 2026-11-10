@@ -54,8 +54,12 @@ describe('S5 state overlays (C# cross-pin)', () => {
   // (0,3,0) under pressed (0,4,0).
   it('focus and press select every box inside the control, ranked by specificity', () => {
     expect(stateSelector(':hover', 'eq-x')).toBe('.eq-x:hover');
-    expect(stateSelector(CONTROL_FOCUS, 'eq-x')).toBe('.eq-pressable:focus-visible .eq-x');
-    expect(stateSelector(CONTROL_PRESSED, 'eq-x')).toBe('.eq-pressable.eq-pressable:active .eq-x');
+    expect(stateSelector(CONTROL_FOCUS, 'eq-x')).toBe(
+      '.eq-pressable:focus-visible .eq-x:not(:where(.eq-pressable:focus-visible .eq-pressable .eq-x))',
+    );
+    expect(stateSelector(CONTROL_PRESSED, 'eq-x')).toBe(
+      '.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-x:not(:where(.eq-pressable:not(:active) .eq-x))',
+    );
   });
 
   it('a pressed diff lowers to the pressed family, hashed by its name', () => {
