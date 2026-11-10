@@ -12,6 +12,11 @@ when the save was written and when the last edit reached the server.
 - **WHEN** a save is rebuilt and announced, and the debounce asks for a rebuild again with nothing saved since
 - **THEN** the page hears one announcement, where it heard a second one, which said mount
 
+#### Scenario: An event of a path already gone
+
+- **WHEN** a save's file is written, its edit reaches the server, and the save's events include one for a path gone by the time the server reads it
+- **THEN** the save keeps its file's write time and the page hears hydrate, where the gone path dated it at the event's arrival and the page heard mount
+
 #### Scenario: A page that mounts
 
 - **WHEN** a rebuild tells the page to mount

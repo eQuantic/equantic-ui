@@ -7,6 +7,7 @@
 
 ## 2. One announcement per save
 
+- [x] 2.2 An event for a path already gone dates nothing when the save has a time. Verify: `AnEventOfAPathAlreadyGone_DoesNotDateTheSaveAfterItsEdit` fails before (mount) and passes after
 - [x] 2.1 A rebuild with no save since the last does nothing. Verify: `ASecondCallForTheSaveTheLastRebuildAnswered_AnnouncesNothing` fails before (two announcements, the second a mount) and passes after, with the 29 hot-reload tests
 
 ## 3. Proved against the real thing

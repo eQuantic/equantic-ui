@@ -161,6 +161,34 @@ public class HotReloadStreamTests
     }
 
     /// <summary>
+    /// An event of a save whose path is gone by the time the server reads it (a temp file an editor
+    /// renamed onto the source) dates nothing: the save's other events carry its write time. Dated at
+    /// when it arrived, which is after the edit, it made the rebuild wait for an edit that had already
+    /// come, and the page drew over (#1373, found by the secondary review of #1378).
+    /// </summary>
+    [Fact]
+    public async Task AnEventOfAPathAlreadyGone_DoesNotDateTheSaveAfterItsEdit()
+    {
+        var root = Directory.CreateTempSubdirectory("eq-stream-").FullName;
+        var edits = new ServerEdits(arriveOnSave: true, TimeSpan.FromSeconds(1));
+        using var service = new HotReloadService(root, Exits(true), TimeSpan.FromSeconds(30), edits);
+        var (page, listening, leave) = await ListenAsync(service);
+
+        var saved = Path.Combine(root, "Screen.cs");
+        await File.WriteAllTextAsync(saved, "class Screen { }");
+        await Task.Delay(50);
+        edits.Take();
+        await Task.Delay(50);
+        service.SourceChanged(saved);
+        service.SourceChanged(Path.Combine(root, "Screen.cs.tmp.cs"));
+        service.Rebuild();
+        leave.Cancel();
+        await listening;
+
+        page.Heard.Should().EndWith("event: rebuilt\ndata: hydrate\n\n", "the save was written before its edit came");
+    }
+
+    /// <summary>
     /// A save is announced once. The events of one save can straddle the start of its rebuild, so the
     /// debounce asked for a rebuild again after the first had taken the save: that one had no save to read
     /// a write time from, waited for an edit after it was asked, found none and said the page mounts, and

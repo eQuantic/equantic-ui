@@ -160,13 +160,17 @@ public sealed class HotReloadService : IDisposable
         // Each event of a save restarts the wait, so a burst of writes is one rebuild.
         if (_disposed) return;
         // The burst's last write, which the edit of its save follows: read off the file, never off
-        // when this event arrived, which may be after dotnet watch applied the edit.
-        var written = path is not null && File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.UtcNow;
+        // when this event arrived, which may be after dotnet watch applied the edit. A path gone by the
+        // time its event is read (a temp file an editor renamed onto the source, a file deleted) has no
+        // write time, and the save's other events carry it: dated now, it put the burst after the edit,
+        // and the page drew over (#1373). Alone in its burst, it is dated now, so the save is rebuilt.
+        var exists = path is not null && File.Exists(path);
+        var written = exists ? File.GetLastWriteTimeUtc(path!) : DateTime.UtcNow;
         long seen;
         do
         {
             seen = Volatile.Read(ref _burstWritten);
-            if (seen >= written.Ticks) break;
+            if (seen >= written.Ticks || path is not null && !exists && seen != 0) break;
         }
         while (Interlocked.CompareExchange(ref _burstWritten, written.Ticks, seen) != seen);
         try
