@@ -1,4 +1,7 @@
 #nullable enable
+[EQX0001]eQuantic.UI.Native.Framework.FieldText
+[EQX0001]static eQuantic.UI.Native.Framework.FieldText.Of(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Primitives.TextEntry! entry) -> string!
+[EQX0001]static eQuantic.UI.Native.Framework.FieldText.Typed(eQuantic.UI.Primitives.Element? at, eQuantic.UI.Primitives.TextEntry! entry, string! text) -> void
 [EQX0001]eQuantic.UI.Native.Framework.PortableIconRasterizer
 [EQX0001]eQuantic.UI.Native.Framework.PortableIconRasterizer.PortableIconRasterizer() -> void
 [EQX0001]eQuantic.UI.Native.Framework.PortableIconRasterizer.Rasterize(eQuantic.UI.Primitives.IconGlyph glyph, float widthDp, float heightDp, float scale) -> eQuantic.UI.Native.Framework.TextRaster?
