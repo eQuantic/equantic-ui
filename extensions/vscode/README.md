@@ -62,7 +62,7 @@ npm run package      # compiles, publishes the design host into host/, writes eq
 `npm test` downloads a VS Code, loads the extension into it on the dashboard sample, and drives it.
 
 It takes Node.js 22 or later, the version CI uses: the packaging tool's own dependencies
-(`@vscode/vsce`, through `@azure/identity`) declare it, and on 20 npm prints a wall of `EBADENGINE`
+(`@vscode/vsce` 4 asks for 22) declare it, and on 20 npm prints a wall of `EBADENGINE`
 warnings.
 
 ## Publishing it
@@ -70,20 +70,15 @@ warnings.
 `npm run package` writes the `.vsix`; putting it on the Marketplace needs two things this repository
 deliberately does not carry:
 
-- **A publisher, and a credential.** CI has a `publish-extension` job, gated on an `ext-v*` tag,
-  which publishes the archive the packaging job already verified rather than rebuilding one, with
-  the vsce that `package-lock.json` pinned, installed by `npm ci`. It takes
-  either credential and needs one:
-  - `VSCE_PAT` — a Marketplace personal access token. One secret, nothing else to set up, and it
-    **retires on 2026-12-01**.
-  - `AZURE_CLIENT_ID` + `AZURE_TENANT_ID` + `AZURE_SUBSCRIPTION_ID` — Microsoft Entra with workload
-    identity federation. The job signs the Azure CLI in with `azure/login`, and `vsce publish
-    --azure-credential` takes its token from there. Nothing is stored, but the identity has to be
-    created in Azure and added to the publisher as a member.
+- **A publisher, and its trusted publishing policy.** CI has a `publish-extension` job, gated on an
+  `ext-v*` tag, which publishes the archive the packaging job already verified rather than rebuilding
+  one, with the vsce that `package-lock.json` pinned, installed by `npm ci`. It publishes with
+  `vsce publish --oidc`: the job's GitHub token is exchanged for a Marketplace credential that lives
+  fifteen minutes, so no credential is stored and none expires. What it needs is a Trusted
+  Publishing policy on the publisher's page in the Marketplace's publisher management, naming this
+  repository and `.github/workflows/ci.yml`. Without one the job fails, and never falls back to a
+  token.
 
-  Trusted publishing (`vsce publish --oidc`), which would need neither, is documented on the tool's
-  **main branch** and is not in the released CLI — 3.9.2 answers `unknown option '--oidc'`. When it
-  ships, it replaces both of these with four lines.
 The icon comes from `assets/equantic-vscode-icon.png` and is copied in on every package, because a
 second copy is a thing that drifts — this one was a stale 100×100 within the same minute the source
 was corrected. The Marketplace requires PNG at 128×128 or larger and prohibits SVG, so `npm run
