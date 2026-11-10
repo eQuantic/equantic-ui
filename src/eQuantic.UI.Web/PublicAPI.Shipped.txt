@@ -784,7 +784,7 @@ static eQuantic.UI.Web.IconRegistry.Path(eQuantic.UI.Primitives.Icons glyph) -> 
 static eQuantic.UI.Web.LoadedComponentState.operator !=(eQuantic.UI.Web.LoadedComponentState? left, eQuantic.UI.Web.LoadedComponentState? right) -> bool
 static eQuantic.UI.Web.LoadedComponentState.operator ==(eQuantic.UI.Web.LoadedComponentState? left, eQuantic.UI.Web.LoadedComponentState? right) -> bool
 static eQuantic.UI.Web.RenderContext.LinkPolicy.get -> System.Func<string!, string!>?
-static eQuantic.UI.Web.RenderContext.ResolveDestination(string! destination) -> string!
+static eQuantic.UI.Web.RenderContext.ResolveDestination(string! destination) -> string?
 static eQuantic.UI.Web.RenderContext.SetLinkPolicy(System.Func<string!, string!>? policy) -> void
 static eQuantic.UI.Web.StyleAtomizer.Atomize(eQuantic.UI.Web.HtmlStyle! style, eQuantic.UI.Web.ThemeVarMap! vars, eQuantic.UI.Web.StyleSink! sink) -> string!
 static eQuantic.UI.Web.StyleAtomizer.AtomizeTree(eQuantic.UI.Web.HtmlElement! element, eQuantic.UI.Web.ThemeVarMap! vars, eQuantic.UI.Web.StyleSink! sink) -> void

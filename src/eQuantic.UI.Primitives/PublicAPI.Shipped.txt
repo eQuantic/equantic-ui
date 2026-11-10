@@ -555,6 +555,10 @@ eQuantic.UI.Primitives.FileFilter.Extensions.init -> void
 eQuantic.UI.Primitives.FileFilter.FileFilter(string! Label, params string![]! Extensions) -> void
 eQuantic.UI.Primitives.FileFilter.Label.get -> string!
 eQuantic.UI.Primitives.FileFilter.Label.init -> void
+eQuantic.UI.Primitives.FileSaveOutcome
+eQuantic.UI.Primitives.FileSaveOutcome.Cancelled = 0 -> eQuantic.UI.Primitives.FileSaveOutcome
+eQuantic.UI.Primitives.FileSaveOutcome.Offered = 1 -> eQuantic.UI.Primitives.FileSaveOutcome
+eQuantic.UI.Primitives.FileSaveOutcome.Saved = 2 -> eQuantic.UI.Primitives.FileSaveOutcome
 eQuantic.UI.Primitives.FlexNode
 eQuantic.UI.Primitives.FlexNode.Add(eQuantic.UI.Primitives.VisualNode! child) -> void
 eQuantic.UI.Primitives.FlexNode.Background.get -> eQuantic.UI.Primitives.ColorToken?
@@ -859,6 +863,10 @@ eQuantic.UI.Primitives.IFilePicker
 eQuantic.UI.Primitives.IFilePicker.IsAvailable.get -> bool
 eQuantic.UI.Primitives.IFilePicker.PickFileAsync(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>? filters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.PickedFile?>
 eQuantic.UI.Primitives.IFilePicker.PickFilesAsync(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>? filters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.PickedFile!>!>
+eQuantic.UI.Primitives.IFileSaver
+eQuantic.UI.Primitives.IFileSaver.IsAvailable.get -> bool
+eQuantic.UI.Primitives.IFileSaver.SaveBytesAsync(string! name, byte[]! content, string? mimeType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.FileSaveOutcome>
+eQuantic.UI.Primitives.IFileSaver.SaveTextAsync(string! name, string! text, string? mimeType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.FileSaveOutcome>
 eQuantic.UI.Primitives.IFrameTicker
 eQuantic.UI.Primitives.IFrameTicker.OnFrame(System.Action<eQuantic.UI.Primitives.FrameTick>! onFrame) -> System.IDisposable!
 eQuantic.UI.Primitives.IHandleStatus
