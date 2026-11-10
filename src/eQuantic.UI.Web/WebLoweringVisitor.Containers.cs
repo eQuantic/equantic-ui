@@ -872,8 +872,10 @@ internal sealed partial class WebLoweringVisitor
         var simulated = _simulated;
         if (box.Style.Hover is { IsEmpty: false } hover)
         {
+            // Inside an enabled control the hover is the control's, as the focus and the press are
+            // (#614); outside every control, and inside a disabled one, it is the box's own.
             if (simulated.HasFlag(SimulatedState.Hovered)) ApplyDiff(element.Style, hover, box.Style);
-            else AppendDiff(element, ":hover", hover, box.Style);
+            else AppendDiff(element, _inEnabledControl ? StyleSink.ControlHover : ":hover", hover, box.Style);
         }
         // Focus and press are the CONTROL's states, so they go to the families that select every box
         // inside the control (#508), and they are laid over the base in the handoff's order: a

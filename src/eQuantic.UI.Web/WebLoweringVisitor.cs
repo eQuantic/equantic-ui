@@ -50,6 +50,10 @@ internal sealed partial class WebLoweringVisitor(
     /// as the real ones do (#616). A <see cref="Simulated"/> node starts it over.</summary>
     private bool _inControl;
 
+    /// <summary>True while the nearest control around the box being lowered is ENABLED: its hover is
+    /// then the control's (#614). A disabled control's boxes keep their own, as before.</summary>
+    private bool _inEnabledControl;
+
     /// <summary>
     /// The single dispatch every node passes through — and therefore the one place the design-mode
     /// origin is attached, once, rather than in each of the branches below.

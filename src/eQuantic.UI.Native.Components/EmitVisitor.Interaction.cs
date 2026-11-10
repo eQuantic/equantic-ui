@@ -20,6 +20,11 @@ internal sealed partial class EmitVisitor
             : s.Input;
         input.Add(new HitRegion(ExpandHitRect(s.Node.Bounds, s.Press.Density), s.Node.Bounds, pressable,
             PositionOf(s.Node)));
+        // An enabled control is hovered as a whole, and its boxes show their Hover diff while it is,
+        // wherever the pointer is on it (#614): the host tracks it as it tracks a hovering box. Its
+        // drawn bounds, not the slop a finger is given: a pointer hovers what it is over.
+        if (!pressable.Disabled)
+            input.Add(new HoverRegion(s.Node.Bounds, pressable, PositionOf(s.Node)));
 
         // A PRESSABLE IS THE STOP FOR ITS SUBTREE, exactly as a link, an Adjustable and a Navigable
         // are, and for the reason all four share: `Visit(Pressable)` announces and CONSUMES, so

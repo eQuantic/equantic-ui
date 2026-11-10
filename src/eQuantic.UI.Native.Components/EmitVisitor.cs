@@ -159,17 +159,23 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         var outerSimulated = press.Simulated;
         var outerDisabled = press.InDisabledControl;
         var outerInControl = press.InControl;
+        var outerHovered = press.ControlHovered;
         if (enabledControl)
         {
             press.InPressedControl = pressedHere;
             press.InFocusedControl = focusedHere;
-            if (press.InControl) press.Simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
+            // The hover is the control's too (#614): its own place in the host's hover chain.
+            press.ControlHovered = press.IsHovered(node, node.Source);
+            if (press.InControl)
+                press.Simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused | SimulatedState.Hovered);
             press.InControl = true;
         }
         if (disabledControl)
         {
             press.Simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
             press.InDisabledControl = true;
+            // A disabled control's boxes keep their own hover, as before.
+            press.ControlHovered = null;
         }
         node.Source.Accept(this, s);
         press.InPressedControl = outerPressed;
@@ -177,6 +183,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         press.Simulated = outerSimulated;
         press.InDisabledControl = outerDisabled;
         press.InControl = outerInControl;
+        press.ControlHovered = outerHovered;
     }
 
     /// <summary>Paint the children where they were laid out. The default arm of the old dispatch,

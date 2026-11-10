@@ -478,14 +478,17 @@ internal sealed partial class WebLoweringVisitor
         var outerSimulated = _simulated;
         var outerDisabled = _inDisabledControl;
         var outerInControl = _inControl;
+        var outerInEnabledControl = _inEnabledControl;
         if (pressable.Disabled)
         {
             _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
             _inDisabledControl = true;
         }
         else if (_inControl)
-            _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
+            // The hover too, since #614 made it the control's: a picture of the row is the row's.
+            _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused | SimulatedState.Hovered);
         _inControl = true;
+        _inEnabledControl = !pressable.Disabled;
         // What THIS control is pictured as: its ring below reads it, so a nested control under a
         // picture of the one around it draws no ring either.
         var pictured = _simulated;
@@ -499,6 +502,7 @@ internal sealed partial class WebLoweringVisitor
             _simulated = outerSimulated;
             _inDisabledControl = outerDisabled;
             _inControl = outerInControl;
+            _inEnabledControl = outerInEnabledControl;
         }
 
         // A Pressable AROUND a control — a Menu making its trigger open the panel — is ordinary

@@ -44,6 +44,7 @@ import {
   atomizePseudo,
   atomizeScrolled,
   CONTROL_FOCUS,
+  CONTROL_HOVER,
   CONTROL_PRESSED,
   ensureAdaptiveGate,
   gateCompactUntil,
@@ -3231,8 +3232,9 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
 
   const result = element('div', entries);
 
+  // Inside an enabled control the hover is the control's (C# twin, #614).
   if (style.hover && !(simulatedState & SIMULATED_HOVERED))
-    appendDiff(result, ':hover', style.hover, style);
+    appendDiff(result, inEnabledControl ? CONTROL_HOVER : ':hover', style.hover, style);
   if (focus && !(simulatedState & SIMULATED_FOCUSED)) appendDiff(result, CONTROL_FOCUS, focus, style);
   if (pressed && !(simulatedState & SIMULATED_PRESSED))
     appendDiff(result, CONTROL_PRESSED, pressed, style);
@@ -3849,11 +3851,13 @@ function lowerPressable(
   const outerSimulated = simulatedState;
   const outerDisabled = inDisabledControl;
   const outerInControl = inControl;
+  const outerInEnabledControl = inEnabledControl;
   if (disabled) {
     simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
     inDisabledControl = true;
-  } else if (inControl) simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
+  } else if (inControl) simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED | SIMULATED_HOVERED);
   inControl = true;
+  inEnabledControl = !disabled;
   // What THIS control is pictured as: its ring below reads it (C# `pictured`).
   const pictured = simulatedState;
   let child: HtmlNode | null;
@@ -3863,6 +3867,7 @@ function lowerPressable(
     simulatedState = outerSimulated;
     inDisabledControl = outerDisabled;
     inControl = outerInControl;
+    inEnabledControl = outerInEnabledControl;
   }
 
   // HTML forbids a button inside a button (and an anchor inside an anchor): the parser closes the
@@ -4533,6 +4538,8 @@ let simulatedState = 0;
 let inDisabledControl = false;
 /** True while an enabled control's subtree is lowered under a Simulated node (C# `_inControl`, #616). */
 let inControl = false;
+/** True while the nearest control is ENABLED, whose hover its boxes then take (C# `_inEnabledControl`, #614). */
+let inEnabledControl = false;
 
 /**
  * Draws the subtree in the given states (the C# `LowerSimulated`). `:hover` and `:focus-visible`

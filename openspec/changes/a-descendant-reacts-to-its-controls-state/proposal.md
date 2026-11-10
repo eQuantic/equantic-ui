@@ -26,9 +26,10 @@ its own pointer, because a child inside a button has no pointer region of its ow
   group, as in Flutter. On the web the hover family becomes the control's
   (`.eq-pressable:hover .x`, leaving out a box under a control nobody hovers) for a box inside a
   control, still gated on `@media (hover: hover)`; Photon lends its tracked hover to the control's
-  subtree, as it lends the press. A hover of the box itself inside a control is no longer said. Where
-  a component's hover sits on the control's own surface the two mean the same, and the first task
-  measures every hover a component states inside a control before anything changes.
+  subtree, as it lends the press. A hover of the box itself inside a control is no longer said.
+  Measured first: every hover a component in this repository states inside a control sits on the
+  control's own surface, the box the `Pressable` wraps, where the control's hover and the box's are
+  the same (the list is task 1.1), so none of them changes where it applies.
 - **A foreground that descendants inherit.** `BoxStyle.Foreground` and `StyleDiff.Foreground`
   (`ColorToken?`): the colour a `Text`, an `Icon` and a `VectorIcon` inside the box take when they
   name none of their own, resolved per state like any member, so `Hover = new StyleDiff { Foreground
