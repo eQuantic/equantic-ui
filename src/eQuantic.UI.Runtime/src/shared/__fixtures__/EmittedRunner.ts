@@ -1,5 +1,5 @@
 export class EmittedRunner {
-    constructor(step?: (value: number) => number, live?: boolean) {
+    constructor(step: (value: number) => number = undefined!, live: boolean = undefined!) {
         if (arguments.length === 1) {
             let $c0: any, $c1: any;
             {

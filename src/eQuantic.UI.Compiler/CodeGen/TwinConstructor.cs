@@ -128,16 +128,19 @@ internal sealed class TwinConstructor
         if (single is not null)
         {
             // A count an alternate takes below what the root requires reaches the twin with fewer
-            // arguments than its parameters: each is then optional to TypeScript, as JavaScript reads it.
+            // arguments than its parameters: each may then arrive missing, as JavaScript reads it. The
+            // alternate's branch binds every one of them before the body reads it, so the body holds
+            // the declared type: in TypeScript the parameter is defaulted to an `undefined` the checker
+            // reads as that type (`x: number = undefined!`), where `x?: number` made every read of it
+            // `number | undefined` and every store of it into a member refused (#1305).
             var optional = constructors.Alternates.Any(alternate => alternate.Arity.Low < single.Arity.Low);
             parameters = string.Join(", ", single.Parameters.Select(parameter =>
             {
                 var defaulted = parameter.Default is { } given
                     ? _converter.ConvertExpression(given.Value, parameter.Type?.ValueText())
                     : single.Primary && parameter.Type is { } typed ? DefaultOf(typed)
-                    : optional ? "undefined" : null;
-                // Its declared type where the emitter names one: one that may arrive missing is optional
-                // to TypeScript (`x?: number`).
+                    : optional ? (_annotations ? "undefined!" : "undefined") : null;
+                // Its declared type where the emitter names one.
                 var type = _parameterType?.Invoke(parameter.Type) ?? "any";
                 return _lowering.ParamWithDefault(ParameterName(parameter, single.Primary), type, defaulted,
                     parameter.Modifiers.Any(SyntaxKind.ParamsKeyword));
