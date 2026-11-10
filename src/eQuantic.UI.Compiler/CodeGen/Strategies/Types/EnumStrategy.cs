@@ -75,7 +75,8 @@ public class EnumStrategy : IConversionStrategy
     /// and casts behaving like .NET. Every other enum is its member name as a string (SizeVariant.Medium
     /// is 'medium'), never its number: verbose, easy to identify, and stable whatever the underlying
     /// value. camelCase matches the runtime's theme lookups. A flags value is read through decimal,
-    /// which holds every underlying type's range: a ulong member past long's crashed the compile.
+    /// which holds every underlying type's range: a ulong member past long's crashed the compile, and
+    /// it is written at the enum's width, a 64-bit enum's as a BigInt (#551).
     /// </para>
     /// </summary>
     internal static string MemberLiteral(IFieldSymbol field)
@@ -83,7 +84,7 @@ public class EnumStrategy : IConversionStrategy
         if (!field.HasConstantValue) return $"'{field.Name.ToCamelCase()}'";
         var value = System.Convert.ToDecimal(field.ConstantValue, CultureInfo.InvariantCulture);
         return field.ContainingType.IsFlagsEnum()
-            ? value.ToString(CultureInfo.InvariantCulture)
+            ? EnumShape.ValueLiteral(field.ContainingType, value)
             : $"'{EnumShape.KeyOf(field.ContainingType, value) ?? field.Name.ToCamelCase()}'";
     }
 
