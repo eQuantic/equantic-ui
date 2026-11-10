@@ -114,6 +114,7 @@ public class ServerEventsBoundsTests
     [InlineData(null, "{} {}")]
     [InlineData(null, "{")]
     [InlineData(null, "")]
+    [InlineData(null, "   ")]
     public async Task AFrameTheBackplaneCarriesThatAFrameCannotHold_ReachesNoPage(string? id, string payload)
     {
         await using var app = await AnonymousApp();
