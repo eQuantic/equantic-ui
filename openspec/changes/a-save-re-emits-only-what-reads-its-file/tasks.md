@@ -12,7 +12,7 @@
 - [x] 2.1 The text outside every body of a changed file is compared before and after the save, and any difference compiles every file
 - [x] 2.2 A file that is not changed, read nothing changed and compiled without error keeps its results, warnings, resource uses and discovered resource classes, replayed into the build in a cold build's order
 - [x] 2.3 Tests, each with the dependency forgotten failing: a body of one screen (only it is compiled), a default interface member's body, a struct method's body read by `ValueCopies`, a constant, a constructor a factory calls, and a resource string of a file not compiled again. Every module equals a cold build's. Verify: `ASaveCompilesWhatItTouchedTests`, and four sabotages each failing its cases (the kept mutation answer's hand-on is not isolated, since the second caller reads the struct's file itself too)
-- [ ] 2.4 The compiler's suite with its component pins, and the conformance suite, pass. Verify: the compiler's suite, 2858 tests
+- [x] 2.4 The compiler's suite with its component pins, and the conformance suite, pass. Verify: the compiler's suite, 2858 tests, and the conformance suite, 7432 tests
 
 ## 3. The proof
 
