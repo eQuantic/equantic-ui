@@ -45,12 +45,83 @@ public sealed class WalletApp : StatefulComponent
     /// and the screen is the one it opens on. Each head says where they come from: the native head
     /// resolves the ledger from its container and reads the screen from its configuration
     /// (`--screen cards` opens on the cards screen), and the web head builds both in its page.
+    /// <para>
+    /// <paramref name="tour"/> makes the app walk its own screens, on a clock: the filters, the
+    /// settings, the transactions, the cards, and round again. Nothing is tapped, so a recording of it
+    /// is the same recording on every target, which is how the sample's video is made. The native head
+    /// reads it from its configuration (`--tour true`) and the web head serves it at `/tour`.
+    /// </para>
     /// </summary>
-    public WalletApp(IWalletLedger ledger, WalletScreen screen = WalletScreen.Home)
+    public WalletApp(IWalletLedger ledger, WalletScreen screen = WalletScreen.Home, bool tour = false)
     {
         _ledger = ledger;
         _screen = screen;
+        _tour = tour;
         _tab = Math.Max(0, Array.FindIndex(WalletData.Tabs, tab => tab.Screen == _screen));
+    }
+
+    // ---- The tour --------------------------------------------------------------------------
+
+    private readonly bool _tour;
+    private IDisposable? _beats;
+    private int _beat;
+
+    /// <summary>How long a beat of the tour is. Every step of it is a number of these.</summary>
+    private static readonly TimeSpan Beat = TimeSpan.FromMilliseconds(100);
+
+    /// <summary>How many beats one round of the tour takes, its closing pause included.</summary>
+    private const int Round = 190;
+
+    // The clock is a capability, asked for where there is no context: the same line starts the tour
+    // in a browser, on a phone and on a desktop.
+    protected override void OnMount()
+    {
+        if (_tour) _beats = GetService<IClock>()?.Every(Beat, Step);
+    }
+
+    protected override void OnUnmount() => _beats?.Dispose();
+
+    /// <summary>One beat of the tour: what a person would have done by now, done through the same
+    /// state their taps would have changed.</summary>
+    private void Step()
+    {
+        _beat = (_beat + 1) % Round;
+        switch (_beat)
+        {
+            // Home: the three filters, one after the other.
+            case 12: SetState(() => _filter = 1); break;
+            case 20: SetState(() => _filter = 2); break;
+            case 28: SetState(() => _filter = 0); break;
+            // Settings: two switches, the stepper twice, and the limit drawn up.
+            case 38: Go(3); break;
+            case 52: SetState(() => _pushAlerts = true); break;
+            case 60: SetState(() => _faceId = false); break;
+            case 68: SetState(() => _cardsPerInvoice = 3); break;
+            case 73: SetState(() => _cardsPerInvoice = 4); break;
+            case >= 80 and < 88: SetState(() => _limit += 0.05f); break;
+            // Transactions: two of its tabs, and the first row swiped open.
+            case 102: Go(2); break;
+            case 114: SetState(() => _tab2 = 1); break;
+            case 122: SetState(() => _tab2 = 2); break;
+            case 130: SetState(() => _tab2 = 0); break;
+            case 138: SetState(() => _rowOpen = true); break;
+            // Cards, and home again as it was found.
+            case 152: Go(1); break;
+            case 0:
+                SetState(() =>
+                {
+                    _screen = WalletScreen.Home;
+                    _tab = 0;
+                    _filter = 0;
+                    _tab2 = 0;
+                    _rowOpen = false;
+                    _faceId = true;
+                    _pushAlerts = false;
+                    _cardsPerInvoice = 2;
+                    _limit = 0.4f;
+                });
+                break;
+        }
     }
 
     public override VisualNode Build(ComponentContext context)

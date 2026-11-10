@@ -40,9 +40,11 @@ public partial class Program
         {
             photon.Theme = PhotonTheme.Instance;
             photon.Title = "eQuantic Wallet";
-            // The phone this was drawn for. A device reports its own size and ignores these.
-            photon.Width = 390;
-            photon.Height = 844;
+            // The phone this was drawn for, unless the configuration names a window of its own
+            // (`--Photon:Width 1100 --Photon:Height 720` opens the desktop layout, with its rail).
+            // A device reports its own size and ignores these.
+            if (builder.Configuration["Photon:Width"] is null) photon.Width = 390;
+            if (builder.Configuration["Photon:Height"] is null) photon.Height = 844;
         });
 
         // The screen to open on, from the configuration the host already assembled out of
@@ -52,7 +54,10 @@ public partial class Program
             ? named
             : WalletScreen.Home;
 
+        // `--tour true` has the app walk its own screens, which is how its video is recorded.
+        var tour = bool.TryParse(builder.Configuration["tour"], out var asked) && asked;
+
         var app = builder.Build();
-        return app.UseRoot(() => ActivatorUtilities.CreateInstance<WalletApp>(app.Services, screen));
+        return app.UseRoot(() => ActivatorUtilities.CreateInstance<WalletApp>(app.Services, screen, tour));
     }
 }
