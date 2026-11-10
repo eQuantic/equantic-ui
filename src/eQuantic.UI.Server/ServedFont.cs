@@ -14,8 +14,11 @@ namespace eQuantic.UI.Server;
 /// it compresses to about half, which is most of what WOFF2 would have saved.</param>
 internal sealed record ServedFont(string Resource, string Name, byte[] Bytes, byte[] Brotli)
 {
-    /// <summary>Where a page fetches it.</summary>
+    /// <summary>Its URL addressed by its content, where a page fetches a file the theme's stylesheet serves.</summary>
     public string Url => "/_equantic/fonts/" + Name;
+
+    /// <summary>The hash of its bytes, which the URL of a face served at its identity names as its version.</summary>
+    public string Version => Path.GetFileNameWithoutExtension(Name);
 
     /// <summary>The media type it is served as.</summary>
     public string ContentType => FontFaceRules.ContentType(Resource);
