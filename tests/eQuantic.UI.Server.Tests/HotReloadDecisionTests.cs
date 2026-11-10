@@ -84,13 +84,18 @@ public class HotReloadDecisionTests
         var (app, client) = await StartAsync(environment, hotReload);
         await using var _ = app;
 
-        var config = ShellConfig.In(await client.GetStringAsync("/watched"));
+        var document = await client.GetStringAsync("/watched");
+        var config = ShellConfig.In(document);
         using var stream = new HttpRequestMessage(HttpMethod.Get, "/_equantic/hmr");
         using var answer = await client.SendAsync(stream, HttpCompletionOption.ResponseHeadersRead);
 
         config.GetProperty("hotReload").GetBoolean().Should().Be(hotReloads);
         (answer.Content.Headers.ContentType?.MediaType == "text/event-stream").Should().Be(hotReloads,
             "the page is told to listen exactly when the stream is mapped");
+        // The stream is the page's one source of reloads, so dotnet watch's refresh script is kept out
+        // of it exactly when there is one (#1275), and left alone on every other page.
+        document.Contains($"window.{WatchScriptGuardTests.Guard} = true;", StringComparison.Ordinal).Should().Be(hotReloads,
+            "the page that listens to the stream tells dotnet watch's script it is taken");
     }
 
     /// <summary>

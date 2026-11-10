@@ -29,7 +29,7 @@ public class B14TransitionTests
     /// live, and the clock they glide against.</summary>
     private sealed class Frames
     {
-        public BuildOwner Owner { get; } = BuildOwner.Structural();
+        public BuildOwner Owner { get; } = ComponentBoundary.StructuralOwner();
 
         public TransitionClock Clock { get; } = new();
 
@@ -129,7 +129,7 @@ public class S6TransitionClockTests
 {
     /// <summary>A node's position, kept by an owner as a host keeps it: where its tracks live.</summary>
     private static Element Position() =>
-        BuildOwner.Structural().Build(new Box(new BoxStyle()), new ComponentContext(PhotonTheme.Instance),
+        ComponentBoundary.StructuralOwner().Build(new Box(new BoxStyle()), new ComponentContext(PhotonTheme.Instance),
             WindowSizeClass.Compact, rebuildAll: true);
 
     [Fact]

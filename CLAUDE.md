@@ -238,16 +238,21 @@ is not the owner's.
    after the third in any case: a defect found later is still fixed and proved, and anything else
    is sorted as in any round, without asking for another. When the account's GitHub credits are
    exhausted and Copilot cannot review, skip this step.
-4. **Squash-merge on green CI, composing nothing.** The ruleset requires thirteen of the CI's jobs
-   and a branch up to date with `main` (#287), so when `main` moved after the CI ran, merge `main`
-   into the pull request first: CI runs again, and it costs no Copilot round. Then
-   `gh pr merge <n> --squash` takes the repository's squash default, the pull request's title and
-   its commits' messages, so the commit's subject IS the title that was already read and its body is
-   what the `commit-messages` job read on the pull request. If a message is composed
-   anyway, it goes in a file and `./scripts/check-commit-messages.sh --file <file>` reads it before
-   the merge. Last, merge the pull request's wiki branch, when it has one, into the wiki's master
-   (see Documentation below): main and the wiki move in the same step, and the next pull request's
-   guards read both.
+4. **Squash-merge on green CI, composing nothing.** The ruleset requires the CI's jobs (the list is
+   the `working-agreement` spec's) on a run that saw the `main` the pull request lands on (#287). Once ruleset 21198869 merges
+   through GitHub's merge queue (#1308), a reviewed, green pull request enters the queue with
+   `gh pr merge <n>`: the queue runs CI on it together with every pull request ahead of it, merges it
+   with a squash when that run is green, and nobody merges `main` into a pull request only to bring
+   it up to date. Until the queue is on, when `main` moved after the CI ran, merge `main` into the
+   pull request first (CI runs again, and it costs no Copilot round), then `gh pr merge <n> --squash`.
+   Either way the squash takes the repository's default, the pull request's title and its commits'
+   messages, so the commit's subject IS the title that was already read and its body is what the
+   `commit-messages` job read on the pull request, and reads again in the queue's run before it
+   reaches `main`. If a message is composed anyway, it goes in a file and
+   `./scripts/check-commit-messages.sh --file <file>` reads it before the merge. Last, once the pull
+   request is on `main`, merge its wiki branch, when it has one, into the wiki's master (see
+   Documentation below): the next pull request's guards read both, and a queue's run reads the wiki
+   branches of its whole group already merged onto master.
 5. **A release is Edgar's call.** Merging a pull request never implies one; `CLAUDE.md`'s Version
    Management section says what a bump touches.
 
