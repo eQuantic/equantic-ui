@@ -13,4 +13,4 @@
 
 - [x] 3.1 The wiki's Uploads page in every language, and Upgrading in both
 - [x] 3.2 A ledger entry under `docs/ledger/`
-- [ ] 3.3 The suites, each read by its exit code
+- [x] 3.3 The suites, each read by its exit code
