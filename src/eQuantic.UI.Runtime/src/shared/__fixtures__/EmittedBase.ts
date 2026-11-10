@@ -1,6 +1,5 @@
 export class EmittedBase {
-    constructor(name: string) {
-        this.name = null!;
+    constructor(name: string = null!) {
         this.name = name;
     }
 
