@@ -10,6 +10,7 @@
 import type { AppTheme, ColorToken } from './value-types';
 import { getPhotonTheme } from './photon-context';
 import { SCROLLED_MARKER } from './markers';
+import { createStyleElement } from '../utils/page-nonce';
 
 /** FNV-1a 32-bit over UTF-16 code units, base36 — the exact C# `StyleAtomizer.Hash`. */
 export function hashDeclaration(text: string): string {
@@ -149,9 +150,7 @@ function registry(): CSSStyleSheet | null {
     }
   }
   if (!el) {
-    el = document.createElement('style');
-    el.id = 'eq-atomic';
-    document.head.appendChild(el);
+    el = createStyleElement('eq-atomic');
   }
   sheet = el.sheet;
   return sheet;
