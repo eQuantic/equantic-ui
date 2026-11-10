@@ -58,7 +58,7 @@ public class S5StateRealizerTests
         }), Theme, 1f, sink);
 
         sink.Css.Should().MatchRegex(
-            $@"\.eq-pressable:focus-visible \.eq-[0-9a-z]+\{{border:2px solid var\(--eq-color-focus, {System.Text.RegularExpressions.Regex.Escape(TokenCss.Value(Theme.FocusRing))}\)\}}");
+            $@"\.eq-pressable:focus-visible \.eq-[0-9a-z]+[^{{}}]*\{{border:2px solid var\(--eq-color-focus, {System.Text.RegularExpressions.Regex.Escape(TokenCss.Value(Theme.FocusRing))}\)\}}");
         sink.Css.Should().NotContain("}:focus-visible{", "no rule on the box's own focus, which it never has");
     }
 
@@ -73,7 +73,7 @@ public class S5StateRealizerTests
             Width = 10, Height = 10,
         }), Theme, 1f, sink);
 
-        sink.Css.Should().MatchRegex(@"\.eq-pressable\.eq-pressable:active \.eq-[0-9a-z]+\{transform:scale\(0\.985\)\}");
+        sink.Css.Should().MatchRegex(@"\.eq-pressable\.eq-pressable:active:not\(:where\(:has\(\.eq-pressable:active\)\)\) \.eq-[0-9a-z]+[^{}]*\{transform:scale\(0\.985\)\}");
     }
 
     /// <summary>
@@ -200,7 +200,7 @@ public class S5StateRealizerTests
         });
 
         css.Should().Contain(":hover{transform:translate(0, -2px)}");
-        css.Should().MatchRegex(@"\.eq-pressable:focus-visible \.eq-[0-9a-z]+\{transform:none\}",
+        css.Should().MatchRegex(@"\.eq-pressable:focus-visible \.eq-[0-9a-z]+[^{}]*\{transform:none\}",
             "an identity transform undoes the base's");
     }
 
