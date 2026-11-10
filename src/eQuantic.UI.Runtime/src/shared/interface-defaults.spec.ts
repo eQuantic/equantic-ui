@@ -14,6 +14,7 @@ import * as defaults from './interface-defaults';
 import { photonTheme } from './design-system.generated';
 import { DataPalette } from './data-palette';
 import { codeTokenColor } from './value-types';
+import { AppThemeExtensions, ButtonTheme, ControlsTheme } from './theme-slots';
 
 const lines = readFileSync('src/shared/__fixtures__/interface-defaults.txt', 'utf8')
   .split('\n')
@@ -68,5 +69,26 @@ describe('the vocabulary interface defaults (cross-pinned with VocabularyInterfa
     expect(defaults.IAppTheme.code(photonTheme, 'keyword')).toEqual(
       photonTheme.colors('primary').base,
     );
+  });
+});
+
+describe('AppThemeExtensions.with, the C# OverriddenTheme (E6a, #1241)', () => {
+  it('replaces the slot it is given and forwards every other member', () => {
+    const button = new ButtonTheme({ minWidth: 88 });
+    const theme = AppThemeExtensions.with(photonTheme, null, button);
+
+    expect(theme.button).toBe(button);
+    expect(theme.controls).toBe(photonTheme.controls);
+    expect(theme.colors('primary')).toBe(photonTheme.colors('primary'));
+    expect(theme.code('keyword')).toEqual(photonTheme.code('keyword'));
+  });
+
+  it('keeps its slot through a further with, as the C# override does', () => {
+    const button = new ButtonTheme({ minWidth: 88 });
+    const controls = new ControlsTheme();
+    const again = AppThemeExtensions.with(AppThemeExtensions.with(photonTheme, null, button), controls, null);
+
+    expect(again.controls).toBe(controls);
+    expect(again.button).toBe(button);
   });
 });

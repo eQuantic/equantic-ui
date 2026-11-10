@@ -170,8 +170,124 @@ public static class ThemeBridge
             }
             sb.Append('}');
         }
+
+        // The code palette, every kind's colour (#936): the browser's `code(kind)` answers from it, so
+        // a theme that overrides `Code` colours a code block alike on the server, on Photon and in the
+        // browser once it renders again. Always written, since every theme answers one.
+        sb.Append(",\"code\":{");
+        first = true;
+        foreach (var kind in Enum.GetValues<CodeTokenKind>())
+        {
+            Comma(sb, ref first);
+            Key(sb, Camel(kind.ToString()));
+            Token(sb, theme.Code(kind));
+        }
+        sb.Append('}');
+
+        // The component slots (docs/ELEMENT-TREE-PLAN.md §3.10), each when the theme answers one, with
+        // the members it names: a member left out is the next step of the slot order on the client as
+        // on the server. A value that varies by density crosses with both sides, since the density is
+        // the browser's to report.
+        if (theme.Controls is { } controls)
+        {
+            sb.Append(",\"controls\":");
+            Controls(sb, controls);
+        }
+        if (theme.Button is { } button)
+        {
+            sb.Append(",\"button\":{");
+            first = true;
+            if (button.Controls is { } ladder)
+            {
+                Comma(sb, ref first);
+                Key(sb, "controls");
+                Controls(sb, ladder);
+            }
+            foreach (var (name, value) in ButtonMembers(button))
+            {
+                if (value is null) continue;
+                Comma(sb, ref first);
+                Key(sb, name);
+                sb.Append(value);
+            }
+            sb.Append('}');
+        }
         sb.Append('}');
         return sb.ToString();
+    }
+
+    /// <summary>The control ladder's members by the name the browser reads them under, each a ladder
+    /// per size or per size and density. <c>ThemeBridgeTests</c> holds it to every property the record
+    /// has.</summary>
+    internal static IEnumerable<(string Name, object? Value)> ControlsMembers(ControlsTheme controls) =>
+    [
+        ("height", controls.Height),
+        ("paddingX", controls.PaddingX),
+        ("labelSize", controls.LabelSize),
+        ("gap", controls.Gap),
+        ("icon", controls.Icon),
+        ("radius", controls.Radius),
+    ];
+
+    /// <summary>The Button slot's members beside its ladder, by name and as the JSON value each writes;
+    /// <c>ThemeBridgeTests</c> holds it to every property the record has.</summary>
+    internal static IEnumerable<(string Name, string? Value)> ButtonMembers(ButtonTheme button) =>
+    [
+        ("minWidth", button.MinWidth is { } minWidth ? Num(minWidth) : null),
+        ("labelWeight", button.LabelWeight is { } weight ? $"\"{Camel(weight.ToString())}\"" : null),
+        ("labelTracking", button.LabelTracking is { } tracking ? Num(tracking) : null),
+        ("outlineWidth", button.OutlineWidth is { } outline ? Num(outline) : null),
+        ("linkPaddingX", button.LinkPaddingX is { } link ? Num(link) : null),
+    ];
+
+    private static void Controls(StringBuilder sb, ControlsTheme controls)
+    {
+        sb.Append('{');
+        var first = true;
+        foreach (var (name, value) in ControlsMembers(controls))
+        {
+            if (value is null) continue;
+            Comma(sb, ref first);
+            Key(sb, name);
+            switch (value)
+            {
+                case DensityLadder density: Ladder(sb, density); break;
+                case SizeLadder size: Ladder(sb, size); break;
+            }
+        }
+        sb.Append('}');
+    }
+
+    private static void Ladder(StringBuilder sb, DensityLadder ladder)
+    {
+        sb.Append('{');
+        var first = true;
+        foreach (var (name, side) in new[] { ("comfortable", ladder.Comfortable), ("compact", ladder.Compact) })
+        {
+            if (side is null) continue;
+            Comma(sb, ref first);
+            Key(sb, name);
+            Ladder(sb, side);
+        }
+        sb.Append('}');
+    }
+
+    private static void Ladder(StringBuilder sb, SizeLadder ladder)
+    {
+        sb.Append('{');
+        var first = true;
+        foreach (var (name, rung) in new[]
+                 {
+                     ("small", ladder.Small), ("medium", ladder.Medium), ("large", ladder.Large),
+                     ("xLarge", ladder.XLarge),
+                 })
+        {
+            if (rung is not { } value) continue;
+            Comma(sb, ref first);
+            Key(sb, name);
+            sb.Append(Num(value));
+        }
+        sb.Append('}');
     }
 
     /// <summary>Every member of the spreadsheet's slot by the name the browser reads it under.

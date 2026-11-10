@@ -11,6 +11,7 @@ import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 import { DataPalette, DivergingScale, StatusScale } from './data-palette';
 import { SheetTheme } from './sheet-theme';
+import { buttonTheme, controlsTheme, type ButtonData, type ControlsData } from './theme-slots';
 
 type RgbaTuple = readonly [number, number, number, number];
 type TokenTuple = readonly [RgbaTuple, RgbaTuple];
@@ -59,6 +60,12 @@ export interface ThemeData {
   };
   /** The spreadsheet's slot, present only when the theme answers one, with the members it names. */
   sheet?: Partial<Record<keyof SheetTheme, TokenTuple>>;
+  /** Every code token kind's colour (#936), so `code(kind)` answers what the server's theme answers. */
+  code?: Record<string, TokenTuple>;
+  /** The control ladder, present only when the theme answers one, with the members it names. */
+  controls?: ControlsData;
+  /** The Button's slot, by the same rule. */
+  button?: ButtonData;
 }
 
 const color = (t: RgbaTuple): ColorValue => ({ r: t[0], g: t[1], b: t[2], a: t[3] });
@@ -149,10 +156,14 @@ export function materializeTheme(data: ThemeData): AppTheme {
       if (value) (sheet as unknown as Record<string, ColorToken>)[name] = token(value);
     }
   }
+  const code: Record<string, ColorToken> = {};
+  for (const [kind, value] of Object.entries(data.code ?? {})) code[kind] = token(value);
   return {
     ...(surfaces as unknown as Pick<AppTheme, never>),
     data: palette,
     sheet,
+    controls: data.controls ? controlsTheme(data.controls) : null,
+    button: data.button ? buttonTheme(data.button) : null,
     disabledOpacity: data.disabledOpacity,
     monoFamily: data.monoFamily ? fontFamily(data.monoFamily) : undefined,
     textFamily: data.textFamily ? fontFamily(data.textFamily) : undefined,
@@ -167,7 +178,8 @@ export function materializeTheme(data: ThemeData): AppTheme {
       return elevations[Math.max(0, Math.min(5, Math.trunc(level)))];
     },
     code(kind: string): ColorToken {
-      return codeTokenColor(this as unknown as AppTheme, kind);
+      // The server's palette, kind by kind (#936); a payload written before it crossed derives it.
+      return code[kind] ?? codeTokenColor(this as unknown as AppTheme, kind);
     },
     shape(scale: string): number {
       return data.shape[scale] ?? data.shape.medium;
