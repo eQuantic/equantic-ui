@@ -144,6 +144,21 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
     }
 
     [Fact]
+    public async Task A64BitFlagsEnum_CrossesAsALongDoes()
+    {
+        // Its values past 2^53 as a field, a dictionary's keys and a list's elements, and a 32-bit flags
+        // field beside it: the first crossed as JSON numbers that lost their low digits, and a top-level
+        // flags field crossed by its members' names (#551).
+        var (html, drawn) = await CrossAsync("/crossing-wide-enum", nameof(CrossingWideEnumPage));
+
+        var expected = ("reach 4611686018427387905 Near, Far | access 3 Read, Write | keys 7 True 2"
+            + " | list True 4611686018427387904 2").Split(" | ");
+        foreach (var line in expected) html.Should().Contain(line);
+        drawn[0].Split(" | ").Should().Equal(expected);
+        drawn[1].Should().Be(drawn[0]);
+    }
+
+    [Fact]
     public async Task ADictionaryKeyedByIntegers_CrossesInTheOrderTheServerDrewIt()
     {
         // Integer keys out of order, a slot a removal freed taken again, and text that looks like
