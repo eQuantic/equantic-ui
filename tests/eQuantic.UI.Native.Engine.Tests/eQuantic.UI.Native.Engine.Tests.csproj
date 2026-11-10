@@ -56,6 +56,9 @@
     <!-- The web half of the component tester: what a screen reader announces on the web, which the
          semantics parity fixture compares with Photon's tree (#339). -->
     <ProjectReference Include="..\..\src\eQuantic.UI.Testing\eQuantic.UI.Testing.csproj" />
+    <!-- The component tester's native half: a golden scene is painted through it, so the package is
+         held to the goldens the host is (#1246). -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Native.Testing\eQuantic.UI.Native.Testing.csproj" />
     <!-- Referenced as a LIBRARY, not as an analyzer: these tests drive the generator directly
          through CSharpGeneratorDriver and assert its diagnostics. Wired as an analyzer it would
          also run over this project's own code, where there is no program to find. -->

@@ -89,6 +89,12 @@ public sealed class Chip : StatelessComponent
                 : theme.SurfaceSubtle.MidpointWith(theme.Border)
             : (ColorToken?)null;
 
+        // Spec B8 pressed: fill shift (SurfaceSubtle ↔ Pressed-subtle), on the chip's own surface, and
+        // only for the kind that is pressed at all.
+        var pressedFill = Kind == ChipKind.Filter && OnPressed != null
+            ? Selected ? primary.Pressed.WithOpacity(0.24f) : theme.SurfaceSubtle
+            : (ColorToken?)null;
+
         var box = new Box(new BoxStyle
         {
             Height = Sizing.Height(SizeVariant.Small, context.Density),
@@ -98,6 +104,7 @@ public sealed class Chip : StatelessComponent
             BorderWidth = Kind == ChipKind.Filter && Selected ? 1f : 0f,
             BorderColor = primary.Base,
             Hover = hoverFill is null ? null : new StyleDiff { Background = hoverFill },
+            Pressed = pressedFill is null ? null : new StyleDiff { Background = pressedFill },
         }, content);
 
         // Filter chips toggle; Tags are static annotations; Input chips act through the remove glyph.
@@ -105,8 +112,6 @@ public sealed class Chip : StatelessComponent
             ? new Pressable(box, OnPressed)
             {
                 Label = Label,
-                // Spec B8 pressed: fill shift (SurfaceSubtle ↔ Pressed-subtle).
-                PressedBackground = Selected ? primary.Pressed.WithOpacity(0.24f) : theme.SurfaceSubtle,
                 // B8: a filter chip is a TOGGLE button — "Income, filter, selected". A filter chip
                 // always carries selection (that is what makes it a filter), so false is the honest
                 // answer for an unselected one rather than silence.

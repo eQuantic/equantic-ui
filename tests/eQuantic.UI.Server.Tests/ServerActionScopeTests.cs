@@ -88,6 +88,7 @@ public class ServerActionScopeTests
         var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
         context.Request.Path = "/api/_equantic/actions";
         context.Request.Method = "POST";
+        context.Request.ContentType = "application/json";
         context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(
             JsonSerializer.Serialize(new { actionId, arguments = Array.Empty<object>() })));
         var responseBody = new MemoryStream();

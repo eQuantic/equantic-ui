@@ -74,6 +74,12 @@ public class AssemblyLayeringTests
         ["eQuantic.UI.Native.Engine.Reference"] = ["eQuantic.UI.Native.Engine"],
         ["eQuantic.UI.Native.Framework"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Native.Engine"],
         ["eQuantic.UI.Native.Hosting"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Native.Components"],
+
+        // The component tester, one half per target, each on the host it drives (#1245, #1246). The web
+        // half sees NOTHING of the native track: a package's dependencies are its consumers', and an app
+        // that ships only to the web tests its pages without restoring an engine or meeting EQX0001.
+        ["eQuantic.UI.Testing"] = ["eQuantic.UI.Web"],
+        ["eQuantic.UI.Native.Testing"] = ["eQuantic.UI.Native.Components", "eQuantic.UI.Native.Engine.Reference"],
     };
 
     public static IEnumerable<object[]> EveryCoreAssembly() => Layering.Keys.Select(k => new object[] { k });

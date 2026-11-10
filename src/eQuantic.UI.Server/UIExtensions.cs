@@ -122,6 +122,11 @@ public static class UIExtensions
         // Add authorization service for Server Actions
         // TryAdd allows users to override with their own implementation
         services.TryAddSingleton<IServerActionAuthorizationService, ServerActionAuthorizationService>();
+        // An action and a page are decided by the app's policy provider and evaluator, which ASP.NET Core
+        // registers with AddAuthorization: an app that only marked an action [Authorize] never called it,
+        // and its action would be refused for want of them. It adds what is missing and changes nothing
+        // the app registered (#1320).
+        services.AddAuthorization();
         // A refused CLIENT NAVIGATION into a page that requires authorization is answered 401 or 403,
         // which the router acts on, instead of a challenge a fetch cannot follow (#673).
         // It WRAPS the handler the app registered before AddUI, so the app's own answers stand for
@@ -160,6 +165,7 @@ public static class UIExtensions
         services.TryAddSingleton<eQuantic.UI.Primitives.ITextClipboard, AbsentCapabilities.Clipboard>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IPhotoLibrary, AbsentCapabilities.PhotoLibrary>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IFilePicker, AbsentCapabilities.FilePicker>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.IFileSaver, AbsentCapabilities.FileSaver>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IUploads, AbsentCapabilities.Uploads>();
         services.TryAddSingleton<eQuantic.UI.Primitives.ICamera, AbsentCapabilities.Camera>();
         services.TryAddSingleton<eQuantic.UI.Primitives.ILocation, AbsentCapabilities.Location>();
@@ -663,12 +669,12 @@ public static class UIExtensions
         if ((own ?? built) is not null)
         {
             var link = HtmlTag.Link("icon", "/favicon.ico");
-            tags.Add((own is null ? link.Attr("sizes", "16x16 32x32 48x48") : link).Render());
+            tags.Add((own is null ? link.Attr("sizes", "16x16 32x32 48x48") : link).Render(nonce: null));
         }
         if (Find("_equantic/icons/apple-touch-icon.png") is not null)
-            tags.Add(HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png").Render());
+            tags.Add(HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png").Render(nonce: null));
         if (Find("_equantic/icons/site.webmanifest") is not null)
-            tags.Add(HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest").Render());
+            tags.Add(HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest").Render(nonce: null));
         return new IconSet(tags, own ?? built);
     }
 
@@ -740,8 +746,6 @@ public static class UIExtensions
     private static async Task ServePageState(HttpContext context, Type? page, DeclaredPage? declared)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
-        // Never cached: this is the page's data, and the next visitor's is not this one's.
-        context.Response.Headers["Cache-Control"] = "no-store";
         // The answer to a navigation says so, with the header the request carried, whatever its
         // status: a page that answers 404 for content that does not exist still sends its title, its
         // head and its state, and the client applies them as a full load of it shows them. Read off
@@ -838,6 +842,13 @@ public static class UIExtensions
 
     private static async Task ServeAppShell(HttpContext context, Type? page, DeclaredPage? declared)
     {
+        // Never stored, by the browser or by any cache between it and the server, and said here once
+        // for both answers of a page's route: the document carries what this visitor's cookies chose
+        // (theme, density, culture) and the page's own state, and so does the data a navigation asks
+        // for. The next visitor's is not this one's. The document went with no Cache-Control at all,
+        // so a CDN rule that caches HTML served one visitor's prefetched data to the next (#1288).
+        context.Response.Headers.CacheControl = "no-store";
+
         // A client navigation asks the same route for the page's data instead of a document.
         if (context.Request.Headers.ContainsKey(NavigationHeader))
         {
@@ -849,9 +860,12 @@ public static class UIExtensions
         if (RedirectToLanguageUrl(context, options)) return;
 
         var shell = options.HtmlShell;
-        // Per-request copy of the head tags. The HtmlShell is a singleton, so mutating
-        // shell.HeadTags directly is not thread-safe and leaks tags across requests.
-        var headTags = new List<string>(shell.HeadTags);
+        // The request's nonce, on every script and style the shell writes (#1266): the template's
+        // own, the app's head tags and CSS, and the page's assets.
+        var nonce = ShellNonce.Of(context);
+        // The head tags rendered for THIS request: the HtmlShell is a singleton, so this list is the
+        // request's own, and what the page adds below never reaches the next request.
+        var headTags = shell.HeadTags.Select(tag => tag.Render(nonce)).ToList();
 
         // The theme's stylesheet, on EVERY page: the theme the app chose (options.UseTheme), or
         // Photon's, the one the browser runtime falls back to. It carries the document's rules and
@@ -927,7 +941,7 @@ public static class UIExtensions
             // with none of its classes defined.
             if (adopted.Assets != null)
             {
-                foreach (var tag in adopted.Assets.RenderTags())
+                foreach (var tag in adopted.Assets.RenderTags(nonce))
                 {
                     if (!headTags.Contains(tag))
                         headTags.Add(tag);
@@ -1063,6 +1077,8 @@ public static class UIExtensions
 
         var isDevelopment = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
 
+        var hotReloads = options.HotReloads(context.RequestServices.GetRequiredService<IWebHostEnvironment>());
+
         // The client's configuration, written by System.Text.Json and nothing else. Its strings were
         // quoted by hand, escaping the backslash and the quote, so a route title holding a line break
         // was a syntax error in a script every page carries, and stopped the client of the whole app
@@ -1076,7 +1092,7 @@ public static class UIExtensions
             Version: BuildId,
             Ssr: ssrEnabled,
             // Whether this server streams rebuilds, so the page listens exactly when there is a stream.
-            HotReload: options.HotReloads(context.RequestServices.GetRequiredService<IWebHostEnvironment>()),
+            HotReload: hotReloads,
             // What the page was rendered at: hydration adopts this markup, so it lowers at the same
             // density and then switches the whole page to the browser's own at once (#623).
             Density: DensityCookie.NameOf(DensityCookie.Resolve(context)),
@@ -1106,15 +1122,19 @@ public static class UIExtensions
         var html = template.Render(ctx =>
         {
             // Variables
-            ctx.Set("HtmlClass", shell.HtmlClass)
+            // The nonce first: a value written before it can never be read as its placeholder.
+            ctx.Set("Nonce", nonce)
+               .Set("HtmlClass", shell.HtmlClass)
                .Set("HtmlLang", htmlLang)
                .Set("Title", System.Web.HttpUtility.HtmlEncode(metadata.Title ?? string.Empty))
                .Set("MetadataTags", metadata.RenderTags())
                .SetOrEmpty("FontPreloads", fonts.Preloads)
                .Set("BuildId", BuildId)
-               .Set("ThemeStyles", themeStyles)
+               // A style element's text, which nothing in it can end (#1295).
+               .Set("ThemeStyles", StyleElementText.Of(themeStyles))
                // One element per AddStyles call, so a malformed chunk cannot swallow the next one.
-               .SetOrEmpty("AppStyles", string.Join("\n        ", shell.Styles.Select(css => $"<style>{css}</style>")))
+               .SetOrEmpty("AppStyles", string.Join("\n        ",
+                   shell.Styles.Select(css => $"<style{ShellNonce.Attribute(nonce)}>{StyleElementText.Of(css)}</style>")))
                .Set("HeadTags", string.Join("\n    ", headTags))
                .Set("SsrEnabled", ssrEnabled.ToString().ToLowerInvariant())
                .Set("SsrContent", ssrContent)
@@ -1130,9 +1150,18 @@ public static class UIExtensions
                .When("HasInitialState", serializedState != null)
                .When("SsrEnabled", ssrEnabled)
                .When("HasServerActions", hasServerActions)
+               // The rebuild stream is the page's one source of reloads (HotReloadService), so the
+               // refresh script dotnet watch injects into every page it serves is told the page is
+               // taken, by the guard it keeps against connecting twice. It reloaded the page as soon
+               // as the server took an edit, with the modules from before it, and the rebuild
+               // reloaded it again seconds later (#1275). WatchScriptGuardTests pins the guard's name
+               // in the SDK global.json selects.
+               .When("HotReloads", hotReloads)
                ;
         });
 
+        // The page's policy, with the nonce its scripts carry, when the app turned one on (#1267).
+        context.RequestServices.GetService<ContentSecurityPolicy>()?.WriteTo(context.Response, nonce);
         context.Response.ContentType = "text/html";
         await context.Response.WriteAsync(html);
     }

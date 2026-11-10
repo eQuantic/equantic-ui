@@ -39,7 +39,7 @@ public class InViewTests
     public void AChildOnScreen_IsReported()
     {
         var seen = new List<bool>();
-        Draw(Page(seen.Add, spacerHeight: 0), new BuildOwner());
+        Draw(Page(seen.Add, spacerHeight: 0), ComponentBoundary.Owner());
 
         seen.Should().Equal(true);
     }
@@ -49,7 +49,7 @@ public class InViewTests
     public void AChildBelowTheSurface_IsNot()
     {
         var seen = new List<bool>();
-        Draw(Page(seen.Add, spacerHeight: 400), new BuildOwner());
+        Draw(Page(seen.Add, spacerHeight: 400), ComponentBoundary.Owner());
 
         seen.Should().BeEmpty("it never became visible, so nothing changed");
     }
@@ -62,7 +62,7 @@ public class InViewTests
     public void StayingVisible_DoesNotKeepFiring()
     {
         var seen = new List<bool>();
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         var page = Page(seen.Add, spacerHeight: 0);
 
         Draw(page, owner);
@@ -76,7 +76,7 @@ public class InViewTests
     public void LeavingTheSurface_ReportsTheDeparture()
     {
         var seen = new List<bool>();
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
 
         Draw(Page(seen.Add, spacerHeight: 0), owner);
         Draw(Page(seen.Add, spacerHeight: 400), owner);
@@ -105,12 +105,12 @@ public class InViewTests
     {
         var seen = new List<bool>();
         // 50 tall, 30 of it on screen: 60%, under a threshold of 0.9.
-        Draw(Page(seen.Add, spacerHeight: 70, threshold: 0.9f), new BuildOwner());
+        Draw(Page(seen.Add, spacerHeight: 70, threshold: 0.9f), ComponentBoundary.Owner());
 
         seen.Should().BeEmpty();
 
         var enough = new List<bool>();
-        Draw(Page(enough.Add, spacerHeight: 0, threshold: 0.9f), new BuildOwner());
+        Draw(Page(enough.Add, spacerHeight: 0, threshold: 0.9f), ComponentBoundary.Owner());
         enough.Should().Equal(true);
     }
 }
@@ -150,7 +150,7 @@ public class InViewClipTests
         content.Add(Row(70));
         content.Add(Watched(seen.Add));
 
-        Draw(new ScrollView(content) { Width = 200, Height = 60 }, new BuildOwner());
+        Draw(new ScrollView(content) { Width = 200, Height = 60 }, ComponentBoundary.Owner());
 
         seen.Should().BeEmpty("it is inside the window, and outside the list's viewport");
     }
@@ -165,7 +165,7 @@ public class InViewClipTests
         content.Add(Watched(seen.Add));
         content.Add(Row(300));
 
-        Draw(new ScrollView(content) { Width = 200, Height = 60 }, new BuildOwner());
+        Draw(new ScrollView(content) { Width = 200, Height = 60 }, ComponentBoundary.Owner());
 
         seen.Should().Equal(true);
     }
@@ -180,7 +180,7 @@ public class InViewClipTests
         inner.Add(Watched(seen.Add));
 
         // Clipped to 40 but 100 of window below it: the row at y=50 is on screen and out of the box.
-        Draw(new Box(new BoxStyle { Width = 200, Height = 40, Clip = true }, inner), new BuildOwner());
+        Draw(new Box(new BoxStyle { Width = 200, Height = 40, Clip = true }, inner), ComponentBoundary.Owner());
 
         seen.Should().BeEmpty();
     }
@@ -195,7 +195,7 @@ public class InViewClipTests
         content.Add(Row(70));
         content.Add(Watched(seen.Add));
 
-        Draw(content, new BuildOwner());
+        Draw(content, ComponentBoundary.Owner());
 
         seen.Should().Equal(true);
     }

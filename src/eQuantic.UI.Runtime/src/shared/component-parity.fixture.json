@@ -22,15 +22,14 @@
       "tag": "button",
       "attrs": {
         "aria-label": "Save",
-        "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-        "style": "--eq-pressed-bg: light-dark(#00427f, #9bcdff)"
+        "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
       },
       "events": [],
       "children": [
         {
           "tag": "div",
           "attrs": {
-            "class": "eq-1eb13m5 eq-1k117pa eq-1n584ip eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy"
+            "class": "eq-1eb13m5 eq-1k117pa eq-1n584ip eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-r1g8kw eq-xhcqoy"
           },
           "events": [],
           "children": [
@@ -69,15 +68,14 @@
       "tag": "button",
       "attrs": {
         "aria-label": "Cancel",
-        "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-        "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+        "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
       },
       "events": [],
       "children": [
         {
           "tag": "div",
           "attrs": {
-            "class": "eq-189q21e eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi"
+            "class": "eq-189q21e eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-a51p1u eq-bo3n4y eq-g7fowl eq-hw1jqi"
           },
           "events": [],
           "children": [
@@ -442,15 +440,14 @@
           "tag": "button",
           "attrs": {
             "aria-label": "A",
-            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-            "style": "--eq-pressed-bg: light-dark(#00427f, #9bcdff)"
+            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
           },
           "events": [],
           "children": [
             {
               "tag": "div",
               "attrs": {
-                "class": "eq-1eb13m5 eq-1k117pa eq-1n584ip eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy"
+                "class": "eq-1eb13m5 eq-1k117pa eq-1n584ip eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-r1g8kw eq-xhcqoy"
               },
               "events": [],
               "children": [
@@ -487,15 +484,14 @@
           "tag": "button",
           "attrs": {
             "aria-label": "B",
-            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-            "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
           },
           "events": [],
           "children": [
             {
               "tag": "div",
               "attrs": {
-                "class": "eq-12kbhu0 eq-189q21e eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy"
+                "class": "eq-12kbhu0 eq-189q21e eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-a51p1u eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy"
               },
               "events": [],
               "children": [
@@ -644,8 +640,7 @@
     {
       "tag": "button",
       "attrs": {
-        "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-        "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+        "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
       },
       "events": [
         "click"
@@ -654,7 +649,7 @@
         {
           "tag": "div",
           "attrs": {
-            "class": "eq-12u4tcw eq-1b16wwz eq-1eb13m5 eq-1eviv88 eq-1p21xeu eq-1p2uoqo eq-1xrfuoj eq-2lm2s0 eq-50fgr5 eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-njh4w0"
+            "class": "eq-12u4tcw eq-1b16wwz eq-1eb13m5 eq-1eviv88 eq-1p21xeu eq-1p2uoqo eq-1xrfuoj eq-2lm2s0 eq-50fgr5 eq-5hocaj eq-a51p1u eq-bo3n4y eq-cl6mtg eq-g7fowl eq-njh4w0"
           },
           "events": [],
           "children": []
@@ -666,8 +661,7 @@
     {
       "tag": "button",
       "attrs": {
-        "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-focused eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable eq-pressed",
-        "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+        "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-focused eq-g7fowl eq-p7nbpw eq-pressable"
       },
       "events": [
         "click"
@@ -676,7 +670,7 @@
         {
           "tag": "div",
           "attrs": {
-            "class": "eq-1b16wwz eq-1eb13m5 eq-1eviv88 eq-1mgirag eq-1p2uoqo eq-1stp3zs eq-1xa1uug eq-1xrfuoj eq-5hocaj eq-bo3n4y eq-cl6mtg eq-d7k4c7 eq-g7fowl"
+            "class": "eq-12ve49g eq-1b16wwz eq-1eb13m5 eq-1eviv88 eq-1mgirag eq-1p2uoqo eq-1stp3zs eq-1xa1uug eq-1xrfuoj eq-bo3n4y eq-cl6mtg eq-d7k4c7 eq-g7fowl"
           },
           "events": [],
           "children": []
@@ -700,6 +694,49 @@
           },
           "events": [],
           "children": []
+        }
+      ]
+    }
+  ],
+  "nested-control-simulated": [
+    {
+      "tag": "span",
+      "attrs": {
+        "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-focused eq-g7fowl eq-p7nbpw eq-pressable",
+        "role": "button",
+        "tabindex": "0"
+      },
+      "events": [
+        "click"
+      ],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-12ve49g eq-15qobfw eq-17wm4ct eq-1eb13m5 eq-1eoeorz eq-bo3n4y eq-g7fowl"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-12u4tcw eq-1b16wwz eq-1eb13m5 eq-1eviv88 eq-1p21xeu eq-1p2uoqo eq-1xrfuoj eq-2lm2s0 eq-50fgr5 eq-5hocaj eq-a51p1u eq-bo3n4y eq-cl6mtg eq-g7fowl eq-njh4w0"
+                  },
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
         }
       ]
     }
@@ -1795,8 +1832,7 @@
           "tag": "button",
           "attrs": {
             "aria-label": "Previous",
-            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-            "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
           },
           "events": [
             "click"
@@ -1805,7 +1841,7 @@
             {
               "tag": "div",
               "attrs": {
-                "class": "eq-12kbhu0 eq-189q21e eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi"
+                "class": "eq-12kbhu0 eq-189q21e eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-a51p1u eq-bo3n4y eq-g7fowl eq-hw1jqi"
               },
               "events": [],
               "children": [
@@ -2084,8 +2120,7 @@
           "tag": "button",
           "attrs": {
             "aria-label": "Next",
-            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-            "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
           },
           "events": [
             "click"
@@ -2094,7 +2129,7 @@
             {
               "tag": "div",
               "attrs": {
-                "class": "eq-12kbhu0 eq-189q21e eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi"
+                "class": "eq-12kbhu0 eq-189q21e eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-a51p1u eq-bo3n4y eq-g7fowl eq-hw1jqi"
               },
               "events": [],
               "children": [
@@ -2257,9 +2292,8 @@
               "attrs": {
                 "aria-label": "One",
                 "aria-selected": "false",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
                 "role": "tab",
-                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)",
                 "tabindex": "-1"
               },
               "events": [],
@@ -2267,129 +2301,55 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-11yg588 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-a51p1u eq-akjizx eq-g7fowl"
                   },
                   "events": [],
                   "children": [
                     {
                       "tag": "div",
                       "attrs": {
-                        "class": "eq-168ghzj eq-1gudvpj"
+                        "class": "eq-11yg588 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
                       },
                       "events": [],
                       "children": [
                         {
                           "tag": "div",
                           "attrs": {
-                            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu"
+                            "class": "eq-168ghzj eq-1gudvpj"
                           },
                           "events": [],
                           "children": [
                             {
-                              "tag": "span",
+                              "tag": "div",
                               "attrs": {
-                                "class": "eq-1566de eq-16x7aca eq-1ehjvh5 eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-lgp7n6 eq-mbtjfn eq-type-caption eq-y9mhin"
+                                "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu"
                               },
                               "events": [],
                               "children": [
                                 {
-                                  "tag": "#text",
-                                  "text": "One",
-                                  "attrs": {},
+                                  "tag": "span",
+                                  "attrs": {
+                                    "class": "eq-1566de eq-16x7aca eq-1ehjvh5 eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-lgp7n6 eq-mbtjfn eq-type-caption eq-y9mhin"
+                                  },
                                   "events": [],
-                                  "children": []
+                                  "children": [
+                                    {
+                                      "tag": "#text",
+                                      "text": "One",
+                                      "attrs": {},
+                                      "events": [],
+                                      "children": []
+                                    }
+                                  ]
                                 }
                               ]
                             }
                           ]
-                        }
-                      ]
-                    },
-                    {
-                      "tag": "div",
-                      "attrs": {
-                        "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-i65znl eq-kngwsg eq-xhcqoy"
-                      },
-                      "events": [],
-                      "children": []
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "tag": "div",
-          "attrs": {
-            "class": "eq-168ghzj eq-5ew4ww"
-          },
-          "events": [],
-          "children": [
-            {
-              "tag": "button",
-              "attrs": {
-                "aria-label": "Two",
-                "aria-selected": "true",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                "role": "tab",
-                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)",
-                "tabindex": "-1"
-              },
-              "events": [],
-              "children": [
-                {
-                  "tag": "div",
-                  "attrs": {
-                    "class": "eq-11yg588 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
-                  },
-                  "events": [],
-                  "children": [
-                    {
-                      "tag": "div",
-                      "attrs": {
-                        "class": "eq-168ghzj eq-1gudvpj"
-                      },
-                      "events": [],
-                      "children": [
+                        },
                         {
                           "tag": "div",
                           "attrs": {
-                            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu"
-                          },
-                          "events": [],
-                          "children": [
-                            {
-                              "tag": "span",
-                              "attrs": {
-                                "class": "eq-13zzdqz eq-1566de eq-16x7aca eq-17jb6qs eq-1ehjvh5 eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-type-caption"
-                              },
-                              "events": [],
-                              "children": [
-                                {
-                                  "tag": "#text",
-                                  "text": "Two",
-                                  "attrs": {},
-                                  "events": [],
-                                  "children": []
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "tag": "div",
-                      "attrs": {
-                        "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-i65znl eq-xhcqoy"
-                      },
-                      "events": [],
-                      "children": [
-                        {
-                          "tag": "div",
-                          "attrs": {
-                            "class": "eq-1eb13m5 eq-1fggo7a eq-1k117pa eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-i65znl"
+                            "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-i65znl eq-kngwsg eq-xhcqoy"
                           },
                           "events": [],
                           "children": []
@@ -2412,11 +2372,10 @@
             {
               "tag": "button",
               "attrs": {
-                "aria-label": "Three",
-                "aria-selected": "false",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
+                "aria-label": "Two",
+                "aria-selected": "true",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
                 "role": "tab",
-                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)",
                 "tabindex": "-1"
               },
               "events": [],
@@ -2424,51 +2383,151 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-11yg588 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-a51p1u eq-akjizx eq-g7fowl"
                   },
                   "events": [],
                   "children": [
                     {
                       "tag": "div",
                       "attrs": {
-                        "class": "eq-168ghzj eq-1gudvpj"
+                        "class": "eq-11yg588 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
                       },
                       "events": [],
                       "children": [
                         {
                           "tag": "div",
                           "attrs": {
-                            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu"
+                            "class": "eq-168ghzj eq-1gudvpj"
                           },
                           "events": [],
                           "children": [
                             {
-                              "tag": "span",
+                              "tag": "div",
                               "attrs": {
-                                "class": "eq-1566de eq-16x7aca eq-1ehjvh5 eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-lgp7n6 eq-mbtjfn eq-type-caption eq-y9mhin"
+                                "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu"
                               },
                               "events": [],
                               "children": [
                                 {
-                                  "tag": "#text",
-                                  "text": "Three",
-                                  "attrs": {},
+                                  "tag": "span",
+                                  "attrs": {
+                                    "class": "eq-13zzdqz eq-1566de eq-16x7aca eq-17jb6qs eq-1ehjvh5 eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-type-caption"
+                                  },
                                   "events": [],
-                                  "children": []
+                                  "children": [
+                                    {
+                                      "tag": "#text",
+                                      "text": "Two",
+                                      "attrs": {},
+                                      "events": [],
+                                      "children": []
+                                    }
+                                  ]
                                 }
                               ]
                             }
                           ]
+                        },
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-i65znl eq-xhcqoy"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "class": "eq-1eb13m5 eq-1fggo7a eq-1k117pa eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-i65znl"
+                              },
+                              "events": [],
+                              "children": []
+                            }
+                          ]
                         }
                       ]
-                    },
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-168ghzj eq-5ew4ww"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Three",
+                "aria-selected": "false",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
+                "role": "tab",
+                "tabindex": "-1"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-a51p1u eq-akjizx eq-g7fowl"
+                  },
+                  "events": [],
+                  "children": [
                     {
                       "tag": "div",
                       "attrs": {
-                        "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-i65znl eq-kngwsg eq-xhcqoy"
+                        "class": "eq-11yg588 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
                       },
                       "events": [],
-                      "children": []
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-168ghzj eq-1gudvpj"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "span",
+                                  "attrs": {
+                                    "class": "eq-1566de eq-16x7aca eq-1ehjvh5 eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-lgp7n6 eq-mbtjfn eq-type-caption eq-y9mhin"
+                                  },
+                                  "events": [],
+                                  "children": [
+                                    {
+                                      "tag": "#text",
+                                      "text": "Three",
+                                      "attrs": {},
+                                      "events": [],
+                                      "children": []
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-i65znl eq-kngwsg eq-xhcqoy"
+                          },
+                          "events": [],
+                          "children": []
+                        }
+                      ]
                     }
                   ]
                 }
@@ -2557,8 +2616,7 @@
               "tag": "button",
               "attrs": {
                 "aria-label": "Clear search",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                "style": "--eq-pressed-bg: light-dark(#e2e5ea, #2a323d)"
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
               },
               "events": [
                 "click"
@@ -2567,7 +2625,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-17a2pwz eq-1eb13m5 eq-1m836id eq-bo3n4y eq-cl6mtg eq-g7fowl eq-ra6ajf"
+                    "class": "eq-17a2pwz eq-1eb13m5 eq-1m836id eq-1tjg7qo eq-bo3n4y eq-cl6mtg eq-g7fowl eq-ra6ajf"
                   },
                   "events": [],
                   "children": [
@@ -2963,15 +3021,14 @@
               "tag": "button",
               "attrs": {
                 "aria-label": "Open",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                "style": "--eq-pressed-bg: light-dark(#00427f, #9bcdff)"
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
               },
               "events": [],
               "children": [
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-1eb13m5 eq-1k117pa eq-1n584ip eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy"
+                    "class": "eq-1eb13m5 eq-1k117pa eq-1n584ip eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-r1g8kw eq-xhcqoy"
                   },
                   "events": [],
                   "children": [
@@ -3138,16 +3195,15 @@
                                   "tag": "button",
                                   "attrs": {
                                     "aria-label": "Cancel",
-                                    "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                                    "data-eq-initial-focus": "",
-                                    "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+                                    "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
+                                    "data-eq-initial-focus": ""
                                   },
                                   "events": [],
                                   "children": [
                                     {
                                       "tag": "div",
                                       "attrs": {
-                                        "class": "eq-189q21e eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy"
+                                        "class": "eq-189q21e eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-a51p1u eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy"
                                       },
                                       "events": [],
                                       "children": [
@@ -3184,15 +3240,14 @@
                                   "tag": "button",
                                   "attrs": {
                                     "aria-label": "Delete",
-                                    "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                                    "style": "--eq-pressed-bg: light-dark(#00427f, #9bcdff)"
+                                    "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
                                   },
                                   "events": [],
                                   "children": [
                                     {
                                       "tag": "div",
                                       "attrs": {
-                                        "class": "eq-1eb13m5 eq-1k117pa eq-1n584ip eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy"
+                                        "class": "eq-1eb13m5 eq-1k117pa eq-1n584ip eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-r1g8kw eq-xhcqoy"
                                       },
                                       "events": [],
                                       "children": [
@@ -23436,15 +23491,14 @@
           "tag": "button",
           "attrs": {
             "aria-label": "Info",
-            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-            "style": "--eq-pressed-bg: light-dark(#00427f, #9bcdff)"
+            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
           },
           "events": [],
           "children": [
             {
               "tag": "div",
               "attrs": {
-                "class": "eq-1eb13m5 eq-1k117pa eq-1n584ip eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy"
+                "class": "eq-1eb13m5 eq-1k117pa eq-1n584ip eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-r1g8kw eq-xhcqoy"
               },
               "events": [],
               "children": [
@@ -24657,8 +24711,7 @@
               "tag": "button",
               "attrs": {
                 "aria-label": "Previous month",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
               },
               "events": [
                 "click"
@@ -24667,7 +24720,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl"
+                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-a51p1u eq-bo3n4y eq-g7fowl"
                   },
                   "events": [],
                   "children": [
@@ -24708,8 +24761,7 @@
               "tag": "button",
               "attrs": {
                 "aria-label": "Next month",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
               },
               "events": [
                 "click"
@@ -24718,7 +24770,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl"
+                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-a51p1u eq-bo3n4y eq-g7fowl"
                   },
                   "events": [],
                   "children": [
@@ -26842,8 +26894,7 @@
               "tag": "button",
               "attrs": {
                 "aria-label": "Previous month",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
               },
               "events": [
                 "click"
@@ -26852,7 +26903,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl"
+                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-a51p1u eq-bo3n4y eq-g7fowl"
                   },
                   "events": [],
                   "children": [
@@ -26893,8 +26944,7 @@
               "tag": "button",
               "attrs": {
                 "aria-label": "Next month",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
               },
               "events": [
                 "click"
@@ -26903,7 +26953,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl"
+                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-a51p1u eq-bo3n4y eq-g7fowl"
                   },
                   "events": [],
                   "children": [
@@ -28707,8 +28757,7 @@
               "tag": "button",
               "attrs": {
                 "aria-label": "Previous month",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
               },
               "events": [
                 "click"
@@ -28717,7 +28766,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl"
+                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-a51p1u eq-bo3n4y eq-g7fowl"
                   },
                   "events": [],
                   "children": [
@@ -28758,8 +28807,7 @@
               "tag": "button",
               "attrs": {
                 "aria-label": "Next month",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
               },
               "events": [
                 "click"
@@ -28768,7 +28816,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl"
+                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-a51p1u eq-bo3n4y eq-g7fowl"
                   },
                   "events": [],
                   "children": [
@@ -30890,8 +30938,7 @@
               "tag": "button",
               "attrs": {
                 "aria-label": "Previous month",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
               },
               "events": [
                 "click"
@@ -30900,7 +30947,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl"
+                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-a51p1u eq-bo3n4y eq-g7fowl"
                   },
                   "events": [],
                   "children": [
@@ -30941,8 +30988,7 @@
               "tag": "button",
               "attrs": {
                 "aria-label": "Next month",
-                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-press-fill eq-pressable",
-                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
               },
               "events": [
                 "click"
@@ -30951,7 +30997,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl"
+                    "class": "eq-17a2pwz eq-189q21e eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-a51p1u eq-bo3n4y eq-g7fowl"
                   },
                   "events": [],
                   "children": [
@@ -33011,6 +33057,256 @@
                       "attrs": {
                         "class": "eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk"
                       },
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "links-with-schemes": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11yg588 eq-19dgm5h eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "a",
+          "attrs": {
+            "class": "eq-g7fowl eq-link"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "script",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "a",
+          "attrs": {
+            "class": "eq-g7fowl eq-link"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "folded",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "a",
+          "attrs": {
+            "class": "eq-g7fowl eq-link",
+            "href": "mailto:team@example.com"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "mail",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "span",
+          "attrs": {
+            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "a",
+              "attrs": {},
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "data",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {},
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "vb",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {
+                "href": "tel:\u002B351210000000"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "call",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {
+                "href": "HTTPS://example.com"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "web",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {
+                "href": "#top"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "here",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {
+                "href": "docs/next?page=2"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "next",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp eq-qginuq"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-115fhry eq-16x7aca eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "a",
+                  "attrs": {},
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": "click",
+                      "attrs": {},
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "tag": "span",
+                  "attrs": {},
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": " and ",
+                      "attrs": {},
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "tag": "a",
+                  "attrs": {
+                    "href": "https://example.com/docs"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": "docs",
+                      "attrs": {},
                       "events": [],
                       "children": []
                     }

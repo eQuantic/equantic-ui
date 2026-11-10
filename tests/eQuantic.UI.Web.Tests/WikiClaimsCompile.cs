@@ -476,6 +476,30 @@ public class WikiClaimsCompile
         }
     }
 
+    // Capabilities.md, "Saving a file the page made" (#1022): codes made in the page, offered as a file.
+    private sealed class RecoveryCodes(IFileSaver? saver, ITextClipboard? clipboard) : Primitives.StatefulComponent
+    {
+        private const string Codes = "7KQ2-M9XD\nP4TN-8WCE\nH6JB-2RZF\n";
+        private string _said = "";
+
+        public override VisualNode Build(ComponentContext context) =>
+            Column(gap: Space.S3, children: [
+                Text(Codes, TypeRole.BodyL),
+                Row(gap: Space.S3, children: [
+                    Button("Download .txt", onPressed: () => _ = Download()),
+                    Button("Copy all", Variant.Outline, onPressed: () => clipboard?.Write(Codes)),
+                ]),
+                Text(_said, TypeRole.BodyM),
+            ]);
+
+        private async Task Download()
+        {
+            if (saver is null) return;
+            var outcome = await saver.SaveTextAsync("recovery-codes.txt", Codes);
+            SetState(() => _said = outcome == FileSaveOutcome.Cancelled ? "Nothing was saved." : "Saved.");
+        }
+    }
+
     // Uploads.md (#1215): the policy the page and the server both read, a page that takes files with
     // FileUpload and receives them in its Server Action, and a component drawn over IUploads.
     private static class Uploads
