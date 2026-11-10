@@ -8,7 +8,8 @@ namespace eQuantic.UI.Web;
 /// What DOM the server writes for each word of the vocabulary — the web realizer's dispatch, moved
 /// off a switch with a default arm and onto the visitor the compiler checks.
 /// </summary>
-internal sealed partial class WebLoweringVisitor(ComponentContext context, FontlessMeasurer measurer)
+internal sealed partial class WebLoweringVisitor(
+    ComponentContext context, FontlessMeasurer measurer, ElementFrame? frame = null)
     : IVisualNodeVisitor<bool?, HtmlElement?>
 {
     /// <summary>The theme and type scale this lowering runs against — fixed for the pass.</summary>
@@ -17,6 +18,12 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
     /// <summary>The context's measurer, which answers 0 and counts: how <see cref="Visit(UiComponent, bool?)"/>
     /// learns that a component was built on widths nobody measured.</summary>
     private readonly FontlessMeasurer _measurer = measurer;
+
+    /// <summary>The frame of a live element tree this lowering walks, or null for a tree drawn once:
+    /// with one, a component is lowered from what its position built and a layer is shown to the
+    /// owner before it lowers (<see cref="ElementFrame"/>). Set aside, not replaced, for a subtree
+    /// the tree does not hold: an adaptive node's arm other than the one it resolved.</summary>
+    private ElementFrame? _frame = frame;
 
 
     /// <summary>
@@ -30,9 +37,18 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
     /// </summary>
     private SimulatedState _simulated;
 
+    /// <summary>The rule of the container a component stands in, while it builds: what it builds may
+    /// be an AdaptiveNode, whose arms are that container's to place (see <see cref="Place"/>).</summary>
+    private Func<VisualNode, HtmlElement?>? _placing;
+
     /// <summary>True while a DISABLED control's subtree is lowered: its boxes write no focus and no
     /// press, pictured or real, so neither a picture nor a control around it reaches them (#508).</summary>
     private bool _inDisabledControl;
+
+    /// <summary>True while the subtree of an enabled control is lowered under a <see cref="Simulated"/>
+    /// node: a control nested in it is another control, and the picture's press and focus stop at it,
+    /// as the real ones do (#616). A <see cref="Simulated"/> node starts it over.</summary>
+    private bool _inControl;
 
     /// <summary>
     /// The single dispatch every node passes through — and therefore the one place the design-mode
@@ -44,8 +60,19 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
     /// side of hydration, and one attribute of disagreement is a diverged subtree.
     /// </para>
     /// </summary>
-    internal HtmlElement? Lower(VisualNode node, bool? horizontalAxis) =>
-        Decorate(node, node.Accept(this, horizontalAxis));
+    internal HtmlElement? Lower(VisualNode node, bool? horizontalAxis)
+    {
+        if (_placing is { } rule)
+        {
+            if (node is AdaptiveNode adaptive)
+            {
+                _placing = null;
+                return PlaceArms(adaptive, rule);
+            }
+            if (node is not UiComponent) _placing = null;
+        }
+        return Decorate(node, node.Accept(this, horizontalAxis));
+    }
 
     /// <summary>
     /// What the funnel writes on the element a node lowered to. A method of its own, apart from the
@@ -114,7 +141,7 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
 
     public HtmlElement? Visit(Anchored anchored, bool? horizontalAxis) => LowerAnchored(anchored);
 
-    public HtmlElement? Visit(ScrollView scroll, bool? horizontalAxis) => LowerScrollView(scroll);
+    public HtmlElement? Visit(ScrollView scroll, bool? horizontalAxis) => LowerScrollView(scroll, horizontalAxis);
 
     public HtmlElement? Visit(Overlay overlay, bool? horizontalAxis) => LowerOverlay(overlay);
 
@@ -213,6 +240,18 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
     /// </summary>
     public HtmlElement? Visit(UiComponent component, bool? horizontalAxis)
     {
+        // A FRAME OF A LIVE TREE built it already, through the same boundary, with the instance
+        // its position keeps. What it built is lowered as it stands, and a discovery round names
+        // the KEPT instance, the one whose fields the next frame reads. The unmeasured mark below is
+        // hydration's, and a frame's tree has no server markup to adopt yet: the owner that renders
+        // a request (E4) is the one that will need it, and it builds through a measurer it owns.
+        if (_frame is { } frame)
+        {
+            var (kept, built) = frame.At(component);
+            ComponentExpansionScope.Ambient?.Enter(kept);
+            return built is not null ? Lower(built, horizontalAxis) : null;
+        }
+
         // NAMED BEFORE IT BUILDS, and the order is the whole mechanism: ExpandContained runs
         // Build on the next line, so anything a previous discovery round loaded for this component
         // has to be back on it by now or the build reads the empty defaults again. Null outside an
@@ -261,21 +300,13 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
             table.Height.Kind is not (SizeKind.Fixed or SizeKind.WindowMinus)),
         // A drawing at its parent's width fills across; its height follows from its aspect.
         Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
-        Pressable pressable => Fills(pressable.Child),
-        Hoverable hoverable => Fills(hoverable.Child),
-        DropTarget target => Fills(target.Child),
-        Adjustable adjustable => Fills(adjustable.Child),
-        Progress progress => Fills(progress.Child),
-        LiveRegion live => Fills(live.Child),
-        Flexible flexible => Fills(flexible.Child),
-        LoopMotion motion => Fills(motion.Child),
-        // The three the TypeScript `fills` already walked and this side did not. A wrapper missing
-        // here does not fail — it answers (false, false), which reads as "the child does not fill"
-        // and is indistinguishable from the truth until a child actually does. `Progress(InView(Box
-        // { Width = Fill }))` served a hugging host and hydrated into a filling one.
-        Simulated simulated => Fills(simulated.Child),
-        InFlow inFlow => Fills(inFlow.Child),
-        InView inView => Fills(inView.Child),
+        // Every wrapper the vocabulary calls layout-transparent, by its one rule rather than a list.
+        // A wrapper missing from a list does not fail — it answers (false, false), which reads as
+        // "the child does not fill" and is indistinguishable from the truth until a child actually
+        // does: `Progress(InView(Box { Width = Fill }))` served a hugging host and hydrated into a
+        // filling one, and a SafeArea around a page or a rail hugged on the web while Photon filled.
+        // The TypeScript `fills` lists the same kinds, pinned by TheBrowsersFills_WalksEveryTransparentWrapper.
+        SingleChildNode wrapper when wrapper.IsLayoutTransparent() => Fills(wrapper.Child),
         _ => (false, false),
     };
     /// <summary>

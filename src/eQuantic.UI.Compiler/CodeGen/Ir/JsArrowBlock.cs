@@ -8,7 +8,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Ir;
 /// placed, and knows nothing of that depth. It binds at assignment level, as <see cref="JsArrow"/>
 /// does.
 /// </summary>
-public sealed record JsArrowBlock(string Parameters, JsStatement Block, bool IsAsync, JsLayout Layout, int Depth) : JsExpr
+public sealed record JsArrowBlock(string Parameters, JsStatement Block, bool IsAsync, JsLayout Layout, int Depth, string Returns = "") : JsExpr
 {
     public override JsPrecedence Precedence => JsPrecedence.Assignment;
 }

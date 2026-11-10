@@ -1,6 +1,7 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Testing;
 using FluentAssertions;
 
 namespace eQuantic.UI.Web.Tests;
@@ -40,13 +41,25 @@ public class DestinationSemanticsTests
         new(Icons.Person, "Profile"),
     ];
 
+    /// <summary>What a screen reader announces for the three destinations, in reading order, read
+    /// through eQuantic.UI.Testing, the package an app's own tests read it through.</summary>
+    private static IReadOnlyList<Announcement> Announced(VisualNode node)
+    {
+        using var tester = new ComponentTester(Theme);
+        tester.Pump(node);
+        return tester.Semantics.Where(stop => Items.Any(item => item.Label == stop.Name)).ToList();
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(2)]
     public void OnlyTheCurrentDestinationCarriesTheAttribute(int selected)
     {
-        var destinations = Destinations(new BottomNavigation(Items, selected));
+        var bar = new BottomNavigation(Items, selected);
+        Announced(bar).Select(stop => stop.Current).Should().Equal(Enumerable.Range(0, 3).Select(index => index == selected),
+            "a reader hears where the user is on the one destination that is it");
 
+        var destinations = Destinations(bar);
         destinations.Should().HaveCount(3);
         for (var index = 0; index < destinations.Count; index++)
         {
@@ -63,11 +76,9 @@ public class DestinationSemanticsTests
     [Fact]
     public void TheRailSaysExactlyWhatTheBarSays()
     {
-        var bar = Destinations(new BottomNavigation(Items, 1))[1];
-        var rail = Destinations(new NavigationRail(Items, 1))[1];
-
-        rail.Attributes["aria-current"].Should().Be(bar.Attributes["aria-current"]);
-        rail.Attributes["aria-label"].Should().Be(bar.Attributes["aria-label"]);
+        // Everything a reader hears of the destinations, compared whole: one attribute pair at one
+        // index could agree while the rest differed.
+        Announced(new NavigationRail(Items, 1)).Should().Equal(Announced(new BottomNavigation(Items, 1)));
     }
 
     /// <summary>A destination keeps its Tab stop, unlike a tab or a radio: a navigation is a list of

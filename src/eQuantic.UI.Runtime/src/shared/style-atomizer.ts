@@ -10,6 +10,7 @@
 import type { AppTheme, ColorToken } from './value-types';
 import { getPhotonTheme } from './photon-context';
 import { SCROLLED_MARKER } from './markers';
+import { createStyleElement } from '../utils/page-nonce';
 
 /** FNV-1a 32-bit over UTF-16 code units, base36 — the exact C# `StyleAtomizer.Hash`. */
 export function hashDeclaration(text: string): string {
@@ -149,9 +150,7 @@ function registry(): CSSStyleSheet | null {
     }
   }
   if (!el) {
-    el = document.createElement('style');
-    el.id = 'eq-atomic';
-    document.head.appendChild(el);
+    el = createStyleElement('eq-atomic');
   }
   sheet = el.sheet;
   return sheet;
@@ -209,6 +208,26 @@ export function effectiveStyle(node: { attributes: Record<string, string | undef
   }
   parts.sort();
   if (node.attributes['style']) parts.push(node.attributes['style']);
+  return parts.join('; ');
+}
+
+/**
+ * TEST SEAM, effectiveStyle's twin for a STATE: the declarations an element takes while one family
+ * applies (`':hover'`, {@link CONTROL_FOCUS}, {@link CONTROL_PRESSED}), resolved as effectiveStyle
+ * resolves them. Specs assert what a pressed box turns into, not the hash of the rule that does it.
+ */
+export function stateStyle(node: { attributes: Record<string, string | undefined> }, family: string): string {
+  const parts: string[] = [];
+  for (const cls of (node.attributes['class'] ?? '').split(' ')) {
+    const rule = ruleTexts.get(cls);
+    if (!rule) continue;
+    const tag = rule.indexOf('\u0001');
+    if (tag < 0 || rule.slice(0, tag) !== family) continue;
+    const declaration = rule.slice(tag + 1);
+    const colon = declaration.indexOf(':');
+    parts.push(`${declaration.slice(0, colon)}: ${resolveVars(declaration.slice(colon + 1))}`);
+  }
+  parts.sort();
   return parts.join('; ');
 }
 
@@ -452,12 +471,18 @@ export const CONTROL_PRESSED = 'pressed';
 
 /**
  * The C# `StyleSink.StateSelector`: a hover is the box's own pseudo-class, and a focus and a press
- * are its control's, selecting every box inside an enabled control in that state. Specificity orders
- * them (hover 0,2,0 under focus 0,3,0 under pressed 0,4,0), never their order in the sheet.
+ * are its control's, selecting every box inside an enabled control in that state and not a box of a
+ * control nested in it (#616). Specificity orders them (hover 0,2,0 under focus 0,3,0 under pressed
+ * 0,4,0), never their order in the sheet; the nesting rule rides in a `:where()`, which weighs nothing.
  */
 export function stateSelector(family: string, className: string): string {
-  if (family === CONTROL_FOCUS) return `.eq-pressable:focus-visible .${className}`;
-  if (family === CONTROL_PRESSED) return `.eq-pressable.eq-pressable:active .${className}`;
+  if (family === CONTROL_FOCUS)
+    return `.eq-pressable:focus-visible .${className}:not(:where(.eq-pressable:focus-visible .eq-pressable .${className}))`;
+  if (family === CONTROL_PRESSED)
+    return (
+      `.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .${className}` +
+      `:not(:where(.eq-pressable:not(:active) .${className}))`
+    );
   return `.${className}${family}`;
 }
 

@@ -43,8 +43,9 @@ export class Chip extends StatelessComponent {
             content.add(new Pressable(new Icon(IconGlyph.fromIcons('close'), 20, textColor), this.onRemove, { label: SdkStrings.remove }));
         }
         let hoverFill = this.kind === 'filter' && this.onPressed != null ? this.selected ? primary.subtle.midpointWith(primary.base) : theme.surfaceSubtle.midpointWith(theme.border) : null;
-        let box = new Box(new BoxStyle({ height: Sizing.height('small', context.density), padding: EdgeInsets.symmetric(12, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'filter' && this.selected ? 1 : 0, borderColor: primary.base, hover: hoverFill == null ? null : new StyleDiff({ background: hoverFill }) }), content);
-        return this.kind === 'filter' && this.onPressed != null ? new Pressable(box, this.onPressed, { label: this.label, pressedBackground: this.selected ? primary.pressed.withOpacity(Math.fround(0.24)) : theme.surfaceSubtle, selected: this.selected }) : box;
+        let pressedFill = this.kind === 'filter' && this.onPressed != null ? this.selected ? primary.pressed.withOpacity(Math.fround(0.24)) : theme.surfaceSubtle : null;
+        let box = new Box(new BoxStyle({ height: Sizing.height('small', context.density), padding: EdgeInsets.symmetric(12, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'filter' && this.selected ? 1 : 0, borderColor: primary.base, hover: hoverFill == null ? null : new StyleDiff({ background: hoverFill }), pressed: pressedFill == null ? null : new StyleDiff({ background: pressedFill }) }), content);
+        return this.kind === 'filter' && this.onPressed != null ? new Pressable(box, this.onPressed, { label: this.label, selected: this.selected }) : box;
     }
 }
 

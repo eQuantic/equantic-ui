@@ -72,34 +72,23 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
     /// <summary>
     /// An enum's hash and its method group's: its underlying value's, hashed as a value of the underlying
     /// type hashes, which is what .NET's <c>Enum.GetHashCode</c> answers (#926). The browser holds a
-    /// non-flags enum as its member's key, and a 64-bit enum's value as a number where a <c>long</c> is a
-    /// BigInt, so the value is brought into its underlying type's own representation first:
-    /// <c>Wide.High.GetHashCode()</c> hashed a double where <c>((long)Wide.High).GetHashCode()</c> hashes
-    /// the long's two halves (Copilot's review of #947). A non-flags 64-bit enum's member is read from a
-    /// table of BigInts, so a value above 2^53 hashes as its constant does: through the table of numbers
-    /// the value had already rounded before it became a BigInt (its second review). A constant is its
-    /// value, written as its type writes it. An empty <c>Nullable</c> answers 0, and its group is refused
-    /// where it is made.
+    /// non-flags enum as its member's key, which the table of values reads, and a 64-bit enum's value as a
+    /// BigInt, as a <c>long</c> is held (#551), so <c>Wide.High.GetHashCode()</c> hashes the long's two
+    /// halves as <c>((long)Wide.High).GetHashCode()</c> does. A constant is its value, written as its type
+    /// writes it. An empty <c>Nullable</c> answers 0, and its group is refused where it is made.
     /// </summary>
     private static JsExpr EnumHash(ExpressionSyntax expression, JsExpr receiver, ITypeSymbol type,
         INamedTypeSymbol enumType, bool group, ConversionContext context)
     {
-        var wide = enumType.EnumUnderlyingType?.SpecialType is SpecialType.System_Int64 or SpecialType.System_UInt64;
         var helper = group ? Eq.HashGroup : Eq.Hash;
-        // What the browser holds, as the hash reads it: a flags enum's number, a member's value by its key, a
-        // 64-bit one's as an exact BigInt, and a value no member names as it is held.
-        var number = (enumType.IsFlagsEnum(), wide) switch
-        {
-            (true, false) => "{0}",
-            (true, true) => "BigInt({0})",
-            (false, false) => $"(({EnumShape.KeyToValue(enumType)})[{{0}}] ?? {{0}})",
-            (false, true) => $"(({EnumShape.KeyToBigInt(enumType)})[{{0}}] ?? BigInt({{0}}))",
-        };
+        // What the browser holds, as the hash reads it: a flags enum's value, a member's value by its
+        // key, and a value no member names as it is held.
+        var number = enumType.IsFlagsEnum() ? "{0}" : $"(({EnumShape.KeyToValue(enumType)})[{{0}}] ?? {{0}})";
         if (!type.IsNullableValue())
         {
             var value = context.SemanticHelper.TryGetConstantValue(expression, out var constant) && constant is not null
-                ? JsExpr.Literal(System.Convert.ToDecimal(constant, System.Globalization.CultureInfo.InvariantCulture)
-                    .ToString(System.Globalization.CultureInfo.InvariantCulture) + (wide ? "n" : ""))
+                ? JsExpr.Literal(EnumShape.ValueLiteral(enumType,
+                    System.Convert.ToDecimal(constant, System.Globalization.CultureInfo.InvariantCulture)))
                 : number == "{0}" ? receiver : JsExpr.Template(number, [receiver]);
             return JsExpr.Call(JsExpr.Identifier(helper), value);
         }

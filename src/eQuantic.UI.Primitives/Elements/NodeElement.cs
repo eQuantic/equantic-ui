@@ -31,6 +31,16 @@ public sealed class NodeElement : Element
     /// <inheritdoc />
     public override Element? ChildAt(int slot) => (uint)slot < (uint)_children.Count ? _children[slot] : null;
 
+    /// <inheritdoc />
+    public override void VisitChildren(Action<Element> visitor)
+    {
+        for (var slot = 0; slot < _children.Count; slot++)
+        {
+            var child = _children[slot];
+            if (child is not null) visitor(child);
+        }
+    }
+
     /// <summary>
     /// What the realizer drawing this position keeps for its node between frames: a scroll view's
     /// offset, a drag, a transition's tracks. The engine never reads it. When the position leaves the
@@ -71,7 +81,7 @@ public sealed class NodeElement : Element
     {
         if (_deferred < 0)
             throw new InvalidOperationException(
-                $"A {Configuration.GetType().Name} has no slot the realizer shows.");
+                $"A '{Configuration.NodeKind}' node has no slot the realizer shows.");
 
         Owner.EnterBuild();
         try
