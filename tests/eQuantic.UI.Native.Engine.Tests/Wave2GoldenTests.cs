@@ -2,6 +2,7 @@ using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine.Reference;
 using eQuantic.UI.Native.Engine.Tests.Golden;
+using eQuantic.UI.Native.Testing;
 using eQuantic.UI.Primitives;
 using List = eQuantic.UI.Components.List;
 using Switch = eQuantic.UI.Components.Switch;
@@ -64,5 +65,20 @@ public class Wave2GoldenTests
         backend.Render(builder.Build(), surface);
 
         GoldenImage.Match(surface, golden);
+    }
+
+    /// <summary>
+    /// THE COMPONENT TESTER IS HELD TO THE SAME GOLDEN. An app's test measures through
+    /// <see cref="PhotonTester"/>, and its answer is only worth having if it is the one the native
+    /// goldens pin: the same scene, pumped through the package and painted by its reference backend,
+    /// matches the image the host-driven test above is held to (#1246).
+    /// </summary>
+    [Fact]
+    public void Wave2Gallery_ThroughTheComponentTester_PaintsTheSameGolden()
+    {
+        using var tester = new PhotonTester(PhotonTheme.Instance, width: 380, height: 460, mode: ThemeMode.Light);
+        tester.Pump(Gallery());
+
+        GoldenImage.Match(380, 460, tester.ReadPixelsSrgb(), "wave2-gallery-light");
     }
 }

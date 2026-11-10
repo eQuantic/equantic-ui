@@ -10,6 +10,9 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
+    // Where happy-dom departs from a standard a browser follows, the departure is undone there and
+    // the file says which and why.
+    setupFiles: ['./src/test-environment.ts'],
     // happy-dom performs a REAL navigation for a link the router deliberately lets through, and a
     // unit suite has no business reaching the network: the request to `http://localhost:3000/counter`
     // was refused, the rejection arrived after the test that caused it had passed, and vitest failed

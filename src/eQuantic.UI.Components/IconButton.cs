@@ -128,13 +128,13 @@ public sealed class IconButton : StatelessComponent
             BorderWidth = Kind == IconButtonKind.Outline ? 1f : 0f,
             BorderColor = theme.BorderStrong,
             Hover = Disabled ? null : new StyleDiff { Background = hoverFill },
+            Pressed = Disabled ? null : new StyleDiff { Background = pressedFill },
         }, content);
 
         return new Pressable(box, Disabled ? null : OnPressed)
         {
             Disabled = Disabled,
             Label = Label,
-            PressedBackground = Disabled ? null : pressedFill,
             // A TOGGLE says so (handoff A13: "role toggle button, announces selected"). The glyph
             // swap and the Primary tint are the whole story for anyone who can see them, and nothing
             // at all for anyone who cannot — `Selected` reached the paint and stopped there.

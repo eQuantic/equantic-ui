@@ -59,18 +59,6 @@ public class FactorySemanticSurfaceTests
     }
 
     [Fact]
-    public void PressableFactoryCarriesThePressedFill()
-    {
-        var node = Pressable(Icon(Icons.Search), () => { },
-            pressedBackground: Theme.SurfaceSubtle);
-
-        var button = Walk(WebRealizer.Lower(node, Theme).Render())
-            .First(candidate => candidate.Attributes.TryGetValue("style", out var style) &&
-                                style?.Contains("--eq-pressed-bg") == true);
-        button.Attributes["class"].Should().Contain("eq-pressable");
-    }
-
-    [Fact]
     public void LinkFactoryStatesNameAndWhereYouAre()
     {
         var node = Link("/scan", Icon(Icons.Search), label: "Scan", current: true);
