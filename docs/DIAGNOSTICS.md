@@ -117,6 +117,12 @@ than pick for you, eqc asks.
 request's culture in C# and the invariant one in the browser; since #1087 the browser reads the
 page's culture there, as .NET reads the current one.
 
+## EQ2115 — the Content-Security-Policy
+
+| Code | Meaning | What to do |
+|---|---|---|
+| `EQ2115` | An inline handler of the escape hatch in an app that turned on the Content-Security-Policy: `HtmlElement.OnClientClick` or `OnLoad`, or a `DynamicElement.CustomAttributes` key that starts with `on`. They write JavaScript as text into an `onclick` or an `onload`, and a strict policy refuses every inline handler in the browser, wherever the markup was written. Read in every source of the build, the projects the app references included. | Handle the event in C#: an `OnClick`, or an entry of `CustomEvents`, which the runtime attaches as a listener. |
+
 ## EQ3001–EQ3007 — the Photon app generator
 
 | Code | Meaning |
