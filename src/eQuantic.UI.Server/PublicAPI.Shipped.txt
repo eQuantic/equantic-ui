@@ -91,6 +91,8 @@ eQuantic.UI.Server.Authorization.ServerActionAuthorizationService
 eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.AuthorizeAsync(Microsoft.AspNetCore.Http.HttpContext! context, eQuantic.UI.Server.ServerActionDescriptor! descriptor) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!>!
 eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.ServerActionAuthorizationService(Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Authorization.ServerActionAuthorizationService!>! logger) -> void
 eQuantic.UI.Server.ConsentCookie
+eQuantic.UI.Server.ContentSecurityPolicyAttribute
+eQuantic.UI.Server.ContentSecurityPolicyAttribute.ContentSecurityPolicyAttribute() -> void
 eQuantic.UI.Server.ContentSecurityPolicyBuilder
 eQuantic.UI.Server.ContentSecurityPolicyBuilder.AllowConnectionsTo(params string![]! sources) -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
 eQuantic.UI.Server.ContentSecurityPolicyBuilder.AllowFramingBy(params string![]! sources) -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
