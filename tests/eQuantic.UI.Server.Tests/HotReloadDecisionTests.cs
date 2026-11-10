@@ -66,8 +66,14 @@ public class HotReloadDecisionTests
 
         public async ValueTask DisposeAsync()
         {
-            await app.StopAsync();
-            await app.DisposeAsync();
+            try
+            {
+                await app.StopAsync();
+            }
+            finally
+            {
+                await app.DisposeAsync();
+            }
         }
     }
 
