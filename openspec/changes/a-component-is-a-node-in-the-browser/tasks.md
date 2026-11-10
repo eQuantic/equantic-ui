@@ -14,5 +14,5 @@
 
 ## 3. Documentation
 
-- [ ] 3.1 `docs/ELEMENT-TREE-PLAN.md`, E3a: the slice and what it measured, written once #1314 has merged, since both add to the same paragraph.
+- [x] 3.1 `docs/ELEMENT-TREE-PLAN.md`, E3a: the slice and what it measured (its archive path takes the date the change is archived on).
 - [x] 3.2 One ledger entry under `docs/ledger/`, citing #1301.
