@@ -73,13 +73,20 @@ public static class GtmExtensions
                 nameof(configure));
         if (first) Installed.Add(options, gtm.DataLayerName);
 
+        // What the container connects to, for the Content-Security-Policy an app may turn on (#1267):
+        // the hosts Google's own guidance for GTM and GA4 names. Declared whether or not the policy is
+        // on, so turning it on later needs nothing more from the app. The container's script and the
+        // tags it loads are admitted by the nonce and 'strict-dynamic', with no host for them.
+        options.ContentSecurity.AllowConnectionsTo(
+            "https://*.googletagmanager.com", "https://*.google-analytics.com", "https://*.analytics.google.com");
+
         options.ConfigureHtmlShell(shell =>
         {
             // The runtime's IAnalytics realization stays a no-op until an installer declares
             // itself — this line is that declaration, and it must run BEFORE the app bundle.
             if (first)
-                shell.AddHeadTag(
-                    $"<script>window.__EQ_ANALYTICS__={{dataLayer:{Js(gtm.DataLayerName)}}};</script>");
+                shell.AddHeadTag(HtmlTag.InlineScript(
+                    $"window.__EQ_ANALYTICS__={{dataLayer:{Js(gtm.DataLayerName)}}};", defer: false));
 
             // The official container snippet, verbatim but for the parameters GTM itself
             // templates: the dataLayer name, the container id, and the optional environment pair.
@@ -91,12 +98,17 @@ public static class GtmExtensions
                 "(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),"
                 + "event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),"
                 + "dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl"
-                + environment + ";f.parentNode.insertBefore(j,f);})"
+                + environment
+                // The nonce-aware form of Google's snippet: the container script carries the page's
+                // nonce, which GTM hands the custom HTML tags it writes, so a strict policy admits
+                // them (#1267).
+                + ";var n=d.querySelector('[nonce]');n&&j.setAttribute('nonce',n.nonce||n.getAttribute('nonce'))"
+                + ";f.parentNode.insertBefore(j,f);})"
                 + $"(window,document,'script',{Js(gtm.DataLayerName)},{Js(containerId)});";
 
             if (!gtm.RequireConsent)
             {
-                shell.AddHeadTag($"<script>{snippet}</script>");
+                shell.AddHeadTag(HtmlTag.InlineScript(snippet, defer: false));
             }
             else
             {
@@ -110,8 +122,8 @@ public static class GtmExtensions
                 // after a grant turns them back to denied on the page (#1294), and a grant turns on
                 // only the signals the app named. Over HTTPS the answer is read from the cookie only
                 // the page's own host can write (ConsentCookie.SecureName).
-                shell.AddHeadTag(
-                    "<script>(function(){"
+                shell.AddHeadTag(HtmlTag.InlineScript(
+                    "(function(){"
                     + $"var l={Js(gtm.DataLayerName)};window[l]=window[l]||[];"
                     + "function gtag(){window[l].push(arguments);}"
                     + $"gtag('consent','default',{Signals(GtmConsentSignals.None)});"
@@ -124,7 +136,7 @@ public static class GtmExtensions
                     + "var m=document.cookie.split('; ').filter(function(c){return c.indexOf(name+'=')===0;})[0];"
                     + "if(m&&m.slice(name.length+1)==='granted')answer('granted');"
                     + "document.addEventListener('eq:consent',function(e){if(e.detail)answer(e.detail.state);});"
-                    + "})();</script>");
+                    + "})();", defer: false));
             }
 
             // SPA page views: the router announces every committed navigation on the document
@@ -132,10 +144,10 @@ public static class GtmExtensions
             // are the names GA4's own history events use, so existing tags pick them up unchanged.
             if (first && gtm.TrackSpaPageViews)
             {
-                shell.AddHeadTag(
-                    "<script>document.addEventListener('eq:navigate',function(e){"
+                shell.AddHeadTag(HtmlTag.InlineScript(
+                    "document.addEventListener('eq:navigate',function(e){"
                     + $"window[{Js(gtm.DataLayerName)}].push({{event:'page_view',"
-                    + "page_path:e.detail.path+e.detail.search,page_title:e.detail.title});});</script>");
+                    + "page_path:e.detail.path+e.detail.search,page_title:e.detail.title});});", defer: false));
             }
         });
 

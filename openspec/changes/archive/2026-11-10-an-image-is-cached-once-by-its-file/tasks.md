@@ -9,4 +9,4 @@
 
 - [x] 2.1 The wiki's Image page in every language, and Upgrading in both
 - [x] 2.2 A ledger entry under `docs/ledger/`
-- [ ] 2.3 The suites, each read by its exit code
+- [x] 2.3 The suites, each read by its exit code
