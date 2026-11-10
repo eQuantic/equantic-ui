@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection.Metadata;
 
 [assembly: MetadataUpdateHandler(typeof(eQuantic.UI.Native.Components.PhotonHotReload))]
@@ -35,10 +36,15 @@ public static class PhotonHotReload
 {
     private static readonly List<WeakReference<PhotonHost>> Hosts = [];
     private static int _generation;
+    private static long _appliedAt;
 
     /// <summary>Bumped once per applied edit. A host that sees a number it has not seen before
     /// drops its content caches — on its own render thread, never on this one.</summary>
     public static int Generation => Volatile.Read(ref _generation);
+
+    /// <summary>When the last edit was applied, as a <see cref="Stopwatch"/> timestamp: the host says
+    /// how long after it the frame that draws the edit was built.</summary>
+    internal static long AppliedAt => Volatile.Read(ref _appliedAt);
 
     /// <summary>Every live host registers at construction; the reference is WEAK, so a host that
     /// belonged to a closed window (or a finished test) costs nothing and pins nothing.</summary>
@@ -53,7 +59,13 @@ public static class PhotonHotReload
 
     /// <summary>Runtime contract: caches keyed on updated metadata may be stale. The work happens
     /// per-host on the render thread; here the generation just moves.</summary>
-    public static void ClearCache(Type[]? updatedTypes) => Interlocked.Increment(ref _generation);
+    /// The runtime calls this first, once the delta is applied, so this is also when the edit counts
+    /// as applied: a frame that sees the new generation draws code that is already patched.
+    public static void ClearCache(Type[]? updatedTypes)
+    {
+        Volatile.Write(ref _appliedAt, Stopwatch.GetTimestamp());
+        Interlocked.Increment(ref _generation);
+    }
 
     /// <summary>Runtime contract: the update is applied — make it VISIBLE. Wakes every live host;
     /// the loops present within a tick and the new bodies draw with all state intact.</summary>

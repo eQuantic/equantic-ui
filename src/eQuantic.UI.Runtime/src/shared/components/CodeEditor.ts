@@ -242,7 +242,7 @@ export class CodeEditor extends StatefulComponent {
     }
 
     create() {
-        let $n0: any; 
+        let $n0: CodeEditorController; 
         let editor = ($n0 = new CodeEditorController(this.initialCode, CodeLanguages.for(this.languageName)), $n0.readOnly = this.readOnly, $n0);
         this._toldDocument = editor.document;
         this._toldSelection = editor.selection;
@@ -467,21 +467,21 @@ export class CodeEditor extends StatefulComponent {
         let marks: CodeDecoration[] = $eq.collections.listCopy(this.decorations);
         let previewed: any; 
         if ((previewed = editor.goTo.preview) != null && previewed.end.line >= first && previewed.start.line <= last) {
-            let $n4: any; 
+            let $n4: CodeDecoration; 
             marks.push(($n4 = new CodeDecoration(previewed, 'line'), $n4.color = theme.colors('info').subtle, $n4));
         }
         let link: any; 
         if ((link = editor.definitions.link) != null && link.end.line >= first && link.start.line <= last) {
-            let $n5: any; 
+            let $n5: CodeDecoration; 
             marks.push(($n5 = new CodeDecoration(link, 'underline'), $n5.color = theme.colors('primary').base, $n5));
         }
         for (const placeholder of editor.snippet.placeholdersIn(first, last)) {
-            let $n6: any; 
+            let $n6: CodeDecoration; 
             marks.push(($n6 = new CodeDecoration(placeholder, 'highlight'), $n6.color = theme.colors('info').subtle, $n6));
         }
         for (const problem of problems) {
             if (problem.range.end.line < first || problem.range.start.line > last) continue;
-            let $n7: any; 
+            let $n7: CodeDecoration; 
             marks.push(($n7 = new CodeDecoration(problem.range, problem.severity === 'hint' ? 'dots' : 'squiggle'), $n7.color = CodeHoverCard.severityColor(theme, problem.severity), $n7));
         }
         let composition: any; 
