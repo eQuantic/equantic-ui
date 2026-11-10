@@ -131,13 +131,13 @@ public sealed class Button : StatelessComponent
             BorderWidth = borderWidth,
             BorderColor = borderColor,
             Hover = inert || hoverFill is null ? null : new StyleDiff { Background = hoverFill },
+            Pressed = inert || pressedFill is null ? null : new StyleDiff { Background = pressedFill },
         }, content);
 
         return new Pressable(container, inert ? null : OnPressed)
         {
             Disabled = inert,
             Label = Label,
-            PressedBackground = inert ? null : pressedFill,
             InitialFocus = InitialFocus,
         };
     }

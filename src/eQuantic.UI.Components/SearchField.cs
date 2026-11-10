@@ -63,11 +63,11 @@ public sealed class SearchField : StatelessComponent
                     Height = side,
                     CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
                     Hover = new StyleDiff { Background = theme.SurfaceSubtle.MidpointWith(theme.Border) },
+                    Pressed = new StyleDiff { Background = theme.Border },
                 }, new Icon(Icons.Close, IconSize.Dense, theme.TextMuted).Centered()),
                 () => OnChanged?.Invoke(""))
             {
                 Label = SdkStrings.ClearSearch,
-                PressedBackground = theme.Border,
             });
         }
 
