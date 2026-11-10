@@ -1,6 +1,5 @@
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
-using System.Runtime.CompilerServices;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Native.Components;
@@ -12,28 +11,21 @@ namespace eQuantic.UI.Native.Components;
 internal sealed partial class EmitVisitor
 {
     /// <summary>Whether a box of this control, up to a control nested in it, declares a Hover diff:
-    /// what the control's hover would show. Asked once per laid-out control, so a frame asks it again
-    /// only for a tree that was built again.</summary>
+    /// what the control's hover would show. Walked by index, every frame, so it forms nothing: a cache
+    /// keyed on the laid-out node missed on every frame the layout ran again, and paid an entry and a
+    /// box for each control, which a steady frame measured (#614).</summary>
     private static bool HoversWithItsControl(LayoutNode control)
     {
-        if (ControlHovers.TryGetValue(control, out var known)) return known.Value;
-        var answer = AnyHover(control);
-        ControlHovers.AddOrUpdate(control, new StrongBox<bool>(answer));
-        return answer;
-
-        static bool AnyHover(LayoutNode node)
+        var children = control.Children;
+        for (var i = 0; i < children.Count; i++)
         {
-            foreach (var child in node.Children)
-            {
-                if (child.Source is Pressable) continue;
-                if (child.Source is Box { Style.Hover.IsEmpty: false }) return true;
-                if (AnyHover(child)) return true;
-            }
-            return false;
+            var child = children[i];
+            if (child.Source is Pressable) continue;
+            if (child.Source is Box { Style.Hover.IsEmpty: false }) return true;
+            if (HoversWithItsControl(child)) return true;
         }
+        return false;
     }
-
-    private static readonly ConditionalWeakTable<LayoutNode, StrongBox<bool>> ControlHovers = new();
 
     private void EmitPressable(Pressable pressable, EmitState s)
     {

@@ -102,8 +102,10 @@ internal sealed partial class EmitVisitor
         var fill = style.Background;
         var borderColor = style.BorderColor;
         var borderWidth = style.BorderWidth;
-        // Spec S5: hover-reactive boxes register for the host's pointer tracking.
-        if (box?.Style.Hover is { IsEmpty: false })
+        // Spec S5: hover-reactive boxes register for the host's pointer tracking. Inside an enabled
+        // control the hover is the control's, which registers its own region, so a box there adds
+        // none: it would be tracked and never read (#614).
+        if (box?.Style.Hover is { IsEmpty: false } && s.Press.ControlHovered is null)
             s.Input.Add(new HoverRegion(s.Node.Bounds, box, PositionOf(s.Node)));
 
         // Colours glide as resolved sRGB (what CSS does), wrapped back into a token that
