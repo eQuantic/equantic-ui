@@ -24,13 +24,15 @@ public sealed class DialogFileSaver(IFileDialogs dialogs) : IFileSaver
         cancellationToken.ThrowIfCancellationRequested();
         var path = await dialogs.PickSavePath(suggestedName: name, filters: FiltersFor(name));
         if (path is null) return FileSaveOutcome.Cancelled;
-        await File.WriteAllBytesAsync(path, content, cancellationToken);
+        // Not cancellable from here on: the person chose a place, and a write stopped halfway would
+        // leave a truncated file there under the name they gave it.
+        await File.WriteAllBytesAsync(path, content, CancellationToken.None);
         return FileSaveOutcome.Saved;
     }
 
     /// <summary>The panel offers the kind the name says, labelled as a person reads an extension
     /// (<c>TXT</c>); a name with no extension offers anything.</summary>
-    internal static IReadOnlyList<FileFilter>? FiltersFor(string name)
+    private static IReadOnlyList<FileFilter>? FiltersFor(string name)
     {
         var extension = Path.GetExtension(name).TrimStart('.');
         return extension.Length == 0 ? null : [new FileFilter(extension.ToUpperInvariant(), extension)];

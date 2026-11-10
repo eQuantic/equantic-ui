@@ -26,11 +26,13 @@ desktop. This proposal takes the same shape, and the same split by target.
   - The media type is derived from the name's extension when the page states none (`codes.txt` is
     `text/plain`, `report.csv` is `text/csv`, an unknown one is `application/octet-stream`), so the
     developer writes a file name and nothing else.
-  - The answer is a **`FileSaveOutcome`**: `Offered` when the target took the file and saves it the
-    way it saves downloads (the browser, which tells a page nothing about where it went or whether the
-    person kept it), `Saved` when it was written where the person chose (a desktop save panel), and
-    `Cancelled` when the person closed the panel. A person cancelling has not failed at anything, so
-    it is an answer and not an exception.
+  - The answer is a **`FileSaveOutcome`**: `Cancelled`, its default, when the person closed the
+    panel, `Offered` when the target took the file and saves it the way it saves downloads (the
+    browser, which tells a page nothing about where it went or whether the person kept it), and
+    `Saved` when it was written where the person chose (a desktop save panel). A person cancelling has
+    not failed at anything, so it is an answer and not an exception; a PAGE that gave up, through its
+    cancellation token, meets `OperationCanceledException` before anything is offered, as .NET does,
+    on every target.
 - **The web** registers `IFileSaver` in the runtime: a `Blob` of the content under its media type, an
   object URL, and an anchor with `download` clicked inside the press that asked, then the URL revoked.
   Nothing is awaited before the click, so the person's gesture still holds when the browser decides.

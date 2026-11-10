@@ -5,10 +5,10 @@
 ### Requirement: A page offers a file it made through one contract
 
 The SDK SHALL offer a page an `IFileSaver` capability that takes a file name and the content, as text
-written in UTF-8 or as bytes, with an optional media type, and answers a `FileSaveOutcome`: `Offered`
-when the target took the file and saves it the way it saves downloads, `Saved` when it was written
-where the person chose, and `Cancelled` when the person closed the panel. When the page states no
-media type, the SDK SHALL derive it from the name's extension, and SHALL use
+written in UTF-8 or as bytes, with an optional media type, and answers a `FileSaveOutcome`:
+`Cancelled`, its default, when the person closed the panel, `Offered` when the target took the file
+and saves it the way it saves downloads, and `Saved` when it was written where the person chose. When
+the page states no media type, the SDK SHALL derive it from the name's extension, and SHALL use
 `application/octet-stream` for an extension it does not know.
 
 #### Scenario: A text file whose type the name gives
@@ -20,6 +20,12 @@ media type, the SDK SHALL derive it from the name's extension, and SHALL use
 
 - **WHEN** a page saves `model.xyz` as bytes with no media type
 - **THEN** the file offered is `application/octet-stream`
+
+#### Scenario: A page that gave up before offering
+
+- **WHEN** a page saves with a cancellation token already cancelled
+- **THEN** every target throws `OperationCanceledException`, as .NET does, and offers nothing: the
+  browser clicks no anchor and the desktop opens no panel
 
 ### Requirement: The browser downloads the file inside the press
 

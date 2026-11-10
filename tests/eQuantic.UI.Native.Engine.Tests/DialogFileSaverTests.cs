@@ -80,6 +80,20 @@ public sealed class DialogFileSaverTests : IDisposable
     }
 
     [Fact]
+    public async Task ATokenCancelledBeforehand_Throws_AndOpensNoPanel()
+    {
+        var panel = new Panel { Choice = Path.Combine(_folder, "kept.txt") };
+        using var source = new CancellationTokenSource();
+        await source.CancelAsync();
+
+        var save = () => new DialogFileSaver(panel).SaveTextAsync("codes.txt", "x", cancellationToken: source.Token).AsTask();
+
+        await save.Should().ThrowAsync<OperationCanceledException>();
+        panel.SuggestedName.Should().BeNull("no panel opened");
+        Directory.EnumerateFileSystemEntries(_folder).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task APanelClosedWithoutChoosing_WritesNothing()
     {
         var outcome = await new DialogFileSaver(new Panel()).SaveTextAsync("codes.txt", "x");

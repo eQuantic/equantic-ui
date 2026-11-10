@@ -6,6 +6,10 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public enum FileSaveOutcome
 {
+    /// <summary>The person closed the panel without choosing a place. Nothing was written, and
+    /// nothing failed. First, so the default value says nothing was saved.</summary>
+    Cancelled,
+
     /// <summary>
     /// The target took the file and saves it the way it saves downloads. A browser answers this: it
     /// tells a page nothing about where the file went, or whether the person kept it.
@@ -14,8 +18,4 @@ public enum FileSaveOutcome
 
     /// <summary>The file was written where the person chose, in a save panel.</summary>
     Saved,
-
-    /// <summary>The person closed the panel without choosing a place. Nothing was written, and
-    /// nothing failed.</summary>
-    Cancelled,
 }

@@ -73,14 +73,14 @@ describe('WebFileSaver', () => {
     expect(clicks).toHaveLength(1);
   });
 
-  it('offers nothing once the page has given up', async () => {
+  it('offers nothing once the page has given up, and throws as .NET does', async () => {
     const { clicks } = whenTheBrowserDownloads();
     const source = new CancellationTokenSource();
     source.cancel();
 
-    const outcome = await new WebFileSaver().saveTextAsync('a.txt', 'a', null, source.token);
-
-    expect(outcome).toBe('cancelled');
+    await expect(new WebFileSaver().saveTextAsync('a.txt', 'a', null, source.token)).rejects.toMatchObject({
+      name: 'OperationCanceledException',
+    });
     expect(clicks).toHaveLength(0);
   });
 });

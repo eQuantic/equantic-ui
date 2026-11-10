@@ -9,6 +9,7 @@
  */
 
 import type { CancellationToken } from '../../utils/cancellation';
+import { exception } from '../../utils/exceptions';
 import type { FileSaveOutcomeValue } from '../enums.generated';
 
 /** How long the object URL outlives the click. A browser reads the blob after the click returns,
@@ -44,10 +45,18 @@ export class WebFileSaver {
     mimeType: string | null | undefined,
     cancellationToken: CancellationToken | null | undefined,
   ): Promise<FileSaveOutcomeValue> {
-    if (!this.isAvailable) {
-      return Promise.reject(new Error('IFileSaver: this target has no document to offer a file from.'));
+    try {
+      if (!this.isAvailable) {
+        throw exception(
+          'System.InvalidOperationException',
+          'A file is offered to a person from a page in their browser, and this target has no document.',
+        );
+      }
+      // As .NET does, and as the desktop does: a token cancelled before the file is offered throws.
+      cancellationToken?.throwIfCancellationRequested();
+    } catch (error) {
+      return Promise.reject(error);
     }
-    if (cancellationToken?.isCancellationRequested) return Promise.resolve('cancelled');
     // A Blob encodes a string as UTF-8, which is what SaveTextAsync promises.
     const blob = new Blob([content as BlobPart], { type: mimeType || mediaTypeOf(name) });
     const url = URL.createObjectURL(blob);

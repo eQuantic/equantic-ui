@@ -29,7 +29,9 @@ public interface IFileSaver
     /// <param name="name">The file's name, without a folder: <c>recovery-codes.txt</c>.</param>
     /// <param name="text">What the file holds.</param>
     /// <param name="mimeType">What the content is. Null derives it from the name.</param>
-    /// <param name="cancellationToken">Gives up before the file is offered.</param>
+    /// <param name="cancellationToken">Gives up before the file is offered, throwing
+    /// <see cref="OperationCanceledException"/> as .NET does. Once the person has chosen a place,
+    /// the file is written whole.</param>
     ValueTask<FileSaveOutcome> SaveTextAsync(string name, string text, string? mimeType = null,
         CancellationToken cancellationToken = default);
 
@@ -37,7 +39,9 @@ public interface IFileSaver
     /// <param name="name">The file's name, without a folder: <c>report.pdf</c>.</param>
     /// <param name="content">What the file holds.</param>
     /// <param name="mimeType">What the content is. Null derives it from the name.</param>
-    /// <param name="cancellationToken">Gives up before the file is offered.</param>
+    /// <param name="cancellationToken">Gives up before the file is offered, throwing
+    /// <see cref="OperationCanceledException"/> as .NET does. Once the person has chosen a place,
+    /// the file is written whole.</param>
     ValueTask<FileSaveOutcome> SaveBytesAsync(string name, byte[] content, string? mimeType = null,
         CancellationToken cancellationToken = default);
 }
