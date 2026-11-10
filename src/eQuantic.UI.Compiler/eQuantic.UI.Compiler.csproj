@@ -39,5 +39,7 @@
          core/runtime-members.spec.ts. eqc refuses a C# member that would shadow one (EQ2011), and
          the list has to travel with the CLI — which ships as tools/net10.0/eqc.dll. -->
     <EmbeddedResource Include="Resources/runtime-members.txt" />
+    <!-- The bundle worker bun runs from its command line (ModuleBundler, #1280). -->
+    <EmbeddedResource Include="Services/BundleWorker.js" LogicalName="eQuantic.UI.Compiler.BundleWorker.js" />
   </ItemGroup>
 </Project>

@@ -1,2 +1,8 @@
 #nullable enable
 eQuantic.UI.Compiler.Services.AppBuild.LoadFrom(eQuantic.UI.Compiler.Services.AppBuild! previous) -> bool
+*REMOVED*eQuantic.UI.Compiler.Services.AppBuild.AppBuild(eQuantic.UI.Compiler.Services.AppBuildOptions! options, System.IO.TextWriter? output = null, System.IO.TextWriter? errors = null) -> void
+*REMOVED*static eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(string! bunPath, string! workingDirectory, System.Collections.Generic.IReadOnlyCollection<string!>! entryPoints, string! outputDir, string! intermediateDir, eQuantic.UI.Compiler.SourceMapMode sourceMaps, System.Action<string!>? warn = null) -> string?
+eQuantic.UI.Compiler.Services.AppBuild.AppBuild(eQuantic.UI.Compiler.Services.AppBuildOptions! options, System.IO.TextWriter? output = null, System.IO.TextWriter? errors = null, eQuantic.UI.Compiler.Services.ModuleBundler? bundler = null) -> void
+eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(System.Collections.Generic.IReadOnlyCollection<string!>! entryPoints, string! outputDir, string! intermediateDir, eQuantic.UI.Compiler.SourceMapMode sourceMaps, System.Action<string!>? warn = null) -> string?
+eQuantic.UI.Compiler.Services.ModuleBundler.Dispose() -> void
+eQuantic.UI.Compiler.Services.ModuleBundler.ModuleBundler(string! bunPath, string! workingDirectory) -> void
