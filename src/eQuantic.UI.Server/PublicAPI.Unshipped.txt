@@ -33,6 +33,14 @@ eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportUri.get -> string?
 eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportUri.set -> void
 eQuantic.UI.Server.UIOptions.ContentSecurity.get -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
 eQuantic.UI.Server.UIOptions.UseContentSecurityPolicy(System.Action<eQuantic.UI.Server.ContentSecurityPolicyBuilder!>? configure = null) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UploadsOptions.MaxUploadsPerOwner.get -> int
+eQuantic.UI.Server.UploadsOptions.MaxUploadsPerOwner.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxBytesPerOwner.get -> long
+eQuantic.UI.Server.UploadsOptions.MaxBytesPerOwner.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxTotalUploads.get -> int
+eQuantic.UI.Server.UploadsOptions.MaxTotalUploads.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxTotalBytes.get -> long
+eQuantic.UI.Server.UploadsOptions.MaxTotalBytes.set -> void
 *REMOVED*eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.ServerActionAuthorizationService(System.IServiceProvider! serviceProvider, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Authorization.ServerActionAuthorizationService!>! logger) -> void
 eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.ServerActionAuthorizationService(Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Authorization.ServerActionAuthorizationService!>! logger) -> void
 *REMOVED*static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.PolicyFailed(string! policyName) -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!

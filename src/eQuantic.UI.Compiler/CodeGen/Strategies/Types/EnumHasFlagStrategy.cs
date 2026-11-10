@@ -1,13 +1,14 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
-/// Converts <c>enumValue.HasFlag(flag)</c>. A <c>[Flags]</c> enum is represented numerically (see
-/// <see cref="EnumStrategy"/>), so <c>HasFlag</c> becomes the bitwise test <c>(value &amp; flag) === flag</c>
-/// (true when every bit of <c>flag</c> is set). For a non-flags enum (string repr) a single
-/// value "has" only itself, so it degrades to equality.
+/// Converts <c>enumValue.HasFlag(flag)</c>: the bitwise test <c>(value &amp; flag) === flag</c> on the values,
+/// at the underlying type's width (<see cref="EnumOperators.HasFlag"/>), which .NET answers for any enum: a
+/// non-flags one degraded to equality, so a member with no bits was in no other value, and a uint flag's
+/// high bit read negative on one side of the test (#555).
 /// </summary>
 public class EnumHasFlagStrategy : IConversionStrategy
 {
@@ -29,16 +30,15 @@ public class EnumHasFlagStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
 
-        var receiver = context.Converter.ConvertExpression(memberAccess.Expression);
-        var flag = context.Converter.ConvertExpression(invocation.ArgumentList.Arguments[0].Expression);
-
-        // Bitwise test for [Flags] (numeric) enums; equality for a known non-flags (string) enum.
-        var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
-        var knownNonFlags = receiverType is { TypeKind: TypeKind.Enum } && !receiverType.IsFlagsEnum();
-
-        return knownNonFlags
-            ? $"({receiver} === {flag})"
-            : $"(({receiver} & {flag}) === {flag})";
+        var receiver = context.Converter.ConvertIr(memberAccess.Expression);
+        var flagSyntax = invocation.ArgumentList.Arguments[0].Expression;
+        var flag = context.Converter.ConvertIr(flagSyntax);
+        var flagConstant = context.SemanticHelper.TryGetConstantValue(flagSyntax, out var constant) && constant is not null
+            ? System.Convert.ToDecimal(constant, System.Globalization.CultureInfo.InvariantCulture)
+            : (decimal?)null;
+        return context.SemanticHelper.GetType(memberAccess.Expression) is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType
+            ? JsExprWriter.Write(EnumOperators.HasFlag(enumType, receiver, flag, flagConstant, context))
+            : $"(({JsExprWriter.Write(receiver)} & {JsExprWriter.Write(flag)}) === {JsExprWriter.Write(flag)})";
     }
 
     // Above the generic invocation handling.

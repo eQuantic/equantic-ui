@@ -5,7 +5,7 @@ export class CodeChoiceProvider {
         this._list = null!;
         let items: CodeCompletionItem[] = [];
         for (let i = 0; i < $eq.collections.count(options); i++) {
-            let $n0: any; 
+            let $n0: CodeCompletionItem; 
             items.push(($n0 = new CodeCompletionItem($eq.collections.item(options, i), 'value'), $n0.sortText = $eq.text.format(i, null, undefined, undefined, 'int32').padStart(6, '0'), $n0));
         }
         this._list = new CodeCompletionList(items);

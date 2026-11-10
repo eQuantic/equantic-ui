@@ -1,4 +1,4 @@
-import { $eq, Adjustable, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { $eq, Adjustable, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Row, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle } from "../runtime-exports";
 
 export class Tabs extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Tabs';
@@ -31,7 +31,8 @@ export class Tabs extends StatelessComponent {
             let cell = new Column(0, 'start', 'stretch', false, null, null, { height: SizeValue.fill });
             cell.add(new Flexible(labelRow));
             cell.add(new Box(new BoxStyle({ width: SizeValue.fill, height: 3, padding: EdgeInsets.symmetric(16, 0) }), isActive ? new Box(new BoxStyle({ width: SizeValue.fill, height: 3, background: primary.base, cornerRadius: new CornerRadii(2, 2, 0, 0) })) : null));
-            row.add(new Flexible(new Pressable(cell, this.onSelect == null ? null : () => this.onSelect!(index), { label: $eq.collections.item(this.labels, i), pressedBackground: theme.surfaceSubtle, role: 'tab', selected: isActive })));
+            let surface = new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, pressed: new StyleDiff({ background: theme.surfaceSubtle }) }), cell);
+            row.add(new Flexible(new Pressable(surface, this.onSelect == null ? null : () => this.onSelect!(index), { label: $eq.collections.item(this.labels, i), role: 'tab', selected: isActive })));
         }
         if (this.onSelect == null || $eq.collections.count(this.labels) === 0) return row;
         let count = $eq.collections.count(this.labels);

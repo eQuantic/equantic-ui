@@ -449,6 +449,7 @@ public sealed class StudioShell : StatefulComponent
                 Background = current ? theme.Colors(Variant.Primary).Subtle : null,
                 CornerRadius = new CornerRadii(Radius.Sm),
                 Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
+                Pressed = new StyleDiff { Background = theme.Surface },
             }, row);
 
             var captured = section;
@@ -456,7 +457,6 @@ public sealed class StudioShell : StatefulComponent
             {
                 Label = Gallery.NameOf(section),
                 Selected = current,
-                PressedBackground = theme.Surface,
             });
         }
 
@@ -530,10 +530,10 @@ public sealed class StudioShell : StatefulComponent
                 Height = 36,
                 Padding = EdgeInsets.Symmetric(Space.S3, 0),
                 CornerRadius = new CornerRadii(Radius.Sm),
+                Pressed = new StyleDiff { Background = theme.SurfaceSubtle },
             }, row), () => { SetState(() => _searchOpen = false); Navigate(captured); })
             {
                 Label = Gallery.NameOf(section),
-                PressedBackground = theme.SurfaceSubtle,
             });
         }
 
