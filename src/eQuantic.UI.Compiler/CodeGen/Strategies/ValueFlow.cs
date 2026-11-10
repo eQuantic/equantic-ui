@@ -225,13 +225,11 @@ public static class ValueFlow
 
         if (kind.IsTupleConversion) return Numeric(from, to, translated, null, isChecked, context);
 
-        if (kind.IsEnumeration && to is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
-        {
-            // Only the literal 0 converts implicitly to an enum: the member that is 0, by name.
-            var zero = enumType.GetMembers().OfType<IFieldSymbol>()
-                .FirstOrDefault(f => f.HasConstantValue && System.Convert.ToInt64(f.ConstantValue, CultureInfo.InvariantCulture) == 0);
-            return zero is null ? translated : JsExpr.Literal($"'{zero.Name.ToCamelCase()}'");
-        }
+        // An ENUMERATION conversion, the literal 0 into an enum or a foreach element read as one, converts
+        // the underlying value and holds it as the target does: the member that is 0 by its key, where every
+        // element of `foreach (Status s in numbers)` became that member (#551).
+        if (kind.IsEnumeration)
+            return Types.EnumConversion.Convert(from, to, convertedConstant, translated, isChecked, context) ?? translated;
 
         // A T[] behind a face that can change a size is marked where the static type still says it is one:
         // a list and an array are one JavaScript array here, and a call through the face grew it (#711).
@@ -279,10 +277,14 @@ public static class ValueFlow
     /// <summary>A numeric conversion between the primitives JavaScript represents differently:
     /// a char is a 1-length string, a long a BigInt, a decimal a Decimal, a float a rounded
     /// double, and every fixed-width integer a plain number that must wrap (or throw, checked)
-    /// where C# says it does.</summary>
-    private static JsExpr Numeric(ITypeSymbol? from, ITypeSymbol? to, JsExpr translated, object? constant,
+    /// where C# says it does. An enum on either side converts its underlying value
+    /// (<see cref="Types.EnumConversion"/>), a lifted one's included.</summary>
+    internal static JsExpr Numeric(ITypeSymbol? from, ITypeSymbol? to, JsExpr translated, object? constant,
         bool isChecked, ConversionContext context)
     {
+        if (Types.EnumConversion.Convert(from, to, null, translated, isChecked, context) is { } enumeration)
+            return enumeration;
+
         // An IDENTITY needs nothing: a T flowing into a T? is the same value. Through the table
         // below a decimal went through its double and back, keeping 15 digits (`decimal? m =
         // 1234567890.123456789012m` was 1234567890.12346), and a char through its code unit.
