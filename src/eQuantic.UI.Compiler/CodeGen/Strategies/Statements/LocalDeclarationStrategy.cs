@@ -251,33 +251,13 @@ public class LocalDeclarationStrategy : IStatementStrategy
         if (item is INamedTypeSymbol nested && nested.NestedTwinName() is not null) return nested.IntroduceTwin(context);
         // A type parameter is named as its declaration names it, `class$` for `@class` (Copilot on #1068).
         if (item is ITypeParameterSymbol) return item.Name.ToJsIdentifier();
-        if (item is INamedTypeSymbol { SpecialType: SpecialType.None } named) return NamedItemName(named, context);
+        if (item is INamedTypeSymbol { SpecialType: SpecialType.None } named) return TsNamedType.Named(named, context);
         if (item.SpecialType == SpecialType.None) return null;
         var ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(
             item.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));
         // A decimal is the runtime's class, which the module imports only when something says so.
         if (ts == "Decimal") context.UsedRuntimeTypes.Add("Decimal");
         return ts;
-    }
-
-    /// <summary>
-    /// The TS spelling of a named item that is neither a primitive nor generic. A type with a twin, the
-    /// app's own or one the runtime provides, is named by its twin and imported as any reference to it is:
-    /// an app class only a tuple's slot named was named and never imported. A task held as a value is a
-    /// promise, where the mapper's <c>void</c> is what a method returning one is awaited to. Any other type
-    /// the app does not declare is named as the mapper spells it where a module names that with no module
-    /// of the app's behind it (a Guid is a string, a TimeSpan the runtime's), and null where nothing can
-    /// verify the name, which leaves the list to inference as a declared type degrades to <c>any</c>
-    /// (Copilot's reviews of #1068 found each).
-    /// </summary>
-    private static string? NamedItemName(INamedTypeSymbol named, ConversionContext context)
-    {
-        if (named.Locations.Any(location => location.IsInSource) || named.IsRuntimeProvided())
-            return named.IntroduceTwin(context);
-        if (named is { Name: "Task", Arity: 0 } && named.ContainingNamespace?.ToDisplayString() == "System.Threading.Tasks")
-            return "Promise<void>";
-        var ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(named.Name);
-        return CodeGen.TypeScriptEmitter.NamesWithoutAModule(ts) ? ts : null;
     }
 
     /// <summary>An array of <paramref name="item"/>, a union parenthesised: <c>string | null[]</c> is a string
@@ -299,13 +279,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
         if (declared is null || actual is null) return "";
         if (SymbolEqualityComparer.Default.Equals(declared, actual)) return "";
 
-        // Only NAMED vocabulary/user types annotate — primitives, generics and arrays keep their
-        // C# spellings, which are not TypeScript's, and inference is already right for them.
-        if (declared is not INamedTypeSymbol { IsGenericType: false, SpecialType: SpecialType.None } named)
-            return "";
-        // An interface, an exception and a delegate are named by what they cross as (TsStandIn):
-        // `IThing thing = new Thing()` declared an `IThing` no module defines.
-        var name = TsStandIn.For(named, context.UsedRuntimeTypes) ?? named.NestedTwinName() ?? named.Name;
+        if (TsNamedType.For(declared, context) is not { } name) return "";
         if (name == "any") return ": any";
         // `VisualNode?` crosses as the union it is — an annotation that rejects the null the C#
         // explicitly allowed would refuse `VisualNode? icon = selected ? new Icon(…) : null`.
