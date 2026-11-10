@@ -71,7 +71,8 @@ warnings.
 deliberately does not carry:
 
 - **A publisher, and a credential.** CI has a `publish-extension` job, gated on an `ext-v*` tag,
-  which publishes the archive the packaging job already verified rather than rebuilding one. It takes
+  which publishes the archive the packaging job already verified rather than rebuilding one, with
+  the vsce that `package-lock.json` pinned, installed by `npm ci`. It takes
   either credential and needs one:
   - `VSCE_PAT` — a Marketplace personal access token. One secret, nothing else to set up, and it
     **retires on 2026-12-01**.

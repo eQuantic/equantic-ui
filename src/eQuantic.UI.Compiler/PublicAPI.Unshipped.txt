@@ -4,7 +4,3 @@ eQuantic.UI.Compiler.Services.AppBuildOptions.SourcesFile.get -> string?
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourcesFile.init -> void
 static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnits(System.Collections.Generic.IReadOnlyList<string!>! sourceDirectories, string? generatedDirectory, System.Collections.Generic.IReadOnlyList<string!>? projectFiles = null) -> System.Collections.Generic.IEnumerable<(string! Directory, string! File, bool IsGenerated)>!
 eQuantic.UI.Compiler.Services.SemanticModelProvider.OptionsFor(string? path) -> Microsoft.CodeAnalysis.CSharp.CSharpParseOptions!
-const eQuantic.UI.Compiler.CodeGen.Eq.Guard = "$eq.guard" -> string!
-const eQuantic.UI.Compiler.CodeGen.Eq.TypesNamed = "$eq.types.named" -> string!
-const eQuantic.UI.Compiler.CodeGen.Eq.TypesOf = "$eq.types.of" -> string!
-const eQuantic.UI.Compiler.CodeGen.Eq.TypesSame = "$eq.types.same" -> string!

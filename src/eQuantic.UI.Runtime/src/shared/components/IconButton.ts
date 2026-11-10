@@ -48,8 +48,8 @@ export class IconButton extends StatelessComponent {
         let content = VisualNodeExtensions.centered(new Icon(glyph, iconSize, tint));
         let pressedFill = (() => { const $s = this.kind; if ($s === 'filled') return primary.pressed; if ($s === 'tonal') return primary.pressed.withOpacity(Math.fround(0.24)); return theme.surfaceSubtle; })();
         let hoverFill = (() => { const $s = this.kind; if ($s === 'filled') return primary.hover; if ($s === 'tonal') return primary.subtle.midpointWith(primary.pressed.withOpacity(Math.fround(0.24))); return theme.surfaceSubtle; })();
-        let box = new Box(new BoxStyle({ width: side, height: side, background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'outline' ? 1 : 0, borderColor: theme.borderStrong, hover: this.disabled ? null : new StyleDiff({ background: hoverFill }) }), content);
-        return new Pressable(box, this.disabled ? null : this.onPressed, { disabled: this.disabled, label: this.label, pressedBackground: this.disabled ? null : pressedFill, selected: this.selectedGlyph == null && !this.selected ? null : this.selected });
+        let box = new Box(new BoxStyle({ width: side, height: side, background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'outline' ? 1 : 0, borderColor: theme.borderStrong, hover: this.disabled ? null : new StyleDiff({ background: hoverFill }), pressed: this.disabled ? null : new StyleDiff({ background: pressedFill }) }), content);
+        return new Pressable(box, this.disabled ? null : this.onPressed, { disabled: this.disabled, label: this.label, selected: this.selectedGlyph == null && !this.selected ? null : this.selected });
     }
 }
 
