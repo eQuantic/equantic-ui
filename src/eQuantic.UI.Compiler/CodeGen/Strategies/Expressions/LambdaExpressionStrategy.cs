@@ -144,7 +144,11 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
         if (special is not null) return $"{name}: {special}";
         var ts = declared.TypeKind switch
         {
-            TypeKind.Enum => "string",
+            // A non-flags enum is held as its member's key, a flags one as its value: a number, a 64-bit
+            // one's a BigInt (#551). Every enum was annotated a string, a flags one's value included.
+            TypeKind.Enum => declared is INamedTypeSymbol { } enumType && enumType.IsFlagsEnum()
+                ? Types.EnumShape.FlagsTsType(enumType)
+                : "string",
             TypeKind.Interface or TypeKind.TypeParameter => "any",
             _ => TypeScriptEmitter.CSharpTypeToTypeScript(declared.Name),
         };

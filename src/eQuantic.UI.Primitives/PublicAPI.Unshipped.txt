@@ -1,1 +1,10 @@
 #nullable enable
+abstract eQuantic.UI.Primitives.Element.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
+override eQuantic.UI.Primitives.ComponentElement.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
+override eQuantic.UI.Primitives.NodeElement.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
+eQuantic.UI.Primitives.ComponentElement.MarkNeedsBuild() -> void
+*REMOVED*eQuantic.UI.Primitives.IAppIcon.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Primitives.AppIconUse
+eQuantic.UI.Primitives.AppIconUse.Launcher = 0 -> eQuantic.UI.Primitives.AppIconUse
+eQuantic.UI.Primitives.AppIconUse.Small = 1 -> eQuantic.UI.Primitives.AppIconUse
+eQuantic.UI.Primitives.IAppIcon.Build(eQuantic.UI.Primitives.ComponentContext! context, eQuantic.UI.Primitives.AppIconUse use) -> eQuantic.UI.Primitives.VisualNode!

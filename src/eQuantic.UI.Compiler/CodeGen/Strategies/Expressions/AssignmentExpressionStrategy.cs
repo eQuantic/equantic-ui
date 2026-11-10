@@ -177,6 +177,13 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         if (op.Length >= 2 && op[^1] == '=' && op is not ("==" or "!=" or "<=" or ">=" or "??="))
         {
             var binaryOp = op[..^1];
+            // An ENUM target computes as the enum's operator does (Types.EnumOperators), a nullable one's
+            // inside the lift: JavaScript's `|=` answered a uint flag's high bit negative and `+=` on a
+            // non-flags enum concatenated its key (#555).
+            if (Types.EnumOperators.Compound(binaryOp, leftType, assignment, context) is { } enumRule)
+                return Compound(leftType.IsNullableValue()
+                    ? (current, operand) => NullableLift.Binary(current, operand, enumRule, context)
+                    : enumRule);
             // A NULLABLE number follows its type's rule inside the lift, as C#'s lifted operator
             // does (#372): a null target or a null value answers null, and a value is computed
             // exactly as the underlying type computes it. JavaScript's own `op=` read a null target

@@ -15,4 +15,11 @@ public sealed class ServerActionsOptions
     /// another domain than its actions. Each is a bare <c>scheme://host[:port]</c>, with no path.
     /// </summary>
     public IList<string> AllowedOrigins { get; } = new List<string>();
+
+    /// <summary>
+    /// The largest request body an action reads, in bytes: 1 MB unless the app says otherwise. A body past
+    /// it is refused with 413, whether or not an earlier middleware already started reading the request
+    /// (#1291). A file goes up through the app's uploads, which have their own limits, not as an argument.
+    /// </summary>
+    public long MaxRequestBodySize { get; set; } = 1_048_576;
 }

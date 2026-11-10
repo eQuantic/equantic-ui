@@ -350,4 +350,16 @@ public class PatternConformanceTests
     [InlineData("return (\"x\") is var _;")]
     public void AnInputNobodyCanSeeRead_IsLeftOutWhenThePatternNamesNothing(string statements) =>
         Transpiler.TranspileStatements(statements).Should().Contain("return true;");
+
+    /// <summary>A relation never matches a null, where JavaScript's <c>null &lt; 5</c> is true: an input that
+    /// may be null is tested for a value first.</summary>
+    [SkippableTheory]
+    [InlineData("int? n = null; int? m = 3; return (n is < 5) + \"|\" + (m is < 5) + \"|\" + (n is >= 0);")]   // "False|True|False"
+    [InlineData("double? d = null; return d is > -1.5;")]                                                     // false
+    [InlineData("int? n = null; return n is > 0 and < 10;")]                                                  // false
+    public void ARelationOverANullable_NeverMatchesNull(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }
