@@ -4138,6 +4138,458 @@ record of a release, the wiki's Upgrading page is the distillate.
   fails on a catalog that lacks a key, carries one the neutral catalog does not or differs in a
   placeholder ([#1221](https://github.com/eQuantic/equantic-ui/issues/1221)). Proposed and archived
   through OpenSpec (`openspec/specs/sdk-strings`, a new spec).
+- **2026-10-29 · The runtime's test tooling moves past eleven advisories**: a task under #306
+  ([#1177](https://github.com/eQuantic/equantic-ui/issues/1177)). Dependabot reported eleven open advisories
+  against the runtime's lockfile, all in the tooling that proves it: `happy-dom` (to 21.0.4, a major whose one break
+  disables CSS and iframe loading by default), `vite` (6.4.5), `vitest` and `@vitest/mocker` (4.1.12),
+  `source-map-js` (1.2.2) and `brace-expansion` (1.1.21 and 5.0.12). None reaches what ships: the served
+  `runtime.js` imports no npm package, and it came out byte-identical. `bun.lock`, which `TestRuntime` installs
+  from, moved by `--lockfile-only` and in place, because a fresh resolution moved some sixty packages and gave
+  vitest a vite 8 of its own. `package-lock.json`, which Dependabot reads, records the same 233 versions; that
+  two lockfiles exist at all is #1180. happy-dom 21 brought `Element.animate`, and with it a `cancel()` that
+  leaves its rejected finished promise unhandled where Web Animations marks it handled: the table glides failed
+  the run with rejections no browser raises, and the test environment restores the standard (`setupFiles`).
+- **2026-10-30 · A host with no project's compilation reads one rule, and fails the build where the browser
+  failed**: a member an app's exception class declares has no module in a snippet compiled on its own, and now
+  fails its build with EQ2010, where `Failure.Count++` named a class nothing wrote
+  ([#754](https://github.com/eQuantic/equantic-ui/issues/754)). The parser and the dependency scan read one rule
+  for what a component is, `ComponentRule`, and a plain class imports a `[RuntimeProvided]` helper through the scan
+  as a component does ([#1170](https://github.com/eQuantic/equantic-ui/issues/1170)). Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-exceptions`, `openspec/specs/module-imports`).
+- **2026-11-06 · 0.2.0-preview.67 released** from `004630d3`: an embedded document handed what its page
+  may use, so a payment provider's checkout offers the device's wallet (#1228), an app in European
+  Portuguese reading the SDK's components in Portuguese (#1221), a wiki snippet held to the SDK
+  interface it implements (#1226), and releases through trusted publishing (#1224), with the release's
+  own issue (#1231). Nothing breaks: seven members were appended to `WebSandbox`. The tag's first run
+  had its `build-packages` cancelled before anything was pushed, and the run of its failed jobs again
+  pushed all 52 packages through trusted publishing and wrote the release page. The site restored the
+  published packages and compiled a component in its playground on them
+  *([v0.2.0-preview.67](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.67))*.
+- **2026-11-09 · The dashboard's pages are read as they are served, and its rail scrolls**: nothing
+  read the document a page serves, which is where a subtree placed in two adaptive arms shows,
+  since each copy lowers perfectly. `DashboardDocumentTests` now hosts the dashboard from its own
+  `Program` and reads every route it declares: one fails on an id drawn twice, naming the route
+  and the id, and its sibling on an in-page link whose fragment names nothing. With the page put
+  back in both arms of the shell the first named /charts, /form, /sheet and /table, and green on
+  main. /charts got a "Jump to" row, the first fragment any sample links to, and driving it found
+  the console's rail did not scroll: the document grew to 1034px in a 900px window, so a link
+  scrolled the window and took the toolbar with it. The destinations scroll in the rail's share
+  now, inset so the focus ring is not clipped, and the README's web pictures, which showed the rail
+  cut off, were taken again ([#1252](https://github.com/eQuantic/equantic-ui/issues/1252)).
+  Proposed and archived through OpenSpec, with no spec moved: the change is in the test suites and
+  a sample alone.
+- **2026-11-09 · A Photon field keeps what was typed until the page builds it**: a Photon field drew
+  the value the app handed it, so a key showed only once something built the component that held the
+  value, and the host, unable to see which one, rebuilt every component after a field's handler that
+  called no `SetState`. A field's position now keeps what was typed, and the field shows it until the
+  page builds it again, when it shows what the page holds whether or not that value changed: the rule
+  the web settled in #1026, not the issue's "take the app's value only when it differs", which against
+  the tests left `ab!` after a rejected key and `123` over a field reset in the same frame as the
+  typing. The measure, the paint, the semantics, the caret and the phone keyboard's editing value read
+  the one text, and the position decides whether the page built the field, so a reader holding an
+  older frame's node cannot wipe what was typed. Review found that `TextInput`, rebuilding on its own
+  when the focus left, built the field from the value its parent had handed it before the typing, and
+  a form keeping the value without `SetState` lost it; `TextInput` now keeps what its field reported
+  until its parent configures it again, on both targets. A frame after a key typed into a field whose
+  form keeps the value without `SetState` went from 96,992 to 30,864 bytes and builds nothing
+  ([#996](https://github.com/eQuantic/equantic-ui/issues/996)). Proposed and archived through
+  OpenSpec (`openspec/specs/text-entry`, `openspec/specs/element-tree`).
+- **2026-11-09 · A Server Action is authorized by its page's rules**: a security fix in Server Actions,
+  tracked in a private advisory ([#1320](https://github.com/eQuantic/equantic-ui/issues/1320)), with
+  [#1290](https://github.com/eQuantic/equantic-ui/issues/1290) and
+  [#1291](https://github.com/eQuantic/equantic-ui/issues/1291) from the security review (#1265). A page and
+  a Server Action are decided by one rule (`RequestAuthorization`): the SDK's and ASP.NET Core's attributes,
+  their schemes, the app's fallback policy and the request as the resource. An action's id is its
+  component's CLR full name on both sides, and two methods under one id stop the app at start. The endpoint
+  takes JSON only, caps every body (`EQuantic:ServerActions:MaxRequestBodySize`), keeps its reasons in the
+  log, answers malformed arguments with 400, refuses an `UploadedFile` inside a value, and writes the
+  declared result. Proposed and archived through OpenSpec (`server-actions`).
+- **2026-11-09 · A string search says its comparison, and text is written as .NET writes it**: bugs under #849
+  ([#532](https://github.com/eQuantic/equantic-ui/issues/532),
+  [#533](https://github.com/eQuantic/equantic-ui/issues/533),
+  [#965](https://github.com/eQuantic/equantic-ui/issues/965),
+  [#729](https://github.com/eQuantic/equantic-ui/issues/729)). A break, Edgar's decision: `StartsWith`, `EndsWith`,
+  `IndexOf` and `LastIndexOf` of a string with no `StringComparison` search by the culture in .NET, which the browser
+  cannot, and fail the build now (EQ1004). A culture comparison that ignores case keeps widths and kana apart, each
+  form a primary difference after its other form, measured over the whole BMP: a small katakana sorts after the forms
+  of its large one. A number or a date held as an interface or a type parameter is written in the culture, as one
+  held as `object` is. And `px` writes what `TokenCss.Px` writes, which is a float's seven significant digits rounded,
+  not its shortest text as the issue supposed: `16777216f` writes `16777220`. Proved by the conformance suite on both
+  sides, 22 of the 33 cases of width, kana and text failing on main, and by a cross-pin of `px` on both sides.
+  Proposed and archived through OpenSpec (`transpiler-bcl`, `typography`).
+- **2026-11-09 · A test measures a component as Photon lays it out**: a new package,
+  `eQuantic.UI.Native.Testing`, the native half of `eQuantic.UI.Testing`. Its `PhotonTester` drives
+  a `PhotonHost` with no window and no GPU, as every shell drives one, frames recycled as a shell's
+  are, and answers each node's box and its text's lines (`Root`, `Layers`), copied from the frame
+  that measured them so a measurement a test holds stays true. `Find` reads Photon's own semantics
+  tree by the name a screen reader announces, the name T1 finds a control by on the web. Text is
+  measured by the engine's deterministic measurer and drawn as its placeholder bars, Flutter's test
+  font in another form, so a box a test pins on a Mac is the one CI measures on Linux; and
+  `ReadPixelsSrgb` paints a frame through the reference backend, which is how the package is held to
+  the goldens: the wave-2 gallery pumped through it matches `wave2-gallery-light.png`. Testers are
+  held to Photon's one UI thread a process: a tester pumped from a second thread while another is
+  mounted fails, as Flutter's tests share one binding. The package is on the native track by its
+  name, so it carries EQX0001 as the track does, and the layering pin now holds the web half to the
+  web realizer alone, so a web-only app's tests never meet the native track
+  ([#1246](https://github.com/eQuantic/equantic-ui/issues/1246)).
+- **2026-11-09 · An app tests a component without a browser**: a new package, `eQuantic.UI.Testing`,
+  which an ordinary xUnit, NUnit or MSTest project references. Its `ComponentTester` draws frames
+  through the vocabulary's own `BuildOwner`, a live one like Photon's, and lowers each through the
+  web realizer the server uses, so a stateful instance keeps its state across frames, `OnMount` runs
+  once, and the markup is the server's. A test acts on a control by the name a screen reader
+  announces (`Tap`, `EnterText`) and reads what is announced as `Announcement`s that speak
+  `SemanticRole`, never an ARIA string; `PumpPageAsync` loads a page's server data first, marking
+  only the position that loaded. Underneath, the web realizer gained `LowerFrame`, which lowers a
+  frame of a live tree from its positions (the first step of E4, its first frame the server's markup
+  byte for byte save hydration's unmeasured mark, its public form E4's to decide), the style sink
+  `HidesAt`, the element `VisitChildren`, and `ComponentElement.MarkNeedsBuild` made public, as
+  Flutter's is. Neither engine addition is a break: `Element`'s constructor is `private protected`,
+  so nothing outside the engine derives from it. The web suite's semantics tests read through the
+  package, and two of them got stronger in the move
+  ([#1245](https://github.com/eQuantic/equantic-ui/issues/1245)).
+- **2026-11-09 · An enum is held and combined at its underlying type's width**: two Bugs under #164
+  ([#551](https://github.com/eQuantic/equantic-ui/issues/551),
+  [#555](https://github.com/eQuantic/equantic-ui/issues/555)). A `long`- or `ulong`-backed enum was held
+  in the browser as a JavaScript number, the one 64-bit value the SDK held otherwise, so a member past
+  2^53 was a number that is not its value, in its casts, its text, its statics and on the wire; and an
+  enum's operators were JavaScript's own, in signed 32 bits, so a `uint` flag's high bit read negative
+  and a long's flags past bit 31 vanished. A 64-bit enum is a BigInt now, every writer of an enum's value
+  goes through its width (`EnumShape`), every conversion into or out of an enum is the numeric
+  conversion between the underlying types (`EnumConversion`), and every operator C# defines on an enum
+  computes on its values at that width (`EnumOperators`), `HasFlag`, `CompareTo` and a relational pattern
+  included. The server writes a 64-bit flags enum as its digits and a page's top-level enum field
+  through EqJson, where a flags field crossed by its members' names, and a relational pattern no longer
+  matches a null. Measured on main, 37 of the 54 conformance cases first fail there. Proposed and archived through OpenSpec (`transpiler-bcl`).
+- **2026-11-09 · An optimized image is cached once by its file**: a Bug from the security review (#1265),
+  [#1289](https://github.com/eQuantic/equantic-ui/issues/1289). The image optimizer's cache was keyed by the
+  url's spelling and any quality from 1 to 100, and bounded by age alone. It is keyed by the file the url
+  resolves to, a request's quality is rounded to one of `Qualities`, and the cache keeps at most
+  `MaxCacheSize` on disk, the oldest copies going first. Measured on main, the four new middleware tests
+  fail there. Proposed and archived through OpenSpec (`image-optimization`).
+- **2026-11-09 · eqc answers a comparison of runtime types and the argument guards as .NET does**: a task under
+  #1127 ([#1202](https://github.com/eQuantic/equantic-ui/issues/1202)), found measuring the element engine for the
+  runtime. `a.GetType() == b.GetType()`, Flutter's `canUpdate`, and every `ThrowIf` guard of the three argument
+  exceptions failed the build with EQ2004. A comparison of runtime types now answers through `$eq.types` wherever
+  the receiver's static type says the browser tells its runtime type apart (an exception, by the .NET type it
+  carries, and a class or a struct whose twin is a class of its own, by its prototype and the type arguments it
+  was built with, which a generic class is now marked with as a generic record is), and is refused where it
+  cannot (a number, a string, an array, `object`, an interface). The twelve guards go through `$eq.guard`, with
+  the parameter's name `CallerArgumentExpression` gives, read from the bound tree, the type's own equality or
+  order, and .NET's words with the values in the current culture, measured on .NET 10: a NaN is negative, a
+  negative zero is zero and negative, a null is `null` in an equality guard and nothing in an ordering one, and
+  an ordering guard calls `CompareTo` through a null value. Held by two conformance classes executed on both
+  sides, in the invariant culture and in pt-BR. Proposed and archived through OpenSpec (`transpiler-exceptions`,
+  `transpiler-classes`).
+- **2026-11-09 · An app declares its icon once and the SDK writes every favicon**: the site and
+  myartwork3d wrote their favicon links by hand, because the icon the SDK already rasterized could not
+  draw the app's own artwork (eqicon compiled `AppIcon.cs` alone, so `Box(...)` was the vocabulary's
+  type and `Vectors` did not exist), drew every vector as a placeholder box where no platform
+  rasterizer exists, Linux included, had one artwork where a brand has two, and answered `/favicon.ico`
+  with a 404. `IAppIcon.Build` takes the `AppIconUse` it is drawn for, the icon compiles with
+  the app's usings and its vector catalog, a rasterizer in plain C# draws its vectors on every machine,
+  and the web set writes `favicon.ico` from the small cut with its transparency. The server answers
+  `/favicon.ico` from the app's own file first, a referenced project's static web asset included, then
+  from the built one, and every page links it, so an app that wrote that link by hand drops its
+  `AddHeadTag`. A C# icon also builds on Windows now: eqicon referenced every `.dll` of the runtime's
+  folder, its native libraries included, and each was CS0009 there. The dashboard sample draws its icon from two
+  SVGs ([#1240](https://github.com/eQuantic/equantic-ui/issues/1240)). Proposed and archived through
+  OpenSpec (`openspec/specs/app-icon`, a new spec).
+- **2026-11-09 · The extension's tooling moves past the MSAL Node advisory**: Dependabot alert #87
+  (GHSA-xcx6-jx8p-x3h5, high) reached `@azure/msal-node` 5.5.0 in the VS Code extension's lockfile,
+  through `@vscode/vsce` and `@azure/identity` 4.13.1, and when the issue was filed no released
+  `@azure/identity` accepted the patched 7.1.0, so it waited rather than take an `overrides` entry over
+  a dependency's declared range. `@azure/identity` 4.14.1 (2026-10-29) asks for `^7.1.0`, and the
+  lockfile resolves it and `@azure/msal-node` 7.2.1 with nothing outside that package's tree moving.
+  `npm audit` went from two high advisories to none, and the extension still packages with its host
+  answering ([#1179](https://github.com/eQuantic/equantic-ui/issues/1179)). Proposed and archived
+  through OpenSpec, with no spec moved: the change is in the extension's lockfile alone.
+- **2026-11-09 · The extension's tooling moves past the qs advisory**: Dependabot alert #90
+  (GHSA-6pq8-jhm2-2vcw, medium) reached `qs` 6.15.3 in the VS Code extension's lockfile, through
+  `@vscode/vsce` and `typed-rest-client`, whose range already held the patched release. The lockfile
+  now resolves `qs` 6.17.1, with nothing else moving, and `npm audit` lists `qs` no more. The other
+  alert of the issue, `minimatch` below 11.0.1, waits for a release of vsce that accepts 11: 3.9.2
+  and 4.1.0 both ask for 10, and no 10.x release is patched
+  ([#1259](https://github.com/eQuantic/equantic-ui/issues/1259)). Proposed and archived through
+  OpenSpec, with no spec moved: the change is in the extension's lockfile alone.
+- **2026-11-09 · The served document writes each value once, and is never stored**: a security fix tracked
+  in [#1319](https://github.com/eQuantic/equantic-ui/issues/1319) and a Bug under #1174
+  ([#1288](https://github.com/eQuantic/equantic-ui/issues/1288)), both from the security review of #1265.
+  The shell's template engine filled its placeholders one variable after another over the whole document,
+  so text one variable wrote could be read again as template by the next. Every placeholder of the template
+  is now filled in one pass over the template alone, and what a variable writes is never read again. And the
+  document went with no `Cache-Control` while it carries the visitor's cookie choices and the page's state:
+  every answer of a page's route is now `no-store`, said once. Held by two Server test classes, each failing
+  before its fix. Proposed and archived through OpenSpec (`served-document`).
+- **2026-11-09 · The version-mark guard reads each release once, for every mark**: the guard asked
+  git once per mark, a pickaxe search over every ref, and CI's checkout fetches each ref at depth
+  one, so every search read about three hundred whole trees. 159 marks took 34 to 39 minutes on
+  CI's runners and then more than the hour CI gives a case, which failed both `test` jobs of every
+  pull request, and of main, after `0.2.0-preview.67`. It now compares each release with the one
+  before it and counts every mark's symbol in the same pass, 67 diffs in all, answering the first
+  release whose files hold it: six seconds on a laptop, the answer the old searches gave on CI's
+  checkout for all 154 searches, and the one they gave a full clone for all but a name that never
+  reached a release. CI fetches the release tags alone, and its hang timeout is fifteen minutes
+  again, where the slowest other case took 55 seconds
+  ([#999](https://github.com/eQuantic/equantic-ui/issues/999)). Proposed and archived through
+  OpenSpec, with no spec moved: the change is in the test suites and CI alone.
+- **2026-11-09 · A pressed fill is its surface's Pressed diff**: since #508 a pressed fill could be
+  said two ways, `Pressable.PressedBackground` and the surface's `Pressed` diff, and the first had
+  machinery of its own on each target: a custom property, a marker and two `!important` rules on the
+  web, and on Photon a fill the first box drawn under the control took, wherever that box was. The
+  components now say it the second way, on the box the handoff names, and the first way is gone
+  with its machinery. The order the `!important` held comes from the selector alone, the pressed
+  family's (0,4,0) over the focus's (0,3,0), the hover's (0,2,0) and the box's own (0,1,0), and a
+  test reads that specificity and fails when the family weakens. The two targets also disagreed on
+  WHERE three components filled: a pressed tab painted the 3dp strip under its label on Photon, and
+  the navigation bar and the rail filled the whole item on the web, where the handoff draws the
+  tab's cell and the pill; both targets now fill those, pinned by one test per target over the
+  same eight components. The selected destination's pill takes no pressed fill, where Photon
+  traded it for another colour while the finger stayed down, and neither does a selected list row.
+  A control's press and focus now stop at a control nested in it, on both targets and in a
+  `Simulated` picture: once the fill was a member of the diff, pressing a row filled every button
+  in it, and on the web a pressed button had always pressed its row too. A break:
+  `Pressable(box, …, pressedBackground: theme.Surface)` becomes `Pressable(box, …)` over a box
+  whose style says `Pressed = new StyleDiff { Background = theme.Surface }`, and
+  `PressedBackground = x` moves the same way
+  ([#616](https://github.com/eQuantic/equantic-ui/issues/616)). Proposed and archived through
+  OpenSpec, in `interaction-states`.
+- **2026-11-09 · The lockfiles Dependabot watches are the trees that run**: GitHub's dependency
+  graph reads `package-lock.json` and no `bun.lock`, so the runtime's tests installed from a
+  `bun.lock` that Dependabot never read, beside a `package-lock.json` mirror kept in step by hand
+  (#107 found it three majors behind), and the extension's Marketplace publish resolved its own
+  unpinned vsce tree, in the one job that holds the credential. `RuntimeLockfilesTests` now
+  compares the runtime's two lockfiles by resolved `name@version`, and both against the
+  manifest's ranges, and fails naming what differs: today they agree on 233 pairs over 228 names,
+  and a version moved in one alone, or a range moved in the manifest alone, fails. The publish
+  installs the extension's lockfile with `npm ci` and runs the vsce it pinned, and the stray root
+  `bun.lock`, which nothing read, is gone
+  ([#1180](https://github.com/eQuantic/equantic-ui/issues/1180)). Proposed and archived through
+  OpenSpec, with the requirement written into the working agreement's spec.
+- **2026-10-30 · A container sees through a component to what only it can place**: four Bugs under #166
+  ([#701](https://github.com/eQuantic/equantic-ui/issues/701), [#736](https://github.com/eQuantic/equantic-ui/issues/736),
+  [#738](https://github.com/eQuantic/equantic-ui/issues/738), [#1186](https://github.com/eQuantic/equantic-ui/issues/1186)). A component is what it builds, and a line or a grid
+  asked the component itself whether it was a Spacer, a Flexible or an AdaptiveNode, so the same tree laid out
+  differently with a component around a node: on Photon a built Spacer took no space, and on both targets an arm's
+  alignment and span were dropped. Photon now reads what a component built from the element its position already
+  holds, and on the web a container's rule waits for what the component builds, so nothing builds twice. A
+  bridge's theme and type scale are also the ambient ones for the length of its render, so a stateless component
+  under it hydrates in the colours the server drew. And a scroller fixed on a line's axis is no longer squeezed on
+  the web, its width a ceiling at the line on both targets. Proposed and archived through OpenSpec (`adaptive-layout`,
+  `flex-layout`, `hydration-contract`).
+- **2026-10-30 · A twin says the type C# declared**: a local function carries its declared return type (an async one, the promise of it), where
+  TypeScript inferred the derived type its body returned and a variable it initialized refused a sibling
+  ([#793](https://github.com/eQuantic/equantic-ui/issues/793)), and an object initializer's temporary is declared as the
+  type it holds, where `any` left a lambda subscribed to the local's event with nothing to infer from
+  ([#1106](https://github.com/eQuantic/equantic-ui/issues/1106)). Only the TypeScript changes, 24 transpiled components
+  of it, and the runtime's `tsc` reads them clean.
+- **2026-11-09 · An upload is bounded, and described by the server**: Bugs from the security review
+  (#1265), [#1287](https://github.com/eQuantic/equantic-ui/issues/1287) and
+  [#1293](https://github.com/eQuantic/equantic-ui/issues/1293). The uploads a server keeps are bounded per
+  owner and for the whole store, a finished one counted until it expires (`EQuantic:Uploads`), and the store
+  keeps tallies instead of counting every record on each creation. An upload's type is the one its
+  extension names, its name is one a file system takes as it is, a folder under the web root stops the app,
+  and the owner's cookie is `Secure` behind a proxy that ends TLS. Measured on main, the 18 new tests all
+  fail there. Proposed and archived through OpenSpec (`file-uploads`).
+- **2026-11-10 · A member named Component is that member**: a Bug on 1.0's critical path (#1127),
+  [#1299](https://github.com/eQuantic/equantic-ui/issues/1299). eqc read every bare `Component` its scope did
+  not bind as `this._component`, a field of the State classes the runtime no longer has, so the element
+  engine's property stayed null in the browser with no error, and an app's member of that name held two
+  values. The name is read by its symbol now, as every other name is. Measured on main, the new
+  conformance case fails there. Proposed and archived through OpenSpec (`transpiler-names`).
+- **2026-11-09 · An edit is timed from the save to the screen, on the web and on the desktop**: the
+  roadmap's bar says an edit reaches the screen in under a second, and nothing had ever measured it.
+  `scripts/measure-edit-to-view.cs` runs a sample under `dotnet watch`, changes a text literal of a
+  component on disk, and stops the clock when a browser or the window draws the new text, each part of
+  the path timed on its own clock: eqc reports its phases, and the Photon host reports the frame that
+  draws an edit. CI's samples job runs it last. Its first clean run measured a warm median of 329ms on
+  the desktop, held to the bar of a second, and 22.9s on the web, held to a ceiling of 45s that only
+  comes down as the slices of #900 make each part faster (#1274 to #1281). Measuring it found the
+  desktop sample restarted on every edit, since publishing trimmed turned .NET's startup hook off for
+  every build: the native SDK now keeps it on for the Debug build of a desktop head that is not a
+  publish ([#900](https://github.com/eQuantic/equantic-ui/issues/900),
+  [#1258](https://github.com/eQuantic/equantic-ui/issues/1258)). Proposed through OpenSpec
+  (`openspec/specs/hot-reload`).
+- **2026-11-09 · A new push to a pull request cancels the CI run it replaces**: `ci.yml` had no
+  `concurrency` block, so every push left the previous head's run going to the end, each holding three
+  macOS runners; that afternoon #1251 started six runs, and three other pull requests four each, while
+  every other pull request waited three to seven minutes for a macOS runner. A pull request's runs now
+  share a group keyed on its number and cancel the one in progress; a run on `main`, on a tag or by
+  hand gets a group of its own and is never cancelled
+  ([#1309](https://github.com/eQuantic/equantic-ui/issues/1309)). Proposed and archived through
+  OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-09 · The run's longest path only packs, and macOS runs what only a Mac answers**:
+  `build-packages` set a pull request's wall time (18.2 of 24.0 minutes on run 42675312854) because it
+  ran the whole suite a third time on macOS, 13 minutes 38 seconds, the same projects Ubuntu and Windows
+  had run, for the facts only a Mac answers. It now builds, packs and checks, and a job of its own,
+  `test (macos-latest)`, runs beside it, whole and with the Apple workloads, the projects that reference
+  the Apple track or hold a test asking for macOS, derived by `scripts/macos-tests.sh` from the tests;
+  a project that runs no test fails. Ubuntu and Windows still run every project, and the ruleset
+  requires the new leg ([#1311](https://github.com/eQuantic/equantic-ui/issues/1311)). Proposed and
+  archived through OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-09 · Every script and style the shell writes carries the request's nonce**: a strict
+  Content-Security-Policy admits an inline element only by a nonce or a hash, and the shell gave its
+  own neither: the template's seven elements, the app's CSS, GTM's four scripts, a chart library's
+  CDN script and initializer, and every page's assets, the atomic sheet among them. Each request now
+  has one nonce of 128 random bits, stamped on every script and style the shell writes, chosen over
+  hashes by measure: a hash cannot admit a CDN script the SDK does not serve, and three of the
+  elements change with every response anyway. `HtmlShellOptions.HeadTags` holds `HtmlTag`s rendered
+  per request, and `AddHeadTag(string)` is gone, since text the shell did not build is text it
+  cannot stamp. Where an app wrote `AddHeadTag("<meta name=\"theme-color\" content=\"#3b82f6\">")` it
+  writes `AddHeadTag(HtmlTag.Meta("theme-color", "#3b82f6"))`, and a favicon needs no head tag at
+  all: the icon declared once as an `IAppIcon` writes every favicon link (#1240)
+  ([#1266](https://github.com/eQuantic/equantic-ui/issues/1266)). Proposed and archived through
+  OpenSpec, as the first requirement of `content-security`.
+- **2026-11-09 · The element engine is written in what eqc translates**: the first part of E3a.
+  `ChildSlots` reads a node's children by `NodeKind` in one switch, and a test that mounts one
+  instance of every concrete `VisualNode` through an owner keeps the guarantee the visitor gave; the
+  owner is handed how a component builds, so the engine no longer names the host-only
+  `ComponentBoundary`, whose `Owner()` and `StructuralOwner()` now make every owner (an app's test
+  that wrote `new BuildOwner()`, as the wiki's Capabilities page showed, writes `Owner()`); and the engine
+  goes through eqc with no diagnostic, which `ElementEngineTranspilesTests` holds while it stays
+  `[ServerOnly]`. Generated as the other engines are, its modules failed the runtime's `tsc`: six
+  emission defects of eqc's, one of them silent and reaching app code (a member named `Component`),
+  filed under the bug sweep (#1299, #1303 to #1307), and a browser component model that differs from
+  the one the engine drives, which is E3a-3 (#1301). Photon's frame is unchanged, allocation identical
+  to the byte in every scene ([#1127](https://github.com/eQuantic/equantic-ui/issues/1127)). Proposed
+  and archived through OpenSpec, adding three requirements to `element-tree`.
+- **2026-11-10 · A class's twin passes the runtime's type check as its C# compiles**: six shapes of ordinary C# wrote
+  TypeScript the runtime's strict `tsc` refused, and each is now typed, with the JavaScript unchanged. An abstract
+  method is declared in its class's twin ([#1304](https://github.com/eQuantic/equantic-ui/issues/1304)), a downcast
+  keeps its target's type and a class module imports the app types it names when its compile has no scan of the app
+  ([#1303](https://github.com/eQuantic/equantic-ui/issues/1303)), a constructor overload's parameters hold their
+  declared type ([#1305](https://github.com/eQuantic/equantic-ui/issues/1305)), a lambda stored in a static takes its
+  parameters' types from the delegate ([#1306](https://github.com/eQuantic/equantic-ui/issues/1306)), a value a
+  derived class evaluates before its base's constructor is declared as its member
+  ([#1307](https://github.com/eQuantic/equantic-ui/issues/1307)), and a primary constructor's null default is said
+  to be one ([#1347](https://github.com/eQuantic/equantic-ui/issues/1347)). Fixtures of each shape are checked by the
+  runtime's `tsc`. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
+- **2026-11-09 · A web save goes straight to an eqc the server keeps running**: every save started a
+  new MSBuild, which evaluated the project and resolved its references before it started a new eqc,
+  measured at 6.8s of MSBuild on CI's runner before a module was written. The server now asks the
+  project's MSBuild once for a run, while the app starts, how to start eqc, and keeps it running:
+  `eqc --serve` reads `compile` on its standard input for each save and answers in one line, loading
+  the project's compilation again. The server owns the process: eqc ends with its input, a stop or a
+  compile past its limit kills it, and the next save starts it again. `--watch`, which compiled with
+  the semantic model it loaded at its start, gave way to it. Measured on the dashboard sample at a load
+  average of 80 to 100, the MSBuild part of a warm save went from seconds to 5 to 12ms, with one
+  document per save, hydrated ([#1276](https://github.com/eQuantic/equantic-ui/issues/1276)). Proposed
+  through OpenSpec (`openspec/specs/hot-reload`).
+- **2026-11-09 · A web save is rebuilt after the editor's burst, and none is dropped**: the server
+  waited a fixed 400ms after a save before it rebuilt, measured as 44% of the second an edit has to
+  reach the screen in, and dropped a save that came while a rebuild ran, so the browser stayed on the
+  edit before it. The wait is a 50ms quiet window that each change of a save restarts, on one timer
+  for the service's life, and a save during a rebuild runs one more rebuild when it ends, however many
+  came. Measured on the dashboard sample, the wait part went from 436 to 475ms to 91 to 97ms, and a test
+  counts two rebuilds for three saves where the old service ran one. The first of the web's
+  edit-to-view slices ([#1274](https://github.com/eQuantic/equantic-ui/issues/1274),
+  [#1262](https://github.com/eQuantic/equantic-ui/issues/1262)). Proposed through OpenSpec
+  (`openspec/specs/hot-reload`).
+- **2026-11-09 · A web save reloads the page once, into markup that holds the edit**: each save
+  reloaded the page twice. dotnet watch applied the edit to the server and refreshed the browser
+  itself, with the modules from before the edit, and the rebuild reloaded it again seconds later into
+  markup the boot could not trust, so it drew over it. The rebuild stream is now the page's one source
+  of reloads: the shell keeps dotnet watch's refresh script out of the page by the guard the script
+  keeps against connecting twice, and the stream names the server's run (a page that reconnects to
+  another run reloads), says when the modules are new and whether the server holds the edit, counted
+  through .NET's `MetadataUpdateHandler`, and carries a failed rebuild's errors to the development
+  overlay. The boot hydrates the markup and replays the page's fields after it. Measured on the
+  dashboard sample, one document per save where there were two, hydrated with no warning, and the
+  replay went from 98 to 229ms on CI to 37 to 42ms on a loaded machine. A test reads the guard out of
+  the SDK global.json selects, and the measurement fails a run that reloads twice
+  ([#1275](https://github.com/eQuantic/equantic-ui/issues/1275)). Proposed through OpenSpec
+  (`openspec/specs/hot-reload`).
+- **2026-11-09 · CI is ready for main to merge through GitHub's merge queue**: with two fronts merging
+  at once, every merge left every other green pull request behind, to merge `main` again and wait
+  about thirty minutes of CI before its turn, about two merges an hour. `ci.yml` now runs on
+  `merge_group`, every required job runs there and no publishing job does. The commit guard reads its
+  range from the event (`--event`), so a group's squash commits are read before they reach `main`,
+  where the workflow's old expression gave a group the last commit alone; and a group's docs guards
+  read master with the wiki branch of each pull request in the group merged onto it. Both self-tests
+  hold the merge group's shapes and fail on the old behaviour. The queue itself is turned on in ruleset
+  21198869 ([#1308](https://github.com/eQuantic/equantic-ui/issues/1308)). Proposed and archived
+  through OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-09 · CI restores NuGet packages from a cache keyed on their versions**: no job cached
+  `~/.nuget/packages`, so every job of every run downloaded its packages again. The test jobs,
+  `test (macos-latest)`, `build-packages` and `samples` now restore through one composite action from
+  a cache keyed on the system, the job and a hash of the lines that declare a package or a version, so
+  an edit to a project that declares none keeps the cache; there is no fallback key, so a miss restores
+  from nuget.org as before, and this repository's own `equantic.*` packages are never saved
+  ([#1312](https://github.com/eQuantic/equantic-ui/issues/1312)). Proposed and archived through
+  OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-09 · Each system's tests run as three parallel jobs**: a `test` leg ran the eleven test
+  projects one after another, 13.4 minutes on Ubuntu and 15.1 on Windows on run 42675312854, and
+  Conformance.Tests alone took 5 minutes 32 seconds of Ubuntu's. Each system now runs `conformance`,
+  `web` and `rest` side by side, the projects found by `scripts/test-groups.sh`, so a new project lands
+  in `rest` without an edit, a group that finds none fails, and every red project is still named at
+  the end of its job. The ruleset requires the six jobs in place of the two legs
+  ([#1310](https://github.com/eQuantic/equantic-ui/issues/1310)). Proposed and archived through
+  OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-09 · The Content-Security-Policy is a builder setting**: `ui.UseContentSecurityPolicy()`
+  writes the strict policy on every page, `script-src` by the request's nonce and `'strict-dynamic'`,
+  `object-src` and `base-uri` refused, framing and connections to the app's own origin, with
+  `X-Content-Type-Options: nosniff` and `Referrer-Policy` on every response. The app states only the
+  origins its own code connects to or is framed by, in C# (`AllowConnectionsTo`, `AllowFramingBy`)
+  and per environment in `EQuantic:ContentSecurityPolicy`, where report-only and the report URI live
+  too, and a source that is not one stops the app at start. The SDK adds what its features need:
+  `UseGtm` declares Google's hosts and hands its container the nonce, and under `dotnet watch`, whose
+  own script no nonce admits, the policy reports and refuses nothing. `style-src` waits for #1268
+  ([#1267](https://github.com/eQuantic/equantic-ui/issues/1267)). Proposed and archived through
+  OpenSpec, into `content-security`.
+- **2026-11-09 · The SDK's styles stay inside a strict policy**: the policy writes `style-src` by the
+  request's nonce and `style-src-attr 'unsafe-inline'`. The shell's stylesheet links carry the nonce
+  as its style elements do, and the runtime stamps the style elements it creates (`eq-atomic`,
+  `eq-faces`) before they enter the document. Measured in Chromium 152, an unstamped one is refused
+  and gets no sheet. Style attributes are admitted by their own directive: the dashboard's pages
+  carry 4 to 25 each (a pressable's pressed fill, a loop's endpoints, an editor's caret), per element
+  and often per frame, and server-rendered markup is styled before any script could write them
+  through the CSSOM. An injected style element is still refused, and the runtime's one
+  `setAttribute('style')` writes through `style.cssText`. ApexCharts, which writes its CSS in a style
+  element of its own, is handed the page's nonce
+  ([#1268](https://github.com/eQuantic/equantic-ui/issues/1268)). Proposed and archived through
+  OpenSpec, into `content-security`.
+- **2026-11-09 · A link writes an href only for a scheme it may carry**: no URL scheme was checked
+  anywhere, so a `Link`'s, a `TextRun`'s or a Markdown link's destination reached `href` with whatever
+  scheme it carried, in SSR and on the client. The web realizer and its
+  twin now write a destination only with no scheme or with `http`, `https`, `mailto` or `tel`, read as a
+  browser's URL parser reads it, and write the anchor with no `href` for any other
+  ([#1286](https://github.com/eQuantic/equantic-ui/issues/1286)). `RenderContext.ResolveDestination`
+  answers `string?`. Proposed and archived through OpenSpec (`openspec/specs/links`).
+- **2026-11-09 · A page offers a file it made for the person to save**: `IFileSaver` takes a name and
+  the content, as UTF-8 text or as bytes, derives the media type from the name, and answers what the
+  target honestly knows (`Offered`, `Saved`, `Cancelled`). The browser downloads it through a blob
+  and an anchor clicked inside the press; the macOS and Windows shells register one realization over
+  the save panel `IFileDialogs` already opens; the server render takes a page that needs one and
+  throws with the reason when it is called. The dashboard's new recovery codes screen offers its
+  codes as `recovery-codes.txt`, measured in Chromium. The phones save through their export picker,
+  left to #782 ([#1022](https://github.com/eQuantic/equantic-ui/issues/1022)). Proposed and archived
+  through OpenSpec, in `file-saving`.
+- **2026-11-09 · Nothing a style element holds can end the element**: the server wrote the atomic sheet,
+  the theme's sheet and an app's own styles into `<style>` as they came, so a value could end the element
+  it was written in. `StyleElementText` is now the one
+  writer of that text and writes every `</` as `\3c /`, which CSS reads as the same characters inside a
+  string or a `url()` ([#1295](https://github.com/eQuantic/equantic-ui/issues/1295)). Proposed and
+  archived through OpenSpec (`openspec/specs/document-theme`).
+- **2026-11-10 · The Wallet draws alike on every target**: recorded on the web, iOS, Android and
+  macOS, the same screens drew three ways. On the web a `SafeArea` hugged its content where Photon
+  gives it its child's size, so the cards page stood at 481px of 1100 and the rail stopped at its
+  last destination; it now takes the fill and the cap its child lowered to, through an adaptive
+  node's arms, in the C# lowering and its TypeScript twin
+  ([#1342](https://github.com/eQuantic/equantic-ui/issues/1342)). On Photon a `Stack` measured its
+  positioned children before it had a size, so a `SwipeableRow`'s action was a 40dp strip on a
+  78dp row; positioned children are now measured against the size the flow gave the stack
+  ([#1343](https://github.com/eQuantic/equantic-ui/issues/1343)). The three readers that decide
+  whether a node fills now read the vocabulary's layout transparency instead of lists kept by
+  hand, and a test fails when the browser's list leaves a wrapper out. Proving it on Android found
+  #1344: two layers sharing an edge on a fractional pixel bleed through each other there.
+- **2026-11-10 · eqc refuses an inline handler under the app's policy**: the SDK's generator reads
+  `UseContentSecurityPolicy` out of the app's source into `[assembly: ContentSecurityPolicy]`, and
+  eqc then refuses with EQ2115 every `HtmlElement.OnClientClick` and `OnLoad` and every constant
+  `DynamicElement.CustomAttributes` key that starts with `on`, which a strict policy refuses in the
+  browser wherever the markup was written. It reads every source of the build, the projects the app
+  references included, since a library never sees the app's `Program.cs`, and the message names the
+  C# handler to write instead. The escape hatch keeps the properties, and an app without the policy
+  builds as before ([#1269](https://github.com/eQuantic/equantic-ui/issues/1269)). Proposed and
+  archived through OpenSpec, into `content-security`.
 
 ## Retired documents
 
