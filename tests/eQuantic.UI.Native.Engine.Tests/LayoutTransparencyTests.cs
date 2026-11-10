@@ -125,10 +125,12 @@ public class LayoutTransparencyTests
         var hugged = new List<string>();
         foreach (var wrapper in Transparent(new Box(new BoxStyle { Width = 30, Height = SizeValue.Fill })))
         {
+            // Anchored at the top only, 30dp down: a fill spans to the opposite edge, 60dp, where a
+            // child the stack does not see filling takes the whole room it was offered, 90.
             var stack = new Stack { Width = SizeValue.Fixed(200), Height = SizeValue.Fixed(90) };
-            stack.Add(new Positioned(wrapper, top: 0, bottom: 0, end: 0));
+            stack.Add(new Positioned(wrapper, top: 30, end: 0));
             var laid = LayoutEngine.Layout(stack, 400, 400, Ctx);
-            if (laid.Children[0].Bounds.Height != 90) hugged.Add($"{wrapper.GetType().Name} ({laid.Children[0].Bounds.Height})");
+            if (laid.Children[0].Bounds.Height != 60) hugged.Add($"{wrapper.GetType().Name} ({laid.Children[0].Bounds.Height})");
         }
 
         hugged.Should().BeEmpty("every wrapper the vocabulary calls transparent takes its child's size, a fill included");
