@@ -4365,6 +4365,37 @@ record of a release, the wiki's Upgrading page is the distillate.
   `bun.lock`, which nothing read, is gone
   ([#1180](https://github.com/eQuantic/equantic-ui/issues/1180)). Proposed and archived through
   OpenSpec, with the requirement written into the working agreement's spec.
+- **2026-10-30 · A container sees through a component to what only it can place**: four Bugs under #166
+  ([#701](https://github.com/eQuantic/equantic-ui/issues/701), [#736](https://github.com/eQuantic/equantic-ui/issues/736),
+  [#738](https://github.com/eQuantic/equantic-ui/issues/738), [#1186](https://github.com/eQuantic/equantic-ui/issues/1186)). A component is what it builds, and a line or a grid
+  asked the component itself whether it was a Spacer, a Flexible or an AdaptiveNode, so the same tree laid out
+  differently with a component around a node: on Photon a built Spacer took no space, and on both targets an arm's
+  alignment and span were dropped. Photon now reads what a component built from the element its position already
+  holds, and on the web a container's rule waits for what the component builds, so nothing builds twice. A
+  bridge's theme and type scale are also the ambient ones for the length of its render, so a stateless component
+  under it hydrates in the colours the server drew. And a scroller fixed on a line's axis is no longer squeezed on
+  the web, its width a ceiling at the line on both targets. Proposed and archived through OpenSpec (`adaptive-layout`,
+  `flex-layout`, `hydration-contract`).
+- **2026-10-30 · A twin says the type C# declared**: a local function carries its declared return type (an async one, the promise of it), where
+  TypeScript inferred the derived type its body returned and a variable it initialized refused a sibling
+  ([#793](https://github.com/eQuantic/equantic-ui/issues/793)), and an object initializer's temporary is declared as the
+  type it holds, where `any` left a lambda subscribed to the local's event with nothing to infer from
+  ([#1106](https://github.com/eQuantic/equantic-ui/issues/1106)). Only the TypeScript changes, 24 transpiled components
+  of it, and the runtime's `tsc` reads them clean.
+- **2026-11-09 · An upload is bounded, and described by the server**: Bugs from the security review
+  (#1265), [#1287](https://github.com/eQuantic/equantic-ui/issues/1287) and
+  [#1293](https://github.com/eQuantic/equantic-ui/issues/1293). The uploads a server keeps are bounded per
+  owner and for the whole store, a finished one counted until it expires (`EQuantic:Uploads`), and the store
+  keeps tallies instead of counting every record on each creation. An upload's type is the one its
+  extension names, its name is one a file system takes as it is, a folder under the web root stops the app,
+  and the owner's cookie is `Secure` behind a proxy that ends TLS. Measured on main, the 18 new tests all
+  fail there. Proposed and archived through OpenSpec (`file-uploads`).
+- **2026-11-10 · A member named Component is that member**: a Bug on 1.0's critical path (#1127),
+  [#1299](https://github.com/eQuantic/equantic-ui/issues/1299). eqc read every bare `Component` its scope did
+  not bind as `this._component`, a field of the State classes the runtime no longer has, so the element
+  engine's property stayed null in the browser with no error, and an app's member of that name held two
+  values. The name is read by its symbol now, as every other name is. Measured on main, the new
+  conformance case fails there. Proposed and archived through OpenSpec (`transpiler-names`).
 
 ## Retired documents
 
