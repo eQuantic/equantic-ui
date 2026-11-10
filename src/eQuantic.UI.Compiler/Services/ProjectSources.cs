@@ -98,6 +98,7 @@ internal sealed class ProjectSources
             var symbols = SymbolsOf(lines[at + 1][SymbolsHeader.Length..]);
 
             var files = new List<string>();
+            var listed = new HashSet<string>(StringComparer.Ordinal);
             var own = new List<string>();
             for (at += 2; at < lines.Length && !lines[at].StartsWith(AppHeader, StringComparison.Ordinal)
                     && !lines[at].StartsWith(ProjectHeader, StringComparison.Ordinal); at++)
@@ -105,7 +106,7 @@ internal sealed class ProjectSources
                 if (lines[at].Length == 0) continue;
                 var compiledOnly = lines[at].StartsWith(CompiledOnly, StringComparison.Ordinal);
                 var file = Path.GetFullPath(compiledOnly ? lines[at][CompiledOnly.Length..] : lines[at]);
-                if (!File.Exists(file) || files.Contains(file, StringComparer.Ordinal)) continue;
+                if (!File.Exists(file) || !listed.Add(file)) continue;
                 files.Add(file);
                 if (!compiledOnly) own.Add(file);
             }
