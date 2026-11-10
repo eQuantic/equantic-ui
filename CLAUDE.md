@@ -734,7 +734,7 @@ public class TodoList : StatefulComponent
 **Compiles to:**
 ```javascript
 async loadTodos() {
-    return await this._serverActions.invoke("TodoList/LoadTodos", []);
+    return await this._serverActions.invoke("MyApp.Pages.TodoList/LoadTodos", []);
 }
 ```
 

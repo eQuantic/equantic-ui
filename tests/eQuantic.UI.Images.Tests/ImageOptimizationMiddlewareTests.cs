@@ -71,6 +71,34 @@ public class ImageOptimizationMiddlewareTests : IDisposable
         return context;
     }
 
+    [Theory]
+    [InlineData("//images/test.jpg")]
+    [InlineData("/images/./test.jpg")]
+    [InlineData("/images//test.jpg")]
+    public async Task TwoSpellingsOfOneFile_ShareOneCachedCopy(string spelling)
+    {
+        // One copy of a file per width, quality and format, whatever the url's spelling (#1289).
+        var first = CreateHttpContext("/images/test.jpg", "640");
+        await ImageOptimizationMiddleware.HandleAsync(first);
+        var second = CreateHttpContext(spelling, "640");
+        await ImageOptimizationMiddleware.HandleAsync(second);
+
+        first.Response.StatusCode.Should().Be(200);
+        second.Response.StatusCode.Should().Be(200);
+        Directory.GetFiles(_cacheDir).Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task AQuality_IsRoundedToTheNearestConfiguredOne()
+    {
+        // 74 and 76 round to 75, the default: one copy among them. 60 rounds to 50: a copy of its own.
+        foreach (var q in new[] { "74", "76", "75" }) await ImageOptimizationMiddleware.HandleAsync(CreateHttpContext("/images/test.jpg", "640", q));
+        Directory.GetFiles(_cacheDir).Should().ContainSingle();
+
+        await ImageOptimizationMiddleware.HandleAsync(CreateHttpContext("/images/test.jpg", "640", "60"));
+        Directory.GetFiles(_cacheDir).Should().HaveCount(2);
+    }
+
     private static async Task<string> ReadResponseBody(HttpContext context)
     {
         context.Response.Body.Position = 0;

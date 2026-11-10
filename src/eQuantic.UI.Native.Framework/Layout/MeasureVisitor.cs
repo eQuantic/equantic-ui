@@ -129,7 +129,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
 
     public LayoutNode Visit(Text node, MeasureState s) => MeasureText(node, s.Constraints, _ctx);
 
-    public LayoutNode Visit(TextEntry node, MeasureState s) => MeasureTextEntry(node, s.Constraints.MaxWidth, _ctx);
+    public LayoutNode Visit(TextEntry node, MeasureState s) => MeasureTextEntry(node, s.Constraints.MaxWidth, _ctx, s.At);
 
     // Images are an explicitly sized slot - layout can't infer extent from undecoded sources (A11).
     public LayoutNode Visit(Image node, MeasureState s) =>

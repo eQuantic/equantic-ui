@@ -120,19 +120,11 @@ public static class DefaultValue
             && pair.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic")
             return $"{Eq.Pair}({Of(key, named, typeParameter)}, {Of(value, named, typeParameter)})";
 
-        // An enum is its member NAME at runtime, so the default is the member whose value is 0.
-        // .NET still yields the numeric 0 when the enum declares no such member.
-        if (type is { TypeKind: TypeKind.Enum })
-        {
-            // A [Flags] enum is a NUMBER on this side — the bits have to be combinable — so its
-            // default is 0 whatever its zero member is called. An ordinary enum is its member
-            // NAME, and the default is the member whose value is zero; .NET still yields the
-            // numeric 0 when the enum declares no such member.
-            if (type is INamedTypeSymbol enumType && enumType.IsFlagsEnum()) return "0";
-            var zero = type.GetMembers().OfType<IFieldSymbol>()
-                .FirstOrDefault(field => field.HasConstantValue && IsZero(field.ConstantValue));
-            return zero is null ? "0" : $"'{zero.Name.ToCamelCase()}'";
-        }
+        // An enum's default is the value 0 as the browser holds it (Types.EnumShape.HeldLiteral): an
+        // ordinary enum's member whose value is 0, by its key, and a [Flags] enum's number, a 64-bit
+        // enum's a BigInt (#551); .NET still yields the value 0 when the enum declares no such member.
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            return Types.EnumShape.HeldLiteral(enumType, 0);
 
         // A value the browser holds as DATA (`[TwinIsData]`) is its members, so its zero is each
         // member's zero written out, `{ r: 0, g: 0, b: 0, a: 0 }` for a `Color`, with no twin to build.
@@ -219,10 +211,4 @@ public static class DefaultValue
             ?.TypeArguments.FirstOrDefault(),
         _ => null,
     };
-
-    private static bool IsZero(object? constant)
-    {
-        try { return constant is not null && System.Convert.ToInt64(constant) == 0; }
-        catch { return false; }
-    }
 }
