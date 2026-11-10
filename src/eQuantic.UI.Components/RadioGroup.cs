@@ -39,7 +39,9 @@ public sealed class RadioGroup : StatelessComponent
         // The theme's Selection slot, then the component's own (§3.10); the ring and its dot vary by
         // density alone.
         var slot = theme.SelectionControls;
-        var side = ControlMetrics.AtDensity(slot?.Box, context.Density) ?? Sizing.SelectionBox(context.Density);
+        var side = ControlMetrics.AtDensity(slot?.RadioSize, context.Density)
+            ?? ControlMetrics.AtDensity(slot?.Box, context.Density)
+            ?? Sizing.SelectionBox(context.Density);
         var dot = ControlMetrics.AtDensity(slot?.RadioDot, context.Density) ?? Sizing.RadioDot(context.Density);
 
         var options = new Column(gap: Space.S1) { Width = SizeValue.Fill };

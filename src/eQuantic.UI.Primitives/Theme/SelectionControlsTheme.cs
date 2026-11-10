@@ -17,6 +17,10 @@ public sealed record SelectionControlsTheme
     /// <summary>The checkbox's square and the radio's circle (22, 20 compact).</summary>
     public DensityValue? Box { get; init; }
 
+    /// <summary>The radio's circle where it differs from the checkbox's square, ahead of
+    /// <see cref="Box"/> for the radio (Material 3 draws an 18dp checkbox and a 20dp radio).</summary>
+    public DensityValue? RadioSize { get; init; }
+
     /// <summary>The border width of an unchecked box and of the radio's ring (2).</summary>
     public float? BorderWidth { get; init; }
 

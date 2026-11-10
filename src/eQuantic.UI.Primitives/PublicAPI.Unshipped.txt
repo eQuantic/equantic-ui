@@ -274,3 +274,5 @@ static eQuantic.UI.Primitives.SegmentedTheme.operator !=(eQuantic.UI.Primitives.
 static eQuantic.UI.Primitives.SegmentedTheme.operator ==(eQuantic.UI.Primitives.SegmentedTheme? left, eQuantic.UI.Primitives.SegmentedTheme? right) -> bool
 static eQuantic.UI.Primitives.SelectionControlsTheme.operator !=(eQuantic.UI.Primitives.SelectionControlsTheme? left, eQuantic.UI.Primitives.SelectionControlsTheme? right) -> bool
 static eQuantic.UI.Primitives.SelectionControlsTheme.operator ==(eQuantic.UI.Primitives.SelectionControlsTheme? left, eQuantic.UI.Primitives.SelectionControlsTheme? right) -> bool
+eQuantic.UI.Primitives.SelectionControlsTheme.RadioSize.get -> eQuantic.UI.Primitives.DensityValue?
+eQuantic.UI.Primitives.SelectionControlsTheme.RadioSize.init -> void
