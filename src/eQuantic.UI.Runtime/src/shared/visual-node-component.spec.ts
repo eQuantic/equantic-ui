@@ -8,6 +8,7 @@ import { ColorToken } from './value-types';
 import { Text } from './vocabulary';
 import type { HtmlElement, HtmlNode } from '../core/types';
 import { VisualNodeComponent } from './visual-node-component';
+import { Checkbox } from './components/Checkbox';
 
 afterEach(() => {
   setPhotonTheme(photonTheme);
@@ -20,6 +21,10 @@ function heights(node: HtmlNode): string[] {
   return [...own, ...node.children.flatMap(heights)];
 }
 
+function allStyles(node: HtmlNode): string[] {
+  return [effectiveStyle(node), ...node.children.flatMap(allStyles)];
+}
+
 describe('VisualNodeComponent (the Core⇄Shared client bridge)', () => {
   it('renders an abstract subtree with the ambient theme — the SSR adapter parity pair', () => {
     const adapter = new VisualNodeComponent(new Card(new Text('body'), 'filled'));
@@ -28,6 +33,18 @@ describe('VisualNodeComponent (the Core⇄Shared client bridge)', () => {
     expect(node.tag).toBe('div');
     expect(effectiveStyle(node)).toContain('border-radius: 14px');
     expect(effectiveStyle(node)).toContain('background-color: light-dark(#eff1f4, #1c232b)');
+  });
+
+  // A stateless twin renders itself from the ambient theme, so a bridge's own has to BE the ambient
+  // one while it renders: the C# realizer builds the whole subtree in the theme it was given, and the
+  // client drew the page's colours over the ones the server had drawn (#701).
+  it('builds a stateless component in the theme it was given, and hands the ambient one back', () => {
+    const green = new ColorToken({ r: 0, g: 128, b: 0, a: 255 });
+    const before = getPhotonTheme();
+    const node = new VisualNodeComponent(new Checkbox(false), { ...photonTheme, borderStrong: green }).render();
+
+    expect(JSON.stringify(allStyles(node))).toContain('#008000');
+    expect(getPhotonTheme()).toBe(before);
   });
 
   it('boot-time theme registration: setPhotonTheme swaps what the ambient lowering resolves', () => {

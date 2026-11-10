@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
@@ -331,9 +332,11 @@ public sealed class PhotonHost
         // An edit landed since the last frame: drop the content caches BEFORE realizing, on this
         // thread, where they are owned. Most edits would miss them anyway (the keys are content),
         // but a patched rasterizer or an edited icon path re-rasters fresh — once.
+        var drawsEdit = false;
         if (_hotReloadGeneration != PhotonHotReload.Generation)
         {
             _hotReloadGeneration = PhotonHotReload.Generation;
+            drawsEdit = true;
             _textCache.Clear();
             _iconCache.Clear();
             _imageCache.Clear();
@@ -444,6 +447,11 @@ public sealed class PhotonHost
         _nextFrameDueMs = caretDue is { } caret && announcementDue is { } owed
             ? MathF.Min(caret, owed)
             : caretDue ?? announcementDue;
+        // Said once per edit, on the frame that draws it, as the web's server says each rebuild: the
+        // person sees how long an edit took to reach the window, and the edit-to-view measurement
+        // (#900) reads the same line. The shell presents this frame next, within a vsync.
+        if (drawsEdit)
+            Console.WriteLine($"[eQuantic.HotReload] drew the edit {Stopwatch.GetElapsedTime(PhotonHotReload.AppliedAt).TotalMilliseconds:F0}ms after it was applied");
         return _lastFrame;
     }
 
