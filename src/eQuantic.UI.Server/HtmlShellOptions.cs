@@ -7,7 +7,14 @@ public class HtmlShellOptions
 {
     public string Title { get; set; } = "eQuantic.UI App";
     public string HtmlClass { get; set; } = "";
-    public List<string> HeadTags { get; } = new();
+    /// <summary>
+    /// The head elements every page carries, as DATA. They are rendered per request, so the shell
+    /// stamps each script and style with that request's nonce (#1266). There is no raw-markup
+    /// overload: text the shell did not build is text it cannot stamp.
+    /// </summary>
+    public IReadOnlyList<HtmlTag> HeadTags => _headTags;
+
+    private readonly List<HtmlTag> _headTags = new();
 
     /// <summary>The app's own CSS, in the order <see cref="AddStyles"/> added it.</summary>
     public IReadOnlyList<string> Styles => _styles;
@@ -32,17 +39,8 @@ public class HtmlShellOptions
     /// </summary>
     public HtmlShellOptions AddHeadTag(HtmlTag tag)
     {
-        HeadTags.Add(tag.Render());
-        return this;
-    }
-
-    /// <summary>
-    /// ESCAPE HATCH: a head element as RAW markup, for anything the typed surface can't express
-    /// yet. Prefer the <see cref="AddHeadTag(HtmlTag)"/> overload — nothing here is escaped.
-    /// </summary>
-    public HtmlShellOptions AddHeadTag(string rawHtml)
-    {
-        HeadTags.Add(rawHtml);
+        ArgumentNullException.ThrowIfNull(tag);
+        _headTags.Add(tag);
         return this;
     }
 

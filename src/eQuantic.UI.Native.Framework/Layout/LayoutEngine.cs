@@ -387,7 +387,7 @@ public static class LayoutEngine
     public static LayoutNode Layout(VisualNode root, float viewportWidth, float viewportHeight, LayoutContext context,
         StretchKind rootStretch = StretchKind.None, Element? rootElement = null)
     {
-        rootElement ??= BuildOwner.Structural().Build(root, context.Components, context.SizeClass, rebuildAll: true);
+        rootElement ??= ComponentBoundary.StructuralOwner().Build(root, context.Components, context.SizeClass, rebuildAll: true);
         context.WindowWidth = viewportWidth;
         context.WindowHeight = viewportHeight;
         // ONE visitor per CONTEXT, which is what lets the context be a field on it and only the

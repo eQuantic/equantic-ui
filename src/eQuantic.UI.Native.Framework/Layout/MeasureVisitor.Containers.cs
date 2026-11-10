@@ -606,7 +606,7 @@ internal sealed partial class MeasureVisitor
 
         // Place children into (column, span) slots — auto-flow with span clamping. An AdaptiveNode's
         // place is its arm's, span included (see LaidOutChildren).
-        var children = new LaidOutChildren(grid.Children, ctx);
+        var children = new LaidOutChildren(grid.Children, ctx, at);
         var placements = new (VisualNode Node, int Column, int Span, int Row)[children.Count];
         var col = 0;
         var row = 0;
@@ -641,7 +641,7 @@ internal sealed partial class MeasureVisitor
                 // that instance's state.
                 if (pl.Column == c && pl.Span == 1)
                     widest = MathF.Max(widest, Measure(pl.Node, constraints.ForChild(float.PositiveInfinity, maxH), ctx,
-                        children.At(at, i)).Bounds.Width);
+                        children.At(i)).Bounds.Width);
             }
             widths[c] = widest;
             used += widest;
@@ -660,7 +660,7 @@ internal sealed partial class MeasureVisitor
             var (node, c, span, r) = placements[i];
             var cellW = grid.Gap * (span - 1);
             for (var k = c; k < c + span; k++) cellW += widths[k];
-            var child = Measure(node, constraints.ForChild(cellW, maxH), ctx, children.At(at, i));
+            var child = Measure(node, constraints.ForChild(cellW, maxH), ctx, children.At(i));
             // A Fill-width child pins to the cell (the realizer paints the full extent).
             if (DeclaredSizeKind(SizedBy(child).Source, horizontal: true) == SizeKind.Fill)
                 child.Bounds = child.Bounds with { Width = cellW };

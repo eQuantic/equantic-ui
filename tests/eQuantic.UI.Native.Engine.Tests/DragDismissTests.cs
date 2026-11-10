@@ -22,7 +22,7 @@ public class DragDismissTests
 
     /// <summary>A gesture's position, kept by an owner as a host keeps it: where its drag lives.</summary>
     private static Element Surface() =>
-        BuildOwner.Structural().Build(new DragDismiss(new Box(new BoxStyle()), () => { }),
+        ComponentBoundary.StructuralOwner().Build(new DragDismiss(new Box(new BoxStyle()), () => { }),
             new ComponentContext(PhotonTheme.Instance), WindowSizeClass.Compact, rebuildAll: true);
 
     [Fact]

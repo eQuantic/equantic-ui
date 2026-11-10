@@ -46,6 +46,7 @@ var build = new AppBuild(options);
 // The project's compilation and the scan of its declarations. A build it cannot stand on has said
 // why (an empty reference list is EQ0002) and stops here.
 if (!build.Load()) return 1;
+var loadedAt = DateTimeOffset.UtcNow;
 
 if (isWatchMode)
 {
@@ -61,6 +62,31 @@ Console.WriteLine($"   Output:       {outputDir}");
 
 // Initial compilation
 var initialBuildHadErrors = build.CompileAndBundle();
+
+// The edit-to-view measurement (#900) names a file in EQC_TIMINGS, and each compile then appends one
+// line to it: when this process started, when the compilation was loaded and when the build ended, in
+// Unix milliseconds, and how long bun took inside it. That is what tells eqc's time and bun's apart
+// from MSBuild's around them and from the browser's after them. Nothing is written otherwise.
+if (Environment.GetEnvironmentVariable("EQC_TIMINGS") is { Length: > 0 } timings)
+{
+    var startedAt = new DateTimeOffset(System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime());
+    var line = System.Text.Json.JsonSerializer.Serialize(new
+    {
+        started = startedAt.ToUnixTimeMilliseconds(),
+        loaded = loadedAt.ToUnixTimeMilliseconds(),
+        ended = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+        bunMs = (long)build.BundleElapsed.TotalMilliseconds,
+    });
+    try
+    {
+        File.AppendAllText(timings, line + "\n");
+    }
+    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+    {
+        // A measurement nobody can read back is not a reason to fail a build that compiled.
+        Console.Error.WriteLine($"eqc: EQC_TIMINGS could not be written: {ex.Message}");
+    }
+}
 
 if (isWatchMode)
 {
