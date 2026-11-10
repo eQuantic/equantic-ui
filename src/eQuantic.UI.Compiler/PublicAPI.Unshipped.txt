@@ -1,9 +1,1 @@
 #nullable enable
-*REMOVED*static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.ArrowBlock(string! parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! block, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout layout, int depth, bool isAsync = false) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
-*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Deconstruct(out string! Parameters, out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Block, out bool IsAsync, out eQuantic.UI.Compiler.CodeGen.Ir.JsLayout Layout, out int Depth) -> void
-*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.JsArrowBlock(string! Parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Block, bool IsAsync, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout Layout, int Depth) -> void
-eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Returns.get -> string!
-eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Returns.init -> void
-eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Deconstruct(out string! Parameters, out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Block, out bool IsAsync, out eQuantic.UI.Compiler.CodeGen.Ir.JsLayout Layout, out int Depth, out string! Returns) -> void
-eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.JsArrowBlock(string! Parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Block, bool IsAsync, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout Layout, int Depth, string! Returns = "") -> void
-static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.ArrowBlock(string! parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! block, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout layout, int depth, bool isAsync = false, string! returns = "") -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!

@@ -395,8 +395,16 @@ eQuantic.UI.Server.UploadsOptions.Expiry.get -> System.TimeSpan
 eQuantic.UI.Server.UploadsOptions.Expiry.set -> void
 eQuantic.UI.Server.UploadsOptions.Folder.get -> string?
 eQuantic.UI.Server.UploadsOptions.Folder.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxBytesPerOwner.get -> long
+eQuantic.UI.Server.UploadsOptions.MaxBytesPerOwner.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxTotalBytes.get -> long
+eQuantic.UI.Server.UploadsOptions.MaxTotalBytes.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxTotalUploads.get -> int
+eQuantic.UI.Server.UploadsOptions.MaxTotalUploads.set -> void
 eQuantic.UI.Server.UploadsOptions.MaxUnfinished.get -> int
 eQuantic.UI.Server.UploadsOptions.MaxUnfinished.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxUploadsPerOwner.get -> int
+eQuantic.UI.Server.UploadsOptions.MaxUploadsPerOwner.set -> void
 eQuantic.UI.Server.UploadsOptions.UploadsOptions() -> void
 override eQuantic.UI.Server.AlternateRequest.GetHashCode() -> int
 override eQuantic.UI.Server.Assets.InlineScriptAsset.Equals(object? obj) -> bool

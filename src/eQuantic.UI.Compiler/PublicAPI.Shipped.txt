@@ -376,17 +376,19 @@ eQuantic.UI.Compiler.CodeGen.Ir.JsArrow.Parameters.init -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Block.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Block.init -> void
-eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Deconstruct(out string! Parameters, out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Block, out bool IsAsync, out eQuantic.UI.Compiler.CodeGen.Ir.JsLayout Layout, out int Depth) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Deconstruct(out string! Parameters, out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Block, out bool IsAsync, out eQuantic.UI.Compiler.CodeGen.Ir.JsLayout Layout, out int Depth, out string! Returns) -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Depth.get -> int
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Depth.init -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Equals(eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock? other) -> bool
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.IsAsync.get -> bool
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.IsAsync.init -> void
-eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.JsArrowBlock(string! Parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Block, bool IsAsync, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout Layout, int Depth) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.JsArrowBlock(string! Parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Block, bool IsAsync, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout Layout, int Depth, string! Returns = "") -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Layout.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsLayout
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Layout.init -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Parameters.get -> string!
 eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Parameters.init -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Returns.get -> string!
+eQuantic.UI.Compiler.CodeGen.Ir.JsArrowBlock.Returns.init -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsBinary
 eQuantic.UI.Compiler.CodeGen.Ir.JsBinary.Deconstruct(out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Left, out string! Operator, out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Right) -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsBinary.Equals(eQuantic.UI.Compiler.CodeGen.Ir.JsBinary? other) -> bool
@@ -2271,7 +2273,7 @@ static eQuantic.UI.Compiler.CodeGen.Ir.JsEmpty.operator !=(eQuantic.UI.Compiler.
 static eQuantic.UI.Compiler.CodeGen.Ir.JsEmpty.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsEmpty? left, eQuantic.UI.Compiler.CodeGen.Ir.JsEmpty? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Array(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! elements) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Arrow(string! parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! body, bool isAsync = false) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
-static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.ArrowBlock(string! parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! block, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout layout, int depth, bool isAsync = false) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.ArrowBlock(string! parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! block, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout layout, int depth, bool isAsync = false, string! returns = "") -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Binary(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! left, string! op, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! right) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Call(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! target, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! arguments) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Call(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! target, params eQuantic.UI.Compiler.CodeGen.Ir.JsExpr![]! arguments) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
