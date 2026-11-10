@@ -10,7 +10,6 @@ namespace eQuantic.UI.Primitives;
 /// simply holds the latest.
 /// </para>
 /// </summary>
-[ServerOnly]
 public sealed class ComponentElement : Element
 {
     private Element? _child;
@@ -43,7 +42,7 @@ public sealed class ComponentElement : Element
 
     private protected override void FirstBuild()
     {
-        if (Owner.Live && Component is StatefulComponent stateful && stateful.Place(this))
+        if (Owner.Live && Component is StatefulComponent stateful && stateful.EnterPosition(this))
             Owner.QueueMount(this);
 
         Rebuild(force: false);
@@ -138,7 +137,7 @@ public sealed class ComponentElement : Element
     private protected override void OnDeactivated()
     {
         // One instance a parent placed at two positions stays mounted until the last of them leaves.
-        if (Owner.Live && Component is StatefulComponent stateful && stateful.Leave(this))
+        if (Owner.Live && Component is StatefulComponent stateful && stateful.LeavePosition(this))
             Owner.QueueUnmount(stateful);
     }
 }

@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "ChildSlots.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Elements/ChildSlots.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IA0BI;QAA4E;;;IA0D5E;QAA+D;QAAA"
+}

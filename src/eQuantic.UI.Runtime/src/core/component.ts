@@ -5,6 +5,7 @@
 import { Component, HtmlNode, RenderContext } from './types';
 import type { VisualNodeValue } from '../shared/nodes';
 import type { CrossAlignValue } from '../shared/enums.generated';
+import type { ComponentElement } from '../shared/components/ComponentElement';
 import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
@@ -454,9 +455,48 @@ export abstract class StatefulComponent extends UiComponent {
   // values (expanded by the lowering — they never reach render() below).
   abstract build(context: RenderContext): Component | VisualNodeValue;
 
-  /** The C# `SetState(mutate)` contract: run the mutation, then schedule a rebuild. */
+  /**
+   * The position the element engine mounted this instance at (the C# `StatefulComponent.MountedAt`):
+   * the first one, while a second position that holds the same instance waits in `_alsoMountedAt`.
+   * Null while no engine holds it, which is every instance the browser builds today (E3b moves the
+   * browser onto the engine).
+   */
+  mountedAt: ComponentElement | null = null;
+
+  private _alsoMountedAt: ComponentElement[] | null = null;
+
+  /** Taken by a position (the C# `EnterPosition`): true when it is the first, which is the one that mounts it. */
+  enterPosition(at: ComponentElement): boolean {
+    if (this.mountedAt === null) {
+      this.mountedAt = at;
+      return true;
+    }
+    (this._alsoMountedAt ??= []).push(at);
+    return false;
+  }
+
+  /** Left by a position (the C# `LeavePosition`): true when it was the last, which is the one that unmounts it. */
+  leavePosition(at: ComponentElement): boolean {
+    const others = this._alsoMountedAt;
+    if (this.mountedAt !== at) {
+      const index = others?.indexOf(at) ?? -1;
+      if (index >= 0) others!.splice(index, 1);
+      return false;
+    }
+    if (others !== null && others.length > 0) {
+      this.mountedAt = others.pop()!;
+      return false;
+    }
+    this.mountedAt = null;
+    return true;
+  }
+
+  /** The C# `SetState(mutate)` contract: run the mutation, mark the positions that hold this
+   * instance for the engine's next build, then schedule a rebuild. */
   protected setState(fn: () => void): void {
     fn();
+    this.mountedAt?.markNeedsBuild();
+    for (const at of this._alsoMountedAt ?? []) at.markNeedsBuild();
     this._scheduleRender();
   }
 

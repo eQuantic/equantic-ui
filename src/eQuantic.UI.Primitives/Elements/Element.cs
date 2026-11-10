@@ -16,11 +16,10 @@ namespace eQuantic.UI.Primitives;
 /// the engine makes one.
 /// </para>
 /// <para>
-/// HOST ONLY until the browser drives the same engine (E3): eqc routes this namespace to the runtime,
-/// so a page naming it would compile and die at hydration, and the attribute moves that to the build.
+/// Written once (3.9): the engine transpiles into the runtime beside the code and spreadsheet engines,
+/// so the browser can drive the very engine Photon drives, and a twin case holds the two to one answer.
 /// </para>
 /// </summary>
-[ServerOnly]
 public abstract class Element
 {
     private protected Element(VisualNode configuration)

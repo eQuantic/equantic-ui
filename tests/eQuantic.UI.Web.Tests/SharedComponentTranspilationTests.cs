@@ -39,13 +39,15 @@ public class SharedComponentTranspilationTests
 
     /// <summary>
     /// Pure MODEL that the components are written against and that has no platform in it — the two
-    /// engines (each its own assembly, every folder of it) and the forms' model. Hand-writing a
-    /// TypeScript twin of a tokenizer is exactly the thing this framework exists not to do, so it
-    /// transpiles with everything else and the same emission runs on both targets.
+    /// engines (each its own assembly, every folder of it), the forms' model and the element tree
+    /// (docs/ELEMENT-TREE-PLAN.md 3.9). Hand-writing a TypeScript twin of a tokenizer, or of a
+    /// reconciler, is exactly the thing this framework exists not to do, so it transpiles with
+    /// everything else and the same emission runs on both targets.
     /// </summary>
     private static string[] SharedModelSources() =>
         EngineSources(RepoRoot())
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Forms"), "*.cs"))
+            .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Elements"), "*.cs"))
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
 

@@ -22,7 +22,6 @@ namespace eQuantic.UI.Primitives;
 /// here, the arm the window resolves, exactly as Photon lays it out: the other arms are never built.
 /// </para>
 /// </summary>
-[ServerOnly]
 internal static class ChildSlots
 {
     internal static NodeSlots Of(VisualNode node, WindowSizeClass sizeClass) => node.NodeKind switch
