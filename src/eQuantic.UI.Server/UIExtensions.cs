@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -121,6 +122,11 @@ public static class UIExtensions
         // Add authorization service for Server Actions
         // TryAdd allows users to override with their own implementation
         services.TryAddSingleton<IServerActionAuthorizationService, ServerActionAuthorizationService>();
+        // An action and a page are decided by the app's policy provider and evaluator, which ASP.NET Core
+        // registers with AddAuthorization: an app that only marked an action [Authorize] never called it,
+        // and its action would be refused for want of them. It adds what is missing and changes nothing
+        // the app registered (#1320).
+        services.AddAuthorization();
         // A refused CLIENT NAVIGATION into a page that requires authorization is answered 401 or 403,
         // which the router acts on, instead of a challenge a fetch cannot follow (#673).
         // It WRAPS the handler the app registered before AddUI, so the app's own answers stand for
@@ -420,6 +426,26 @@ public static class UIExtensions
             return Task.CompletedTask;
         }).AllowAnonymous();
 
+        // The tab's icon at the address every browser and every crawler asks for, whatever a page
+        // links (#1240): the favicon.ico the build wrote from the app's icon. An app's own favicon.ico
+        // wins, wherever its web root has it, a referenced project's static web assets included: with
+        // minimal hosting the routing runs before UseStaticFiles, and the static files serve nothing a
+        // route matched, so this route answers from the same file provider they read. Under
+        // MapStaticAssets, where the file is an endpoint too, this one's order is after it rather than
+        // beside it, which routing would refuse as ambiguous. Not immutable: the address never changes
+        // and the icon may, so a browser asks again daily.
+        endpoints.MapGetAndHead("/favicon.ico", async context =>
+        {
+            if (Icons(context).Favicon is not { } favicon)
+            {
+                context.Response.StatusCode = 404;
+                return;
+            }
+            context.Response.ContentType = "image/x-icon";
+            context.Response.Headers["Cache-Control"] = "public, max-age=86400";
+            await context.Response.SendFileAsync(favicon);
+        }).AllowAnonymous().WithOrder(1);
+
         // Map Runtime JS (immutable via BuildId in URL, long cache)
         endpoints.MapGetAndHead("/_equantic/runtime.js", async context =>
         {
@@ -611,31 +637,55 @@ public static class UIExtensions
     }
 
     /// <summary>The head links for the generated icon set — empty when an app declared no icon.</summary>
-    private static IReadOnlyList<string> GeneratedIconTags(HttpContext context)
+    private static IReadOnlyList<string> GeneratedIconTags(HttpContext context) => Icons(context).Tags;
+
+    /// <summary>
+    /// What the app's web root holds of its icon: the links every page carries, and the file that
+    /// answers <c>/favicon.ico</c>. Read through the web root's file provider, the one UseStaticFiles
+    /// reads, so a file a referenced project contributes as a static web asset counts as the app's own.
+    /// </summary>
+    private sealed record IconSet(IReadOnlyList<string> Tags, IFileInfo? Favicon)
     {
-        if (_iconTags is not null) return _iconTags;
-
-        var environment = context.RequestServices.GetService<IWebHostEnvironment>();
-        var root = environment?.WebRootPath;
-        var icons = root is null ? null : Path.Combine(root, "_equantic", "icons");
-        if (icons is null || !Directory.Exists(icons)) return _iconTags = [];
-
-        var tags = new List<string>();
-        void Link(string file, HtmlTag tag)
-        {
-            if (File.Exists(Path.Combine(icons, file))) tags.Add(tag.Render());
-        }
-
-        // 32 is the tab, 180 is what iOS Safari pins to a home screen, and the manifest carries the
-        // install icons — each answers a different question, so each gets its own link.
-        Link("favicon-32.png", HtmlTag.Link("icon", "/_equantic/icons/favicon-32.png").Attr("type", "image/png"));
-        Link("apple-touch-icon.png", HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png"));
-        Link("site.webmanifest", HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest"));
-        return _iconTags = tags;
+        public static readonly IconSet None = new([], null);
     }
 
-    /// <summary>Computed once: the icon set is a build output and cannot change under a running app.</summary>
-    private static IReadOnlyList<string>? _iconTags;
+    private static IconSet Icons(HttpContext context)
+    {
+        var files = context.RequestServices.GetService<IWebHostEnvironment>()?.WebRootFileProvider;
+        return files is null ? IconSet.None : IconSets.GetValue(files, ReadIcons);
+    }
+
+    private static IconSet ReadIcons(IFileProvider files)
+    {
+        IFileInfo? Find(string path) => files.GetFileInfo(path) is { Exists: true, IsDirectory: false } file ? file : null;
+        var own = Find("favicon.ico");
+        var built = Find("_equantic/icons/favicon.ico");
+
+        // The tab's 16, 32 and 48 in one file at the root (#1240), 180 is what iOS Safari pins to a
+        // home screen, and the manifest carries the install icons — each answers a different
+        // question, so each gets its own link. The root's favicon is linked whichever file answers
+        // it, and the sizes are the built file's, so an app's own favicon.ico is linked without them.
+        var tags = new List<string>();
+        if ((own ?? built) is not null)
+        {
+            var link = HtmlTag.Link("icon", "/favicon.ico");
+            tags.Add((own is null ? link.Attr("sizes", "16x16 32x32 48x48") : link).Render());
+        }
+        if (Find("_equantic/icons/apple-touch-icon.png") is not null)
+            tags.Add(HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png").Render());
+        if (Find("_equantic/icons/site.webmanifest") is not null)
+            tags.Add(HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest").Render());
+        return new IconSet(tags, own ?? built);
+    }
+
+    /// <summary>
+    /// Read once per web root's file provider: the icon set is a build output and cannot change under
+    /// a running app. Keyed by the PROVIDER rather than per process, since a process may host more
+    /// than one app and the first one asked answered for all of them, and rather than by the root's
+    /// path, which two hosts can share with different providers. Weak, so a stopped host's entry goes
+    /// with its provider.
+    /// </summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IFileProvider, IconSet> IconSets = new();
 
     /// <summary>
     /// The header a CLIENT NAVIGATION sends. The request goes to the target URL itself rather than
@@ -696,8 +746,6 @@ public static class UIExtensions
     private static async Task ServePageState(HttpContext context, Type? page, DeclaredPage? declared)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
-        // Never cached: this is the page's data, and the next visitor's is not this one's.
-        context.Response.Headers["Cache-Control"] = "no-store";
         // The answer to a navigation says so, with the header the request carried, whatever its
         // status: a page that answers 404 for content that does not exist still sends its title, its
         // head and its state, and the client applies them as a full load of it shows them. Read off
@@ -794,6 +842,13 @@ public static class UIExtensions
 
     private static async Task ServeAppShell(HttpContext context, Type? page, DeclaredPage? declared)
     {
+        // Never stored, by the browser or by any cache between it and the server, and said here once
+        // for both answers of a page's route: the document carries what this visitor's cookies chose
+        // (theme, density, culture) and the page's own state, and so does the data a navigation asks
+        // for. The next visitor's is not this one's. The document went with no Cache-Control at all,
+        // so a CDN rule that caches HTML served one visitor's prefetched data to the next (#1288).
+        context.Response.Headers.CacheControl = "no-store";
+
         // A client navigation asks the same route for the page's data instead of a document.
         if (context.Request.Headers.ContainsKey(NavigationHeader))
         {

@@ -15,8 +15,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// table (<see cref="ValueFlow.Apply"/>) applies it — the same table that settles implicit flows
 /// and <c>foreach</c> elements, so <c>(int)aLong</c> slices the BigInt's low 32 bits instead of
 /// putting a BigInt into Math.trunc, and <c>checked((byte)n)</c> throws where C# throws. What
-/// stays HERE is what only a cast does: the enum name↔value maps (the runtime enum is its
-/// member-name string), and the spelled-type fallback for the worlds without a semantic model.
+/// stays HERE is what only a cast does: a constant written as its target holds it, the unboxing of
+/// an object into an enum, the checked context an enum's conversion reads off the syntax, and the
+/// spelled-type fallback for the worlds without a semantic model.
 /// </summary>
 public class CastExpressionStrategy : IExpressionIrStrategy
 {
@@ -29,10 +30,6 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     {
         var cast = (CastExpressionSyntax)node;
 
-        // Enums are represented at runtime by their member-name string (SizeVariant.Medium -> 'medium'),
-        // not by their numeric value (see EnumStrategy). A numeric cast therefore can't reach the value the
-        // way .NET does — `(int)'medium'` is NaN. Bridge it with the enum's compile-time name↔value table:
-        // constant-fold to a literal when we can, else inline a tiny generated map indexed by the operand.
         var targetType = context.SemanticHelper.GetType(cast);
         var operandType = UnwrapNullable(context.SemanticHelper.GetType(cast.Expression));
 
@@ -47,53 +44,43 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             return unwraps ? ValueFlow.Unwrapped(converted, context) : converted;
         }
 
-        // (int)enum / (long)enum / … → the underlying integral value.
-        if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumOperand
-            && IsIntegral(UnwrapNullable(targetType)))
+        // An ENUMERATION conversion, out of an enum into a number or into an enum from a number or another
+        // enum (Types.EnumConversion): the value the enum holds, converted as its underlying type
+        // converts. A 64-bit enum's value is a BigInt (#551): `(int)aWideFlag` takes its low 32 bits and
+        // `(long)aWideFlag` is the BigInt itself, where a number past 2^53 had lost its low digits. The
+        // bound tree reports an enumeration conversion unchecked inside `checked(…)` too, so the syntax
+        // says where .NET throws.
+        var target = UnwrapNullable(targetType);
+        var enumSource = operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum };
+        var enumTarget = target as INamedTypeSymbol is { TypeKind: TypeKind.Enum } named ? named : null;
+        if (enumSource && target is not null && IsNumeric(target) || enumTarget is not null)
         {
-            if (context.SemanticHelper.TryGetConstantValue(cast.Expression, out var constant))
-                return JsExpr.Literal(ToLong(constant).ToString(CultureInfo.InvariantCulture));
-
-            // A [Flags] enum is already numeric at runtime — the cast is the identity. A normal (string)
-            // enum needs its member-name string mapped back to the underlying value.
-            return Types.EnumShape.ValueOf(enumOperand, Operand(), context);
-        }
-
-        // (EnumType)int → a value of the enum.
-        if (targetType is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumTarget)
-        {
-            var flags = enumTarget.IsFlagsEnum();
-            // The CAST's own constant, the value already brought into the underlying type
-            // (`unchecked((Tiny)257)` is 1 with a byte under it), never the operand's.
-            if (context.SemanticHelper.TryGetConstantValue(cast, out var constant))
+            // The CAST's own constant, the value already converted (`unchecked((Tiny)257)` is 1 with a byte
+            // under it, `(long)Wide.Top` a long), written as the target holds it.
+            if (context.SemanticHelper.TryGetConstantValue(cast, out var constant) && constant is not null)
             {
-                // Flags enums are numeric — keep the literal value. Normal enums map the value to the
-                // member-name string (so it stays comparable to other enum members).
-                // A value no member names is held as its number.
-                var number = System.Convert.ToDecimal(constant, CultureInfo.InvariantCulture);
-                var key = flags ? null : Types.EnumShape.KeyOf(enumTarget, number);
-                return JsExpr.Literal(key != null ? $"'{key}'" : number.ToString(CultureInfo.InvariantCulture));
+                if (enumTarget is not null)
+                    return JsExpr.Literal(Types.EnumShape.HeldLiteral(enumTarget,
+                        System.Convert.ToDecimal(constant, CultureInfo.InvariantCulture)));
+                if (IntegerWidth.Of(target) is { } width)
+                    return JsExpr.Literal(System.Convert.ToDecimal(constant, CultureInfo.InvariantCulture)
+                        .ToString(CultureInfo.InvariantCulture) + (width.Bits == 64 ? "n" : ""));
             }
 
             var operandIr = Operand();
-            // The enum itself is what the browser holds already. An object holding one
-            // (`(Status)Enum.Parse(typeof(Status), text)`) is unboxed, as the runtime unboxes it: the
-            // member it holds, a boxed number's member, and a refusal for anything else, where the
-            // value→key table answered undefined and a boxed string passed through.
-            if (SymbolEqualityComparer.Default.Equals(operandType, enumTarget)) return operandIr;
-            if (operandType is not null && !IsNumeric(operandType)
-                && operandType is not INamedTypeSymbol { TypeKind: TypeKind.Enum })
+            // An object holding the enum (`(Status)Enum.Parse(typeof(Status), text)`) is unboxed, as the
+            // runtime unboxes it: the member it holds, a boxed number's member, and a refusal for anything
+            // else, where the value→key table answered undefined and a boxed string passed through.
+            if (enumTarget is not null && operandType is not null && !IsNumeric(operandType) && !enumSource)
             {
                 context.UsedHelpers.Add(Eq.Import);
                 return JsExpr.Call(JsExpr.Identifier(Eq.EnumUnbox), operandIr,
                     JsExpr.Literal(Types.EnumShape.Of(enumTarget)), JsExpr.Literal(JsStringLiteral.Quote(enumTarget.Name)));
             }
-            // Another enum's value: its own table gives the number, and this one's gives the key.
-            if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum)
-                operandIr = Types.EnumShape.ValueOf(sourceEnum, operandIr, context);
-            operandIr = IntoUnderlying(operandIr, operandType, enumTarget, ArithmeticContext.ChecksOverflow(cast, context), context);
-            // Flags: the int IS the runtime value (identity). Normal: map value → member-name string.
-            return Types.EnumShape.Held(enumTarget, operandIr, context);
+            // A value that is not null converts on its own; a nullable one kept nullable lets null pass.
+            var from = unwraps ? operandType : context.SemanticHelper.GetType(cast.Expression);
+            return Types.EnumConversion.Convert(from, targetType, null, operandIr,
+                ArithmeticContext.ChecksOverflow(cast, context), context) ?? operandIr;
         }
 
         // The bound tree names the conversion — user-defined operator, numeric with its widths and
@@ -149,42 +136,9 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_UInt16 or
         SpecialType.System_UInt32 or SpecialType.System_UInt64 or SpecialType.System_IntPtr or SpecialType.System_UIntPtr;
 
-    /// <summary>
-    /// A number brought into an enum's underlying type, as C#'s explicit conversion brings it:
-    /// <c>(Tiny)n</c> with a byte under it and n of 257 is 1, where the value was kept whole. A value
-    /// that fits already is left as it is, a long's BigInt is narrowed, and a 64-bit enum, a number
-    /// here (#551), takes the value as it comes.
-    /// </summary>
-    private static JsExpr IntoUnderlying(JsExpr number, ITypeSymbol? source, INamedTypeSymbol target, bool isChecked,
-        ConversionContext context)
-    {
-        if (IntegerWidth.Of(target.EnumUnderlyingType) is not { } width || width.Bits == 64) return number;
-        var fractional = source?.SpecialType is SpecialType.System_Single or SpecialType.System_Double;
-        // A checked cast of a number past the underlying type's range throws, whatever the number's type.
-        if (isChecked && (fractional || IntegerWidth.Of(source) is not null))
-        {
-            var whole = fractional ? JsExpr.Callish($"Math.trunc({JsExprWriter.Write(number)})") : number;
-            var ranged = IntegerWidth.Checked(whole, width, context);
-            return IntegerWidth.Of(source) is { Bits: 64 } ? JsExpr.Callish($"Number({JsExprWriter.Write(ranged)})") : ranged;
-        }
-        var from = source is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum
-            ? IntegerWidth.Of(sourceEnum.EnumUnderlyingType)
-            : IntegerWidth.Of(source);
-        if (from is { Bits: 64 })
-            return JsExpr.Callish($"Number(BigInt.{(width.Unsigned ? "asUintN" : "asIntN")}({width.Bits}, {JsExprWriter.Write(number)}))");
-        if (from is { } narrow)
-            return narrow.Bits < width.Bits && (narrow.Unsigned || !width.Unsigned)
-                || narrow == width
-                ? number
-                : IntegerWidth.Wrap(number, width);
-        return fractional ? ValueFlow.Saturated(number, width, context) : number;
-    }
-
     private static bool IsNumeric(ITypeSymbol type) => IsIntegral(type)
         || type.SpecialType is SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal
             or SpecialType.System_Char;
-
-    private static long ToLong(object? value) => System.Convert.ToInt64(value, CultureInfo.InvariantCulture);
 
     public int Priority => 10;
 }
