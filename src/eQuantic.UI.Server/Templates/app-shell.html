@@ -77,6 +77,10 @@
         <script>
             window.__EQ_CONFIG = {{ConfigJson}};
             window.__EQ_DEV__ = {{IsDevelopmentBool}};
+            {{#if HotReloads}}
+            // The rebuild stream reloads this page: dotnet watch's refresh script stays out of it.
+            window._dotnet_watch_ws_injected = true;
+            {{/if}}
             {{?ThemeData}}{{ThemeData}}{{/ThemeData}}
             {{?CultureData}}{{CultureData}}{{/CultureData}}
             {{?InitialState}}{{InitialState}}{{/InitialState}}

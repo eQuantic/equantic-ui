@@ -11,12 +11,15 @@ namespace eQuantic.UI.Server.Tests;
 [Collection(ProcessConsoleCollection.Name)]
 public class HotReloadAnnouncementTests
 {
+    /// <summary>A server no edit reaches, as one run outside dotnet watch is.</summary>
+    private static ServerEdits NoEdits => new(arriveOnSave: false, TimeSpan.Zero);
+
     [Fact]
     public void ARebuild_SaysWhenItStarts_ThenWhenItEnds()
     {
         using var service = new HotReloadService(Path.GetTempPath(), () => OperatingSystem.IsWindows()
             ? ChildProcess.Started("cmd", ["/c", "exit 0"])
-            : ChildProcess.Started("true", []), TimeSpan.FromSeconds(30));
+            : ChildProcess.Started("true", []), TimeSpan.FromSeconds(30), NoEdits);
 
         // System's: this namespace also sees the dashboard sample's eQuantic.Console.
         var original = System.Console.Out;

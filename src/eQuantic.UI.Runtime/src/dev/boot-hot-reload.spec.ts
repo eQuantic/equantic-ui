@@ -34,11 +34,10 @@ describe('the boot only reaches for hot reload when the server streams rebuilds'
     // environment provides no EventSource at all — so without this the gate would look kept by a
     // boot that never had the chance to open anything.
     (globalThis as { EventSource?: unknown }).EventSource = class {
-      public onmessage: unknown = null;
-      public onerror: unknown = null;
       public constructor(url: string) {
         opened.push(url);
       }
+      public addEventListener(): void {}
       public close(): void {}
     };
     sessionStorage.setItem(marker, JSON.stringify({ url: location.href, pages: {} }));
@@ -190,5 +189,189 @@ describe('a hot reload replay and the server-data door', () => {
     expect(page.label).toBe('from server');
     expect(document.getElementById('app')!.textContent).toBe('Size: large');
     expect(w.__INITIAL_STATE__?.['App.Child#0']).toEqual({ _x: 1 });
+  });
+});
+
+/**
+ * The stream is the page's ONE source of reloads (#1275): dotnet watch's own refresh, which reloaded
+ * each page a second time with the old modules, is kept out of it. So what it says decides
+ * everything: which run of the server the page talks to, when the modules are new and whether the
+ * server's markup holds the edit, and why a rebuild failed. Driven through the real boot, with a
+ * stand-in stream the test speaks for.
+ */
+describe('what the rebuild stream says, and what the page does about it', () => {
+  const marker = '__eq_hmr__';
+
+  /** The stream the boot opened, which the test speaks for. */
+  class Stream {
+    static opened: Stream | null = null;
+    private readonly listeners = new Map<string, ((event: MessageEvent<string>) => void)[]>();
+    public constructor() {
+      Stream.opened = this;
+    }
+    public addEventListener(name: string, listener: (event: MessageEvent<string>) => void): void {
+      this.listeners.set(name, [...(this.listeners.get(name) ?? []), listener]);
+    }
+    public say(name: string, data: string): void {
+      for (const listener of this.listeners.get(name) ?? [])
+        listener(new MessageEvent(name, { data }));
+    }
+    public close(): void {}
+  }
+
+  let reload: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(async () => {
+    (globalThis as { EventSource?: unknown }).EventSource = Stream;
+    Stream.opened = null;
+    reload = vi.spyOn(window.location, 'reload').mockImplementation(() => {});
+    // The boot reports a missing root and returns, after it opened the stream.
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    window.__EQ_CONFIG = { hotReload: true };
+    window.__EQ_DEV__ = false;
+    vi.resetModules();
+    const { boot } = await import('../../../eQuantic.UI.Sdk/Resources/boot');
+    await boot();
+  });
+
+  afterEach(() => {
+    sessionStorage.removeItem(marker);
+    document.getElementById('equantic-error-overlay')?.remove();
+    delete (window as { __EQ_CONFIG?: unknown }).__EQ_CONFIG;
+    vi.restoreAllMocks();
+  });
+
+  const left = () =>
+    JSON.parse(sessionStorage.getItem(marker) ?? 'null') as { hydrate?: boolean } | null;
+
+  it.each([
+    ['hydrate', true],
+    ['mount', false],
+  ])('a rebuild that says %s reloads the page once, and tells the next boot', (said, hydrate) => {
+    Stream.opened!.say('rebuilt', said);
+
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(left()?.hydrate).toBe(hydrate);
+  });
+
+  it('reloads when it reconnects to another run of the server, and only then', () => {
+    Stream.opened!.say('server', 'first');
+    // The same run again: a transient drop the stream recovered from.
+    Stream.opened!.say('server', 'first');
+    expect(reload).not.toHaveBeenCalled();
+
+    // Another run: the server restarted, and built the markup and the modules it serves.
+    Stream.opened!.say('server', 'second');
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(left()?.hydrate).toBe(true);
+  });
+
+  it('asks for one reload however many reasons arrive before it lands', () => {
+    Stream.opened!.say('rebuilt', 'hydrate');
+    Stream.opened!.say('server', 'a');
+    Stream.opened!.say('server', 'b');
+    Stream.opened!.say('rebuilt', 'mount');
+
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(left()?.hydrate).toBe(true);
+  });
+
+  it('shows the errors of a rebuild that failed over the page, and does not reload it', () => {
+    Stream.opened!.say(
+      'failed',
+      JSON.stringify(['Screens/A.cs(3,7): error CS1002: ; expected', '<b>x</b>']),
+    );
+
+    const overlay = document.getElementById('equantic-error-overlay')!;
+    expect(overlay.textContent).toContain('Build Failed');
+    expect(overlay.textContent).toContain('Screens/A.cs(3,7): error CS1002: ; expected');
+    // Text, never markup: the compiler quotes the source it read.
+    expect(overlay.textContent).toContain('<b>x</b>');
+    expect(reload).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The boot that follows a rebuild's reload HYDRATES when the server's markup holds the edit, and
+ * replays the page's fields after it, as a change the next render draws (#1275). The server rendered
+ * the page with its own state, so fields restored before the build would make a tree the markup does
+ * not hold. When the markup is from before the edit, the page is drawn over it with the fields
+ * restored first, as before.
+ */
+describe('the boot after a rebuild, against the markup the server sent', () => {
+  const marker = '__eq_hmr__';
+  const module = '/_equantic/Counted.js';
+
+  class Counted extends StatefulComponent {
+    static $typeId = 'App.Counted';
+    static get $hydration() {
+      return { _count: 'declared' };
+    }
+    _count = 0;
+    build() {
+      return new Text(`Count: ${this._count}`, 'title');
+    }
+  }
+
+  let warned: unknown[][];
+
+  beforeEach(() => {
+    warned = [];
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+      warned.push(args);
+    });
+    // The markup the server rendered: the page with its own state, as the new modules draw it.
+    const server = document.createElement('div');
+    new Counted().mount(server);
+    document.body.innerHTML = `<div id="app" data-ssr="true">${server.innerHTML}</div>`;
+  });
+
+  afterEach(() => {
+    sessionStorage.removeItem(marker);
+    delete (window as { __EQ_CONFIG?: unknown }).__EQ_CONFIG;
+    document.body.innerHTML = '';
+    vi.doUnmock(module);
+    vi.restoreAllMocks();
+  });
+
+  async function bootAfterRebuild(hydrate: boolean): Promise<void> {
+    const before = new Counted();
+    before._count = 4;
+    sessionStorage.setItem(
+      marker,
+      JSON.stringify({
+        url: location.href,
+        pages: { 'App.Counted#0': capturePageState(before) },
+        hydrate,
+      }),
+    );
+    window.__EQ_CONFIG = { page: 'Counted', hotReload: true };
+    window.__EQ_DEV__ = false;
+    vi.doMock(module, () => ({ Counted }));
+    vi.resetModules();
+    const { boot } = await import('../../../eQuantic.UI.Sdk/Resources/boot');
+    await boot();
+    // The render the replay asked for.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  it('hydrates markup that holds the edit, then draws the fields the reload carried', async () => {
+    const served = document.getElementById('app')!.firstElementChild;
+
+    await bootAfterRebuild(true);
+
+    expect(document.getElementById('app')!.firstElementChild).toBe(served);
+    expect(document.getElementById('app')!.textContent).toBe('Count: 4');
+    expect(warned.flat().join(' ')).not.toContain('Hydration');
+  });
+
+  it('draws over markup from before the edit, with the fields restored first', async () => {
+    const served = document.getElementById('app')!.firstElementChild;
+
+    await bootAfterRebuild(false);
+
+    expect(document.getElementById('app')!.firstElementChild).not.toBe(served);
+    expect(document.getElementById('app')!.textContent).toBe('Count: 4');
   });
 });

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
-using System.Threading.Channels;
 using System.Diagnostics;
+using System.Text.Json;
+using System.Threading.Channels;
 using Microsoft.AspNetCore.Http;
 
 namespace eQuantic.UI.Server.HotReload;
@@ -11,19 +12,39 @@ namespace eQuantic.UI.Server.HotReload;
 /// uses, nothing bespoke), and notifies connected browsers over SSE. The RUNTIME side captures the
 /// live page state before reloading and replays it through the ordinary SSR-hydration mechanic —
 /// save a file, the UI updates, the state survives. v2 fence: module hot-swap without a reload.
+/// <para>
+/// THE STREAM IS THE PAGE'S ONE SOURCE OF RELOADS, and says three things (#1275). <c>server</c>, first
+/// on every connection, names this run of the server, so a page that reconnects to another one (a
+/// restart, dotnet watch's answer to an edit it cannot apply) reloads. <c>rebuilt</c> says the modules
+/// are new and whether the server's markup holds the edit too (<see cref="ServerEdits"/>): <c>hydrate</c>,
+/// or <c>mount</c> when the page has to draw over markup from before it. <c>failed</c> carries the
+/// errors of a rebuild that did not compile. dotnet watch's own refresh script, which reloaded each page
+/// a second time with the old modules, stays out of the page while this stream runs: the shell tells it
+/// the page is taken.
+/// </para>
 /// </summary>
 public sealed class HotReloadService : IDisposable
 {
+    /// <summary>The most error lines a failed rebuild sends the page, which shows them all.</summary>
+    internal const int ErrorsShown = 20;
+
     private readonly string _contentRoot;
     private readonly Func<Process?> _startRebuild;
     private readonly TimeSpan _limit;
+    private readonly ServerEdits _edits;
+    private readonly string _run = Guid.NewGuid().ToString("N");
+    private readonly CancellationTokenSource _stopping = new();
     private readonly ConcurrentDictionary<Guid, Channel<string>> _clients = new();
     private readonly object _gate = new();
     private FileSystemWatcher? _watcher;
+    private FileSystemWatcher? _assets;
+    private Timer? _assetsQuiet;
     private Timer? _debounce;
     private Timer? _keepAlive;
     private int _building;
     private int _pending;
+    // When the saves the next rebuild answers last wrote their files, in UTC ticks; 0 when none came.
+    private long _burstWritten;
     private Process? _rebuild;
     private volatile bool _disposed;
 
@@ -35,17 +56,20 @@ public sealed class HotReloadService : IDisposable
             WorkingDirectory = contentRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-        }), TimeSpan.FromMinutes(2))
+        }), TimeSpan.FromMinutes(2), ServerEdits.OfThisProcess)
     {
     }
 
-    /// <summary>The service with the rebuild it starts and how long it may take, which a test sets.</summary>
-    internal HotReloadService(string contentRoot, Func<Process?> startRebuild, TimeSpan limit)
+    /// <summary>The service with the rebuild it starts, how long it may take and the edits its server
+    /// takes, which a test sets.</summary>
+    internal HotReloadService(string contentRoot, Func<Process?> startRebuild, TimeSpan limit, ServerEdits edits)
     {
         _contentRoot = contentRoot;
         _startRebuild = startRebuild;
         _limit = limit;
+        _edits = edits;
     }
+
 
     /// <summary>
     /// How long the sources stay quiet before a rebuild starts: long enough to take an editor's save,
@@ -69,6 +93,25 @@ public sealed class HotReloadService : IDisposable
         _watcher.Renamed += OnSourceChanged;
         _watcher.EnableRaisingEvents = true;
 
+        // The app's own static files reload the page as they are, since dotnet watch's refresh script,
+        // which did that, stays out of a page this stream reloads. The markup is the server's and holds
+        // nothing a file changed, so the page hydrates it. eqc's own output is the rebuild's to announce.
+        var webRoot = Path.Combine(_contentRoot, "wwwroot");
+        if (Directory.Exists(webRoot))
+        {
+            _assetsQuiet = new Timer(_ => AssetChanged(), null, Timeout.Infinite, Timeout.Infinite);
+            _assets = new FileSystemWatcher(webRoot)
+            {
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName,
+            };
+            _assets.Changed += OnAssetChanged;
+            _assets.Created += OnAssetChanged;
+            _assets.Renamed += OnAssetChanged;
+            _assets.Deleted += OnAssetChanged;
+            _assets.EnableRaisingEvents = true;
+        }
+
         // A parked SSE request that never says anything gets idle-dropped by Kestrel and by every
         // proxy in between — a couple of quiet minutes and hot reload was silently over for that
         // tab. A comment frame every 20s is invisible to the client and keeps the pipe warm.
@@ -79,8 +122,47 @@ public sealed class HotReloadService : IDisposable
     {
         var path = e.FullPath.Replace('\\', '/');
         if (path.Contains("/obj/") || path.Contains("/bin/")) return;
+        SourceChanged(e.FullPath);
+    }
+
+    private void OnAssetChanged(object sender, FileSystemEventArgs e)
+    {
+        var path = e.FullPath.Replace('\\', '/');
+        if (path.Contains("/wwwroot/_equantic/", StringComparison.Ordinal) || path.EndsWith("/wwwroot/_equantic", StringComparison.Ordinal)) return;
+        if (_disposed) return;
+        try
+        {
+            _assetsQuiet?.Change(Quiet, Timeout.InfiniteTimeSpan);
+        }
+        catch (ObjectDisposedException)
+        {
+            // An event still in flight when the app stopped.
+        }
+    }
+
+    /// <summary>A static file of the app changed, once its writes are quiet: the page reloads and hydrates.</summary>
+    internal void AssetChanged()
+    {
+        if (_disposed) return;
+        Send(Frame("rebuilt", "hydrate"));
+    }
+
+    /// <summary>A source of the app was written, at <paramref name="path"/> when the event names it: one
+    /// event of a save, which may be several.</summary>
+    internal void SourceChanged(string? path = null)
+    {
         // Each event of a save restarts the wait, so a burst of writes is one rebuild.
         if (_disposed) return;
+        // The burst's last write, which the edit of its save follows: read off the file, never off
+        // when this event arrived, which may be after dotnet watch applied the edit.
+        var written = path is not null && File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.UtcNow;
+        long seen;
+        do
+        {
+            seen = Volatile.Read(ref _burstWritten);
+            if (seen >= written.Ticks) break;
+        }
+        while (Interlocked.CompareExchange(ref _burstWritten, written.Ticks, seen) != seen);
         try
         {
             _debounce?.Change(Quiet, Timeout.InfiniteTimeSpan);
@@ -119,6 +201,9 @@ public sealed class HotReloadService : IDisposable
 
     private void RebuildOnce()
     {
+        // The saves this rebuild answers; one after this line opens the next burst, rebuilt after it.
+        var burst = Interlocked.Exchange(ref _burstWritten, 0) is var ticks and > 0
+            ? new DateTime(ticks, DateTimeKind.Utc) : DateTime.UtcNow;
         try
         {
             // Started under the gate Dispose takes: a shutdown that comes while the process is starting
@@ -154,9 +239,18 @@ public sealed class HotReloadService : IDisposable
             if (process.ExitCode == 0)
             {
                 Console.WriteLine($"[eQuantic.HotReload] rebuilt in {started.Elapsed.TotalSeconds:F1}s — reloading browsers");
-                Broadcast("reload");
+                // Announced once the server holds the edit, when every save brings it one, so the
+                // page reloads ONCE and hydrates markup that agrees with its modules.
+                var held = _edits.ArrivedSince(burst, _stopping.Token);
+                if (_disposed) return;
+                Send(Frame("rebuilt", held ? "hydrate" : "mount"));
             }
-            else Console.WriteLine($"[eQuantic.HotReload] eqc rebuild failed:\n{stderr.Result}{stdout.Result}");
+            else
+            {
+                var output = stdout.Result + stderr.Result;
+                Console.WriteLine($"[eQuantic.HotReload] eqc rebuild failed:\n{output}");
+                Send(Frame("failed", JsonSerializer.Serialize(ErrorsOf(output))));
+            }
         }
         catch (Exception ex)
         {
@@ -168,7 +262,19 @@ public sealed class HotReloadService : IDisposable
         }
     }
 
-    private void Broadcast(string message) => Send($"data: {message}\n\n");
+    /// <summary>One event of the stream: its name and a line of data.</summary>
+    private static string Frame(string name, string data) => $"event: {name}\ndata: {data}\n\n";
+
+    /// <summary>
+    /// What the page shows of a rebuild that failed: MSBuild's error lines, each once, or the end of
+    /// what it said when it wrote none in that form.
+    /// </summary>
+    internal static string[] ErrorsOf(string output)
+    {
+        var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var errors = lines.Where(line => line.Contains(": error ", StringComparison.Ordinal)).Distinct().ToArray();
+        return (errors.Length > 0 ? errors : lines.TakeLast(ErrorsShown)).Take(ErrorsShown).ToArray();
+    }
 
     private void Send(string frame)
     {
@@ -184,9 +290,8 @@ public sealed class HotReloadService : IDisposable
     {
         context.Response.Headers.ContentType = "text/event-stream";
         context.Response.Headers.CacheControl = "no-cache";
-        await context.Response.WriteAsync(": connected\n\n", context.RequestAborted);
-        await context.Response.Body.FlushAsync(context.RequestAborted);
-
+        // Registered BEFORE the first frame is written: a rebuild that ends in between queues its
+        // event behind the greeting instead of reaching a page that was not yet listed.
         var id = Guid.NewGuid();
         var channel = Channel.CreateUnbounded<string>();
         _clients[id] = channel;
@@ -195,6 +300,10 @@ public sealed class HotReloadService : IDisposable
         if (_disposed) channel.Writer.TryComplete();
         try
         {
+            // Which run of the server this is, and a second between attempts to reach the next one: a
+            // restart is seconds of build, and the page reloads as soon as the new run answers.
+            await context.Response.WriteAsync("retry: 1000\n" + Frame("server", _run), context.RequestAborted);
+            await context.Response.Body.FlushAsync(context.RequestAborted);
             await foreach (var frame in channel.Reader.ReadAllAsync(context.RequestAborted))
             {
                 await context.Response.WriteAsync(frame, context.RequestAborted);
@@ -224,7 +333,10 @@ public sealed class HotReloadService : IDisposable
             _disposed = true;
             rebuild = _rebuild;
         }
+        _stopping.Cancel();
         _watcher?.Dispose();
+        _assets?.Dispose();
+        _assetsQuiet?.Dispose();
         _debounce?.Dispose();
         _keepAlive?.Dispose();
         if (rebuild is not null) Stop(rebuild);
