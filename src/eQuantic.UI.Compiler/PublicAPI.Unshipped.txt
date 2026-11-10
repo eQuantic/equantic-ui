@@ -12,3 +12,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.TypesNamed = "$eq.types.named" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TypesOf = "$eq.types.of" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TypesSame = "$eq.types.same" -> string!
 eQuantic.UI.Compiler.Services.AppBuild.BundleElapsed.get -> System.TimeSpan
+eQuantic.UI.Compiler.Services.AppBuildOptions.Serve.get -> bool
+eQuantic.UI.Compiler.Services.AppBuildOptions.Serve.init -> void
+*REMOVED*eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.get -> bool
+*REMOVED*eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.init -> void

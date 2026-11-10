@@ -14,13 +14,12 @@ namespace eQuantic.UI.Server.Tests;
 /// </summary>
 public class HotReloadStreamTests
 {
-    /// <summary>A stand-in rebuild that says <paramref name="says"/> and exits with <paramref name="code"/>.</summary>
-    private static Process Exits(int code, string says = "") => OperatingSystem.IsWindows()
-        ? ChildProcess.Started("cmd", ["/c", $"echo {says}& exit /b {code}"])
-        : ChildProcess.Started("/bin/sh", ["-c", $"echo '{says}'; exit {code}"]);
+    /// <summary>A stand-in compile that ends as <paramref name="compiled"/> says, with <paramref name="errors"/>.</summary>
+    private static StandInCompiler Exits(bool compiled, params string[] errors) =>
+        new(_ => new CompileOutcome(compiled, errors));
 
-    private static HotReloadService Service(Func<Process?> rebuild, ServerEdits edits) =>
-        new(Path.GetTempPath(), rebuild, TimeSpan.FromSeconds(30), edits);
+    private static HotReloadService Service(IModuleCompiler compiler, ServerEdits edits) =>
+        new(Path.GetTempPath(), compiler, TimeSpan.FromSeconds(30), edits);
 
     /// <summary>What a page reads off the stream: every frame written to it, as it was written.</summary>
     private sealed class Page : Stream
@@ -92,8 +91,8 @@ public class HotReloadStreamTests
     [Fact]
     public async Task EveryConnection_OpensByNamingTheRunOfTheServer()
     {
-        using var first = Service(() => Exits(0), new ServerEdits(false, TimeSpan.Zero));
-        using var second = Service(() => Exits(0), new ServerEdits(false, TimeSpan.Zero));
+        using var first = Service(Exits(true), new ServerEdits(false, TimeSpan.Zero));
+        using var second = Service(Exits(true), new ServerEdits(false, TimeSpan.Zero));
 
         var (a, aListening, aLeave) = await ListenAsync(first);
         var (b, bListening, bLeave) = await ListenAsync(first);
@@ -120,7 +119,7 @@ public class HotReloadStreamTests
     {
         var edits = new ServerEdits(arriveOnSave: true, TimeSpan.FromSeconds(10));
         using var service = new HotReloadService(
-            Directory.CreateTempSubdirectory("eq-stream-").FullName, () => Exits(0), TimeSpan.FromSeconds(30), edits);
+            Directory.CreateTempSubdirectory("eq-stream-").FullName, Exits(true), TimeSpan.FromSeconds(30), edits);
         service.Start();
         var (page, listening, leave) = await ListenAsync(service);
 
@@ -145,7 +144,7 @@ public class HotReloadStreamTests
     {
         var root = Directory.CreateTempSubdirectory("eq-stream-").FullName;
         var edits = new ServerEdits(arriveOnSave: true, TimeSpan.FromSeconds(10));
-        using var service = new HotReloadService(root, () => Exits(0), TimeSpan.FromSeconds(30), edits);
+        using var service = new HotReloadService(root, Exits(true), TimeSpan.FromSeconds(30), edits);
         service.Start();
         var (page, listening, leave) = await ListenAsync(service);
 
@@ -167,7 +166,7 @@ public class HotReloadStreamTests
     {
         var root = Directory.CreateTempSubdirectory("eq-stream-").FullName;
         var edits = new ServerEdits(arriveOnSave: true, TimeSpan.FromMilliseconds(400));
-        using var service = new HotReloadService(root, () => Exits(0), TimeSpan.FromSeconds(30), edits);
+        using var service = new HotReloadService(root, Exits(true), TimeSpan.FromSeconds(30), edits);
         service.Start();
         var (page, listening, leave) = await ListenAsync(service);
 
@@ -191,7 +190,7 @@ public class HotReloadStreamTests
     public async Task ARebuild_ThatEndsBeforeTheEditLands_WaitsForIt()
     {
         var edits = new ServerEdits(arriveOnSave: true, TimeSpan.FromSeconds(10));
-        using var service = Service(() => Exits(0), edits);
+        using var service = Service(Exits(true), edits);
         var (page, listening, leave) = await ListenAsync(service);
 
         var rebuild = Task.Run(service.Rebuild);
@@ -214,7 +213,7 @@ public class HotReloadStreamTests
     public async Task ARebuild_WhoseEditNeverCame_SaysThePageMounts_OnceItIsNoLongerComing()
     {
         var limit = TimeSpan.FromMilliseconds(400);
-        using var service = Service(() => Exits(0), new ServerEdits(arriveOnSave: true, limit));
+        using var service = Service(Exits(true), new ServerEdits(arriveOnSave: true, limit));
         var (page, listening, leave) = await ListenAsync(service);
 
         var clock = Stopwatch.StartNew();
@@ -237,7 +236,7 @@ public class HotReloadStreamTests
     [Fact]
     public async Task ARebuild_OfAServerNoSaveReaches_SaysThePageMounts_AtOnce()
     {
-        using var service = Service(() => Exits(0), new ServerEdits(arriveOnSave: false, TimeSpan.FromMinutes(1)));
+        using var service = Service(Exits(true), new ServerEdits(arriveOnSave: false, TimeSpan.FromMinutes(1)));
         var (page, listening, leave) = await ListenAsync(service);
 
         var clock = Stopwatch.StartNew();
@@ -260,7 +259,7 @@ public class HotReloadStreamTests
     public async Task AFailedRebuild_SendsItsErrors_AndNoReload()
     {
         const string error = "Screens/A.cs(3,7): error CS1002: ; expected";
-        using var service = Service(() => Exits(1, error), new ServerEdits(arriveOnSave: false, TimeSpan.Zero));
+        using var service = Service(Exits(false, error), new ServerEdits(arriveOnSave: false, TimeSpan.Zero));
         var (page, listening, leave) = await ListenAsync(service);
 
         service.Rebuild();
@@ -282,7 +281,7 @@ public class HotReloadStreamTests
     {
         var root = Directory.CreateTempSubdirectory("eq-assets-").FullName;
         Directory.CreateDirectory(Path.Combine(root, "wwwroot", "_equantic"));
-        using var service = new HotReloadService(root, () => Exits(0), TimeSpan.FromSeconds(30), new ServerEdits(false, TimeSpan.Zero));
+        using var service = new HotReloadService(root, Exits(true), TimeSpan.FromSeconds(30), new ServerEdits(false, TimeSpan.Zero));
         service.Start();
         var (page, listening, leave) = await ListenAsync(service);
 

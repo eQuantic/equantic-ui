@@ -17,9 +17,7 @@ public class HotReloadAnnouncementTests
     [Fact]
     public void ARebuild_SaysWhenItStarts_ThenWhenItEnds()
     {
-        using var service = new HotReloadService(Path.GetTempPath(), () => OperatingSystem.IsWindows()
-            ? ChildProcess.Started("cmd", ["/c", "exit 0"])
-            : ChildProcess.Started("true", []), TimeSpan.FromSeconds(30), NoEdits);
+        using var service = new HotReloadService(Path.GetTempPath(), StandInCompiler.Compiling(), TimeSpan.FromSeconds(30), NoEdits);
 
         // System's: this namespace also sees the dashboard sample's eQuantic.Console.
         var original = System.Console.Out;

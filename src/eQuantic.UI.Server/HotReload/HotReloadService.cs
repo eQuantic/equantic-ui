@@ -29,7 +29,7 @@ public sealed class HotReloadService : IDisposable
     internal const int ErrorsShown = 20;
 
     private readonly string _contentRoot;
-    private readonly Func<Process?> _startRebuild;
+    private readonly IModuleCompiler _compiler;
     private readonly TimeSpan _limit;
     private readonly ServerEdits _edits;
     private readonly string _run = Guid.NewGuid().ToString("N");
@@ -45,27 +45,19 @@ public sealed class HotReloadService : IDisposable
     private int _pending;
     // When the saves the next rebuild answers last wrote their files, in UTC ticks; 0 when none came.
     private long _burstWritten;
-    private Process? _rebuild;
     private volatile bool _disposed;
 
     public HotReloadService(string contentRoot)
-        : this(contentRoot, () => Process.Start(new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            Arguments = "msbuild -t:CompileEQuanticUI -v:q -nologo",
-            WorkingDirectory = contentRoot,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        }), TimeSpan.FromMinutes(2), ServerEdits.OfThisProcess)
+        : this(contentRoot, new RunningCompiler(contentRoot), TimeSpan.FromMinutes(2), ServerEdits.OfThisProcess)
     {
     }
 
-    /// <summary>The service with the rebuild it starts, how long it may take and the edits its server
-    /// takes, which a test sets.</summary>
-    internal HotReloadService(string contentRoot, Func<Process?> startRebuild, TimeSpan limit, ServerEdits edits)
+    /// <summary>The service with what compiles the modules, how long a compile may take and the edits
+    /// its server takes, which a test sets. The service owns the compiler, and disposes of it.</summary>
+    internal HotReloadService(string contentRoot, IModuleCompiler compiler, TimeSpan limit, ServerEdits edits)
     {
         _contentRoot = contentRoot;
-        _startRebuild = startRebuild;
+        _compiler = compiler;
         _limit = limit;
         _edits = edits;
     }
@@ -111,6 +103,20 @@ public sealed class HotReloadService : IDisposable
             _assets.Deleted += OnAssetChanged;
             _assets.EnableRaisingEvents = true;
         }
+
+        // The compiler gets ready while the app starts, so the first save of a run pays no MSBuild and
+        // no process start. A compiler that cannot get ready says why on the first save.
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                _compiler.Prepare();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[eQuantic.HotReload] the compiler could not get ready: {ex.Message}");
+            }
+        });
 
         // A parked SSE request that never says anything gets idle-dropped by Kestrel and by every
         // proxy in between — a couple of quiet minutes and hot reload was silently over for that
@@ -206,37 +212,14 @@ public sealed class HotReloadService : IDisposable
             ? new DateTime(ticks, DateTimeKind.Utc) : DateTime.UtcNow;
         try
         {
-            // Started under the gate Dispose takes: a shutdown that comes while the process is starting
-            // waits for it to exist, and then finds it to stop.
-            Process? launched;
-            lock (_gate)
-            {
-                if (_disposed) return;
-                launched = _startRebuild();
-                _rebuild = launched;
-            }
-            using var process = launched;
-            if (process is null) return;
+            if (_disposed) return;
             // Said when it starts as well as when it ends: the person sees the save was taken, and the
             // edit-to-view measurement (#900) reads the wait after a save off this line.
             Console.WriteLine("[eQuantic.HotReload] a source changed, rebuilding");
-            // The pipes are read BEFORE waiting: a build that says more than the pipe buffer holds
-            // (~64KB — any real error list) used to block writing while we blocked waiting, and the
-            // whole thing sat there until the 2-minute timeout.
-            var stdout = process.StandardOutput.ReadToEndAsync();
-            var stderr = process.StandardError.ReadToEndAsync();
             var started = Stopwatch.StartNew();
-            if (!process.WaitForExit(_limit))
-            {
-                // Stopped, not abandoned: releasing the wrapper ends nothing, and a build left running
-                // writes beside the next one, where shutdown can no longer reach it.
-                Stop(process);
-                process.WaitForExit(5_000);
-                Console.WriteLine($"[eQuantic.HotReload] eqc rebuild stopped after {_limit.TotalSeconds:F0}s");
-                return;
-            }
+            var outcome = _compiler.Compile(_limit);
             if (_disposed) return;
-            if (process.ExitCode == 0)
+            if (outcome.Compiled)
             {
                 Console.WriteLine($"[eQuantic.HotReload] rebuilt in {started.Elapsed.TotalSeconds:F1}s — reloading browsers");
                 // Announced once the server holds the edit, when every save brings it one, so the
@@ -247,18 +230,14 @@ public sealed class HotReloadService : IDisposable
             }
             else
             {
-                var output = stdout.Result + stderr.Result;
-                Console.WriteLine($"[eQuantic.HotReload] eqc rebuild failed:\n{output}");
-                Send(Frame("failed", JsonSerializer.Serialize(ErrorsOf(output))));
+                var errors = ErrorsOf(string.Join('\n', outcome.Errors));
+                Console.WriteLine($"[eQuantic.HotReload] eqc rebuild failed:\n{string.Join('\n', errors)}");
+                Send(Frame("failed", JsonSerializer.Serialize(errors)));
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[eQuantic.HotReload] rebuild error: {ex.Message}");
-        }
-        finally
-        {
-            _rebuild = null;
         }
     }
 
@@ -327,34 +306,17 @@ public sealed class HotReloadService : IDisposable
     /// shutdown until the host gives up on it.</summary>
     public void Dispose()
     {
-        Process? rebuild;
-        lock (_gate)
-        {
-            _disposed = true;
-            rebuild = _rebuild;
-        }
+        lock (_gate) _disposed = true;
         _stopping.Cancel();
         _watcher?.Dispose();
         _assets?.Dispose();
         _assetsQuiet?.Dispose();
         _debounce?.Dispose();
         _keepAlive?.Dispose();
-        if (rebuild is not null) Stop(rebuild);
-        // The rebuild ends once its process exits, which the kill makes quick.
+        // The compiler stops its process, so a compile in flight answers at once.
+        _compiler.Dispose();
         SpinWait.SpinUntil(() => Volatile.Read(ref _building) == 0, TimeSpan.FromSeconds(10));
         foreach (var (_, channel) in _clients)
             channel.Writer.TryComplete();
-    }
-
-    private static void Stop(Process process)
-    {
-        try
-        {
-            process.Kill(entireProcessTree: true);
-        }
-        catch (InvalidOperationException)
-        {
-            // It exited, or was released, between the read and the kill.
-        }
     }
 }
