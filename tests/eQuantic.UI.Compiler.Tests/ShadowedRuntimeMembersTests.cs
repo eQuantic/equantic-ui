@@ -86,6 +86,9 @@ public class ShadowedRuntimeMembersTests
     [Theory]
     [InlineData("key")]
     [InlineData("nodeKind")]
+    [InlineData("bookmark")]
+    [InlineData("alignSelf")]
+    [InlineData("gridSpan")]
     public void AStatelessComponentRefusesTheNodesMembers(string member)
     {
         Compile($"public class C(string {member}) : StatelessComponent {{ "

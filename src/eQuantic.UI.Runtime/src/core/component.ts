@@ -234,10 +234,15 @@ export abstract class UiComponent extends Component {
   /** The C# `VisualNode.Key` mirror: part of the reconciler identity (path + type + key). */
   key: string | null = null;
 
-  /** The C# `VisualNode.Bookmark`, `AlignSelf` and `GridSpan`, which a component carries as any node does. */
-  declare bookmark?: string | null;
-  declare alignSelf?: CrossAlignValue | null;
-  declare gridSpan?: number;
+  /**
+   * The C# `VisualNode.Bookmark`, `AlignSelf` and `GridSpan`, which a component carries as any node
+   * does. Fields rather than `declare`d types: the lowering reads them off the component, and a field
+   * is what eqc's list of runtime members sees, so an app member of one of these names is refused
+   * at build time instead of becoming the element's id or its alignment.
+   */
+  bookmark?: string | null;
+  alignSelf?: CrossAlignValue | null;
+  gridSpan?: number;
 
   abstract build(context: RenderContext): Component | VisualNodeValue;
 
