@@ -39,6 +39,10 @@ public sealed class MacOSCapabilities : IPhotonCapabilities
         services.TryAddSingleton<IDeepLinks>(_ => AppleDeepLinks.Install());
         // Asking a PERSON for a file — the one way a sandboxed app touches what it was not given.
         services.TryAddSingleton<IFileDialogs, MacFileDialogs>();
+        // A file the page made, offered through that same save panel and written where the person
+        // chose (#1022).
+        services.TryAddSingleton<IFileSaver>(provider =>
+            new DialogFileSaver(provider.GetRequiredService<IFileDialogs>()));
         // And the other direction: handing a path to the system. NSWorkspace.
         services.TryAddSingleton<IWorkspace, MacWorkspace>();
         // A link is a contract of its own, which the phones answer too: the policy decides which

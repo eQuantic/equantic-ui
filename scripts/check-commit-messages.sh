@@ -57,6 +57,12 @@
 # CI runs it on every push, so the day a pattern stops matching is the day CI says so, rather than
 # the day someone next reads a commit.
 #
+# --event reads the range from the CI event that started the run (#1308): a pull request's base and
+# head, a merge group's base and head, which hold the squash commits GitHub's merge queue composed and
+# is about to put on main, or a push's before and after. The workflow used to choose the range in an
+# expression no test could reach, and under a merge group that expression gave an empty base, so the
+# guard would have scanned the group's last commit alone and passed every other one.
+#
 # --file reads a message that is not a commit yet, which is the only moment anything can be stopped.
 # A squash message is composed at MERGE time and handed to `gh pr merge --body-file`; on a push to
 # main these same rules run again and can then only report, because main's history is not rewritten.
@@ -108,6 +114,131 @@ report() {
     printf '\n%s\n' "$label"
     printf '%s\n' "$hits" | /usr/bin/sed 's/^/    /'
     fail=1
+}
+
+# Scans every commit message in base..head, or head alone when base is empty, the all-zero sha or not
+# a commit here (a new branch, a tag push, the first push to a repository): there is then no range to
+# walk, and scanning the head beats skipping and reporting success it did not measure. With a third
+# argument, `strict`, a base that is given and cannot be resolved fails instead: a pull request's or a
+# merge group's base always exists, so not finding it means a checkout too shallow to measure the range,
+# and the head alone would pass every other commit in it.
+scan_range() {
+    local base="$1" head="${2:-HEAD}" strict="${3:-}" commits count sha hits
+
+    # An unresolvable HEAD is the one failure that must never read as success. A shallow checkout
+    # that does not contain the commit would otherwise walk an empty range, print "all clean" and
+    # go green having measured NOTHING — the shape this repository calls an instrument that never
+    # ran in the condition it exists for.
+    if ! git rev-parse --verify --quiet "$head^{commit}" >/dev/null; then
+        printf 'cannot resolve %s in this checkout, so nothing was measured.\n' "$head" >&2
+        printf 'Give the job a full history (actions/checkout with fetch-depth: 0).\n' >&2
+        return 1
+    fi
+
+    if [ -n "$strict" ] && ! git rev-parse --verify --quiet "$base^{commit}" >/dev/null; then
+        printf 'cannot resolve the base %s in this checkout, so the range was not measured.\n' "${base:-(empty)}" >&2
+        printf 'Give the job a full history (actions/checkout with fetch-depth: 0).\n' >&2
+        return 1
+    fi
+
+    if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] \
+        || ! git rev-parse --verify --quiet "$base^{commit}" >/dev/null; then
+        commits=$(git rev-parse "$head")
+        printf 'no usable base (%s), scanning %s alone\n' "${base:-empty}" "$(git log -1 --format=%h "$head")"
+    else
+        if ! commits=$(git rev-list "$base..$head"); then
+            printf 'could not walk %s..%s, so nothing was measured.\n' "$base" "$head" >&2
+            return 1
+        fi
+    fi
+
+    count=0
+    for sha in $commits; do
+        count=$((count + 1))
+        hits=$(scan_message "$(git log -1 --format=%B "$sha")")
+        [ -n "$hits" ] && report "$(git log -1 --format='%h %s' "$sha")" "$hits"
+    done
+
+    if [ "$fail" -ne 0 ]; then
+        cat <<'EOF'
+
+A commit message above carries text a tool left behind rather than something about the change.
+
+CLAUDE.md: no co-authorship or agent-attribution lines, in any spelling, and that includes the
+scaffolding of whatever composed the message. On a squash merge the message is composed at MERGE
+time, which is why reading back the pull request body is not enough — read back what you are about
+to squash with.
+
+This cannot be undone on main, whose history is not rewritten. What it can do is stop the next one:
+write the message to a file, read the file, then merge with it.
+EOF
+        return 1
+    fi
+    printf '%s commit message(s) scanned, all clean\n' "$count"
+    return 0
+}
+
+# One field of an event's JSON, by its dotted path, empty when the event has none. jq where it is,
+# python3 otherwise, since a runner that is not GitHub's may carry one and not the other; neither is a
+# failure that says so. EQ_JSON_READER=python makes the self-test read through python3 as well.
+event_field() {
+    local path="$1" field="$2"
+    if [ ! -r "$path" ]; then
+        printf 'the event file %s cannot be read, so the event names nothing.\n' "${path:-(unset GITHUB_EVENT_PATH)}" >&2
+        return 1
+    fi
+    if [ "${EQ_JSON_READER:-}" != python ] && command -v jq >/dev/null 2>&1; then
+        jq -r ".$field // empty" "$path"
+    elif command -v python3 >/dev/null 2>&1; then
+        python3 -c 'import json, sys
+value = json.load(open(sys.argv[1], encoding="utf-8"))
+for key in sys.argv[2].split("."):
+    value = value.get(key) if isinstance(value, dict) else None
+print("" if value is None else value)' "$path" "$field"
+    else
+        printf 'neither jq nor python3 is on PATH, so the event cannot be read.\n' >&2
+        return 1
+    fi
+}
+
+# The range a CI event is about (#1308), from the event's name, its JSON and the run's commit: the
+# base on one line and the head on the next, an empty base meaning the head alone. A pull request or a
+# merge group that names no base or no head is refused rather than read as a shorter range: that is a
+# guard measuring less than it says.
+event_range() {
+    local name="$1" path="$2" sha="$3" base="" head=""
+    case "$name" in
+    pull_request)
+        base=$(event_field "$path" pull_request.base.sha) || return 1
+        head=$(event_field "$path" pull_request.head.sha) || return 1
+        ;;
+    merge_group)
+        # The queue's run: base_sha is main as the queue saw it, head_sha the group's last squash.
+        base=$(event_field "$path" merge_group.base_sha) || return 1
+        head=$(event_field "$path" merge_group.head_sha) || return 1
+        ;;
+    push)
+        base=$(event_field "$path" before) || return 1
+        head=$sha
+        ;;
+    *)
+        # A run by hand, or any event that names no range: the commit it runs on, alone.
+        head=$sha
+        ;;
+    esac
+    case "$name" in
+    pull_request | merge_group)
+        if [ -z "$base" ] || [ -z "$head" ]; then
+            printf 'the %s event names no base or no head, so nothing would be measured.\n' "$name" >&2
+            return 1
+        fi
+        ;;
+    esac
+    if [ -z "$head" ]; then
+        printf 'the %s event names no commit (GITHUB_SHA is empty), so nothing would be measured.\n' "${name:-unnamed}" >&2
+        return 1
+    fi
+    printf '%s\n%s\n' "$base" "$head"
 }
 
 # --- self-test -------------------------------------------------------------------------------
@@ -248,12 +379,96 @@ runs the guard
         errors=1
     fi
 
+    # The range each CI event gives (#1308): what a pull request, a merge queue's group, a push and a
+    # run by hand are about, and a refusal for a pull request or a group that names no base. Each is
+    # asserted by what event_range prints, read as the --event entry point reads it.
+    local events ranges=0 got want
+    events=$(mktemp -d)
+    printf '{"pull_request":{"base":{"sha":"b1"},"head":{"sha":"h1"}}}' >"$events/pull_request.json"
+    printf '{"merge_group":{"base_sha":"b2","head_sha":"h2","head_ref":"refs/heads/gh-readonly-queue/main/pr-7-h2"}}' >"$events/merge_group.json"
+    printf '{"before":"b3","after":"h3"}' >"$events/push.json"
+    printf '{"inputs":{}}' >"$events/workflow_dispatch.json"
+    printf '{"merge_group":{"head_sha":"h4"}}' >"$events/merge_group_without_base.json"
+    printf '{"pull_request":{"base":{"sha":"b5"},"head":{}}}' >"$events/pull_request_without_head.json"
+    expect_range() {
+        local name="$1" file="$2" sha="$3" want="$4"
+        ranges=$((ranges + 1))
+        if ! got=$(event_range "$name" "$events/$file.json" "$sha" 2>/dev/null); then
+            got="(refused)"
+        fi
+        if [ "$got" != "$want" ]; then
+            printf 'SELF-TEST FAILED: the %s event (%s) gave the range [%s], expected [%s]\n' \
+                "$name" "$file" "${got//$'\n'/..}" "${want//$'\n'/..}"
+            errors=1
+        fi
+    }
+    local reader
+    for reader in jq python; do
+        EQ_JSON_READER=$reader
+        expect_range pull_request pull_request sha0 $'b1\nh1'
+        expect_range merge_group merge_group h2 $'b2\nh2'
+        expect_range push push h3 $'b3\nh3'
+        expect_range workflow_dispatch workflow_dispatch h5 $'\nh5'
+        expect_range merge_group merge_group_without_base h4 "(refused)"
+        expect_range pull_request pull_request_without_head sha0 "(refused)"
+        expect_range pull_request no_such_event_file sha0 "(refused)"
+    done
+    unset EQ_JSON_READER
+
+    # End to end, on a repository of its own: a merge group of two squash commits whose FIRST carries a
+    # tool's signature. The head alone is clean, so a range of the head alone, which is what the
+    # workflow's expression gave a merge group, passes it; the event's range refuses it. Both are run
+    # as CI runs them, this script in a process of its own.
+    local self repo base_sha head_sha
+    self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+    repo="$events/repo"
+    git init --quiet "$repo"
+    git -C "$repo" config user.name "Self Test"
+    git -C "$repo" config user.email "self-test@example.invalid"
+    git -C "$repo" config commit.gpgsign false
+    git -C "$repo" commit --quiet --allow-empty -m "🔧 chore: main as the queue saw it"
+    base_sha=$(git -C "$repo" rev-parse HEAD)
+    git -C "$repo" commit --quiet --allow-empty -m "$bad_signature"
+    git -C "$repo" commit --quiet --allow-empty -m "✅ test: the group's last squash (#2)"
+    head_sha=$(git -C "$repo" rev-parse HEAD)
+    printf '{"merge_group":{"base_sha":"%s","head_sha":"%s","head_ref":"refs/heads/gh-readonly-queue/main/pr-2-%s"}}' \
+        "$base_sha" "$head_sha" "$head_sha" >"$events/group.json"
+    ranges=$((ranges + 1))
+    if (cd "$repo" && bash "$self" --range "" "$head_sha") >/dev/null 2>&1; then :; else
+        printf 'SELF-TEST FAILED: the group'"'"'s head alone was refused, so the fixture proves nothing about the range\n'
+        errors=1
+    fi
+    # Refused, and refused for the signed commit: an --event that failed for any other reason (a head
+    # it cannot resolve, an event it cannot read) would otherwise pass this case for the wrong reason.
+    local out
+    ranges=$((ranges + 1))
+    if out=$(cd "$repo" && GITHUB_EVENT_NAME=merge_group GITHUB_EVENT_PATH="$events/group.json" GITHUB_SHA="$head_sha" \
+        bash "$self" --event 2>&1); then
+        printf 'SELF-TEST FAILED: a merge group whose first squash carries a signature passed --event\n'
+        errors=1
+    elif ! /usr/bin/grep -qF 'chore: something real' <<<"$out"; then
+        printf 'SELF-TEST FAILED: --event refused the merge group without naming the signed commit:\n%s\n' "$out"
+        errors=1
+    fi
+
+    # A group whose base is not in the checkout, as in a shallow one, is refused rather than read as its
+    # head alone, which would pass every other squash in it.
+    printf '{"merge_group":{"base_sha":"%s","head_sha":"%s"}}' "1111111111111111111111111111111111111111" "$head_sha" \
+        >"$events/shallow.json"
+    ranges=$((ranges + 1))
+    if (cd "$repo" && GITHUB_EVENT_NAME=merge_group GITHUB_EVENT_PATH="$events/shallow.json" GITHUB_SHA="$head_sha" \
+        bash "$self" --event) >/dev/null 2>&1; then
+        printf 'SELF-TEST FAILED: a merge group whose base is not in the checkout passed --event\n'
+        errors=1
+    fi
+    rm -rf "$events"
+
     if [ "$errors" -ne 0 ]; then
         printf '\nThe guard no longer discriminates. Fix it before trusting a green run.\n'
         return 1
     fi
-    printf 'self-test: %s fixtures, %s refused and %s accepted, as expected\n' \
-        "$((refused + accepted))" "$refused" "$accepted"
+    printf 'self-test: %s fixtures, %s refused and %s accepted, and %s event ranges, as expected\n' \
+        "$((refused + accepted))" "$refused" "$accepted" "$ranges"
     return 0
 }
 
@@ -293,57 +508,22 @@ case "${1:---help}" in
     exit 0
     ;;
 --range)
-    # A..B, as a push event or a pull request gives it. An empty or unresolvable A (a new branch, a
-    # tag push, the first push to a repository) means there is no range to walk, so the head commit
-    # is scanned alone rather than the guard skipping and reporting success it did not measure.
-    base="${2:-}"
-    head="${3:-HEAD}"
-
-    # An unresolvable HEAD is the one failure that must never read as success. A shallow checkout
-    # that does not contain the commit would otherwise walk an empty range, print "all clean" and
-    # go green having measured NOTHING — the shape this repository calls an instrument that never
-    # ran in the condition it exists for.
-    if ! git rev-parse --verify --quiet "$head^{commit}" >/dev/null; then
-        printf 'cannot resolve %s in this checkout, so nothing was measured.\n' "$head" >&2
-        printf 'Give the job a full history (actions/checkout with fetch-depth: 0).\n' >&2
+    # A..B, as a push event or a pull request gives it.
+    scan_range "${2:-}" "${3:-HEAD}"
+    exit $?
+    ;;
+--event)
+    # The range from the CI event that started this run, read from GITHUB_EVENT_NAME, the event's JSON
+    # at GITHUB_EVENT_PATH and GITHUB_SHA, all three set by GitHub Actions.
+    if ! range=$(event_range "${GITHUB_EVENT_NAME:-}" "${GITHUB_EVENT_PATH:-}" "${GITHUB_SHA:-}"); then
         exit 1
     fi
-
-    if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] \
-        || ! git rev-parse --verify --quiet "$base^{commit}" >/dev/null; then
-        commits=$(git rev-parse "$head")
-        printf 'no usable base (%s), scanning %s alone\n' "${base:-empty}" "$(git log -1 --format=%h "$head")"
-    else
-        if ! commits=$(git rev-list "$base..$head"); then
-            printf 'could not walk %s..%s, so nothing was measured.\n' "$base" "$head" >&2
-            exit 1
-        fi
-    fi
-
-    count=0
-    for sha in $commits; do
-        count=$((count + 1))
-        hits=$(scan_message "$(git log -1 --format=%B "$sha")")
-        [ -n "$hits" ] && report "$(git log -1 --format='%h %s' "$sha")" "$hits"
-    done
-
-    if [ "$fail" -ne 0 ]; then
-        cat <<'EOF'
-
-A commit message above carries text a tool left behind rather than something about the change.
-
-CLAUDE.md: no co-authorship or agent-attribution lines, in any spelling, and that includes the
-scaffolding of whatever composed the message. On a squash merge the message is composed at MERGE
-time, which is why reading back the pull request body is not enough — read back what you are about
-to squash with.
-
-This cannot be undone on main, whose history is not rewritten. What it can do is stop the next one:
-write the message to a file, read the file, then merge with it.
-EOF
-        exit 1
-    fi
-    printf '%s commit message(s) scanned, all clean\n' "$count"
-    exit 0
+    { IFS= read -r base; IFS= read -r head; } <<<"$range"
+    case "${GITHUB_EVENT_NAME:-}" in
+    pull_request | merge_group) scan_range "$base" "$head" strict ;;
+    *) scan_range "$base" "$head" ;;
+    esac
+    exit $?
     ;;
 *)
     cat <<'EOF'
@@ -351,6 +531,7 @@ usage:
   check-commit-messages.sh --self-test            run the rules against their fixtures
   check-commit-messages.sh --file <path>          scan a message BEFORE it becomes a commit
   check-commit-messages.sh --range <base> [head]  scan every commit message in base..head
+  check-commit-messages.sh --event                the range of the CI event that started this run
 EOF
     exit 2
     ;;
