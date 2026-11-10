@@ -642,12 +642,22 @@ and ticks outside a day with .NET's ArgumentOutOfRangeException in its words.
 
 ### Requirement: What a culture writes reads back
 
-A date with a month's name SHALL be read with the words the culture's long, month-day and year-month patterns write between its parts, a point after a day, and a day's name before or after it. A `DateTimeOffset` with a zone and no date SHALL be today at the offset it names.
+A date with a month's name SHALL be read with the words the culture's long, short, month-day and year-month patterns write between its parts, a point after a day, and a day's name before or after it, and a clock SHALL be read with the words its long and short time patterns quote after it. A word SHALL be read only where a word ends, as .NET's lexer reads it: a letter right after it, in a script with no case too, refuses the text. A `DateTimeOffset` with a zone and no date SHALL be today at the offset it names.
 
 #### Scenario: A long date with words
 
-- **WHEN** a pt-BR page reads `15 de janeiro de 2024`, or a ja-JP page `2024年1月15日月曜日`
+- **WHEN** a pt-BR page reads `15 de janeiro de 2024`, or a ja-JP page `2024年1月15日 月曜日`
 - **THEN** the date is January 15, 2024, as in .NET
+
+#### Scenario: A day's name run onto the date
+
+- **WHEN** a ja-JP page reads `2024年1月15日月曜日`, which Linux's and Windows' culture data write for the long date
+- **THEN** the read is refused, as in .NET
+
+#### Scenario: A word after the clock
+
+- **WHEN** an hsb-DE page reads `15.1.2024 9:30 hodź.`, its short time pattern being `H:mm 'hodź'.`
+- **THEN** the moment is January 15, 2024 at 9:30, as in .NET
 
 #### Scenario: An offset with no date
 
