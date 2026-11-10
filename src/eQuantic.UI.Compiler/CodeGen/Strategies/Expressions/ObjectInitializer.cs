@@ -69,7 +69,7 @@ internal static class ObjectInitializer
         if (context.Temporaries.CanBind)
         {
             var name = context.Temporaries.Fresh();
-            context.Temporaries.Bind(name);
+            context.Temporaries.Bind(name, TsNamedType.For(type, context));
             var bound = JsExpr.Identifier(name);
             application.Collect(bound, type, initializer);
             var sequence = application.Elements.Aggregate(JsExpr.Binary(bound, "=", construction),
