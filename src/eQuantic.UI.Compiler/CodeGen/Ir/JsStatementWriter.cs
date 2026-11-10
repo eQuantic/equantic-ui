@@ -77,7 +77,7 @@ public static class JsStatementWriter
         JsReturn { Value: { } value } => new JsWrittenBuilder().Add("return ").Add(Expr(value)).Add(";").Done(),
         JsThrow @throw => new JsWrittenBuilder().Add("throw ").Add(Expr(@throw.Value)).Add(";").Done(),
         JsLet let => new JsWrittenBuilder().Add($"let {let.Name}{let.Annotation} = ").Add(Expr(let.Initializer)).Add(";").Done(),
-        JsConst @const => new JsWrittenBuilder().Add($"const {@const.Name} = ").Add(Expr(@const.Initializer)).Add(";").Done(),
+        JsConst @const => new JsWrittenBuilder().Add($"const {@const.Name}{@const.Annotation} = ").Add(Expr(@const.Initializer)).Add(";").Done(),
         JsBreak { Label: null } => JsWritten.Of("break;"),
         JsBreak @break => JsWritten.Of($"break {@break.Label};"),
         JsContinue { Label: null } => JsWritten.Of("continue;"),

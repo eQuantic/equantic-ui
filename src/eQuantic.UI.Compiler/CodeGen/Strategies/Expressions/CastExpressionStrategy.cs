@@ -89,10 +89,11 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         if (context.SemanticHelper.GetOperation(cast) is IConversionOperation operation)
         {
             var operand = context.Converter.ConvertIr(cast.Expression);
-            return ValueFlow.Apply(operation.GetConversion(), operation.Operand.Type, operation.Type,
+            return TypedForTheChecker(ValueFlow.Apply(operation.GetConversion(), operation.Operand.Type, operation.Type,
                 operation.ConstantValue.HasValue ? operation.ConstantValue.Value : null,
                 operation.Operand.ConstantValue.HasValue ? operation.Operand.ConstantValue.Value : null,
-                operand, context, operation.IsChecked || (operation.GetConversion().IsTupleConversion && ArithmeticContext.ChecksOverflow(cast, context)));
+                operand, context, operation.IsChecked || (operation.GetConversion().IsTupleConversion && ArithmeticContext.ChecksOverflow(cast, context))),
+                operation, context);
         }
 
         // A cast through a user-defined operator with a standard conversion beside it is no operation of
@@ -121,6 +122,31 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             // Default passthrough for other types (compile-time assertion)
             _ => inner,
         };
+    }
+
+    /// <summary>
+    /// A DOWNCAST (an explicit reference conversion into a class) changes nothing at run time, so the
+    /// value passes as it is. The checker still reads the operand as its declared type, and a member
+    /// only the target has was "Property does not exist on type" (#1303): in TypeScript the cast
+    /// keeps its type as an assertion, the target named by its twin and imported as any reference to
+    /// it is. A generic target is left as it was, as a list's generic item is left to inference, and
+    /// so is a type with no twin to name, one the build keeps on the server included. JavaScript has
+    /// no assertion and gets the value alone, and the bundler drops an import used only as a type, so
+    /// a base that casts to its own subclass meets no import cycle. The assertion does not CHECK: a
+    /// wrong downcast reads what the object holds instead of throwing .NET's InvalidCastException,
+    /// as it did before.
+    /// </summary>
+    private static JsExpr TypedForTheChecker(JsExpr value, IConversionOperation operation, ConversionContext context)
+    {
+        if (!context.TypeAnnotations) return value;
+        var conversion = operation.GetConversion();
+        if (!conversion.IsReference || conversion.IsImplicit) return value;
+        if (operation.Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } target) return value;
+        if (!target.Locations.Any(location => location.IsInSource) && !target.IsRuntimeProvided()) return value;
+        // A type the build writes no module for has no twin to name, and a cast to it still writes
+        // nothing, as it did: the value passes as it is, and the fence stays where the code reads it.
+        if (target.IsKeptOut()) return value;
+        return JsExpr.Template("({0} as " + target.IntroduceTwin(context) + ")", value);
     }
 
     /// <summary>The integer part of a value only spelled, never bound — Math.trunc as text.</summary>
