@@ -1,7 +1,7 @@
 # file-saving Specification
 
 ## Purpose
-TBD - created by archiving change a-page-offers-a-file-it-made. Update Purpose after archive.
+How a page hands a person a file it made for them to keep: one contract on every target, a download in the browser and a save panel on a desktop, answering what the target honestly knows, and saying so when a target cannot.
 
 ## Requirements
 
