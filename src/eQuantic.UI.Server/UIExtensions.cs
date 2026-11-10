@@ -34,6 +34,22 @@ public static class UIExtensions
     // invalidating only when the code actually changes.
     public static readonly string BuildId = GetDeterministicBuildId();
 
+    /// <summary>The runtime with the dev loop, which a page imports where the server serves that loop.</summary>
+    internal const string DevRuntimeFile = "runtime.dev.js";
+
+    /// <summary>
+    /// Whether a page of this server runs the dev loop, the error overlay and the hot-reload client: in
+    /// Development, where the overlay installs, and wherever the server streams rebuilds. The server
+    /// decides it and names the runtime that carries the loop in the page's import map, so a production
+    /// page loads none of it and no client guesses (#1359).
+    /// </summary>
+    internal static bool ServesDevLoop(HttpContext context)
+    {
+        var environment = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
+        return environment.IsDevelopment()
+            || context.RequestServices.GetRequiredService<UIOptions>().HotReloads(environment);
+    }
+
     /// <summary>The SDK's version as this assembly was built, its source revision included: what the
     /// error overlay's report names (#1108).</summary>
     private static readonly string? SdkVersion = typeof(UIExtensions).Assembly
@@ -446,13 +462,24 @@ public static class UIExtensions
             await context.Response.SendFileAsync(favicon);
         }).AllowAnonymous().WithOrder(1);
 
-        // Map Runtime JS (immutable via BuildId in URL, long cache)
-        endpoints.MapGetAndHead("/_equantic/runtime.js", async context =>
+        // Map Runtime JS (immutable via BuildId in URL, long cache): runtime.js for every page, and the
+        // same runtime with the dev loop for a page the server serves the dev loop to (#1359).
+        // Literal routes, one per runtime: a pattern would match as broadly as /_equantic/{name}.js below,
+        // and the two would be ambiguous.
+        foreach (var file in new[] { "runtime.js", DevRuntimeFile })
+        endpoints.MapGetAndHead("/_equantic/" + file, async context =>
         {
+            // The dev runtime is answered only where the dev loop is: a production server ships it in
+            // its assembly and never serves it.
+            if (file == DevRuntimeFile && !ServesDevLoop(context))
+            {
+                context.Response.StatusCode = 404;
+                return;
+            }
             context.Response.ContentType = "application/javascript";
             context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
             var assembly = typeof(UIExtensions).Assembly;
-            var resourceName = "eQuantic.UI.Server.runtime.js";
+            var resourceName = "eQuantic.UI.Server." + file;
             using var stream = assembly.GetManifestResourceStream(resourceName);
 
             if (stream == null)
@@ -576,9 +603,10 @@ public static class UIExtensions
             // SDK leads to the SDK's C# where eqc transpiled it and to the runtime's module elsewhere,
             // and the overlay names it so. The overlay asks for it as `<frame's URL>.map`. Development
             // alone, under the same condition as the overlay; its sources are names, it carries no text.
-            endpoints.MapGetAndHead("/_equantic/runtime.js.map", async context =>
+            foreach (var map in new[] { "runtime.js.map", DevRuntimeFile + ".map" })
+            endpoints.MapGetAndHead("/_equantic/" + map, async context =>
             {
-                using var stream = typeof(UIExtensions).Assembly.GetManifestResourceStream("eQuantic.UI.Server.runtime.js.map");
+                using var stream = typeof(UIExtensions).Assembly.GetManifestResourceStream("eQuantic.UI.Server." + map);
                 if (stream is null)
                 {
                     context.Response.StatusCode = 404;
@@ -1130,6 +1158,7 @@ public static class UIExtensions
                .Set("MetadataTags", metadata.RenderTags())
                .SetOrEmpty("FontPreloads", fonts.Preloads)
                .Set("BuildId", BuildId)
+               .Set("RuntimeFile", ServesDevLoop(context) ? DevRuntimeFile : "runtime.js")
                // A style element's text, which nothing in it can end (#1295).
                .Set("ThemeStyles", StyleElementText.Of(themeStyles))
                // One element per AddStyles call, so a malformed chunk cannot swallow the next one.
