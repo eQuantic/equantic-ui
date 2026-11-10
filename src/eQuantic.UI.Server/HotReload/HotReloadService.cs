@@ -89,6 +89,9 @@ public sealed class HotReloadService : IDisposable
             }
             using var process = launched;
             if (process is null) return;
+            // Said when it starts as well as when it ends: the person sees the save was taken, and the
+            // edit-to-view measurement (#900) reads the wait after a save off this line.
+            Console.WriteLine("[eQuantic.HotReload] a source changed, rebuilding");
             // The pipes are read BEFORE waiting: a build that says more than the pipe buffer holds
             // (~64KB — any real error list) used to block writing while we blocked waiting, and the
             // whole thing sat there until the 2-minute timeout.

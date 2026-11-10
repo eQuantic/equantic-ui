@@ -97,7 +97,7 @@ public class FlexLineResolutionTests
     [Fact]
     public void AWeightAnimatedToZero_GlidesToItsBasis_WithoutASnap()
     {
-        var owner = BuildOwner.Structural();
+        var owner = ComponentBoundary.StructuralOwner();
         var clock = new TransitionClock();
         float Width(int flex, float timeMs)
         {
