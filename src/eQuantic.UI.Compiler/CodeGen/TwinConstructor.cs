@@ -58,9 +58,10 @@ internal sealed class TwinConstructor
 
     /// <summary>One member the constructor starts: the slot it is held in on the instance, what it starts
     /// as, whether evaluating that can do anything but read a value, which is what a derived type
-    /// evaluates before its base's constructor runs, and the C# that declares it, which the statements
-    /// that start it map to, so a frame thrown in an initializer leads to its own line (#293).</summary>
-    public readonly record struct Start(string Slot, JsExpr Value, bool RunsCode, SyntaxNode? Origin = null);
+    /// evaluates before its base's constructor runs, the C# that declares it, which the statements
+    /// that start it map to, so a frame thrown in an initializer leads to its own line (#293), and what
+    /// TypeScript reads the member as, which the local a derived type evaluates it into is declared as.</summary>
+    public readonly record struct Start(string Slot, JsExpr Value, bool RunsCode, SyntaxNode? Origin, string TsType);
 
     /// <summary>
     /// What a member starts as, as C# starts it: a primary constructor's parameter the parameter
@@ -89,7 +90,7 @@ internal sealed class TwinConstructor
             _ => ("null", false),
         };
         if (value is "null" or "undefined" && _annotations && !Nullable(tsType)) value += "!";
-        return new Start(slot, JsExpr.Opaque(value), runsCode, declaration);
+        return new Start(slot, JsExpr.Opaque(value), runsCode, declaration, tsType);
     }
 
     /// <summary>
@@ -128,17 +129,24 @@ internal sealed class TwinConstructor
         if (single is not null)
         {
             // A count an alternate takes below what the root requires reaches the twin with fewer
-            // arguments than its parameters: each is then optional to TypeScript, as JavaScript reads it.
+            // arguments than its parameters: each may then arrive missing, as JavaScript reads it. The
+            // alternate's branch binds every one of them before the body reads it, so the body holds
+            // the declared type: in TypeScript the parameter is defaulted to an `undefined` the checker
+            // reads as that type (`x: number = undefined!`), where `x?: number` made every read of it
+            // `number | undefined` and every store of it into a member refused (#1305).
             var optional = constructors.Alternates.Any(alternate => alternate.Arity.Low < single.Arity.Low);
             parameters = string.Join(", ", single.Parameters.Select(parameter =>
             {
                 var defaulted = parameter.Default is { } given
                     ? _converter.ConvertExpression(given.Value, parameter.Type?.ValueText())
                     : single.Primary && parameter.Type is { } typed ? DefaultOf(typed)
-                    : optional ? "undefined" : null;
-                // Its declared type where the emitter names one: one that may arrive missing is optional
-                // to TypeScript (`x?: number`).
+                    : optional ? (_annotations ? "undefined!" : "undefined") : null;
+                // Its declared type where the emitter names one.
                 var type = _parameterType?.Invoke(parameter.Type) ?? "any";
+                // A primary constructor's parameter defaults to its type's zero, which for a reference
+                // TypeScript reads as never null is C#'s null all the same: said to be one, as a member
+                // that starts at it is (StartOf), where `name: string = null` was refused (#1347).
+                if (defaulted is "null" && _annotations && !Nullable(type)) defaulted += "!";
                 return _lowering.ParamWithDefault(ParameterName(parameter, single.Primary), type, defaulted,
                     parameter.Modifiers.Any(SyntaxKind.ParamsKeyword));
             }));
@@ -167,7 +175,11 @@ internal sealed class TwinConstructor
             // C# name holds no `$`, and the constructor's are `$` and a letter (`$a`, `$k`, `$c0`). A
             // member `A` or `K` was `const $a` beside the rest parameter `$a`, and the module did not load.
             foreach (var start in state)
-                if (start.RunsCode) statements.Add(JsStatement.Const(Evaluated(start.Slot), start.Value) with { Origin = start.Origin });
+                // Declared as the member is: inferred from the value alone, an empty list was an
+                // `any[]` the checker refused (#1307).
+                if (start.RunsCode)
+                    statements.Add(JsStatement.Const(Evaluated(start.Slot), start.Value, _annotations ? $": {start.TsType}" : "")
+                        with { Origin = start.Origin });
             var implicitException = ImplicitExceptionBase(type);
             if (single is not null)
                 statements.AddRange(SuperCall(single, clause, implicitException));

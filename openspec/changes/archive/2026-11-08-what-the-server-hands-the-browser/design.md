@@ -16,8 +16,9 @@ product principle says nothing should have to.
   changes nothing: a response that says its encoding is left alone.
 - **Every kind of token crosses**, rather than only those that differ from the default, so the browser reads one source and
   `theme-bridge.photon.json` pins it. The fallback stays for a page written by an older shell during a deployment.
-- **Two different waits for #997.** The renderer's streams are its answer, so the deadline holds them all. A rebuild that
-  succeeded has no answer to read, so hot reload waits only on the failure path, within what is left of its limit.
+- **Two different waits for #997.** The renderer's streams are its answer, so the deadline holds them all. Hot reload's
+  MSBuild answers on its standard output too, so what it wrote is read within what is left of its time after it exits,
+  on success as on failure.
 
 ## Risks / Trade-offs
 

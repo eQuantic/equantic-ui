@@ -211,12 +211,184 @@ the server's payload SHALL NOT write a field the replay decided.
   `Array.Resize` grew, or a tuple holding an undefined, and is reloaded
 - **THEN** each keeps its initializer, where JSON wrote the hole and the undefined as null
 
-### Requirement: A rebuild's output never holds the loop
+### Requirement: The time from a save to the screen is measured on both samples
 
-A failed rebuild's output SHALL be read within what is left of its limit, and the rebuild SHALL leave no worker node or
-server behind holding its streams.
+The repository SHALL measure, on the dashboard sample and on the Photon desktop sample, the time from
+a save of a component's `.cs` file, with the app running under `dotnet watch`, to the screen drawing
+the change. Each edit SHALL be repeated enough to report a distribution, the first edit after the app
+starts apart from the ones after it, and each part of the path SHALL be timed on its own.
 
-#### Scenario: A failed rebuild that left its output held
+#### Scenario: The web
 
-- **WHEN** a rebuild exits with an error, and something it started goes on holding its output
-- **THEN** the rebuild ends within its limit, and the next one can start
+- **WHEN** the measuring tool edits a component's text on disk while the dashboard sample runs under
+  `dotnet watch` with a browser on the page that shows it
+- **THEN** it reports when the browser drew the new text, and how long the wait after the save,
+  MSBuild, eqc, bun, the reload and the replay each took
+
+#### Scenario: The desktop
+
+- **WHEN** the measuring tool edits a component's text on disk while the Photon desktop sample runs
+  under `dotnet watch`
+- **THEN** it reports when the window drew the frame with the new text, and how long the delta took
+  to compile and apply and the frame took to draw
+
+### Requirement: The desktop sample reaches the screen in under a second
+
+The time from a save to the frame that draws it, measured on the Photon desktop sample under
+`dotnet watch`, SHALL be held to a budget of a second on its warm median, and the measurement SHALL
+fail when the median is over the budget, naming the part and the value.
+
+#### Scenario: Within the bar
+
+- **WHEN** the measuring tool times six edits of the desktop sample with the repository's budget
+- **THEN** the warm median of the total is under 1000ms and the run passes
+
+#### Scenario: Over a budget
+
+- **WHEN** the same edits are held to a budget below their median
+- **THEN** the run fails, saying the warm median and the budget it is over
+
+### Requirement: The web sample is held to a ceiling that only comes down
+
+The time from a save to the frame that draws it, measured on the dashboard sample under `dotnet
+watch`, SHALL be held to a ceiling on its warm median, set from the first CI run that measured it with
+room for the runner's spread. The measurement SHALL fail over the ceiling, and SHALL say when the
+median falls under half of a ceiling that is above the bar, so the change that made it faster lowers
+it in the same pull request.
+
+#### Scenario: Over the ceiling
+
+- **WHEN** the measuring tool times four edits of the web sample with the repository's budget, and
+  their warm median is over the ceiling
+- **THEN** the run fails, saying the warm median and the ceiling it is over
+
+#### Scenario: Far under the ceiling
+
+- **WHEN** the warm median is under half of a ceiling above the bar of a second
+- **THEN** the run passes and says the ceiling can be lowered
+
+### Requirement: An app that publishes trimmed reloads an edit in place
+
+A Photon app that sets `PublishTrimmed` or `PublishAot` SHALL keep .NET's startup hook on for a Debug
+build that is not a publish, which is what `dotnet watch` builds, so an edit is applied in the running
+app rather than by restarting it. A publish SHALL leave the hook as trimming decides.
+
+#### Scenario: The build dotnet watch runs
+
+- **WHEN** a native SDK consumer with `PublishTrimmed` is evaluated for Debug
+- **THEN** `StartupHookSupport` is `true`
+
+#### Scenario: A publish
+
+- **WHEN** the same consumer is evaluated with `_IsPublishing` set, or for Release
+- **THEN** `StartupHookSupport` is not set to `true` by the SDK
+
+#### Scenario: The desktop sample under dotnet watch
+
+- **WHEN** the desktop sample, which publishes trimmed, runs under `dotnet watch` and a `Build` body
+  is edited
+- **THEN** dotnet watch applies the edit to the running app instead of restarting it, and the window
+  draws the frame with the edit
+
+### Requirement: A save is rebuilt after the editor's burst, and none is dropped
+
+The server SHALL start a rebuild once the app's sources have been quiet for 50ms, each change of the
+same save restarting that wait. A save that arrives while a rebuild runs SHALL be rebuilt when that
+rebuild ends, by one more rebuild however many saves arrived.
+
+#### Scenario: Saves during a rebuild
+
+- **WHEN** two saves arrive while a rebuild runs
+- **THEN** one more rebuild runs when it ends, so the rebuilds number two, where the server used to
+  run one and keep the browser on the earlier edit
+
+#### Scenario: The wait after a save
+
+- **WHEN** `scripts/measure-edit-to-view.cs web` times an edit of the dashboard sample
+- **THEN** its "wait" part, from the save to the server starting its rebuild, is under 100ms
+
+### Requirement: A save reloads the page once, into markup that holds the edit
+
+The rebuild stream SHALL be the page's one source of reloads: while it runs, the page SHALL keep
+dotnet watch's refresh script from connecting. A rebuild SHALL announce itself once the edit of the
+save it answers has reached the server, when dotnet watch runs the server, and SHALL say whether the
+server's markup holds the edit. The page SHALL hydrate markup that holds the edit and replay its
+fields after hydrating it, and SHALL draw over markup that does not.
+
+#### Scenario: One reload per save
+
+- **WHEN** `scripts/measure-edit-to-view.cs web` times an edit of the dashboard sample
+- **THEN** each save reloads the page once, the reloaded document hydrates the server's markup, and it
+  raises no hydration warning, or the run fails
+
+#### Scenario: The edit reaches the server after the rebuild
+
+- **WHEN** a rebuild ends before the edit of its save has reached the server, and dotnet watch runs it
+- **THEN** the rebuild announces itself once the edit arrives, and says the page hydrates
+
+#### Scenario: No edit reaches the server
+
+- **WHEN** a rebuild ends and no edit reaches the server within five seconds of the save, or the server
+  runs outside dotnet watch
+- **THEN** the rebuild says the page mounts, and the page draws over the server's markup
+
+### Requirement: The stream says which run of the server a page talks to, and why a rebuild failed
+
+Every connection to the rebuild stream SHALL open by naming the run of the server, and a page that
+reconnects to another run SHALL reload. A rebuild that fails SHALL send its errors, and the page SHALL
+show them over itself without reloading.
+
+#### Scenario: The server restarts
+
+- **WHEN** a page's stream reconnects to a run of the server with another name
+- **THEN** the page reloads once
+
+#### Scenario: A static file of the app changes
+
+- **WHEN** a file under the app's `wwwroot` changes, outside eqc's output
+- **THEN** the stream says the page hydrates, and the page reloads once
+
+#### Scenario: A save that does not compile
+
+- **WHEN** a rebuild fails
+- **THEN** the page shows MSBuild's error lines in the development overlay and keeps running the code
+  it has
+
+### Requirement: A save is compiled by an eqc the server keeps running
+
+The server SHALL ask the project's MSBuild how to start eqc once for a run, as the app starts, and
+SHALL keep that eqc running, asking it to compile on each save. No MSBuild SHALL run for a save. The
+server SHALL own the process: eqc SHALL end when its standard input does, a stop or a compile past
+its limit SHALL kill it, and the next save SHALL start it again.
+
+#### Scenario: A save
+
+- **WHEN** `scripts/measure-edit-to-view.cs web` times an edit of the dashboard sample
+- **THEN** its "msbuild" part is a few milliseconds, and eqc's part pays no process start
+
+#### Scenario: eqc died
+
+- **WHEN** the running eqc exits between two saves
+- **THEN** the next save starts it again, with what MSBuild said at the start of the run, and compiles
+
+#### Scenario: A compile past its limit, or a stop
+
+- **WHEN** a compile takes longer than its limit, or the app stops while one runs
+- **THEN** eqc is killed, and the compile answers that it did not run
+
+#### Scenario: A broken edit, then its fix
+
+- **WHEN** a save does not compile, and the next one does
+- **THEN** the first sends its errors to the development overlay, and the second reloads the page with
+  the fix, with no restart of the app or of eqc
+
+### Requirement: Asking MSBuild how to start eqc never holds the loop
+
+The MSBuild the server asks how to start eqc SHALL leave no worker node or server behind holding its
+streams, and what it wrote SHALL be read within what is left of the time the server gives it, so a save
+that asks answers instead of waiting on a stream nothing will close.
+
+#### Scenario: An MSBuild that exits and leaves its output held
+
+- **WHEN** the MSBuild the server asks exits, and something it started goes on holding its output
+- **THEN** the asking ends within its limit, and the save answers that eqc could not be started

@@ -51,7 +51,10 @@ public abstract record JsStatement
     public static JsStatement Let(string name, string annotation, JsExpr initializer) =>
         new JsLet(name, annotation, initializer);
 
-    public static JsStatement Const(string name, JsExpr initializer) => new JsConst(name, initializer);
+    /// <summary><c>const name: annotation = initializer;</c>, the annotation carrying its leading colon
+    /// as a <see cref="JsLet"/>'s does, or empty for a constant TypeScript infers.</summary>
+    public static JsStatement Const(string name, JsExpr initializer, string annotation = "") =>
+        new JsConst(name, annotation, initializer);
 
     /// <summary>A statement introduced by a head the writer does not model — <c>for (…)</c>,
     /// <c>for (const x of xs)</c>, <c>label:</c> — followed by its body, laid out like any block.</summary>
@@ -94,7 +97,9 @@ public sealed record JsThrow(JsExpr Value) : JsStatement;
 /// leading colon, or is empty.</summary>
 public sealed record JsLet(string Name, string Annotation, JsExpr Initializer) : JsStatement;
 
-public sealed record JsConst(string Name, JsExpr Initializer) : JsStatement;
+/// <summary><c>const name: annotation = initializer;</c> — the annotation text already carries its
+/// leading colon, or is empty.</summary>
+public sealed record JsConst(string Name, string Annotation, JsExpr Initializer) : JsStatement;
 
 public sealed record JsHeaded(string Head, JsStatement Body) : JsStatement;
 

@@ -6,8 +6,8 @@ Three places where what the server hands on was less than it had. `AddUI` regist
 nothing applied them: on the blank template in Release, `/_equantic/runtime.js` went out at 939,966 bytes whatever the
 browser accepted (#1002). `ThemeBridge` wrote everything of `IAppTheme` but `Code`, so a theme's code palette coloured a
 `CodeBlock` on the server and on Photon and fell to the default in the browser (#936). And the design host waited for
-its renderer to exit before reading it, and hot reload read a failed rebuild's output with no deadline, so a child
-that said too much, or left something holding its streams, held the host (#997).
+its renderer to exit before reading it, and hot reload read the output of an MSBuild with no deadline after it exited,
+so a child that said too much, or left something holding its streams, held the host (#997).
 
 ## What Changes
 
@@ -15,8 +15,10 @@ that said too much, or left something holding its streams, held the host (#997).
   the pipeline through an `IStartupFilter`. A stream of events is no type it compresses.
 - `window.__EQ_THEME__` carries the colour of every `CodeTokenKind`, and the browser's theme answers `code(kind)` from it.
 - The design host drains both of the renderer's streams from the start and holds the exit and both streams to one
-  deadline, whose message names the command. Hot reload holds a failed rebuild's output to what is left of its limit,
-  and starts the rebuild so that no node or server stays behind holding it.
+  deadline, whose message names the command. Hot reload holds what the MSBuild it asks how to start eqc wrote to what
+  is left of that MSBuild's time, and starts every build tool so that no node or server stays behind holding it. The
+  per-save MSBuild rebuild this first fixed is gone since #1283, which keeps eqc running; the same read was left in the
+  one MSBuild a run still asks.
 
 ## Capabilities
 
@@ -27,7 +29,7 @@ that said too much, or left something holding its streams, held the host (#997).
 ### Modified Capabilities
 
 - `design-system`: gains "A theme's code palette reaches the browser".
-- `hot-reload`: gains "A rebuild's output never holds the loop".
+- `hot-reload`: gains "Asking MSBuild how to start eqc never holds the loop".
 
 ## Impact
 

@@ -1,11 +1,12 @@
 ## ADDED Requirements
 
-### Requirement: A rebuild's output never holds the loop
+### Requirement: Asking MSBuild how to start eqc never holds the loop
 
-A failed rebuild's output SHALL be read within what is left of its limit, and the rebuild SHALL leave no worker node or
-server behind holding its streams.
+The MSBuild the server asks how to start eqc SHALL leave no worker node or server behind holding its
+streams, and what it wrote SHALL be read within what is left of the time the server gives it, so a save
+that asks answers instead of waiting on a stream nothing will close.
 
-#### Scenario: A failed rebuild that left its output held
+#### Scenario: An MSBuild that exits and leaves its output held
 
-- **WHEN** a rebuild exits with an error, and something it started goes on holding its output
-- **THEN** the rebuild ends within its limit, and the next one can start
+- **WHEN** the MSBuild the server asks exits, and something it started goes on holding its output
+- **THEN** the asking ends within its limit, and the save answers that eqc could not be started

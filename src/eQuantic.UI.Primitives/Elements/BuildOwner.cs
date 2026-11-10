@@ -12,6 +12,12 @@ namespace eQuantic.UI.Primitives;
 /// would subscribe, set state or start work for a tree nobody draws again.
 /// </para>
 /// <para>
+/// How a component builds is handed in by whoever makes the owner, as Flutter's owner is handed
+/// <c>onBuildScheduled</c>: the engine runs in the browser too (3.9), so it names no host's error
+/// boundary. On .NET, <see cref="ComponentBoundary.Owner"/> and <see cref="ComponentBoundary.StructuralOwner"/>
+/// hand it the boundary every target builds through, with its containment, report and depth bound.
+/// </para>
+/// <para>
 /// A frame is <see cref="Build"/>, then the realizer's layout and paint (which may show deferred
 /// slots, <see cref="NodeElement.ShowDeferred"/>), then <see cref="EndFrame"/>, where what leaves
 /// unmounts before what arrives mounts.
@@ -31,20 +37,30 @@ public sealed class BuildOwner
     private int _building;
     private int _stamp;
     private int _ids;
+    private readonly Func<UiComponent, ComponentContext, int, VisualNode> _buildComponent;
 
     /// <summary>A live owner: the one a host keeps for the surface it draws.</summary>
-    public BuildOwner()
-        : this(live: true)
+    /// <param name="buildComponent">How a component builds: its <c>Build</c> for a context, at a depth
+    /// of components, inside whatever boundary contains what it throws.</param>
+    public BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent)
+        : this(buildComponent, live: true)
     {
     }
 
-    private BuildOwner(bool live)
+    private BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool live)
     {
+        ArgumentNullException.ThrowIfNull(buildComponent);
+        _buildComponent = buildComponent;
         Live = live;
     }
 
     /// <summary>An owner for a tree laid out once: it builds, and calls no lifecycle hook.</summary>
-    public static BuildOwner Structural() => new(live: false);
+    /// <param name="buildComponent">How a component builds, as the live owner takes it.</param>
+    public static BuildOwner Structural(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent) => new(buildComponent, live: false);
+
+    /// <summary>Builds a component the way this owner was handed.</summary>
+    internal VisualNode BuildComponent(UiComponent component, ComponentContext context, int depth) =>
+        _buildComponent(component, context, depth);
 
     /// <summary>Asked when a position becomes dirty outside a build: the host's cue to draw a frame.
     /// Raised on the thread the <c>SetState</c> ran on, which the dispatcher makes the UI thread.</summary>

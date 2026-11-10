@@ -8,7 +8,7 @@
 
 ## 3. Processes
 
-- [x] 3.1 `ChildOutput` for the design host, and the bounded read and the build's environment for hot reload. Verify: `ChildOutputTests` and `AFailedRebuildThatLeavesItsOutputHeld_DoesNotHoldTheLoop`
+- [x] 3.1 `ChildOutput` for the design host, and the bounded read and the build tools' environment for hot reload's MSBuild. Verify: `ChildOutputTests`, `AnMsBuildThatLeavesItsOutputHeld_DoesNotHoldTheSaveThatAsked` and `WhatTheServerStarts_LeavesNoBuildServerBehind`
 
 ## 4. Against the real thing
 
