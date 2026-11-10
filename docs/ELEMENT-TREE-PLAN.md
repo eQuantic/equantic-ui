@@ -547,7 +547,7 @@ the parity rows it closes flip.
 
    E3a-3 starts with a slice of its own, because it changes how the browser builds every component
    without state: **a component is a node in the browser too**
-   (`openspec/changes/archive/<date>-a-component-is-a-node-in-the-browser`). The engine's position
+   (`openspec/changes/archive/2026-11-10-a-component-is-a-node-in-the-browser`). The engine's position
    for a component is a node, and in the browser only a stateful component carried
    `nodeKind = 'component'`; a stateless one carried none on purpose and rendered itself through the
    lowering's mixing seam. The runtime gains `UiComponent` between the web `Component` and the two

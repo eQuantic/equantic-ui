@@ -61,5 +61,8 @@ them, and an `HtmlElement` is not, as in C#.
 
 - [Every component without state of every app takes a new door] → the runtime's suite (2905 cases),
   the three cases above, the server's document tests, and the served runtime's budget.
-- [A member named `key` in an app's component without state is now refused] → it shadowed the node's
-  key and changed the component's identity; the refusal is the one a stateful component already had.
+- [A member named like a node member in an app's component is now refused] → `key` shadowed the node's
+  key and changed the component's identity, and `bookmark`, `alignSelf` and `gridSpan` were read by
+  the lowering off the component, an app parameter of that name becoming the element's id or its
+  alignment with no diagnostic. The three were `declare`d types, which reach no live prototype, so
+  they are fields now and the list carries them for both kinds.

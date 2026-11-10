@@ -29,12 +29,14 @@ and a stateless component built through a second door that no C# realizer has.
 - `core/component-is-a-node.type-test.ts` holds `UiComponent` to every member the vocabulary's
   `VisualNode` declares: one the node gains that the component lacks fails `tsc`.
 - The list of members the runtime's component already has, which eqc reads to refuse a C# member that
-  would shadow one, gains `key` and `nodeKind` for a component without state.
+  would shadow one, gains the node's members: `key` and `nodeKind` for a component without state, and
+  `bookmark`, `alignSelf` and `gridSpan` for both kinds, which were types only and so reached no list.
 
 For someone using the SDK nothing changes in what they write. A component without state is named,
-contained and retained through the same door as one with state, and a member of theirs named `key` in
-a component without state is now refused at build time, as it already was in one with state, because
-it would shadow the node's key.
+contained and retained through the same door as one with state, and a member of theirs named like a
+node member (`key`, `nodeKind`, `bookmark`, `alignSelf`, `gridSpan`) is now refused at build time,
+because it would shadow the node's: an app parameter named `bookmark` used to become the element's
+id with no diagnostic.
 
 Parts reached: the runtime (`core/component.ts`, `shared/lowering.ts`, the two export files, three
 specs and a type test), and eqc's embedded list of runtime members.
