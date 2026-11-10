@@ -76,6 +76,7 @@ public record InlineStyleAsset(string Content, string? Id = null) : IAsset
     public string Render(string? nonce)
     {
         var idAttr = !string.IsNullOrWhiteSpace(Id) ? $" id=\"{HttpUtility.HtmlAttributeEncode(Id)}\"" : "";
-        return $"<style{idAttr}{ShellNonce.Attribute(nonce)}>{Content}</style>";
+        // What the sheet holds can never end the element (#1295).
+        return $"<style{idAttr}{ShellNonce.Attribute(nonce)}>{StyleElementText.Of(Content)}</style>";
     }
 }
