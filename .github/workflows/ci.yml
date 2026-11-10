@@ -10,6 +10,12 @@ on:
     tags: ["v*", "ext-v*"]
   pull_request:
     branches: ["main"]
+  # GitHub's merge queue (#1308): a reviewed, green pull request waits in the queue, which runs this
+  # workflow on the pull request together with every one ahead of it and merges the group when the
+  # required jobs pass. Every job those checks name runs here; the publishing jobs, which run on a
+  # push to main or a tag, do not.
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
     inputs:
       version:
@@ -19,10 +25,10 @@ on:
 
 # A new push to a pull request cancels the run of the head it replaces (#1309): every run holds macOS
 # runners, the scarcest kind, and a stale one made every other pull request wait for them. Only a pull
-# request's runs share a group, keyed on its number; a run on main, on a tag or by hand gets a group of
-# its own run, so nothing ever cancels it or queues it behind another. The reasons live here and not
-# inside the expressions, where a `#` is not a comment but a parse error that fails the whole workflow
-# before any job starts.
+# request's runs share a group, keyed on its number; a run on main, on a tag, on a merge group or by
+# hand gets a group of its own run, so nothing ever cancels it or queues it behind another. The
+# reasons live here and not inside the expressions, where a `#` is not a comment but a parse error
+# that fails the whole workflow before any job starts.
 concurrency:
   group: ${{ github.event_name == 'pull_request' && format('ci-pull-request-{0}', github.event.pull_request.number) || format('ci-run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -31,8 +37,10 @@ jobs:
   # A commit message says something about the change and nothing about what composed it. Three
   # squash messages on main ended with the scaffolding of the tool that wrote them before anything
   # compared, so this compares. On a pull request it reads the branch's commits, which is
-  # prevention; on a push to main it reads what was actually squashed, which is the only place that
-  # message exists — and by then the merge has happened, so the job going red IS the report.
+  # prevention; in a merge queue's run it reads the squash commits the queue composed, before they
+  # reach main, which is prevention of the merge-time message itself (#1308); on a push to main it
+  # reads what was actually squashed, and by then the merge has happened, so the job going red IS
+  # the report.
   commit-messages:
     runs-on: ubuntu-latest
     steps:
@@ -46,12 +54,10 @@ jobs:
         run: ./scripts/check-commit-messages.sh --self-test
 
       - name: No commit message carries what a tool left behind
-        # Through the environment rather than interpolated into the command: a ref is data, and
-        # `${{ }}` substitution happens before the shell ever sees it.
-        env:
-          EQ_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          EQ_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: ./scripts/check-commit-messages.sh --range "$EQ_BASE" "$EQ_HEAD"
+        # The range comes from the event itself, read by the script (GITHUB_EVENT_NAME, the event's
+        # JSON and GITHUB_SHA), where its self-test holds an event of every kind. An expression here
+        # chose it once, and under a merge group it gave an empty base: the group's last commit alone.
+        run: ./scripts/check-commit-messages.sh --event
 
   # Every OpenSpec change and spec, validated strictly by the CLI tools/openspec/package-lock.json
   # pins, through the same script a developer runs. The plain `openspec validate --all --strict`
@@ -459,6 +465,12 @@ jobs:
           # another pull request's pages. Through the environment: a branch name is text someone
           # else wrote, and `${{ }}` substitution happens before the shell ever sees it.
           EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
+          # A merge queue's run reads master with the wiki branch of every pull request in its group
+          # merged onto it (#1308); the script asks the API for them, with the run's token.
+          EQ_QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+          EQ_QUEUE_HEAD: ${{ github.event.merge_group.head_sha }}
+          EQ_QUEUE_REF: ${{ github.event.merge_group.head_ref }}
+          GH_TOKEN: ${{ github.token }}
         run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
 
       # Once a run, for an answer that is the same on every system and group: the split of a fixture
@@ -563,6 +575,11 @@ jobs:
         continue-on-error: true
         env:
           EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
+          # In a merge queue's run, the wiki as the group will leave it, as on the other legs (#1308).
+          EQ_QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+          EQ_QUEUE_HEAD: ${{ github.event.merge_group.head_sha }}
+          EQ_QUEUE_REF: ${{ github.event.merge_group.head_ref }}
+          GH_TOKEN: ${{ github.token }}
         run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
 
       - name: The derivation still discriminates
