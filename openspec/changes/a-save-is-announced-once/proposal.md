@@ -11,7 +11,7 @@ The events of one save can straddle the start of its rebuild: the file watcher r
 ## What Changes
 
 - A rebuild answers the saves made since the last one took them, and a call that finds none rebuilds nothing and tells the page nothing.
-- A save's write time is read off its files alone: an event for a path gone by the time the server reads it (a temp file an editor renamed onto the source) dates nothing when the save's other events carry a time, where it dated the save at its own arrival, after the edit.
+- A save's write time is read off its files alone: an event for a path gone by the time the server reads it is a temp file an editor renamed onto the source (the watcher listens for no deletion, and the rename raises its own event for the source), so it dates nothing and opens no rebuild, where it dated the save at its own arrival, after the edit.
 - The server writes why each rebuild tells the page to hydrate or to mount: the save's write time and when the last edit reached it. `scripts/measure-edit-to-view.cs` records the frames each document's stream heard, what the reload carried and whether the server rendered the document, and a save that draws over fails naming all of them with the server's line.
 - Nothing a developer using the SDK writes changes. Under `dotnet watch`, a save reloads the page once, and the server's console says why the page hydrated or drew over.
 

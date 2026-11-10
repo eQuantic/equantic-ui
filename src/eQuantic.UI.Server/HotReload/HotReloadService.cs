@@ -43,8 +43,7 @@ public sealed class HotReloadService : IDisposable
     private Timer? _keepAlive;
     private int _building;
     private int _pending;
-    // When the saves the next rebuild answers last wrote their files, in UTC ticks: positive when read
-    // off a file, negative when only an event's arrival dates it, and 0 when none came.
+    // When the saves the next rebuild answers last wrote their files, in UTC ticks; 0 when none came.
     private long _burstWritten;
     private volatile bool _disposed;
 
@@ -160,31 +159,22 @@ public sealed class HotReloadService : IDisposable
     {
         // Each event of a save restarts the wait, so a burst of writes is one rebuild.
         if (_disposed) return;
+        // A path gone by the time its event is read is a temp file an editor renamed onto the source:
+        // the watcher does not listen for deletions, and the rename raises its own event, for the source,
+        // which carries the save's write time. Dated by its arrival instead, it put the save after its
+        // edit, or opened a burst of its own after the rebuild had taken the save, and either way the
+        // page was told to mount and drew over (#1373).
+        if (path is not null && !File.Exists(path)) return;
         // The burst's last write, which the edit of its save follows: read off the file, never off
-        // when this event arrived, which may be after dotnet watch applied the edit. A path gone by the
-        // time its event is read (a temp file an editor renamed onto the source, a file deleted) has no
-        // write time, and is dated by its arrival only until a file's own time comes: dated now, it put
-        // the burst after the edit, and the page drew over (#1373). The burst holds a file's time as
-        // positive ticks and an arrival's as negative ones, so a file's time always replaces an
-        // arrival's, whichever event came first, and an arrival's never replaces a file's.
-        var candidate = path is not null && File.Exists(path)
-            ? File.GetLastWriteTimeUtc(path).Ticks
-            : -DateTime.UtcNow.Ticks;
-        long seen, next;
+        // when this event arrived, which may be after dotnet watch applied the edit.
+        var written = path is not null ? File.GetLastWriteTimeUtc(path) : DateTime.UtcNow;
+        long seen;
         do
         {
             seen = Volatile.Read(ref _burstWritten);
-            next = (seen, candidate) switch
-            {
-                (0, _) => candidate,
-                ( > 0, > 0) => Math.Max(seen, candidate),
-                ( > 0, _) => seen,
-                (_, > 0) => candidate,
-                _ => Math.Min(seen, candidate),
-            };
-            if (next == seen) break;
+            if (seen >= written.Ticks) break;
         }
-        while (Interlocked.CompareExchange(ref _burstWritten, next, seen) != seen);
+        while (Interlocked.CompareExchange(ref _burstWritten, written.Ticks, seen) != seen);
         try
         {
             _debounce?.Change(Quiet, Timeout.InfiniteTimeSpan);
@@ -229,7 +219,7 @@ public sealed class HotReloadService : IDisposable
         // told the page the first one had reloaded to mount, which drew over the markup it hydrated (#1373).
         var ticks = Interlocked.Exchange(ref _burstWritten, 0);
         if (ticks == 0) return;
-        var burst = new DateTime(Math.Abs(ticks), DateTimeKind.Utc);
+        var burst = new DateTime(ticks, DateTimeKind.Utc);
         try
         {
             if (_disposed) return;

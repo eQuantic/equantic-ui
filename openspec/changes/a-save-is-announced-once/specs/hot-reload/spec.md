@@ -15,7 +15,7 @@ when the save was written and when the last edit reached the server.
 #### Scenario: An event of a path already gone
 
 - **WHEN** a save's file is written, its edit reaches the server, and the save's events include one for a path gone by the time the server reads it
-- **THEN** the save keeps its file's write time and the page hears hydrate, where the gone path dated it at the event's arrival and the page heard mount
+- **THEN** the event dates nothing and opens no rebuild, whether it comes before the source's event or after the save's rebuild, and the page hears one hydrate, where the gone path dated the save at its arrival and the page heard mount
 
 #### Scenario: A page that mounts
 

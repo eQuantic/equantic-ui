@@ -195,6 +195,35 @@ public class HotReloadStreamTests
     }
 
     /// <summary>
+    /// An event of a path already gone that comes after the save's rebuild took it opens no burst of its
+    /// own: dated by its arrival, after the edit, it was rebuilt alone and told the page the first rebuild
+    /// had reloaded to mount (found by the secondary review of #1378, round 3).
+    /// </summary>
+    [Fact]
+    public async Task AnEventOfAPathAlreadyGone_AfterTheSavesRebuild_AnnouncesNothing()
+    {
+        var root = Directory.CreateTempSubdirectory("eq-stream-").FullName;
+        var edits = new ServerEdits(arriveOnSave: true, TimeSpan.FromSeconds(1));
+        using var service = new HotReloadService(root, Exits(true), TimeSpan.FromSeconds(30), edits);
+        var (page, listening, leave) = await ListenAsync(service);
+
+        var saved = Path.Combine(root, "Screen.cs");
+        await File.WriteAllTextAsync(saved, "class Screen { }");
+        await Task.Delay(50);
+        edits.Take();
+        service.SourceChanged(saved);
+        service.Rebuild();
+        service.SourceChanged(Path.Combine(root, "Screen.cs.tmp.cs"));
+        service.Rebuild();
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        leave.Cancel();
+        await listening;
+
+        page.Heard.Split("event: rebuilt").Length.Should().Be(2, "one save, one announcement");
+        page.Heard.Should().EndWith("event: rebuilt\ndata: hydrate\n\n");
+    }
+
+    /// <summary>
     /// A save is announced once. The events of one save can straddle the start of its rebuild, so the
     /// debounce asked for a rebuild again after the first had taken the save: that one had no save to read
     /// a write time from, waited for an edit after it was asked, found none and said the page mounts, and
