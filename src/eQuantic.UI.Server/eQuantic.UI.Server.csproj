@@ -127,8 +127,21 @@
     </PropertyGroup>
     <Error Condition="!Exists('$(_EqcForRuntimeMap)')"
       Text="eQuantic.UI.Server: eqc was not built at '$(_EqcForRuntimeMap)', and the runtime's map cannot be composed. The ProjectReference to eQuantic.Build orders it; a build that skipped it is a broken graph." />
-    <Exec Command="dotnet &quot;$(_EqcForRuntimeMap)&quot; compose-map wwwroot/runtime.js.map --names-from &quot;$(MSBuildThisFileDirectory)..&quot;" />
-    <Exec Command="dotnet &quot;$(_EqcForRuntimeMap)&quot; compose-map wwwroot/runtime.dev.js.map --names-from &quot;$(MSBuildThisFileDirectory)..&quot;" />
+    <!-- Through RunProgram, a list of arguments and no shell, as every program the SDK starts (#841): a
+         shell read each path first, and a folder named like `Cash$Flow` arrived as `Cash`. One run per
+         runtime's map, the dev runtime's included (#1359). -->
+    <ItemGroup>
+      <_EqComposeRuntimeMap Include="tool" Value="$(_EqcForRuntimeMap)" />
+      <_EqComposeRuntimeMap Include="command" Value="compose-map" />
+      <_EqComposeRuntimeMap Include="map" Value="wwwroot/runtime.js.map" />
+      <_EqComposeRuntimeMap Include="names" Option="--names-from" Value="$(MSBuildThisFileDirectory).." />
+      <_EqComposeDevRuntimeMap Include="tool" Value="$(_EqcForRuntimeMap)" />
+      <_EqComposeDevRuntimeMap Include="command" Value="compose-map" />
+      <_EqComposeDevRuntimeMap Include="map" Value="wwwroot/runtime.dev.js.map" />
+      <_EqComposeDevRuntimeMap Include="names" Option="--names-from" Value="$(MSBuildThisFileDirectory).." />
+    </ItemGroup>
+    <RunProgram Program="dotnet" Arguments="@(_EqComposeRuntimeMap)" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <RunProgram Program="dotnet" Arguments="@(_EqComposeDevRuntimeMap)" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 
   <ItemGroup>
