@@ -1,1 +1,2 @@
 #nullable enable
+eQuantic.UI.Compiler.Services.AppBuild.BundleElapsed.get -> System.TimeSpan
