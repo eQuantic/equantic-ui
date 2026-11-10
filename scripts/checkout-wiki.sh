@@ -93,23 +93,31 @@ queue_branches() {
     return 1
   fi
 
-  # Arrays and a separate last element: the macOS runner's bash is 3.2, which has no negative index.
-  local squashed=() merged=() last_squashed="" last_merged="" subject
+  # Arrays, and the last commit's number kept apart: the macOS runner's bash is 3.2, which has no
+  # negative index. `last_*` hold the LAST commit's number only, reset at every commit, so a group
+  # whose final commit names no pull request ends with none. In a squash group every commit is a
+  # pull request's squash, so one without a number is a group this cannot read, and fails; with the
+  # merge method a pull request's own commits carry none, and only the merge commits count.
+  local squashed=() merged=() last_squashed="" last_merged="" unnumbered="" subject
   while IFS= read -r subject; do
     subject=${subject%$'\r'}
+    last_squashed=""
+    last_merged=""
     if [[ $subject =~ ^Merge\ pull\ request\ \#([0-9]+)\  ]]; then
       merged+=("${BASH_REMATCH[1]}")
       last_merged=${BASH_REMATCH[1]}
     elif [[ $subject =~ \(#([0-9]+)\)$ ]]; then
       squashed+=("${BASH_REMATCH[1]}")
       last_squashed=${BASH_REMATCH[1]}
+    else
+      unnumbered=yes
     fi
   done <<< "$subjects"
   local numbers=() last=""
   if [ -n "$last_merged" ]; then
     numbers=("${merged[@]}")
     last=$last_merged
-  elif [ -n "$last_squashed" ]; then
+  elif [ -n "$last_squashed" ] && [ -z "$unnumbered" ]; then
     numbers=("${squashed[@]}")
     last=$last_squashed
   fi
@@ -371,6 +379,14 @@ STUB
   answers "🔧 chore: a commit no pull request wrote"
   queue "a group whose commits name no pull request fails" \
     "refs/heads/gh-readonly-queue/main/pr-1-abc123" "(fails)"
+
+  answers "🔧 chore: the first (#1)" "🔧 chore: a commit no pull request wrote"
+  queue "a group whose last commit names no pull request fails, though an earlier one names the ref's" \
+    "refs/heads/gh-readonly-queue/main/pr-1-abc123" "(fails)"
+
+  answers "🔧 chore: a squash with no number" "✨ feat: the second (#2)"
+  queue "a squash group with a commit that names no pull request fails" \
+    "refs/heads/gh-readonly-queue/main/pr-2-abc123" "(fails)"
 
   answers "✨ feat: the second (#2)"
   queue "a ref that is not a merge queue's fails" "refs/heads/main" "(fails)"
