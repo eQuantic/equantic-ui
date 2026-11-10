@@ -41,6 +41,11 @@ internal sealed partial class WebLoweringVisitor(
     /// press, pictured or real, so neither a picture nor a control around it reaches them (#508).</summary>
     private bool _inDisabledControl;
 
+    /// <summary>True while the subtree of an enabled control is lowered under a <see cref="Simulated"/>
+    /// node: a control nested in it is another control, and the picture's press and focus stop at it,
+    /// as the real ones do (#616). A <see cref="Simulated"/> node starts it over.</summary>
+    private bool _inControl;
+
     /// <summary>
     /// The single dispatch every node passes through — and therefore the one place the design-mode
     /// origin is attached, once, rather than in each of the branches below.
