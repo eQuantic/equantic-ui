@@ -1822,12 +1822,12 @@ eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceSourcesFile.get -> string
 eQuantic.UI.Compiler.Services.AppBuildOptions.ReferenceSourcesFile.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.ReferencesFile.get -> string?
 eQuantic.UI.Compiler.Services.AppBuildOptions.ReferencesFile.init -> void
+eQuantic.UI.Compiler.Services.AppBuildOptions.Serve.get -> bool
+eQuantic.UI.Compiler.Services.AppBuildOptions.Serve.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourceDirectories.get -> System.Collections.Generic.IReadOnlyList<string!>!
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourceDirectories.init -> void
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourceMaps.get -> eQuantic.UI.Compiler.SourceMapMode
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourceMaps.init -> void
-eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.get -> bool
-eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.init -> void
 eQuantic.UI.Compiler.Services.ComponentDependencyResolver
 eQuantic.UI.Compiler.Services.ComponentDependencyResolver.ComponentDependencyResolver(Microsoft.CodeAnalysis.Compilation? projectCompilation = null) -> void
 eQuantic.UI.Compiler.Services.ComponentDependencyResolver.GeneratedDirectory.get -> string?

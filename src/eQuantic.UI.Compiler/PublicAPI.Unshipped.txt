@@ -1,5 +1,1 @@
 #nullable enable
-eQuantic.UI.Compiler.Services.AppBuildOptions.Serve.get -> bool
-eQuantic.UI.Compiler.Services.AppBuildOptions.Serve.init -> void
-*REMOVED*eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.get -> bool
-*REMOVED*eQuantic.UI.Compiler.Services.AppBuildOptions.Watch.init -> void

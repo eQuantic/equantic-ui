@@ -2,6 +2,7 @@
 abstract eQuantic.UI.Server.Metadata.MetaTag.Key.get -> string!
 abstract eQuantic.UI.Server.Metadata.MetaTag.Render() -> string!
 const eQuantic.UI.Server.ConsentCookie.Name = "eq-consent" -> string!
+const eQuantic.UI.Server.ContentSecurityPolicyOptions.SectionName = "EQuantic:ContentSecurityPolicy" -> string!
 const eQuantic.UI.Server.CultureRouteConstraint.Name = "culture" -> string!
 const eQuantic.UI.Server.ServerActionsOptions.SectionName = "EQuantic:ServerActions" -> string!
 const eQuantic.UI.Server.ServerEventsOptions.SectionName = "EQuantic:ServerEvents" -> string!
@@ -90,6 +91,20 @@ eQuantic.UI.Server.Authorization.ServerActionAuthorizationService
 eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.AuthorizeAsync(Microsoft.AspNetCore.Http.HttpContext! context, eQuantic.UI.Server.ServerActionDescriptor! descriptor) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!>!
 eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.ServerActionAuthorizationService(Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Authorization.ServerActionAuthorizationService!>! logger) -> void
 eQuantic.UI.Server.ConsentCookie
+eQuantic.UI.Server.ContentSecurityPolicyBuilder
+eQuantic.UI.Server.ContentSecurityPolicyBuilder.AllowConnectionsTo(params string![]! sources) -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
+eQuantic.UI.Server.ContentSecurityPolicyBuilder.AllowFramingBy(params string![]! sources) -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
+eQuantic.UI.Server.ContentSecurityPolicyBuilder.ContentSecurityPolicyBuilder() -> void
+eQuantic.UI.Server.ContentSecurityPolicyBuilder.ReportOnly() -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
+eQuantic.UI.Server.ContentSecurityPolicyBuilder.ReportViolationsTo(System.Uri! endpoint) -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
+eQuantic.UI.Server.ContentSecurityPolicyOptions
+eQuantic.UI.Server.ContentSecurityPolicyOptions.ConnectSources.get -> System.Collections.Generic.IList<string!>!
+eQuantic.UI.Server.ContentSecurityPolicyOptions.ContentSecurityPolicyOptions() -> void
+eQuantic.UI.Server.ContentSecurityPolicyOptions.FrameAncestors.get -> System.Collections.Generic.IList<string!>!
+eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportOnly.get -> bool
+eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportOnly.set -> void
+eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportUri.get -> string?
+eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportUri.set -> void
 eQuantic.UI.Server.CultureRouteConstraint
 eQuantic.UI.Server.CultureRouteConstraint.CultureRouteConstraint(eQuantic.UI.Server.UIOptions! options) -> void
 eQuantic.UI.Server.CultureRouteConstraint.Match(Microsoft.AspNetCore.Http.HttpContext? httpContext, Microsoft.AspNetCore.Routing.IRouter? route, string! routeKey, Microsoft.AspNetCore.Routing.RouteValueDictionary! values, Microsoft.AspNetCore.Routing.RouteDirection routeDirection) -> bool
@@ -362,6 +377,7 @@ eQuantic.UI.Server.UIOptions.AllowedDeserializationAssemblies.get -> System.Coll
 eQuantic.UI.Server.UIOptions.AlternateCultures.get -> System.Collections.Generic.IReadOnlyList<string!>?
 eQuantic.UI.Server.UIOptions.AlternateUrl.get -> System.Func<eQuantic.UI.Server.AlternateRequest, string?>?
 eQuantic.UI.Server.UIOptions.ConfigureHtmlShell(System.Action<eQuantic.UI.Server.HtmlShellOptions!>! configure) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.ContentSecurity.get -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
 eQuantic.UI.Server.UIOptions.CultureRoutes.get -> eQuantic.UI.Server.CultureRouteMap?
 eQuantic.UI.Server.UIOptions.DeclaredRoutes.get -> System.Collections.Generic.IReadOnlyList<(string! Pattern, System.Type! Page, string? Title)>!
 eQuantic.UI.Server.UIOptions.DisablePoweredByHeader.get -> bool
@@ -376,6 +392,7 @@ eQuantic.UI.Server.UIOptions.RegisterServices(System.Action<Microsoft.Extensions
 eQuantic.UI.Server.UIOptions.ScanAssembly(System.Reflection.Assembly! assembly) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UIOptions() -> void
 eQuantic.UI.Server.UIOptions.UseAlternateLinks(System.Func<eQuantic.UI.Server.AlternateRequest, string?>! url, params string![]! cultures) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.UseContentSecurityPolicy(System.Action<eQuantic.UI.Server.ContentSecurityPolicyBuilder!>? configure = null) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseCultureRoutes(params string![]! cultures) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseInitialThemeMode(eQuantic.UI.Primitives.ThemeMode mode) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseServerEvents(System.Action<eQuantic.UI.Server.ServerEventsBuilder!>! configure) -> eQuantic.UI.Server.UIOptions!

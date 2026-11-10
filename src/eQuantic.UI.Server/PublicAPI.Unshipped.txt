@@ -1,18 +1,1 @@
 #nullable enable
-const eQuantic.UI.Server.ContentSecurityPolicyOptions.SectionName = "EQuantic:ContentSecurityPolicy" -> string!
-eQuantic.UI.Server.ContentSecurityPolicyBuilder
-eQuantic.UI.Server.ContentSecurityPolicyBuilder.AllowConnectionsTo(params string![]! sources) -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
-eQuantic.UI.Server.ContentSecurityPolicyBuilder.AllowFramingBy(params string![]! sources) -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
-eQuantic.UI.Server.ContentSecurityPolicyBuilder.ContentSecurityPolicyBuilder() -> void
-eQuantic.UI.Server.ContentSecurityPolicyBuilder.ReportOnly() -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
-eQuantic.UI.Server.ContentSecurityPolicyBuilder.ReportViolationsTo(System.Uri! endpoint) -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
-eQuantic.UI.Server.ContentSecurityPolicyOptions
-eQuantic.UI.Server.ContentSecurityPolicyOptions.ConnectSources.get -> System.Collections.Generic.IList<string!>!
-eQuantic.UI.Server.ContentSecurityPolicyOptions.ContentSecurityPolicyOptions() -> void
-eQuantic.UI.Server.ContentSecurityPolicyOptions.FrameAncestors.get -> System.Collections.Generic.IList<string!>!
-eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportOnly.get -> bool
-eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportOnly.set -> void
-eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportUri.get -> string?
-eQuantic.UI.Server.ContentSecurityPolicyOptions.ReportUri.set -> void
-eQuantic.UI.Server.UIOptions.ContentSecurity.get -> eQuantic.UI.Server.ContentSecurityPolicyBuilder!
-eQuantic.UI.Server.UIOptions.UseContentSecurityPolicy(System.Action<eQuantic.UI.Server.ContentSecurityPolicyBuilder!>? configure = null) -> eQuantic.UI.Server.UIOptions!
