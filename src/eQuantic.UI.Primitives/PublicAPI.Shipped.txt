@@ -1423,8 +1423,6 @@ eQuantic.UI.Primitives.Pressable.Mixed.init -> void
 eQuantic.UI.Primitives.Pressable.OnPressed.get -> System.Action?
 eQuantic.UI.Primitives.Pressable.OnPressed.init -> void
 eQuantic.UI.Primitives.Pressable.Pressable(eQuantic.UI.Primitives.VisualNode! child, System.Action? onPressed = null) -> void
-eQuantic.UI.Primitives.Pressable.PressedBackground.get -> eQuantic.UI.Primitives.ColorToken?
-eQuantic.UI.Primitives.Pressable.PressedBackground.init -> void
 eQuantic.UI.Primitives.Pressable.Role.get -> eQuantic.UI.Primitives.PressableRole
 eQuantic.UI.Primitives.Pressable.Role.init -> void
 eQuantic.UI.Primitives.Pressable.Selected.get -> bool?
