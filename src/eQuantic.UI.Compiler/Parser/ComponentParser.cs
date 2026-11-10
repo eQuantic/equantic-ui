@@ -433,7 +433,9 @@ public class ComponentParser
                 var actionInfo = new ServerActionInfo
                 {
                     MethodName = method.Identifier.ValueText,
-                    ActionId = $"{definition.Name}/{actionName}",
+                    // The component's CLR full name, the one the server registers the action under
+                    // (ComponentIdentity.Of): its simple name let two components share one id (#1290).
+                    ActionId = $"{definition.TypeIdentity}/{actionName}",
                     ReturnType = method.ReturnType.ValueText(),
                     TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToList() ?? new List<string>(),
                     IsAsync = method.Modifiers.Any(m => m.ValueText == "async"),

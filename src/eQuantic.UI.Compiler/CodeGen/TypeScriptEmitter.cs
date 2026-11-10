@@ -1239,8 +1239,7 @@ public class TypeScriptEmitter
         // number in a slot the twin declares as the member-name string.
         if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType
             && !enumType.IsFlagsEnum()
-            && !enumType.GetMembers().OfType<IFieldSymbol>().Any(field => field.HasConstantValue
-                && Convert.ToInt64(field.ConstantValue, System.Globalization.CultureInfo.InvariantCulture) == 0))
+            && Strategies.Types.EnumShape.KeyOf(enumType, 0) is null)
         {
             return null;
         }
