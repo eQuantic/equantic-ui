@@ -28,8 +28,8 @@ public class WriteOncePageServerActionTests
         var registry = new ServerActionRegistry();
         registry.ScanAssembly(typeof(WriteOncePageServerActionTests).Assembly);
 
-        var action = registry.GetAction("WriteOncePageServerActionTests$ProbePage/Compile");
-        action.Should().NotBeNull("the write-once page family carries server actions too, named by the twin eqc calls, its owner's name first");
+        var action = registry.GetAction($"{typeof(ProbePage).FullName}/Compile");
+        action.Should().NotBeNull("the write-once page family carries server actions too");
         action!.ComponentType.Should().Be(typeof(ProbePage));
     }
 }

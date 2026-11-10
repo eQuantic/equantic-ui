@@ -467,7 +467,7 @@ describe('Dictionary — the JSON it writes', () => {
   // (ServerActionDictionaryTests): the two halves are held to one text.
   it('writes the arguments of a Server Action as the server reads them', () => {
     const body = JSON.stringify({
-      actionId: 'ServerActionDictionaryTests$OrderActions/Echo',
+      actionId: 'eQuantic.UI.Server.Tests.ServerActionDictionaryTests+OrderActions/Echo',
       arguments: [
         dictionary<number, string>([
           [3, 'c'],

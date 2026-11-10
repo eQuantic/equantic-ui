@@ -14,10 +14,22 @@ public class ServerActionRegistry : IServerActionRegistry
 {
     private readonly Dictionary<string, ServerActionDescriptor> _actions = new();
     
+    /// <summary>
+    /// Registers an action under its id. A second method under an id already held stops the app at start,
+    /// naming both: the registry kept the last one without a word, and a call ran the other method under
+    /// the other method's authorization (#1290). The same method registered twice is one action.
+    /// </summary>
     public void RegisterAction(string actionId, ServerActionDescriptor descriptor)
     {
+        if (_actions.TryGetValue(actionId, out var held) && held.Method != descriptor.Method)
+            throw new InvalidOperationException(
+                $"Two Server Actions answer to '{actionId}': {Describe(held)} and {Describe(descriptor)}. " +
+                "Name one of them apart with [ServerAction(Name = \"...\")].");
         _actions[actionId] = descriptor;
     }
+
+    private static string Describe(ServerActionDescriptor descriptor) =>
+        $"{descriptor.ComponentType.FullName}.{descriptor.Method.Name}({string.Join(", ", descriptor.Method.GetParameters().Select(parameter => parameter.ParameterType.Name))})";
     
     public ServerActionDescriptor? GetAction(string actionId)
     {
@@ -46,10 +58,10 @@ public class ServerActionRegistry : IServerActionRegistry
             foreach (var method in methods)
             {
                 var attr = method.GetCustomAttribute<ServerActionAttribute>()!;
-                // Named by the component's twin, as eqc names the call it writes (TwinName.OfType): a
-                // component nested in a class (`Host$Page`, #584) or named like a global the emitted code
-                // reads (`Map$`, #934) was registered by its CLR name and answered "Action not found".
-                var actionId = $"{TwinName.OfType(type)}/{attr.Name ?? method.Name}";
+                // The component's CLR full name, which eqc reads off the same declaration
+                // (ComponentDefinition.TypeIdentity): by its simple name, two components of one name in
+                // two namespaces shared one id, as two pages shared one route before #514 (#1290).
+                var actionId = $"{ComponentIdentity.Of(type)}/{attr.Name ?? method.Name}";
                 
                 var descriptor = new ServerActionDescriptor
                 {

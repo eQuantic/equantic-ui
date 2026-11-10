@@ -59,10 +59,11 @@ public class TwinTypeNameTests
     }
 
     /// <summary>A page named like a global the emitted code reads is its twin, <c>Map$</c>, to the route
-    /// table and to the action registry alike, the names eqc writes its module and its calls under (#934,
-    /// #890): the client asked for a module named <c>Map</c> and for an action eqc never calls.</summary>
+    /// table, the name eqc writes its module under (#934, #890): the client asked for a module named
+    /// <c>Map</c>. Its actions are registered by its CLR full name, the one eqc writes its calls with
+    /// (#1290), whatever its twin is named.</summary>
     [Fact]
-    public void APageNamedLikeAGlobal_IsServedAndCalledByItsTwin()
+    public void APageNamedLikeAGlobal_IsServedByItsTwin_AndCalledByItsClrName()
     {
         TwinName.OfType(typeof(ReservedPages.Map)).Should().Be("Map$");
 
@@ -73,7 +74,7 @@ public class TwinTypeNameTests
 
         var registry = new ServerActionRegistry();
         registry.ScanAssembly(typeof(TwinTypeNameTests).Assembly);
-        registry.GetAction("Map$/Pins").Should().NotBeNull("eqc writes the call as Map$/Pins");
-        registry.GetAction("Map/Pins").Should().BeNull();
+        registry.GetAction("eQuantic.UI.Server.Tests.ReservedPages.Map/Pins").Should().NotBeNull("eqc writes the call with the CLR full name");
+        registry.GetAction("Map$/Pins").Should().BeNull("the twin's name is the module's, not the action's");
     }
 }

@@ -26,7 +26,7 @@ namespace eQuantic.UI.Server.Tests;
 /// </summary>
 public class ServerActionCultureTests
 {
-    private const string Body = """{"actionId":"ServerActionCultureTests$CultureActions/Read","arguments":[]}""";
+    private const string Body = """{"actionId":"eQuantic.UI.Server.Tests.ServerActionCultureTests+CultureActions/Read","arguments":[]}""";
 
     public sealed class CultureActions : StatelessComponent
     {

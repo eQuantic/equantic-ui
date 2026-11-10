@@ -31,11 +31,6 @@ public class IdentifierStrategy : IExpressionIrStrategy
         // Priority: Semantic Check > String Check (Fallback)
         var symbol = context.SemanticHelper.GetSymbol(identifier);
 
-        // Map 'Component' property (in State classes) to 'this._component', but not a name bound in
-        // scope: a local, a parameter or a local function called `Component` is that binding, and
-        // mapped first it read the inherited value instead (Copilot's review of #399).
-        if (name == "Component" && !BoundInScope(symbol, identifier, name)) return JsExpr.ThisMember("_component");
-
         // A type the build writes no module for, named here: `Vault.Key()` reaches `Vault` through this
         // name, and a top-level [ServerOnly] class of the app's was written as a class nothing wrote
         // (#823), where a nested one was refused already (#584).
@@ -223,19 +218,6 @@ public class IdentifierStrategy : IExpressionIrStrategy
     /// its own (#563), and any other member's camelCased.</summary>
     private static string Named(ISymbol symbol, string name) =>
         symbol is IMethodSymbol method ? TwinMethodName.Of(method, name) : name.ToCamelCase();
-
-    /// <summary>Whether <paramref name="name"/> reaches a binding of the scope it is read in, a local,
-    /// a parameter, a range variable or a local function, rather than a member.</summary>
-    private static bool BoundInScope(ISymbol? symbol, SyntaxNode at, string name) => symbol switch
-    {
-        // With no model, a local or a parameter of a scope around it is as much a binding as a local
-        // function: `int Component = 4; return Component;` read the component's `_component`.
-        null => LocalFunctionName.IsBoundAt(at, name),
-        IMethodSymbol { MethodKind: MethodKind.LocalFunction } => true,
-        { Kind: SymbolKind.Local or SymbolKind.RangeVariable } => true,
-        { Kind: SymbolKind.Parameter } => !symbol.IsPrimaryConstructorParameter(),
-        _ => false,
-    };
 
     public int Priority => 10;
 

@@ -34,7 +34,7 @@ export class SheetKeymap {
 
     static handleEntry(sheet: SheetController, key: string, modifiers: number, convention: KeyboardConventionValue) {
         let shift = (modifiers & 1) !== 0;
-        let plain = (modifiers & ~1) === 0;
+        let plain = (modifiers & (~1 & 0xFF)) === 0;
         {
             const $s = key;
             if (($s === 'Enter' && (modifiers === 2))) {

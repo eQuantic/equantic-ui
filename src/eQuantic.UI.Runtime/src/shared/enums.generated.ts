@@ -21,6 +21,8 @@ export type AnchorPanelRoleValue = 'none' | 'menu' | 'listbox' | 'dialog';
 export type AnchorPlacementValue =
   'bottomStart' | 'bottomEnd' | 'topStart' | 'topEnd' | 'bottomCenter' | 'topCenter';
 
+export type AppIconUseValue = 'launcher' | 'small';
+
 export type BiometricResultValue =
   'succeeded' | 'failed' | 'cancelled' | 'fallbackRequested' | 'notEnrolled' | 'unavailable';
 
@@ -99,6 +101,8 @@ export type DeviceCapabilityValue =
   | 'motion' | 'biometrics' | 'contacts' | 'notifications';
 
 export type DragAxisValue = 'vertical' | 'horizontal';
+
+export type FileSaveOutcomeValue = 'cancelled' | 'offered' | 'saved';
 
 export type FontWeightValue =
   'thin' | 'extraLight' | 'light' | 'regular' | 'medium' | 'semiBold' | 'bold' | 'extraBold'

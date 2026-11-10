@@ -57,10 +57,13 @@ public class RenderContext
 
     /// <summary>The destination an href should carry — the policy's answer, or the destination
     /// untouched when no policy is in force. Only APP-INTERNAL rooted paths are offered to it:
-    /// <c>//cdn</c>, <c>https://</c>, <c>#anchor</c> and <c>mailto:</c> belong to someone else.
+    /// <c>//cdn</c>, <c>https://</c>, <c>#anchor</c> and <c>mailto:</c> belong to someone else. Null
+    /// when the destination's scheme is one an href never carries (<see cref="LinkScheme"/>), and the
+    /// link is written with no href at all (#1286).
     /// </summary>
-    public static string ResolveDestination(string destination) =>
-        _linkPolicy.Value is { } policy
+    public static string? ResolveDestination(string destination) =>
+        !LinkScheme.Allows(destination) ? null
+        : _linkPolicy.Value is { } policy
         && destination.Length > 0
         && destination[0] == '/'
         && !destination.StartsWith("//", StringComparison.Ordinal)

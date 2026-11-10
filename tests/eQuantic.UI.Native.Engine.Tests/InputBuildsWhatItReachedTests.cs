@@ -9,9 +9,9 @@ namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
 /// A frame after input builds what the input reached (#976): the positions its handlers marked, and
-/// the stateful component that holds a field or a surface the host typed into, and no other
-/// component. Every frame after input rebuilt every component while the host found its controls by
-/// their layout path and could not say which component input had reached.
+/// no other component. Every frame after input rebuilt every component while the host found its
+/// controls by their layout path and could not say which component input had reached. A key typed
+/// into a field builds nothing more than that, because the field keeps it on its position (#996).
 /// <para>
 /// In the process dispatcher's collection, because one of them posts to it, and a host drawing in a
 /// test beside it would run the work on its own thread.
@@ -132,7 +132,8 @@ public class InputBuildsWhatItReachedTests
         host.TextInput("a");
         Frame(host);
         host.TextInput("b");
-        return (builds, Frame(host).TextRegions.Single().Entry.Value);
+        var typedInto = Frame(host).TextRegions.Single();
+        return (builds, FieldText.Of(typedInto.Element, typedInto.Entry));
     }
 
     [Theory]
@@ -150,14 +151,14 @@ public class InputBuildsWhatItReachedTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void AKeyTypedIntoAField_WhoseHandlerSetsNoState_StillShows(bool wrapped)
+    public void AKeyTypedIntoAField_WhoseHandlerSetsNoState_BuildsNothing_AndStillShows(bool wrapped)
     {
         var (builds, shown) = TypeTwoKeys(tells: false, wrapped);
 
         shown.Should().Be("ab", "each key starts from the one before, as it does in a browser's input");
-        builds.Should().Equal(["board", "form", "card 0", "card 1", "card 2", "board", "form", "card 0", "card 1", "card 2"],
-            "a handler that says nothing leaves the host unable to see where the value lives, so the "
-            + "frame after each key rebuilds every component, as every frame after input did before");
+        builds.Should().BeEmpty(
+            "the field keeps what was typed on its position, so a handler that says nothing marks "
+            + "nothing to build, where the host used to rebuild every component to find the value (#996)");
     }
 
     [Fact]

@@ -125,6 +125,24 @@
         <_EqDesktopShell Condition="'$(_EqDesktopShell)' == ''">MacOS</_EqDesktopShell>
     </PropertyGroup>
 
+    <!--
+        Hot reload reaches a running desktop app through a startup hook, and an app that publishes
+        trimmed or ahead of time turns startup hooks off for EVERY build, so `dotnet watch` restarted it
+        on each edit instead of applying the edit in place, saying so in a line nobody reads twice.
+        This repository's desktop sample publishes trimmed on purpose, and its reload was a restart
+        from September until #900 measured it (#1258). The hook stays on for a Debug build that is not
+        a publish, which is what `dotnet watch` builds: DotNetWatchBuild, the property it evaluates
+        with, is never set on its build, so the runtime refused the hook while dotnet watch waited for
+        it. A publish sets _IsPublishing, so what ships is trimmed exactly as before.
+        HERE, for the desktop head alone and above .NET's own targets, which default the hook off for a
+        trimmed app. Never on a phone: .NET for iOS decides the hook for its own Debug build, which it
+        links, and set from here as well it broke that link (IL2026 on the startup hook provider,
+        measured on WalletMobile's iOS head when this block lived in Sdk.props and reached every head).
+    -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == '' AND '$(StartupHookSupport)' == '' AND '$(Configuration)' == 'Debug' AND '$(_IsPublishing)' != 'true'">
+        <StartupHookSupport>true</StartupHookSupport>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(_EqPlatform)' == '' AND '$(OutputType)' == 'Exe' AND '$(EQuanticConsole)' != 'true' AND $([MSBuild]::IsOSPlatform('Windows'))">
         <OutputType>WinExe</OutputType>
     </PropertyGroup>
@@ -284,7 +302,28 @@
         had not been walked yet), skipped in silence, and the build that followed failed with five
         XA2001s about PNG files — an error about resources, for a cause about a tool.
     -->
-    <Target Name="EQuanticAndroidIcon"
+    <!--
+        What an icon written in C# compiles with besides its own file (#1240): the app's `Using` items,
+        so the icon is written like any file of the app, `Box(...)` being the factory there as it is
+        everywhere else. They are items of the project's EVALUATION, so they are there even for the
+        Android icon, drawn during restore. eqicon keeps the usings the vocabulary resolves and drops
+        the rest. The web SDK has the same target, and hands its vector catalog too.
+    -->
+    <Target Name="_EQuanticAppIconInputs">
+        <ItemGroup>
+            <_EqIconUsing Include="@(Using)" Spelling="%(Using.Identity)" />
+            <_EqIconUsing Condition="'%(_EqIconUsing.Static)' == 'true'">
+                <Spelling>static %(Identity)</Spelling>
+            </_EqIconUsing>
+            <_EqIconUsing Condition="'%(_EqIconUsing.Alias)' != ''">
+                <Spelling>%(_EqIconUsing.Alias) = %(Identity)</Spelling>
+            </_EqIconUsing>
+            <_EqAppIconInput Include="using" Option="--using" Value="%(_EqIconUsing.Spelling)"
+                Condition="'%(_EqIconUsing.Spelling)' != ''" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="EQuanticAndroidIcon" DependsOnTargets="_EQuanticAppIconInputs"
             Condition="'$(_EqPlatform)' == 'android' AND '$(EQuanticAppIconSource)' != '' AND '$(ExcludeRestorePackageImports)' != 'true' AND '$(DesignTimeBuild)' != 'true'">
         <!--
             An InitialTarget runs before ResolveProjectReferences, so the edge Sdk.props declares has
@@ -303,6 +342,7 @@
             <_EqAndroidIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
             <_EqAndroidIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
             <_EqAndroidIconArgument Include="resources" Option="--android" Value="$(_EqAssetsGenerated)/android/res" />
+            <_EqAndroidIconArgument Include="@(_EqAppIconInput)" />
         </ItemGroup>
         <RunProgram Program="dotnet" Arguments="@(_EqAndroidIconArgument)" StandardOutputImportance="normal" />
     </Target>
@@ -458,7 +498,7 @@
         debugger attaches to. Ad-hoc signed, from the build's own files.
     -->
     <Target Name="EQuanticMacAppBundle" AfterTargets="Build"
-            DependsOnTargets="EQuanticResolveMacPackaging"
+            DependsOnTargets="EQuanticResolveMacPackaging;_EQuanticAppIconInputs"
             Condition="'$(_EqMacHead)' == 'true'">
         <PropertyGroup>
             <!-- ALWAYS beside the build output, never beside the sources. In an outer multi-TFM
@@ -507,6 +547,7 @@
             <_EqMacIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
             <_EqMacIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
             <_EqMacIconArgument Include="icns" Option="--macos" Value="$(_EqIcns)" />
+            <_EqMacIconArgument Include="@(_EqAppIconInput)" />
         </ItemGroup>
         <RunProgram Condition="'$(EQuanticAppIconSource)' != ''"
               Program="dotnet" Arguments="@(_EqMacIconArgument)" StandardOutputImportance="normal" />
@@ -577,7 +618,7 @@
         puts its own and therefore where tooling already looks.
     -->
     <Target Name="EQuanticMacAppPackage" AfterTargets="Publish"
-            DependsOnTargets="EQuanticResolveMacPackaging"
+            DependsOnTargets="EQuanticResolveMacPackaging;_EQuanticAppIconInputs"
             Condition="'$(_EqMacHead)' == 'true'">
         <PropertyGroup>
             <!-- Two steps rather than one nested call. The nested form parses and works — this
@@ -606,6 +647,7 @@
             <_EqShipIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
             <_EqShipIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
             <_EqShipIconArgument Include="icns" Option="--macos" Value="$(_EqIcns)" />
+            <_EqShipIconArgument Include="@(_EqAppIconInput)" />
         </ItemGroup>
         <RunProgram Condition="'$(EQuanticAppIconSource)' != ''"
               Program="dotnet" Arguments="@(_EqShipIconArgument)" StandardOutputImportance="normal" />
@@ -945,7 +987,7 @@
         <Delete Files="$(_EqAndroidMergedManifest)" />
     </Target>
 
-    <Target Name="EQuanticAppIcon"
+    <Target Name="EQuanticAppIcon" DependsOnTargets="_EQuanticAppIconInputs"
             Condition="'$(EQuanticAppIconSource)' != ''"
             BeforeTargets="_CompileAppManifest;_CoreCompileImageAssets;_CompileImageAssets;_UpdateAndroidResgen;CoreCompile">
         <PropertyGroup>
@@ -971,6 +1013,7 @@
             <_EqAppIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
             <_EqAppIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
             <_EqAppIconArgument Include="output" Option="$(_EqIconOption)" Value="$(_EqIconOutput)" />
+            <_EqAppIconArgument Include="@(_EqAppIconInput)" />
         </ItemGroup>
         <RunProgram Condition="'$(_EqIconOption)' != ''"
               Program="dotnet" Arguments="@(_EqAppIconArgument)" StandardOutputImportance="normal" />

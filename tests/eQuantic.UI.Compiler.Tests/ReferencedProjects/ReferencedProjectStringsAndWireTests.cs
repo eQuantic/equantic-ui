@@ -85,7 +85,7 @@ public sealed class ReferencedProjectStringsAndWireTests : IClassFixture<Referen
     {
         // The stub hands the answer to the record's twin, which a type read from an assembly does
         // not have: there the shape was written out member by member from metadata.
-        _built.Module("Home").Should().Contain("$eq.hydrate(await getServerActionsClient().invoke('Home/LoadReceipt', []), Receipt)");
+        _built.Module("Home").Should().Contain("$eq.hydrate(await getServerActionsClient().invoke('App.Screens.Home/LoadReceipt', []), Receipt)");
         _built.Module("Receipt").Should().Contain("static get $hydration() { return { total: Money, number: 'long', issuedAt: 'dateTimeOffset' }; }",
             "a long past 2^53 and an instant with its offset are read as what they are, and the total by the Domain record's own twin");
         _built.Module("Money").Should().Contain("amount: 'decimal'");

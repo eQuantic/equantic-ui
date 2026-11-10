@@ -84,11 +84,12 @@ public class NestedTwinNameTests
             .And.NotMatchRegex(@"import \{[^}]*(?<![\w$])Math(?![\w$])[^}]*\}");
     }
 
-    /// <summary>A component's action is called by the component's twin, the name the server registers it
-    /// under (<c>TwinName.OfType</c>): <c>Map$</c> for a component named like a global, and the owner's
-    /// name first for a nested one.</summary>
+    /// <summary>A component's action is called by the component's CLR full name, the one the server
+    /// registers it under (<c>ComponentIdentity.Of</c>, #1290), whatever its twin is named: <c>Map</c> for a
+    /// component whose twin is <c>Map$</c>, and <c>Host+Page</c> for a nested one, whose twin is
+    /// <c>Host$Page</c>.</summary>
     [Fact]
-    public void AnActionsComponent_IsNamedByItsTwin()
+    public void AnActionsComponent_IsCalledByItsClrName_WhateverItsTwinIsNamed()
     {
         var results = new ComponentCompiler().CompileSource("""
             using System.Threading.Tasks;
@@ -108,8 +109,8 @@ public class NestedTwinNameTests
             }
             """, "Probe.cs");
 
-        results.Single(result => result.ComponentName == "Map$").TypeScript.Should().Contain("invoke('Map$/Pins', [])");
-        results.Single(result => result.ComponentName == "Host$Page").TypeScript.Should().Contain("invoke('Host$Page/Hits', [])");
+        results.Single(result => result.ComponentName == "Map$").TypeScript.Should().Contain("invoke('Map/Pins', [])");
+        results.Single(result => result.ComponentName == "Host$Page").TypeScript.Should().Contain("invoke('Host+Page/Hits', [])");
     }
 
     [Fact]

@@ -70,9 +70,9 @@ public class LocalFunctionNameTests
     [Fact]
     public void WithNoModel_AComponentLocalIsThatLocal()
     {
-        // `Component` maps to the component's `_component`, unless the name is bound in scope. With
-        // no model the lookup knew local functions only, so a local called `Component` read the
-        // inherited value (Copilot's review of #399).
+        // With no model, a capital reads as a member, unless the name is bound in scope: the lookup
+        // knew local functions only, so a local called `Component` read a member instead (Copilot's
+        // review of #399).
         var method = CSharpSyntaxTree.ParseText(
                 "class C { int M() { int Component = 4; return Component; } }", ParseDefaults.Options)
             .GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().Single();
@@ -95,7 +95,7 @@ public class LocalFunctionNameTests
 
         var js = new CSharpToJsConverter().Convert(method.Body!);
 
-        js.Should().Contain("(Component) => Component + 1").And.Contain("return this._component");
+        js.Should().Contain("(Component) => Component + 1").And.Contain("return this.component");
     }
 
     [Fact]

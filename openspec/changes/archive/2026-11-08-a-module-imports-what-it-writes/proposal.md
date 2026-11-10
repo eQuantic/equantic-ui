@@ -10,7 +10,6 @@ Closes #824 (under #565), #890 (under #849) and #934 (under #845). Each is a mod
 
 - A type's twin takes a `$` after its name when that name is a word JavaScript reserves or a global the emitted code reads (`function$`, `class$`, `Math$`), its module too, as a local of that name already did. The rule is `TwinName.OfNested`, shared by eqc and the server, with the two lists moved beside it into one shared `JsNames`. A type of .NET's or of the vocabulary keeps its name, and a nested type is named by its owner already.
 - Every site that introduces a type's twin writes the name it registers for the import: a type read through its namespace (`App.Util.Math.Family()`), an extension's home, an extension property's and indexer's, a construction through an alias, and a local that starts null, whose annotation was mapped from its text and named `Item` for `Cart.Item` too.
-- The server registers a component's action under the component's twin, the name eqc writes the call with (`TwinName.OfType`): a nested component's action, `Host$Page/Hits`, was registered as `Page/Hits` and answered "Action not found", as `Map$/Pins` would have.
 - The scan asks of a class's symbol whether it is a resource class, as the parser does, and is no module of it. The test of whether a module's text names a type reads outside its string literals, the component path's as the record path's already did.
 
 ## Capabilities
@@ -19,10 +18,9 @@ Closes #824 (under #565), #890 (under #849) and #934 (under #845). Each is a mod
 
 - `module-imports`: a class named `Math` is imported as `Math$`, and a name inside a string is no reference.
 - `transpiler-names`: a type named by a reserved word or a global takes a `$`.
-- `server-actions`: an action is registered under its component's twin.
 
 ## Impact
 
-- Reaches `eQuantic.UI.Compiler` (`TypeSymbolExtensions`, `StringExtensions`, the strategies that introduce a twin, `LocalDeclarationStrategy`, `NamespaceRemovalStrategy`, `TypeScriptEmitter`, `ComponentParser`, `PlainClassModule`), the shared `TwinName` and the new `JsNames` (linked into the Compiler, the Generators and the Server), and the Server's `ServerActionRegistry`.
-- An app with a class named like a global or a reserved word gets a module named `Math$.js` or `function$.js` where it got `Math.js`, and a page of that name is served by it. An action of a nested component is called by the id eqc always wrote.
+- Reaches `eQuantic.UI.Compiler` (`TypeSymbolExtensions`, `StringExtensions`, the strategies that introduce a twin, `LocalDeclarationStrategy`, `NamespaceRemovalStrategy`, `TypeScriptEmitter`, `ComponentParser`, `PlainClassModule`), the shared `TwinName` and the new `JsNames` (linked into the Compiler, the Generators and the Server). A component's action keeps the id #1290 gave it, its CLR full name, whatever its twin is named.
+- An app with a class named like a global or a reserved word gets a module named `Math$.js` or `function$.js` where it got `Math.js`, and a page of that name is served by it.
 - Neither `PublicAPI.Shipped.txt` / `PublicAPI.Unshipped.txt` nor `developer-surface.baseline.txt` moves.

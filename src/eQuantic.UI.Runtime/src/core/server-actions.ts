@@ -43,7 +43,7 @@ export class ServerActionsClient {
 
   /**
    * Invoke a server action.
-   * @param actionId The action identifier (e.g., "Counter/Increment")
+   * @param actionId The action identifier: the component's CLR full name and the action's (e.g., "MyApp.Pages.Counter/Increment")
    * @param args Arguments to pass to the action
    */
   async invoke<T = unknown>(
