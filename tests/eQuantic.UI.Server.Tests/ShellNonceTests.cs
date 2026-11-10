@@ -30,7 +30,9 @@ namespace eQuantic.UI.Server.Tests;
 /// </summary>
 public class ShellNonceTests
 {
-    private static readonly Regex Element = new(@"<(script|style)\b[^>]*>", RegexOptions.IgnoreCase);
+    /// <summary>Every element a policy admits by nonce: a script, a style, and a stylesheet link (#1268).</summary>
+    private static readonly Regex Element = new(
+        @"<(script|style)\b[^>]*>|<link\b[^>]*\brel=""stylesheet""[^>]*>", RegexOptions.IgnoreCase);
     private static readonly Regex Nonce = new("\\snonce=\"([^\"]+)\"");
 
     [Page("/nonce")]
@@ -83,6 +85,7 @@ public class ShellNonceTests
             options.ConfigureHtmlShell(shell => shell
                 .AddStyles("body { margin: 0; }")
                 .AddScript(new Uri("https://cdn.example/app.js"))
+                .AddStylesheet(new Uri("https://cdn.example/app.css"))
                 .AddHeadTag(HtmlTag.InlineScript("window.__appHead = true;", defer: false)));
         });
 
@@ -119,10 +122,8 @@ public class ShellNonceTests
 
         var rendered = string.Join("\n", assets.RenderTags("n0nce"));
 
-        ElementsOf(rendered).Should().HaveCount(3).And.OnlyContain(element => element.Nonce == "n0nce",
-            "an external script, an inline script and an inline style are all admitted by the nonce");
-        rendered.Should().Contain("<link rel=\"stylesheet\" href=\"https://cdn.example/lib.css\">",
-            "a stylesheet link is not an inline style, and carries nothing");
+        ElementsOf(rendered).Should().HaveCount(4).And.OnlyContain(element => element.Nonce == "n0nce",
+            "an external script, an inline script, a stylesheet link and an inline style are all admitted by the nonce");
     }
 
     [Fact]
@@ -143,6 +144,9 @@ public class ShellNonceTests
     {
         HtmlTag.InlineScript("x()", defer: false).Render("n0nce").Should().Be("<script nonce=\"n0nce\">x()</script>");
         new HtmlTag("style") { Content = "a{}" }.Render("n0nce").Should().Be("<style nonce=\"n0nce\">a{}</style>");
+        HtmlTag.Link("stylesheet", "https://cdn.example/a.css").Render("n0nce")
+            .Should().Be("<link rel=\"stylesheet\" href=\"https://cdn.example/a.css\" nonce=\"n0nce\">",
+                "style-src governs a stylesheet link as it governs a style element");
         HtmlTag.Link("preconnect", "https://cdn.example/").Render("n0nce")
             .Should().Be("<link rel=\"preconnect\" href=\"https://cdn.example/\">");
     }

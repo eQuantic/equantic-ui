@@ -141,6 +141,72 @@ public class StackLayoutTests
             new Positioned(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 })) { StartFraction = 0.5f };
     }
 
+    /// <summary>
+    /// A stack that sizes from its content has edges too, once that content is measured: a child
+    /// that fills, anchored top and bottom, spans the height its flow sibling gave the stack, as the
+    /// web's absolute box spans its grid and Flutter's positioned child spans its stack. Measured
+    /// beside the flow instead, it took the room it was offered and stood its content's height at
+    /// the top: the Wallet's "Dispute" action was a 40dp strip on a 78dp row, on Android and macOS.
+    /// </summary>
+    [Fact]
+    public void AFillingChildAnchoredOnBothSides_SpansAStackThatSizesFromItsContent()
+    {
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 96, Height = SizeValue.Fill }),
+            top: 0, bottom: 0, end: 0));
+        stack.Add(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill, Height = 78 }));
+
+        var laid = Layout(stack, 400, float.PositiveInfinity);
+
+        laid.Bounds.Height.Should().Be(78, "the flow child sizes the stack");
+        laid.Children[0].Bounds.Should().Be(new Rect(304, 0, 96, 78),
+            "the action spans the stack's height, pinned to its end");
+    }
+
+    /// <summary>The same when a component builds the Positioned: it is placed with the others, once
+    /// the stack knows its size.</summary>
+    [Fact]
+    public void AFillingChildPositionedByAComponent_SpansAStackThatSizesFromItsContent()
+    {
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(new EndStrip());
+        stack.Add(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill, Height = 64 }));
+
+        var laid = Layout(stack, 300, float.PositiveInfinity);
+
+        laid.Children[0].Bounds.Should().Be(new Rect(250, 0, 50, 64));
+    }
+
+    private sealed class EndStrip : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Positioned(new Primitives.Box(new BoxStyle { Width = 50, Height = SizeValue.Fill }), top: 0, bottom: 0, end: 0);
+    }
+
+    /// <summary>The component the defect was seen in: its action is as tall as its row.</summary>
+    [Fact]
+    public void ASwipeableRowsAction_IsAsTallAsItsRow()
+    {
+        var row = new SwipeableRow(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill, Height = 78 }),
+            "Dispute", Icons.Warning);
+
+        var laid = Layout(row, 390, float.PositiveInfinity);
+        var stack = Find(laid, node => node.Source is Stack)!;
+        var action = stack.Children[0];
+
+        stack.Bounds.Height.Should().Be(78);
+        action.Bounds.Height.Should().Be(78, "the action fills the row it sits behind, as the web draws it");
+        action.Bounds.Width.Should().Be(SwipeableRow.ActionWidth);
+    }
+
+    private static LayoutNode? Find(LayoutNode node, Func<LayoutNode, bool> match)
+    {
+        if (match(node)) return node;
+        foreach (var child in node.Children)
+            if (Find(child, match) is { } found) return found;
+        return null;
+    }
+
     [Fact]
     public void CenterAlignment_CentersNonPositionedChildren()
     {

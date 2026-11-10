@@ -88,8 +88,11 @@ describe('gradient definitions belong to the document', () => {
     new Drawing(sky(), 100, 100).render();
 
     const container = document.getElementById('eq-vectors')!;
-    expect(container.getAttribute('style')).toContain('position:absolute');
-    expect(container.getAttribute('style')).not.toContain('display:none');
+    // Read as the browser reads it: the runtime writes it through the CSSOM (#1268), whose text is
+    // the browser's own spelling.
+    expect(container.style.position).toBe('absolute');
+    expect(container.style.overflow).toBe('hidden');
+    expect(container.style.display).not.toBe('none');
     expect(container.getAttribute('aria-hidden')).toBe('true');
   });
 });
