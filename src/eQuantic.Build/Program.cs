@@ -32,95 +32,90 @@ try
 catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
 {
     Console.Error.WriteLine($"eqc: {ex.Message}");
-    Console.Error.WriteLine("Usage: eqc <source-dir>[;<source-dir>...] <output-dir> [--refs <file>] [--projects <file> --project-assets <file>] [--assembly-name <name>] [--ref-sources <file>] [--generated <dir>] [--bun <path>] [--source-maps full|external|none] [--watch]");
+    Console.Error.WriteLine("Usage: eqc <source-dir>[;<source-dir>...] <output-dir> [--refs <file>] [--projects <file> --project-assets <file>] [--assembly-name <name>] [--ref-sources <file>] [--generated <dir>] [--bun <path>] [--source-maps full|external|none] [--serve]");
     Console.Error.WriteLine("       eqc @<file>, the same arguments one a line");
     Console.Error.WriteLine("       eqc compose-map <map> --names-from <dir>");
     return 1;
 }
-var isWatchMode = options.Watch;
-var sourceDirs = options.SourceDirectories;
-var outputDir = options.OutputDirectory;
 
+if (options.Serve) return Serve(options);
+
+var processStarted = new DateTimeOffset(System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime());
 var build = new AppBuild(options);
 
 // The project's compilation and the scan of its declarations. A build it cannot stand on has said
 // why (an empty reference list is EQ0002) and stops here.
 if (!build.Load()) return 1;
+var loadedAt = DateTimeOffset.UtcNow;
 
-if (isWatchMode)
-{
-    Console.WriteLine($"👀 eQuantic.UI: Watching {sourceDirs.Count} directories...");
-}
-else
-{
-    Console.WriteLine($"🔨 eQuantic.UI: Compiling components from {sourceDirs.Count} directories");
-}
-
+Console.WriteLine($"🔨 eQuantic.UI: Compiling components from {options.SourceDirectories.Count} directories");
 Console.WriteLine($"   Intermediate: {build.IntermediateDirectory}");
-Console.WriteLine($"   Output:       {outputDir}");
+Console.WriteLine($"   Output:       {options.OutputDirectory}");
 
-// Initial compilation
-var initialBuildHadErrors = build.CompileAndBundle();
+var hadErrors = build.CompileAndBundle();
+WriteTimings(processStarted, loadedAt, build);
 
-if (isWatchMode)
+// Non-zero exit fails the MSBuild step when transpilation hit unsupported constructs.
+return hadErrors ? 1 : 0;
+
+// SERVED (#1276): the server of an app in development starts eqc once, with the response file the
+// build wrote, and writes `compile` on its standard input for each save, where it used to start a new
+// MSBuild and a new eqc for every one. Each compile loads the project's compilation again, since the
+// save changed its sources, and answers in ONE line of standard output, `@eqc ` and a JSON object
+// that says whether it compiled and holds its error lines, whatever it wrote before that line. The
+// end of the input is the server gone, and the process goes with it: nothing outlives its owner.
+static int Serve(AppBuildOptions options)
 {
-    var debouncer = new Debouncer(TimeSpan.FromMilliseconds(100));
-    // Watch all source directories
-    var watchers = new List<FileSystemWatcher>();
-    foreach (var dir in sourceDirs)
+    Console.WriteLine($"👀 eQuantic.UI: serving compiles of {options.SourceDirectories.Count} directories, one for each `compile` read");
+    // Loaded once before the first request and thrown away, so the first save does not pay for
+    // loading the compiler itself: what each compile loads again is the project.
+    new AppBuild(options, TextWriter.Null, TextWriter.Null).Load();
+    string? request;
+    while ((request = Console.In.ReadLine()) is not null)
     {
-        var watcher = new FileSystemWatcher(dir, "*.cs");
-        watcher.IncludeSubdirectories = true;
-        watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime;
-
-        FileSystemEventHandler onChanged = (sender, e) =>
+        if (request.Trim() != "compile") continue;
+        var started = DateTimeOffset.UtcNow;
+        var errors = new StringWriter();
+        var build = new AppBuild(options, Console.Out, errors);
+        var compiled = build.Load();
+        var loaded = DateTimeOffset.UtcNow;
+        if (compiled) compiled = !build.CompileAndBundle();
+        WriteTimings(started, loaded, build);
+        var said = errors.ToString();
+        Console.Error.Write(said);
+        var answer = System.Text.Json.JsonSerializer.Serialize(new
         {
-            if (e.FullPath.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
-                e.FullPath.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
-                return;
-
-            debouncer.Debounce(() => {
-                Console.WriteLine($"🔄 Change detected in {Path.GetFileName(e.FullPath)}. Recompiling...");
-                build.CompileAndBundle();
-            });
-        };
-
-        watcher.Changed += onChanged;
-        watcher.Created += onChanged;
-        watcher.Deleted += onChanged;
-        watcher.Renamed += (s, e) => onChanged(s, e);
-        watcher.EnableRaisingEvents = true;
-        watchers.Add(watcher);
+            compiled,
+            errors = said.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+        });
+        Console.Out.WriteLine("@eqc " + answer);
+        Console.Out.Flush();
     }
-
-    await Task.Delay(-1);
+    return 0;
 }
 
-// Non-zero exit fails the MSBuild `Exec` step when transpilation hit unsupported constructs.
-return initialBuildHadErrors ? 1 : 0;
-
-class Debouncer
+// The edit-to-view measurement (#900) names a file in EQC_TIMINGS, and each compile then appends one
+// line to it: when the compile started (the process's start for a single build, the request for a
+// served one), when the compilation was loaded and when the build ended, in Unix milliseconds, and
+// how long bun took inside it. That is what tells eqc's time and bun's apart from what runs around
+// them and from the browser's after them. Nothing is written otherwise.
+static void WriteTimings(DateTimeOffset started, DateTimeOffset loaded, AppBuild build)
 {
-    private readonly TimeSpan _delay;
-    private CancellationTokenSource? _cts;
-
-    public Debouncer(TimeSpan delay)
+    if (Environment.GetEnvironmentVariable("EQC_TIMINGS") is not { Length: > 0 } timings) return;
+    var line = System.Text.Json.JsonSerializer.Serialize(new
     {
-        _delay = delay;
+        started = started.ToUnixTimeMilliseconds(),
+        loaded = loaded.ToUnixTimeMilliseconds(),
+        ended = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+        bunMs = (long)build.BundleElapsed.TotalMilliseconds,
+    });
+    try
+    {
+        File.AppendAllText(timings, line + "\n");
     }
-
-    public void Debounce(Action action)
+    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
     {
-        _cts?.Cancel();
-        _cts = new CancellationTokenSource();
-        var token = _cts.Token;
-
-        Task.Delay(_delay, token).ContinueWith(t =>
-        {
-            if (!t.IsCanceled)
-            {
-                action();
-            }
-        });
+        // A measurement nobody can read back is not a reason to fail a build that compiled.
+        Console.Error.WriteLine($"eqc: EQC_TIMINGS could not be written: {ex.Message}");
     }
 }

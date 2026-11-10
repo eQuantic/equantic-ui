@@ -95,12 +95,12 @@ public sealed class ComponentElement : Element
         // what is armed, because an AsyncLocal write allocates and nearly every build has none.
         var armed = InFlow.Current;
         if (armed == UnderInFlow)
-            return ComponentBoundary.BuildAtDepth(Component, Owner.Context, ComponentDepth);
+            return Owner.BuildComponent(Component, Owner.Context, ComponentDepth);
 
         InFlow.Current = UnderInFlow;
         try
         {
-            return ComponentBoundary.BuildAtDepth(Component, Owner.Context, ComponentDepth);
+            return Owner.BuildComponent(Component, Owner.Context, ComponentDepth);
         }
         finally
         {

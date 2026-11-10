@@ -86,6 +86,31 @@ internal static class AbsentCapabilities
             new((IReadOnlyList<PickedFile>)Array.Empty<PickedFile>());
     }
 
+    /// <summary>
+    /// No person to offer a file to, and the one capability here that says so by THROWING. A picker
+    /// that chooses nothing draws as "nothing chosen yet", which is true; a save that did nothing
+    /// would tell a page the person has a file they never received. A page that takes the saver still
+    /// renders, since only a call fails, and a call belongs in a press handler, which runs in the
+    /// browser (#1022).
+    /// </summary>
+    internal sealed class FileSaver : IFileSaver
+    {
+        internal const string Reason =
+            "A file is offered to a person in their browser, in answer to a press, and this page is "
+            + "rendering on the server, where there is no person to offer it to. Call IFileSaver from "
+            + "a press handler.";
+
+        public bool IsAvailable => false;
+
+        public ValueTask<FileSaveOutcome> SaveTextAsync(string name, string text, string? mimeType = null,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException(Reason);
+
+        public ValueTask<FileSaveOutcome> SaveBytesAsync(string name, byte[] content, string? mimeType = null,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException(Reason);
+    }
+
     internal sealed class Camera : ICamera
     {
         public bool IsAvailable => false;

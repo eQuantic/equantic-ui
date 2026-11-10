@@ -86,9 +86,11 @@ internal static class TypeInitializer
         JsStatement.Block([Start(className), .. body is JsBlock block ? block.Statements : [body]]);
 
     /// <summary>One static that initializes in order: its name on the twin, its annotation, its zero,
-    /// its initializer converted (none for a static that holds its zero until something sets it), and
-    /// the C# it came from.</summary>
-    public readonly record struct Ordered(string Name, string Type, string Zero, string? Value, SyntaxNode? Origin);
+    /// its initializer converted (none for a static that holds its zero until something sets it), the
+    /// C# it came from, and whether that initializer is a lambda or an anonymous method, whose
+    /// parameters take their types from the static's.</summary>
+    public readonly record struct Ordered(string Name, string Type, string Zero, string? Value, SyntaxNode? Origin,
+        bool IsFunction);
 
     /// <summary>A static that holds a value of its own: its name on the twin, its declared type, its
     /// initializer, and the declaration it came from (a field's or an event's variable, a property).</summary>
@@ -138,7 +140,8 @@ internal static class TypeInitializer
     public static IReadOnlyList<Ordered> Collect(TypeDeclarationSyntax type, Func<TypeSyntax, string> annotation,
         Func<TypeSyntax, string> zero, Func<EqualsValueClauseSyntax, TypeSyntax, string> value) =>
         Stores(type).Select(store => new Ordered(store.Name, annotation(store.Type), zero(store.Type),
-            store.Initializer is { } initializer ? value(initializer, store.Type) : null, store.Declaration)).ToList();
+            store.Initializer is { } initializer ? value(initializer, store.Type) : null, store.Declaration,
+            store.Initializer?.Value is AnonymousFunctionExpressionSyntax)).ToList();
 
     /// <summary>The static constructor a type declares, or null.</summary>
     public static ConstructorDeclarationSyntax? StaticConstructorOf(TypeDeclarationSyntax type) =>
@@ -255,7 +258,7 @@ internal static class TypeInitializer
         build.AddRange(statics.Select(member =>
             JsStatement.Expression(JsExpr.Binary(JsExpr.Member(holder, member.Name), "=", JsExpr.Opaque(member.Zero)))));
         build.AddRange(statics.Where(member => member.Value is not null).Select(member =>
-            JsStatement.Expression(JsExpr.Binary(JsExpr.Member(holder, member.Name), "=", JsExpr.Opaque(member.Value!)))
+            JsStatement.Expression(JsExpr.Binary(JsExpr.Member(holder, member.Name), "=", Value(member, annotate)))
                 with { Origin = member.Origin }));
         // The function's block stands inside $init's `if`, and that inside its `try`: three levels in.
         if (constructor.Count > 0)
@@ -286,6 +289,19 @@ internal static class TypeInitializer
         }
         return members;
     }
+
+    /// <summary>
+    /// A static's initializer as its slot takes it. The slots are an object of no declared shape, so a
+    /// lambda stored there had nothing to type its parameters from, and each was an implicit `any`
+    /// the checker refused (#1306). In TypeScript a function satisfies the static's type, which types
+    /// its parameters from the delegate as an assignment to the member would, and still checks it
+    /// against that type rather than asserting it. JavaScript has no <c>satisfies</c> and takes the
+    /// value as it is.
+    /// </summary>
+    private static JsExpr Value(Ordered member, bool annotate) =>
+        annotate && member.IsFunction && member.Type != "any"
+            ? JsExpr.Opaque($"({member.Value}) satisfies {member.Type}")
+            : JsExpr.Opaque(member.Value!);
 
     /// <summary>The statements of the type's static constructor, converted by the emitter's own
     /// converter, which run after its static initializers; none when it declares none. Nothing emitted
