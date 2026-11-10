@@ -473,11 +473,13 @@ eQuantic.UI.Compiler.CodeGen.Ir.JsConditional.WhenFalse.init -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsConditional.WhenTrue.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Ir.JsConditional.WhenTrue.init -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsConst
-eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Deconstruct(out string! Name, out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Initializer) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Annotation.get -> string!
+eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Annotation.init -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Deconstruct(out string! Name, out string! Annotation, out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Initializer) -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Equals(eQuantic.UI.Compiler.CodeGen.Ir.JsConst? other) -> bool
 eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Initializer.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Initializer.init -> void
-eQuantic.UI.Compiler.CodeGen.Ir.JsConst.JsConst(string! Name, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Initializer) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConst.JsConst(string! Name, string! Annotation, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Initializer) -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Name.get -> string!
 eQuantic.UI.Compiler.CodeGen.Ir.JsConst.Name.init -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsConstructorMember
@@ -2355,7 +2357,7 @@ static eQuantic.UI.Compiler.CodeGen.Ir.JsSpread.operator !=(eQuantic.UI.Compiler
 static eQuantic.UI.Compiler.CodeGen.Ir.JsSpread.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsSpread? left, eQuantic.UI.Compiler.CodeGen.Ir.JsSpread? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Block(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!>! statements) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Break(string? label) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
-static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Const(string! name, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! initializer) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Const(string! name, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! initializer, string! annotation = "") -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Continue(string? label) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.DoWhile(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! condition) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Expression(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! expression) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
