@@ -11,7 +11,7 @@ export class EmittedItems {
             let $slots: any = EmittedItems.$slots = {};
             try {
                 $slots.byDepth = null;
-                $slots.byDepth = (a, b) => Math.sign(a.depth - b.depth);
+                $slots.byDepth = ((a, b) => Math.sign(a.depth - b.depth)) satisfies (x: any, y: any) => number;
             } catch ($error) {
                 EmittedItems.$slots = null;
                 throw EmittedItems.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Web.Tests.Fixtures.EmittedItems', $error);

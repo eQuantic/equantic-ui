@@ -58,9 +58,10 @@ internal sealed class TwinConstructor
 
     /// <summary>One member the constructor starts: the slot it is held in on the instance, what it starts
     /// as, whether evaluating that can do anything but read a value, which is what a derived type
-    /// evaluates before its base's constructor runs, and the C# that declares it, which the statements
-    /// that start it map to, so a frame thrown in an initializer leads to its own line (#293).</summary>
-    public readonly record struct Start(string Slot, JsExpr Value, bool RunsCode, SyntaxNode? Origin = null);
+    /// evaluates before its base's constructor runs, the C# that declares it, which the statements
+    /// that start it map to, so a frame thrown in an initializer leads to its own line (#293), and what
+    /// TypeScript reads the member as, which the local a derived type evaluates it into is declared as.</summary>
+    public readonly record struct Start(string Slot, JsExpr Value, bool RunsCode, SyntaxNode? Origin, string TsType);
 
     /// <summary>
     /// What a member starts as, as C# starts it: a primary constructor's parameter the parameter
@@ -89,7 +90,7 @@ internal sealed class TwinConstructor
             _ => ("null", false),
         };
         if (value is "null" or "undefined" && _annotations && !Nullable(tsType)) value += "!";
-        return new Start(slot, JsExpr.Opaque(value), runsCode, declaration);
+        return new Start(slot, JsExpr.Opaque(value), runsCode, declaration, tsType);
     }
 
     /// <summary>
@@ -170,7 +171,11 @@ internal sealed class TwinConstructor
             // C# name holds no `$`, and the constructor's are `$` and a letter (`$a`, `$k`, `$c0`). A
             // member `A` or `K` was `const $a` beside the rest parameter `$a`, and the module did not load.
             foreach (var start in state)
-                if (start.RunsCode) statements.Add(JsStatement.Const(Evaluated(start.Slot), start.Value) with { Origin = start.Origin });
+                // Declared as the member is: inferred from the value alone, an empty list was an
+                // `any[]` the checker refused (#1307).
+                if (start.RunsCode)
+                    statements.Add(JsStatement.Const(Evaluated(start.Slot), start.Value, _annotations ? $": {start.TsType}" : "")
+                        with { Origin = start.Origin });
             var implicitException = ImplicitExceptionBase(type);
             if (single is not null)
                 statements.AddRange(SuperCall(single, clause, implicitException));

@@ -2,7 +2,7 @@ import { EmittedBase } from "./EmittedBase";
 
 export class EmittedBag extends EmittedBase {
     constructor(name: string) {
-        const $$_items = [];
+        const $$_items: (string | null)[] = [];
         super(name);
         this._items = $$_items;
     }
