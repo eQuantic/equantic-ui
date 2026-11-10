@@ -7,6 +7,8 @@ eQuantic.UI.Primitives.IFileSaver
 eQuantic.UI.Primitives.IFileSaver.IsAvailable.get -> bool
 eQuantic.UI.Primitives.IFileSaver.SaveBytesAsync(string! name, byte[]! content, string? mimeType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.FileSaveOutcome>
 eQuantic.UI.Primitives.IFileSaver.SaveTextAsync(string! name, string! text, string? mimeType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.FileSaveOutcome>
+*REMOVED*eQuantic.UI.Primitives.Pressable.PressedBackground.get -> eQuantic.UI.Primitives.ColorToken?
+*REMOVED*eQuantic.UI.Primitives.Pressable.PressedBackground.init -> void
 abstract eQuantic.UI.Primitives.Element.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
 override eQuantic.UI.Primitives.ComponentElement.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
 override eQuantic.UI.Primitives.NodeElement.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
