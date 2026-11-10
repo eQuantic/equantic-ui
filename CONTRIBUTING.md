@@ -173,10 +173,10 @@ any jobs at all.
 
 ## Documentation
 
-The wiki is bilingual, and it is its own repository
+The wiki reads in five languages, and it is its own repository
 ([equantic-ui.wiki](https://github.com/eQuantic/equantic-ui/wiki), not a folder of this one). Every
-page has an English canonical file and a Portuguese twin under `locale/pt-BR/<Page>-pt-BR.md` there,
-edited in the **same wiki commit**; the documentation site fails its build
+page has an English canonical file and its translations under `locale/<culture>/<Page>-<culture>.md`
+there, Portuguese, Spanish, French and German, edited in the **same wiki commit**; the documentation site fails its build
 when a translation is older than its canonical page. That commit goes on a wiki branch named exactly
 like the pull request's branch: CI reads it for the docs guards (`scripts/checkout-wiki.sh`), and it
 is merged into the wiki's master when the pull request merges. To run the guards locally against

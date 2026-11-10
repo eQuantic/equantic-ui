@@ -5,9 +5,9 @@
 CI SHALL check out the wiki for the documentation guards at the branch named exactly like the pull
 request's head branch when the wiki has one and the pull request comes from this repository, and at
 the wiki's default branch otherwise. In a merge queue's run, CI SHALL read the wiki's default branch
-with the wiki branch of every pull request already merged whose branch still waits, and then of every
-pull request the group puts on main, merged onto it in that order, leaving out a pull request from a
-fork. The branch name SHALL be read as data and never
+with the wiki branch of every pull request already merged whose branch still waits and whose name no
+open pull request uses, and then of every pull request the group puts on main, merged onto it in that
+order, leaving out a pull request from a fork. The branch name SHALL be read as data and never
 interpolated into a command. When the wiki's branches cannot be listed, when a group's commits do
 not end with the pull request its ref names, or when two of its wiki branches conflict, the checkout
 SHALL fail and leave nothing behind, rather than read the default branch.

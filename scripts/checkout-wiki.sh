@@ -93,33 +93,34 @@ queue_branches() {
     return 1
   fi
 
-  # Arrays, and the last commit's number kept apart: the macOS runner's bash is 3.2, which has no
-  # negative index. `last_*` hold the LAST commit's number only, reset at every commit, so a group
-  # whose final commit names no pull request ends with none. In a squash group every commit is a
-  # pull request's squash, so one without a number is a group this cannot read, and fails; with the
-  # merge method a pull request's own commits carry none, and only the merge commits count.
-  local squashed=() merged=() last_squashed="" last_merged="" unnumbered="" subject
+  # One method for the whole group, as the queue has one. A squash group is one in which EVERY commit
+  # ends with a pull request's ` (#N)`, read in order, even one whose title starts with "Merge pull
+  # request". Otherwise it is a merge group, read by its `Merge pull request #N` commits, and its last
+  # commit must be one: a pull request's own commits carry no number of their own, and one citing an
+  # issue as `(#N)` is never read as a pull request. The macOS runner's bash is 3.2, so the arrays keep
+  # their last element apart, with no negative index.
+  local squashed=() merged=() last_merged="" every_squashed=yes final="" subject
   while IFS= read -r subject; do
     subject=${subject%$'\r'}
-    last_squashed=""
-    last_merged=""
+    [ -n "$subject" ] || continue
+    final=$subject
+    if [[ $subject =~ \(#([0-9]+)\)$ ]]; then
+      squashed+=("${BASH_REMATCH[1]}")
+    else
+      every_squashed=""
+    fi
     if [[ $subject =~ ^Merge\ pull\ request\ \#([0-9]+)\  ]]; then
       merged+=("${BASH_REMATCH[1]}")
       last_merged=${BASH_REMATCH[1]}
-    elif [[ $subject =~ \(#([0-9]+)\)$ ]]; then
-      squashed+=("${BASH_REMATCH[1]}")
-      last_squashed=${BASH_REMATCH[1]}
-    else
-      unnumbered=yes
     fi
   done <<< "$subjects"
   local numbers=() last=""
-  if [ -n "$last_merged" ]; then
+  if [ -n "$final" ] && [ -n "$every_squashed" ]; then
+    numbers=("${squashed[@]}")
+    [[ $final =~ \(#([0-9]+)\)$ ]] && last=${BASH_REMATCH[1]}
+  elif [[ $final =~ ^Merge\ pull\ request\ \#([0-9]+)\  ]]; then
     numbers=("${merged[@]}")
     last=$last_merged
-  elif [ -n "$last_squashed" ] && [ -z "$unnumbered" ]; then
-    numbers=("${squashed[@]}")
-    last=$last_squashed
   fi
   if [ -z "$last" ] || [ "$last" != "$named" ]; then
     echo "::error::The merge group's commits end with pull request '${last:-none}', and its ref names '$named'." >&2
@@ -132,7 +133,21 @@ queue_branches() {
     echo "::error::The pull requests already merged into '$target' could not be read." >&2
     return 1
   fi
-  own_branches "$repo" <<< "$landed"
+  # A branch name an open pull request uses now is that pull request's, whatever a closed one under
+  # the same name merged: its wiki branch waits for its own merge, and is never read for another's.
+  local open
+  if ! open=$(gh api "repos/$repo/pulls?state=open&base=$target&per_page=100" \
+    --jq '.[] | [.head.repo.full_name // "", .head.ref] | @tsv'); then
+    echo "::error::The pull requests open against '$target' could not be read." >&2
+    return 1
+  fi
+  local opened branch
+  opened=$'\n'$(own_branches "$repo" <<< "$open")$'\n'
+  while IFS= read -r branch; do
+    [ -n "$branch" ] || continue
+    case "$opened" in *$'\n'"$branch"$'\n'*) continue ;; esac
+    printf '%s\n' "$branch"
+  done < <(own_branches "$repo" <<< "$landed")
 
   local number line
   for number in "${numbers[@]}"; do
@@ -156,10 +171,16 @@ queue_checkout() {
     echo "::error::The wiki's branches could not be listed at $url." >&2
     return 1
   fi
-  git clone --quiet -- "$url" "$destination" || return 1
-  git -C "$destination" config user.name "eQuantic CI"
-  git -C "$destination" config user.email "ci@equantic.invalid"
-  git -C "$destination" config commit.gpgsign false
+  # Nothing is left behind on any failure from here on: a clone that fails partway, or a
+  # configuration that fails after it, removes the destination before it returns.
+  if ! git clone --quiet -- "$url" "$destination" \
+    || ! git -C "$destination" config user.name "eQuantic CI" \
+    || ! git -C "$destination" config user.email "ci@equantic.invalid" \
+    || ! git -C "$destination" config commit.gpgsign false; then
+    echo "::error::The wiki could not be cloned and prepared at $destination." >&2
+    rm -rf "$destination"
+    return 1
+  fi
 
   local branch merged="" seen=$'\n'
   while IFS= read -r branch; do
@@ -268,6 +289,7 @@ self_test() {
 case "$2" in
   "repos/eQuantic/equantic-ui/compare/base1...head1") cat "$EQ_STUB/subjects" ;;
   "repos/eQuantic/equantic-ui/pulls?state=closed&base=main&sort=updated&direction=desc&per_page=100") cat "$EQ_STUB/landed" ;;
+  "repos/eQuantic/equantic-ui/pulls?state=open&base=main&per_page=100") cat "$EQ_STUB/open" ;;
   repos/eQuantic/equantic-ui/pulls/*) number=${2##*/}; [ -f "$EQ_STUB/pull-$number" ] || exit 1; cat "$EQ_STUB/pull-$number" ;;
   *) exit 1 ;;
 esac
@@ -306,7 +328,7 @@ STUB
     local name=$1 ref=$2 want_page=$3 want_second=${4:-} want_landed=${5:-"(no page)"}
     runs=$((runs + 1))
     rm -rf "$work/out"
-    if ! PATH="$work/stub:$PATH" EQ_STUB="$work/answers" GITHUB_REPOSITORY="eQuantic/equantic-ui" \
+    if ! PATH="${EQ_FAKE_GIT:+$EQ_FAKE_GIT:}$work/stub:$PATH" EQ_STUB="$work/answers" GITHUB_REPOSITORY="eQuantic/equantic-ui" \
       EQ_WIKI_URL="file://$fixture" EQ_QUEUE_BASE=base1 EQ_QUEUE_HEAD=head1 EQ_QUEUE_REF="$ref" \
       bash "$self" "$work/out" > /dev/null 2>&1; then
       if [ "$want_page" = "(fails)" ] && [ ! -e "$work/out" ]; then
@@ -343,6 +365,7 @@ STUB
     mkdir -p "$work/answers"
     printf '%s\n' "$@" > "$work/answers/subjects"
     : > "$work/answers/landed"
+    : > "$work/answers/open"
   }
   pull() { printf '%s\t%s\n' "$2" "$3" > "$work/answers/pull-$1"; }
 
@@ -390,6 +413,24 @@ STUB
 
   answers "✨ feat: the second (#2)"
   queue "a ref that is not a merge queue's fails" "refs/heads/main" "(fails)"
+
+  answers "🔧 chore: the first (#1)" "Merge pull request #2 from someone/feat-second (#2)"
+  queue "a squash whose title starts with 'Merge pull request' is still the group's squash" \
+    "refs/heads/gh-readonly-queue/main/pr-2-abc123" "branch" "second"
+
+  answers "✨ feat: the second (#2)"
+  printf '%s\t%s\n' "eQuantic/equantic-ui" "feat/landed" > "$work/answers/landed"
+  printf '%s\t%s\n' "eQuantic/equantic-ui" "feat/landed" > "$work/answers/open"
+  queue "a merged pull request's branch name that an open one reuses is not read as landed" \
+    "refs/heads/gh-readonly-queue/main/pr-2-abc123" "master" "second"
+
+  # A clone that succeeds and a configuration that fails after it leave nothing behind either.
+  mkdir -p "$work/fakegit"
+  printf '#!/usr/bin/env bash\n[ "$1" = -C ] && [ "$3" = config ] && exit 1\nexec "%s" "$@"\n' "$(command -v git)" > "$work/fakegit/git"
+  chmod +x "$work/fakegit/git"
+  answers "✨ feat: the second (#2)"
+  EQ_FAKE_GIT="$work/fakegit" queue "a configuration that fails after the clone fails, and leaves nothing behind" \
+    "refs/heads/gh-readonly-queue/main/pr-2-abc123" "(fails)"
 
   answers "🔧 chore: the first (#1)" "🐛 fix: the fifth (#5)"
   pull 5 eQuantic/equantic-ui feat/conflict
