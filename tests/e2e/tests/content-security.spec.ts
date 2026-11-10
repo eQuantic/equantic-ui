@@ -85,7 +85,8 @@ test.describe('The dashboard under the strict Content-Security-Policy', () => {
       }
       await expect(link, `${route} is linked from the page the navigation starts on`).toHaveCount(1);
       await link.click();
-      await page.waitForURL(`**${route}`);
+      // The path alone: a link that carries a query or a fragment lands on the route with it.
+      await page.waitForURL((url) => url.pathname === route);
       for (const violation of await violationsOf(page)) offences.push(`${route}: ${violation}`);
     }
 
