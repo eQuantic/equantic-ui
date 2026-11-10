@@ -4463,6 +4463,90 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#1307](https://github.com/eQuantic/equantic-ui/issues/1307)), and a primary constructor's null default is said
   to be one ([#1347](https://github.com/eQuantic/equantic-ui/issues/1347)). Fixtures of each shape are checked by the
   runtime's `tsc`. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
+- **2026-11-09 · A web save goes straight to an eqc the server keeps running**: every save started a
+  new MSBuild, which evaluated the project and resolved its references before it started a new eqc,
+  measured at 6.8s of MSBuild on CI's runner before a module was written. The server now asks the
+  project's MSBuild once for a run, while the app starts, how to start eqc, and keeps it running:
+  `eqc --serve` reads `compile` on its standard input for each save and answers in one line, loading
+  the project's compilation again. The server owns the process: eqc ends with its input, a stop or a
+  compile past its limit kills it, and the next save starts it again. `--watch`, which compiled with
+  the semantic model it loaded at its start, gave way to it. Measured on the dashboard sample at a load
+  average of 80 to 100, the MSBuild part of a warm save went from seconds to 5 to 12ms, with one
+  document per save, hydrated ([#1276](https://github.com/eQuantic/equantic-ui/issues/1276)). Proposed
+  through OpenSpec (`openspec/specs/hot-reload`).
+- **2026-11-09 · A web save is rebuilt after the editor's burst, and none is dropped**: the server
+  waited a fixed 400ms after a save before it rebuilt, measured as 44% of the second an edit has to
+  reach the screen in, and dropped a save that came while a rebuild ran, so the browser stayed on the
+  edit before it. The wait is a 50ms quiet window that each change of a save restarts, on one timer
+  for the service's life, and a save during a rebuild runs one more rebuild when it ends, however many
+  came. Measured on the dashboard sample, the wait part went from 436 to 475ms to 91 to 97ms, and a test
+  counts two rebuilds for three saves where the old service ran one. The first of the web's
+  edit-to-view slices ([#1274](https://github.com/eQuantic/equantic-ui/issues/1274),
+  [#1262](https://github.com/eQuantic/equantic-ui/issues/1262)). Proposed through OpenSpec
+  (`openspec/specs/hot-reload`).
+- **2026-11-09 · A web save reloads the page once, into markup that holds the edit**: each save
+  reloaded the page twice. dotnet watch applied the edit to the server and refreshed the browser
+  itself, with the modules from before the edit, and the rebuild reloaded it again seconds later into
+  markup the boot could not trust, so it drew over it. The rebuild stream is now the page's one source
+  of reloads: the shell keeps dotnet watch's refresh script out of the page by the guard the script
+  keeps against connecting twice, and the stream names the server's run (a page that reconnects to
+  another run reloads), says when the modules are new and whether the server holds the edit, counted
+  through .NET's `MetadataUpdateHandler`, and carries a failed rebuild's errors to the development
+  overlay. The boot hydrates the markup and replays the page's fields after it. Measured on the
+  dashboard sample, one document per save where there were two, hydrated with no warning, and the
+  replay went from 98 to 229ms on CI to 37 to 42ms on a loaded machine. A test reads the guard out of
+  the SDK global.json selects, and the measurement fails a run that reloads twice
+  ([#1275](https://github.com/eQuantic/equantic-ui/issues/1275)). Proposed through OpenSpec
+  (`openspec/specs/hot-reload`).
+- **2026-11-09 · CI is ready for main to merge through GitHub's merge queue**: with two fronts merging
+  at once, every merge left every other green pull request behind, to merge `main` again and wait
+  about thirty minutes of CI before its turn, about two merges an hour. `ci.yml` now runs on
+  `merge_group`, every required job runs there and no publishing job does. The commit guard reads its
+  range from the event (`--event`), so a group's squash commits are read before they reach `main`,
+  where the workflow's old expression gave a group the last commit alone; and a group's docs guards
+  read master with the wiki branch of each pull request in the group merged onto it. Both self-tests
+  hold the merge group's shapes and fail on the old behaviour. The queue itself is turned on in ruleset
+  21198869 ([#1308](https://github.com/eQuantic/equantic-ui/issues/1308)). Proposed and archived
+  through OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-09 · CI restores NuGet packages from a cache keyed on their versions**: no job cached
+  `~/.nuget/packages`, so every job of every run downloaded its packages again. The test jobs,
+  `test (macos-latest)`, `build-packages` and `samples` now restore through one composite action from
+  a cache keyed on the system, the job and a hash of the lines that declare a package or a version, so
+  an edit to a project that declares none keeps the cache; there is no fallback key, so a miss restores
+  from nuget.org as before, and this repository's own `equantic.*` packages are never saved
+  ([#1312](https://github.com/eQuantic/equantic-ui/issues/1312)). Proposed and archived through
+  OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-09 · Each system's tests run as three parallel jobs**: a `test` leg ran the eleven test
+  projects one after another, 13.4 minutes on Ubuntu and 15.1 on Windows on run 42675312854, and
+  Conformance.Tests alone took 5 minutes 32 seconds of Ubuntu's. Each system now runs `conformance`,
+  `web` and `rest` side by side, the projects found by `scripts/test-groups.sh`, so a new project lands
+  in `rest` without an edit, a group that finds none fails, and every red project is still named at
+  the end of its job. The ruleset requires the six jobs in place of the two legs
+  ([#1310](https://github.com/eQuantic/equantic-ui/issues/1310)). Proposed and archived through
+  OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-09 · The Content-Security-Policy is a builder setting**: `ui.UseContentSecurityPolicy()`
+  writes the strict policy on every page, `script-src` by the request's nonce and `'strict-dynamic'`,
+  `object-src` and `base-uri` refused, framing and connections to the app's own origin, with
+  `X-Content-Type-Options: nosniff` and `Referrer-Policy` on every response. The app states only the
+  origins its own code connects to or is framed by, in C# (`AllowConnectionsTo`, `AllowFramingBy`)
+  and per environment in `EQuantic:ContentSecurityPolicy`, where report-only and the report URI live
+  too, and a source that is not one stops the app at start. The SDK adds what its features need:
+  `UseGtm` declares Google's hosts and hands its container the nonce, and under `dotnet watch`, whose
+  own script no nonce admits, the policy reports and refuses nothing. `style-src` waits for #1268
+  ([#1267](https://github.com/eQuantic/equantic-ui/issues/1267)). Proposed and archived through
+  OpenSpec, into `content-security`.
+- **2026-11-09 · The SDK's styles stay inside a strict policy**: the policy writes `style-src` by the
+  request's nonce and `style-src-attr 'unsafe-inline'`. The shell's stylesheet links carry the nonce
+  as its style elements do, and the runtime stamps the style elements it creates (`eq-atomic`,
+  `eq-faces`) before they enter the document. Measured in Chromium 152, an unstamped one is refused
+  and gets no sheet. Style attributes are admitted by their own directive: the dashboard's pages
+  carry 4 to 25 each (a pressable's pressed fill, a loop's endpoints, an editor's caret), per element
+  and often per frame, and server-rendered markup is styled before any script could write them
+  through the CSSOM. An injected style element is still refused, and the runtime's one
+  `setAttribute('style')` writes through `style.cssText`. ApexCharts, which writes its CSS in a style
+  element of its own, is handed the page's nonce
+  ([#1268](https://github.com/eQuantic/equantic-ui/issues/1268)). Proposed and archived through
+  OpenSpec, into `content-security`.
 
 ## Retired documents
 
