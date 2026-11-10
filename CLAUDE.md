@@ -370,6 +370,8 @@ The TypeScript runtime is built using **embedded Bun** (bundled in platform-spec
 # Type-check (tsc) and test (vitest run) the runtime through the embedded Bun — no Node, any OS.
 # The build unpacks the bun of the sibling package for this OS and architecture
 # (src/eQuantic.UI.Runtime.<Os><Arch>/tools/bun/*.zip), and the target installs from bun.lock first.
+# bun.lock is the authority. package-lock.json beside it is its mirror, the file Dependabot reads:
+# a dependency moves in both in one change, and RuntimeLockfilesTests fails when they differ.
 dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
 
 # That bun's path, for running it by hand:
