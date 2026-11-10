@@ -48,7 +48,10 @@ public class DocumentShellTests
         return await app.GetTestClient().GetStringAsync("/document");
     }
 
-    private static string HeadOf(string page) => page[..page.IndexOf("</head>", StringComparison.Ordinal)];
+    /// <summary>The head, without the request's nonce: it changes with every request and is held by
+    /// <c>ShellNonceTests</c>, and these read the order and the content of what it is stamped on.</summary>
+    private static string HeadOf(string page) =>
+        Regex.Replace(page[..page.IndexOf("</head>", StringComparison.Ordinal)], " nonce=\"[^\"]+\"", "");
 
     [Fact]
     public async Task APageWhoseAppChoseNoTheme_CarriesPhotonsStylesheet()

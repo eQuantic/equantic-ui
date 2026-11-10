@@ -7,6 +7,12 @@ eQuantic.UI.Primitives.IFileSaver
 eQuantic.UI.Primitives.IFileSaver.IsAvailable.get -> bool
 eQuantic.UI.Primitives.IFileSaver.SaveBytesAsync(string! name, byte[]! content, string? mimeType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.FileSaveOutcome>
 eQuantic.UI.Primitives.IFileSaver.SaveTextAsync(string! name, string! text, string? mimeType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.FileSaveOutcome>
+eQuantic.UI.Primitives.BuildOwner.BuildOwner(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent) -> void
+static eQuantic.UI.Primitives.BuildOwner.Structural(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent) -> eQuantic.UI.Primitives.BuildOwner!
+static eQuantic.UI.Primitives.ComponentBoundary.Owner() -> eQuantic.UI.Primitives.BuildOwner!
+static eQuantic.UI.Primitives.ComponentBoundary.StructuralOwner() -> eQuantic.UI.Primitives.BuildOwner!
+*REMOVED*eQuantic.UI.Primitives.BuildOwner.BuildOwner() -> void
+*REMOVED*static eQuantic.UI.Primitives.BuildOwner.Structural() -> eQuantic.UI.Primitives.BuildOwner!
 *REMOVED*eQuantic.UI.Primitives.Pressable.PressedBackground.get -> eQuantic.UI.Primitives.ColorToken?
 *REMOVED*eQuantic.UI.Primitives.Pressable.PressedBackground.init -> void
 abstract eQuantic.UI.Primitives.Element.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
