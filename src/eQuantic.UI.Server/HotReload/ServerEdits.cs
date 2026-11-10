@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Reflection.Metadata;
 
 namespace eQuantic.UI.Server.HotReload;
@@ -33,7 +32,7 @@ internal sealed class ServerEdits
         MetadataUpdater.IsSupported && Environment.GetEnvironmentVariable("DOTNET_WATCH") == "1", Within);
 
     private readonly object _gate = new();
-    private long _taken;
+    private DateTime _lastTakenUtc = DateTime.MinValue;
 
     /// <summary>The edits of a process, which a test plays.</summary>
     internal ServerEdits(bool arriveOnSave, TimeSpan within)
@@ -48,45 +47,40 @@ internal sealed class ServerEdits
     /// <summary>How long after a save its edit may still arrive.</summary>
     internal TimeSpan ArrivalLimit { get; }
 
-    /// <summary>How many edits this process has taken.</summary>
-    internal long Taken
-    {
-        get
-        {
-            lock (_gate) return _taken;
-        }
-    }
-
     private void Wake()
     {
         lock (_gate) Monitor.PulseAll(_gate);
     }
 
-    /// <summary>One more edit was applied to this process.</summary>
+    /// <summary>One more edit was applied to this process, now.</summary>
     internal void Take()
     {
         lock (_gate)
         {
-            _taken++;
+            _lastTakenUtc = DateTime.UtcNow;
             Monitor.PulseAll(_gate);
         }
     }
 
     /// <summary>
-    /// Whether an edit arrived after <paramref name="seen"/> had been taken. When every save brings
-    /// one, it is waited for until <see cref="ArrivalLimit"/> after <paramref name="savedAt"/>, a
-    /// <see cref="Stopwatch"/> timestamp, or until <paramref name="stopping"/> is cancelled: an app
-    /// that stops is not held by a wait for an edit it will never render.
+    /// Whether an edit was applied to this process at or after <paramref name="writtenUtc"/>, when the
+    /// files a save changed were last written. A save's edit is compiled from what it wrote, so it is
+    /// applied after that, whenever this server hears of the save: a count taken when the server's own
+    /// watcher saw the save missed an edit dotnet watch had applied first, which it does in a few tens
+    /// of milliseconds, and the page drew over markup that held the edit (#1275). When every save brings
+    /// one, it is waited for until <see cref="ArrivalLimit"/> after the write, or until
+    /// <paramref name="stopping"/> is cancelled: an app that stops is not held by a wait for an edit it
+    /// will never render.
     /// </summary>
-    internal bool ArrivedAfter(long seen, long savedAt, CancellationToken stopping)
+    internal bool ArrivedSince(DateTime writtenUtc, CancellationToken stopping)
     {
         using var woken = stopping.Register(Wake);
         lock (_gate)
         {
-            while (_taken <= seen)
+            while (_lastTakenUtc < writtenUtc)
             {
                 if (!ArriveOnSave || stopping.IsCancellationRequested) return false;
-                var left = ArrivalLimit - Stopwatch.GetElapsedTime(savedAt);
+                var left = writtenUtc + ArrivalLimit - DateTime.UtcNow;
                 if (left <= TimeSpan.Zero) return false;
                 Monitor.Wait(_gate, left);
             }
