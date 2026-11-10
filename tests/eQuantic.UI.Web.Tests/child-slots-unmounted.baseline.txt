@@ -1,0 +1,4 @@
+# Node kinds ChildSlotsCoverageTests cannot build an instance of, so it cannot hold them to their arm
+# in ChildSlots. One line each, "TypeName: why". It only shrinks: a new kind gets an instance, not a
+# line here, and EQ_UPDATE_CHILD_SLOTS_BASELINE=1 only takes lines out.
+# Empty: every concrete VisualNode in Primitives is built and mounted.
