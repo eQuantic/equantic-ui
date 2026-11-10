@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
-using System.Threading.Channels;
 using System.Diagnostics;
+using System.Text.Json;
+using System.Threading.Channels;
 using Microsoft.AspNetCore.Http;
 
 namespace eQuantic.UI.Server.HotReload;
@@ -11,43 +12,69 @@ namespace eQuantic.UI.Server.HotReload;
 /// uses, nothing bespoke), and notifies connected browsers over SSE. The RUNTIME side captures the
 /// live page state before reloading and replays it through the ordinary SSR-hydration mechanic —
 /// save a file, the UI updates, the state survives. v2 fence: module hot-swap without a reload.
+/// <para>
+/// THE STREAM IS THE PAGE'S ONE SOURCE OF RELOADS, and says three things (#1275). <c>server</c>, first
+/// on every connection, names this run of the server, so a page that reconnects to another one (a
+/// restart, dotnet watch's answer to an edit it cannot apply) reloads. <c>rebuilt</c> says the modules
+/// are new and whether the server's markup holds the edit too (<see cref="ServerEdits"/>): <c>hydrate</c>,
+/// or <c>mount</c> when the page has to draw over markup from before it. <c>failed</c> carries the
+/// errors of a rebuild that did not compile. dotnet watch's own refresh script, which reloaded each page
+/// a second time with the old modules, stays out of the page while this stream runs: the shell tells it
+/// the page is taken.
+/// </para>
 /// </summary>
 public sealed class HotReloadService : IDisposable
 {
+    /// <summary>The most error lines a failed rebuild sends the page, which shows them all.</summary>
+    internal const int ErrorsShown = 20;
+
     private readonly string _contentRoot;
-    private readonly Func<Process?> _startRebuild;
+    private readonly IModuleCompiler _compiler;
     private readonly TimeSpan _limit;
+    private readonly ServerEdits _edits;
+    private readonly string _run = Guid.NewGuid().ToString("N");
+    private readonly CancellationTokenSource _stopping = new();
     private readonly ConcurrentDictionary<Guid, Channel<string>> _clients = new();
     private readonly object _gate = new();
     private FileSystemWatcher? _watcher;
+    private FileSystemWatcher? _assets;
+    private Timer? _assetsQuiet;
     private Timer? _debounce;
     private Timer? _keepAlive;
     private int _building;
-    private Process? _rebuild;
+    private int _pending;
+    // When the saves the next rebuild answers last wrote their files, in UTC ticks; 0 when none came.
+    private long _burstWritten;
     private volatile bool _disposed;
 
     public HotReloadService(string contentRoot)
-        : this(contentRoot, () => Process.Start(new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            Arguments = "msbuild -t:CompileEQuanticUI -v:q -nologo",
-            WorkingDirectory = contentRoot,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        }), TimeSpan.FromMinutes(2))
+        : this(contentRoot, new RunningCompiler(contentRoot), TimeSpan.FromMinutes(2), ServerEdits.OfThisProcess)
     {
     }
 
-    /// <summary>The service with the rebuild it starts and how long it may take, which a test sets.</summary>
-    internal HotReloadService(string contentRoot, Func<Process?> startRebuild, TimeSpan limit)
+    /// <summary>The service with what compiles the modules, how long a compile may take and the edits
+    /// its server takes, which a test sets. The service owns the compiler, and disposes of it.</summary>
+    internal HotReloadService(string contentRoot, IModuleCompiler compiler, TimeSpan limit, ServerEdits edits)
     {
         _contentRoot = contentRoot;
-        _startRebuild = startRebuild;
+        _compiler = compiler;
         _limit = limit;
+        _edits = edits;
     }
+
+
+    /// <summary>
+    /// How long the sources stay quiet before a rebuild starts: long enough to take an editor's save,
+    /// which can be several writes and a rename, as one rebuild, and short against the second an edit
+    /// has to reach the screen in. It was a fixed 400ms, measured as 44% of that bar (#900, #1274).
+    /// </summary>
+    internal static readonly TimeSpan Quiet = TimeSpan.FromMilliseconds(50);
 
     public void Start()
     {
+        // One timer for the service's life, restarted by each event: the watcher raises them on pool
+        // threads, and replacing the timer from two of them at once left the first one running.
+        _debounce = new Timer(_ => Rebuild(), null, Timeout.Infinite, Timeout.Infinite);
         _watcher = new FileSystemWatcher(_contentRoot, "*.cs")
         {
             IncludeSubdirectories = true,
@@ -57,6 +84,39 @@ public sealed class HotReloadService : IDisposable
         _watcher.Created += OnSourceChanged;
         _watcher.Renamed += OnSourceChanged;
         _watcher.EnableRaisingEvents = true;
+
+        // The app's own static files reload the page as they are, since dotnet watch's refresh script,
+        // which did that, stays out of a page this stream reloads. The markup is the server's and holds
+        // nothing a file changed, so the page hydrates it. eqc's own output is the rebuild's to announce.
+        var webRoot = Path.Combine(_contentRoot, "wwwroot");
+        if (Directory.Exists(webRoot))
+        {
+            _assetsQuiet = new Timer(_ => AssetChanged(), null, Timeout.Infinite, Timeout.Infinite);
+            _assets = new FileSystemWatcher(webRoot)
+            {
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName,
+            };
+            _assets.Changed += OnAssetChanged;
+            _assets.Created += OnAssetChanged;
+            _assets.Renamed += OnAssetChanged;
+            _assets.Deleted += OnAssetChanged;
+            _assets.EnableRaisingEvents = true;
+        }
+
+        // The compiler gets ready while the app starts, so the first save of a run pays no MSBuild and
+        // no process start. A compiler that cannot get ready says why on the first save.
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                _compiler.Prepare();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[eQuantic.HotReload] the compiler could not get ready: {ex.Message}");
+            }
+        });
 
         // A parked SSE request that never says anything gets idle-dropped by Kestrel and by every
         // proxy in between — a couple of quiet minutes and hot reload was silently over for that
@@ -68,65 +128,132 @@ public sealed class HotReloadService : IDisposable
     {
         var path = e.FullPath.Replace('\\', '/');
         if (path.Contains("/obj/") || path.Contains("/bin/")) return;
-        // Debounce editor save bursts; the build itself serializes via _building.
-        _debounce?.Dispose();
-        _debounce = new Timer(_ => Rebuild(), null, 400, Timeout.Infinite);
+        SourceChanged(e.FullPath);
     }
 
-    internal void Rebuild()
+    private void OnAssetChanged(object sender, FileSystemEventArgs e)
     {
-        if (_disposed || Interlocked.Exchange(ref _building, 1) == 1) return;
+        var path = e.FullPath.Replace('\\', '/');
+        if (path.Contains("/wwwroot/_equantic/", StringComparison.Ordinal) || path.EndsWith("/wwwroot/_equantic", StringComparison.Ordinal)) return;
+        if (_disposed) return;
         try
         {
-            // Started under the gate Dispose takes: a shutdown that comes while the process is starting
-            // waits for it to exist, and then finds it to stop.
-            Process? launched;
-            lock (_gate)
+            _assetsQuiet?.Change(Quiet, Timeout.InfiniteTimeSpan);
+        }
+        catch (ObjectDisposedException)
+        {
+            // An event still in flight when the app stopped.
+        }
+    }
+
+    /// <summary>A static file of the app changed, once its writes are quiet: the page reloads and hydrates.</summary>
+    internal void AssetChanged()
+    {
+        if (_disposed) return;
+        Send(Frame("rebuilt", "hydrate"));
+    }
+
+    /// <summary>A source of the app was written, at <paramref name="path"/> when the event names it: one
+    /// event of a save, which may be several.</summary>
+    internal void SourceChanged(string? path = null)
+    {
+        // Each event of a save restarts the wait, so a burst of writes is one rebuild.
+        if (_disposed) return;
+        // The burst's last write, which the edit of its save follows: read off the file, never off
+        // when this event arrived, which may be after dotnet watch applied the edit.
+        var written = path is not null && File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.UtcNow;
+        long seen;
+        do
+        {
+            seen = Volatile.Read(ref _burstWritten);
+            if (seen >= written.Ticks) break;
+        }
+        while (Interlocked.CompareExchange(ref _burstWritten, written.Ticks, seen) != seen);
+        try
+        {
+            _debounce?.Change(Quiet, Timeout.InfiniteTimeSpan);
+        }
+        catch (ObjectDisposedException)
+        {
+            // An event still in flight when the app stopped: there is nothing left to rebuild for.
+        }
+    }
+
+    /// <summary>
+    /// Rebuilds, and once more when a save came while it ran: once, however many came, since a rebuild
+    /// compiles the whole project. A save that found a rebuild running used to be dropped, and the
+    /// browser stayed on the edit before it until the next save (#1262).
+    /// </summary>
+    internal void Rebuild()
+    {
+        // Said before the flag is taken, so a rebuild already running sees it when it ends.
+        Volatile.Write(ref _pending, 1);
+        while (!_disposed && Interlocked.Exchange(ref _building, 1) == 0)
+        {
+            try
             {
-                if (_disposed) return;
-                launched = _startRebuild();
-                _rebuild = launched;
+                while (!_disposed && Interlocked.Exchange(ref _pending, 0) == 1)
+                    RebuildOnce();
             }
-            using var process = launched;
-            if (process is null) return;
+            finally
+            {
+                Interlocked.Exchange(ref _building, 0);
+            }
+            // A save between the last look and the release found the flag held and left: its rebuild
+            // is this loop's to run.
+            if (Volatile.Read(ref _pending) == 0) return;
+        }
+    }
+
+    private void RebuildOnce()
+    {
+        // The saves this rebuild answers; one after this line opens the next burst, rebuilt after it.
+        var burst = Interlocked.Exchange(ref _burstWritten, 0) is var ticks and > 0
+            ? new DateTime(ticks, DateTimeKind.Utc) : DateTime.UtcNow;
+        try
+        {
+            if (_disposed) return;
             // Said when it starts as well as when it ends: the person sees the save was taken, and the
             // edit-to-view measurement (#900) reads the wait after a save off this line.
             Console.WriteLine("[eQuantic.HotReload] a source changed, rebuilding");
-            // The pipes are read BEFORE waiting: a build that says more than the pipe buffer holds
-            // (~64KB — any real error list) used to block writing while we blocked waiting, and the
-            // whole thing sat there until the 2-minute timeout.
-            var stdout = process.StandardOutput.ReadToEndAsync();
-            var stderr = process.StandardError.ReadToEndAsync();
             var started = Stopwatch.StartNew();
-            if (!process.WaitForExit(_limit))
-            {
-                // Stopped, not abandoned: releasing the wrapper ends nothing, and a build left running
-                // writes beside the next one, where shutdown can no longer reach it.
-                Stop(process);
-                process.WaitForExit(5_000);
-                Console.WriteLine($"[eQuantic.HotReload] eqc rebuild stopped after {_limit.TotalSeconds:F0}s");
-                return;
-            }
+            var outcome = _compiler.Compile(_limit);
             if (_disposed) return;
-            if (process.ExitCode == 0)
+            if (outcome.Compiled)
             {
                 Console.WriteLine($"[eQuantic.HotReload] rebuilt in {started.Elapsed.TotalSeconds:F1}s — reloading browsers");
-                Broadcast("reload");
+                // Announced once the server holds the edit, when every save brings it one, so the
+                // page reloads ONCE and hydrates markup that agrees with its modules.
+                var held = _edits.ArrivedSince(burst, _stopping.Token);
+                if (_disposed) return;
+                Send(Frame("rebuilt", held ? "hydrate" : "mount"));
             }
-            else Console.WriteLine($"[eQuantic.HotReload] eqc rebuild failed:\n{stderr.Result}{stdout.Result}");
+            else
+            {
+                var errors = ErrorsOf(string.Join('\n', outcome.Errors));
+                Console.WriteLine($"[eQuantic.HotReload] eqc rebuild failed:\n{string.Join('\n', errors)}");
+                Send(Frame("failed", JsonSerializer.Serialize(errors)));
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[eQuantic.HotReload] rebuild error: {ex.Message}");
         }
-        finally
-        {
-            _rebuild = null;
-            Interlocked.Exchange(ref _building, 0);
-        }
     }
 
-    private void Broadcast(string message) => Send($"data: {message}\n\n");
+    /// <summary>One event of the stream: its name and a line of data.</summary>
+    private static string Frame(string name, string data) => $"event: {name}\ndata: {data}\n\n";
+
+    /// <summary>
+    /// What the page shows of a rebuild that failed: MSBuild's error lines, each once, or the end of
+    /// what it said when it wrote none in that form.
+    /// </summary>
+    internal static string[] ErrorsOf(string output)
+    {
+        var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var errors = lines.Where(line => line.Contains(": error ", StringComparison.Ordinal)).Distinct().ToArray();
+        return (errors.Length > 0 ? errors : lines.TakeLast(ErrorsShown)).Take(ErrorsShown).ToArray();
+    }
 
     private void Send(string frame)
     {
@@ -142,9 +269,8 @@ public sealed class HotReloadService : IDisposable
     {
         context.Response.Headers.ContentType = "text/event-stream";
         context.Response.Headers.CacheControl = "no-cache";
-        await context.Response.WriteAsync(": connected\n\n", context.RequestAborted);
-        await context.Response.Body.FlushAsync(context.RequestAborted);
-
+        // Registered BEFORE the first frame is written: a rebuild that ends in between queues its
+        // event behind the greeting instead of reaching a page that was not yet listed.
         var id = Guid.NewGuid();
         var channel = Channel.CreateUnbounded<string>();
         _clients[id] = channel;
@@ -153,6 +279,10 @@ public sealed class HotReloadService : IDisposable
         if (_disposed) channel.Writer.TryComplete();
         try
         {
+            // Which run of the server this is, and a second between attempts to reach the next one: a
+            // restart is seconds of build, and the page reloads as soon as the new run answers.
+            await context.Response.WriteAsync("retry: 1000\n" + Frame("server", _run), context.RequestAborted);
+            await context.Response.Body.FlushAsync(context.RequestAborted);
             await foreach (var frame in channel.Reader.ReadAllAsync(context.RequestAborted))
             {
                 await context.Response.WriteAsync(frame, context.RequestAborted);
@@ -176,31 +306,17 @@ public sealed class HotReloadService : IDisposable
     /// shutdown until the host gives up on it.</summary>
     public void Dispose()
     {
-        Process? rebuild;
-        lock (_gate)
-        {
-            _disposed = true;
-            rebuild = _rebuild;
-        }
+        lock (_gate) _disposed = true;
+        _stopping.Cancel();
         _watcher?.Dispose();
+        _assets?.Dispose();
+        _assetsQuiet?.Dispose();
         _debounce?.Dispose();
         _keepAlive?.Dispose();
-        if (rebuild is not null) Stop(rebuild);
-        // The rebuild ends once its process exits, which the kill makes quick.
+        // The compiler stops its process, so a compile in flight answers at once.
+        _compiler.Dispose();
         SpinWait.SpinUntil(() => Volatile.Read(ref _building) == 0, TimeSpan.FromSeconds(10));
         foreach (var (_, channel) in _clients)
             channel.Writer.TryComplete();
-    }
-
-    private static void Stop(Process process)
-    {
-        try
-        {
-            process.Kill(entireProcessTree: true);
-        }
-        catch (InvalidOperationException)
-        {
-            // It exited, or was released, between the read and the kill.
-        }
     }
 }
