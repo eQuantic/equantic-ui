@@ -32,9 +32,14 @@ readonly MARKERS='OperatingSystem\.IsMacOS\(\)|OSPlatform\.OSX|\[Mac(Fact|Theory
 readonly TEST_ATTRIBUTE='\[[A-Za-z]*(Fact|Theory)[](,]'
 readonly APPLE_TRACK='Native\.(Shell\.(Apple|MacOS|iOS)|Engine\.Metal)'
 
+# shellcheck source=scripts/test-projects.sh
+. "$(dirname "${BASH_SOURCE[0]}")/test-projects.sh"
+
 list() {
-  local root=${EQ_TESTS_ROOT:-tests} project dir file why
+  local root=${EQ_TESTS_ROOT:-tests} project dir file why all
+  all=$(test_projects "$root") || { echo "::error::The test projects under $root could not be listed." >&2; return 1; }
   while IFS= read -r project; do
+    [ -n "$project" ] || continue
     dir=$(dirname "$project")
     why=""
     if /usr/bin/grep -qE "<ProjectReference[^>]*$APPLE_TRACK" "$project"; then
@@ -49,7 +54,7 @@ list() {
       done < <(/usr/bin/grep -rlE --include='*.cs' --exclude-dir=bin --exclude-dir=obj "$MARKERS" "$dir" | sort)
     fi
     if [ -n "$why" ]; then printf '%s\t%s\n' "$project" "$why"; fi
-  done < <(find "$root" -name '*.csproj' -not -path '*/bin/*' -not -path '*/obj/*' | sort)
+  done <<< "$all"
 }
 
 # The number of tests a TRX report says ran, passed and failed included, skipped not.
