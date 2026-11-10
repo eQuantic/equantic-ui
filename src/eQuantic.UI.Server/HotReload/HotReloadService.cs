@@ -226,6 +226,11 @@ public sealed class HotReloadService : IDisposable
                 // page reloads ONCE and hydrates markup that agrees with its modules.
                 var held = _edits.ArrivedSince(burst, _stopping.Token);
                 if (_disposed) return;
+                // What the page is told, and why: the edit-to-view measurement reads this line when a
+                // save draws over the server's markup, which it could not explain before (#1373).
+                Console.WriteLine(held
+                    ? "[eQuantic.HotReload] the page hydrates: this server holds the save's edit"
+                    : $"[eQuantic.HotReload] the page mounts: {_edits.WhyNotSince(burst)}");
                 Send(Frame("rebuilt", held ? "hydrate" : "mount"));
             }
             else

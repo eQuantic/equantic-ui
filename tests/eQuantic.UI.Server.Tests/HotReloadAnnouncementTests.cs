@@ -33,9 +33,11 @@ public class HotReloadAnnouncementTests
         }
 
         var lines = captured.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        lines.Should().HaveCount(2);
+        lines.Should().HaveCount(3);
         lines[0].Should().Be("[eQuantic.HotReload] a source changed, rebuilding",
             "said before the build runs, so the time to it is the wait after the save and nothing else");
         lines[1].Should().StartWith("[eQuantic.HotReload] rebuilt in ");
+        lines[2].Should().Be("[eQuantic.HotReload] the page mounts: no save brings this server its edit, since dotnet watch does not run it",
+            "the server says why the page draws over its markup, which the edit-to-view measurement reads (#1373)");
     }
 }

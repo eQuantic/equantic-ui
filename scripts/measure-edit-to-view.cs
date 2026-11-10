@@ -198,6 +198,21 @@ return failures.Count == 0 ? 0 : 1;
 
 // ---- the web ---------------------------------------------------------------------------------
 
+// What a document that drew over was told and served, and what the server said of it: the frames the
+// page's streams received after the save, what the reload carried, whether the server rendered the
+// document, and the server's line on its answer. A failure used to name none of them (#1373).
+string WhyItDrewOver(JsonNode state, JsonNode reloaded, double saved)
+{
+    var frames = (state["frames"]?.AsArray() ?? [])
+        .Where(f => f!["at"]!.GetValue<double>() > saved && f["name"]!.GetValue<string>() == "rebuilt")
+        .Select(f => f!["data"]!.GetValue<string>());
+    var said = lines.Where(l => l.At > saved && l.Text.Contains("[eQuantic.HotReload] the page", StringComparison.Ordinal))
+        .Select(l => l.Text.Trim());
+    return $"The streams heard rebuilt: [{string.Join(", ", frames)}]; the reload carried hydrate: "
+        + $"{reloaded["told"]?.ToJsonString() ?? "nothing"}; the server rendered it: {reloaded["ssr"]?.ToJsonString() ?? "unknown"}; "
+        + $"the server said: {(said.Any() ? string.Join(" | ", said) : "nothing")}.";
+}
+
 async Task<Dictionary<string, double>> MeasureWeb(string marker, double saved)
 {
     // The edit is on screen once the browser runs the code that draws it: a document the server's
@@ -236,7 +251,7 @@ async Task<Dictionary<string, double>> MeasureWeb(string marker, double saved)
     if (parts["documents"] != 1)
         failures.Add($"\"{marker}\": the save reloaded the page {parts["documents"]:F0} times, where once is the rebuild's");
     if (reloaded["hydrated"]?.GetValue<bool>() != true)
-        failures.Add($"\"{marker}\": the rebuild's document drew over the server's markup instead of hydrating it, so the server did not hold the edit");
+        failures.Add($"\"{marker}\": the rebuild's document drew over the server's markup instead of hydrating it. {WhyItDrewOver(state, reloaded, saved)}");
     if (reloaded["warned"]?.GetValue<bool>() == true)
         failures.Add($"\"{marker}\": the rebuild's document warned while it hydrated, so the server's markup and the modules disagree");
 
@@ -420,14 +435,36 @@ partial class Program
     const string Observer = """
         (() => {
           const key = 'eq-edit-to-view';
-          const read = () => JSON.parse(sessionStorage.getItem(key) || '{"documents":[],"draws":[],"timeline":[]}');
+          const read = () => JSON.parse(sessionStorage.getItem(key) || '{"documents":[],"draws":[],"timeline":[],"frames":[]}');
           const write = (state) => sessionStorage.setItem(key, JSON.stringify(state));
           const origin = performance.timeOrigin;
           const state = read();
           // The runtime leaves __eq_hmr__ behind just before it reloads for a rebuild, and boot reads it
           // after this runs: a document started by anything else (dotnet watch's own refresh) finds none.
-          state.documents.push({ origin, rebuild: sessionStorage.getItem('__eq_hmr__') !== null });
+          const hmr = sessionStorage.getItem('__eq_hmr__');
+          // What the reload carried for the boot: whether the stream said the server holds the edit (#1373).
+          let told = null;
+          try { told = hmr === null ? null : JSON.parse(hmr).hydrate === true; } catch { told = null; }
+          state.documents.push({ origin, rebuild: hmr !== null, told });
           write(state);
+          // Every frame this document's stream receives, with what it said: a document that drew over is
+          // explained by the frame that reloaded it (#1373).
+          const listen = EventSource.prototype.addEventListener;
+          EventSource.prototype.addEventListener = function (type, listener, options) {
+            if (type === 'rebuilt' || type === 'server') {
+              listen.call(this, type, (event) => {
+                const heard = read();
+                (heard.frames = heard.frames || []).push({ document: origin, name: type, data: event.data, at: performance.timeOrigin + performance.now() });
+                write(heard);
+              });
+            }
+            return listen.call(this, type, listener, options);
+          };
+          // Whether the server rendered this document, which the boot hydrates only when it did.
+          document.addEventListener('DOMContentLoaded', () => {
+            const config = window.__EQ_CONFIG;
+            if (config) { const noted = read(); const mine = noted.documents.find((d) => d.origin === origin); if (mine) { mine.ssr = config.ssr === true; write(noted); } }
+          });
           // What the boot says in Development as it starts on the server's markup: that it hydrates it,
           // and any warning hydrating it raised. Heard here, before the boot runs, and passed on.
           const note = (field) => {
