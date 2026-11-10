@@ -312,6 +312,13 @@ public class TypeScriptEmitter
         set => _converter.ResourceIds = value;
     }
 
+    /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.AppServices"/>.</summary>
+    internal Services.ServiceRegistrations AppServices
+    {
+        get => _converter.AppServices;
+        set => _converter.AppServices = value;
+    }
+
     public void SetDependencyResolver(ComponentDependencyResolver resolver)
     {
         _dependencyResolver = resolver;
@@ -665,7 +672,13 @@ public class TypeScriptEmitter
                                 var target = ctorDef!.IsPrimaryConstructor
                                     ? $"this.{service.Name.ToCamelCase()}"
                                     : $"const {service.Name.ToJsIdentifier()}";
-                                statements.Add(JsStatement.Raw($"{target} = {Eq.ResolveService}('{service.ServiceKey}');"));
+                                // The key is written by the one writer of it: an app's own service carries
+                                // the implementation its registration names, so the browser builds the class
+                                // the server's container hands out (#1335).
+                                var key = _converter.ServiceKey(service.ServiceKey!, service.ServiceType,
+                                    service.IsRequiredService ? component.Name : null,
+                                    (SyntaxNode?)service.Node ?? component.ClassSyntax!);
+                                statements.Add(JsStatement.Raw($"{target} = {Eq.ResolveService}({key});"));
 
                                 // The twin of CapabilityScope.Require: a component that declared it
                                 // cannot work without this one says so HERE, where the capability is
@@ -679,9 +692,9 @@ public class TypeScriptEmitter
                                         ? $"this.{service.Name.ToCamelCase()}"
                                         : service.Name.ToJsIdentifier();
                                     statements.Add(JsStatement.Raw($"if ({read} === undefined || {read} === null) throw new Error("
-                                        + $"'{component.Name} needs {service.ServiceKey}, and this target has none. "
-                                        + $"Register it with the host, or declare the parameter as {service.ServiceKey}? "
-                                        + "if the component can work without it.');"));
+                                        + $"'{component.Name} needs {service.ServiceKey}, and nothing provides one in the browser. "
+                                        + $"Register it in Program.cs, builder.Services.AddSingleton<{service.ServiceKey}, TImplementation>(), "
+                                        + $"or declare the parameter as {service.ServiceKey}? if the component can work without it.');"));
                                 }
                             }
                             foreach (var param in passed)

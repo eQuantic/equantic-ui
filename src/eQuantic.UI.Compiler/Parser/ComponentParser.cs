@@ -807,6 +807,7 @@ public class ComponentParser
                 Name = param.Identifier.ValueText,
                 Type = param.Type?.ValueText() ?? "object",
                 DefaultValueNode = param.Default?.Value,
+                Node = param,
             };
 
             if (param.Type is not null
@@ -816,6 +817,7 @@ public class ComponentParser
             {
                 described.IsService = true;
                 described.ServiceKey = service.Name;
+                described.ServiceType = service;
                 // Whether the component can work without it, which decides what an ABSENT capability
                 // does: hand over null as the author allowed, or say which one is missing.
                 if (model.GetDeclaredSymbol(param) is { } parameter)
