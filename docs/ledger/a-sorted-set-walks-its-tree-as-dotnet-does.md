@@ -1,4 +1,4 @@
-- **2026-11-09 · A sorted set walks its tree as .NET does**: a Bug under #1174
+- **2026-11-10 · A sorted set walks its tree as .NET does**: a Bug under #1174
   ([#766](https://github.com/eQuantic/equantic-ui/issues/766)). `SortedSet<T>.RemoveWhere` asked its
   predicate in the set's order, where .NET asks it breadth first through its red-black tree, so a
   predicate that keeps a record saw another order. The runtime's set held a sorted array; it holds .NET's
