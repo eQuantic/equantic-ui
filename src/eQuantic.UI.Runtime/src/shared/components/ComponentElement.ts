@@ -7,7 +7,7 @@ export class ComponentElement extends Element {
         this.component = null!;
         this.dirty = false;
         this.builtInFrame = 0;
-        this._component = component;
+        this.component = component;
     }
 
     _child!: Element | null;
@@ -19,9 +19,13 @@ export class ComponentElement extends Element {
         return slot === 0 ? this._child : null;
     }
 
+    visitChildren(visitor: (element: Element) => void) {
+        if (!(this._child == null)) visitor(this._child);
+    }
+
     firstBuild() {
         let stateful: any; 
-        if (this.owner.live && (($0) => ($0 instanceof StatefulComponent && (stateful = $0, true)))(this._component) && stateful.place(this)) this.owner.queueMount(this);
+        if (this.owner.live && (($0) => ($0 instanceof StatefulComponent && (stateful = $0, true)))(this.component) && stateful.enterPosition(this)) this.owner.queueMount(this);
         this.rebuild(false);
     }
 
@@ -30,12 +34,12 @@ export class ComponentElement extends Element {
             if (!force && !this.dirty) return;
         } else {
             this.configuration = configuration;
-            let next = configuration;
+            let next = (configuration as UiComponent);
             let retained: any; 
-            if ((($0) => ($0 instanceof StatefulComponent && (retained = $0, true)))(this._component)) {
+            if ((($0) => ($0 instanceof StatefulComponent && (retained = $0, true)))(this.component)) {
                 if (!(retained === next)) retained.adoptConfig(next);
             } else {
-                this._component = next;
+                this.component = next;
             }
         }
         this.rebuild(force);
@@ -50,10 +54,10 @@ export class ComponentElement extends Element {
 
     buildContained() {
         let armed = InFlow.current;
-        if (armed === this.underInFlow) return this.owner.buildComponent(this._component, this.owner.context, this.componentDepth);
+        if (armed === this.underInFlow) return this.owner.buildComponent(this.component, this.owner.context, this.componentDepth);
         InFlow.current = this.underInFlow;
         try {
-            return this.owner.buildComponent(this._component, this.owner.context, this.componentDepth);
+            return this.owner.buildComponent(this.component, this.owner.context, this.componentDepth);
         } finally {
             InFlow.current = armed;
         }
@@ -75,7 +79,7 @@ export class ComponentElement extends Element {
 
     onDeactivated() {
         let stateful: any; 
-        if (this.owner.live && (($0) => ($0 instanceof StatefulComponent && (stateful = $0, true)))(this._component) && stateful.leave(this)) this.owner.queueUnmount(stateful);
+        if (this.owner.live && (($0) => ($0 instanceof StatefulComponent && (stateful = $0, true)))(this.component) && stateful.leavePosition(this)) this.owner.queueUnmount(stateful);
     }
 
     toString(): string {

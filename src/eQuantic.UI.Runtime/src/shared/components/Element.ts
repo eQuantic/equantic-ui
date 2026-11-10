@@ -23,6 +23,8 @@ export abstract class Element {
     componentDepth!: number;
     underInFlow!: boolean;
     matchStamp!: number;
+    abstract childAt(slot: number): Element | null;
+    abstract visitChildren(visitor: (element: Element) => void): void;
 
     static create(configuration: VisualNode) {
         let component: any; 
@@ -43,6 +45,9 @@ export abstract class Element {
         this.isActive = true;
         this.firstBuild();
     }
+
+    abstract firstBuild(): void;
+    abstract update(configuration: VisualNode, force: boolean): void;
 
     updateChild(child: Element | null, configuration: VisualNode | null, force: boolean) {
         if (configuration == null) {
@@ -70,6 +75,8 @@ export abstract class Element {
         this.isActive = false;
         this.onDeactivated();
     }
+
+    abstract deactivateChildren(): void;
 
     onDeactivated() {}
 

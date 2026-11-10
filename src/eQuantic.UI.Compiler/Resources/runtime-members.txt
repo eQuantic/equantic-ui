@@ -29,6 +29,7 @@ StatelessComponent	mountReconcile
 StatelessComponent	nodeKind
 StatelessComponent	render
 StatelessComponent	serviceProvider
+StatefulComponent	_alsoMountedAt
 StatefulComponent	_instances
 StatefulComponent	_invalidate
 StatefulComponent	_invalidationHook
@@ -44,13 +45,16 @@ StatefulComponent	build
 StatefulComponent	children
 StatefulComponent	constructor
 StatefulComponent	disposeQuietly
+StatefulComponent	enterPosition
 StatefulComponent	getCurrentTree
 StatefulComponent	getVirtualNode
 StatefulComponent	gridSpan
 StatefulComponent	hydrate
 StatefulComponent	key
+StatefulComponent	leavePosition
 StatefulComponent	mount
 StatefulComponent	mountReconcile
+StatefulComponent	mountedAt
 StatefulComponent	nodeKind
 StatefulComponent	notifyMounted
 StatefulComponent	notifyUnmounted

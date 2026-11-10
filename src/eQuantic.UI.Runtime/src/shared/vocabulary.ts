@@ -8,9 +8,9 @@
  * `render()` like on any other component; the reconciler never learns about abstract nodes).
  */
 
-import type { AnchorPlacementValue, ComponentChild, ICanvasPainter, NavigableMoveValue } from './nodes';
+import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
-import type { TableCellRoleValue, TableRoleValue } from './enums.generated';
+import type { TableCellRoleValue, TableRoleValue, WindowSizeClassValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import { iconPaths } from './icons.generated';
 import type {
@@ -86,11 +86,12 @@ export abstract class VisualNode {
 }
 
 /**
- * Anything a child slot accepts: a vocabulary node, or a shared COMPONENT instance (in C#,
- * `UiComponent : VisualNode` — on the runtime components live in their own class hierarchy, so the
- * union states the same truth structurally; the lowering expands components via `build`).
+ * Anything a child slot accepts: a vocabulary node, a component included, as in C#, where a slot is a
+ * `VisualNode` and `UiComponent : VisualNode`. It was a union with a structural `ComponentChild` while
+ * a component without state carried no node kind; every component is a node now, so the slot is the
+ * node and the element engine hands it to a position as it is.
  */
-export type VisualChild = VisualNode | ComponentChild;
+export type VisualChild = VisualNode;
 
 /** Mirror of the C# `StyleDiff` record (spec S5): a partial style applied over the base while
  * an interaction state is active — only the set members override. */
@@ -471,6 +472,16 @@ export class AdaptiveNode extends VisualNode {
   ) {
     super();
     if (config) Object.assign(this, config);
+  }
+
+  /**
+   * The arm a window of this size class shows (the C# `Resolve`): the widest declared arm at or below
+   * it, the compact one at the least. The element engine builds this arm alone, as Photon lays it out.
+   */
+  resolve(sizeClass: WindowSizeClassValue): VisualNode {
+    if (sizeClass === 'expanded') return this.expanded ?? this.medium ?? this.compact;
+    if (sizeClass === 'medium') return this.medium ?? this.compact;
+    return this.compact;
   }
 }
 

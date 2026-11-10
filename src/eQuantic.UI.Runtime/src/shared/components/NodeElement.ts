@@ -2,9 +2,9 @@ import { $eq, ChildSlots, Element, NodeSlots, VisualNode } from "../runtime-expo
 
 export class NodeElement extends Element {
     constructor(configuration: VisualNode) {
-        const $$_children = [];
-        const $$_deferred = -1;
-        const $$_shownInFrame = -1;
+        const $$_children: (Element | null)[] = [];
+        const $$_deferred: number = -1;
+        const $$_shownInFrame: number = -1;
         super(configuration);
         this._children = $$_children;
         this._spare = null;
@@ -23,6 +23,13 @@ export class NodeElement extends Element {
 
     childAt(slot: number) {
         return (slot >>> 0) < (this._children.length >>> 0) ? this._children[slot] : null;
+    }
+
+    visitChildren(visitor: (element: Element) => void) {
+        for (let slot = 0; slot < this._children.length; slot++) {
+            let child = this._children[slot];
+            if (!(child == null)) visitor(child);
+        }
     }
 
     partId(part: number) {

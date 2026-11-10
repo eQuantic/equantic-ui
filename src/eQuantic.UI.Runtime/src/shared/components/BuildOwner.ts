@@ -1,7 +1,7 @@
 import { $eq, BuildContext, ComponentElement, Element, NodeElement, StatefulComponent, UiComponent, VisualNode, WindowSizeClassValue } from "../runtime-exports";
 
 export class BuildOwner {
-    constructor(buildComponent?: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode, live?: boolean) {
+    constructor(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode = undefined!, live: boolean = undefined!) {
         if (arguments.length === 1) {
             let $c0: any, $c1: any;
             {
@@ -75,7 +75,7 @@ export class BuildOwner {
             let $slots: any = BuildOwner.$slots = {};
             try {
                 $slots.byDepth = null;
-                $slots.byDepth = (a, b) => Math.sign(a.depth - b.depth);
+                $slots.byDepth = ((a, b) => Math.sign(a.depth - b.depth)) satisfies (x: any, y: any) => number;
             } catch ($error) {
                 BuildOwner.$slots = null;
                 throw BuildOwner.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Primitives.BuildOwner', $error);
