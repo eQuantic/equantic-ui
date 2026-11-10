@@ -506,6 +506,61 @@ public class ComponentParityFixtureTests
             + "with EQ_UPDATE_PARITY_FIXTURE=1 once the twin agrees");
     }
 
+    /// <summary>
+    /// A FRAME OF A LIVE TREE lowers the tree the server draws. <see cref="WebRealizer.LowerFrame"/>
+    /// lowers each component from what its position built rather than building it again, which is
+    /// what a host that draws more than once needs (a component test, and the request owner of
+    /// docs/ELEMENT-TREE-PLAN.md's E4). Its first frame must be the markup <see cref="WebRealizer.Lower"/>
+    /// writes, byte for byte, at every size class: an arm the element does not hold lowers as it
+    /// always did. The markup is compared whole, not canonically, so attribute order counts.
+    /// <para>
+    /// ONE attribute is the server's alone, and is taken out of its markup before the comparison:
+    /// hydration's unmeasured mark, which says a component built on widths nobody measured. The
+    /// lowering counts what each component's build asks, and in a frame the OWNER built every one,
+    /// so the count is the owner's to keep. A frame drawn more than once is never hydrated; the
+    /// request owner of E4 is, and attributes it there.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData(WindowSizeClass.Compact)]
+    [InlineData(WindowSizeClass.Medium)]
+    [InlineData(WindowSizeClass.Expanded)]
+    public void TheFirstFrameOfALiveTree_LowersTheMarkupTheServerWrites(WindowSizeClass sizeClass)
+    {
+        var previousCulture = CultureInfo.CurrentCulture;
+        var previousUiCulture = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentCulture = new CultureInfo("en-US");
+        CultureInfo.CurrentUICulture = new CultureInfo("en-US");
+        try
+        {
+            // Two constructions of every case: the server's lowering builds the one it is handed,
+            // and the frame must start from instances nobody built.
+            foreach (var ((name, drawnOnce, _), (_, framed, _)) in Cases().Zip(Cases()))
+            {
+                var once = UnmeasuredMark.Replace(
+                    HtmlRenderer.RenderNode(WebRealizer.Lower(drawnOnce, Theme, 1f, new StyleSink()).Render()), "");
+
+                var owner = new BuildOwner();
+                var root = owner.Build(framed, new ComponentContext(Theme, 1f, Density.Comfortable, static (_, _) => 0f),
+                    sizeClass, rebuildAll: false);
+                var frame = HtmlRenderer.RenderNode(WebRealizer.LowerFrame(root, Theme, 1f, new StyleSink()).Render());
+                owner.EndFrame();
+                owner.UnmountAll();
+
+                UnmeasuredMark.IsMatch(frame).Should().BeFalse("a frame writes no hydration mark");
+                frame.Should().Be(once, $"the first frame of \"{name}\" is what the server draws");
+            }
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+            CultureInfo.CurrentUICulture = previousUiCulture;
+        }
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex UnmeasuredMark =
+        new($" data-{WebLoweringVisitor.UnmeasuredMark}(=\"\")?", System.Text.RegularExpressions.RegexOptions.Compiled);
+
     /// <summary>Every frame of a case: the lowering, then the lowering after each press. Lowering
     /// goes through a STYLE SINK, which is the path SSR takes — declarations become atomic classes
     /// instead of inline style, and the client always atomizes, so lowering without one would

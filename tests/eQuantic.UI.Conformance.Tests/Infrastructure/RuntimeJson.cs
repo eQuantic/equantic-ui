@@ -20,8 +20,8 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 /// <item><term><c>decimal</c></term><description>the runtime's Decimal, whose <c>toJSON</c> writes its
 /// text, scale kept: <c>"1.50"</c>. A decimal that became a JS number passed against <c>1.50</c>.</description></item>
 /// <item><term>an enum</term><description>a <c>[Flags]</c> enum's number, any other enum's member by its
-/// twin name (<c>"friday"</c>), and a value no member names by its number. An enum written as its number
-/// passed against <c>1</c>.</description></item>
+/// twin name (<c>"friday"</c>), and a value no member names by its number, a 64-bit enum's as the BigInt
+/// it is held as, its digits in a string. An enum written as its number passed against <c>1</c>.</description></item>
 /// <item><term><c>double</c>, <c>float</c></term><description>a double, a float the double that holds the
 /// single, written by JavaScript's own <c>Number::toString</c>: <c>100000000000000000</c> for 1e17,
 /// <c>0.00001</c>, <c>1e+21</c>, <c>0.10000000149011612</c> for <c>0.1f</c>; NaN and the infinities as
@@ -152,9 +152,8 @@ public static class RuntimeJson
     /// <summary>
     /// An enum as the runtime holds it: a <c>[Flags]</c> enum's number, a member by its twin name
     /// (<c>TwinName</c>, the rule eqc names it by), the first declared when two share a value, and a
-    /// value no member names by its number. The number is a JS number whatever the underlying type, as
-    /// eqc writes an enum's value, so an enum over a long writes no BigInt: it is written as the double
-    /// it is (found in review).
+    /// value no member names by its number. An enum over a long or a ulong holds its value as a BigInt,
+    /// as a long is held (#551), which writes itself as its digits in a string.
     /// </summary>
     private sealed class EnumAsTwin : JsonConverterFactory
     {
@@ -166,6 +165,9 @@ public static class RuntimeJson
         private sealed class Of<TEnum> : JsonConverter<TEnum> where TEnum : struct, Enum
         {
             private static readonly bool Flags = typeof(TEnum).IsDefined(typeof(FlagsAttribute), inherit: false);
+
+            private static readonly bool Wide = Enum.GetUnderlyingType(typeof(TEnum)) is var underlying
+                && (underlying == typeof(long) || underlying == typeof(ulong));
 
             /// <summary>Each value's first declared member, in declaration order.</summary>
             private static readonly Dictionary<TEnum, string> Names = typeof(TEnum)
@@ -180,16 +182,20 @@ public static class RuntimeJson
             public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options)
             {
                 if (!Flags && Names.TryGetValue(value, out var name)) writer.WriteStringValue(name);
+                else if (Wide) writer.WriteStringValue(Digits(value));
                 else writer.WriteRawValue(Number(value));
             }
 
             public override void WriteAsPropertyName(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options) =>
                 writer.WritePropertyName(!Flags && Names.TryGetValue(value, out var name)
                     ? name
-                    : Number(value));
+                    : Wide ? Digits(value) : Number(value));
 
             /// <summary>The value's number, as the JS number the browser holds it in.</summary>
             private static string Number(TEnum value) => NumberText(Convert.ToDouble(value, CultureInfo.InvariantCulture));
+
+            /// <summary>A 64-bit value's digits, as its BigInt writes them.</summary>
+            private static string Digits(TEnum value) => Convert.ToDecimal(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
         }
     }
 

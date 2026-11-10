@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace eQuantic.UI.Server;
@@ -11,7 +10,7 @@ namespace eQuantic.UI.Server;
 /// <summary>
 /// Simple and fast HTML template engine using {{variable}} placeholders.
 /// Supports conditionals ({{#if}}...{{/if}}) and optional sections ({{?variable}}...{{/variable}}).
-/// Optimized for performance with StringBuilder and minimal allocations.
+/// Each placeholder of the template is filled once, and what fills it is never read as template.
 /// </summary>
 public class HtmlTemplateEngine
 {
@@ -32,6 +31,7 @@ public class HtmlTemplateEngine
         RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex _optionalRegex = new(@"\{\{\?(\w+)\}\}(.*?)\{\{/\1\}\}",
         RegexOptions.Compiled | RegexOptions.Singleline);
+    private static readonly Regex _variableRegex = new(@"\{\{(\w+)\}\}", RegexOptions.Compiled);
 
     public HtmlTemplateEngine(string template)
     {
@@ -106,15 +106,12 @@ public class HtmlTemplateEngine
             return hasValue ? content : string.Empty;
         });
 
-        // 3. Process simple variable substitutions: {{Variable}}
-        var builder = new StringBuilder(result);
-        foreach (var kvp in variables)
-        {
-            var placeholder = $"{{{{{kvp.Key}}}}}";
-            builder.Replace(placeholder, kvp.Value ?? string.Empty);
-        }
-
-        return builder.ToString();
+        // 3. Every {{Variable}} of the TEMPLATE, in one pass: a value is written once and never read
+        // again. Filling variable after variable over the whole buffer read every value already
+        // inserted, so a placeholder inside one was filled by a later variable (#1319). A placeholder
+        // with no variable stays as it is, as it always did.
+        return _variableRegex.Replace(result, match =>
+            variables.TryGetValue(match.Groups[1].Value, out var value) ? value ?? string.Empty : match.Value);
     }
 
     /// <summary>
