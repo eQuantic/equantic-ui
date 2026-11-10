@@ -1,6 +1,1 @@
 #nullable enable
-[EQX0001]eQuantic.UI.Native.Hosting.DialogFileSaver
-[EQX0001]eQuantic.UI.Native.Hosting.DialogFileSaver.DialogFileSaver(eQuantic.UI.Primitives.IFileDialogs! dialogs) -> void
-[EQX0001]eQuantic.UI.Native.Hosting.DialogFileSaver.IsAvailable.get -> bool
-[EQX0001]eQuantic.UI.Native.Hosting.DialogFileSaver.SaveBytesAsync(string! name, byte[]! content, string? mimeType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.FileSaveOutcome>
-[EQX0001]eQuantic.UI.Native.Hosting.DialogFileSaver.SaveTextAsync(string! name, string! text, string? mimeType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.FileSaveOutcome>
