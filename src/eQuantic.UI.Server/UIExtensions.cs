@@ -1076,6 +1076,8 @@ public static class UIExtensions
 
         var isDevelopment = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
 
+        var hotReloads = options.HotReloads(context.RequestServices.GetRequiredService<IWebHostEnvironment>());
+
         // The client's configuration, written by System.Text.Json and nothing else. Its strings were
         // quoted by hand, escaping the backslash and the quote, so a route title holding a line break
         // was a syntax error in a script every page carries, and stopped the client of the whole app
@@ -1089,7 +1091,7 @@ public static class UIExtensions
             Version: BuildId,
             Ssr: ssrEnabled,
             // Whether this server streams rebuilds, so the page listens exactly when there is a stream.
-            HotReload: options.HotReloads(context.RequestServices.GetRequiredService<IWebHostEnvironment>()),
+            HotReload: hotReloads,
             // What the page was rendered at: hydration adopts this markup, so it lowers at the same
             // density and then switches the whole page to the browser's own at once (#623).
             Density: DensityCookie.NameOf(DensityCookie.Resolve(context)),
@@ -1146,9 +1148,18 @@ public static class UIExtensions
                .When("HasInitialState", serializedState != null)
                .When("SsrEnabled", ssrEnabled)
                .When("HasServerActions", hasServerActions)
+               // The rebuild stream is the page's one source of reloads (HotReloadService), so the
+               // refresh script dotnet watch injects into every page it serves is told the page is
+               // taken, by the guard it keeps against connecting twice. It reloaded the page as soon
+               // as the server took an edit, with the modules from before it, and the rebuild
+               // reloaded it again seconds later (#1275). WatchScriptGuardTests pins the guard's name
+               // in the SDK global.json selects.
+               .When("HotReloads", hotReloads)
                ;
         });
 
+        // The page's policy, with the nonce its scripts carry, when the app turned one on (#1267).
+        context.RequestServices.GetService<ContentSecurityPolicy>()?.WriteTo(context.Response, nonce);
         context.Response.ContentType = "text/html";
         await context.Response.WriteAsync(html);
     }
