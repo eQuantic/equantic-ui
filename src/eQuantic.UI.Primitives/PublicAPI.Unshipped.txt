@@ -5,6 +5,8 @@ static eQuantic.UI.Primitives.ComponentBoundary.Owner() -> eQuantic.UI.Primitive
 static eQuantic.UI.Primitives.ComponentBoundary.StructuralOwner() -> eQuantic.UI.Primitives.BuildOwner!
 *REMOVED*eQuantic.UI.Primitives.BuildOwner.BuildOwner() -> void
 *REMOVED*static eQuantic.UI.Primitives.BuildOwner.Structural() -> eQuantic.UI.Primitives.BuildOwner!
+*REMOVED*eQuantic.UI.Primitives.Pressable.PressedBackground.get -> eQuantic.UI.Primitives.ColorToken?
+*REMOVED*eQuantic.UI.Primitives.Pressable.PressedBackground.init -> void
 abstract eQuantic.UI.Primitives.Element.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
 override eQuantic.UI.Primitives.ComponentElement.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
 override eQuantic.UI.Primitives.NodeElement.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void

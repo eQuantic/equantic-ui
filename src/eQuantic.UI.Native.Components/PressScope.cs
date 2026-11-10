@@ -117,20 +117,24 @@ internal sealed class PressScope
     /// is drawn again, a frame realized with a live owner (see <see cref="InViewState"/>).</summary>
     public bool ReportsInView { get; init; }
 
-    public ColorToken? PendingFill { get; set; }
     public bool PendingFocusRing { get; set; }
 
     /// <summary>
     /// True while the subtree of the PRESSED control is drawn, set by its <see cref="Pressable"/>
     /// and restored after, the way a <see cref="Simulated"/> node sets its states: a press is the
-    /// control's, and every box inside it shows its <c>Pressed</c> diff (#508). The web twin is
-    /// <c>.eq-pressable:active .cls</c>.
+    /// control's, and every box inside it shows its <c>Pressed</c> diff (#508), up to a control
+    /// nested in it, which sets its own (#616). The web twin is the pressed family's selector.
     /// </summary>
     public bool InPressedControl { get; set; }
 
     /// <summary>True while the subtree of the FOCUSED control is drawn — its boxes show their
     /// <c>Focus</c> diff, as <see cref="InPressedControl"/>'s show their press.</summary>
     public bool InFocusedControl { get; set; }
+
+    /// <summary>True while an enabled control's subtree is drawn under a <see cref="Simulated"/>
+    /// node: a control nested in it is another control, and the picture's press and focus stop at
+    /// it, as the real ones do (#616). A <see cref="Simulated"/> node starts it over.</summary>
+    public bool InControl { get; set; }
 
     /// <summary>True while a DISABLED control's subtree is drawn: its boxes show no focus and no
     /// press, pictured or real, whatever control around it is in that state (#508). The web twin
