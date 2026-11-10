@@ -84,7 +84,8 @@ public class NativeSdkEvaluationTests
     }
 
     /// <summary>Asks MSBuild, and fails loudly with the child's own output when it cannot.</summary>
-    private static Evaluation Evaluate(string targetFramework, string bodyProperties = "")
+    private static Evaluation Evaluate(string targetFramework, string bodyProperties = "",
+        IEnumerable<string>? globalProperties = null)
     {
         var dir = WriteConsumer(targetFramework, bodyProperties);
         try
@@ -97,7 +98,9 @@ public class NativeSdkEvaluationTests
                 "-getProperty:_EqMacHead", "-getProperty:CollectAppManifestsDependsOn",
                 "-getItem:ProjectReference", "-getItem:PackageReference",
                 "-getItem:PartialAppManifest", "-getItem:TrimmerRootAssembly",
+                "-getProperty:StartupHookSupport",
             };
+            args.AddRange((globalProperties ?? []).Select(property => $"-p:{property}"));
 
             // The REPOSITORY root, not the throwaway project's folder: `dotnet` picks its SDK from the
             // global.json it finds by walking up from the working directory, and this repository pins
@@ -120,6 +123,28 @@ public class NativeSdkEvaluationTests
         {
             try { Directory.Delete(dir, recursive: true); } catch (IOException) { /* a temp dir */ }
         }
+    }
+
+    /// <summary>
+    /// `dotnet watch` applies an edit in the running app through a startup hook, and an app that
+    /// publishes trimmed turns startup hooks off for EVERY build, so it was restarted on each edit
+    /// instead (#1258, found by measuring edit-to-view, #900). The hook stays on for a Debug build that
+    /// is not a publish, which is what dotnet watch builds; a publish and a Release build keep the
+    /// answer trimming gives, so what ships is what it was.
+    /// </summary>
+    [Fact]
+    public void ATrimmedApp_KeepsItsStartupHook_ForTheBuildDotnetWatchRuns_AndNotForAPublish()
+    {
+        const string trimmed = "<PublishTrimmed>true</PublishTrimmed>";
+
+        Evaluate("net10.0", trimmed).Property("StartupHookSupport").Should().Be("true",
+            "dotnet watch builds Debug, and the runtime refuses its hook when the runtimeconfig turns hooks off");
+        // Left unset there, which is trimming's own answer: .NET turns the hook off inside its build
+        // targets, after evaluation, so an empty value is the SDK saying nothing.
+        Evaluate("net10.0", trimmed, ["_IsPublishing=true"]).Property("StartupHookSupport").Should().NotBe("true",
+            "a publish is trimmed exactly as it was");
+        Evaluate("net10.0", trimmed, ["Configuration=Release"]).Property("StartupHookSupport").Should().NotBe("true",
+            "only the build a developer runs keeps the hook");
     }
 
     /// <summary>
