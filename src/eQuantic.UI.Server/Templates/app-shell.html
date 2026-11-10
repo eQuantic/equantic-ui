@@ -14,7 +14,7 @@
              the app root is the web mirror of the native window — a determinate frame at least
              one viewport tall whose single child (the page root) stretches to it. A page root
              asking Height=Fill gets the viewport here exactly as it gets the window on native. -->
-        <style>
+        <style nonce="{{Nonce}}">
             /* The frame is exactly one viewport, and the ROW is pinned to it so a percentage
                height inside resolves against the viewport and not against whatever the content
                came to. An APP page (root Height=Fill → height:100%) therefore resolves to exactly
@@ -36,7 +36,7 @@
         <!-- The theme's stylesheet: its tokens, the document it draws (surface, text, faces,
              selection, placeholder, scrollbars) and the classes the components name. Before the
              app's own CSS, so an app's rule wins every tie with the SDK's. -->
-        <style>
+        <style nonce="{{Nonce}}">
             {{ThemeStyles}}
         </style>
         {{?AppStyles}}
@@ -44,7 +44,7 @@
         {{/AppStyles}} {{HeadTags}}
 
         <!-- Import Map for bare modules -->
-        <script type="importmap">
+        <script type="importmap" nonce="{{Nonce}}">
             {
                 "imports": {
                     "@equantic/runtime": "/_equantic/runtime.js?v={{BuildId}}"
@@ -54,7 +54,7 @@
 
         {{#if IsDevelopment}}
         <!-- Development Mode -->
-        <script>
+        <script nonce="{{Nonce}}">
             console.log('[eQuantic.UI] Running in DEVELOPMENT mode');
             console.log('[eQuantic.UI] BuildId:', '{{BuildId}}');
             console.log('[eQuantic.UI] SSR:', {{SsrEnabled}});
@@ -74,21 +74,21 @@
         {{?VectorDefs}}{{VectorDefs}}{{/VectorDefs}}
 
         <!-- eQuantic.UI Runtime (Static Asset) -->
-        <script>
+        <script nonce="{{Nonce}}">
             window.__EQ_CONFIG = {{ConfigJson}};
             window.__EQ_DEV__ = {{IsDevelopmentBool}};
             {{?ThemeData}}{{ThemeData}}{{/ThemeData}}
             {{?CultureData}}{{CultureData}}{{/CultureData}}
             {{?InitialState}}{{InitialState}}{{/InitialState}}
         </script>
-        <script type="module">
+        <script type="module" nonce="{{Nonce}}">
             import { boot } from "@equantic/runtime";
             boot();
         </script>
 
         {{#if IsDevelopment}}
         <!-- Development Tools -->
-        <script>
+        <script nonce="{{Nonce}}">
             // Add development helpers
             window.__EQ_DEBUG = {
                 getState: () => window.__INITIAL_STATE__,
