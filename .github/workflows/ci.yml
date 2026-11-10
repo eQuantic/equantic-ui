@@ -821,6 +821,21 @@ jobs:
         shell: bash
         run: ./scripts/check-ios-launch.sh
 
+      # The roadmap's bar is an edit on screen in under a second (#900), timed as a developer meets it:
+      # each sample under dotnet watch, a component's file changed on disk, the clock stopped when a
+      # window or a browser DRAWS the change, each part of the path timed on its own. LAST in the job,
+      # because it edits the samples' sources while it runs: the steps above read what the builds wrote.
+      # The desktop holds the bar's budget and fails over it. The web is tens of seconds over the bar, and
+      # fails over a ceiling that only comes down as the slices of #900 make each part of it faster.
+      - name: Edit to view, timed on both samples
+        shell: bash
+        run: |
+          set -uo pipefail
+          status=0
+          dotnet run scripts/measure-edit-to-view.cs -- desktop --runs 6 --budget scripts/edit-to-view.budget.json || status=1
+          dotnet run scripts/measure-edit-to-view.cs -- web --runs 4 --budget scripts/edit-to-view.budget.json || status=1
+          exit $status
+
 
   # GitHub Packages is a convenience feed for every main push — a light ubuntu job so the heavy
   # macOS build job never dies on the upload (exit 137).

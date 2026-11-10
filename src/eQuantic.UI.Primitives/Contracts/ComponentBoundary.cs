@@ -137,6 +137,17 @@ public static class ComponentBoundary
     }
 
     /// <summary>
+    /// A live owner whose components build through this boundary: the one a host keeps for the surface
+    /// it draws. The element engine is handed how a component builds rather than naming this class,
+    /// because the engine runs in the browser too and this boundary's report and diagnostics are host
+    /// state (docs/ELEMENT-TREE-PLAN.md 3.6 moves them onto the owner).
+    /// </summary>
+    public static BuildOwner Owner() => new(BuildAtDepth);
+
+    /// <summary>A structural owner whose components build through this boundary: a tree laid out once.</summary>
+    public static BuildOwner StructuralOwner() => BuildOwner.Structural(BuildAtDepth);
+
+    /// <summary>
     /// Builds a component that stands <paramref name="depth"/> components deep in an element tree:
     /// what <see cref="ExpandContained"/> answers, with the depth read from the tree instead of
     /// counted by a walk. The element engine builds each position on its own, outside its parent's

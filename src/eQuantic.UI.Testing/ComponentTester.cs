@@ -35,7 +35,7 @@ public sealed class ComponentTester : IDisposable
     /// (<c>ServerRenderingService</c>). The server draws the defaults past it; a test fails.</summary>
     private const int MaxPrefetchRounds = 5;
 
-    private readonly BuildOwner _owner = new();
+    private readonly BuildOwner _owner = ComponentBoundary.Owner();
     private readonly ComponentContext _context;
     private readonly WindowSizeClass _sizeClass;
     private VisualNode? _root;

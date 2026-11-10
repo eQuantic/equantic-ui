@@ -333,11 +333,18 @@ public sealed class AppBuild
     }
 
     /// <summary>
+    /// How long the last <see cref="CompileAndBundle"/> spent in bun, so a caller timing the build can
+    /// tell bundling from compiling: eqc writes it for the edit-to-view measurement (#900).
+    /// </summary>
+    public TimeSpan BundleElapsed { get; private set; }
+
+    /// <summary>
     /// Compiles every module, writes the string catalogs and bundles. True when it produced an error,
     /// so the process can exit non-zero and fail the build.
     /// </summary>
     public bool CompileAndBundle()
     {
+        BundleElapsed = TimeSpan.Zero;
         var sourceDirs = _options.SourceDirectories;
         var outputDir = _options.OutputDirectory;
         var bunPath = _options.BunPath;
@@ -509,8 +516,11 @@ public sealed class AppBuild
                 // proves a thrown error's frame leads back to its C# line runs exactly this. bun runs
                 // in the project's folder, where the build has always run it, so a chunk keeps its
                 // name wherever eqc itself runs.
-                if (ModuleBundler.Bundle(bunPath!, _primarySourceDir, entryPoints, outputDir, _intermediateDir,
-                        _options.SourceMaps, _errors.WriteLine) is { } bunError)
+                var bundling = System.Diagnostics.Stopwatch.StartNew();
+                var bunError = ModuleBundler.Bundle(bunPath!, _primarySourceDir, entryPoints, outputDir,
+                    _intermediateDir, _options.SourceMaps, _errors.WriteLine);
+                BundleElapsed = bundling.Elapsed;
+                if (bunError is not null)
                 {
                     _errors.WriteLine("❌ Bun compilation failed:");
                     _errors.WriteLine(bunError);
