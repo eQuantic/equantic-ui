@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using eQuantic.UI.Primitives;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using tusdotnet.Models;
@@ -30,6 +31,15 @@ internal sealed class UploadProtocol
 {
     /// <summary>Where the request keeps the place its creation holds until the record is written.</summary>
     private static readonly object Reservation = new();
+
+    /// <summary>The type a file is, read from the extension its policy accepted it by, as ASP.NET Core's
+    /// static files read it.</summary>
+    private static readonly FileExtensionContentTypeProvider Types = new();
+
+    /// <summary>Names Windows keeps for its devices, which a file name may not start with.</summary>
+    private static readonly HashSet<string> DeviceNames = new(
+        ["CON", "PRN", "AUX", "NUL", .. Enumerable.Range(1, 9).SelectMany(n => new[] { $"COM{n}", $"LPT{n}" })],
+        StringComparer.OrdinalIgnoreCase);
 
     private readonly UploadStore _store;
     private readonly UploadPolicies _policies;
@@ -131,10 +141,12 @@ internal sealed class UploadProtocol
             return;
         }
 
-        if (await _store.ReserveAsync(owner, _options.MaxUnfinished) is not { } reservation)
+        // The limits the app set on its uploads, a finished one counted until it expires and everyone's
+        // counted together: a visitor without the cookie is a new owner each time (#1287).
+        var (reservation, status, quota) = await _store.ReserveAsync(owner, context.UploadLength);
+        if (reservation is null)
         {
-            context.FailRequest(HttpStatusCode.TooManyRequests,
-                $"At most {_options.MaxUnfinished} uploads may be unfinished at a time.");
+            context.FailRequest(status, quota!);
             return;
         }
 
@@ -153,7 +165,7 @@ internal sealed class UploadProtocol
             UploadOwner.Resolve(http),
             Text(context.Metadata, "policy")!,
             FileName(context.Metadata)!,
-            Text(context.Metadata, "filetype") ?? "application/octet-stream",
+            TypeOf(FileName(context.Metadata)!),
             context.UploadLength,
             now,
             now + _options.Expiry);
@@ -164,9 +176,46 @@ internal sealed class UploadProtocol
     private static string? Text(Dictionary<string, TusMetadata> metadata, string key) =>
         metadata.TryGetValue(key, out var value) && value.GetString(Encoding.UTF8) is { Length: > 0 } text ? text : null;
 
-    /// <summary>The file's name without any folder a device put before it, on either kind of separator.</summary>
-    private static string? FileName(Dictionary<string, TusMetadata> metadata) =>
-        Text(metadata, "filename") is { } name && name[(name.LastIndexOfAny(['/', '\\']) + 1)..].Trim() is { Length: > 0 } file
-            ? file
-            : null;
+    /// <summary>A name cut to 255 characters, its extension kept when it is a short one, and the dots and
+    /// spaces the cut leaves at the stem's end dropped.</summary>
+    private static string Cut(string name)
+    {
+        if (name.Length <= 255) return name;
+        var extension = Path.GetExtension(name) is { Length: <= 16 } kept ? kept : "";
+        var end = 255 - extension.Length;
+        // Never between the two halves of a character outside the basic plane (an emoji).
+        if (char.IsHighSurrogate(name[end - 1])) end--;
+        return name[..end].TrimEnd('.', ' ') + extension;
+    }
+
+    /// <summary>
+    /// The type the server says the file is: the one its extension names, or <c>application/octet-stream</c>.
+    /// The device's <c>filetype</c> is never read: an app that served a file with it served an HTML page
+    /// uploaded as <c>x.png</c> as HTML, from its own site (#1293).
+    /// </summary>
+    private static string TypeOf(string name) =>
+        Types.TryGetContentType(name, out var type) ? type : "application/octet-stream";
+
+    /// <summary>
+    /// The file's name as the server keeps it: without any folder a device put before it, on either kind
+    /// of separator; without control characters or the format ones that turn how it reads (a right-to-left
+    /// override shows <c>exe.pdf</c> for <c>fdp.exe</c>), and with the characters a file system refuses written as
+    /// <c>_</c>; without the dots and spaces Windows drops from its end; never <c>.</c> or <c>..</c>; never
+    /// a name Windows keeps for a device; and no longer than 255 characters, its extension kept. A name
+    /// that kept them was one an app writing it to disk could be led by (#1293).
+    /// </summary>
+    private static string? FileName(Dictionary<string, TusMetadata> metadata)
+    {
+        if (Text(metadata, "filename") is not { } sent) return null;
+        var name = sent[(sent.LastIndexOfAny(['/', '\\']) + 1)..];
+        name = new string(name.Where(c => !char.IsControl(c) && char.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.Format)
+            .Select(c => c is '<' or '>' or ':' or '"' or '|' or '?' or '*' ? '_' : c).ToArray()).Trim();
+        // Cut first, then trimmed and checked: a cut can end the name in the dots and spaces Windows drops,
+        // and leave a name the checks below refuse (found in the review of #1326).
+        name = Cut(name).TrimEnd('.', ' ');
+        if (name.Length == 0 || name is "." or "..") return null;
+        // A device's name is kept apart by a leading _, cut again with its extension kept.
+        if (DeviceNames.Contains(name.Split('.')[0].TrimEnd(' '))) name = Cut("_" + name);
+        return name;
+    }
 }

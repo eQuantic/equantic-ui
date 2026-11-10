@@ -16,6 +16,14 @@ eQuantic.UI.Server.Assets.StylesheetAsset.Render(string? nonce) -> string!
 eQuantic.UI.Server.Assets.InlineStyleAsset.Render(string? nonce) -> string!
 eQuantic.UI.Server.HtmlShellOptions.HeadTags.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Server.HtmlTag!>!
 eQuantic.UI.Server.HtmlTag.Render(string? nonce) -> string!
+eQuantic.UI.Server.UploadsOptions.MaxUploadsPerOwner.get -> int
+eQuantic.UI.Server.UploadsOptions.MaxUploadsPerOwner.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxBytesPerOwner.get -> long
+eQuantic.UI.Server.UploadsOptions.MaxBytesPerOwner.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxTotalUploads.get -> int
+eQuantic.UI.Server.UploadsOptions.MaxTotalUploads.set -> void
+eQuantic.UI.Server.UploadsOptions.MaxTotalBytes.get -> long
+eQuantic.UI.Server.UploadsOptions.MaxTotalBytes.set -> void
 *REMOVED*eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.ServerActionAuthorizationService(System.IServiceProvider! serviceProvider, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Authorization.ServerActionAuthorizationService!>! logger) -> void
 eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.ServerActionAuthorizationService(Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Authorization.ServerActionAuthorizationService!>! logger) -> void
 *REMOVED*static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.PolicyFailed(string! policyName) -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
