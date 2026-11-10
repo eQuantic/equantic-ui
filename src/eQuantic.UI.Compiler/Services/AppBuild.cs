@@ -279,7 +279,7 @@ public sealed class AppBuild
         if (previous._inputs != Inputs()) return false;
         var files = CollectSourceFiles(TextWriter.Null).Where(File.Exists).ToList();
         if (!files.SequenceEqual(before, StringComparer.Ordinal)) return false;
-        if (previous._built is { } built && built.Any(pair => !IsAsWritten(pair.Value, pair.Key.SourceFiles())))
+        if (previous._built is { } built && built.Any(pair => !IsAsWritten(pair.Value, pair.Key)))
             return false;
 
         // A file the compilation holds twice is one a tree replaced by path would leave half stale.
@@ -307,13 +307,16 @@ public sealed class AppBuild
         return true;
     }
 
-    /// <summary>Whether a referenced project's compilation holds its files as they are on disk, the
-    /// same files and the same text.</summary>
-    private static bool IsAsWritten(Compilation compilation, IReadOnlyList<string> sourceFiles)
+    /// <summary>Whether a referenced project's compilation holds its files as they are on disk: every
+    /// tree but its friend declarations is one of its files, with the same text, and no file is
+    /// missing. A tree whose file was deleted is not among the files, and must not be passed over.</summary>
+    private static bool IsAsWritten(Compilation compilation, ReferencedProject project)
     {
-        var files = sourceFiles.Where(File.Exists).ToHashSet(StringComparer.Ordinal);
-        var own = compilation.SyntaxTrees.Where(tree => files.Contains(tree.FilePath)).ToList();
-        return own.Count == files.Count && own.All(tree => tree.GetText().ToString() == File.ReadAllText(tree.FilePath));
+        var files = project.SourceFiles().Where(File.Exists).ToHashSet(StringComparer.Ordinal);
+        var friends = ProjectCompilations.FriendsPath(project);
+        var trees = compilation.SyntaxTrees.Where(tree => tree.FilePath != friends).ToList();
+        return trees.Count == files.Count
+            && trees.All(tree => files.Contains(tree.FilePath) && tree.GetText().ToString() == File.ReadAllText(tree.FilePath));
     }
 
     /// <summary>The inputs the SDK hands a build besides the sources, by what they are on disk: a

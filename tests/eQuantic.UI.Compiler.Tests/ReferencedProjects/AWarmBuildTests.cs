@@ -85,6 +85,31 @@ public class AWarmBuildTests
         warm.Modules.Should().Contain("Badge");
     }
 
+    /// <summary>
+    /// A file deleted from a referenced project is a change of that project too: its tree is in the kept
+    /// compilation and its file is not on disk, which a check that read only the files on disk passed
+    /// over (found by the secondary review of #1346).
+    /// </summary>
+    [Fact]
+    public void AFileOfAReferencedProjectThatWasRemoved_LoadsCold()
+    {
+        using var solution = new Solution()
+            .Library("Common", globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Prices.cs", Prices.Replace("namespace Shop", "namespace Common")),
+                ("Extra.cs", "namespace Common;\n\npublic static class Extra { public const int Count = 1; }\n"),
+            ])
+            .App("Shop", references: ["Common"], globalUsings: SharedLibrary.Factories,
+                files: [("Components/Tag.cs", Tag.Replace("namespace Shop;", "using Common;\n\nnamespace Shop;"))]);
+        var cold = solution.Build();
+        CompilerErrors(cold).Should().BeEmpty();
+
+        File.Delete(solution.FileOf("Common", "Extra.cs"));
+        var (_, wasWarm) = solution.Rebuild(cold);
+
+        wasWarm.Should().BeFalse("the kept compilation holds a file the project no longer has");
+    }
+
     [Fact]
     public void AFileOfAReferencedProjectThatChanged_LoadsCold()
     {
