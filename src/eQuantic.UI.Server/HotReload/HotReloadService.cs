@@ -43,7 +43,8 @@ public sealed class HotReloadService : IDisposable
     private Timer? _keepAlive;
     private int _building;
     private int _pending;
-    private Burst? _burst;
+    // When the saves the next rebuild answers last wrote their files, in UTC ticks; 0 when none came.
+    private long _burstWritten;
     private Process? _rebuild;
     private volatile bool _disposed;
 
@@ -69,12 +70,6 @@ public sealed class HotReloadService : IDisposable
         _edits = edits;
     }
 
-    /// <summary>
-    /// The saves one rebuild answers, from the first: how many edits the server had taken then, and
-    /// when. The edit of that save reaches the server after it, so an edit counted past that number is
-    /// one the rebuild's reload will find in the server's markup.
-    /// </summary>
-    private sealed record Burst(long EditsSeen, long At);
 
     /// <summary>
     /// How long the sources stay quiet before a rebuild starts: long enough to take an editor's save,
@@ -127,7 +122,7 @@ public sealed class HotReloadService : IDisposable
     {
         var path = e.FullPath.Replace('\\', '/');
         if (path.Contains("/obj/") || path.Contains("/bin/")) return;
-        SourceChanged();
+        SourceChanged(e.FullPath);
     }
 
     private void OnAssetChanged(object sender, FileSystemEventArgs e)
@@ -152,14 +147,22 @@ public sealed class HotReloadService : IDisposable
         Send(Frame("rebuilt", "hydrate"));
     }
 
-    /// <summary>A source of the app was written: one event of a save, which may be several.</summary>
-    internal void SourceChanged()
+    /// <summary>A source of the app was written, at <paramref name="path"/> when the event names it: one
+    /// event of a save, which may be several.</summary>
+    internal void SourceChanged(string? path = null)
     {
         // Each event of a save restarts the wait, so a burst of writes is one rebuild.
         if (_disposed) return;
-        // The burst's first event, taken before the edit of its save can reach the server.
-        if (Volatile.Read(ref _burst) is null)
-            Interlocked.CompareExchange(ref _burst, new Burst(_edits.Taken, Stopwatch.GetTimestamp()), null);
+        // The burst's last write, which the edit of its save follows: read off the file, never off
+        // when this event arrived, which may be after dotnet watch applied the edit.
+        var written = path is not null && File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.UtcNow;
+        long seen;
+        do
+        {
+            seen = Volatile.Read(ref _burstWritten);
+            if (seen >= written.Ticks) break;
+        }
+        while (Interlocked.CompareExchange(ref _burstWritten, written.Ticks, seen) != seen);
         try
         {
             _debounce?.Change(Quiet, Timeout.InfiniteTimeSpan);
@@ -199,7 +202,8 @@ public sealed class HotReloadService : IDisposable
     private void RebuildOnce()
     {
         // The saves this rebuild answers; one after this line opens the next burst, rebuilt after it.
-        var burst = Interlocked.Exchange(ref _burst, null) ?? new Burst(_edits.Taken, Stopwatch.GetTimestamp());
+        var burst = Interlocked.Exchange(ref _burstWritten, 0) is var ticks and > 0
+            ? new DateTime(ticks, DateTimeKind.Utc) : DateTime.UtcNow;
         try
         {
             // Started under the gate Dispose takes: a shutdown that comes while the process is starting
@@ -237,7 +241,7 @@ public sealed class HotReloadService : IDisposable
                 Console.WriteLine($"[eQuantic.HotReload] rebuilt in {started.Elapsed.TotalSeconds:F1}s — reloading browsers");
                 // Announced once the server holds the edit, when every save brings it one, so the
                 // page reloads ONCE and hydrates markup that agrees with its modules.
-                var held = _edits.ArrivedAfter(burst.EditsSeen, burst.At, _stopping.Token);
+                var held = _edits.ArrivedSince(burst, _stopping.Token);
                 if (_disposed) return;
                 Send(Frame("rebuilt", held ? "hydrate" : "mount"));
             }

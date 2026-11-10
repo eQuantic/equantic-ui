@@ -134,6 +134,56 @@ public class HotReloadStreamTests
     }
 
     /// <summary>
+    /// dotnet watch applies a save's edit in a few tens of milliseconds, which can be before the server's
+    /// own watcher hears of the save. The page drew over markup that held the edit then: the server
+    /// counted the edits when it heard the save, so the edit it had already taken was not one it was
+    /// waiting for (#1275, one save in four on the dashboard sample). What decides is when the file was
+    /// written, which the edit always follows.
+    /// </summary>
+    [Fact]
+    public async Task AnEditAppliedBeforeTheServerHearsOfItsSave_StillHydrates()
+    {
+        var root = Directory.CreateTempSubdirectory("eq-stream-").FullName;
+        var edits = new ServerEdits(arriveOnSave: true, TimeSpan.FromSeconds(10));
+        using var service = new HotReloadService(root, () => Exits(0), TimeSpan.FromSeconds(30), edits);
+        service.Start();
+        var (page, listening, leave) = await ListenAsync(service);
+
+        var saved = Path.Combine(root, "Screen.cs");
+        await File.WriteAllTextAsync(saved, "class Screen { }");
+        await Task.Delay(50);
+        edits.Take();
+        service.SourceChanged(saved);
+        var read = await UntilAsync(page, "event: rebuilt");
+        leave.Cancel();
+        await listening;
+
+        read.Should().EndWith("event: rebuilt\ndata: hydrate\n\n", "the edit was applied after the file was written");
+    }
+
+    /// <summary>An edit applied before the file was written belongs to an earlier save, and is not this one's.</summary>
+    [Fact]
+    public async Task AnEditAppliedBeforeTheFileWasWritten_IsNotItsSaves()
+    {
+        var root = Directory.CreateTempSubdirectory("eq-stream-").FullName;
+        var edits = new ServerEdits(arriveOnSave: true, TimeSpan.FromMilliseconds(400));
+        using var service = new HotReloadService(root, () => Exits(0), TimeSpan.FromSeconds(30), edits);
+        service.Start();
+        var (page, listening, leave) = await ListenAsync(service);
+
+        edits.Take();
+        await Task.Delay(50);
+        var saved = Path.Combine(root, "Screen.cs");
+        await File.WriteAllTextAsync(saved, "class Screen { }");
+        service.SourceChanged(saved);
+        var read = await UntilAsync(page, "event: rebuilt");
+        leave.Cancel();
+        await listening;
+
+        read.Should().EndWith("event: rebuilt\ndata: mount\n\n", "no edit came after this save");
+    }
+
+    /// <summary>
     /// When every save brings the server its edit, the rebuild waits for it, and announces itself once
     /// it lands, not before: a page reloaded before would hydrate markup from before the edit.
     /// </summary>
@@ -259,7 +309,7 @@ public class HotReloadStreamTests
         using var stopping = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
 
         var clock = Stopwatch.StartNew();
-        var arrived = edits.ArrivedAfter(edits.Taken, Stopwatch.GetTimestamp(), stopping.Token);
+        var arrived = edits.ArrivedSince(DateTime.UtcNow, stopping.Token);
 
         arrived.Should().BeFalse();
         clock.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(10), "the wait ends when the app stops, not at its limit");
