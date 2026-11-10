@@ -654,7 +654,7 @@ suite compares, and CI reports the page modules' on every pull request):
    one of them with a hash: `NotFoundScreen-<hash>.js` in the dashboard sample is its console
    shell, not a second type of that name. There is no `pages/` folder
 3. **strings/`<culture>`.json** — the culture catalogs, when the app has `.resx`
-4. **icons/** — the app icon sizes and the web manifest, when an `AppIcon` is declared
+4. **icons/** — the app icon sizes, the tab's `favicon.ico` (answered at `/favicon.ico` too) and the web manifest, when an `AppIcon` is declared
 
 The styles are not a file: the token sheet and the atomic classes are written inline by the server
 (`<style id="eq-atomic">` among them). A base stylesheet was copied here until #335, and no page had
@@ -736,7 +736,7 @@ public class TodoList : StatefulComponent
 **Compiles to:**
 ```javascript
 async loadTodos() {
-    return await this._serverActions.invoke("TodoList/LoadTodos", []);
+    return await this._serverActions.invoke("MyApp.Pages.TodoList/LoadTodos", []);
 }
 ```
 

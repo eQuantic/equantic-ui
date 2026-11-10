@@ -15,8 +15,20 @@ namespace eQuantic.UI.Primitives;
 /// nobody can reach. Keep it to shapes, gradients and at most a letter or two: at the size a home
 /// screen actually shows, anything finer is a smudge.
 /// </para>
+/// <para>
+/// It is written like any file of the app: the usings the app compiles with reach it, and in a web
+/// app so does the catalog of its own artwork, so <c>Drawing(Vectors.Mark, SizeValue.Fill)</c> draws
+/// the brand from the SVG under <c>Assets</c> rather than redrawing it as shapes. The device SDK writes
+/// no vector catalog yet, so a native app's icon draws shapes. Only the vocabulary is drawn:
+/// the icon is rasterized before the app runs, with nothing of the app's own code but this file.
+/// </para>
 /// </summary>
 public interface IAppIcon
 {
-    VisualNode Build(ComponentContext context);
+    /// <summary>
+    /// The icon for <paramref name="use"/>. An app with one artwork draws it for every use and reads
+    /// nothing of the argument; one whose brand has a second cut for small sizes answers
+    /// <see cref="AppIconUse.Small"/> with it.
+    /// </summary>
+    VisualNode Build(ComponentContext context, AppIconUse use);
 }

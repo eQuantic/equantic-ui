@@ -11,7 +11,7 @@ rot. What holds each claim here:
 | Claim | Instrument |
 |---|---|
 | every node reaches every dispatch, or is named there as an absence | the COMPILER — six visitors over `IVisualNodeVisitor`, plus `assertNever` on a generated union in the browser. `VocabularyCoverageTests` held this until the last dispatch crossed and is deleted; the plan keeps its record |
-| the layering — which core assembly may reference which, exactly | `AssemblyLayeringTests` — thirteen assemblies |
+| the layering — which core assembly may reference which, exactly | `AssemblyLayeringTests` — eighteen assemblies |
 | the handoff speaks the vocabulary's current names | `HandoffVocabularyTests` |
 | the handoff's numbers are the SDK's numbers | `HandoffTokenPinTests` |
 | every Flutter row is findable, and every gap still a gap | `FlutterParityPinTests` — 64 rows |
@@ -130,6 +130,8 @@ move, its address does not.
 | `Native.Framework` — layout | 2,803 | 11 | 25 | Primitives, Engine |
 | `Native.Components` — the Photon realizer, semantics, the host | 4,707 | 12 | 27 | Primitives, Engine, Framework |
 | `Native.Hosting` — the native application builder | 998 | 12 | 14 | Primitives, Native.Components |
+| `Testing` — the component tester, on the web (added 2026-11-09, #1245) | 739 | 4 | 2 | Web |
+| `Native.Testing` — its native half (added 2026-11-09, #1246) | 321 | 3 | 2 | Native.Components, Native.Engine.Reference |
 | `Compiler` — eqc's library | 24,619 | 198 | 256 | Codegen |
 | the TypeScript runtime | 35,540 (+13,658 of spec) | | | |
 | the five shells | Windows 4,539 · Apple 2,365 · Android 1,832 · macOS 1,691 · iOS 836 | | | |
@@ -172,6 +174,13 @@ else. The vehicle that delivers `Components` to eqc was never this edge: it is t
 `PackageReference` with `GeneratePathProperty` in `Sdk.props`, which a transitive dependency cannot
 produce. `AssemblyLayeringTests` now holds the table above as exact sets, so the next edge added in
 passing fails a test and owes a sentence here.
+
+The two `Testing` rows are one package per target, each on the host it drives, and they are two
+packages for a reason the table can hold: a package's dependencies are every consumer's. Had the
+Photon half lived in `Testing`, the test project of an app that ships only to the web would restore
+the native engine to test a page, and meet EQX0001 for a track it never chose. So `Testing` sees
+the web realizer and nothing of the native track, `Native.Testing` drives a `PhotonHost` and paints
+through the reference backend, and `AssemblyLayeringTests` holds both to that.
 
 One coupling worth a line rather than a row: `Native.Build`, the icon tool, references BOTH the Apple
 and the Windows shell — for CoreText and DirectWrite, so a C# icon's lettering is real glyphs on
