@@ -659,7 +659,7 @@ public class StatementSourceMapTests
     [Theory]
     [InlineData("this._limit = ", "private int _limit = Parse(\"40\");", "Gauge.cs")]
     [InlineData("this.label = ", "public string Label { get; set; } = \"gauge\";", "Gauge.cs")]
-    [InlineData("const $$_turns = ", "private int _turns = Parse(\"3\");", "Dial.cs")]
+    [InlineData("const $$_turns: number = ", "private int _turns = Parse(\"3\");", "Dial.cs")]
     [InlineData("this._turns = $$_turns;", "private int _turns = Parse(\"3\");", "Dial.cs")]
     public void AMembersStart_MapsToItsDeclaration(string emitted, string written, string file) =>
         AssertMapped(Compile(InitializedSource, file), emitted, written, InitializedSource);
