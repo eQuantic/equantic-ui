@@ -1,4 +1,4 @@
-- **2026-10-30 · A date reads and builds as .NET does**: bugs under #849
+- **2026-11-10 · A date reads and builds as .NET does**: bugs under #849
   ([#807](https://github.com/eQuantic/equantic-ui/issues/807),
   [#952](https://github.com/eQuantic/equantic-ui/issues/952)). The reader took the numeric forms a culture writes;
   it reads a month's and a day's name now, in the culture's language and in English, two numbers, a clock alone as
