@@ -1,4 +1,4 @@
-import { $eq, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconGlyph, IconsValue, NavItem, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconGlyph, IconsValue, NavItem, Pressable, Row, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class BottomNavigation extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.BottomNavigation';
@@ -41,11 +41,11 @@ export class BottomNavigation extends StatelessComponent {
             let icon = new Icon(IconGlyph.fromIcons(glyph), 24, tint);
             let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;
             let pillContent = VisualNodeExtensions.centered(iconNode);
-            let pill = new Box(new BoxStyle({ width: 56, height: 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')) }), pillContent);
+            let pill = new Box(new BoxStyle({ width: 56, height: 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), pillContent);
             let column = new Column(2, 'start', 'stretch', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
             column.add(pill);
             column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(11, 14, 'bold', Math.fround(0.1), Math.fround(1.3)) }));
-            row.add(new Flexible(new Pressable(column, this.onSelect == null ? null : () => this.onSelect!(index), { label: item.label, pressedBackground: theme.surfaceSubtle, role: 'destination', selected: isActive })));
+            row.add(new Flexible(new Pressable(column, this.onSelect == null ? null : () => this.onSelect!(index), { label: item.label, role: 'destination', selected: isActive })));
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, height: 56, background: theme.surface }), row);
     }

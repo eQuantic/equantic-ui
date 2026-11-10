@@ -157,7 +157,7 @@ public class ControlStateNativeTests
         public void Disable() => SetState(() => Off = true);
 
         public override VisualNode Build(ComponentContext context) =>
-            new Pressable(Surface(), () => { }) { Disabled = Off, PressedBackground = PressedFill };
+            new Pressable(Surface(pressed: new StyleDiff { Background = PressedFill }), () => { }) { Disabled = Off };
     }
 
     private static bool Paints(DisplayList list, ColorToken token) =>
@@ -199,11 +199,11 @@ public class ControlStateNativeTests
         var host = Host(new Simulated(SimulatedState.Pressed | SimulatedState.Focused,
             new Pressable(Surface(
                 focus: new StyleDiff { Opacity = 0.5f },
-                pressed: new StyleDiff { Transform = Transform2D.Scale(0.5f) }), () => { })
-            { Disabled = true, PressedBackground = PressedFill }));
+                pressed: new StyleDiff { Transform = Transform2D.Scale(0.5f), Background = PressedFill }), () => { })
+            { Disabled = true }));
         var frame = Frame(host);
 
-        Paints(frame, PressedFill).Should().BeFalse("the web gives a disabled control no eq-pressed");
+        Paints(frame, PressedFill).Should().BeFalse("the web writes no pressed rule for a disabled control's boxes");
         Rings(frame).Should().BeFalse("nor eq-focused");
         LayerAlpha(frame).Should().Be(1, "and its boxes picture no focus (found by Copilot on #617)");
         Fills(frame).Single().Transform.M11.Should().Be(1, "and no press");
