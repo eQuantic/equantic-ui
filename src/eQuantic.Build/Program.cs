@@ -60,8 +60,9 @@ return hadErrors ? 1 : 0;
 
 // SERVED (#1276): the server of an app in development starts eqc once, with the response file the
 // build wrote, and writes `compile` on its standard input for each save, where it used to start a new
-// MSBuild and a new eqc for every one. Each compile loads the project's compilation again, since the
-// save changed its sources, and answers in ONE line of standard output, `@eqc ` and a JSON object
+// MSBuild and a new eqc for every one. Each compile starts from the compilation the one before it
+// loaded, with the files the save changed replaced in it, and loads it cold when anything else a load
+// reads changed (#1278). It answers in ONE line of standard output, `@eqc ` and a JSON object
 // that says whether it compiled and holds its error lines, whatever it wrote before that line. The
 // end of the input is the server gone, and the process goes with it: nothing outlives its owner.
 static int Serve(AppBuildOptions options)

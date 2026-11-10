@@ -147,4 +147,23 @@ public class AWarmBuildTests
 
         wasWarm.Should().BeFalse("a file it could not read is a cold load's to read");
     }
+
+    /// <summary>
+    /// An assembly the reference list names, built again under the same path, loads the compilation
+    /// cold: the list did not change, and the kept compilation would read the assembly as it was.
+    /// </summary>
+    [Fact]
+    public void AReferencedAssemblyBuiltAgain_LoadsCold()
+    {
+        using var solution = new Solution()
+            .Package("Pack", ("Brand.cs", "namespace Pack;\n\npublic static class Brand { public const string Name = \"Pack\"; }\n"))
+            .App("Shop", references: ["Pack"], globalUsings: SharedLibrary.Factories, files: [("Prices.cs", Prices), ("Components/Tag.cs", Tag)]);
+        var cold = solution.Build();
+        var assembly = solution.AssemblyOf("Pack");
+        File.SetLastWriteTimeUtc(assembly, DateTime.UtcNow.AddMinutes(1));
+
+        var (_, wasWarm) = solution.Rebuild(cold);
+
+        wasWarm.Should().BeFalse("an assembly the compilation read changed on disk");
+    }
 }

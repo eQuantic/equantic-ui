@@ -335,13 +335,20 @@ public sealed class AppBuild
 
     /// <summary>The inputs the SDK hands a build besides the sources, by what they are on disk: a
     /// build whose inputs changed loads cold.</summary>
-    private string Inputs() =>
-        string.Join('|', new[]
+    private string Inputs()
+    {
+        // The assemblies the reference list names as well as the list: one built again under the same
+        // path leaves the list as it was, and the kept compilation would read its metadata as it was.
+        var files = new List<string?>
         {
             _options.ReferencesFile, _options.ProjectsFile, _options.ReferenceSourcesFile, _options.ProjectAssetsFile,
-        }.Select(file => string.IsNullOrEmpty(file) || !File.Exists(file)
+        };
+        if (!string.IsNullOrEmpty(_options.ReferencesFile) && File.Exists(_options.ReferencesFile))
+            files.AddRange(File.ReadAllLines(_options.ReferencesFile).Select(line => line.Trim()).Where(line => line.Length > 0));
+        return string.Join('|', files.Select(file => string.IsNullOrEmpty(file) || !File.Exists(file)
             ? $"{file}:none"
             : $"{file}:{File.GetLastWriteTimeUtc(file).Ticks}:{new FileInfo(file).Length}"));
+    }
 
     /// <summary>
     /// Every file the project's compilation is built from: the project's own sources, the global usings
