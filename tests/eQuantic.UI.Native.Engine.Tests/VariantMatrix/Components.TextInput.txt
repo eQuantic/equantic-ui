@@ -60,8 +60,8 @@ TextInput 0 0 480x61
       Box 0 0 480x40
         Row 15 1 450x38
           Flexible 15 8 450x24
-            TextEntry 15 8 450x24
-    Text 0 45 480x16
+            TextEntry 15 8 450x24 1 line(s)
+    Text 0 45 480x16 1 line(s)
 
 ## Medium · Compact
 ### web
@@ -125,8 +125,8 @@ TextInput 0 0 480x53
       Box 0 0 480x32
         Row 15 1 450x30
           Flexible 15 4 450x24
-            TextEntry 15 4 450x24
-    Text 0 37 480x16
+            TextEntry 15 4 450x24 1 line(s)
+    Text 0 37 480x16 1 line(s)
 
 ## Large · Comfortable
 ### web
@@ -190,8 +190,8 @@ TextInput 0 0 480x69
       Box 0 0 480x48
         Row 15 1 450x46
           Flexible 15 12 450x24
-            TextEntry 15 12 450x24
-    Text 0 53 480x16
+            TextEntry 15 12 450x24 1 line(s)
+    Text 0 53 480x16 1 line(s)
 
 ## Large · Compact
 ### web
@@ -255,8 +255,8 @@ TextInput 0 0 480x61
       Box 0 0 480x40
         Row 15 1 450x38
           Flexible 15 8 450x24
-            TextEntry 15 8 450x24
-    Text 0 45 480x16
+            TextEntry 15 8 450x24 1 line(s)
+    Text 0 45 480x16 1 line(s)
 
 ## XLarge · Comfortable
 ### web
@@ -320,8 +320,8 @@ TextInput 0 0 480x77
       Box 0 0 480x56
         Row 15 1 450x54
           Flexible 15 16 450x24
-            TextEntry 15 16 450x24
-    Text 0 61 480x16
+            TextEntry 15 16 450x24 1 line(s)
+    Text 0 61 480x16 1 line(s)
 
 ## XLarge · Compact
 ### web
@@ -385,6 +385,6 @@ TextInput 0 0 480x69
       Box 0 0 480x48
         Row 15 1 450x46
           Flexible 15 12 450x24
-            TextEntry 15 12 450x24
-    Text 0 53 480x16
+            TextEntry 15 12 450x24 1 line(s)
+    Text 0 53 480x16 1 line(s)
 

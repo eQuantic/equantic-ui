@@ -64,7 +64,7 @@ Select 0 0 480x40
           Pressable 0 0 480x40
             Box 0 0 480x40
               Row 13 1 454x38
-                Text 13 10 51x20
+                Text 13 10 51x20 1 line(s)
                 Flexible 72 20 371x0
                   Spacer 72 20 371x0
                 Icon 451 12 16x16
@@ -135,7 +135,7 @@ Select 0 0 480x32
           Pressable 0 0 480x32
             Box 0 0 480x32
               Row 13 1 454x30
-                Text 13 6 51x20
+                Text 13 6 51x20 1 line(s)
                 Flexible 72 16 371x0
                   Spacer 72 16 371x0
                 Icon 451 8 16x16

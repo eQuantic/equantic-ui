@@ -70,7 +70,7 @@ SearchField 0 0 480x40
     Row 14 0 452x40
       Icon 14 10 20x20
       Flexible 44 10 364x20
-        TextEntry 44 10 364x20
+        TextEntry 44 10 364x20 1 line(s)
       Pressable 418 0 48x40
         Box 418 0 48x40
           Row 418 0 48x40
@@ -148,7 +148,7 @@ SearchField 0 0 480x32
     Row 14 0 452x32
       Icon 14 6 20x20
       Flexible 44 6 364x20
-        TextEntry 44 6 364x20
+        TextEntry 44 6 364x20 1 line(s)
       Pressable 418 0 48x32
         Box 418 0 48x32
           Row 418 0 48x32

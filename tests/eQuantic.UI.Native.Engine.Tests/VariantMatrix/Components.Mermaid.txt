@@ -65,7 +65,7 @@ Mermaid 0 0 480x42
               Row 0 12 13.52x18
                 Box 0 13 24x16
                   Row 12 13 0x16
-                    Text 12 13 0x16
+                    Text 12 13 0x16 1 line(s)
 
 ## Compact
 ### web
@@ -134,5 +134,5 @@ Mermaid 0 0 480x41
               Row 0 12 11.96x17
                 Box 0 13.25 24x14.5
                   Row 12 13.25 0x14.5
-                    Text 12 13.25 0x14.5
+                    Text 12 13.25 0x14.5 1 line(s)
 

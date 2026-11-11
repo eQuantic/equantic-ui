@@ -55,7 +55,7 @@ EmptyState 0 0 480x202
     Box 208 48 64x64
       Row 208 48 64x64
         Icon 224 64 32x32
-    Text 234.8 128 10.4x26
+    Text 234.8 128 10.4x26 1 line(s)
 
 ## Compact
 ### web
@@ -114,5 +114,5 @@ EmptyState 0 0 480x202
     Box 208 48 64x64
       Row 208 48 64x64
         Icon 224 64 32x32
-    Text 234.8 128 10.4x26
+    Text 234.8 128 10.4x26 1 line(s)
 

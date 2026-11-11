@@ -36,7 +36,7 @@ StaticText "x"
 Chip 0 0 480x32
   Box 0 0 480x32
     Row 12 0 456x32
-      Text 236.62 8 6.76x16
+      Text 236.62 8 6.76x16 1 line(s)
 
 ## Primary · Compact
 ### web
@@ -76,7 +76,7 @@ StaticText "x"
 Chip 0 0 480x26
   Box 0 0 480x26
     Row 12 0 456x26
-      Text 236.62 5 6.76x16
+      Text 236.62 5 6.76x16 1 line(s)
 
 ## Secondary · Comfortable
 ### web
@@ -116,7 +116,7 @@ StaticText "x"
 Chip 0 0 480x32
   Box 0 0 480x32
     Row 12 0 456x32
-      Text 236.62 8 6.76x16
+      Text 236.62 8 6.76x16 1 line(s)
 
 ## Secondary · Compact
 ### web
@@ -156,7 +156,7 @@ StaticText "x"
 Chip 0 0 480x26
   Box 0 0 480x26
     Row 12 0 456x26
-      Text 236.62 5 6.76x16
+      Text 236.62 5 6.76x16 1 line(s)
 
 ## Destructive · Comfortable
 ### web
@@ -196,7 +196,7 @@ StaticText "x"
 Chip 0 0 480x32
   Box 0 0 480x32
     Row 12 0 456x32
-      Text 236.62 8 6.76x16
+      Text 236.62 8 6.76x16 1 line(s)
 
 ## Destructive · Compact
 ### web
@@ -236,7 +236,7 @@ StaticText "x"
 Chip 0 0 480x26
   Box 0 0 480x26
     Row 12 0 456x26
-      Text 236.62 5 6.76x16
+      Text 236.62 5 6.76x16 1 line(s)
 
 ## Outline · Comfortable
 ### web
@@ -276,7 +276,7 @@ StaticText "x"
 Chip 0 0 480x32
   Box 0 0 480x32
     Row 12 0 456x32
-      Text 236.62 8 6.76x16
+      Text 236.62 8 6.76x16 1 line(s)
 
 ## Outline · Compact
 ### web
@@ -316,7 +316,7 @@ StaticText "x"
 Chip 0 0 480x26
   Box 0 0 480x26
     Row 12 0 456x26
-      Text 236.62 5 6.76x16
+      Text 236.62 5 6.76x16 1 line(s)
 
 ## Ghost · Comfortable
 ### web
@@ -356,7 +356,7 @@ StaticText "x"
 Chip 0 0 480x32
   Box 0 0 480x32
     Row 12 0 456x32
-      Text 236.62 8 6.76x16
+      Text 236.62 8 6.76x16 1 line(s)
 
 ## Ghost · Compact
 ### web
@@ -396,7 +396,7 @@ StaticText "x"
 Chip 0 0 480x26
   Box 0 0 480x26
     Row 12 0 456x26
-      Text 236.62 5 6.76x16
+      Text 236.62 5 6.76x16 1 line(s)
 
 ## Link · Comfortable
 ### web
@@ -436,7 +436,7 @@ StaticText "x"
 Chip 0 0 480x32
   Box 0 0 480x32
     Row 12 0 456x32
-      Text 236.62 8 6.76x16
+      Text 236.62 8 6.76x16 1 line(s)
 
 ## Link · Compact
 ### web
@@ -476,7 +476,7 @@ StaticText "x"
 Chip 0 0 480x26
   Box 0 0 480x26
     Row 12 0 456x26
-      Text 236.62 5 6.76x16
+      Text 236.62 5 6.76x16 1 line(s)
 
 ## Success · Comfortable
 ### web
@@ -516,7 +516,7 @@ StaticText "x"
 Chip 0 0 480x32
   Box 0 0 480x32
     Row 12 0 456x32
-      Text 236.62 8 6.76x16
+      Text 236.62 8 6.76x16 1 line(s)
 
 ## Success · Compact
 ### web
@@ -556,7 +556,7 @@ StaticText "x"
 Chip 0 0 480x26
   Box 0 0 480x26
     Row 12 0 456x26
-      Text 236.62 5 6.76x16
+      Text 236.62 5 6.76x16 1 line(s)
 
 ## Warning · Comfortable
 ### web
@@ -596,7 +596,7 @@ StaticText "x"
 Chip 0 0 480x32
   Box 0 0 480x32
     Row 12 0 456x32
-      Text 236.62 8 6.76x16
+      Text 236.62 8 6.76x16 1 line(s)
 
 ## Warning · Compact
 ### web
@@ -636,7 +636,7 @@ StaticText "x"
 Chip 0 0 480x26
   Box 0 0 480x26
     Row 12 0 456x26
-      Text 236.62 5 6.76x16
+      Text 236.62 5 6.76x16 1 line(s)
 
 ## Info · Comfortable
 ### web
@@ -676,7 +676,7 @@ StaticText "x"
 Chip 0 0 480x32
   Box 0 0 480x32
     Row 12 0 456x32
-      Text 236.62 8 6.76x16
+      Text 236.62 8 6.76x16 1 line(s)
 
 ## Info · Compact
 ### web
@@ -716,7 +716,7 @@ StaticText "x"
 Chip 0 0 480x26
   Box 0 0 480x26
     Row 12 0 456x26
-      Text 236.62 5 6.76x16
+      Text 236.62 5 6.76x16 1 line(s)
 
 ## Tertiary · Comfortable
 ### web
@@ -756,7 +756,7 @@ StaticText "x"
 Chip 0 0 480x32
   Box 0 0 480x32
     Row 12 0 456x32
-      Text 236.62 8 6.76x16
+      Text 236.62 8 6.76x16 1 line(s)
 
 ## Tertiary · Compact
 ### web
@@ -796,5 +796,5 @@ StaticText "x"
 Chip 0 0 480x26
   Box 0 0 480x26
     Row 12 0 456x26
-      Text 236.62 5 6.76x16
+      Text 236.62 5 6.76x16 1 line(s)
 

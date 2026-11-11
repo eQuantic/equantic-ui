@@ -142,7 +142,7 @@ CodeEditor 0 0 480x800
                                 Row 0 12 46x18
                                   Box 0 12 14x18
                                     Row 0 12 14x18
-                                      Text 7.24 13 6.76x16
+                                      Text 7.24 13 6.76x16 1 line(s)
                                   Row 14 12 20x18
                             Flexible 46 0 434x42
                               ScrollView 46 0 434x42
@@ -158,7 +158,7 @@ CodeEditor 0 0 480x800
                                             Row 46 12 6.76x18
                                               Box 46 13 24x16
                                                 Row 58 13 0x16
-                                                  Text 58 13 0x16
+                                                  Text 58 13 0x16 1 line(s)
 
 ## Small · Compact
 ### web
@@ -304,7 +304,7 @@ CodeEditor 0 0 480x800
                                 Row 0 12 44x17
                                   Box 0 12 12x17
                                     Row 0 12 12x17
-                                      Text 6.02 13.25 5.98x14.5
+                                      Text 6.02 13.25 5.98x14.5 1 line(s)
                                   Row 12 12 20x17
                             Flexible 44 0 436x41
                               ScrollView 44 0 436x41
@@ -320,7 +320,7 @@ CodeEditor 0 0 480x800
                                             Row 44 12 5.98x17
                                               Box 44 13.25 24x14.5
                                                 Row 56 13.25 0x14.5
-                                                  Text 56 13.25 0x14.5
+                                                  Text 56 13.25 0x14.5 1 line(s)
 
 ## Medium · Comfortable
 ### web
@@ -466,7 +466,7 @@ CodeEditor 0 0 480x800
                                 Row 0 12 48x22
                                   Box 0 12 16x22
                                     Row 0 12 16x22
-                                      Text 8.2 13.5 7.8x19
+                                      Text 8.2 13.5 7.8x19 1 line(s)
                                   Row 16 12 20x22
                             Flexible 48 0 432x46
                               ScrollView 48 0 432x46
@@ -482,7 +482,7 @@ CodeEditor 0 0 480x800
                                             Row 48 12 7.8x22
                                               Box 48 13.5 24x19
                                                 Row 60 13.5 0x19
-                                                  Text 60 13.5 0x19
+                                                  Text 60 13.5 0x19 1 line(s)
 
 ## Medium · Compact
 ### web
@@ -628,7 +628,7 @@ CodeEditor 0 0 480x800
                                 Row 0 12 46x18
                                   Box 0 12 14x18
                                     Row 0 12 14x18
-                                      Text 7.24 13 6.76x16
+                                      Text 7.24 13 6.76x16 1 line(s)
                                   Row 14 12 20x18
                             Flexible 46 0 434x42
                               ScrollView 46 0 434x42
@@ -644,7 +644,7 @@ CodeEditor 0 0 480x800
                                             Row 46 12 6.76x18
                                               Box 46 13 24x16
                                                 Row 58 13 0x16
-                                                  Text 58 13 0x16
+                                                  Text 58 13 0x16 1 line(s)
 
 ## Large · Comfortable
 ### web
@@ -790,7 +790,7 @@ CodeEditor 0 0 480x800
                                 Row 0 12 49x23
                                   Box 0 12 17x23
                                     Row 0 12 17x23
-                                      Text 8.68 13.5 8.32x20
+                                      Text 8.68 13.5 8.32x20 1 line(s)
                                   Row 17 12 20x23
                             Flexible 49 0 431x47
                               ScrollView 49 0 431x47
@@ -806,7 +806,7 @@ CodeEditor 0 0 480x800
                                             Row 49 12 8.32x23
                                               Box 49 13.5 24x20
                                                 Row 61 13.5 0x20
-                                                  Text 61 13.5 0x20
+                                                  Text 61 13.5 0x20 1 line(s)
 
 ## Large · Compact
 ### web
@@ -952,7 +952,7 @@ CodeEditor 0 0 480x800
                                 Row 0 12 48x21
                                   Box 0 12 16x21
                                     Row 0 12 16x21
-                                      Text 8.46 13.5 7.54x18
+                                      Text 8.46 13.5 7.54x18 1 line(s)
                                   Row 16 12 20x21
                             Flexible 48 0 432x45
                               ScrollView 48 0 432x45
@@ -968,7 +968,7 @@ CodeEditor 0 0 480x800
                                             Row 48 12 7.54x21
                                               Box 48 13.5 24x18
                                                 Row 60 13.5 0x18
-                                                  Text 60 13.5 0x18
+                                                  Text 60 13.5 0x18 1 line(s)
 
 ## XLarge · Comfortable
 ### web
@@ -1114,7 +1114,7 @@ CodeEditor 0 0 480x800
                                 Row 0 12 50x24
                                   Box 0 12 18x24
                                     Row 0 12 18x24
-                                      Text 9.16 13.5 8.84x21
+                                      Text 9.16 13.5 8.84x21 1 line(s)
                                   Row 18 12 20x24
                             Flexible 50 0 430x48
                               ScrollView 50 0 430x48
@@ -1130,7 +1130,7 @@ CodeEditor 0 0 480x800
                                             Row 50 12 8.84x24
                                               Box 50 13.5 24x21
                                                 Row 62 13.5 0x21
-                                                  Text 62 13.5 0x21
+                                                  Text 62 13.5 0x21 1 line(s)
 
 ## XLarge · Compact
 ### web
@@ -1276,7 +1276,7 @@ CodeEditor 0 0 480x800
                                 Row 0 12 49x22
                                   Box 0 12 17x22
                                     Row 0 12 17x22
-                                      Text 8.94 13.25 8.06x19.5
+                                      Text 8.94 13.25 8.06x19.5 1 line(s)
                                   Row 17 12 20x22
                             Flexible 49 0 431x46
                               ScrollView 49 0 431x46
@@ -1292,5 +1292,5 @@ CodeEditor 0 0 480x800
                                             Row 49 12 8.06x22
                                               Box 49 13.25 24x19.5
                                                 Row 61 13.25 0x19.5
-                                                  Text 61 13.25 0x19.5
+                                                  Text 61 13.25 0x19.5 1 line(s)
 

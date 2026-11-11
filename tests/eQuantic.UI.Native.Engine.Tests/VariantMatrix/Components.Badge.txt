@@ -38,7 +38,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Primary · Compact
 ### web
@@ -80,7 +80,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Secondary · Comfortable
 ### web
@@ -122,7 +122,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Secondary · Compact
 ### web
@@ -164,7 +164,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Destructive · Comfortable
 ### web
@@ -206,7 +206,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Destructive · Compact
 ### web
@@ -248,7 +248,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Outline · Comfortable
 ### web
@@ -290,7 +290,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Outline · Compact
 ### web
@@ -332,7 +332,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Ghost · Comfortable
 ### web
@@ -374,7 +374,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Ghost · Compact
 ### web
@@ -416,7 +416,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Link · Comfortable
 ### web
@@ -458,7 +458,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Link · Compact
 ### web
@@ -500,7 +500,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Success · Comfortable
 ### web
@@ -542,7 +542,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Success · Compact
 ### web
@@ -584,7 +584,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Warning · Comfortable
 ### web
@@ -626,7 +626,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Warning · Compact
 ### web
@@ -668,7 +668,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Info · Comfortable
 ### web
@@ -710,7 +710,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Info · Compact
 ### web
@@ -752,7 +752,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Tertiary · Comfortable
 ### web
@@ -794,7 +794,7 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 
 ## Tertiary · Compact
 ### web
@@ -836,5 +836,5 @@ StaticText "0"
 Badge 0 0 480x16
   Box 0 0 480x16
     Row 4 0 472x16
-      Text 237.4 2 5.2x12
+      Text 237.4 2 5.2x12 1 line(s)
 

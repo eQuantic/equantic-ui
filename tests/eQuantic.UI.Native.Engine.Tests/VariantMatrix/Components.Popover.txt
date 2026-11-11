@@ -11,7 +11,7 @@ StaticText "x"
 ### photon
 Popover 0 0 480x24
   Anchored 0 0 480x24
-    Text 0 0 480x24
+    Text 0 0 480x24 1 line(s)
 
 ## Compact
 ### web
@@ -26,5 +26,5 @@ StaticText "x"
 ### photon
 Popover 0 0 480x24
   Anchored 0 0 480x24
-    Text 0 0 480x24
+    Text 0 0 480x24 1 line(s)
 

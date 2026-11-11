@@ -53,7 +53,7 @@ NameBox 0 0 96x32
       CodeSurface 1 1 34x30
         Box 1 1 34x30
           Box 1 1 34x30
-            Text 9 6 18x20
+            Text 9 6 18x20 1 line(s)
 
 ## Compact
 ### web
@@ -110,5 +110,5 @@ NameBox 0 0 96x32
       CodeSurface 1 1 34x30
         Box 1 1 34x30
           Box 1 1 34x30
-            Text 9 6 18x20
+            Text 9 6 18x20 1 line(s)
 

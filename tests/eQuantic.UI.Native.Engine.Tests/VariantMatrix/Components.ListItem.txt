@@ -43,7 +43,7 @@ ListItem 0 0 480x52
     Row 0 0 480x36
       Flexible 16 8 448x20
         Column 16 8 448x20
-          Text 16 8 448x20
+          Text 16 8 448x20 1 line(s)
 
 ## Compact
 ### web
@@ -90,5 +90,5 @@ ListItem 0 0 480x52
     Row 0 0 480x36
       Flexible 16 8 448x20
         Column 16 8 448x20
-          Text 16 8 448x20
+          Text 16 8 448x20 1 line(s)
 

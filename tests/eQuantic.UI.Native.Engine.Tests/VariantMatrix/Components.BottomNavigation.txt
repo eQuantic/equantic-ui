@@ -105,21 +105,21 @@ BottomNavigation 0 0 480x56
             Box 52 7 56x26
               Row 52 7 56x26
                 Icon 68 8 24x24
-            Text 62.27 35 35.46x14
+            Text 62.27 35 35.46x14 1 line(s)
       Flexible 160 0 160x56
         Pressable 160 0 160x56
           Column 160 0 160x56
             Box 212 7 56x26
               Row 212 7 56x26
                 Icon 228 8 24x24
-            Text 222.54 35 34.92x14
+            Text 222.54 35 34.92x14 1 line(s)
       Flexible 320 0 160x56
         Pressable 320 0 160x56
           Column 320 0 160x56
             Box 372 7 56x26
               Row 372 7 56x26
                 Icon 388 8 24x24
-            Text 385.45 35 29.1x14
+            Text 385.45 35 29.1x14 1 line(s)
 
 ## Compact
 ### web
@@ -228,19 +228,19 @@ BottomNavigation 0 0 480x56
             Box 52 7 56x26
               Row 52 7 56x26
                 Icon 68 8 24x24
-            Text 62.27 35 35.46x14
+            Text 62.27 35 35.46x14 1 line(s)
       Flexible 160 0 160x56
         Pressable 160 0 160x56
           Column 160 0 160x56
             Box 212 7 56x26
               Row 212 7 56x26
                 Icon 228 8 24x24
-            Text 222.54 35 34.92x14
+            Text 222.54 35 34.92x14 1 line(s)
       Flexible 320 0 160x56
         Pressable 320 0 160x56
           Column 320 0 160x56
             Box 372 7 56x26
               Row 372 7 56x26
                 Icon 388 8 24x24
-            Text 385.45 35 29.1x14
+            Text 385.45 35 29.1x14 1 line(s)
 

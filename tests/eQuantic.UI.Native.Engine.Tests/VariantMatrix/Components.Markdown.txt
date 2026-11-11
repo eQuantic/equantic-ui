@@ -22,7 +22,7 @@ StaticText "x"
 ### photon
 Markdown 0 0 480x20
   Column 0 0 480x20
-    Text 0 0 480x20
+    Text 0 0 480x20 1 line(s)
 
 ## Compact
 ### web
@@ -48,5 +48,5 @@ StaticText "x"
 ### photon
 Markdown 0 0 480x20
   Column 0 0 480x20
-    Text 0 0 480x20
+    Text 0 0 480x20 1 line(s)
 

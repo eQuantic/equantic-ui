@@ -115,9 +115,31 @@ Button "Stay"
 Button "Sign out"
 ### photon
 Column 0 0 480x34
-  Text 0 0 480x26
+  Text 0 0 480x26 1 line(s)
   Dialog 0 34 480x0
     Overlay 0 34 0x0
+### photon layer
+Presence 0 0 480x800
+  Stack 0 0 480x800
+    Pressable 0 0 480x800
+      Box 0 0 480x800
+    Column 0 0 480x800
+      Box 24 323 432x154
+        Column 44 343 392x114
+          Column 44 343 392x54
+            Text 44 343 392x26 1 line(s)
+            Text 44 377 392x20 1 line(s)
+          Row 44 417 392x40
+            Button 275.7 417 64x40
+              Pressable 275.7 417 64x40
+                Box 275.7 417 64x40
+                  Row 291.7 417 31.6x40
+                    Text 291.7 427.5 31.6x19 1 line(s)
+            Button 347.7 417 88.3x40
+              Pressable 347.7 417 88.3x40
+                Box 347.7 417 88.3x40
+                  Row 363.7 417 56.3x40
+                    Text 363.7 427.5 56.3x19 1 line(s)
 
 ## Compact
 ### web
@@ -236,7 +258,29 @@ Button "Stay"
 Button "Sign out"
 ### photon
 Column 0 0 480x34
-  Text 0 0 480x26
+  Text 0 0 480x26 1 line(s)
   Dialog 0 34 480x0
     Overlay 0 34 0x0
+### photon layer
+Presence 0 0 480x800
+  Stack 0 0 480x800
+    Pressable 0 0 480x800
+      Box 0 0 480x800
+    Column 0 0 480x800
+      Box 24 327 432x146
+        Column 44 347 392x106
+          Column 44 347 392x54
+            Text 44 347 392x26 1 line(s)
+            Text 44 381 392x20 1 line(s)
+          Row 44 421 392x32
+            Button 291.1 421 64x32
+              Pressable 291.1 421 64x32
+                Box 291.1 421 64x32
+                  Row 303.1 421 40x32
+                    Text 309.38 429 27.44x16 1 line(s)
+            Button 363.1 421 72.9x32
+              Pressable 363.1 421 72.9x32
+                Box 363.1 421 72.9x32
+                  Row 375.1 421 48.9x32
+                    Text 375.1 429 48.9x16 1 line(s)
 

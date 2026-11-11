@@ -20,7 +20,7 @@ StaticText "x"
 ### photon
 Card 0 0 480x58
   Box 0 0 480x58
-    Text 17 17 446x24
+    Text 17 17 446x24 1 line(s)
 
 ## Compact
 ### web
@@ -44,5 +44,5 @@ StaticText "x"
 ### photon
 Card 0 0 480x58
   Box 0 0 480x58
-    Text 17 17 446x24
+    Text 17 17 446x24 1 line(s)
 

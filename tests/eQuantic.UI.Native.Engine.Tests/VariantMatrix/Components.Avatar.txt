@@ -37,7 +37,7 @@ StaticText "x"
 Avatar 0 0 24x24
   Box 0 0 24x24
     Row 0 0 24x24
-      Text 9.4 7 5.2x10
+      Text 9.4 7 5.2x10 1 line(s)
 
 ## Small · Compact
 ### web
@@ -78,7 +78,7 @@ StaticText "x"
 Avatar 0 0 24x24
   Box 0 0 24x24
     Row 0 0 24x24
-      Text 9.4 7 5.2x10
+      Text 9.4 7 5.2x10 1 line(s)
 
 ## Medium · Comfortable
 ### web
@@ -119,7 +119,7 @@ StaticText "x"
 Avatar 0 0 32x32
   Box 0 0 32x32
     Row 0 0 32x32
-      Text 12.62 9.5 6.76x13
+      Text 12.62 9.5 6.76x13 1 line(s)
 
 ## Medium · Compact
 ### web
@@ -160,7 +160,7 @@ StaticText "x"
 Avatar 0 0 32x32
   Box 0 0 32x32
     Row 0 0 32x32
-      Text 12.62 9.5 6.76x13
+      Text 12.62 9.5 6.76x13 1 line(s)
 
 ## Large · Comfortable
 ### web
@@ -201,7 +201,7 @@ StaticText "x"
 Avatar 0 0 40x40
   Box 0 0 40x40
     Row 0 0 40x40
-      Text 15.84 12 8.32x16
+      Text 15.84 12 8.32x16 1 line(s)
 
 ## Large · Compact
 ### web
@@ -242,7 +242,7 @@ StaticText "x"
 Avatar 0 0 40x40
   Box 0 0 40x40
     Row 0 0 40x40
-      Text 15.84 12 8.32x16
+      Text 15.84 12 8.32x16 1 line(s)
 
 ## XLarge · Comfortable
 ### web
@@ -283,7 +283,7 @@ StaticText "x"
 Avatar 0 0 56x56
   Box 0 0 56x56
     Row 0 0 56x56
-      Text 22.28 17 11.44x22
+      Text 22.28 17 11.44x22 1 line(s)
 
 ## XLarge · Compact
 ### web
@@ -324,5 +324,5 @@ StaticText "x"
 Avatar 0 0 56x56
   Box 0 0 56x56
     Row 0 0 56x56
-      Text 22.28 17 11.44x22
+      Text 22.28 17 11.44x22 1 line(s)
 

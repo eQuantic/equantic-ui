@@ -56,7 +56,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Primary · Compact
 ### web
@@ -116,7 +116,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Secondary · Comfortable
 ### web
@@ -176,7 +176,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Secondary · Compact
 ### web
@@ -236,7 +236,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Destructive · Comfortable
 ### web
@@ -296,7 +296,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Destructive · Compact
 ### web
@@ -356,7 +356,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Outline · Comfortable
 ### web
@@ -416,7 +416,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Outline · Compact
 ### web
@@ -476,7 +476,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Ghost · Comfortable
 ### web
@@ -536,7 +536,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Ghost · Compact
 ### web
@@ -596,7 +596,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Link · Comfortable
 ### web
@@ -656,7 +656,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Link · Compact
 ### web
@@ -716,7 +716,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Success · Comfortable
 ### web
@@ -776,7 +776,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Success · Compact
 ### web
@@ -836,7 +836,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Warning · Comfortable
 ### web
@@ -896,7 +896,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Warning · Compact
 ### web
@@ -956,7 +956,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Info · Comfortable
 ### web
@@ -1016,7 +1016,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Info · Compact
 ### web
@@ -1076,7 +1076,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Tertiary · Comfortable
 ### web
@@ -1136,7 +1136,7 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 
 ## Tertiary · Compact
 ### web
@@ -1196,5 +1196,5 @@ Banner 0 0 480x44
         Icon 14 12 20x20
         Flexible 44 12 422x18
           Column 44 12 422x18
-            Text 44 12 422x18
+            Text 44 12 422x18 1 line(s)
 

@@ -84,7 +84,7 @@ CodeBlock 0 0 480x42
       Column 0 0 26x30
         Box 0 12 26x18
           Row 0 12 14x18
-            Text 7.24 13 6.76x16
+            Text 7.24 13 6.76x16 1 line(s)
       Flexible 26 0 454x42
         ScrollView 26 0 454x42
           Box 26 0 13.52x42
@@ -93,7 +93,7 @@ CodeBlock 0 0 480x42
                 Row 26 12 13.52x18
                   Box 26 13 24x16
                     Row 38 13 0x16
-                      Text 38 13 0x16
+                      Text 38 13 0x16 1 line(s)
 
 ## Small · Compact
 ### web
@@ -181,7 +181,7 @@ CodeBlock 0 0 480x41
       Column 0 0 24x29
         Box 0 12 24x17
           Row 0 12 12x17
-            Text 6.02 13.25 5.98x14.5
+            Text 6.02 13.25 5.98x14.5 1 line(s)
       Flexible 24 0 456x41
         ScrollView 24 0 456x41
           Box 24 0 11.96x41
@@ -190,7 +190,7 @@ CodeBlock 0 0 480x41
                 Row 24 12 11.96x17
                   Box 24 13.25 24x14.5
                     Row 36 13.25 0x14.5
-                      Text 36 13.25 0x14.5
+                      Text 36 13.25 0x14.5 1 line(s)
 
 ## Medium · Comfortable
 ### web
@@ -278,7 +278,7 @@ CodeBlock 0 0 480x46
       Column 0 0 28x34
         Box 0 12 28x22
           Row 0 12 16x22
-            Text 8.2 13.5 7.8x19
+            Text 8.2 13.5 7.8x19 1 line(s)
       Flexible 28 0 452x46
         ScrollView 28 0 452x46
           Box 28 0 15.6x46
@@ -287,7 +287,7 @@ CodeBlock 0 0 480x46
                 Row 28 12 15.6x22
                   Box 28 13.5 24x19
                     Row 40 13.5 0x19
-                      Text 40 13.5 0x19
+                      Text 40 13.5 0x19 1 line(s)
 
 ## Medium · Compact
 ### web
@@ -375,7 +375,7 @@ CodeBlock 0 0 480x42
       Column 0 0 26x30
         Box 0 12 26x18
           Row 0 12 14x18
-            Text 7.24 13 6.76x16
+            Text 7.24 13 6.76x16 1 line(s)
       Flexible 26 0 454x42
         ScrollView 26 0 454x42
           Box 26 0 13.52x42
@@ -384,7 +384,7 @@ CodeBlock 0 0 480x42
                 Row 26 12 13.52x18
                   Box 26 13 24x16
                     Row 38 13 0x16
-                      Text 38 13 0x16
+                      Text 38 13 0x16 1 line(s)
 
 ## Large · Comfortable
 ### web
@@ -472,7 +472,7 @@ CodeBlock 0 0 480x47
       Column 0 0 29x35
         Box 0 12 29x23
           Row 0 12 17x23
-            Text 8.68 13.5 8.32x20
+            Text 8.68 13.5 8.32x20 1 line(s)
       Flexible 29 0 451x47
         ScrollView 29 0 451x47
           Box 29 0 16.64x47
@@ -481,7 +481,7 @@ CodeBlock 0 0 480x47
                 Row 29 12 16.64x23
                   Box 29 13.5 24x20
                     Row 41 13.5 0x20
-                      Text 41 13.5 0x20
+                      Text 41 13.5 0x20 1 line(s)
 
 ## Large · Compact
 ### web
@@ -569,7 +569,7 @@ CodeBlock 0 0 480x45
       Column 0 0 28x33
         Box 0 12 28x21
           Row 0 12 16x21
-            Text 8.46 13.5 7.54x18
+            Text 8.46 13.5 7.54x18 1 line(s)
       Flexible 28 0 452x45
         ScrollView 28 0 452x45
           Box 28 0 15.08x45
@@ -578,7 +578,7 @@ CodeBlock 0 0 480x45
                 Row 28 12 15.08x21
                   Box 28 13.5 24x18
                     Row 40 13.5 0x18
-                      Text 40 13.5 0x18
+                      Text 40 13.5 0x18 1 line(s)
 
 ## XLarge · Comfortable
 ### web
@@ -666,7 +666,7 @@ CodeBlock 0 0 480x48
       Column 0 0 30x36
         Box 0 12 30x24
           Row 0 12 18x24
-            Text 9.16 13.5 8.84x21
+            Text 9.16 13.5 8.84x21 1 line(s)
       Flexible 30 0 450x48
         ScrollView 30 0 450x48
           Box 30 0 17.68x48
@@ -675,7 +675,7 @@ CodeBlock 0 0 480x48
                 Row 30 12 17.68x24
                   Box 30 13.5 24x21
                     Row 42 13.5 0x21
-                      Text 42 13.5 0x21
+                      Text 42 13.5 0x21 1 line(s)
 
 ## XLarge · Compact
 ### web
@@ -763,7 +763,7 @@ CodeBlock 0 0 480x46
       Column 0 0 29x34
         Box 0 12 29x22
           Row 0 12 17x22
-            Text 8.94 13.25 8.06x19.5
+            Text 8.94 13.25 8.06x19.5 1 line(s)
       Flexible 29 0 451x46
         ScrollView 29 0 451x46
           Box 29 0 16.12x46
@@ -772,5 +772,5 @@ CodeBlock 0 0 480x46
                 Row 29 12 16.12x22
                   Box 29 13.25 24x19.5
                     Row 41 13.25 0x19.5
-                      Text 41 13.25 0x19.5
+                      Text 41 13.25 0x19.5 1 line(s)
 

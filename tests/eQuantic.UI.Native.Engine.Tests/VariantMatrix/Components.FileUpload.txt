@@ -83,15 +83,15 @@ FileUpload 0 0 480x158
     DropTarget 0 0 480x130
       Box 0 0 480x130
         Column 25 25 430x80
-          Text 143.55 25 192.9x16
-          Text 189.74 49 100.52x16
+          Text 143.55 25 192.9x16 1 line(s)
+          Text 189.74 49 100.52x16 1 line(s)
           Button 191.39 73 97.22x32
             Pressable 191.39 73 97.22x32
               Box 191.39 73 97.22x32
                 Row 203.39 73 73.22x32
-                  Text 203.39 81 73.22x16
+                  Text 203.39 81 73.22x16 1 line(s)
     LiveRegion 0 142 480x16
-      Text 0 142 480x16
+      Text 0 142 480x16 1 line(s)
 
 ## Compact
 ### web
@@ -178,13 +178,13 @@ FileUpload 0 0 480x152
     DropTarget 0 0 480x124
       Box 0 0 480x124
         Column 25 25 430x74
-          Text 143.55 25 192.9x16
-          Text 189.74 49 100.52x16
+          Text 143.55 25 192.9x16 1 line(s)
+          Text 189.74 49 100.52x16 1 line(s)
           Button 199.54 73 80.91x26
             Pressable 199.54 73 80.91x26
               Box 199.54 73 80.91x26
                 Row 207.54 73 64.91x26
-                  Text 207.54 78.75 64.91x14.5
+                  Text 207.54 78.75 64.91x14.5 1 line(s)
     LiveRegion 0 136 480x16
-      Text 0 136 480x16
+      Text 0 136 480x16 1 line(s)
 

@@ -52,6 +52,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Primary · Compact
 ### web
@@ -107,6 +115,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Secondary · Comfortable
 ### web
@@ -162,6 +178,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Secondary · Compact
 ### web
@@ -217,6 +241,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Destructive · Comfortable
 ### web
@@ -272,6 +304,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Destructive · Compact
 ### web
@@ -327,6 +367,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Outline · Comfortable
 ### web
@@ -382,6 +430,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Outline · Compact
 ### web
@@ -437,6 +493,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Ghost · Comfortable
 ### web
@@ -492,6 +556,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Ghost · Compact
 ### web
@@ -547,6 +619,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Link · Comfortable
 ### web
@@ -602,6 +682,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Link · Compact
 ### web
@@ -657,6 +745,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Success · Comfortable
 ### web
@@ -712,6 +808,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Success · Compact
 ### web
@@ -767,6 +871,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Warning · Comfortable
 ### web
@@ -822,6 +934,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Warning · Compact
 ### web
@@ -877,6 +997,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Info · Comfortable
 ### web
@@ -932,6 +1060,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Info · Compact
 ### web
@@ -987,6 +1123,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Tertiary · Comfortable
 ### web
@@ -1042,6 +1186,14 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 
 ## Tertiary · Compact
 ### web
@@ -1097,4 +1249,12 @@ StaticText "x"
 ### photon
 Toast 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Column 0 0 480x800
+  Presence 210.1 732 59.8x44
+    LiveRegion 210.1 732 59.8x44
+      Box 210.1 732 59.8x44
+        Row 226.1 744 27.8x20
+          Box 226.1 750 8x8
+          Text 246.1 744 7.8x20 1 line(s)
 

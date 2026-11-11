@@ -82,7 +82,7 @@ Stepper 0 0 480x32
             Icon 7 6 20x20
       Box 33 1 32x30
         Row 33 1 32x30
-          Text 45.57 8 6.86x16
+          Text 45.57 8 6.86x16 1 line(s)
       Pressable 65 1 32x30
         Box 65 1 32x30
           Row 65 1 32x30
@@ -172,7 +172,7 @@ Stepper 0 0 480x26
             Icon 4 3 20x20
       Box 27 1 26x24
         Row 27 1 26x24
-          Text 36.96 6 6.08x14
+          Text 36.96 6 6.08x14 1 line(s)
       Pressable 53 1 26x24
         Box 53 1 26x24
           Row 53 1 26x24
@@ -262,7 +262,7 @@ Stepper 0 0 480x40
             Icon 11 10 20x20
       Box 41 1 40x38
         Row 41 1 40x38
-          Text 57.05 10.75 7.9x18.5
+          Text 57.05 10.75 7.9x18.5 1 line(s)
       Pressable 81 1 40x38
         Box 81 1 40x38
           Row 81 1 40x38
@@ -352,7 +352,7 @@ Stepper 0 0 480x32
             Icon 7 6 20x20
       Box 33 1 32x30
         Row 33 1 32x30
-          Text 45.57 8 6.86x16
+          Text 45.57 8 6.86x16 1 line(s)
       Pressable 65 1 32x30
         Box 65 1 32x30
           Row 65 1 32x30
@@ -442,7 +442,7 @@ Stepper 0 0 480x48
             Icon 15 14 20x20
       Box 49 1 48x46
         Row 49 1 48x46
-          Text 68.79 14.25 8.42x19.5
+          Text 68.79 14.25 8.42x19.5 1 line(s)
       Pressable 97 1 48x46
         Box 97 1 48x46
           Row 97 1 48x46
@@ -532,7 +532,7 @@ Stepper 0 0 480x40
             Icon 11 10 20x20
       Box 41 1 40x38
         Row 41 1 40x38
-          Text 57.18 11 7.64x18
+          Text 57.18 11 7.64x18 1 line(s)
       Pressable 81 1 40x38
         Box 81 1 40x38
           Row 81 1 40x38
@@ -622,7 +622,7 @@ Stepper 0 0 480x56
             Icon 19 18 20x20
       Box 57 1 56x54
         Row 57 1 56x54
-          Text 80.53 17.5 8.94x21
+          Text 80.53 17.5 8.94x21 1 line(s)
       Pressable 113 1 56x54
         Box 113 1 56x54
           Row 113 1 56x54
@@ -712,7 +712,7 @@ Stepper 0 0 480x48
             Icon 15 14 20x20
       Box 49 1 48x46
         Row 49 1 48x46
-          Text 68.92 14.5 8.16x19
+          Text 68.92 14.5 8.16x19 1 line(s)
       Pressable 97 1 48x46
         Box 97 1 48x46
           Row 97 1 48x46

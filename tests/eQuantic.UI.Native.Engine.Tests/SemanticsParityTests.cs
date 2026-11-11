@@ -82,8 +82,8 @@ public class SemanticsParityTests(ITestOutputHelper output)
 
         compared.Should().BeGreaterThan(40, "the derived set reaches every component with a semantic role");
 
-        var path = BaselinePath();
-        var baseline = ReadBaseline(path);
+        var path = ShrinkingBaseline.PathOf("semantics-parity.baseline.txt");
+        var baseline = ShrinkingBaseline.Read(path);
         var unexplained = found.Where(entry => !baseline.ContainsKey(entry)).ToList();
         var stale = baseline.Keys.Where(entry => !found.Contains(entry)).ToList();
 
@@ -92,7 +92,7 @@ public class SemanticsParityTests(ITestOutputHelper output)
         foreach (var entry in stale) output.WriteLine($"stale: {entry}");
 
         if (Environment.GetEnvironmentVariable(UpdateVariable) == "1" && stale.Count > 0)
-            WriteBaseline(path, baseline.Where(pair => found.Contains(pair.Key)));
+            ShrinkingBaseline.Write(path, baseline.Where(pair => found.Contains(pair.Key)));
 
         string.Join(Environment.NewLine, unexplained).Should().BeEmpty(
             "a component says the same thing to a screen reader on every target; a difference that is right "
@@ -327,36 +327,5 @@ public class SemanticsParityTests(ITestOutputHelper output)
             host.Unmount();
             (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture) = (culture, uiCulture);
         }
-    }
-
-    // ---- the baseline ----------------------------------------------------------------------------
-
-    private static string BaselinePath()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Directory.Build.props"))) dir = dir.Parent;
-        return Path.Combine(dir!.FullName, "tests", "eQuantic.UI.Native.Engine.Tests", "Coverage", "semantics-parity.baseline.txt");
-    }
-
-    /// <summary>Each entry and its reason: the entry runs to the first two spaces, the reason after.</summary>
-    private static Dictionary<string, string> ReadBaseline(string path)
-    {
-        var entries = new Dictionary<string, string>(StringComparer.Ordinal);
-        if (!File.Exists(path)) return entries;
-        foreach (var line in File.ReadLines(path))
-        {
-            if (line.Length == 0 || line.StartsWith('#')) continue;
-            var split = line.IndexOf("  ", StringComparison.Ordinal);
-            if (split < 0) entries[line] = "";
-            else entries[line[..split]] = line[(split + 2)..];
-        }
-        return entries;
-    }
-
-    private static void WriteBaseline(string path, IEnumerable<KeyValuePair<string, string>> kept)
-    {
-        var header = File.ReadLines(path).TakeWhile(line => line.StartsWith('#'));
-        File.WriteAllLines(path, header.Concat(kept.OrderBy(pair => pair.Key, StringComparer.Ordinal)
-            .Select(pair => $"{pair.Key}  {pair.Value}")));
     }
 }

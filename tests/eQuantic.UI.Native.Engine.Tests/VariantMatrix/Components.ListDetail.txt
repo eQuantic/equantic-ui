@@ -63,7 +63,7 @@ StaticText "Message"
 ListDetail 0 0 480x800
   Column 0 0 480x800
     Flexible 0 0 480x800
-      Text 0 0 480x800
+      Text 0 0 480x800 1 line(s)
 
 ## Compact
 ### web
@@ -130,5 +130,5 @@ StaticText "Message"
 ListDetail 0 0 480x800
   Column 0 0 480x800
     Flexible 0 0 480x800
-      Text 0 0 480x800
+      Text 0 0 480x800 1 line(s)
 

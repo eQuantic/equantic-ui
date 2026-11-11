@@ -427,7 +427,7 @@ GridCell "Friday, 31 July 2026" (not selected)
 Calendar 0 0 480x332
   Column 0 0 480x332
     Row 0 0 480x32
-      Text 0 6 62.4x20
+      Text 0 6 62.4x20 1 line(s)
       Flexible 66.4 16 341.6x0
         Spacer 66.4 16 341.6x0
       IconButton 412 0 32x32
@@ -444,25 +444,25 @@ Calendar 0 0 480x332
       Row 0 40 480x28
         Box 0 40 44x28
           Row 0 40 44x28
-            Text 12.34 46 19.32x16
+            Text 12.34 46 19.32x16 1 line(s)
         Box 44 40 44x28
           Row 44 40 44x28
-            Text 54.54 46 22.92x16
+            Text 54.54 46 22.92x16 1 line(s)
         Box 88 40 44x28
           Row 88 40 44x28
-            Text 100.34 46 19.32x16
+            Text 100.34 46 19.32x16 1 line(s)
         Box 132 40 44x28
           Row 132 40 44x28
-            Text 142.54 46 22.92x16
+            Text 142.54 46 22.92x16 1 line(s)
         Box 176 40 44x28
           Row 176 40 44x28
-            Text 188.34 46 19.32x16
+            Text 188.34 46 19.32x16 1 line(s)
         Box 220 40 44x28
           Row 220 40 44x28
-            Text 233.78 46 16.44x16
+            Text 233.78 46 16.44x16 1 line(s)
         Box 264 40 44x28
           Row 264 40 44x28
-            Text 276.34 46 19.32x16
+            Text 276.34 46 19.32x16 1 line(s)
       Row 0 68 480x44
         Box 0 68 44x44
         Box 44 68 44x44
@@ -470,131 +470,131 @@ Calendar 0 0 480x332
         Pressable 132 68 44x44
           Box 132 68 44x44
             Row 132 68 44x44
-              Text 150.1 80 7.8x20
+              Text 150.1 80 7.8x20 1 line(s)
         Pressable 176 68 44x44
           Box 176 68 44x44
             Row 176 68 44x44
-              Text 194.1 80 7.8x20
+              Text 194.1 80 7.8x20 1 line(s)
         Pressable 220 68 44x44
           Box 220 68 44x44
             Row 220 68 44x44
-              Text 238.1 80 7.8x20
+              Text 238.1 80 7.8x20 1 line(s)
         Pressable 264 68 44x44
           Box 264 68 44x44
             Row 264 68 44x44
-              Text 282.1 80 7.8x20
+              Text 282.1 80 7.8x20 1 line(s)
       Row 0 112 480x44
         Pressable 0 112 44x44
           Box 0 112 44x44
             Row 0 112 44x44
-              Text 18.1 124 7.8x20
+              Text 18.1 124 7.8x20 1 line(s)
         Pressable 44 112 44x44
           Box 44 112 44x44
             Row 44 112 44x44
-              Text 62.1 124 7.8x20
+              Text 62.1 124 7.8x20 1 line(s)
         Pressable 88 112 44x44
           Box 88 112 44x44
             Row 88 112 44x44
-              Text 106.1 124 7.8x20
+              Text 106.1 124 7.8x20 1 line(s)
         Pressable 132 112 44x44
           Box 132 112 44x44
             Row 132 112 44x44
-              Text 150.1 124 7.8x20
+              Text 150.1 124 7.8x20 1 line(s)
         Pressable 176 112 44x44
           Box 176 112 44x44
             Row 176 112 44x44
-              Text 194.1 124 7.8x20
+              Text 194.1 124 7.8x20 1 line(s)
         Pressable 220 112 44x44
           Box 220 112 44x44
             Row 220 112 44x44
-              Text 234.2 124 15.6x20
+              Text 234.2 124 15.6x20 1 line(s)
         Pressable 264 112 44x44
           Box 264 112 44x44
             Row 264 112 44x44
-              Text 278.2 124 15.6x20
+              Text 278.2 124 15.6x20 1 line(s)
       Row 0 156 480x44
         Pressable 0 156 44x44
           Box 0 156 44x44
             Row 0 156 44x44
-              Text 14.2 168 15.6x20
+              Text 14.2 168 15.6x20 1 line(s)
         Pressable 44 156 44x44
           Box 44 156 44x44
             Row 44 156 44x44
-              Text 58.2 168 15.6x20
+              Text 58.2 168 15.6x20 1 line(s)
         Pressable 88 156 44x44
           Box 88 156 44x44
             Row 88 156 44x44
-              Text 102.2 168 15.6x20
+              Text 102.2 168 15.6x20 1 line(s)
         Pressable 132 156 44x44
           Box 132 156 44x44
             Row 132 156 44x44
-              Text 146.2 168 15.6x20
+              Text 146.2 168 15.6x20 1 line(s)
         Pressable 176 156 44x44
           Box 176 156 44x44
             Row 176 156 44x44
-              Text 190.2 168 15.6x20
+              Text 190.2 168 15.6x20 1 line(s)
         Pressable 220 156 44x44
           Box 220 156 44x44
             Row 220 156 44x44
-              Text 234.2 168 15.6x20
+              Text 234.2 168 15.6x20 1 line(s)
         Pressable 264 156 44x44
           Box 264 156 44x44
             Row 264 156 44x44
-              Text 278.2 168 15.6x20
+              Text 278.2 168 15.6x20 1 line(s)
       Row 0 200 480x44
         Pressable 0 200 44x44
           Box 0 200 44x44
             Row 0 200 44x44
-              Text 14.2 212 15.6x20
+              Text 14.2 212 15.6x20 1 line(s)
         Pressable 44 200 44x44
           Box 44 200 44x44
             Row 44 200 44x44
-              Text 58.2 212 15.6x20
+              Text 58.2 212 15.6x20 1 line(s)
         Pressable 88 200 44x44
           Box 88 200 44x44
             Row 88 200 44x44
-              Text 102.2 212 15.6x20
+              Text 102.2 212 15.6x20 1 line(s)
         Pressable 132 200 44x44
           Box 132 200 44x44
             Row 132 200 44x44
-              Text 146.2 212 15.6x20
+              Text 146.2 212 15.6x20 1 line(s)
         Pressable 176 200 44x44
           Box 176 200 44x44
             Row 176 200 44x44
-              Text 190.2 212 15.6x20
+              Text 190.2 212 15.6x20 1 line(s)
         Pressable 220 200 44x44
           Box 220 200 44x44
             Row 220 200 44x44
-              Text 234.2 212 15.6x20
+              Text 234.2 212 15.6x20 1 line(s)
         Pressable 264 200 44x44
           Box 264 200 44x44
             Row 264 200 44x44
-              Text 278.2 212 15.6x20
+              Text 278.2 212 15.6x20 1 line(s)
       Row 0 244 480x44
         Pressable 0 244 44x44
           Box 0 244 44x44
             Row 0 244 44x44
-              Text 14.2 256 15.6x20
+              Text 14.2 256 15.6x20 1 line(s)
         Pressable 44 244 44x44
           Box 44 244 44x44
             Row 44 244 44x44
-              Text 58.2 256 15.6x20
+              Text 58.2 256 15.6x20 1 line(s)
         Pressable 88 244 44x44
           Box 88 244 44x44
             Row 88 244 44x44
-              Text 102.2 256 15.6x20
+              Text 102.2 256 15.6x20 1 line(s)
         Pressable 132 244 44x44
           Box 132 244 44x44
             Row 132 244 44x44
-              Text 146.2 256 15.6x20
+              Text 146.2 256 15.6x20 1 line(s)
         Pressable 176 244 44x44
           Box 176 244 44x44
             Row 176 244 44x44
-              Text 190.2 256 15.6x20
+              Text 190.2 256 15.6x20 1 line(s)
         Pressable 220 244 44x44
           Box 220 244 44x44
             Row 220 244 44x44
-              Text 234.2 256 15.6x20
+              Text 234.2 256 15.6x20 1 line(s)
         Box 264 244 44x44
       Row 0 288 480x44
         Box 0 288 44x44
@@ -1034,7 +1034,7 @@ GridCell "Friday, 31 July 2026" (not selected)
 Calendar 0 0 480x326
   Column 0 0 480x326
     Row 0 0 480x26
-      Text 0 3 62.4x20
+      Text 0 3 62.4x20 1 line(s)
       Flexible 66.4 13 353.6x0
         Spacer 66.4 13 353.6x0
       IconButton 424 0 26x26
@@ -1051,25 +1051,25 @@ Calendar 0 0 480x326
       Row 0 34 480x28
         Box 0 34 44x28
           Row 0 34 44x28
-            Text 12.34 40 19.32x16
+            Text 12.34 40 19.32x16 1 line(s)
         Box 44 34 44x28
           Row 44 34 44x28
-            Text 54.54 40 22.92x16
+            Text 54.54 40 22.92x16 1 line(s)
         Box 88 34 44x28
           Row 88 34 44x28
-            Text 100.34 40 19.32x16
+            Text 100.34 40 19.32x16 1 line(s)
         Box 132 34 44x28
           Row 132 34 44x28
-            Text 142.54 40 22.92x16
+            Text 142.54 40 22.92x16 1 line(s)
         Box 176 34 44x28
           Row 176 34 44x28
-            Text 188.34 40 19.32x16
+            Text 188.34 40 19.32x16 1 line(s)
         Box 220 34 44x28
           Row 220 34 44x28
-            Text 233.78 40 16.44x16
+            Text 233.78 40 16.44x16 1 line(s)
         Box 264 34 44x28
           Row 264 34 44x28
-            Text 276.34 40 19.32x16
+            Text 276.34 40 19.32x16 1 line(s)
       Row 0 62 480x44
         Box 0 62 44x44
         Box 44 62 44x44
@@ -1077,131 +1077,131 @@ Calendar 0 0 480x326
         Pressable 132 62 44x44
           Box 132 62 44x44
             Row 132 62 44x44
-              Text 150.1 74 7.8x20
+              Text 150.1 74 7.8x20 1 line(s)
         Pressable 176 62 44x44
           Box 176 62 44x44
             Row 176 62 44x44
-              Text 194.1 74 7.8x20
+              Text 194.1 74 7.8x20 1 line(s)
         Pressable 220 62 44x44
           Box 220 62 44x44
             Row 220 62 44x44
-              Text 238.1 74 7.8x20
+              Text 238.1 74 7.8x20 1 line(s)
         Pressable 264 62 44x44
           Box 264 62 44x44
             Row 264 62 44x44
-              Text 282.1 74 7.8x20
+              Text 282.1 74 7.8x20 1 line(s)
       Row 0 106 480x44
         Pressable 0 106 44x44
           Box 0 106 44x44
             Row 0 106 44x44
-              Text 18.1 118 7.8x20
+              Text 18.1 118 7.8x20 1 line(s)
         Pressable 44 106 44x44
           Box 44 106 44x44
             Row 44 106 44x44
-              Text 62.1 118 7.8x20
+              Text 62.1 118 7.8x20 1 line(s)
         Pressable 88 106 44x44
           Box 88 106 44x44
             Row 88 106 44x44
-              Text 106.1 118 7.8x20
+              Text 106.1 118 7.8x20 1 line(s)
         Pressable 132 106 44x44
           Box 132 106 44x44
             Row 132 106 44x44
-              Text 150.1 118 7.8x20
+              Text 150.1 118 7.8x20 1 line(s)
         Pressable 176 106 44x44
           Box 176 106 44x44
             Row 176 106 44x44
-              Text 194.1 118 7.8x20
+              Text 194.1 118 7.8x20 1 line(s)
         Pressable 220 106 44x44
           Box 220 106 44x44
             Row 220 106 44x44
-              Text 234.2 118 15.6x20
+              Text 234.2 118 15.6x20 1 line(s)
         Pressable 264 106 44x44
           Box 264 106 44x44
             Row 264 106 44x44
-              Text 278.2 118 15.6x20
+              Text 278.2 118 15.6x20 1 line(s)
       Row 0 150 480x44
         Pressable 0 150 44x44
           Box 0 150 44x44
             Row 0 150 44x44
-              Text 14.2 162 15.6x20
+              Text 14.2 162 15.6x20 1 line(s)
         Pressable 44 150 44x44
           Box 44 150 44x44
             Row 44 150 44x44
-              Text 58.2 162 15.6x20
+              Text 58.2 162 15.6x20 1 line(s)
         Pressable 88 150 44x44
           Box 88 150 44x44
             Row 88 150 44x44
-              Text 102.2 162 15.6x20
+              Text 102.2 162 15.6x20 1 line(s)
         Pressable 132 150 44x44
           Box 132 150 44x44
             Row 132 150 44x44
-              Text 146.2 162 15.6x20
+              Text 146.2 162 15.6x20 1 line(s)
         Pressable 176 150 44x44
           Box 176 150 44x44
             Row 176 150 44x44
-              Text 190.2 162 15.6x20
+              Text 190.2 162 15.6x20 1 line(s)
         Pressable 220 150 44x44
           Box 220 150 44x44
             Row 220 150 44x44
-              Text 234.2 162 15.6x20
+              Text 234.2 162 15.6x20 1 line(s)
         Pressable 264 150 44x44
           Box 264 150 44x44
             Row 264 150 44x44
-              Text 278.2 162 15.6x20
+              Text 278.2 162 15.6x20 1 line(s)
       Row 0 194 480x44
         Pressable 0 194 44x44
           Box 0 194 44x44
             Row 0 194 44x44
-              Text 14.2 206 15.6x20
+              Text 14.2 206 15.6x20 1 line(s)
         Pressable 44 194 44x44
           Box 44 194 44x44
             Row 44 194 44x44
-              Text 58.2 206 15.6x20
+              Text 58.2 206 15.6x20 1 line(s)
         Pressable 88 194 44x44
           Box 88 194 44x44
             Row 88 194 44x44
-              Text 102.2 206 15.6x20
+              Text 102.2 206 15.6x20 1 line(s)
         Pressable 132 194 44x44
           Box 132 194 44x44
             Row 132 194 44x44
-              Text 146.2 206 15.6x20
+              Text 146.2 206 15.6x20 1 line(s)
         Pressable 176 194 44x44
           Box 176 194 44x44
             Row 176 194 44x44
-              Text 190.2 206 15.6x20
+              Text 190.2 206 15.6x20 1 line(s)
         Pressable 220 194 44x44
           Box 220 194 44x44
             Row 220 194 44x44
-              Text 234.2 206 15.6x20
+              Text 234.2 206 15.6x20 1 line(s)
         Pressable 264 194 44x44
           Box 264 194 44x44
             Row 264 194 44x44
-              Text 278.2 206 15.6x20
+              Text 278.2 206 15.6x20 1 line(s)
       Row 0 238 480x44
         Pressable 0 238 44x44
           Box 0 238 44x44
             Row 0 238 44x44
-              Text 14.2 250 15.6x20
+              Text 14.2 250 15.6x20 1 line(s)
         Pressable 44 238 44x44
           Box 44 238 44x44
             Row 44 238 44x44
-              Text 58.2 250 15.6x20
+              Text 58.2 250 15.6x20 1 line(s)
         Pressable 88 238 44x44
           Box 88 238 44x44
             Row 88 238 44x44
-              Text 102.2 250 15.6x20
+              Text 102.2 250 15.6x20 1 line(s)
         Pressable 132 238 44x44
           Box 132 238 44x44
             Row 132 238 44x44
-              Text 146.2 250 15.6x20
+              Text 146.2 250 15.6x20 1 line(s)
         Pressable 176 238 44x44
           Box 176 238 44x44
             Row 176 238 44x44
-              Text 190.2 250 15.6x20
+              Text 190.2 250 15.6x20 1 line(s)
         Pressable 220 238 44x44
           Box 220 238 44x44
             Row 220 238 44x44
-              Text 234.2 250 15.6x20
+              Text 234.2 250 15.6x20 1 line(s)
         Box 264 238 44x44
       Row 0 282 480x44
         Box 0 282 44x44

@@ -62,13 +62,13 @@ Pagination 0 0 480x32
       Pressable 0 0 77.76x32
         Box 0 0 77.76x32
           Row 13 1 51.76x30
-            Text 13 8 51.76x16
+            Text 13 8 51.76x16 1 line(s)
     Row 85.76 16 0x0
     Button 93.76 0 64x32
       Pressable 93.76 0 64x32
         Box 93.76 0 64x32
           Row 106.76 1 38x30
-            Text 112.04 8 27.44x16
+            Text 112.04 8 27.44x16 1 line(s)
 
 ## Compact
 ### web
@@ -134,11 +134,11 @@ Pagination 0 0 480x26
       Pressable 0 0 64x26
         Box 0 0 64x26
           Row 9 1 45.88x24
-            Text 9 5.75 45.88x14.5
+            Text 9 5.75 45.88x14.5 1 line(s)
     Row 72 13 0x0
     Button 80 0 64x26
       Pressable 80 0 64x26
         Box 80 0 64x26
           Row 89 1 46x24
-            Text 99.84 5.75 24.32x14.5
+            Text 99.84 5.75 24.32x14.5 1 line(s)
 

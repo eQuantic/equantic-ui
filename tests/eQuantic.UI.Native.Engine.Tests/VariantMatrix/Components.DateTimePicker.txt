@@ -116,12 +116,12 @@ DateTimePicker 0 0 480x69
               Box 0 0 234x48
                 Row 15 1 204x46
                   Flexible 15 12 174x24
-                    TextEntry 15 12 174x24
+                    TextEntry 15 12 174x24 1 line(s)
                   Shortcut 199 14 20x20
                     Anchored 199 14 20x20
                       Pressable 199 14 20x20
                         Icon 199 14 20x20
-            Text 0 53 234x16
+            Text 0 53 234x16 1 line(s)
     Flexible 246 0 234x40
       TimePicker 246 0 234x40
         Shortcut 246 0 234x40
@@ -133,7 +133,7 @@ DateTimePicker 0 0 480x69
                     Box 246 0 234x40
                       Row 259 1 208x38
                         Icon 259 10 20x20
-                        Text 287 10 95.7x20
+                        Text 287 10 95.7x20 1 line(s)
                         Flexible 390.7 20 52.3x0
                           Spacer 390.7 20 52.3x0
                         Icon 451 12 16x16
@@ -256,12 +256,12 @@ DateTimePicker 0 0 480x61
               Box 0 0 234x40
                 Row 15 1 204x38
                   Flexible 15 8 174x24
-                    TextEntry 15 8 174x24
+                    TextEntry 15 8 174x24 1 line(s)
                   Shortcut 199 10 20x20
                     Anchored 199 10 20x20
                       Pressable 199 10 20x20
                         Icon 199 10 20x20
-            Text 0 45 234x16
+            Text 0 45 234x16 1 line(s)
     Flexible 246 0 234x32
       TimePicker 246 0 234x32
         Shortcut 246 0 234x32
@@ -273,7 +273,7 @@ DateTimePicker 0 0 480x61
                     Box 246 0 234x32
                       Row 259 1 208x30
                         Icon 259 6 20x20
-                        Text 287 6 95.7x20
+                        Text 287 6 95.7x20 1 line(s)
                         Flexible 390.7 16 52.3x0
                           Spacer 390.7 16 52.3x0
                         Icon 451 8 16x16

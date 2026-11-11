@@ -72,6 +72,19 @@ StaticText "x"
 ### photon
 BottomSheet 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Stack 0 0 480x800
+  Presence 0 0 480x800
+    Pressable 0 0 480x800
+      Box 0 0 480x800
+  Column 0 0 480x800
+    Presence 0 724 480x76
+      DragDismiss 0 724 480x76
+        Box 0 724 480x76
+          Column 20 736 440x40
+            Row 20 736 440x4
+              Box 224 736 32x4
+            Text 20 752 440x24 1 line(s)
 
 ## Compact
 ### web
@@ -147,4 +160,17 @@ StaticText "x"
 ### photon
 BottomSheet 0 0 0x0
   Overlay 0 0 0x0
+### photon layer
+Stack 0 0 480x800
+  Presence 0 0 480x800
+    Pressable 0 0 480x800
+      Box 0 0 480x800
+  Column 0 0 480x800
+    Presence 0 724 480x76
+      DragDismiss 0 724 480x76
+        Box 0 724 480x76
+          Column 20 736 440x40
+            Row 20 736 440x4
+              Box 224 736 32x4
+            Text 20 752 440x24 1 line(s)
 

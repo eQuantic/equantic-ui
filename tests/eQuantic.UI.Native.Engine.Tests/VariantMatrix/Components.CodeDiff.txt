@@ -213,9 +213,9 @@ CodeDiff 0 0 480x82
             Column 0 0 480x82
               Row 0 0 480x32
                 Flexible 0 8 261.58x16
-                  Text 0 8 261.58x16
-                Text 269.58 8.5 11.64x15
-                Text 289.22 8.5 11.64x15
+                  Text 0 8 261.58x16 1 line(s)
+                Text 269.58 8.5 11.64x15 1 line(s)
+                Text 289.22 8.5 11.64x15 1 line(s)
                 IconButton 308.86 0 32x32
                   Pressable 308.86 0 32x32
                     Box 308.86 0 32x32
@@ -230,7 +230,7 @@ CodeDiff 0 0 480x82
                   Pressable 388.86 0 91.14x32
                     Box 388.86 0 91.14x32
                       Row 400.86 0 67.14x32
-                        Text 400.86 8 67.14x16
+                        Text 400.86 8 67.14x16 1 line(s)
               Box 0 40 480x42
                 Row 0 40 480x42
                   Flexible 0 40 239.5x42
@@ -238,7 +238,7 @@ CodeDiff 0 0 480x82
                       Column 0 40 26x30
                         Box 0 52 26x18
                           Row 0 52 14x18
-                            Text 7.24 53 6.76x16
+                            Text 7.24 53 6.76x16 1 line(s)
                       Flexible 26 40 213.5x42
                         ScrollView 26 40 213.5x42
                           CodeSurface 26 40 6.76x42
@@ -249,14 +249,14 @@ CodeDiff 0 0 480x82
                                     Row 26 52 6.76x18
                                       Box 26 53 24x16
                                         Row 38 53 0x16
-                                          Text 38 53 0x16
+                                          Text 38 53 0x16 1 line(s)
                   Box 239.5 40 1x42
                   Flexible 240.5 40 239.5x42
                     Row 240.5 40 239.5x42
                       Column 240.5 40 26x30
                         Box 240.5 52 26x18
                           Row 240.5 52 14x18
-                            Text 247.74 53 6.76x16
+                            Text 247.74 53 6.76x16 1 line(s)
                       Flexible 266.5 40 213.5x42
                         ScrollView 266.5 40 213.5x42
                           CodeSurface 266.5 40 6.76x42
@@ -267,7 +267,7 @@ CodeDiff 0 0 480x82
                                     Row 266.5 52 6.76x18
                                       Box 266.5 53 24x16
                                         Row 278.5 53 0x16
-                                          Text 278.5 53 0x16
+                                          Text 278.5 53 0x16 1 line(s)
 
 ## Small · Compact
 ### web
@@ -485,9 +485,9 @@ CodeDiff 0 0 480x75
             Column 0 0 480x75
               Row 0 0 480x26
                 Flexible 0 5 289.2x16
-                  Text 0 5 289.2x16
-                Text 297.2 5.5 11.64x15
-                Text 316.84 5.5 11.64x15
+                  Text 0 5 289.2x16 1 line(s)
+                Text 297.2 5.5 11.64x15 1 line(s)
+                Text 316.84 5.5 11.64x15 1 line(s)
                 IconButton 336.48 0 26x26
                   Pressable 336.48 0 26x26
                     Box 336.48 0 26x26
@@ -502,7 +502,7 @@ CodeDiff 0 0 480x75
                   Pressable 404.48 0 75.52x26
                     Box 404.48 0 75.52x26
                       Row 412.48 0 59.52x26
-                        Text 412.48 5.75 59.52x14.5
+                        Text 412.48 5.75 59.52x14.5 1 line(s)
               Box 0 34 480x41
                 Row 0 34 480x41
                   Flexible 0 34 239.5x41
@@ -510,7 +510,7 @@ CodeDiff 0 0 480x75
                       Column 0 34 24x29
                         Box 0 46 24x17
                           Row 0 46 12x17
-                            Text 6.02 47.25 5.98x14.5
+                            Text 6.02 47.25 5.98x14.5 1 line(s)
                       Flexible 24 34 215.5x41
                         ScrollView 24 34 215.5x41
                           CodeSurface 24 34 5.98x41
@@ -521,14 +521,14 @@ CodeDiff 0 0 480x75
                                     Row 24 46 5.98x17
                                       Box 24 47.25 24x14.5
                                         Row 36 47.25 0x14.5
-                                          Text 36 47.25 0x14.5
+                                          Text 36 47.25 0x14.5 1 line(s)
                   Box 239.5 34 1x41
                   Flexible 240.5 34 239.5x41
                     Row 240.5 34 239.5x41
                       Column 240.5 34 24x29
                         Box 240.5 46 24x17
                           Row 240.5 46 12x17
-                            Text 246.52 47.25 5.98x14.5
+                            Text 246.52 47.25 5.98x14.5 1 line(s)
                       Flexible 264.5 34 215.5x41
                         ScrollView 264.5 34 215.5x41
                           CodeSurface 264.5 34 5.98x41
@@ -539,7 +539,7 @@ CodeDiff 0 0 480x75
                                     Row 264.5 46 5.98x17
                                       Box 264.5 47.25 24x14.5
                                         Row 276.5 47.25 0x14.5
-                                          Text 276.5 47.25 0x14.5
+                                          Text 276.5 47.25 0x14.5 1 line(s)
 
 ## Medium · Comfortable
 ### web
@@ -758,9 +758,9 @@ CodeDiff 0 0 480x86
             Column 0 0 480x86
               Row 0 0 480x32
                 Flexible 0 8 261.58x16
-                  Text 0 8 261.58x16
-                Text 269.58 8.5 11.64x15
-                Text 289.22 8.5 11.64x15
+                  Text 0 8 261.58x16 1 line(s)
+                Text 269.58 8.5 11.64x15 1 line(s)
+                Text 289.22 8.5 11.64x15 1 line(s)
                 IconButton 308.86 0 32x32
                   Pressable 308.86 0 32x32
                     Box 308.86 0 32x32
@@ -775,7 +775,7 @@ CodeDiff 0 0 480x86
                   Pressable 388.86 0 91.14x32
                     Box 388.86 0 91.14x32
                       Row 400.86 0 67.14x32
-                        Text 400.86 8 67.14x16
+                        Text 400.86 8 67.14x16 1 line(s)
               Box 0 40 480x46
                 Row 0 40 480x46
                   Flexible 0 40 239.5x46
@@ -783,7 +783,7 @@ CodeDiff 0 0 480x86
                       Column 0 40 28x34
                         Box 0 52 28x22
                           Row 0 52 16x22
-                            Text 8.2 53.5 7.8x19
+                            Text 8.2 53.5 7.8x19 1 line(s)
                       Flexible 28 40 211.5x46
                         ScrollView 28 40 211.5x46
                           CodeSurface 28 40 7.8x46
@@ -794,14 +794,14 @@ CodeDiff 0 0 480x86
                                     Row 28 52 7.8x22
                                       Box 28 53.5 24x19
                                         Row 40 53.5 0x19
-                                          Text 40 53.5 0x19
+                                          Text 40 53.5 0x19 1 line(s)
                   Box 239.5 40 1x46
                   Flexible 240.5 40 239.5x46
                     Row 240.5 40 239.5x46
                       Column 240.5 40 28x34
                         Box 240.5 52 28x22
                           Row 240.5 52 16x22
-                            Text 248.7 53.5 7.8x19
+                            Text 248.7 53.5 7.8x19 1 line(s)
                       Flexible 268.5 40 211.5x46
                         ScrollView 268.5 40 211.5x46
                           CodeSurface 268.5 40 7.8x46
@@ -812,7 +812,7 @@ CodeDiff 0 0 480x86
                                     Row 268.5 52 7.8x22
                                       Box 268.5 53.5 24x19
                                         Row 280.5 53.5 0x19
-                                          Text 280.5 53.5 0x19
+                                          Text 280.5 53.5 0x19 1 line(s)
 
 ## Medium · Compact
 ### web
@@ -1032,9 +1032,9 @@ CodeDiff 0 0 480x76
             Column 0 0 480x76
               Row 0 0 480x26
                 Flexible 0 5 289.2x16
-                  Text 0 5 289.2x16
-                Text 297.2 5.5 11.64x15
-                Text 316.84 5.5 11.64x15
+                  Text 0 5 289.2x16 1 line(s)
+                Text 297.2 5.5 11.64x15 1 line(s)
+                Text 316.84 5.5 11.64x15 1 line(s)
                 IconButton 336.48 0 26x26
                   Pressable 336.48 0 26x26
                     Box 336.48 0 26x26
@@ -1049,7 +1049,7 @@ CodeDiff 0 0 480x76
                   Pressable 404.48 0 75.52x26
                     Box 404.48 0 75.52x26
                       Row 412.48 0 59.52x26
-                        Text 412.48 5.75 59.52x14.5
+                        Text 412.48 5.75 59.52x14.5 1 line(s)
               Box 0 34 480x42
                 Row 0 34 480x42
                   Flexible 0 34 239.5x42
@@ -1057,7 +1057,7 @@ CodeDiff 0 0 480x76
                       Column 0 34 26x30
                         Box 0 46 26x18
                           Row 0 46 14x18
-                            Text 7.24 47 6.76x16
+                            Text 7.24 47 6.76x16 1 line(s)
                       Flexible 26 34 213.5x42
                         ScrollView 26 34 213.5x42
                           CodeSurface 26 34 6.76x42
@@ -1068,14 +1068,14 @@ CodeDiff 0 0 480x76
                                     Row 26 46 6.76x18
                                       Box 26 47 24x16
                                         Row 38 47 0x16
-                                          Text 38 47 0x16
+                                          Text 38 47 0x16 1 line(s)
                   Box 239.5 34 1x42
                   Flexible 240.5 34 239.5x42
                     Row 240.5 34 239.5x42
                       Column 240.5 34 26x30
                         Box 240.5 46 26x18
                           Row 240.5 46 14x18
-                            Text 247.74 47 6.76x16
+                            Text 247.74 47 6.76x16 1 line(s)
                       Flexible 266.5 34 213.5x42
                         ScrollView 266.5 34 213.5x42
                           CodeSurface 266.5 34 6.76x42
@@ -1086,7 +1086,7 @@ CodeDiff 0 0 480x76
                                     Row 266.5 46 6.76x18
                                       Box 266.5 47 24x16
                                         Row 278.5 47 0x16
-                                          Text 278.5 47 0x16
+                                          Text 278.5 47 0x16 1 line(s)
 
 ## Large · Comfortable
 ### web
@@ -1305,9 +1305,9 @@ CodeDiff 0 0 480x87
             Column 0 0 480x87
               Row 0 0 480x32
                 Flexible 0 8 261.58x16
-                  Text 0 8 261.58x16
-                Text 269.58 8.5 11.64x15
-                Text 289.22 8.5 11.64x15
+                  Text 0 8 261.58x16 1 line(s)
+                Text 269.58 8.5 11.64x15 1 line(s)
+                Text 289.22 8.5 11.64x15 1 line(s)
                 IconButton 308.86 0 32x32
                   Pressable 308.86 0 32x32
                     Box 308.86 0 32x32
@@ -1322,7 +1322,7 @@ CodeDiff 0 0 480x87
                   Pressable 388.86 0 91.14x32
                     Box 388.86 0 91.14x32
                       Row 400.86 0 67.14x32
-                        Text 400.86 8 67.14x16
+                        Text 400.86 8 67.14x16 1 line(s)
               Box 0 40 480x47
                 Row 0 40 480x47
                   Flexible 0 40 239.5x47
@@ -1330,7 +1330,7 @@ CodeDiff 0 0 480x87
                       Column 0 40 29x35
                         Box 0 52 29x23
                           Row 0 52 17x23
-                            Text 8.68 53.5 8.32x20
+                            Text 8.68 53.5 8.32x20 1 line(s)
                       Flexible 29 40 210.5x47
                         ScrollView 29 40 210.5x47
                           CodeSurface 29 40 8.32x47
@@ -1341,14 +1341,14 @@ CodeDiff 0 0 480x87
                                     Row 29 52 8.32x23
                                       Box 29 53.5 24x20
                                         Row 41 53.5 0x20
-                                          Text 41 53.5 0x20
+                                          Text 41 53.5 0x20 1 line(s)
                   Box 239.5 40 1x47
                   Flexible 240.5 40 239.5x47
                     Row 240.5 40 239.5x47
                       Column 240.5 40 29x35
                         Box 240.5 52 29x23
                           Row 240.5 52 17x23
-                            Text 249.18 53.5 8.32x20
+                            Text 249.18 53.5 8.32x20 1 line(s)
                       Flexible 269.5 40 210.5x47
                         ScrollView 269.5 40 210.5x47
                           CodeSurface 269.5 40 8.32x47
@@ -1359,7 +1359,7 @@ CodeDiff 0 0 480x87
                                     Row 269.5 52 8.32x23
                                       Box 269.5 53.5 24x20
                                         Row 281.5 53.5 0x20
-                                          Text 281.5 53.5 0x20
+                                          Text 281.5 53.5 0x20 1 line(s)
 
 ## Large · Compact
 ### web
@@ -1579,9 +1579,9 @@ CodeDiff 0 0 480x79
             Column 0 0 480x79
               Row 0 0 480x26
                 Flexible 0 5 289.2x16
-                  Text 0 5 289.2x16
-                Text 297.2 5.5 11.64x15
-                Text 316.84 5.5 11.64x15
+                  Text 0 5 289.2x16 1 line(s)
+                Text 297.2 5.5 11.64x15 1 line(s)
+                Text 316.84 5.5 11.64x15 1 line(s)
                 IconButton 336.48 0 26x26
                   Pressable 336.48 0 26x26
                     Box 336.48 0 26x26
@@ -1596,7 +1596,7 @@ CodeDiff 0 0 480x79
                   Pressable 404.48 0 75.52x26
                     Box 404.48 0 75.52x26
                       Row 412.48 0 59.52x26
-                        Text 412.48 5.75 59.52x14.5
+                        Text 412.48 5.75 59.52x14.5 1 line(s)
               Box 0 34 480x45
                 Row 0 34 480x45
                   Flexible 0 34 239.5x45
@@ -1604,7 +1604,7 @@ CodeDiff 0 0 480x79
                       Column 0 34 28x33
                         Box 0 46 28x21
                           Row 0 46 16x21
-                            Text 8.46 47.5 7.54x18
+                            Text 8.46 47.5 7.54x18 1 line(s)
                       Flexible 28 34 211.5x45
                         ScrollView 28 34 211.5x45
                           CodeSurface 28 34 7.54x45
@@ -1615,14 +1615,14 @@ CodeDiff 0 0 480x79
                                     Row 28 46 7.54x21
                                       Box 28 47.5 24x18
                                         Row 40 47.5 0x18
-                                          Text 40 47.5 0x18
+                                          Text 40 47.5 0x18 1 line(s)
                   Box 239.5 34 1x45
                   Flexible 240.5 34 239.5x45
                     Row 240.5 34 239.5x45
                       Column 240.5 34 28x33
                         Box 240.5 46 28x21
                           Row 240.5 46 16x21
-                            Text 248.96 47.5 7.54x18
+                            Text 248.96 47.5 7.54x18 1 line(s)
                       Flexible 268.5 34 211.5x45
                         ScrollView 268.5 34 211.5x45
                           CodeSurface 268.5 34 7.54x45
@@ -1633,7 +1633,7 @@ CodeDiff 0 0 480x79
                                     Row 268.5 46 7.54x21
                                       Box 268.5 47.5 24x18
                                         Row 280.5 47.5 0x18
-                                          Text 280.5 47.5 0x18
+                                          Text 280.5 47.5 0x18 1 line(s)
 
 ## XLarge · Comfortable
 ### web
@@ -1852,9 +1852,9 @@ CodeDiff 0 0 480x88
             Column 0 0 480x88
               Row 0 0 480x32
                 Flexible 0 8 261.58x16
-                  Text 0 8 261.58x16
-                Text 269.58 8.5 11.64x15
-                Text 289.22 8.5 11.64x15
+                  Text 0 8 261.58x16 1 line(s)
+                Text 269.58 8.5 11.64x15 1 line(s)
+                Text 289.22 8.5 11.64x15 1 line(s)
                 IconButton 308.86 0 32x32
                   Pressable 308.86 0 32x32
                     Box 308.86 0 32x32
@@ -1869,7 +1869,7 @@ CodeDiff 0 0 480x88
                   Pressable 388.86 0 91.14x32
                     Box 388.86 0 91.14x32
                       Row 400.86 0 67.14x32
-                        Text 400.86 8 67.14x16
+                        Text 400.86 8 67.14x16 1 line(s)
               Box 0 40 480x48
                 Row 0 40 480x48
                   Flexible 0 40 239.5x48
@@ -1877,7 +1877,7 @@ CodeDiff 0 0 480x88
                       Column 0 40 30x36
                         Box 0 52 30x24
                           Row 0 52 18x24
-                            Text 9.16 53.5 8.84x21
+                            Text 9.16 53.5 8.84x21 1 line(s)
                       Flexible 30 40 209.5x48
                         ScrollView 30 40 209.5x48
                           CodeSurface 30 40 8.84x48
@@ -1888,14 +1888,14 @@ CodeDiff 0 0 480x88
                                     Row 30 52 8.84x24
                                       Box 30 53.5 24x21
                                         Row 42 53.5 0x21
-                                          Text 42 53.5 0x21
+                                          Text 42 53.5 0x21 1 line(s)
                   Box 239.5 40 1x48
                   Flexible 240.5 40 239.5x48
                     Row 240.5 40 239.5x48
                       Column 240.5 40 30x36
                         Box 240.5 52 30x24
                           Row 240.5 52 18x24
-                            Text 249.66 53.5 8.84x21
+                            Text 249.66 53.5 8.84x21 1 line(s)
                       Flexible 270.5 40 209.5x48
                         ScrollView 270.5 40 209.5x48
                           CodeSurface 270.5 40 8.84x48
@@ -1906,7 +1906,7 @@ CodeDiff 0 0 480x88
                                     Row 270.5 52 8.84x24
                                       Box 270.5 53.5 24x21
                                         Row 282.5 53.5 0x21
-                                          Text 282.5 53.5 0x21
+                                          Text 282.5 53.5 0x21 1 line(s)
 
 ## XLarge · Compact
 ### web
@@ -2126,9 +2126,9 @@ CodeDiff 0 0 480x80
             Column 0 0 480x80
               Row 0 0 480x26
                 Flexible 0 5 289.2x16
-                  Text 0 5 289.2x16
-                Text 297.2 5.5 11.64x15
-                Text 316.84 5.5 11.64x15
+                  Text 0 5 289.2x16 1 line(s)
+                Text 297.2 5.5 11.64x15 1 line(s)
+                Text 316.84 5.5 11.64x15 1 line(s)
                 IconButton 336.48 0 26x26
                   Pressable 336.48 0 26x26
                     Box 336.48 0 26x26
@@ -2143,7 +2143,7 @@ CodeDiff 0 0 480x80
                   Pressable 404.48 0 75.52x26
                     Box 404.48 0 75.52x26
                       Row 412.48 0 59.52x26
-                        Text 412.48 5.75 59.52x14.5
+                        Text 412.48 5.75 59.52x14.5 1 line(s)
               Box 0 34 480x46
                 Row 0 34 480x46
                   Flexible 0 34 239.5x46
@@ -2151,7 +2151,7 @@ CodeDiff 0 0 480x80
                       Column 0 34 29x34
                         Box 0 46 29x22
                           Row 0 46 17x22
-                            Text 8.94 47.25 8.06x19.5
+                            Text 8.94 47.25 8.06x19.5 1 line(s)
                       Flexible 29 34 210.5x46
                         ScrollView 29 34 210.5x46
                           CodeSurface 29 34 8.06x46
@@ -2162,14 +2162,14 @@ CodeDiff 0 0 480x80
                                     Row 29 46 8.06x22
                                       Box 29 47.25 24x19.5
                                         Row 41 47.25 0x19.5
-                                          Text 41 47.25 0x19.5
+                                          Text 41 47.25 0x19.5 1 line(s)
                   Box 239.5 34 1x46
                   Flexible 240.5 34 239.5x46
                     Row 240.5 34 239.5x46
                       Column 240.5 34 29x34
                         Box 240.5 46 29x22
                           Row 240.5 46 17x22
-                            Text 249.44 47.25 8.06x19.5
+                            Text 249.44 47.25 8.06x19.5 1 line(s)
                       Flexible 269.5 34 210.5x46
                         ScrollView 269.5 34 210.5x46
                           CodeSurface 269.5 34 8.06x46
@@ -2180,5 +2180,5 @@ CodeDiff 0 0 480x80
                                     Row 269.5 46 8.06x22
                                       Box 269.5 47.25 24x19.5
                                         Row 281.5 47.25 0x19.5
-                                          Text 281.5 47.25 0x19.5
+                                          Text 281.5 47.25 0x19.5 1 line(s)
 

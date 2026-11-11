@@ -24,7 +24,7 @@ Menu 0 0 8.84x24
       Shortcut 0 0 8.84x24
         Anchored 0 0 8.84x24
           Pressable 0 0 8.84x24
-            Text 0 0 8.84x24
+            Text 0 0 8.84x24 1 line(s)
 
 ## Compact
 ### web
@@ -52,5 +52,5 @@ Menu 0 0 8.84x24
       Shortcut 0 0 8.84x24
         Anchored 0 0 8.84x24
           Pressable 0 0 8.84x24
-            Text 0 0 8.84x24
+            Text 0 0 8.84x24 1 line(s)
 

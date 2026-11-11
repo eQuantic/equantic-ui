@@ -82,7 +82,7 @@ PullToRefresh 0 0 480x24
           Spinner 230 22 20x20
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Compact
 ### web
@@ -168,5 +168,5 @@ PullToRefresh 0 0 480x24
           Spinner 230 22 20x20
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 

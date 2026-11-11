@@ -1,8 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using System.Text;
-using eQuantic.UI.Native.Components;
-using eQuantic.UI.Native.Framework;
+using eQuantic.UI.Native.Testing;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Testing;
 using FluentAssertions;
@@ -215,27 +214,27 @@ public class VariantMatrixTests(ITestOutputHelper output)
     // ---- one cell --------------------------------------------------------------------------------
 
     /// <summary>The cell's pin, or why it cannot be drawn: the control refuses the cell, or a target
-    /// cannot draw it. Each target is handed an instance of its own, as each would build one.</summary>
+    /// cannot draw it. Each target is handed an instance of its own, as each would build one, and the
+    /// first build is the one that says whether the control accepts the cell at all.</summary>
     private static string Read(Control control, Cell cell, out string? failure)
     {
         failure = null;
-        var text = new StringBuilder($"## {cell}\n");
-        if (!Try(() => Build(control, cell), out _, out var refused))
+        if (!Try(() => InTheCulture(() => Build(control, cell)), out var forTheWeb, out var refused))
         {
             failure = $"refused ({refused})";
             return "";
         }
-        if (!Try(() => OnTheWeb(control, cell), out var web, out var webFailure))
+        if (!Try(() => OnTheWeb(forTheWeb!, cell), out var web, out var webFailure))
         {
             failure = $"not drawn on the web ({webFailure})";
             return "";
         }
-        if (!Try(() => OnPhoton(control, cell), out var photon, out var photonFailure))
+        if (!Try(() => OnPhoton(InTheCulture(() => Build(control, cell)), cell), out var photon, out var photonFailure))
         {
             failure = $"not drawn on Photon ({photonFailure})";
             return "";
         }
-        return text.Append(web).Append(photon).Append('\n').ToString();
+        return $"## {cell}\n{web}{photon}\n";
     }
 
     private static bool Try<T>(Func<T> read, out T? value, out string? failure)
@@ -256,10 +255,10 @@ public class VariantMatrixTests(ITestOutputHelper output)
     }
 
     /// <summary>What the web lowers and what its reader announces, through the component tester.</summary>
-    private static string OnTheWeb(Control control, Cell cell)
+    private static string OnTheWeb(VisualNode node, Cell cell)
     {
         using var tester = new ComponentTester(Theme, width: Width, density: cell.Density);
-        tester.Pump(InTheCulture(() => Build(control, cell)));
+        tester.Pump(node);
         var text = new StringBuilder("### web\n");
         // One element or text a line, one rule a line: a pin is read as a diff.
         text.Append(tester.Html.Replace("><", ">\n<", StringComparison.Ordinal)).Append('\n');
@@ -271,36 +270,40 @@ public class VariantMatrixTests(ITestOutputHelper output)
         return text.ToString();
     }
 
-    /// <summary>What Photon measures: every box the layout placed, in the tree's order.</summary>
-    private static string OnPhoton(Control control, Cell cell)
+    /// <summary>What Photon measures, through the Photon tester: every box the layout placed, in the tree's
+    /// order, and every overlay layer the frame showed.</summary>
+    private static string OnPhoton(VisualNode node, Cell cell)
     {
-        var node = InTheCulture(() => Build(control, cell));
-        var (culture, uiCulture) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
-        CultureInfo.CurrentCulture = CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
-        try
+        using var tester = new PhotonTester(Theme, width: Width, height: Height, density: cell.Density);
+        tester.Pump(node);
+        var text = new StringBuilder("### photon\n");
+        Boxes(tester.Root, 0, text);
+        foreach (var layer in tester.Layers)
         {
-            var result = PhotonRealizer.Realize(node, Width, Height, Theme, ThemeMode.Light, new DisplayListBuilder(),
-                density: cell.Density);
-            var text = new StringBuilder("### photon\n");
-            Boxes(result.Root, 0, text);
-            return text.ToString();
+            text.Append("### photon layer\n");
+            Boxes(layer, 0, text);
         }
-        finally
-        {
-            (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture) = (culture, uiCulture);
-        }
+        return text.ToString();
     }
 
-    private static void Boxes(LayoutNode node, int depth, StringBuilder text)
+    private static void Boxes(MeasuredNode node, int depth, StringBuilder text)
     {
         var bounds = node.Bounds;
-        text.Append(' ', depth * 2).Append(node.Source.GetType().Name).Append(' ')
+        text.Append(' ', depth * 2).Append(node.Node.GetType().Name).Append(' ')
             .Append(Number(bounds.X)).Append(' ').Append(Number(bounds.Y)).Append(' ')
-            .Append(Number(bounds.Width)).Append('x').Append(Number(bounds.Height)).Append('\n');
+            .Append(Number(bounds.Width)).Append('x').Append(Number(bounds.Height));
+        if (node.Text is { } measured) text.Append(' ').Append(measured.Lines.Count).Append(" line(s)");
+        text.Append('\n');
         foreach (var child in node.Children) Boxes(child, depth + 1, text);
     }
 
-    private static string Number(float value) => MathF.Round(value, 2).ToString("0.##", CultureInfo.InvariantCulture);
+    /// <summary>A coordinate to two places, in the invariant culture, and never "-0": a box a hair left of
+    /// zero on one platform and a hair right on another is the same box.</summary>
+    private static string Number(float value)
+    {
+        var rounded = MathF.Round(value, 2);
+        return (rounded == 0 ? 0f : rounded).ToString("0.##", CultureInfo.InvariantCulture);
+    }
 
     /// <summary>Built in the culture both targets read in: a constructor that formats would otherwise read
     /// the machine's.</summary>
@@ -314,7 +317,7 @@ public class VariantMatrixTests(ITestOutputHelper output)
 
     // ---- the pins --------------------------------------------------------------------------------
 
-    private static string PinDirectory() => Path.Combine(Root(), "tests", "eQuantic.UI.Native.Engine.Tests", "VariantMatrix");
+    private static string PinDirectory() => Path.Combine(ShrinkingBaseline.RepositoryRoot(), "tests", "eQuantic.UI.Native.Engine.Tests", "VariantMatrix");
 
     private List<string> ComparePins(Dictionary<string, string> drawn, bool update)
     {
@@ -380,8 +383,8 @@ public class VariantMatrixTests(ITestOutputHelper output)
 
     private List<string> CompareBaseline(SortedSet<string> found, bool update)
     {
-        var path = Path.Combine(Root(), "tests", "eQuantic.UI.Native.Engine.Tests", "Coverage", "variant-matrix.baseline.txt");
-        var baseline = ReadBaseline(path);
+        var path = ShrinkingBaseline.PathOf("variant-matrix.baseline.txt");
+        var baseline = ShrinkingBaseline.Read(path);
         var unexplained = found.Where(entry => !baseline.ContainsKey(entry)).ToList();
         var stale = baseline.Keys.Where(entry => !found.Contains(entry)).ToList();
 
@@ -391,38 +394,9 @@ public class VariantMatrixTests(ITestOutputHelper output)
 
         if (update && stale.Count > 0)
         {
-            WriteBaseline(path, baseline.Where(pair => found.Contains(pair.Key)));
+            ShrinkingBaseline.Write(path, baseline.Where(pair => found.Contains(pair.Key)));
             stale.Clear();
         }
         return unexplained.Select(entry => $"unexplained: {entry}").Concat(stale.Select(entry => $"stale: {entry}")).ToList();
-    }
-
-    /// <summary>Each entry and its reason: the entry runs to the first two spaces, the reason after.</summary>
-    private static Dictionary<string, string> ReadBaseline(string path)
-    {
-        var entries = new Dictionary<string, string>(StringComparer.Ordinal);
-        if (!File.Exists(path)) return entries;
-        foreach (var line in File.ReadLines(path))
-        {
-            if (line.Length == 0 || line.StartsWith('#')) continue;
-            var split = line.IndexOf("  ", StringComparison.Ordinal);
-            if (split < 0) entries[line] = "";
-            else entries[line[..split]] = line[(split + 2)..];
-        }
-        return entries;
-    }
-
-    private static void WriteBaseline(string path, IEnumerable<KeyValuePair<string, string>> kept)
-    {
-        var header = File.ReadLines(path).TakeWhile(line => line.StartsWith('#')).ToList();
-        File.WriteAllLines(path, header.Concat(kept.OrderBy(pair => pair.Key, StringComparer.Ordinal)
-            .Select(pair => $"{pair.Key}  {pair.Value}")));
-    }
-
-    private static string Root()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Directory.Build.props"))) dir = dir.Parent;
-        return dir!.FullName;
     }
 }

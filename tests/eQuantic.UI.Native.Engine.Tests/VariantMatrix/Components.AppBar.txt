@@ -43,7 +43,7 @@ AppBar 0 0 480x56
     Row 4 0 472x56
       Flexible 4 15 472x26
         Box 4 15 472x26
-          Text 16 15 452x26
+          Text 16 15 452x26 1 line(s)
 
 ## Compact
 ### web
@@ -90,5 +90,5 @@ AppBar 0 0 480x56
     Row 4 0 472x56
       Flexible 4 15 472x26
         Box 4 15 472x26
-          Text 16 15 452x26
+          Text 16 15 452x26 1 line(s)
 

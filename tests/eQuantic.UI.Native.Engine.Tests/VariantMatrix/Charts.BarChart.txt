@@ -146,22 +146,22 @@ BarChart 0 0 480x284
         Stack 0 0 48x240
           Positioned 0 232 44x16
             Box 0 232 44x16
-              Text 0 232 44x16
+              Text 0 232 44x16 1 line(s)
           Positioned 0 184 44x16
             Box 0 184 44x16
-              Text 0 184 44x16
+              Text 0 184 44x16 1 line(s)
           Positioned 0 136 44x16
             Box 0 136 44x16
-              Text 0 136 44x16
+              Text 0 136 44x16 1 line(s)
           Positioned 0 88 44x16
             Box 0 88 44x16
-              Text 0 88 44x16
+              Text 0 88 44x16 1 line(s)
           Positioned 0 40 44x16
             Box 0 40 44x16
-              Text 0 40 44x16
+              Text 0 40 44x16 1 line(s)
           Positioned 0 -8 44x16
             Box 0 -8 44x16
-              Text 0 -8 44x16
+              Text 0 -8 44x16 1 line(s)
         Flexible 48 0 432x240
           Stack 48 0 432x240
             Canvas 48 0 432x240
@@ -174,7 +174,7 @@ BarChart 0 0 480x284
         Pressable 371.76 252 108.24x32
           Box 371.76 252 108.24x32
             Row 383.76 252 84.24x32
-              Text 383.76 260 84.24x16
+              Text 383.76 260 84.24x16 1 line(s)
 
 ## Compact
 ### web
@@ -324,22 +324,22 @@ BarChart 0 0 480x278
         Stack 0 0 48x240
           Positioned 0 232 44x16
             Box 0 232 44x16
-              Text 0 232 44x16
+              Text 0 232 44x16 1 line(s)
           Positioned 0 184 44x16
             Box 0 184 44x16
-              Text 0 184 44x16
+              Text 0 184 44x16 1 line(s)
           Positioned 0 136 44x16
             Box 0 136 44x16
-              Text 0 136 44x16
+              Text 0 136 44x16 1 line(s)
           Positioned 0 88 44x16
             Box 0 88 44x16
-              Text 0 88 44x16
+              Text 0 88 44x16 1 line(s)
           Positioned 0 40 44x16
             Box 0 40 44x16
-              Text 0 40 44x16
+              Text 0 40 44x16 1 line(s)
           Positioned 0 -8 44x16
             Box 0 -8 44x16
-              Text 0 -8 44x16
+              Text 0 -8 44x16 1 line(s)
         Flexible 48 0 432x240
           Stack 48 0 432x240
             Canvas 48 0 432x240
@@ -352,5 +352,5 @@ BarChart 0 0 480x278
         Pressable 389.33 252 90.67x26
           Box 389.33 252 90.67x26
             Row 397.33 252 74.67x26
-              Text 397.33 257.75 74.67x14.5
+              Text 397.33 257.75 74.67x14.5 1 line(s)
 

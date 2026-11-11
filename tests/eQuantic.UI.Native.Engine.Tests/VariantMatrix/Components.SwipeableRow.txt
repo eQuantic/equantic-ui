@@ -77,10 +77,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Primary · Compact
 ### web
@@ -161,10 +161,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Secondary · Comfortable
 ### web
@@ -245,10 +245,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Secondary · Compact
 ### web
@@ -329,10 +329,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Destructive · Comfortable
 ### web
@@ -413,10 +413,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Destructive · Compact
 ### web
@@ -497,10 +497,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Outline · Comfortable
 ### web
@@ -580,10 +580,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Outline · Compact
 ### web
@@ -663,10 +663,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Ghost · Comfortable
 ### web
@@ -746,10 +746,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Ghost · Compact
 ### web
@@ -829,10 +829,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Link · Comfortable
 ### web
@@ -913,10 +913,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Link · Compact
 ### web
@@ -997,10 +997,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Success · Comfortable
 ### web
@@ -1081,10 +1081,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Success · Compact
 ### web
@@ -1165,10 +1165,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Warning · Comfortable
 ### web
@@ -1249,10 +1249,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Warning · Compact
 ### web
@@ -1333,10 +1333,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Info · Comfortable
 ### web
@@ -1417,10 +1417,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Info · Compact
 ### web
@@ -1501,10 +1501,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Tertiary · Comfortable
 ### web
@@ -1585,10 +1585,10 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
 ## Tertiary · Compact
 ### web
@@ -1669,8 +1669,8 @@ SwipeableRow 0 0 480x24
           Box 384 0 96x24
             Column 384 0 96x24
               Icon 422 0 20x20
-              Text 428.78 23 6.44x16
+              Text 428.78 23 6.44x16 1 line(s)
       Draggable 0 0 480x24
         Box 0 0 480x24
-          Text 0 0 480x24
+          Text 0 0 480x24 1 line(s)
 
