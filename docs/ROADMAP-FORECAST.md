@@ -114,3 +114,5 @@ When the milestone has a due date, the report says whether the plan passes it.
 - **Order between issues.** A dependency or a decision someone owes is invisible to it: an issue
   waiting on one is forecast as if it were not.
 - **Its own youth.** The first weeks of a board move the pace a lot, and so the dates.
+
+<!-- Probe for #1421: a change to documents only. This branch is never merged. -->
