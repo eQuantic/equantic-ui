@@ -150,6 +150,25 @@ function summing(first = '7.01', second = '14.02', third = 'text'): SheetControl
   return sheet;
 }
 
+/** The C# `Sheet`: a spreadsheet whose A1 is a word and B2 a number, B2:C3 selected. */
+function spreadsheet(): unknown {
+  const sheet = new SheetController(30, 6);
+  sheet.document.setCell(new CellRef(0, 0), 'Ledger');
+  sheet.document.setCell(new CellRef(1, 1), '42');
+  sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(2, 2));
+  return new Spreadsheet(sheet, { width: SizeValue.fill, height: SizeValue.fixed(240) });
+}
+
+/** The C# `Unlabelled`: a table of three rows and two columns with no label. */
+function unlabelled(): unknown {
+  return new TableView(
+    new UniformTableSpans(3, 28),
+    new UniformTableSpans(2, 96),
+    (row: number, column: number) => new Text(`${row}:${column}`, 'caption', photonTheme.textPrimary),
+    { role: 'table' },
+  );
+}
+
 /** The C# `TableAs`: a table or a grid of six rows and four columns, its first row and column pinned and
  * their headers, the corner among the columns' headers, the cell of row 4 and column 3 empty, rows 2 and 3
  * of column 2 selected and the one of row 3 current. */
@@ -447,16 +466,11 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         { pinnedRows: 1, canRequestFocus: false },
       ),
     ),
-    spreadsheet: still(
-      (() => {
-        const sheet = new SheetController(30, 6);
-        sheet.document.setCell(new CellRef(0, 0), 'Ledger');
-        sheet.document.setCell(new CellRef(1, 1), '42');
-        sheet.selection = new SheetRange(new CellRef(1, 1), new CellRef(2, 2));
-        return new Spreadsheet(sheet, { width: SizeValue.fill, height: SizeValue.fixed(240) });
-      })(),
-    ),
+    spreadsheet: still(spreadsheet()),
     'spreadsheet-editing': still(new Spreadsheet(editing(), { width: SizeValue.fill, height: SizeValue.fixed(240) })),
+    // Two spreadsheets on one page, and two tables with no label, each owning its own cells (#1115).
+    'two-spreadsheets': still(column(8, spreadsheet(), spreadsheet())),
+    'two-unlabelled-tables': still(column(8, unlabelled(), unlabelled())),
     'formula-bar': still(new FormulaBar(editing())),
     'name-box': still(new NameBox(editing())),
     'status-bar': still(new StatusBar(summing())),
