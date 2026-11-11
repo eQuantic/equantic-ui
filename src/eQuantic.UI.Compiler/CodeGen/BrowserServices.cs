@@ -52,7 +52,7 @@ internal static class BrowserServices
             // A registration that needs itself, through any number of others, has no first instance.
             if (!building.Add(key))
             {
-                context.Report(at, ConversionSeverity.Error, "EQ2115",
+                context.Report(at, ConversionSeverity.Error, "EQ2116",
                     $"{key} cannot be built in the browser: its registration depends on itself through "
                     + $"{string.Join(" → ", building.Append(key))}.");
                 return quoted;
@@ -68,7 +68,7 @@ internal static class BrowserServices
         // that is a page that fails at hydration, and the build says so now. A service of the SDK is
         // the runtime's to provide, and one from a package is out of the build's sight.
         if (requiredBy is not null && service is not null && registrations.IsAppsOwn(service))
-            context.Report(at, ConversionSeverity.Error, "EQ2115", Missing(key, requiredBy, registrations.All(key)));
+            context.Report(at, ConversionSeverity.Error, "EQ2116", Missing(key, requiredBy, registrations.All(key)));
         return quoted;
     }
 
@@ -83,7 +83,7 @@ internal static class BrowserServices
         var constructor = ServiceRegistrations.ConstructorOf(implementation);
         if (constructor is null)
         {
-            context.Report(at, ConversionSeverity.Error, "EQ2115",
+            context.Report(at, ConversionSeverity.Error, "EQ2116",
                 $"{key} cannot be built in the browser: {implementation.Name} has no public constructor.");
             return null;
         }
@@ -104,7 +104,7 @@ internal static class BrowserServices
             }
             else
             {
-                context.Report(at, ConversionSeverity.Error, "EQ2115",
+                context.Report(at, ConversionSeverity.Error, "EQ2116",
                     $"{key} cannot be built in the browser: {implementation.Name}'s constructor takes "
                     + $"{parameter.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)} {parameter.Name}, "
                     + "which no container provides. Give it a default, or take it as a service of the app's.");

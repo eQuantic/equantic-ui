@@ -195,7 +195,7 @@ public sealed class AnAppsOwnServiceTests : IClassFixture<AnAppsOwnServiceTests.
         var built = solution.Build();
 
         built.Failed.Should().BeTrue();
-        built.Errors.Should().Contain("error EQ2115").And.Contain("Home needs ILedger in the browser, and the app registers none")
+        built.Errors.Should().Contain("error EQ2116").And.Contain("Home needs ILedger in the browser, and the app registers none")
             .And.Contain("builder.Services.AddSingleton<ILedger, TImplementation>()");
     }
 
@@ -218,7 +218,7 @@ public sealed class AnAppsOwnServiceTests : IClassFixture<AnAppsOwnServiceTests.
         var built = solution.Build();
 
         built.Failed.Should().BeTrue();
-        built.Errors.Should().Contain("error EQ2115").And.Contain("only the server can run")
+        built.Errors.Should().Contain("error EQ2116").And.Contain("only the server can run")
             .And.Contain("Program.cs:5");
     }
 
@@ -230,7 +230,7 @@ public sealed class AnAppsOwnServiceTests : IClassFixture<AnAppsOwnServiceTests.
         var built = solution.Build();
 
         built.Failed.Should().BeTrue();
-        built.Errors.Should().Contain("error EQ2115").And.Contain("registers it more than once");
+        built.Errors.Should().Contain("error EQ2116").And.Contain("registers it more than once");
     }
 
     [Fact]
