@@ -53,7 +53,32 @@ public class HotReloadDecisionTests
         options.HotReloads(new Host(environment), dotnetWatch).Should().Be(hotReloads);
     }
 
-    private static async Task<(WebApplication App, HttpClient Client)> StartAsync(
+    /// <summary>
+    /// A started app that is STOPPED before it is disposed. Hot reload lives as long as the app and is
+    /// disposed when the app stops (<c>ApplicationStopping</c>), and disposing a host that was not
+    /// stopped never stops it: the watchers on the content root and the MSBuild the running compiler
+    /// asks, whose working directory is that root, went on holding it. Windows refuses to remove a
+    /// folder something holds, so the case that removes its content root failed there and passed on
+    /// Linux and macOS (#1366).
+    /// </summary>
+    private sealed class Running(WebApplication app) : IAsyncDisposable
+    {
+        public HttpClient Client { get; } = app.GetTestClient();
+
+        public async ValueTask DisposeAsync()
+        {
+            try
+            {
+                await app.StopAsync();
+            }
+            finally
+            {
+                await app.DisposeAsync();
+            }
+        }
+    }
+
+    private static async Task<Running> StartAsync(
         string environment, bool? hotReload, string? contentRoot = null)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -70,7 +95,7 @@ public class HotReloadDecisionTests
         var app = builder.Build();
         app.MapUI();
         await app.StartAsync();
-        return (app, app.GetTestClient());
+        return new Running(app);
     }
 
     [Theory]
@@ -81,8 +106,8 @@ public class HotReloadDecisionTests
     [InlineData("Production", null, false)]
     public async Task TheClient_ListensExactlyWhenTheServerStreamsRebuilds(string environment, bool? hotReload, bool hotReloads)
     {
-        var (app, client) = await StartAsync(environment, hotReload);
-        await using var _ = app;
+        await using var app = await StartAsync(environment, hotReload);
+        var client = app.Client;
 
         var document = await client.GetStringAsync("/watched");
         var config = ShellConfig.In(document);
@@ -117,8 +142,9 @@ public class HotReloadDecisionTests
         File.WriteAllText(Path.Combine(root, "obj", "eQuantic", "ts", "Probe.ts.map"), "{\"sourcesContent\":[\"// C#\"]}");
         try
         {
-            var (app, client) = await StartAsync(environment, hotReload, root);
-            await using var _ = app;
+            // Stopped and disposed at the end of this block, before the finally removes the root.
+            await using var app = await StartAsync(environment, hotReload, root);
+            var client = app.Client;
 
             using var module = await client.GetAsync("/_equantic/Probe.js");
             using var map = await client.GetAsync("/_equantic/src-map/Probe.ts.map");
