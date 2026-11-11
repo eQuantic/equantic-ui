@@ -31,24 +31,6 @@ case select opened: ComboBox "" is announced on the web only  waits on #1328: Ph
 case select opened: ComboBox "Lisbon" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
 case select: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
 case select: ComboBox "Lisbon" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
-case table-view Group: StaticText "0:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "0:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "0:1" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "0:1" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "0:2" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "0:2" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "0:3" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "0:3" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "1:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "1:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "2:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "2:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "3:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "3:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "4:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "4:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "5:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
-case table-view Group: StaticText "5:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
 eQuantic.UI.Components.Calendar: ColumnHeader "Fri" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 eQuantic.UI.Components.Calendar: ColumnHeader "Mon" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 eQuantic.UI.Components.Calendar: ColumnHeader "Sat" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
