@@ -24,15 +24,16 @@ on:
         required: false
         default: ""
 
-# A new push to a pull request cancels the run of the head it replaces (#1309): every run holds macOS
-# runners, the scarcest kind, and a stale one made every other pull request wait for them. A push to
-# main does the same to the run of the push before it (#1421): since the merge queue, every merge is a
-# push to main whose run repeats the suite the queue just ran on the same tree, and on 2026-11-11 a
-# merge group waited for macOS behind twelve of them, eleven already superseded. What a push to main
-# adds is the convenience feed's packages, and the newest push's packages are the ones it wants. A
-# run on a tag, on a merge group or by hand gets a group of its own run, so nothing ever cancels it or
-# queues it behind another. The reasons live here and not inside the expressions, where a `#` is not
-# a comment but a parse error that fails the whole workflow before any job starts.
+# A new push to a pull request cancels the run of the head it replaces (#1309): a stale run held
+# runners every other pull request waited for. The scarcest kind, macOS, a pull request's run no longer
+# takes at all (#1385). A push to main does the same to the run of the push before it (#1421): since
+# the merge queue, every merge is a push to main whose run repeats the suite the queue just ran on the
+# same tree, and on 2026-11-11 a merge group waited for macOS behind twelve of them, eleven already
+# superseded. What a push to main adds is the convenience feed's packages, and the newest push's
+# packages are the ones it wants. A run on a tag, on a merge group or by hand gets a group of its own
+# run, so nothing ever cancels it or queues it behind another. The reasons live here and not inside
+# the expressions, where a `#` is not a comment but a parse error that fails the whole workflow before
+# any job starts.
 concurrency:
   group: ${{ github.event_name == 'pull_request' && format('ci-pull-request-{0}', github.event.pull_request.number) || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'ci-main' || format('ci-run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
@@ -48,7 +49,7 @@ jobs:
   # The required checks keep their names whatever runs. A job skipped by its `if:` reports success,
   # but a MATRIX job skipped as a whole never creates its per-entry checks, and the ruleset waits for
   # them forever: the matrix jobs (`test`, `build-platform-runtimes`) always run and skip their steps,
-  # on Ubuntu when their own runner would be a Mac or Windows with nothing to do.
+  # on Ubuntu when their own runner would be Windows with nothing to do.
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -256,7 +257,7 @@ jobs:
 
   build-platform-runtimes:
     needs: [changes, test-runtime]
-    # Runs whenever the runtime's tests passed or were not needed, so its three checks always report;
+    # Runs whenever the runtime's tests passed or were not needed, so its two checks always report;
     # with no code changed it skips its steps, on Ubuntu (see `changes`).
     if: ${{ !cancelled() && (needs.test-runtime.result == 'success' || needs.test-runtime.result == 'skipped') }}
     runs-on: ${{ needs.changes.outputs.code != 'false' && matrix.os || 'ubuntu-latest' }}
@@ -266,16 +267,14 @@ jobs:
       matrix:
         include:
           # Each OS leg packs BOTH architectures of its platform — packing only zips the right
-          # Bun binary, it does not depend on the host arch. The SDK references all six.
+          # Bun binary, it does not depend on the host arch. The SDK references all six. macOS packs
+          # in the job below, which a pull request's run leaves out (#1385).
           - os: ubuntu-latest
             runtime: Linux64
             runtime2: LinuxArm64
           - os: windows-latest
             runtime: Win64
             runtime2: WinArm64
-          - os: macos-latest
-            runtime: Osx64
-            runtime2: OsxArm64
 
     steps:
       - name: Nothing here for this change
@@ -285,54 +284,42 @@ jobs:
       - uses: actions/checkout@v4
         if: env.EQ_RUN == 'true'
 
-      - name: Setup .NET
+      - uses: ./.github/actions/pack-runtime
         if: env.EQ_RUN == 'true'
-        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          runtime: ${{ matrix.runtime }}
+          runtime2: ${{ matrix.runtime2 }}
 
-      - name: Determine Version
-        if: env.EQ_RUN == 'true'
-        id: version
-        shell: bash
-        run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            # A release tag IS the version: v0.2.0-preview.1 -> 0.2.0-preview.1
-            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.inputs.version }}" != "" ]; then
-            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            # Read version from Directory.Build.props (single source of truth)
-            VERSION=$(grep -o '<Version>[^<]*</Version>' Directory.Build.props | sed 's/<Version>//;s/<\/Version>//')
-            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-            echo "Using version from Directory.Build.props: $VERSION"
-          fi
+  # The macOS runtimes, out of the matrix above and under the check's own name (#1385). GitHub Free
+  # runs five macOS jobs at once, and every push to a pull request held four of them, so pull requests
+  # queued behind each other and behind the release's own tag run. The macOS jobs now run where a merge
+  # is decided, the merge queue (#1308), and on main, on a tag and by hand; a pull request's run skips
+  # them, and so does a change that touches no code (#1421). A job skipped by its own `if` reports as
+  # skipped under its name, which satisfies a required check, while a matrix leg cannot be skipped
+  # alone: a job-level `if` cannot read the matrix, and a matrix skipped whole reports under its
+  # unexpanded name, which no required check names.
+  build-platform-runtimes-macos:
+    name: build-platform-runtimes (macos-latest, Osx64, OsxArm64)
+    needs: [changes, test-runtime]
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Build and Pack Runtime.${{ matrix.runtime }} + ${{ matrix.runtime2 }}
-        if: env.EQ_RUN == 'true'
-        shell: bash
-        run: |
-          VERSION="${{ steps.version.outputs.VERSION }}"
-          dotnet pack src/eQuantic.UI.Runtime.${{ matrix.runtime }}/eQuantic.UI.Runtime.${{ matrix.runtime }}.csproj -c Release -p:Version=$VERSION
-          dotnet pack src/eQuantic.UI.Runtime.${{ matrix.runtime2 }}/eQuantic.UI.Runtime.${{ matrix.runtime2 }}.csproj -c Release -p:Version=$VERSION
-
-      - name: Upload Runtime.${{ matrix.runtime }} + ${{ matrix.runtime2 }} Packages
-        if: env.EQ_RUN == 'true'
-        uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/pack-runtime
         with:
-          name: runtime-${{ matrix.runtime }}-package
-          path: |
-            src/eQuantic.UI.Runtime.${{ matrix.runtime }}/bin/Release/*.nupkg
-            src/eQuantic.UI.Runtime.${{ matrix.runtime2 }}/bin/Release/*.nupkg
+          runtime: Osx64
+          runtime2: OsxArm64
 
   # Build core packages (platform-agnostic)
   build-packages:
-    needs: [changes, build-platform-runtimes]
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' && needs.build-platform-runtimes.result == 'success' }}
+    needs: [changes, build-platform-runtimes, build-platform-runtimes-macos]
     # macOS: the package set includes the iOS/Android shells, whose target frameworks need
     # platform workloads that only install on a Mac. It builds, packs and checks the packages, and
     # runs no test: the suite ran here a third time, 13 minutes 38 seconds on the run's longest path,
-    # for the facts only a Mac answers, which `test-macos` now runs beside it (#1311).
+    # for the facts only a Mac answers, which `test-macos` now runs beside it (#1311). A pull
+    # request's run skips it, as it skips every macOS job; the merge queue runs it (#1385).
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.build-platform-runtimes.result == 'success' && needs.build-platform-runtimes-macos.result == 'success' }}
     runs-on: macos-latest
 
     steps:
@@ -632,7 +619,9 @@ jobs:
   test-macos:
     name: test (macos-latest)
     needs: [changes, test-runtime]
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
+    # In the merge queue, on main, on a tag and by hand, never on a pull request's push (#1385), and
+    # only when the change touches code (#1421).
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -692,9 +681,10 @@ jobs:
   # the one `IsEQuanticDevMode` wires to project references.
   samples:
     needs: [changes, test-runtime]
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
     # macOS is the only runner that can build every target framework the samples declare: ios and
-    # android need workloads that install on a Mac, and the desktop head needs CoreGraphics.
+    # android need workloads that install on a Mac, and the desktop head needs CoreGraphics. So it
+    # runs in the merge queue, on main, on a tag and by hand, never on a pull request's push (#1385).
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
     runs-on: macos-latest
 
     steps:
