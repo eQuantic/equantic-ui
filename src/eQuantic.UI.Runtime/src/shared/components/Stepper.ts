@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Icon, IconGlyph, IconsValue, Pressable, Row, SizeValue, SizeVariantValue, Sizing, StatelessComponent, Text } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, IconGlyph, IconsValue, Pressable, Row, SizeValue, SizeVariantValue, StatelessComponent, Text } from "../runtime-exports";
 
 export class Stepper extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Stepper';
@@ -31,16 +31,16 @@ export class Stepper extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let height = Sizing.height(this.size, context.density);
+        let height = ControlMetrics.height(context, this.size);
         let canDecrement = !this.disabled && this.value - this.step >= this.min;
         let canIncrement = !this.disabled && this.value + this.step <= this.max;
         let row = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
         row.add(Stepper.arm(theme, 'minus', height, canDecrement, () => this.onChanged?.(this.value - this.step), this.action('Decrease')));
         let reading = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
-        reading.add(new Text(`${$eq.text.format(this.value, null, undefined, undefined, 'int32')}${this.suffix}`, 'label', this.disabled ? theme.textMuted : theme.textPrimary, 1, 'start', false, false, null, 0, { align: 'center', tabular: true, styleOverride: theme.type('label').withSize(Sizing.labelSize(this.size, context.density)) }));
+        reading.add(new Text(`${$eq.text.format(this.value, null, undefined, undefined, 'int32')}${this.suffix}`, 'label', this.disabled ? theme.textMuted : theme.textPrimary, 1, 'start', false, false, null, 0, { align: 'center', tabular: true, styleOverride: theme.type('label').withSize(ControlMetrics.labelSize(context, this.size)) }));
         row.add(new Box(new BoxStyle({ minWidth: height, height: SizeValue.fill }), reading));
         row.add(Stepper.arm(theme, 'plus', height, canIncrement, () => this.onChanged?.(this.value + this.step), this.action('Increase')));
-        return new Box(new BoxStyle({ width: SizeValue.hug, height: height, background: this.disabled ? theme.surfaceSubtle : theme.surface, cornerRadius: new CornerRadii(Sizing.radius(this.size)), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
+        return new Box(new BoxStyle({ width: SizeValue.hug, height: height, background: this.disabled ? theme.surfaceSubtle : theme.surface, cornerRadius: new CornerRadii(ControlMetrics.radius(context, this.size)), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
     }
 
     action(verb: string) {

@@ -110,6 +110,7 @@ export { CodeSymbol } from './CodeSymbol';
 export { CodeSymbols } from './CodeSymbols';
 export { CodeToken } from './CodeToken';
 export { CodeWordCompletionProvider } from './CodeWordCompletionProvider';
+export { ControlMetrics } from './ControlMetrics';
 export { CookieConsent } from './CookieConsent';
 export { Crumb } from './Crumb';
 export { CultureOption } from './CultureOption';

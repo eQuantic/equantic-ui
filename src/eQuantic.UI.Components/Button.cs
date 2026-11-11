@@ -76,7 +76,8 @@ public sealed class Button : StatelessComponent
         var textColor = colors.OnBase;
 
         var borderWidth = Variant == Variant.Outline ? slot?.OutlineWidth ?? 1f : 0f;
-        var borderColor = theme.BorderStrong;
+        var borderColor = slot?.OutlineColor ?? theme.BorderStrong;
+        var quietFill = slot?.QuietFill ?? theme.SurfaceSubtle;
 
         var inert = Disabled || Loading;
         if (inert)
@@ -109,7 +110,7 @@ public sealed class Button : StatelessComponent
         ColorToken? pressedFill = Variant switch
         {
             Variant.Link => null,
-            Variant.Outline or Variant.Ghost => theme.SurfaceSubtle,
+            Variant.Outline or Variant.Ghost => quietFill,
             _ => colors.Pressed,
         };
 
@@ -119,7 +120,7 @@ public sealed class Button : StatelessComponent
         ColorToken? hoverFill = Variant switch
         {
             Variant.Link => null,
-            Variant.Outline or Variant.Ghost => theme.SurfaceSubtle,
+            Variant.Outline or Variant.Ghost => quietFill,
             _ => colors.Hover,
         };
 

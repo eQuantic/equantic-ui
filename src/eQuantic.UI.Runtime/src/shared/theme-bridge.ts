@@ -10,8 +10,8 @@ import { ColorToken, FluidSize, FontFamily, FontFile, TypeStyle, VariantColors, 
 import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 import { DataPalette, DivergingScale, StatusScale } from './data-palette';
-import { SheetTheme } from './sheet-theme';
-import { buttonTheme, controlsTheme, type ButtonData, type ControlsData } from './theme-slots';
+import type { SheetTheme } from './sheet-theme';
+import { slotBuilders, type SlotData } from './theme-slots';
 
 type RgbaTuple = readonly [number, number, number, number];
 type TokenTuple = readonly [RgbaTuple, RgbaTuple];
@@ -63,9 +63,9 @@ export interface ThemeData {
   /** Every code token kind's colour (#936), so `code(kind)` answers what the server's theme answers. */
   code?: Record<string, TokenTuple>;
   /** The control ladder, present only when the theme answers one, with the members it names. */
-  controls?: ControlsData;
+  controls?: SlotData;
   /** The Button's slot, by the same rule. */
-  button?: ButtonData;
+  button?: SlotData;
 }
 
 const color = (t: RgbaTuple): ColorValue => ({ r: t[0], g: t[1], b: t[2], a: t[3] });
@@ -149,21 +149,19 @@ export function materializeTheme(data: ThemeData): AppTheme {
       token(data.data.status[3]),
     ),
   );
-  let sheet: SheetTheme | null = null;
-  if (data.sheet) {
-    sheet = new SheetTheme();
-    for (const [name, value] of Object.entries(data.sheet)) {
-      if (value) (sheet as unknown as Record<string, ColorToken>)[name] = token(value);
-    }
+  // Every slot, through its family's builder (theme-slots.ts): one the payload does not carry is null,
+  // as a theme that answers none.
+  const slots: Record<string, unknown> = {};
+  for (const [name, build] of Object.entries(slotBuilders)) {
+    const slot = (data as unknown as Record<string, SlotData | undefined>)[name];
+    slots[name] = slot ? build(slot) : null;
   }
   const code: Record<string, ColorToken> = {};
   for (const [kind, value] of Object.entries(data.code ?? {})) code[kind] = token(value);
   return {
     ...(surfaces as unknown as Pick<AppTheme, never>),
+    ...(slots as unknown as Pick<AppTheme, never>),
     data: palette,
-    sheet,
-    controls: data.controls ? controlsTheme(data.controls) : null,
-    button: data.button ? buttonTheme(data.button) : null,
     disabledOpacity: data.disabledOpacity,
     monoFamily: data.monoFamily ? fontFamily(data.monoFamily) : undefined,
     textFamily: data.textFamily ? fontFamily(data.textFamily) : undefined,

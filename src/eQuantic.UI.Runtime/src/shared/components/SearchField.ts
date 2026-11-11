@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, Sizing, StatelessComponent, StyleDiff, TextEntry, VisualNodeExtensions } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, TextEntry, VisualNodeExtensions } from "../runtime-exports";
 
 export class SearchField extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.SearchField';
@@ -26,10 +26,10 @@ export class SearchField extends StatelessComponent {
         row.add(new Icon(IconGlyph.fromIcons('search'), 20, theme.textMuted));
         row.add(new Flexible(new TextEntry(this.query, this.onChanged, { placeholder: this.placeholder, label: this.placeholder.length > 0 ? this.placeholder : null, onSubmit: this.onSubmit, role: 'bodyM' }), 1));
         if (this.query.length > 0) {
-            let side = Sizing.height('medium', context.density);
+            let side = ControlMetrics.height(context, 'medium');
             row.add(new Pressable(new Box(new BoxStyle({ width: 48, height: side, cornerRadius: new CornerRadii(theme.shape('full')), hover: new StyleDiff({ background: theme.surfaceSubtle.midpointWith(theme.border) }), pressed: new StyleDiff({ background: theme.border }) }), VisualNodeExtensions.centered(new Icon(IconGlyph.fromIcons('close'), 20, theme.textMuted))), () => this.onChanged?.(''), { label: SdkStrings.clearSearch }));
         }
-        return new Box(new BoxStyle({ width: SizeValue.fill, height: Sizing.height('medium', context.density), background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')), padding: EdgeInsets.symmetric(14, 0) }), row);
+        return new Box(new BoxStyle({ width: SizeValue.fill, height: ControlMetrics.height(context, 'medium'), background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')), padding: EdgeInsets.symmetric(14, 0) }), row);
     }
 }
 

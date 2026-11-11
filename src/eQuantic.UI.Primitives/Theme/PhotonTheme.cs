@@ -178,15 +178,17 @@ public sealed class PhotonTheme : IAppTheme
         Radius = BySize(Sizing.Radius),
     };
 
-    /// <summary>The Button (spec A12): a 64dp floor, a semi-bold label at 0.1 tracking, a 1dp outline,
-    /// and a link padded by 6.</summary>
-    public ButtonTheme? Button { get; } = new()
+    /// <summary>The Button (spec A12): a 64dp floor, a semi-bold label at 0.1 tracking, a 1dp outline in
+    /// BorderStrong, a link padded by 6, and the quiet variants filling with SurfaceSubtle.</summary>
+    public ButtonTheme? Button => field ??= new ButtonTheme
     {
         MinWidth = Sizing.ButtonMinWidth,
         LabelWeight = FontWeight.SemiBold,
         LabelTracking = 0.1f,
         OutlineWidth = 1,
         LinkPaddingX = 6,
+        OutlineColor = BorderStrong,
+        QuietFill = SurfaceSubtle,
     };
 
     private static SizeLadder BySize(Func<SizeVariant, float> rung) => new()

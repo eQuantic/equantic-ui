@@ -77,3 +77,7 @@ static eQuantic.UI.Primitives.SizeLadder.operator !=(eQuantic.UI.Primitives.Size
 static eQuantic.UI.Primitives.SizeLadder.operator ==(eQuantic.UI.Primitives.SizeLadder? left, eQuantic.UI.Primitives.SizeLadder? right) -> bool
 eQuantic.UI.Primitives.AppThemeExtensions
 static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null) -> eQuantic.UI.Primitives.IAppTheme!
+eQuantic.UI.Primitives.ButtonTheme.OutlineColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ButtonTheme.OutlineColor.init -> void
+eQuantic.UI.Primitives.ButtonTheme.QuietFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ButtonTheme.QuietFill.init -> void
