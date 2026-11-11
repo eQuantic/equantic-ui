@@ -43,11 +43,15 @@ public sealed record CodeEdit(
     /// text goes to the start of the replacement and an end inside it to its end, so a range whose text
     /// was rewritten covers the rewrite, and one whose text was deleted is empty where the text was. A
     /// range never grows at its edges: text inserted where it starts or where it ends is not in it, and
-    /// an empty range stays with the text after it.
+    /// an empty range stays with the text after it, unless what is inserted begins with a line break: a
+    /// line written below the place is no text of the place's, and an empty range there, a problem of no
+    /// width at a line's end where a semicolon is missing, stays in front of it (#1059). Without that, the
+    /// line a move passes past the document's last line, written after that line's end, took the problem
+    /// with it, and so did Enter typed where the semicolon was missing.
     /// </summary>
     public CodeRange Carry(CodeRange range)
     {
-        var start = CarryStart(range.Start);
+        var start = CarryStart(range.Start, range.IsEmpty);
         var end = CarryEnd(range.End);
         return new CodeRange(start, end < start ? start : end);
     }
@@ -68,12 +72,12 @@ public sealed record CodeEdit(
     internal CodePosition CarryReach(CodePosition position) =>
         position == Range.Start && Range.IsEmpty ? InsertedRange.End : CarryEnd(position);
 
-    /// <summary>Where a range's start goes: past text inserted right at it, and to the start of a
-    /// replacement it stood inside.</summary>
-    private CodePosition CarryStart(CodePosition position)
+    /// <summary>Where a range's start goes: past text inserted right at it, unless that text begins with a
+    /// line break and the range is empty, and to the start of a replacement it stood inside.</summary>
+    private CodePosition CarryStart(CodePosition position, bool empty)
     {
         if (position < Range.Start) return position;
-        if (position == Range.Start && Range.IsEmpty) return Shifted(position);
+        if (position == Range.Start && Range.IsEmpty) return empty && BeginsWithBreak ? position : Shifted(position);
         if (position < Range.End) return Range.Start;
         return Shifted(position);
     }
@@ -101,6 +105,9 @@ public sealed record CodeEdit(
     /// <summary>True when this edit only ADDED text at the caret — the case undo coalesces, so a
     /// sentence typed letter by letter comes back in one press rather than forty.</summary>
     public bool IsSimpleInsert => RemovedText.Length == 0 && !BreaksLine;
+
+    /// <summary>Whether the inserted text begins by breaking a line, on CR or LF.</summary>
+    private bool BeginsWithBreak => InsertedText.Length > 0 && InsertedText[0] is '\n' or '\r';
 
     /// <summary>Whether the inserted text breaks a line, on CR, CRLF or LF, as the document breaks
     /// them: what ends a run of typing.</summary>

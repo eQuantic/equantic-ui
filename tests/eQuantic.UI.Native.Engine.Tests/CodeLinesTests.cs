@@ -255,6 +255,27 @@ public class CodeLinesTests : IDisposable
         Holds("alpha\nbeta\ngamma", At(1, 0), At(1, 0), "ArrowUp", At(0, 0));
         Holds("alpha\n\ngamma", At(1, 0), At(1, 0), "ArrowUp", At(0, 0));
         Holds("alpha\n\ngamma\ndelta", At(1, 0), At(1, 0), "ArrowDown", At(2, 0));
+        // At the document's end no line follows the block, and the passed line is written after the block's
+        // last line, at the very place the problem holds (#1059).
+        Holds("alpha\nbeta", At(1, 0), At(1, 4), "ArrowUp", At(0, 4));
+        Holds("alpha\nbeta", At(0, 0), At(0, 5), "ArrowDown", At(1, 5));
+    }
+
+    /// <summary>
+    /// Enter typed where a semicolon is missing leaves the problem of no width at that line's end: the line
+    /// break begins the text written there, and a line written below the place is no text of the place's.
+    /// Carried past it, the problem went to the start of the new line, where nothing is missing (#1059).
+    /// </summary>
+    [Fact]
+    public void AProblemOfNoWidth_AtALinesEnd_StaysThereWhenEnterIsTypedAtIt()
+    {
+        var editor = Editor("foo()\nbar", At(0, 5));
+        editor.Diagnostics.Report([new CodeDiagnostic(new CodeRange(At(0, 5)), "; expected")]);
+
+        Press(editor, "Enter", KeyModifiers.None).Should().BeTrue();
+
+        editor.Document.Line(0).Should().Be("foo()");
+        editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(At(0, 5)));
     }
 
     /// <summary>
