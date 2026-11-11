@@ -166,4 +166,56 @@ public class AWarmBuildTests
 
         wasWarm.Should().BeFalse("an assembly the compilation read changed on disk");
     }
+
+    /// <summary>
+    /// A file a save changed is parsed with the symbols its build compiled it with (#1401), as a cold
+    /// load parses it: parsed with none, the warm build took the branch the build did not, and wrote what
+    /// no cold build writes.
+    /// </summary>
+    [Fact]
+    public void AChangedFile_IsParsedWithTheSymbolsItsBuildCompiledItWith()
+    {
+        const string edition =
+            """
+            namespace Shop;
+
+            public static class Edition
+            {
+                public static string Name()
+                {
+            #if DEBUG
+                    return "debug";
+            #else
+                    return "release";
+            #endif
+                }
+            }
+            """;
+        const string badge =
+            """
+            using eQuantic.UI.Primitives;
+
+            namespace Shop;
+
+            public sealed class Badge : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => Text(Edition.Name(), TypeRole.BodyM);
+            }
+            """;
+        using var solution = new Solution()
+            .App("Shop", globalUsings: SharedLibrary.Factories, files: [("Edition.cs", edition), ("Components/Badge.cs", badge)])
+            .Defines("Shop", "DEBUG;TRACE");
+        var cold = solution.Build();
+        CompilerErrors(cold).Should().BeEmpty();
+        cold.Module("Edition").Should().Contain("'debug'");
+
+        solution.Write("Shop", "Edition.cs", edition.Replace("\"debug\"", "\"debugging\""));
+        var (warm, wasWarm) = solution.Rebuild(cold);
+
+        wasWarm.Should().BeTrue("only a file's text changed");
+        CompilerErrors(warm).Should().BeEmpty();
+        warm.Module("Edition").Should().Contain("'debugging'", "the project defines DEBUG, and the build compiled that branch")
+            .And.NotContain("'release'");
+        ModulesOf(warm).Should().Equal(ModulesOf(solution.Build()), "a warm build writes what a cold build writes");
+    }
 }
