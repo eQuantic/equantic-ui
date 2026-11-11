@@ -21,6 +21,7 @@ export class BottomNavigation extends StatelessComponent {
         if (selected !== undefined) this.selected = selected;
         if (onSelect !== undefined) this.onSelect = onSelect;
         if (this.selected === undefined) this.selected = 0;
+        this.$items = null!;
         this.items = items;
         this.selected = selected;
         this.onSelect = onSelect;
