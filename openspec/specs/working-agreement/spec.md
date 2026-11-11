@@ -835,7 +835,7 @@ never fails.
 
 An issue SHALL be created with what the plan counts it by. Every issue needs a type. An epic needs its
 Priority and nothing above it. Every other issue needs an open parent under an epic, and points, one
-of 1, 2, 3, 5, 8 or 13. `scripts/new-issue.py` SHALL refuse, before any request, an issue that lacks
+of 1, 2, 3, 5, 8 or 13, except a feature or a story created to be split, which carries none of its own. `scripts/new-issue.py` SHALL refuse, before any request, an issue that lacks
 one of them, naming what it lacks. It SHALL create the issue with its type, parent, milestone,
 assignee and priority, put it on the board with its points and status, read it back, and fail naming
 whatever did not land. A session's `PreToolUse` hook SHALL refuse the other ways a session creates an

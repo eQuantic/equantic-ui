@@ -115,7 +115,9 @@ the epic's priority, so an issue is created with all of them or not at all:
 
 - a type: Epic, Feature, User Story, Task or Bug;
 - an epic: its Priority, and nothing above it;
-- every other issue: an open parent under an epic, and its points, 1, 2, 3, 5, 8 or 13.
+- every other issue: an open parent under an epic, and its points, 1, 2, 3, 5, 8 or 13. Work bigger
+  than 13 is a feature or a story created with `--split`, which carries no points of its own, and its
+  slices, created next with it as their parent.
 
 `scripts/new-issue.py` creates an issue with its type, parent, milestone, assignee and priority in
 one request, puts it on the board with its points and status, reads it back, and fails naming

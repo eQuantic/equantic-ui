@@ -67,6 +67,8 @@ class PullRequest:
     closes: int
     # The lines a person wrote in it, when they were read.
     written: int | None = None
+    # Still open: work someone is visibly on. A closed one that never merged is not.
+    open: bool = False
 
 
 @dataclass
@@ -155,11 +157,17 @@ def milestone_of(issues: dict, issue: Issue) -> str | None:
     return None
 
 
-def lacks(type_: str | None, parent: int | None, points: float | None, priority: str | None) -> list:
+# The levels created as a parent of slices when the work is bigger than POINTS allows.
+SPLIT = ("Feature", "User Story")
+
+
+def lacks(type_: str | None, parent: int | None, points: float | None, priority: str | None,
+          split: bool = False) -> list:
     """What an issue needs before the plan can count it, said as the thing missing: an epic, a lane of
     its own, needs its priority, which gives the lane its part of the pace; every other issue needs a
-    parent to hang in a lane, and points, one of POINTS (bigger than the last is a parent, split into
-    slices, never one issue). Empty when nothing is missing."""
+    parent to hang in a lane, and points, one of POINTS. Work bigger than the last is a feature or a
+    story created to be `split`, whose points are its slices', so it carries none. Empty when nothing
+    is missing."""
     found = []
     if type_ not in TYPES:
         found.append(f"a type ({', '.join(TYPES)})")
@@ -169,8 +177,14 @@ def lacks(type_: str | None, parent: int | None, points: float | None, priority:
         return found
     if parent is None:
         found.append("a parent, the epic or the feature it belongs to")
-    if points not in POINTS:
-        found.append(f"points ({', '.join(map(str, POINTS))}; bigger is a parent, split into slices)")
+    if split:
+        if type_ not in SPLIT:
+            found.append(f"a type that is split into slices ({', '.join(SPLIT)})")
+        if points is not None:
+            found.append("no points of its own: a parent's points are its slices'")
+    elif points not in POINTS:
+        found.append(f"points ({', '.join(map(str, POINTS))}; bigger is a feature or a story created with "
+                     "--split, and its slices)")
     if priority is not None and priority not in PRIORITIES:
         found.append(f"a priority that is one of {', '.join(PRIORITIES)}")
     return found
@@ -552,11 +566,11 @@ def done_below(issues: dict) -> list:
 
 
 def idle(issues: dict, today: dt.date, days: int = 7) -> list:
-    """The issues shown under way for `days` or more with no pull request: the ones the plan keeps in
+    """The issues shown under way for `days` or more with no open pull request: the ones the plan keeps in
     the current sprint although nobody may be on them. The board cannot tell a branch on someone's
     disk from work that stopped, so the report lists them for a person to move back or leave."""
     return [i for i in sorted(issues.values(), key=lambda i: i.number)
-            if not i.closed and not i.children and i.status in STARTED and not i.pulls
+            if not i.closed and not i.children and i.status in STARTED and not any(p.open for p in i.pulls)
             and i.status_on and (today - i.status_on).days >= days]
 
 

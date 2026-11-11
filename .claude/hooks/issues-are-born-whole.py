@@ -19,7 +19,8 @@ import sys
 # Where a command starts: the line's start, or after an operator, a subshell or a substitution, with
 # any environment assignments before it. A phrase quoted inside an argument (a commit message that
 # names the command) is not a command.
-START = r"(?:^|[;&|(`{]|\$\(|\bthen\b|\bdo\b|\bxargs\b)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*"
+START = (r"(?:^|[;&|(`{]|\$\(|\bthen\b|\bdo\b|\bxargs\b|\b(?:ba|z)?sh\s+-l?c\s*['\"])\s*"
+         r"(?:(?:sudo|command|exec|env|nohup|time)\s+)*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*")
 GH_ISSUE_CREATE = re.compile(START + r"gh\s+issue\s+create\b", re.MULTILINE)
 GRAPHQL_CREATE = re.compile(r"\bcreateIssue\s*\(")
 # The REST collection itself, never an issue under it (/issues/12/comments).
@@ -29,7 +30,9 @@ CURL = re.compile(START + r"curl\b", re.MULTILINE)
 # What makes `gh api` write: a method named, or a field or a body, which turn a GET into a POST.
 GH_WRITES = re.compile(r"(?:-X\s*|--method[=\s]+)POST\b|\s(?:-f|-F|--field|--raw-field|--input)(?:\s|=)")
 CURL_WRITES = re.compile(r"(?:-X\s*|--request[=\s]+)POST\b|\s(?:-d|--data(?:-raw|-binary)?|--json)(?:\s|=)")
-MCP_CREATE = re.compile(r"^mcp__.*(?:create_issue|issue_write)")
+MCP_CREATE = re.compile(r"^mcp__.*create_issue")
+# A tool that writes issues by method (GitHub's own server names it issue_write): only `create` creates.
+MCP_WRITE = re.compile(r"^mcp__.*issue_write")
 
 REASON = ("Issues are created with scripts/new-issue.py, which creates one whole or not at all: a type, an open "
           "parent under an epic and points (1, 2, 3, 5, 8 or 13), or, for an epic, its priority, then puts it on "
@@ -52,6 +55,8 @@ def refuses(call: dict) -> bool:
     tool = call.get("tool_name") or ""
     if MCP_CREATE.search(tool):
         return True
+    if MCP_WRITE.search(tool):
+        return str((call.get("tool_input") or {}).get("method") or "").lower() == "create"
     return tool == "Bash" and creates_an_issue((call.get("tool_input") or {}).get("command") or "")
 
 
@@ -66,6 +71,11 @@ def self_test() -> int:
         "gh api -X POST /repos/eQuantic/equantic-ui/issues --input body.json",
         "gh api --method POST repos/eQuantic/equantic-ui/issues --input -",
         "curl -X POST -H 'Authorization: token t' https://api.github.com/repos/eQuantic/equantic-ui/issues -d '{}'",
+        "bash -c 'gh issue create --title x --body y'",
+        "sh -c \"gh issue create --title x\"",
+        "sudo gh issue create --title x",
+        "command gh issue create --title x",
+        "env GH_REPO=eQuantic/equantic-ui gh issue create --title x",
     ]
     passed = [
         "gh issue list --state open",
@@ -85,6 +95,7 @@ def self_test() -> int:
     failures += [f"refused: {c}" for c in passed if creates_an_issue(c)]
     calls = [({"tool_name": "mcp__github__create_issue", "tool_input": {}}, True),
              ({"tool_name": "mcp__github__issue_write", "tool_input": {"method": "create"}}, True),
+             ({"tool_name": "mcp__github__issue_write", "tool_input": {"method": "update"}}, False),
              ({"tool_name": "mcp__github__list_issues", "tool_input": {}}, False),
              ({"tool_name": "Read", "tool_input": {"file_path": "x"}}, False),
              ({"tool_name": "Bash", "tool_input": {"command": "gh issue create --title x"}}, True)]

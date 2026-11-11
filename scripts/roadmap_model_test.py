@@ -342,6 +342,11 @@ class CompletenessTests(unittest.TestCase):
     def test_more_than_thirteen_points_is_a_parent_not_an_issue(self):
         self.assertEqual(len(lacks("Feature", 160, 21, None)), 1)
 
+    def test_a_parent_created_to_be_split_carries_no_points_of_its_own(self):
+        self.assertEqual(lacks("Feature", 160, None, None, split=True), [])
+        self.assertEqual(len(lacks("Feature", 160, 21, None, split=True)), 1)
+        self.assertEqual(len(lacks("Task", 160, None, None, split=True)), 1)
+
     def test_an_epic_needs_its_priority_and_neither_a_parent_nor_points(self):
         self.assertEqual(lacks("Epic", None, None, "High"), [])
         self.assertEqual(len(lacks("Epic", None, None, None)), 1)
@@ -362,8 +367,10 @@ class CompletenessTests(unittest.TestCase):
         quiet, fresh, pulled = (todo(1, status="In progress"), todo(2, status="In progress"),
                                 todo(3, status="In review"))
         quiet.status_on, fresh.status_on, pulled.status_on = day(8), day(2), day(9)
-        pulled.pulls = [pull(10, opened=9)]
-        self.assertEqual([i.number for i in idle(board(quiet, fresh, pulled), TODAY)], [1])
+        pulled.pulls = [PullRequest(10, day(9), None, 1, open=True)]
+        abandoned = todo(4, status="In progress")
+        abandoned.status_on, abandoned.pulls = day(10), [pull(11, opened=12)]
+        self.assertEqual([i.number for i in idle(board(quiet, fresh, pulled, abandoned), TODAY)], [1, 4])
 
 
 class ChangeTests(unittest.TestCase):

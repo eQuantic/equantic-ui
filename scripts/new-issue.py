@@ -8,7 +8,8 @@ The plan (scripts/roadmap.py) counts an issue by its type, the epic above it and
 epic's lane its part of the pace by the epic's priority. An issue created without them is invisible to
 the plan, or costs a guess, until someone notices, so this refuses to create one without them: a type;
 for an epic, its priority; for every other issue, a parent that is open and under an epic, and points,
-one of 1, 2, 3, 5, 8 or 13 (bigger is a parent, created as one and split into slices). It creates the
+one of 1, 2, 3, 5, 8 or 13 (bigger is a feature or a story created with `--split`, which carries
+no points of its own, and its slices, created next with it as their parent). It creates the
 issue with its type, parent, milestone, assignee and priority in one request, puts it on Project 11 with
 its points and status, then reads it back and fails naming whatever did not land.
 
@@ -45,9 +46,12 @@ def chain(number: int) -> dict:
         found = board.gql(f"""query($o: String!, $r: String!, $n: Int!) {{ repository(owner: $o, name: $r) {{
             issue(number: $n) {{ id number state issueType {{ name }} {parent} }} }} }}""",
                           o=board.OWNER, r=board.REPO, n=number)
-    except SystemExit:
-        # GitHub answers a number it does not know with an error, which the caller words as a refusal.
-        return None
+    except SystemExit as refused:
+        # GitHub answers a number it does not know with NOT_FOUND, which the caller words as a refusal;
+        # any other failure (the network, the token, the rate limit) is not an answer about the parent.
+        if "NOT_FOUND" in str(refused.code):
+            return None
+        raise
     return found["repository"]["issue"]
 
 
@@ -67,13 +71,15 @@ def main():
     parser.add_argument("--body-file", required=True, help="the body in Markdown, or - for standard input")
     parser.add_argument("--parent", type=int, help="the issue it is a sub-issue of (every type but Epic)")
     parser.add_argument("--points", type=int, help="1, 2, 3, 5, 8 or 13 (every type but Epic)")
+    parser.add_argument("--split", action="store_true",
+                        help="a Feature or User Story bigger than 13, created to be split: no points of its own")
     parser.add_argument("--priority", choices=PRIORITIES, help="an epic's part of the pace (required for Epic)")
     parser.add_argument("--milestone", help="an open milestone's title")
     parser.add_argument("--status", choices=STATUSES, default="Backlog")
     parser.add_argument("--assignee", help="a login; the account that runs this when omitted")
     args = parser.parse_args()
 
-    missing = lacks(args.type, args.parent, args.points, args.priority)
+    missing = lacks(args.type, args.parent, args.points, args.priority, args.split)
     if args.type == "Epic" and (args.parent or args.points):
         missing.append("nothing above it and no points: an epic is a lane, and its points are its sub-issues'")
     if missing:
@@ -128,6 +134,27 @@ def main():
                            **({"milestoneId": milestone} if milestone else {}),
                            **({"issueFields": fields} if fields else {})})["createIssue"]["issue"]
     number = created["number"]
+    try:
+        finish(project, created, args)
+    except SystemExit as failed:
+        print(f"#{number} {created['url']} was created, but not whole: {failed.code}. Finish it on the board, "
+              "or close it as not planned; creating it again makes a second one.", file=sys.stderr)
+        sys.exit(1)
+    # Read back: an issue that exists without what this promised is the case to catch. GitHub shows a
+    # write on a read some seconds later, so a difference is read again before it is reported.
+    for _ in range(5):
+        wrong = whole(read(number), args, assignee["login"])
+        if not wrong:
+            break
+        time.sleep(3)
+    if wrong:
+        print(f"#{number} was created, but not whole: " + "; ".join(wrong), file=sys.stderr)
+        sys.exit(1)
+    print(f"#{number} {created['url']}")
+
+
+def finish(project: dict, created: dict, args):
+    """Puts the created issue on the board with its status and points."""
 
     # The board's own fields are set on its item. Adding it answers the item at once, where an item
     # createIssue would add shows on the issue only some seconds later.
@@ -141,18 +168,6 @@ def main():
         board.gql("""mutation($p: ID!, $i: ID!, $f: ID!, $n: Float!) { updateProjectV2ItemFieldValue(input: {
             projectId: $p, itemId: $i, fieldId: $f, value: { number: $n } }) { projectV2Item { id } } }""",
                   p=project["id"], i=item, f=project["estimate"]["id"], n=float(args.points))
-
-    # Read back: an issue that exists without what this promised is the case to catch. GitHub shows a
-    # write on a read some seconds later, so a difference is read again before it is reported.
-    for _ in range(5):
-        wrong = whole(read(number), args, assignee["login"])
-        if not wrong:
-            break
-        time.sleep(3)
-    if wrong:
-        print(f"#{number} was created, but not whole: " + "; ".join(wrong), file=sys.stderr)
-        sys.exit(1)
-    print(f"#{number} {created['url']}")
 
 
 def whole(landed: dict, args, login: str) -> list:
