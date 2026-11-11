@@ -25,11 +25,15 @@ internal sealed record ServiceRegistration(
     /// <summary>Whether the browser can build what this registration hands out.</summary>
     public bool Crosses => Implementation is not null;
 
-    /// <summary>The registration as a reader finds it: the call's own text and its place.</summary>
+    /// <summary>The registration as a reader finds it: the call's first line and its place. A factory
+    /// written over several lines is cut at the first, so a message stays one line.</summary>
     public string Describe()
     {
         var line = Written.GetLineSpan();
         var file = Path.GetFileName(line.Path);
-        return $"{Written.SourceTree?.GetRoot().FindNode(Written.SourceSpan)} ({file}:{line.StartLinePosition.Line + 1})";
+        var text = Written.SourceTree?.GetRoot().FindNode(Written.SourceSpan).ToString() ?? "";
+        var end = text.IndexOfAny(['\r', '\n']);
+        var call = end < 0 ? text : text[..end].TrimEnd() + " …";
+        return $"{call} ({file}:{line.StartLinePosition.Line + 1})";
     }
 }

@@ -105,6 +105,17 @@ internal sealed class ServiceRegistrations
             .OrderByDescending(candidate => candidate.Parameters.Length)
             .FirstOrDefault();
 
+    /// <summary>Whether two public constructors share the most parameters, which .NET's container refuses
+    /// to choose between.</summary>
+    public static bool HasTiedConstructors(INamedTypeSymbol implementation)
+    {
+        var lengths = implementation.InstanceConstructors
+            .Where(candidate => candidate.DeclaredAccessibility == Accessibility.Public)
+            .Select(candidate => candidate.Parameters.Length)
+            .ToList();
+        return lengths.Count > 1 && lengths.Count(length => length == lengths.Max()) > 1;
+    }
+
     /// <summary>Whether <paramref name="service"/> is one of the app's own interfaces: declared in
     /// source the build reads as the app's or a referenced project's.</summary>
     public bool IsAppsOwn(ITypeSymbol service) =>
@@ -170,8 +181,11 @@ internal sealed class ServiceRegistrations
             if (parameters.Count == 1) implementation = service;
         }
 
+        // Keyed by an interface, or a class registered under itself (`AddSingleton<LedgerOptions>()`),
+        // which the container builds as its own implementation.
         if (service is not INamedTypeSymbol { IsUnboundGenericType: false } named
-            || !CapabilityRule.IsDependency(named)
+            || !(CapabilityRule.IsDependency(named)
+                 || (named.TypeKind == TypeKind.Class && SymbolEqualityComparer.Default.Equals(named, implementation)))
             || !named.OriginalDefinition.DeclaringSyntaxReferences.Any(reference =>
                 !string.IsNullOrEmpty(reference.SyntaxTree.FilePath) && isSourceOfTheBuild(reference.SyntaxTree.FilePath)))
             return null;

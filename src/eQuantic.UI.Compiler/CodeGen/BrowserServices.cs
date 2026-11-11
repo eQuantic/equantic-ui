@@ -80,6 +80,14 @@ internal static class BrowserServices
     private static string? Construction(INamedTypeSymbol implementation, string key, SyntaxNode at,
         ConversionContext context, HashSet<string> building)
     {
+        if (ServiceRegistrations.HasTiedConstructors(implementation))
+        {
+            // .NET's container refuses to choose between two constructors it could equally use.
+            context.Report(at, ConversionSeverity.Error, "EQ2116",
+                $"{key} cannot be built in the browser: {implementation.Name} has two public constructors that take "
+                + "the most parameters, and the container cannot choose between them. Keep one.");
+            return null;
+        }
         var constructor = ServiceRegistrations.ConstructorOf(implementation);
         if (constructor is null)
         {
@@ -91,7 +99,10 @@ internal static class BrowserServices
         var arguments = new List<string>();
         foreach (var parameter in constructor.Parameters)
         {
-            if (CapabilityRule.IsDependency(parameter.Type))
+            // An interface is a service, and so is a class the app registers under itself
+            // (`AddSingleton<LedgerOptions>()`), which the container hands out as it does any other.
+            if (CapabilityRule.IsDependency(parameter.Type)
+                || context.AppServices.Find(parameter.Type.Name) is { Implementation: not null })
             {
                 var dependency = KeyOf(parameter.Type.Name, parameter.Type,
                     CapabilityRule.IsRequired(parameter) ? implementation.Name : null, at, context, building);
@@ -127,6 +138,10 @@ internal static class BrowserServices
             return $"{requiredBy} needs {key} in the browser, and the app registers none. Register it in Program.cs with "
                 + $"{write}, and the browser builds the same class; or declare the parameter as {key}? if {requiredBy} "
                 + "can work without it.";
+        if (found.Select(registration => registration.Service).Distinct(SymbolEqualityComparer.Default).Count() > 1)
+            return $"{requiredBy} needs {key} in the browser, and the app declares more than one interface of that name: "
+                + $"{string.Join(", ", found.Select(registration => registration.Describe()))}. The browser's container is keyed "
+                + "by the interface's name, so the two cannot both be resolved there. Rename one.";
         if (found.All(registration => !registration.Crosses))
             return $"{requiredBy} needs {key} in the browser, and its registration hands the container something only the "
                 + $"server can run: {string.Join(", ", found.Select(registration => registration.Describe()))}. Register the "

@@ -189,6 +189,88 @@ public sealed class AnAppsOwnServiceTests : IClassFixture<AnAppsOwnServiceTests.
     }
 
     [Fact]
+    public void AClassRegisteredUnderItself_IsHandedToTheConstructorThatTakesIt()
+    {
+        // .NET's container builds Ledger with the LedgerOptions it holds: so does the browser.
+        using var solution = Solution(
+            program: Program + "services.AddSingleton<LedgerOptions>();\n",
+            ledger: """
+                namespace Wallet;
+
+                public interface ILedger
+                {
+                    decimal Balance { get; }
+                }
+
+                public sealed class LedgerOptions
+                {
+                    public decimal Opening { get; set; } = 120m;
+                }
+
+                public sealed class Ledger(IRates rates, LedgerOptions options) : ILedger
+                {
+                    public decimal Balance => options.Opening * rates.Of("EUR");
+                }
+                """);
+        var built = solution.Build();
+        built.Errors.Should().NotContain("EQ2116");
+        built.Module("Home").Should().Contain(
+            "$eq.services.resolve($eq.services.provide('LedgerOptions', () => new LedgerOptions(), 'singleton'))");
+        built.SiblingImportsOf("Home").Should().Contain("LedgerOptions");
+    }
+
+    [Fact]
+    public void TwoConstructorsTheContainerCannotChooseBetween_AreAnErrorAtTheBuild()
+    {
+        using var solution = Solution(ledger: """
+            namespace Wallet;
+
+            public interface ILedger
+            {
+                decimal Balance { get; }
+            }
+
+            public sealed class Ledger : ILedger
+            {
+                public Ledger(IRates rates) => Balance = rates.Of("EUR");
+                public Ledger(decimal opening) => Balance = opening;
+                public decimal Balance { get; }
+            }
+            """);
+        var built = solution.Build();
+        built.Errors.Should().Contain("error EQ2116").And.Contain("cannot choose between them");
+    }
+
+    [Fact]
+    public void TwoInterfacesOfOneName_AreNamedAsSuch_NotAsOneRegisteredTwice()
+    {
+        using var solution = Solution(program: Program + """
+            services.AddSingleton<Other.ILedger, Other.OtherLedger>();
+
+            namespace Other
+            {
+                public interface ILedger { }
+                public sealed class OtherLedger : ILedger { }
+            }
+            """);
+        var built = solution.Build();
+        built.Errors.Should().Contain("error EQ2116").And.Contain("more than one interface of that name");
+    }
+
+    [Fact]
+    public void AServiceAPageOnlyMentions_BringsNoImplementation()
+    {
+        // Home names IMail as a parameter's type and never resolves it: SmtpMail, which writes a file,
+        // must not be compiled for the browser because of a mention.
+        using var solution = Solution(home: Home.Replace(
+            "public override VisualNode Build",
+            "private static string Who(IMail? mail) => mail is null ? \"none\" : \"some\";\n\n    public override VisualNode Build"));
+        var built = solution.Build();
+        built.Module("SmtpMail").Should().BeNull();
+        built.Errors.Should().NotContain("SmtpMail");
+    }
+
+    [Fact]
     public void AServiceNobodyRegistered_IsAnErrorAtTheBuild_NamingTheLineToWrite()
     {
         using var solution = Solution(program: "var nothing = 0;\n");
