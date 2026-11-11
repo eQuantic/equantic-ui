@@ -590,7 +590,7 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
     /// receiver's type. The element names of a tuple are no part of its type, as .NET's closed type erases
     /// them: an identity conversion is the same type.
     /// </summary>
-    private static bool OfAnotherType(InvocationExpressionSyntax invocation, INamedTypeSymbol receiver, ConversionContext context)
+    internal static bool OfAnotherType(InvocationExpressionSyntax invocation, INamedTypeSymbol receiver, ConversionContext context)
     {
         if (context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation
             {
