@@ -134,7 +134,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomSheet.cs:62  Padding = new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
+  BottomSheet.cs:64  Padding = slot?.BottomSheetPadding ?? new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
   ```
 
 ### A6 ScrollView · behaviour · **unverified**
@@ -263,8 +263,8 @@ the pill's 40 down.
 
   ```
   Card.cs:23  public Card(VisualNode child, CardKind kind = CardKind.Elevated)
-  Card.cs:49  return new Box(new BoxStyle
-  Card.cs:57      Elevation = Kind == CardKind.Elevated ? 1 : 0,
+  Card.cs:51  return new Box(new BoxStyle
+  Card.cs:59      Elevation = Kind == CardKind.Elevated ? slot?.Elevation ?? 1 : 0,
   Card.cs:58  }, Child);
   ```
 
@@ -477,8 +477,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ProgressBar.cs:128                Value = new RangeValue(filledWeight / 1000f, 0, 1),
-  ProgressBar.cs:129                ValueText = ValueText,
+  ProgressBar.cs:132                Value = new RangeValue(filledWeight / 1000f, 0, 1),
+  ProgressBar.cs:133                ValueText = ValueText,
   WebLoweringVisitor.Interaction.cs:205  RawAttributes = new Dictionary<string, string> { ["role"] = "progressbar" },
   SemanticsVisitor.Interaction.cs:175         Announce(new(SemanticRole.ProgressIndicator, laidOut.Path ?? "", laidOut.Bounds,
   ```
@@ -491,7 +491,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Banner.cs:88        return new LiveRegion(surface)
+  Banner.cs:92        return new LiveRegion(surface)
   ```
 
 ### C1 BottomSheet · documented-deviation · **unverified**
@@ -526,7 +526,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Toast.cs:57            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
+  Toast.cs:60            CornerRadius = new CornerRadii(theme.Shape(slot?.ToastShape ?? ShapeScale.Full)),
   ```
 
 ### C4 Toast · metric · **unverified**
@@ -537,7 +537,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Toast.cs:48            }, new Text(label, TypeRole.Label, theme.TextInverse)), OnAction)
+  Toast.cs:35            var text = slot?.ToastText ?? theme.TextInverse;
   ```
 
 ### C4 Toast · semantics · **CONFIRMED**
@@ -548,7 +548,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Toast.cs:76        var announced = new LiveRegion(pill);
+  Toast.cs:79        var announced = new LiveRegion(pill);
   ```
 
 ### C4 Toast · documented-deviation · **unverified**
@@ -609,7 +609,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Drawer.cs:62  Elevation = 3,
+  Drawer.cs:63  Elevation = theme.Modal?.DrawerElevation ?? 3,
   PhotonTheme.cs:145-146  3 => new ShadowSpec(6, 16, -2, Shadow(0.16f, 0.52f)),
           4 => new ShadowSpec(12, 28, -4, Shadow(0.20f, 0.56f)),
   ```
@@ -622,7 +622,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Drawer.cs:76  var overlay = new Overlay(layer);
+  Drawer.cs:77  var overlay = new Overlay(layer);
   lowering.ts:1412  if (node.label) layer.attributes['aria-label'] = node.label;
   ```
 
@@ -1033,7 +1033,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Tooltip.cs:44  OpenOnHover = true,
+  Tooltip.cs:46  OpenOnHover = true,
   src/eQuantic.UI.Primitives/Nodes/Anchored.cs  leaves = closed); never fires on touch. Composes with <see cref="Open"/> (either shows
       /// the panel).
   ```
@@ -2013,7 +2013,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Banner.cs:69  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, tint.OnSubtle), OnDismiss)
+  Banner.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, tint.OnSubtle), OnDismiss)
   Banner.cs:28  /// <summary>Dismiss affordance (spec: 20dp close, 48dp hit) ...
   ```
 
@@ -2037,7 +2037,7 @@ the pill's 40 down.
 
   ```
   Banner.cs:24  /// <summary>Up to two text actions (spec) — rendered as Link buttons in the status tint.</summary>
-  Banner.cs:58-59  if (PrimaryAction != null) actions.Add(PrimaryAction);
+  Banner.cs:62-63  if (PrimaryAction != null) actions.Add(PrimaryAction);
                     if (SecondaryAction != null) actions.Add(SecondaryAction);
   ```
 
@@ -2049,7 +2049,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Banner.cs:64  var content = new Row(gap: 10) { Cross = CrossAlign.Start };
+  Banner.cs:68  var content = new Row(gap: slot?.BannerIconGap ?? 10) { Cross = CrossAlign.Start };
   Banner.cs:75  return new Box(new BoxStyle { ... }, content);
   ```
 
@@ -2061,7 +2061,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomSheet.cs:48            Width = 32, Height = 4,
+  BottomSheet.cs:50            Width = slot?.HandleWidth ?? 32, Height = slot?.HandleHeight ?? 4,
   ```
 
 ### C1 BottomSheet · metric · **unverified**
@@ -2072,7 +2072,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomSheet.cs:62            Padding = new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
+  BottomSheet.cs:64            Padding = slot?.BottomSheetPadding ?? new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
   ```
 
 ### C1 BottomSheet · documented-deviation · **unverified**
@@ -2084,7 +2084,7 @@ the pill's 40 down.
 
   ```
   src/eQuantic.UI.Primitives/Nodes/DragDismiss.cs    public const float ThresholdDp = 96;
-  BottomSheet.cs:80        VisualNode sheetNode = Dismissible ? new DragDismiss(sheet, OnDismiss) : sheet;
+  BottomSheet.cs:82        VisualNode sheetNode = Dismissible ? new DragDismiss(sheet, OnDismiss) : sheet;
   ```
 
 ### C1 BottomSheet · documented-deviation · **unverified**
@@ -2095,7 +2095,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomSheet.cs:90        var layer = new Overlay(layers);
+  BottomSheet.cs:92        var layer = new Overlay(layers);
   ```
 
 ### C1 BottomSheet · missing-feature · **unverified**
@@ -2122,7 +2122,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomSheet.cs:62            Padding = new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
+  BottomSheet.cs:64            Padding = slot?.BottomSheetPadding ?? new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
   ```
 
 ### C2 Modal · behaviour · **unverified**
@@ -2133,7 +2133,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Dialog.cs:120        var layer = new Overlay(new Presence(layers))
+  Dialog.cs:122        var layer = new Overlay(new Presence(layers))
   src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs    Fade = 0,
   src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs    SlideUp = 1,
   ```
@@ -2161,7 +2161,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Dialog.cs:60            actions.Add(new Button(action.Label, action.Variant, SizeVariant.Medium, action.OnPressed)
+  Dialog.cs:62            actions.Add(new Button(action.Label, action.Variant, SizeVariant.Medium, action.OnPressed)
   Button.cs:144            Label = Label,
   ```
 
@@ -2173,7 +2173,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Toast.cs:60            MaxWidth = 480,
+  Toast.cs:63            MaxWidth = slot?.ToastMaxWidth ?? 480,
   ```
 
 ### C4 Toast · metric · **unverified**
@@ -2184,7 +2184,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Toast.cs:42        row.Add(new Text(Message, TypeRole.BodyM, theme.TextInverse, maxLines: 2));
+  Toast.cs:35        var text = slot?.ToastText ?? theme.TextInverse;
   ```
 
 ### C4 Toast · behaviour · **unverified**
@@ -2195,7 +2195,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Toast.cs:79        anchor.Add(new Presence(announced, PresenceMotion.SlideUp));
+  Toast.cs:82        anchor.Add(new Presence(announced, PresenceMotion.SlideUp));
   ```
 
 ### C4 Toast · behaviour · **unverified**
@@ -2233,7 +2233,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Drawer.cs:66  if (context.InFlow) return panel;
+  Drawer.cs:67  if (context.InFlow) return panel;
   InFlow.cs:11  design review, a visual-regression suite — wants the surface and none of that machinery
   ```
 
@@ -2565,7 +2565,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Tooltip.cs:38  Padding = EdgeInsets.Symmetric(Space.S2, Space.S1),
+  Tooltip.cs:40  Padding = slot?.TooltipPadding ?? EdgeInsets.Symmetric(Space.S2, Space.S1),
   LayoutTypes.cs:13  public static EdgeInsets Symmetric(float horizontal, float vertical) =>
   Tokens.cs:10-11  public const float S1 = 4;
       public const float S2 = 8;
@@ -2579,7 +2579,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Tooltip.cs:39  }, new Text(Text, TypeRole.Caption, theme.TextInverse, maxLines: 1));
+  Tooltip.cs:41  }, new Text(Text, TypeRole.Caption, slot?.TooltipText ?? theme.TextInverse, maxLines: 1));
   ThemeStylesheet.cs:286  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
   ```
 
@@ -3384,7 +3384,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Dialog.cs:123            Alert = Actions.Any(action => action.Variant == Variant.Destructive),
+  Dialog.cs:125            Alert = Actions.Any(action => action.Variant == Variant.Destructive),
   ```
 
 ### C2 Modal · metric · **unverified**
@@ -3406,7 +3406,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Dialog.cs:52        content.Add(new Text(Body, TypeRole.BodyM, theme.TextSecondary, maxLines: 6));
+  Dialog.cs:54        content.Add(new Text(Body, TypeRole.BodyM, theme.TextSecondary, maxLines: 6));
   ```
 
 ### C4 Toast · documented-deviation · **unverified**
@@ -3445,7 +3445,7 @@ the pill's 40 down.
 
   ```
   Drawer.cs:19  /// v1 fences: lateral slide motion (PresenceMotion gains SlideStart with the motion pack),
-  Drawer.cs:69  ? new Positioned(new Presence(panel), top: 0, bottom: 0, start: 0)
+  Drawer.cs:70  ? new Positioned(new Presence(panel), top: 0, bottom: 0, start: 0)
   ```
 
 ### C6 SegmentedControl · documented-deviation · **unverified**
