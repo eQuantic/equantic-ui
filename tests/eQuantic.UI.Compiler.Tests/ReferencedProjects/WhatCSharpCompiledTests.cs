@@ -136,4 +136,20 @@ public sealed class WhatCSharpCompiledTests
         built.Module("ThisAssembly").Should().BeNull("a file the build generated is no module of the app's");
         built.Module("Home").Should().Contain("'1.2.3'", "a constant of it is read as its value");
     }
+
+    [Fact]
+    public void AFileTheCompileListsUnderTheGeneratedFolder_IsCompiledOnce()
+    {
+        // A build step that writes C# under obj's generated folder and adds it to Compile (the vector
+        // catalog's Vectors.g.cs) reached the compilation twice, from the list and from the generated
+        // folder eqc also reads, so its class was declared twice and nothing that named it bound: the
+        // dashboard sample stopped on EQ2006 for every `Vectors.` it read.
+        using var solution = App(("Screens/Home.cs", Page("Catalog.Name")))
+            .Write("App", Path.Combine("obj", "Debug", "net10.0", "generated", "Probe", "Catalog.g.cs"),
+                "namespace App;\n\ninternal static class Catalog\n{\n    public const string Name = \"catalog\";\n}\n");
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("Home").Should().Contain("'catalog'", "a constant of the generated class is read as its value");
+    }
 }

@@ -104,8 +104,13 @@ public sealed class AppBuild
                 // each configuration's under obj.
                 _output.WriteLine($"   Reading the {appSources.Files.Count} files the C# compiler compiled, with {appSources.Symbols.Count} symbol(s)");
                 allSourceFiles.AddRange(appSources.Files);
+                // What a source generator wrote and csc never listed. A file a build step wrote under the
+                // generated folder AND added to Compile (the vector catalog) is in the list already, and
+                // taken twice its class was declared twice and nothing that named it bound (EQ2006).
                 var generated = ProjectCompilationHelper
-                    .GetCompilerGeneratedFiles(_primarySourceDir, _options.GeneratedDirectory).ToList();
+                    .GetCompilerGeneratedFiles(_primarySourceDir, _options.GeneratedDirectory)
+                    .Where(file => !appSources.Compiles(file))
+                    .ToList();
                 if (generated.Count > 0)
                 {
                     _output.WriteLine($"   Including {generated.Count} compiler-generated file(s)");
