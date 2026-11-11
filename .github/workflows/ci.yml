@@ -138,9 +138,10 @@ jobs:
   # it, and its macOS jobs waited for the plan's five runners beside the live groups' (#1446: eleven
   # discarded runs on 2026-11-11, and #1378 timed out of the queue twice). Every merge group's run, every
   # push to main and a run by hand cancel the merge-group runs whose ref the queue deleted, the sweeping
-  # run's own included. A group the queue still holds keeps its ref, and a lookup that fails any other way
-  # cancels nothing. On a pull request only the self-test runs. Not a required check, so nothing in the
-  # ruleset names it.
+  # run's own included, last. A group the queue still holds keeps its ref, a group that merged is on main,
+  # and a lookup that fails any other way cancels nothing. On a pull request or a tag only the self-test
+  # runs. Not a required check, so nothing in the ruleset names it, and a sweep the API failed marks its
+  # step rather than turning main red: housekeeping nothing waits on.
   discarded-merge-groups:
     runs-on: ubuntu-latest
     permissions:
@@ -153,7 +154,8 @@ jobs:
         run: ./scripts/cancel-discarded-merge-groups.sh --self-test
 
       - name: Cancel the runs of the merge groups the queue discarded
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: ./scripts/cancel-discarded-merge-groups.sh

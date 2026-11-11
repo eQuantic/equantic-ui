@@ -12,11 +12,12 @@ The merge queue discards a group when an entry ahead of it fails or leaves, and 
 ## What Changes
 
 - **The sweep.** `scripts/cancel-discarded-merge-groups.sh` cancels every merge-group run of `ci.yml` that is not finished and whose ref the queue deleted.
-  - A group the queue still holds keeps its ref, so its run is never touched.
+  - A group the queue still holds keeps its ref, and a group that merged has its commit on main, so neither run is touched.
+  - The sweeping run's own is cancelled last, since cancelling it ends the step.
   - A lookup that fails any other way than a 404 cancels nothing and fails the sweep.
   - `--dry-run` names the runs without cancelling them.
   - `--self-test` proves every path against a stub of `gh`.
-- **The job.** A new `discarded-merge-groups` job in `ci.yml` runs the self-test on every event, and the sweep on a merge group, a push to main and a run by hand. Its token may cancel runs (`actions: write`). The run that sweeps is among the runs it reads, so a run whose own group is gone cancels itself.
+- **The job.** A new `discarded-merge-groups` job in `ci.yml` runs the self-test on every event, and the sweep on a merge group, a push to main and a run by hand. A sweep the API failed marks its step and not the run, so a blip never turns main red. Its token may cancel runs (`actions: write`). The run that sweeps is among the runs it reads, so a run whose own group is gone cancels itself.
 - **Nothing else moves.** The job is not a required check, so the ruleset does not change.
 
 ## Capabilities
