@@ -14,6 +14,7 @@ import datetime as dt
 import random
 import re
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 
 # The pace is what the last four weeks delivered, in calendar days, since the weekend is when most
@@ -23,6 +24,9 @@ WINDOW_DAYS, MIN_WINDOW_DAYS = 28, 7
 # What a forecast that has not finished by then reports as beyond reach rather than as a date.
 HORIZON_DAYS = 3 * 365
 STARTED = ("In progress", "In review")
+TYPES = ("Epic", "Feature", "User Story", "Task", "Bug")
+# The board's Priority, an organization issue field. An epic's decides how much of the pace its lane
+# gets; an issue's orders it among its siblings.
 PRIORITIES = ("Urgent", "High", "Medium", "Low")
 # The levels the Roadmap view draws: an epic and its features. A story, a task or a bug moves its
 # feature's bar, and dated on its own it would only add noise to every issue's history.
@@ -149,6 +153,51 @@ def milestone_of(issues: dict, issue: Issue) -> str | None:
             return node.milestone
         node = issues.get(node.parent)
     return None
+
+
+def lacks(type_: str | None, parent: int | None, points: float | None, priority: str | None) -> list:
+    """What an issue needs before the plan can count it, said as the thing missing: an epic, a lane of
+    its own, needs its priority, which gives the lane its part of the pace; every other issue needs a
+    parent to hang in a lane, and points, one of POINTS (bigger than the last is a parent, split into
+    slices, never one issue). Empty when nothing is missing."""
+    found = []
+    if type_ not in TYPES:
+        found.append(f"a type ({', '.join(TYPES)})")
+    if type_ == "Epic":
+        if priority not in PRIORITIES:
+            found.append(f"a priority ({', '.join(PRIORITIES)})")
+        return found
+    if parent is None:
+        found.append("a parent, the epic or the feature it belongs to")
+    if points not in POINTS:
+        found.append(f"points ({', '.join(map(str, POINTS))}; bigger is a parent, split into slices)")
+    if priority is not None and priority not in PRIORITIES:
+        found.append(f"a priority that is one of {', '.join(PRIORITIES)}")
+    return found
+
+
+def incomplete(issues: dict) -> list:
+    """The open issues the board holds that the plan cannot count as they are: [(issue, what it lacks)].
+    An issue is judged where it stands, so a parent's points are not asked for (they are its
+    sub-issues'), and an issue under no epic lacks one even when it has a parent."""
+    found = []
+    for issue in sorted(issues.values(), key=lambda i: i.number):
+        if issue.closed or not issue.item:
+            continue
+        missing = []
+        if not issue.typed:
+            missing.append("a type")
+        if issue.type == "Epic":
+            if issue.priority not in PRIORITIES:
+                missing.append("a priority")
+        else:
+            if lane_of(issues, issue) == NO_EPIC:
+                missing.append("an epic above it")
+            if not issue.children and issue.points is None:
+                missing.append("points")
+        if missing:
+            found.append((issue, missing))
+    return found
 
 
 # ── Points ───────────────────────────────────────────────────────────────────────────────────────────
@@ -336,9 +385,10 @@ def priority_rank(issue: Issue | None) -> int:
 
 def queues(issues: dict, milestones: dict) -> dict:
     """Each lane's work in the order the lane goes through it: depth first, and among siblings what
-    has started first, then what carries the earliest milestone, then priority, then the number. What
-    has started is read from the work itself, never from a parent's status, which this script sets:
-    the plan must not reorder itself on the board it was written to."""
+    carries the earliest milestone first, then what has started, then priority, then the number. A
+    milestone with a date is a promise, so its work goes ahead of work begun outside it. What has
+    started is read from the work itself, never from a parent's status, which this script sets: the
+    plan must not reorder itself on the board it was written to."""
     rank = milestone_rank(milestones)
     ahead = {}
 
@@ -347,7 +397,7 @@ def queues(issues: dict, milestones: dict) -> dict:
             ahead[issue.number] = work(issue)
         started = any(w.status in STARTED for w in ahead[issue.number])
         first = min((rank(milestone_of(issues, w)) for w in ahead[issue.number]), default=rank(None))
-        return (not started, first, priority_rank(issue), issue.number)
+        return (first, not started, priority_rank(issue), issue.number)
 
     def walk(issue: Issue) -> list:
         below = [w for child in sorted(issue.children, key=key) for w in walk(child)]
@@ -361,48 +411,43 @@ def queues(issues: dict, milestones: dict) -> dict:
     return {lane: queue for lane, queue in found.items() if queue}
 
 
-def lane_order(issues: dict, milestones: dict, lanes: dict) -> list:
-    """The order in which a waiting lane takes a freed place: the lane holding the earliest
-    milestone's work first, then the epic's priority, then its number, the issues no epic holds last."""
+def ranking(issues: dict, milestones: dict):
+    """How a lane ranks for the pace, from the issue it would work next: the earliest milestone that
+    issue's work belongs to first, then its epic's priority. Lower ranks first; an epic with no
+    priority, and the lane of the issues no epic holds, rank after Low."""
     rank = milestone_rank(milestones)
 
-    def key(lane: int):
-        first = min((rank(milestone_of(issues, w)) for w in lanes[lane]), default=rank(None))
-        return (first, priority_rank(issues.get(lane)), lane == NO_EPIC, lane)
+    def key(lane: int, issue: Issue) -> tuple:
+        return (rank(milestone_of(issues, issue)), priority_rank(issues.get(lane)))
 
-    return sorted(lanes, key=key)
+    return key
 
 
-def simulate(lanes: dict, costs: dict, shares: dict, order: list, capacity) -> dict:
-    """Works the lanes day by day. Each day `capacity(day)` points of work are shared among the lanes
-    holding a place, by their measured shares; a lane works through its queue one issue at a time, and
-    when it runs out of work its place goes to the next waiting lane in `order`, or, with none waiting,
-    is shared by the lanes still working. Answers {issue number: (first day, last day)}, the last day
-    None when the horizon came first."""
+def simulate(lanes: dict, costs: dict, rank, capacity) -> dict:
+    """Works the lanes day by day. Each day `capacity(day)` points go to the lanes that rank first by
+    `rank(lane, the issue it works next)`, shared equally among them; a lane works through its queue
+    one issue at a time, and what a lane leaves of its part, because it ran out of work or because the
+    issue it works next ranks lower, goes to the lanes that rank first after it, the same day. So a
+    milestone's work is done before anything else, then the highest priority's, and a lower priority
+    is worked only when nothing above it is left. Answers {issue number: (first day, last day)}, the
+    last day None when the horizon came first."""
     queue = {lane: list(issues) for lane, issues in lanes.items()}
     left = {issue.number: costs[issue.number] for issues in lanes.values() for issue in issues}
-    # A lane that delivered in the window holds a place even with nothing left: the first day hands
-    # it on, so the share an epic finished with goes to the work that waits.
-    places = {lane: share for lane, share in shares.items() if share > 0}
-    waiting = [lane for lane in order if lane not in places]
     span = {}
     for day in range(HORIZON_DAYS):
-        for lane in [lane for lane in places if not queue.get(lane)]:
-            share = places.pop(lane)
-            if waiting:
-                places[waiting.pop(0)] = share
-        if not places:
+        if not any(queue.values()):
             break
         budget = capacity(day)
-        # What a lane that runs dry today leaves of its part goes to the lanes still working today.
         while budget > 1e-9:
-            working = {lane: share for lane, share in places.items() if queue.get(lane)}
-            if not working:
+            heads = {lane: rank(lane, issues[0]) for lane, issues in queue.items() if issues}
+            if not heads:
                 break
-            total, spare = sum(working.values()), 0.0
-            for lane, share in working.items():
-                part = budget * share / total
-                while part > 1e-12 and queue[lane]:
+            first = min(heads.values())
+            working = [lane for lane, key in heads.items() if key == first]
+            spare = 0.0
+            for lane in working:
+                part = budget / len(working)
+                while part > 1e-12 and queue[lane] and rank(lane, queue[lane][0]) == first:
                     issue = queue[lane][0]
                     span.setdefault(issue.number, (day, None))
                     used = min(part, left[issue.number])
@@ -424,7 +469,7 @@ class Forecast:
     pace: Pace
     cost: dict
     lanes: dict
-    order: list
+    rank: Callable[[int, Issue], tuple]   # ranking(): a lane's rank for the pace, from the issue it works next
     span: dict          # the deterministic plan, in days from today
     today: dt.date
 
@@ -438,10 +483,10 @@ def forecast(issues: dict, milestones: dict, today: dt.date) -> Forecast | None:
         return None
     cost = estimates(samples(issues))
     lanes = queues(issues, milestones)
-    order = lane_order(issues, milestones, lanes)
+    rank = ranking(issues, milestones)
     costs = {w.number: cost_of(w, cost) for queue in lanes.values() for w in queue}
-    span = simulate(lanes, costs, measured.shares, order, lambda _: measured.rate)
-    return Forecast(measured, cost, lanes, order, span, today)
+    span = simulate(lanes, costs, rank, lambda _: measured.rate)
+    return Forecast(measured, cost, lanes, rank, span, today)
 
 
 def plan(issues: dict, fc: Forecast | None) -> dict:
@@ -506,6 +551,15 @@ def done_below(issues: dict) -> list:
             if not i.closed and i.children and all(n.closed for n in nodes(i)[1:])]
 
 
+def idle(issues: dict, today: dt.date, days: int = 7) -> list:
+    """The issues shown under way for `days` or more with no pull request: the ones the plan keeps in
+    the current sprint although nobody may be on them. The board cannot tell a branch on someone's
+    disk from work that stopped, so the report lists them for a person to move back or leave."""
+    return [i for i in sorted(issues.values(), key=lambda i: i.number)
+            if not i.closed and not i.children and i.status in STARTED and not i.pulls
+            and i.status_on and (today - i.status_on).days >= days]
+
+
 def inflow(issues: dict, fc: Forecast) -> tuple:
     """The issues the board gained over the pace's window, and their work in points. A parent counts
     through its sub-issues, so a feature split into stories is not counted twice."""
@@ -541,7 +595,7 @@ def monte_carlo(issues: dict, fc: Forecast, groups: dict, runs: int, seed: int) 
         for w in queued:
             draw = rng.choice(draws[w.type])
             costs[w.number] = draw if w.points is None else w.points * draw / fc.cost[w.type]
-        span = simulate(fc.lanes, costs, fc.pace.shares, fc.order, lambda _: rng.choice(fc.pace.daily))
+        span = simulate(fc.lanes, costs, fc.rank, lambda _: rng.choice(fc.pace.daily))
         for name, ahead in groups.items():
             results[name].append(finish(span, ahead))
     return {name: sorted(days, key=lambda d: (d is None, d or 0)) for name, days in results.items()}
@@ -594,12 +648,18 @@ def sprinted(issues: dict) -> list:
 
 
 def sprint_of(issue: Issue, fc: Forecast | None, sprints: list) -> tuple:
-    """The sprint an issue belongs in, and why: the one it closed in, or the one the plan finishes it
-    in. With no forecast an open issue's sprint is not known, which says nothing about the one it has."""
+    """The sprint an issue belongs in, and why: the one it closed in, the one holding today while
+    someone has it under way, or the one the plan finishes it in. Work under way is this sprint's
+    whatever the plan says of its end, since someone is on it now; the plan, which ranks by milestone
+    and priority, would otherwise push work begun on a lower priority past the sprint it is done in.
+    With no forecast an open issue's sprint is not known, which says nothing about the one it has."""
     if issue.closed:
         day, why = issue.closed_on, "closed then"
     elif fc is None:
         return None, "no pace"
+    elif issue.status in STARTED and not issue.children:
+        # A parent's status is not evidence: this script sets it, and would hold the parent here for good.
+        day, why = fc.today, "under way"
     else:
         end = fc.span.get(issue.number, (None, None))[1]
         if end is None:

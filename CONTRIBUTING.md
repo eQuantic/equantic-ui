@@ -132,7 +132,10 @@ It answers the two questions the pull-request page cannot: does GitHub still cal
 any jobs at all.
 
 - **Start from an issue.** Every change has one on the board; if none exists, create it as a
-  sub-issue of the epic or feature it belongs to, with the right type.
+  sub-issue of the epic or feature it belongs to, with the right type and its points, with
+  `python3 scripts/new-issue.py` (`--help` says how), which refuses an issue that lacks one of them.
+  In the browser, fill the same: the type, the parent, the Estimate on the board and, for an epic,
+  its Priority, which decides how much of the plan's pace the epic gets.
 - **Branch first**, from `main`, named `<type>/<slug>` (`feat/`, `fix/`, `chore/`, `refactor/`,
   `docs/`, `test/`, `ci/`, `perf/`, `build/`). Never commit onto `main` locally either.
 - **Commit messages** are `emoji type: description`, in English, emoji first:

@@ -5,8 +5,8 @@
 import datetime as dt
 import unittest
 
-from roadmap_model import (NO_EPIC, Forecast, Issue, PullRequest, Sprint, calendar, changes, lines_by_day, pool,
-                           real_start,
+from roadmap_model import (NO_EPIC, Forecast, Issue, PullRequest, Sprint, calendar, changes, idle, incomplete,
+                           lacks, lines_by_day, pool, ranking, real_start,
                            sprint_changes, sprint_load, sprint_of, sprinted, unread, delivered_points, done_below, forecast, link,
                            monte_carlo, pace, plan, points_for, progressing, queues, scope, simulate, size, work,
                            written)
@@ -32,9 +32,14 @@ def done(number, type_="Task", parent=None, closed=1, points=None, pulls=None, i
                  parent=parent, points=points, pulls=pulls or [], item=item)
 
 
-def todo(number, type_="Task", parent=None, points=None, status="Backlog", milestone=None, item="x"):
+def todo(number, type_="Task", parent=None, points=None, status="Backlog", milestone=None, item="x", priority=None):
     return Issue(number, f"#{number}", type_, status=status, parent=parent, points=points, milestone=milestone,
-                 item=item)
+                 item=item, priority=priority)
+
+
+def ranked(ranks: dict):
+    """A ranking that gives each lane a fixed rank, whatever it works next."""
+    return lambda lane, issue: ranks[lane]
 
 
 class PointsTests(unittest.TestCase):
@@ -136,31 +141,49 @@ class PaceTests(unittest.TestCase):
 
 
 class SimulationTests(unittest.TestCase):
-    def test_a_lane_works_its_queue_in_order_at_its_share(self):
+    def test_a_lane_works_its_queue_in_order(self):
         a, b = todo(1), todo(2)
-        span = simulate({7: [a, b]}, {1: 2.0, 2: 2.0}, {7: 1.0}, [7], lambda _: 1.0)
+        span = simulate({7: [a, b]}, {1: 2.0, 2: 2.0}, ranked({7: (0, 0)}), lambda _: 1.0)
         self.assertEqual(span, {1: (0, 1), 2: (2, 3)})
 
-    def test_a_finished_lane_hands_its_place_to_the_next_that_waits(self):
-        fast, slow, idle = todo(1), todo(2), todo(3)
-        span = simulate({7: [fast], 8: [slow], 9: [idle]}, {1: 1.0, 2: 10.0, 3: 1.0}, {7: 0.5, 8: 0.5}, [7, 8, 9],
-                        lambda _: 2.0)
-        # Lane 9 had no share: it starts the day after lane 7 runs dry, with lane 7's half of the pace.
-        self.assertEqual(span[1], (0, 0))
-        self.assertEqual(span[3], (1, 1))
+    def test_the_highest_priority_takes_the_whole_pace(self):
+        urgent, medium = todo(1), todo(2)
+        span = simulate({7: [urgent], 8: [medium]}, {1: 4.0, 2: 1.0}, ranked({7: (0, 0), 8: (0, 2)}), lambda _: 2.0)
+        # Lane 8 waits while lane 7 has work, whatever either delivered before.
+        self.assertEqual(span[1], (0, 1))
+        self.assertEqual(span[2], (2, 2))
 
-    def test_a_lane_with_a_share_and_no_work_gives_its_place_away_at_once(self):
-        span = simulate({9: [todo(1)]}, {1: 1.0}, {7: 1.0}, [9], lambda _: 1.0)
-        self.assertEqual(span[1], (0, 0))
-
-    def test_what_a_lane_leaves_of_its_day_goes_to_the_lanes_still_working(self):
-        quick, long_ = todo(1), todo(2)
-        span = simulate({7: [quick], 8: [long_]}, {1: 0.5, 2: 3.4}, {7: 0.5, 8: 0.5}, [7, 8], lambda _: 2.0)
-        # Day 0: lane 7 needs 0.5 of its 1.0, so lane 8 takes 1.5; day 1 lane 8 takes all 2.0: 3.5 >= 3.4.
+    def test_what_a_lane_leaves_of_its_day_goes_to_the_next_rank_the_same_day(self):
+        urgent, medium = todo(1), todo(2)
+        span = simulate({7: [urgent], 8: [medium]}, {1: 0.5, 2: 3.4}, ranked({7: (0, 0), 8: (0, 2)}), lambda _: 2.0)
+        # Day 0: lane 7 needs 0.5, so lane 8 takes 1.5; day 1 lane 8 takes all 2.0: 3.5 >= 3.4.
         self.assertEqual(span[2], (0, 1))
 
+    def test_lanes_of_the_same_rank_share_the_pace_equally(self):
+        span = simulate({7: [todo(1)], 8: [todo(2)]}, {1: 2.0, 2: 2.0}, ranked({7: (0, 1), 8: (0, 1)}),
+                        lambda _: 2.0)
+        self.assertEqual((span[1], span[2]), ((0, 1), (0, 1)))
+
+    def test_a_milestone_s_work_goes_ahead_of_a_higher_priority(self):
+        issues = board(todo(1, "Epic", priority="Urgent"), todo(2, "Epic", priority="Medium"),
+                       todo(3, parent=1, points=3), todo(4, parent=2, points=3, milestone="1.0.0"),
+                       todo(5, parent=2, points=3))
+        rank = ranking(issues, {"1.0.0": TODAY})
+        lanes = queues(issues, {"1.0.0": TODAY})
+        span = simulate(lanes, {3: 3.0, 4: 3.0, 5: 3.0}, rank, lambda _: 3.0)
+        # The milestone's issue first, then the urgent epic, and the medium epic's other issue last:
+        # its lane ranks lower once the issue it works next carries no milestone.
+        self.assertEqual((span[4], span[3], span[5]), ((0, 0), (1, 1), (2, 2)))
+
+    def test_an_epic_with_no_priority_ranks_after_low_with_the_issues_no_epic_holds(self):
+        issues = board(todo(1, "Epic", priority="Low"), todo(2, "Epic"), todo(3, parent=1), todo(4, parent=2),
+                       todo(5))
+        rank = ranking(issues, {})
+        self.assertLess(rank(1, issues[3]), rank(2, issues[4]))
+        self.assertEqual(rank(2, issues[4]), rank(NO_EPIC, issues[5]))
+
     def test_what_the_horizon_does_not_reach_has_no_end(self):
-        span = simulate({7: [todo(1)]}, {1: 10.0}, {7: 1.0}, [7], lambda _: 0.0)
+        span = simulate({7: [todo(1)]}, {1: 10.0}, ranked({7: (0, 0)}), lambda _: 0.0)
         self.assertEqual(span[1], (None, None))
 
 
@@ -175,9 +198,9 @@ class PlanTests(unittest.TestCase):
             todo(7, "Feature", parent=1, status="In progress", points=1),
         )
 
-    def test_started_work_comes_first_then_the_milestone_then_the_number(self):
+    def test_the_milestone_comes_first_then_started_work_then_the_number(self):
         lanes = queues(self.issues, {"1.0.0": None})
-        self.assertEqual([w.number for w in lanes[1]], [7, 6, 4])
+        self.assertEqual([w.number for w in lanes[1]], [6, 7, 4])
 
     def test_the_plan_dates_what_happened_as_it_happened(self):
         fc = forecast(self.issues, {"1.0.0": None}, TODAY)
@@ -257,12 +280,24 @@ class SprintTests(unittest.TestCase):
     def test_a_sprint_holds_what_closed_in_it_and_what_the_plan_ends_in_it(self):
         sprints = sprints_from(13, 3)
         closed, early, ahead, far = done(1, closed=2), done(2, closed=30), todo(3, points=3), todo(4, points=3)
-        fc = Forecast(None, {}, {}, [], {3: (0, 20), 4: (None, None)}, TODAY)
+        fc = Forecast(None, {}, {}, None, {3: (0, 20), 4: (None, None)}, TODAY)
         self.assertEqual(sprint_of(closed, fc, sprints), (sprints[0], "closed then"))
         self.assertEqual(sprint_of(early, fc, sprints), (None, "before the first sprint"))
         self.assertEqual(sprint_of(ahead, fc, sprints), (sprints[2], "planned to end then"))
         self.assertEqual(sprint_of(far, fc, sprints), (None, "beyond the horizon"))
         self.assertEqual(sprint_of(ahead, None, sprints), (None, "no pace"))
+
+    def test_work_under_way_sits_in_the_sprint_holding_today(self):
+        sprints = sprints_from(13, 3)
+        under_way = todo(1, points=8, status="In review")
+        fc = Forecast(None, {}, {}, None, {1: (0, 20)}, TODAY)
+        self.assertEqual(sprint_of(under_way, fc, sprints), (sprints[0], "under way"))
+
+    def test_a_parent_shown_under_way_is_planned_not_held_by_its_own_status(self):
+        # Every sub-issue closed, and the In progress this script once wrote on it still showing.
+        issues = board(todo(1, "Feature", status="In progress"), done(2, parent=1))
+        fc = Forecast(None, {}, {}, None, {1: (0, 20)}, TODAY)
+        self.assertEqual(sprint_of(issues[1], fc, sprints_from(13, 3))[1], "planned to end then")
 
     def test_a_parent_whose_work_is_open_below_it_is_held_by_no_sprint(self):
         issues = board(todo(1, "Feature"), todo(2, parent=1), done(3, "Feature"), done(4, parent=3),
@@ -273,7 +308,7 @@ class SprintTests(unittest.TestCase):
         issue = todo(1, points=3)
         issue.sprint = "Sprint 2"
         sprints = sprints_from(13, 2)
-        fc = Forecast(None, {}, {}, [], {1: (None, None)}, TODAY)
+        fc = Forecast(None, {}, {}, None, {1: (None, None)}, TODAY)
         self.assertEqual([(c.kind, c.new) for c in sprint_changes(board(issue), fc, sprints)], [("Sprint", None)])
         self.assertEqual(sprint_changes(board(issue), None, sprints), [])
 
@@ -285,7 +320,7 @@ class SprintTests(unittest.TestCase):
 
     def test_each_sprint_says_what_it_delivered_and_what_it_is_planned_to_hold(self):
         issues = board(done(1, closed=2, points=5), done(2, closed=3, points=3), todo(3, points=8))
-        fc = Forecast(None, {}, {}, [], {3: (0, 20)}, TODAY)
+        fc = Forecast(None, {}, {}, None, {3: (0, 20)}, TODAY)
         lines = {day(4): 700, day(5): 50, day(40): 900}
         self.assertEqual(sprint_load(issues, fc, sprints_from(13, 3), lines),
                          {"Sprint 1": (8.0, 750.0, 0.0), "Sprint 2": (0.0, 0.0, 0.0), "Sprint 3": (0.0, 0.0, 8.0)})
@@ -296,6 +331,39 @@ class SprintTests(unittest.TestCase):
         fc = forecast(issues, {}, TODAY)
         written_to(issues, sprint_changes(issues, fc, sprints))
         self.assertEqual(sprint_changes(issues, forecast(issues, {}, TODAY), sprints), [])
+
+
+class CompletenessTests(unittest.TestCase):
+    def test_an_issue_is_created_with_its_type_parent_and_points(self):
+        self.assertEqual(lacks("Task", 160, 5, None), [])
+        self.assertEqual(len(lacks("Task", None, None, None)), 2)
+        self.assertEqual(len(lacks(None, 160, 5, None)), 1)
+
+    def test_more_than_thirteen_points_is_a_parent_not_an_issue(self):
+        self.assertEqual(len(lacks("Feature", 160, 21, None)), 1)
+
+    def test_an_epic_needs_its_priority_and_neither_a_parent_nor_points(self):
+        self.assertEqual(lacks("Epic", None, None, "High"), [])
+        self.assertEqual(len(lacks("Epic", None, None, None)), 1)
+
+    def test_a_priority_given_is_one_the_board_has(self):
+        self.assertEqual(len(lacks("Bug", 157, 2, "Critical")), 1)
+
+    def test_the_board_names_what_each_open_issue_lacks(self):
+        untyped = todo(6, points=2, parent=1)
+        untyped.typed = False
+        issues = board(todo(1, "Epic", priority="High"), todo(2, "Epic"), todo(3, parent=1),
+                       todo(4, "Feature", parent=1), todo(5, parent=4, points=3), untyped, todo(7, points=1),
+                       done(8, parent=1))
+        found = {i.number: missing for i, missing in incomplete(issues)}
+        self.assertEqual(found, {2: ["a priority"], 3: ["points"], 6: ["a type"], 7: ["an epic above it"]})
+
+    def test_work_shown_under_way_for_a_week_with_no_pull_request_is_listed(self):
+        quiet, fresh, pulled = (todo(1, status="In progress"), todo(2, status="In progress"),
+                                todo(3, status="In review"))
+        quiet.status_on, fresh.status_on, pulled.status_on = day(8), day(2), day(9)
+        pulled.pulls = [pull(10, opened=9)]
+        self.assertEqual([i.number for i in idle(board(quiet, fresh, pulled), TODAY)], [1])
 
 
 class ChangeTests(unittest.TestCase):
@@ -331,7 +399,7 @@ class ChangeTests(unittest.TestCase):
     def test_a_date_the_plan_no_longer_reaches_is_cleared(self):
         issues = board(todo(1, "Feature", points=8))
         issues[1].start, issues[1].target = day(-3), day(-9)
-        fc = Forecast(None, {}, {}, [], {1: (None, None)}, TODAY)
+        fc = Forecast(None, {}, {}, None, {1: (None, None)}, TODAY)
         found = changes(issues, plan(issues, fc))
         self.assertEqual({(c.kind, c.new) for c in found}, {("Start date", None), ("Target date", None)})
 
