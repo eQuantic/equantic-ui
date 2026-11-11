@@ -14,7 +14,7 @@ namespace eQuantic.UI.Primitives;
 /// <para>
 /// Every target draws its child as if it were not there. Photon builds an element per position, so
 /// there a component finds the nearest one above it. The web and the server build with no element per
-/// position until #1395, and a context there answers null.
+/// position until #1395, and an email has none, so a context there answers null.
 /// </para>
 /// </summary>
 public abstract class InheritedComponent : VisualNode

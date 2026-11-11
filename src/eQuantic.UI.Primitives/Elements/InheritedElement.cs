@@ -14,7 +14,7 @@ namespace eQuantic.UI.Primitives;
 public sealed class InheritedElement : Element
 {
     private Element? _child;
-    private readonly List<ComponentElement> _dependents = new();
+    private readonly HashSet<ComponentElement> _dependents = new();
 
     internal InheritedElement(InheritedComponent inherited) : base(inherited)
     {
@@ -60,7 +60,7 @@ public sealed class InheritedElement : Element
     /// <summary>A component position that read this one, and builds again when it changes.</summary>
     internal void AddDependent(ComponentElement dependent)
     {
-        if (!_dependents.Contains(dependent)) _dependents.Add(dependent);
+        _dependents.Add(dependent);
     }
 
     /// <summary>A dependent that left the tree.</summary>

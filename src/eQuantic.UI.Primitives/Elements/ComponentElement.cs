@@ -15,7 +15,7 @@ public sealed class ComponentElement : Element
 {
     private Element? _child;
     private ComponentContext? _context;
-    private List<InheritedElement>? _dependencies;
+    private HashSet<InheritedElement>? _dependencies;
 
     internal ComponentElement(UiComponent component) : base(component)
     {
@@ -59,9 +59,10 @@ public sealed class ComponentElement : Element
     {
         var found = Nearest(matches);
         if (found is null) return null;
+        // A position that left the tree (a handler that kept its context) reads, and registers nothing.
+        if (!IsActive) return found.Inherited;
         found.AddDependent(this);
-        _dependencies ??= new List<InheritedElement>();
-        if (!_dependencies.Contains(found)) _dependencies.Add(found);
+        (_dependencies ??= new HashSet<InheritedElement>()).Add(found);
         return found.Inherited;
     }
 

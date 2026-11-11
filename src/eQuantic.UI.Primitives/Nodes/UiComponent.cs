@@ -42,7 +42,8 @@ public sealed class ComponentContext
     /// <summary>The frame this position builds in, with the position registered as one that read it.</summary>
     private ComponentContext ReadFrame(ComponentElement position)
     {
-        position.Owner.ReadFrame(position);
+        // A position that left the tree (a handler that kept its context) reads, and registers nothing.
+        if (position.IsActive) position.Owner.ReadFrame(position);
         return position.Owner.Context;
     }
 
