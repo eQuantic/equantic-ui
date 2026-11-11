@@ -348,9 +348,26 @@ public class VariantMatrixTests(ITestOutputHelper output)
     /// <summary>The cells whose section of the pin changed, by their heading.</summary>
     private static string DifferingCells(string expected, string actual)
     {
-        static Dictionary<string, string> Sections(string pin) => pin.Split("## ", StringSplitOptions.RemoveEmptyEntries)
-            .Where(section => !section.StartsWith('#'))
-            .ToDictionary(section => section[..section.IndexOf('\n')], StringComparer.Ordinal);
+        // A cell's section runs from its heading, the one line that opens with exactly two marks, to the next.
+        static Dictionary<string, string> Sections(string pin)
+        {
+            var sections = new Dictionary<string, string>(StringComparer.Ordinal);
+            string? heading = null;
+            var body = new StringBuilder();
+            foreach (var line in pin.Split('\n'))
+            {
+                if (line.StartsWith("## ", StringComparison.Ordinal))
+                {
+                    if (heading is not null) sections[heading] = body.ToString();
+                    heading = line[3..];
+                    body.Clear();
+                    continue;
+                }
+                body.Append(line).Append('\n');
+            }
+            if (heading is not null) sections[heading] = body.ToString();
+            return sections;
+        }
         var before = Sections(expected);
         var after = Sections(actual);
         var changed = after.Keys.Union(before.Keys)
