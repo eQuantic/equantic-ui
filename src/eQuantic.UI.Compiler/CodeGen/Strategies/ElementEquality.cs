@@ -220,9 +220,6 @@ internal static class ElementEquality
         && tuple.AllInterfaces.Any(implemented =>
             SymbolEqualityComparer.Default.Equals(implemented.OriginalDefinition, face.OriginalDefinition));
 
-    /// <summary>The equality, and whether <c>$eq.equals</c> answers what it answers for a value of the
-    /// type: what lets a tuple of such members be compared by <c>$eq.equals</c> whole. <paramref name="equatable"/>
-    /// false leaves <c>IEquatable&lt;T&gt;</c> out (<see cref="Comparer"/>).</summary>
     /// <summary>
     /// Refuses, where the call is written, a comparison that reaches an equality no twin holds, as a call bound to the
     /// member is refused (<see cref="HostOnlySymbolExtensions.ReportIfHostOnly"/>, EQ2010), and answers whether it did.
@@ -300,6 +297,9 @@ internal static class ElementEquality
             method is { IsStatic: false, Parameters: [{ Type.SpecialType: SpecialType.System_Object }] };
     }
 
+    /// <summary>The equality, and whether <c>$eq.equals</c> answers what it answers for a value of the
+    /// type: what lets a tuple of such members be compared by <c>$eq.equals</c> whole. <paramref name="equatable"/>
+    /// false leaves <c>IEquatable&lt;T&gt;</c> out (<see cref="Comparer"/>).</summary>
     private static (string? Equality, bool ValueSafe) Describe(ITypeSymbol? type, bool equatable = true)
     {
         var value = type.UnwrapNullable() ?? type;
