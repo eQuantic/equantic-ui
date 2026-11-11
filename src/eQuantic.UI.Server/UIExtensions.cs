@@ -807,7 +807,7 @@ public static class UIExtensions
     /// 302, not 301: the preference is the reader's, and it changes. A URL that already carries a
     /// segment is left alone, and so is the default culture, which has none.
     /// </summary>
-    private static bool RedirectToLanguageUrl(HttpContext context, UIOptions options)
+    internal static bool RedirectToLanguageUrl(HttpContext context, UIOptions options)
     {
         if (options.CultureRoutes is not { } map) return false;
         var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
@@ -826,10 +826,20 @@ public static class UIExtensions
 
         // The path as a URL writes it: a decoded one holds what a header cannot carry, and a page whose
         // address has an accent answered 500 instead of its redirect (#1296).
-        context.Response.Redirect(map.PathFor(culture, context.Request.Path.ToUriComponent()) + context.Request.QueryString,
-            permanent: false);
+        var target = map.PathFor(culture, context.Request.Path.ToUriComponent()) + context.Request.QueryString;
+        // Only ever to this app: the target starts with the language's segment, so it is a path of this
+        // origin, and the guard says so where a reader, and an analyzer, can see it (#1296).
+        if (!IsLocalPath(target)) return false;
+        context.Response.Redirect(target, permanent: false);
         return true;
     }
+
+    /// <summary>Whether a redirect target is a path of this origin: rooted, and neither protocol-relative
+    /// (<c>//</c>) nor a backslash a browser reads as one (<c>/\</c>), so it names no other host. The rule
+    /// of ASP.NET Core's own local redirect.</summary>
+    internal static bool IsLocalPath(string target) =>
+        target.Length > 0 && target[0] == '/'
+        && (target.Length == 1 || (target[1] != '/' && target[1] != '\\'));
 
     /// <summary>The theme's stylesheet for each mode a request can paint in, written once per theme:
     /// it depends on nothing else, and every page carries it.</summary>
