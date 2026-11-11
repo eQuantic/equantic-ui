@@ -503,7 +503,8 @@ function lowerNodeKind(
     case 'component': {
       // W6 slice 2: resolve against the positional store BEFORE building — a retained instance
       // (same path + type + key) keeps its state and adopts the fresh config. Mirrors the C#
-      // LayoutEngine.MeasureComponent; the build output expands at the wrapper position (path/0).
+      // LayoutEngine.MeasureComponent; the build output expands one step down (path/~), a step the
+      // scope of a grid's ids reads past (pathScope), since a page mounted as a root takes none.
       const pass = getActivePass();
       const resolved = (
         pass ? pass.store.reconcile(path, node, pass.invalidator) : node
@@ -529,7 +530,7 @@ function lowerNodeKind(
         reportComponentFailure(name, error);
         built = describeComponentFailure(name, error, getPhotonTheme());
       }
-      return lowerNode(built as VisualNodeValue, context, horizontalAxis, path + '/0');
+      return lowerNode(built as VisualNodeValue, context, horizontalAxis, path + '/~');
     }
     // THE DOOR CLOSED. `nodeKind` is the generated NodeKind union, so this arm is unreachable for
     // every kind the vocabulary declares — and the day it declares one more, this line stops
@@ -2046,13 +2047,20 @@ interface TableSemantics {
 }
 
 /**
- * The scope a grid's or a table's cells' ids are unique in: its path below its root, hashed with the atomizer's
- * FNV, the same on both sides whichever root this pass gave it (C# twin: LoweringPath.Scope). The label was the
+ * The scope a grid's or a table's cells' ids are unique in: its path below its root, past the steps into what a
+ * component builds (`~`), hashed with the atomizer's FNV, the same on both sides whichever root this pass gave it
+ * and whether a component was mounted as a root or met inside the tree (C# twin: LoweringPath.Scope). The label was the
  * scope, so two grids of one label, two spreadsheets or two unlabelled tables shared their cells' ids (#1115).
  */
 function pathScope(path: string): string {
   const below = path.indexOf('/');
-  return hashDeclaration(below < 0 ? '' : path.slice(below));
+  const steps = below < 0 ? [] : path.slice(below + 1).split('/');
+  return hashDeclaration(
+    steps
+      .filter((step) => step !== '~')
+      .map((step) => '/' + step)
+      .join(''),
+  );
 }
 
 /** The id a table's cell answers to, which its row's `aria-owns` names (C# twin: TableCellId). */

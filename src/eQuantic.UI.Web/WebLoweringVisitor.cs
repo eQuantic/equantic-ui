@@ -274,7 +274,7 @@ internal sealed partial class WebLoweringVisitor(
         {
             var (kept, built) = frame.At(component);
             ComponentExpansionScope.Ambient?.Enter(kept);
-            return built is not null ? Lower(built, horizontalAxis, LoweringPath.Child) : null;
+            return built is not null ? Lower(built, horizontalAxis, LoweringPath.Built) : null;
         }
 
         // NAMED BEFORE IT BUILDS, and the order is the whole mechanism: ExpandContained runs
@@ -290,7 +290,7 @@ internal sealed partial class WebLoweringVisitor(
                 // Counted BEFORE the built tree lowers: the components inside it build during that
                 // lowering, and what they ask is theirs, not this one's.
                 var unmeasured = state.Visitor._measurer.Asks > state.Asked;
-                var element = state.Visitor.Lower(built, state.Axis, LoweringPath.Child);
+                var element = state.Visitor.Lower(built, state.Axis, LoweringPath.Built);
                 if (unmeasured && element is not null) MarkUnmeasured(element);
                 return element;
             });

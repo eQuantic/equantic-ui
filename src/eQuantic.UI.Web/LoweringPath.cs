@@ -20,8 +20,16 @@ internal static class LoweringPath
     /// path reads it below its root (<see cref="Scope"/>).</summary>
     public const string Root = "r";
 
-    /// <summary>The one child of a node that holds one, and what a component builds.</summary>
+    /// <summary>The one child of a node that holds one.</summary>
     public const string Child = "0";
+
+    /// <summary>
+    /// What a component builds. A component is no place of its own for a scope (<see cref="Scope"/> reads past
+    /// this step): the browser mounts a page, and a component a page builds as its whole tree, as roots of their
+    /// own, with what they build AT the root, where the server lowers the page as a node of the tree. Inside a
+    /// tree the browser still takes the step, because its reconciler names each component by its path.
+    /// </summary>
+    public const string Built = "~";
 
     /// <summary>The second child of a node that holds two: a code surface's options, an anchored node's panel.</summary>
     public const string Second = "1";
@@ -44,13 +52,15 @@ internal static class LoweringPath
     public static string Below(string parent, string segment) => parent + "/" + segment;
 
     /// <summary>
-    /// The scope a grid's or a table's cells' ids are unique in: its path below its root, hashed with the
-    /// atomizer's FNV, the same on both sides whichever root the browser's pass gave it. The label was the
+    /// The scope a grid's or a table's cells' ids are unique in: its path below its root, past the steps into what
+    /// a component builds (<see cref="Built"/>), hashed with the atomizer's FNV, the same on both sides whichever root
+    /// the browser's pass gave it and whether it mounted a component as a root or met it inside the tree. The label was the
     /// scope, so two grids of one label, two spreadsheets or two unlabelled tables shared their cells' ids.
     /// </summary>
     public static string Scope(string path)
     {
         var below = path.IndexOf('/');
-        return StyleAtomizer.Hash(below < 0 ? "" : path[below..]);
+        var steps = below < 0 ? [] : path[(below + 1)..].Split('/');
+        return StyleAtomizer.Hash(string.Concat(steps.Where(step => step != Built).Select(step => "/" + step)));
     }
 }
