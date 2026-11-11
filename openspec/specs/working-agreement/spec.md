@@ -107,9 +107,13 @@ when a change or a spec is invalid and also when there is nothing to validate at
 
 CI SHALL check out the wiki for the documentation guards at the branch named exactly like the pull
 request's head branch when the wiki has one and the pull request comes from this repository, and at
-the wiki's default branch otherwise. The branch name SHALL be read as data and never interpolated
-into a command. When the wiki's branches cannot be
-listed, the checkout SHALL fail and leave nothing behind, rather than read the default branch.
+the wiki's default branch otherwise. In a merge queue's run, CI SHALL read the wiki's default branch
+with the wiki branch of every pull request already merged whose branch still waits and whose name no
+open pull request uses, and then of every pull request the group puts on main, merged onto it in that
+order, leaving out a pull request from a fork. The branch name SHALL be read as data and never
+interpolated into a command. When the wiki's branches cannot be listed, when a group's commits do
+not end with the pull request its ref names, or when two of its wiki branches conflict, the checkout
+SHALL fail and leave nothing behind, rather than read the default branch.
 
 #### Scenario: A pull request that carries its wiki pages
 
@@ -118,7 +122,7 @@ listed, the checkout SHALL fail and leave nothing behind, rather than read the d
 
 #### Scenario: A run with no wiki branch of its own
 
-- **WHEN** the wiki has no branch of that name, or the run is not a pull request
+- **WHEN** the wiki has no branch of that name, or the run is not a pull request nor a merge group
 - **THEN** the guards read the wiki's default branch
 
 #### Scenario: A pull request from a fork
@@ -141,6 +145,31 @@ listed, the checkout SHALL fail and leave nothing behind, rather than read the d
 
 - **WHEN** the head branch's name holds `$(touch pwned)` and a backquoted command
 - **THEN** nothing it names runs
+
+#### Scenario: A merge group of two pull requests that carry pages
+
+- **WHEN** a merge group puts two of this repository's pull requests on main, each with a wiki branch
+- **THEN** the guards read the default branch with both branches merged onto it
+
+#### Scenario: A pull request already on main whose wiki branch waits
+
+- **WHEN** the queue merged a pull request whose wiki branch nobody has merged into master yet
+- **THEN** the next group's guards read that branch's pages too
+
+#### Scenario: A merge group with a fork's pull request
+
+- **WHEN** a pull request in the group comes from a fork whose head branch is named like a wiki branch
+- **THEN** that branch is not merged
+
+#### Scenario: A merge group whose commits do not name its pull request
+
+- **WHEN** the group's commits do not end with the pull request its ref names
+- **THEN** the checkout fails and leaves no directory behind
+
+#### Scenario: Two wiki branches that conflict
+
+- **WHEN** two pull requests in the group change the same lines of a page
+- **THEN** the checkout fails and leaves no directory behind
 
 ### Requirement: Every docs guard reads one wiki, which a local run can name
 
@@ -233,17 +262,25 @@ defect, once per push of fixes, and never after the third round.
 
 ### Requirement: A pull request merges on its own CI, against the current main
 
-The repository's ruleset SHALL require the CI's jobs (`test-runtime`, the three `test` legs, `samples`,
-the three `build-platform-runtimes`, `build-packages`, `commit-messages`, `openspec`, `session-start`,
-`wiki-checkout` and `package-extension`) to pass on a pull request's head, and SHALL require that head
-to be up to date with main, so a pull request merges only on a CI run that saw the main it lands on.
-Every job in a dependency chain SHALL be required, since GitHub counts a job skipped for a failed
-dependency as passed.
+The repository's ruleset SHALL require the CI's jobs to pass: `test-runtime`, the three `test` jobs of
+Ubuntu and the three of Windows (`conformance`, `web` and `rest`), `test (macos-latest)`, `samples`, the
+three `build-platform-runtimes`, `build-packages`, `commit-messages`, `openspec`, `session-start`,
+`wiki-checkout` and `package-extension`, so a pull request merges only on a CI run that saw the main it
+lands on: on its own head kept up to date with main, or, once the ruleset merges through GitHub's merge
+queue, on the queue's run of it together with every pull request ahead of it. The CI SHALL run every
+one of those jobs on a merge group, and no job that publishes. Every job in a dependency chain SHALL be
+required, since GitHub counts a job skipped for a failed dependency as passed.
 
 #### Scenario: main moved after the CI ran
 
 - **WHEN** a pull request passed CI, and another pull request merged into main after it
-- **THEN** GitHub refuses the merge until main is merged into the pull request and CI passes again
+- **THEN** it reaches main only through a run that includes the new main: the queue's run of its
+  group, or, without the queue, CI again after main is merged into it
+
+#### Scenario: A merge group
+
+- **WHEN** the merge queue starts a run for a group
+- **THEN** every required job runs and reports on it, and no job publishes a package or a release
 
 #### Scenario: A workflow that never ran
 
@@ -255,23 +292,40 @@ dependency as passed.
 - **WHEN** a pull request turns a `[MacFact]` red
 - **THEN** `test (macos-latest)` fails and the pull request cannot merge
 
+#### Scenario: A red test in one group
+
+- **WHEN** a pull request turns a Conformance case red on Windows
+- **THEN** `test (windows-latest, conformance)` fails and the pull request cannot merge
+
 ### Requirement: A commit message carries no tool's attribution
 
-CI SHALL fail when a commit message of a pull request, or of a push to main, carries a tool's
-attribution in a shape the guard names: a wrapper's tags, a generated-with or generated-by line
-naming the tool, an assistant's co-authorship, the attribution comment a project's pull request
-opens with, or a link into the tool's own pages, a session's or a conversation's. A named phrase
-SHALL be refused wherever a line break falls in it. Prose that names the tool, and a balanced markup
-snippet a message quotes, SHALL pass. The guard's self-test SHALL hold a fixture that isolates each
-named shape, and CI SHALL run it on every push. The repository's squash default SHALL take a pull
-request's title and its commits' messages, never its body, so the message a squash writes on main is
-one the job already read on the pull request.
+CI SHALL fail when a commit message of a pull request, of a merge queue's group, or of a push to main,
+carries a tool's attribution in a shape the guard names: a wrapper's tags, a generated-with or
+generated-by line naming the tool, an assistant's co-authorship, the attribution comment a project's
+pull request opens with, or a link into the tool's own pages, a session's or a conversation's. The
+range it reads SHALL come from the event that started the run: a pull request's base and head, a merge
+group's base and head, which holds the squash commits the queue composed, or a push's before and
+after. A named phrase SHALL be refused wherever a line break falls in it. Prose that names the tool,
+and a balanced markup snippet a message quotes, SHALL pass. The guard's self-test SHALL hold a fixture
+that isolates each named shape and an event of each kind, and CI SHALL run it on every push. The
+repository's squash default SHALL take a pull request's title and its commits' messages, never its
+body, so the message a squash writes on main is one the job already read on the pull request.
 
 #### Scenario: A squash message that took a project's pull request body
 
 - **WHEN** the squash message of a pull request opened from a project carries the body's attribution
   comment, its link to the conversation and its signature line
 - **THEN** the `commit-messages` job fails on the push to main, naming each line
+
+#### Scenario: A squash message the queue composed
+
+- **WHEN** a merge group holds two squash commits and the first carries a tool's attribution
+- **THEN** the `commit-messages` job fails on the group's run, before the commit reaches main
+
+#### Scenario: A range the checkout cannot measure
+
+- **WHEN** a pull request's or a merge group's base is not in the checkout
+- **THEN** the `commit-messages` job fails instead of reading the head alone
 
 #### Scenario: A signature the squash composer wrapped
 
@@ -640,7 +694,8 @@ that packs the packages SHALL run no test.
 ### Requirement: A new push to a pull request cancels the run it replaces
 
 CI SHALL cancel a pull request's run in progress when the same pull request starts a new one, and
-SHALL never cancel, nor queue behind another, a run on main, on a tag, or started by hand.
+SHALL never cancel, nor queue behind another, a run on main, on a tag, on a merge group or started by
+hand.
 
 #### Scenario: Two pushes to a pull request
 
@@ -651,6 +706,46 @@ SHALL never cancel, nor queue behind another, a run on main, on a tag, or starte
 
 - **WHEN** main gets a push while a pull request's runs come and go
 - **THEN** main's run goes to the end
+
+### Requirement: Each system's tests run as parallel groups
+
+CI SHALL run each system's test projects as parallel jobs, one per group: the Conformance project, the
+Web project, and every other project found under `tests/`. The projects SHALL be found and never
+listed, so a new project lands in a group without an edit to the workflow. A group that finds no
+project SHALL fail, and a job SHALL name every red project of its group at its end.
+
+#### Scenario: A new test project
+
+- **WHEN** a project is added under `tests/` and nothing else changes
+- **THEN** it runs in the `rest` group on every system
+
+#### Scenario: A named project renamed away
+
+- **WHEN** the Conformance project is renamed and the grouping is not
+- **THEN** the `conformance` group finds no project and its job fails, saying so
+
+### Requirement: A restore reads its packages from a cache keyed on their versions
+
+The jobs that restore .NET packages SHALL restore them from a cache keyed on the runner's system, the
+job, and a hash of every line that declares a package or a version (the package items and `...Version`
+properties of the project, props and targets files, `global.json` and the `packages.lock.json` files),
+with no fallback to another key's cache. An edit that declares no package SHALL keep the key. The
+repository's own packages (`equantic.*`) SHALL never be kept in the cache.
+
+#### Scenario: A version changes
+
+- **WHEN** a pull request changes the version of a referenced package
+- **THEN** its jobs miss the cache and restore from nuget.org
+
+#### Scenario: A project edit that declares no package
+
+- **WHEN** a pull request adds a property or a `<Compile Remove>` to a project file
+- **THEN** its jobs restore from the same cache as before
+
+#### Scenario: A package this repository built
+
+- **WHEN** a job restores an `equantic.*` package it packed
+- **THEN** that package is not in the cache the next run restores
 
 ### Requirement: The lockfile Dependabot watches is the tree that runs
 
@@ -680,3 +775,21 @@ publish time.
 - **WHEN** an `ext-v*` tag runs `publish-extension`
 - **THEN** it installs the extension's `package-lock.json` with `npm ci` and publishes the verified
   archive with the vsce that install put in `node_modules/.bin`
+
+### Requirement: No page holds a conflict a merge left
+
+The docs guards SHALL fail when a page of the wiki, in any of its languages, or a Markdown file git tracks in
+this repository holds a git conflict marker, naming the file and the line: `<<<<<<<`, `|||||||`, `=======` or
+`>>>>>>>`, alone on its line or followed by a space. A line of seven `=` SHALL count as a marker only inside a
+conflict another marker opened, under a blank line or at the start of a page, so a title's Setext underline
+never fails.
+
+#### Scenario: A conflict committed into a wiki page
+
+- **WHEN** the guards read the wiki at the commit before d7728c2, whose `Upgrading.md` holds a conflict
+- **THEN** they fail naming `Upgrading.md` and its markers' lines, where every docs guard passed
+
+#### Scenario: A title's underline
+
+- **WHEN** a page underlines a title with `=======` on the line under it
+- **THEN** the guards pass

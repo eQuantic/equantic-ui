@@ -1,4 +1,4 @@
-- **2026-10-30 · A primitive's Equals answers by its type, a pair writes its own text, and a task can be made already ended**:
+- **2026-11-10 · A primitive's Equals answers by its type, a pair writes its own text, and a task can be made already ended**:
   bugs under #849 ([#904](https://github.com/eQuantic/equantic-ui/issues/904),
   [#905](https://github.com/eQuantic/equantic-ui/issues/905), [#910](https://github.com/eQuantic/equantic-ui/issues/910),
   [#956](https://github.com/eQuantic/equantic-ui/issues/956), [#957](https://github.com/eQuantic/equantic-ui/issues/957)).

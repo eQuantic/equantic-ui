@@ -34,7 +34,7 @@ import {
   setFailureRenderer,
 } from './component-boundary';
 import { getActivePass } from './instance-store';
-import { getPhotonTheme, setInFlow } from './photon-context';
+import { getPhotonTheme, photonComponentContext, setInFlow } from './photon-context';
 import { declareInView } from './in-view';
 import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
 import {
@@ -129,7 +129,7 @@ import { declareScrollViewport } from './scroll-viewports';
 import { declareTableViewport, tableCellPlace } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
-import { localizeDestination } from '../utils/culture-routes';
+import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
 
 /** The C# `Anchored.MotionLiftDp` twin — the open/close nudge toward the anchor. */
@@ -153,6 +153,15 @@ export function renderContainedFailure(componentName: string, error: unknown): H
   return lowerVisualNode(describeComponentFailure(componentName, error, theme), {
     textPrimary: theme.textPrimary,
   });
+}
+
+/**
+ * The context a component builds with: the one the lowering was handed, or the ambient one when it was
+ * handed none. A component with or without state builds here, and the stateless one used to render
+ * itself with the ambient context, so a lowering called with a bare context still builds it as before.
+ */
+function componentContextOf(context: LoweringContext): unknown {
+  return context.componentContext ?? photonComponentContext();
 }
 
 /** Lowers an abstract node tree to an HtmlNode the reconciler renders. */
@@ -360,10 +369,11 @@ function lowerNodeKind(
   path: string,
 ): HtmlNode | null {
   // MIXING SEAM, and it is ahead of the switch rather than in a default arm because the switch no
-  // longer HAS one: a WEB component (transpiled shared component or low-level HtmlElement) composed
-  // inside an abstract tree is typed as a VisualNodeValue at the call site and is not one — it
-  // carries no nodeKind at all, and renders itself. So the test is for the discriminator's ABSENCE,
-  // which is the truth about these objects, rather than for a case the union does not have.
+  // longer HAS one: a WEB component (the low-level HtmlElement, the DOM escape hatch) composed inside
+  // an abstract tree is typed as a VisualNodeValue at the call site and is not one: as in C#, where
+  // `HtmlElement` is an `IComponent` and no node, it carries no nodeKind at all, and renders itself.
+  // So the test is for the discriminator's ABSENCE, which is the truth about these objects, rather
+  // than for a case the union does not have.
   const foreign = node as { nodeKind?: string; render?: () => HtmlNode };
 
   // A container's rule waiting for what a component builds (C# `Lower`, #738): an AdaptiveNode is
@@ -380,11 +390,8 @@ function lowerNodeKind(
   }
 
   if (foreign.nodeKind === undefined) {
-    // NOTHING TO SAY ABOUT THE WALK. A write-once StatelessComponent twin declares no `nodeKind`
-    // (only StatefulComponent does) so it arrives here rather than in the switch, and its own
-    // render() takes its key — the same key the C# realizer consumed by entering it. An
-    // HtmlElement arriving here has no such render and takes none, which is right: the realizer
-    // does not enter one either.
+    // NOTHING TO SAY ABOUT THE WALK: the realizer does not enter an HtmlElement either. A component
+    // with or without state is a `UiComponent`, a node of kind `component`, and takes the arm below.
     return typeof foreign.render === 'function' ? plainNode(foreign.render()) : null;
   }
 
@@ -515,7 +522,7 @@ function lowerNodeKind(
       // nothing else. Without this the mount threw, nothing reached the root, and the page was white.
       let built: unknown;
       try {
-        built = resolved.build(context.componentContext);
+        built = resolved.build(componentContextOf(context));
       } catch (error) {
         const name =
           (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
@@ -1273,7 +1280,8 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   // The active language rides the href (C# twin: RenderContext.ResolveDestination). An author
   // writes `/pricing` once and the link is right in every language — including after a
   // client-side switch, which re-renders this node with a different active culture.
-  const destination = localizeDestination(node.destination);
+  // A destination whose scheme an href never carries is no href (C# twin, #1286).
+  const destination = writtenDestination(node.destination);
   // The child's width contract, which the C# realizer has always passed through here and this
   // side never did — a Fill child inside a Link filled on the server and hugged in the browser.
   // No fixture caught it because none composed the two; agreement is only proof when something
@@ -1282,7 +1290,7 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   const linkCap = capsAt(node.child);
   const anchor: HtmlNode = {
     tag: 'a',
-    attributes: { class: 'eq-link', href: destination },
+    attributes: destination === null ? { class: 'eq-link' } : { class: 'eq-link', href: destination },
     events: {},
     children: [],
   };
@@ -1299,7 +1307,7 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   // that is what the router's one delegated click listener meets.
   if (node.keepsPosition) anchor.attributes['data-eq-keep-position'] = '';
   // WARM ON HOVER (C# twin): app-internal destinations only — an absolute URL is somebody else's.
-  if (warmsOnHover(destination)) anchor.attributes['data-prefetch'] = '';
+  if (destination !== null && warmsOnHover(destination)) anchor.attributes['data-prefetch'] = '';
   // The page you are ON (C# twin): only the current link says so.
   if (node.current === true) anchor.attributes['aria-current'] = 'page';
   const child = lowerNode(node.child, context, null, path + '/0');
@@ -2549,8 +2557,9 @@ function gradientRegistry(): Element | null {
     container.setAttribute('width', '0');
     container.setAttribute('height', '0');
     container.setAttribute('aria-hidden', 'true');
-    // Out of flow and zero-sized, NEVER display:none — see above.
-    container.setAttribute('style', 'position:absolute;overflow:hidden');
+    // Out of flow and zero-sized, NEVER display:none — see above. Through the CSSOM, which a
+    // Content-Security-Policy does not govern, rather than a style attribute, which it does (#1268).
+    container.style.cssText = 'position:absolute;overflow:hidden';
     document.body.appendChild(container);
   }
 
@@ -3683,9 +3692,12 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
           if (run.destination) {
             // A run that links is a link (C# twin): the language rides its href and an
             // app-internal one warms on hover, as a Link's does (#505).
-            const destination = localizeDestination(run.destination);
-            runNode.attributes = { ...runNode.attributes, href: destination };
-            if (warmsOnHover(destination)) runNode.attributes['data-prefetch'] = '';
+            // One whose scheme an href never carries is no href, and the run stays a run (#1286).
+            const destination = writtenDestination(run.destination);
+            if (destination !== null) {
+              runNode.attributes = { ...runNode.attributes, href: destination };
+              if (warmsOnHover(destination)) runNode.attributes['data-prefetch'] = '';
+            }
           }
           return runNode;
         })
@@ -3797,6 +3809,26 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as FlexibleNode).child);
     case 'loopMotion':
       return fills((node as LoopMotionNode).child);
+    // The rest of the wrappers the vocabulary calls layout-transparent (C# `IsLayoutTransparent`,
+    // which the C# `Fills` reads): a kind missing here answers "does not fill", silently.
+    case 'safeArea':
+      return fills((node as unknown as SafeAreaNode).child as VisualNodeValue);
+    case 'draggable':
+      return fills((node as unknown as DraggableNode).child as VisualNodeValue);
+    case 'dragDismiss':
+      return fills((node as unknown as DragDismissNode).child as VisualNodeValue);
+    case 'link':
+      return fills((node as unknown as LinkNode).child as VisualNodeValue);
+    case 'pinned':
+      return fills((node as unknown as PinnedNode).child as VisualNodeValue);
+    case 'presence':
+      return fills((node as unknown as PresenceNode).child as VisualNodeValue);
+    case 'shortcut':
+      return fills((node as unknown as ShortcutNode).child as VisualNodeValue);
+    case 'codeSurface':
+      return fills((node as unknown as CodeSurfaceNode).child as VisualNodeValue);
+    case 'sheetSurface':
+      return fills((node as unknown as SheetSurfaceNode).child as VisualNodeValue);
     default:
       return { width: false, height: false };
   }
@@ -4562,16 +4594,11 @@ function lowerSimulated(
  * takes, which is the decision `child.nodeKind === 'positioned'` was getting wrong.
  */
 /**
- * A component the walk can go THROUGH, either family.
+ * A component the walk can go THROUGH: one that builds its own node.
  *
- * `nodeKind === 'component'` is only the ABSTRACT family's badge. The web family — what a
- * transpiled stateless component extends — deliberately carries no nodeKind, because the
- * lowering's default branch recognises it by that absence and lets it render itself. Everywhere
- * else the two are interchangeable; here they were not, and a `Positioned` returned by a stateless
- * component laid out in FLOW while the identical stateful one was placed.
- *
- * The test is the build both families declare, which is also the thing this walk needs: the offsets
- * live in the node a component BUILDS, and a render cannot be asked for them.
+ * Every `UiComponent`, with or without state, carries `nodeKind === 'component'`. The build is
+ * tested too because it is the thing this walk needs, the offsets living in the node a component
+ * BUILDS, and a value that only declares one still answers it.
  */
 function buildsItsOwnNode(node: unknown): boolean {
   const candidate = node as { nodeKind?: string; build?: unknown } | null | undefined;
@@ -4600,7 +4627,7 @@ function resolveStackChild(
     );
 
     try {
-      node = resolved.build(context.componentContext) as VisualNodeValue;
+      node = resolved.build(componentContextOf(context)) as VisualNodeValue;
     } catch (error) {
       const name =
         (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
@@ -4744,8 +4771,46 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
   });
 
   const child = lowerNode(node.child, context, null, path + '/0');
-  if (child) wrapper.children.push(child);
+  if (child) {
+    // C# twin: transparent to its child's size, read off what the child lowered to (a component's
+    // fill is only known once it has built), with the insets inside the box it takes.
+    const asked = asksForAll(child);
+    if (asked.width || asked.height) {
+      mergeAtomicDeclaration(wrapper, 'box-sizing', 'border-box');
+      if (asked.width) {
+        // The whole width contract: the fill AND its cap (C# twin).
+        mergeAtomicDeclaration(wrapper, 'width', '100%');
+        if (asked.cap !== undefined) mergeAtomicDeclaration(wrapper, 'max-width', asked.cap);
+      }
+      if (asked.height) mergeAtomicDeclaration(wrapper, 'height', '100%');
+      // FILL means the parent's extent, never more (C# twin, as lowerFlex writes it).
+      if (asked.width) mergeAtomicDeclaration(wrapper, 'min-width', '0');
+      if (asked.height) mergeAtomicDeclaration(wrapper, 'min-height', '0');
+    }
+    wrapper.children.push(child);
+  }
   return wrapper;
+}
+
+/**
+ * C# `AsksForAll`: the axes a lowered element asks its parent for all of, and its width cap, read
+ * through every element that draws no box (a display:contents wrapper, an adaptive node's gate),
+ * where every arm has to ask it — the page's media rules show one arm at a time, and the parent
+ * cannot know which.
+ */
+function asksForAll(node: HtmlNode): { width: boolean; height: boolean; cap?: string } {
+  const gate = (node.attributes['class'] ?? '').split(' ').some(isAdaptiveGate);
+  if (gate || atomicDeclaration(node, 'display') === 'contents') {
+    const inner = node.children.filter((child) => child.textContent === undefined).map(asksForAll);
+    if (inner.length === 0) return { width: false, height: false };
+    if (inner.length === 1) return inner[0];
+    return { width: inner.every((arm) => arm.width), height: inner.every((arm) => arm.height) };
+  }
+  return {
+    width: atomicDeclaration(node, 'width') === '100%',
+    height: atomicDeclaration(node, 'height') === '100%',
+    cap: atomicDeclaration(node, 'max-width'),
+  };
 }
 
 /**
