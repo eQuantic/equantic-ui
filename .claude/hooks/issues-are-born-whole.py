@@ -30,6 +30,8 @@ GRAPHQL_CREATE = re.compile(r"\bcreateIssue\s*\(")
 # The REST collection itself, never an issue under it (/issues/12/comments).
 REST_ISSUES = re.compile(r"""(?:^|[\s'"/])repos/[^/\s'"]+/[^/\s'"]+/issues(?=$|[\s'"?])""")
 GH_API = re.compile(START + r"gh\s+api\b", re.MULTILINE)
+# What can send a GraphQL mutation written on the command line: gh, curl, or a program run on it.
+SENDS = re.compile(START + r"(?:gh|curl|python3?|node|bun|deno|ruby|perl)\b", re.MULTILINE)
 CURL = re.compile(START + r"curl\b", re.MULTILINE)
 # What makes `gh api` write: a method named, or a field or a body, which turn a GET into a POST.
 GH_WRITES = re.compile(r"(?:-X\s*|--method[=\s]+)POST\b|\s(?:-f|-F|--field|--raw-field|--input)(?:\s|=)")
@@ -66,7 +68,11 @@ def files_hold_a_creation(command: str, cwd: str | None) -> bool:
 
 
 def creates_an_issue(command: str, cwd: str | None = None) -> bool:
-    if GH_ISSUE_CREATE.search(command) or GRAPHQL_CREATE.search(command):
+    if GH_ISSUE_CREATE.search(command):
+        return True
+    # A mutation on the command line creates an issue only when something there can send it: a
+    # grep for it, a git log -S or a commit that quotes it reads it.
+    if GRAPHQL_CREATE.search(command) and SENDS.search(command):
         return True
     if (GH_API.search(command) or CURL.search(command)) and files_hold_a_creation(command, cwd):
         return True
@@ -117,6 +123,8 @@ def self_test() -> int:
         "gh api graphql -f query='{ repository(owner: \"eQuantic\", name: \"equantic-ui\") { issues(first: 5) { nodes { number } } } }'",
         "python3 scripts/new-issue.py --type Task --parent 160 --points 5 --title 'x' --body-file b.md",
         "grep -rn createIssue scripts/",
+        "grep -n 'createIssue(' scripts/new-issue.py",
+        "git log -S 'createIssue(' --oneline",
         "git commit -m 'A session never runs gh issue create, it runs the script'",
         "curl -s https://api.github.com/repos/eQuantic/equantic-ui/issues",
     ]
