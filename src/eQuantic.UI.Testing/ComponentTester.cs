@@ -133,28 +133,16 @@ public sealed class ComponentTester : IDisposable
         // The rounds the server runs (ServerDataRounds): which components are asked after each frame,
         // and only the positions that loaded build again, with the instance that loaded.
         var data = new ServerDataRounds(_host);
-        var rounds = 0;
-        while (true)
+        var settled = await data.RunAsync(() => Discover(page), async component =>
         {
-            var due = data.Next(Discover(page));
-            if (due.Count == 0) break;
+            using (new CultureScope(Culture))
+                await component.PrefetchAsync(Services, cancellationToken).ConfigureAwait(false);
+        }, MaxPrefetchRounds).ConfigureAwait(false);
 
-            // The bound counts rounds that reached something new to ask, as the server's does: a
-            // component waiting its turn below another spends none.
-            if (data.ReachedNew && ++rounds > MaxPrefetchRounds)
-                throw new InvalidOperationException(
-                    $"The page still asks for data after {MaxPrefetchRounds} rounds ({string.Join(", ", data.Pending.Select(component => component.GetType().Name))}): "
-                    + "the server would draw it with the defaults. Something each round loads builds a component that loads again.");
-
-            // ONE AT A TIME, as the server asks them: they share the services, and two components
-            // resolving one scoped dependency would use it at once.
-            foreach (var component in due)
-            {
-                using (new CultureScope(Culture))
-                    await component.PrefetchAsync(Services, cancellationToken).ConfigureAwait(false);
-                data.Loaded(component);
-            }
-        }
+        if (!settled)
+            throw new InvalidOperationException(
+                $"The page still asks for data after {MaxPrefetchRounds} rounds ({string.Join(", ", data.Pending.Select(component => component.GetType().Name))}): "
+                + "the server would draw it with the defaults. Something each round loads builds a component that loads again.");
 
         Draw(rebuildAll: false);
     }

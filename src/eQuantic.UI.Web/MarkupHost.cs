@@ -45,8 +45,6 @@ public sealed class MarkupHost
     {
         ArgumentNullException.ThrowIfNull(theme);
         Theme = theme;
-        TypeScale = typeScale;
-        Density = density;
         _context = new ComponentContext(theme, typeScale, density, _measurer.Measure);
         Owner = live ? new BuildOwner(_measurer.Build) : BuildOwner.Structural(_measurer.Build);
     }
@@ -61,12 +59,6 @@ public sealed class MarkupHost
 
     /// <summary>The theme the tree builds and lowers with.</summary>
     public IAppTheme Theme { get; }
-
-    /// <summary>The text scale the tree builds and lowers at.</summary>
-    public float TypeScale { get; }
-
-    /// <summary>The density the tree builds and lowers at.</summary>
-    public Density Density { get; }
 
     /// <summary>The owner of the tree: what a host marks a position through
     /// (<see cref="ComponentElement.MarkNeedsBuild"/>) and walks it from (<see cref="BuildOwner.Root"/>).</summary>

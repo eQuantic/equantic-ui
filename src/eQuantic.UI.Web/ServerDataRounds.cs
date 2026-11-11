@@ -10,12 +10,20 @@ namespace eQuantic.UI.Web;
 /// instance that loaded (docs/ELEMENT-TREE-PLAN.md 3.7). Nothing is written back onto a fresh instance:
 /// the one that loaded is the one drawn.
 /// <para>
-/// The server and the component tester run the same rounds. What each does when a page never settles
-/// is its own: the server draws what it has and says so in its log, a test fails.
+/// The server and the component tester run the same rounds (<see cref="RunAsync"/>). What each does when
+/// a page never settles is its own: the server draws what it has and says so in its log, a test fails.
 /// </para>
 /// </summary>
 public sealed class ServerDataRounds
 {
+    /// <summary>
+    /// The frames a round may take, past which the rounds stop as at their bound. A frame that reaches
+    /// nothing new is not counted as a round, and asks only a component that waited its turn below
+    /// another, so a page settles in a few of them a round; one that keeps reaching nothing new and never
+    /// settles is building its own loaders anew, and a request must not wait on it for ever.
+    /// </summary>
+    private const int FramesPerRound = 4;
+
     private readonly MarkupHost _host;
     private readonly HashSet<UiComponent> _asked = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<ComponentElement> _seen = new(ReferenceEqualityComparer.Instance);
@@ -72,9 +80,9 @@ public sealed class ServerDataRounds
 
         _pending = reached.Cast<IServerPrefetch>().ToList();
         ReachedNew = false;
+        _positions.Clear();
         if (reached.Count == 0) return [];
 
-        _positions.Clear();
         foreach (var component in reached) _positions[component] = [];
         if (_host.Owner.Root is { } root) Collect(root, _positions);
 
@@ -94,6 +102,42 @@ public sealed class ServerDataRounds
         }
 
         return due;
+    }
+
+    /// <summary>
+    /// Runs the rounds until the page settles: draws a frame with <paramref name="frame"/>, which answers
+    /// the scope it lowered with, asks each component <see cref="Next"/> answers through
+    /// <paramref name="load"/>, ONE AT A TIME (they share the request's services, and two components
+    /// resolving one scoped dependency would use it at once), and marks what loaded. The last frame drawn
+    /// is the page.
+    /// <para>
+    /// The bound counts rounds that reached something new (<see cref="ReachedNew"/>), and stops BEFORE
+    /// loading on the last one, so nothing loads that no frame draws: past it the page is drawn with its
+    /// defaults, its markup and its state agreeing. The frames are bounded too (four a round).
+    /// </para>
+    /// </summary>
+    /// <param name="frame">Builds and lowers the next frame with an expansion scope armed, and answers it.</param>
+    /// <param name="load">Asks one component for its data.</param>
+    /// <param name="maxRounds">How many rounds may reach something new, the last one drawn and not loaded.</param>
+    /// <returns>True when the page settled; false when the rounds stopped at their bound, with
+    /// <see cref="Pending"/> naming what still asked.</returns>
+    public async Task<bool> RunAsync(Func<ComponentExpansionScope> frame, Func<IServerPrefetch, Task> load, int maxRounds)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(load);
+        var rounds = 0;
+        for (var frames = 1; ; frames++)
+        {
+            var due = Next(frame());
+            if (due.Count == 0) return true;
+            if ((ReachedNew && ++rounds >= maxRounds) || frames >= maxRounds * FramesPerRound) return false;
+
+            foreach (var component in due)
+            {
+                await load(component).ConfigureAwait(false);
+                Loaded(component);
+            }
+        }
     }
 
     /// <summary>
