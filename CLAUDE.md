@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Every rule that decides a design, each with the case it came from and the test that holds it, is in
+[docs/PRINCIPLES.md](docs/PRINCIPLES.md), and how a change is proved is in
+[docs/PROVING.md](docs/PROVING.md). GitHub Copilot reviews every pull request with the same rules,
+from `.github/copilot-instructions.md` and `.github/instructions/`. This file states the main ones at
+length; where the two differ, this file wins and the page is corrected.
+
 ## THE PRODUCT PRINCIPLE (read this first — it decides designs)
 
 **A developer using eQuantic.UI never writes a line of Swift, an Xcode setting, an Android
@@ -151,6 +157,12 @@ what was delivered before it, and an issue bigger than 13 is a parent split into
 work moves (an issue starts, a pull request merges), `python3 scripts/roadmap.py` reports the board's
 real dates and the forecast of the rest, each milestone's included, and `--apply` writes them to the
 board; `docs/ROADMAP-FORECAST.md` is the method.
+
+An issue is taken by assigning it. Every issue starts assigned to the owner's account, which every
+session works as, so one assigned to anyone else is that person's, and so is one labelled
+`good first issue`, which is kept for a person's first step: no session starts it, and no session
+pushes to a branch of its. A contributor takes an issue by assigning it to themselves and moving it
+to In progress, and an issue already In progress is someone's, whoever it is assigned to.
 
 ### Branches
 
