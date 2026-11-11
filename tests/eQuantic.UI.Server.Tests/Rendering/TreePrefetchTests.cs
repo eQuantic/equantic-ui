@@ -1036,4 +1036,71 @@ public class TreePrefetchTests
         result.Html.Should().Contain("drawn by the instance that loaded")
             .And.NotContain("drawn by another instance");
     }
+
+    /// <summary>A component whose prefetch loads something that is not a value: a delegate, which no
+    /// round could put back on a fresh instance, and what it builds depends on it.</summary>
+    private sealed class LoadsAGreeting : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private Func<string>? _greeting;
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _greeting = static () => "hello";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) =>
+            _greeting is { } greeting ? new Greeted(greeting()) : new Text("waiting", TypeRole.BodyM);
+    }
+
+    /// <summary>What the greeting brings, which loads data of its own.</summary>
+    private sealed class Greeted(string greeting) : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private string _said = greeting;
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _said = $"{_said}, loaded";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) => new Text(_said, TypeRole.BodyM);
+    }
+
+    [Page("/tree-prefetch-greeting")]
+    private sealed class PageLoadingAGreeting : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2);
+            column.Add(new LoadsAGreeting());
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// WHAT A ROUND COULD NOT PUT BACK reaches the next round, on a full load and on a navigation alike,
+    /// because the next round reaches the instance that loaded. Putting the loaded fields back onto a
+    /// fresh instance by name skipped a delegate on purpose, so a component that composes by one drew
+    /// "waiting", and what it would have composed was never asked for its data.
+    /// </summary>
+    [Fact]
+    public async Task WhatAComponentLoaded_ThatIsNotAValue_ComposesTheNextRound_OnALoadAndANavigation()
+    {
+        var drawn = await CreateService().RenderPageAsync(typeof(PageLoadingAGreeting), RequestWith(out _));
+
+        drawn.Success.Should().BeTrue(drawn.Error);
+        drawn.Html.Should().Contain("hello, loaded").And.NotContain("waiting");
+
+        var navigated = await CreateService().PreparePageAsync(typeof(PageLoadingAGreeting), RequestWith(out _));
+
+        navigated.Success.Should().BeTrue(navigated.Error);
+        navigated.SerializedState.Should().NotBeNull();
+        using var payload = JsonDocument.Parse(navigated.SerializedState!);
+        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(Greeted), 0), out var greeted)
+            .Should().BeTrue($"the navigation reaches what the greeting composed; payload was: {navigated.SerializedState}");
+        greeted.GetProperty("_said").GetString().Should().Be("hello, loaded");
+    }
 }

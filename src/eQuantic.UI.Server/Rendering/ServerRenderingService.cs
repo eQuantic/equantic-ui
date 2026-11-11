@@ -395,8 +395,9 @@ public class ServerRenderingService : IServerRenderingService
                     // navigation: the reader saw the number, clicked away, came back, and the second
                     // visit showed the default. The root's own kind decides how the ROOT is asked —
                     // directly, above — and says nothing about what it composes.
-                    navigationPayload = await PrefetchTreeAsync(
-                        component, prefetched, asked, context, coreRootKey);
+                    navigationPayload = component is Web.VisualNodeComponent navigated
+                        ? await PrefetchPageAsync(navigated, context, density)
+                        : await PrefetchTreeAsync(component, prefetched, asked, context, coreRootKey);
                 }
 
                 // THEN metadata, and the order is the whole point. ConfigureMetadata used to run first,
@@ -609,6 +610,90 @@ public class ServerRenderingService : IServerRenderingService
         }
 
         return wire;
+    }
+
+    /// <summary>
+    /// A NAVIGATION'S DISCOVERY of a write-once page, through an element tree the request owns, as
+    /// the drawing's: each round is a frame of one tree, only the positions that loaded build again,
+    /// and the instance that loaded is the one the next round reaches. Nothing is drawn, so the wire
+    /// form of each component is kept as it loads, and shaped as <see cref="PrefetchTreeAsync"/> shapes
+    /// it: what the last round no longer reaches goes, and a component holding a value from the
+    /// container joins.
+    /// </summary>
+    private async Task<Dictionary<string, IReadOnlyDictionary<string, object?>>> PrefetchPageAsync(
+        Web.VisualNodeComponent page, HttpContext context, Density density)
+    {
+        var wire = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
+        var host = Web.MarkupHost.Structural(Theme, 1f, density);
+        var data = new Web.ServerDataRounds(host);
+        var counted = 0;
+        Web.ComponentExpansionScope settled;
+
+        while (true)
+        {
+            settled = new Web.ComponentExpansionScope();
+            Discover(host, page.Node, settled);
+
+            var due = data.Next(settled);
+            if (due.Count == 0) break;
+
+            if (data.ReachedNew && ++counted >= MaxPrefetchRounds)
+            {
+                _logger.LogWarning(
+                    "[SSR Prefetch] Stopped at {Rounds} rounds with {Count} component(s) still asking "
+                    + "for data; the navigation carries their defaults.", MaxPrefetchRounds, data.Pending.Count);
+                break;
+            }
+
+            var keys = new Dictionary<object, string>(ReferenceEqualityComparer.Instance);
+            foreach (var (key, named) in settled.Expanded) keys.TryAdd(named, key);
+
+            foreach (var loader in due)
+            {
+                await loader.PrefetchAsync(context.RequestServices, context.RequestAborted);
+                data.Loaded(loader);
+                if (keys.TryGetValue(loader, out var key)) wire[key] = Snapshot(loader);
+            }
+        }
+
+        foreach (var stale in wire.Keys.Where(key => !settled.Expanded.ContainsKey(key)).ToList())
+        {
+            wire.Remove(stale);
+        }
+
+        foreach (var (key, instance) in settled.Expanded)
+        {
+            if (!wire.ContainsKey(key) && CarriesProjection(instance)) wire[key] = Snapshot(instance);
+        }
+
+        return wire;
+    }
+
+    /// <summary>A frame of <paramref name="host"/>'s tree built and lowered with <paramref name="scope"/>
+    /// naming its components, the markup thrown away: <see cref="Expand"/>, for a tree the request owns.</summary>
+    private static void Discover(Web.MarkupHost host, VisualNode page, Web.ComponentExpansionScope scope)
+    {
+        var styles = Web.StyleSink.Ambient;
+        var gradients = Web.GradientSink.Ambient;
+        var faces = Web.FaceSink.Ambient;
+        var discarded = new Web.StyleSink();
+        Web.StyleSink.Ambient = discarded;
+        Web.GradientSink.Ambient = new Web.GradientSink();
+        Web.FaceSink.Ambient = new Web.FaceSink();
+        Web.ComponentExpansionScope.Ambient = scope;
+        try
+        {
+            host.Build(page, ServerSizeClass);
+            host.Lower(discarded);
+            host.EndFrame();
+        }
+        finally
+        {
+            Web.ComponentExpansionScope.Ambient = null;
+            Web.StyleSink.Ambient = styles;
+            Web.GradientSink.Ambient = gradients;
+            Web.FaceSink.Ambient = faces;
+        }
     }
 
     /// <summary>
