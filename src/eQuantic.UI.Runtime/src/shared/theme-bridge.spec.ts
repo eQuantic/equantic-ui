@@ -208,3 +208,34 @@ describe('theme bridge: the slots and the code palette cross (E6a, #1241; #936)'
     expect(bare.button).toBeNull();
   });
 });
+
+describe('theme bridge: the navigation and collection slots and the document\'s cross (E6d, #1244)', () => {
+  const theme = materializeTheme(photonData as unknown as ThemeData);
+  const families = ['navigation', 'list', 'table', 'badge', 'calendar', 'markdown'] as const;
+
+  it('materializes each family as the generated Photon theme holds it', () => {
+    for (const family of families) expect(theme[family], family).toEqual(photonTheme[family]);
+  });
+
+  it('reads every member the server wrote, each in its kind', () => {
+    for (const family of families) {
+      const written = (photonData as unknown as Record<string, Record<string, unknown>>)[family];
+      const read = theme[family] as unknown as Record<string, unknown>;
+      for (const name of Object.keys(written)) expect(read[name], `${family}.${name}`).not.toBeNull();
+    }
+    expect(theme.navigation?.tabHeight).toBe(48);
+    expect(theme.navigation?.inactiveColor).toEqual(photonTheme.textMuted);
+    expect(theme.badge?.avatarSize?.xLarge).toBe(56);
+    expect(theme.calendar?.titleRole).toBe('titleSmall');
+    expect(theme.table?.headerUppercase).toBe(true);
+  });
+
+  it('refuses a member the mirror does not declare', () => {
+    expect(() =>
+      materializeTheme({
+        ...(photonData as unknown as ThemeData),
+        list: { itemHeight: 52, rowSpacing: 4 },
+      }),
+    ).toThrow(/ListTheme has no member 'rowSpacing'/);
+  });
+});
