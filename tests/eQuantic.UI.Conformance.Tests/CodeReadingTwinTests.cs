@@ -46,14 +46,18 @@ public class CodeReadingTwinTests
         return placed;
     }
 
-    private static string OnDotNet(string text, Placed at)
-    {
-        var editor = new CodeEditorController(text, CodeLanguages.CSharp)
+    private static TextReading OnDotNet(string text, Placed at) =>
+        new CodeEditorController(text, CodeLanguages.CSharp)
         {
             Selection = new CodeRange(new CodePosition(at.AL, at.AC), new CodePosition(at.FL, at.FC)),
-        };
-        var reading = editor.Reading;
-        return JsonSerializer.Serialize(new object[] { reading.Text, reading.Anchor, reading.Focus });
+        }.Reading;
+
+    /// <summary>The twin's line read back as values: compared as text, .NET's serializer escapes what
+    /// JavaScript's writes as it is (a <c>&lt;</c> among them), and the two would differ with the same reading.</summary>
+    private static TextReading OnTheWeb(string line)
+    {
+        var values = JsonSerializer.Deserialize<JsonElement>(line);
+        return new TextReading(values[0].GetString()!, values[1].GetInt32(), values[2].GetInt32());
     }
 
     [SkippableFact]
@@ -83,7 +87,7 @@ public class CodeReadingTwinTests
 
         web.Should().HaveCount(selections.Count, "every selection is read on the web");
         for (var i = 0; i < selections.Count; i++)
-            web[i].Should().Be(OnDotNet(text, selections[i]), $"the selection {selections[i]} reads alike");
+            OnTheWeb(web[i]).Should().Be(OnDotNet(text, selections[i]), $"the selection {selections[i]} reads alike");
     }
 
     [Fact]
