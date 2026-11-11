@@ -12,7 +12,7 @@
 - [x] 2.1 A value in each family's slot reaches the web's lowering and Photon's layout. Verify: `SurfaceSlotsRealizerTests` and `SurfaceSlotsTests`, each case failing with its read put back to the constant
 - [x] 2.2 Photon's pinned outputs stay as they were, and the Material goldens are written again after looking at both modes
 - [x] 2.3 The runtime's own suites (`tsc` and vitest)
-- [x] 2.4 The web, native engine, component testing, server, compiler and conformance suites. Verify: 1408, 3405, 21, 560, 2841 and 7431 tests, and the served runtime's budget re-recorded at 328,128 gzipped bytes (+3,577 from main's 324,551)
+- [x] 2.4 The web, native engine, component testing, server, compiler and conformance suites. Verify: 1408, 3405, 21, 560, 2841 and 7431 tests, and the served runtime's budget re-recorded at 330,217 gzipped bytes (+3,892 from #1408's 326,325)
 
 ## 3. Documentation
 
