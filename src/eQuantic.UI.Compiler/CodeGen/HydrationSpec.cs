@@ -263,14 +263,6 @@ public static class HydrationSpec
     }
 
     /// <summary>
-    /// How the property name System.Text.Json writes for a key of this type becomes the key (a
-    /// <c>HydrationKey</c> of <c>utils/hydrate.ts</c>): a number, a bool, or a compat scalar by its tag.
-    /// Null where the name IS the key: a string, a char, a <c>Guid</c>. A <c>[Flags]</c> enum's key is its
-    /// number's text (EqJson), and a number here (#442), a 64-bit one's a BigInt, as a long's key is (#551);
-    /// any other enum's is its member's camelCase name, or a value no member names as its digits
-    /// (<see cref="EnumTag"/>).
-    /// </summary>
-    /// <summary>
     /// How an enum's value comes back from what EqJson wrote: a <c>[Flags]</c> one's number, a 64-bit one's
     /// as a long's digits, and <paramref name="flagsNarrow"/> for a narrower one (nothing for a value, which
     /// is a JSON number, and a number for a key, which is its text); any other enum's member name as itself,
@@ -282,6 +274,14 @@ public static class HydrationSpec
             ? Strategies.Types.EnumShape.IsWide(enumType) ? "'long'" : flagsNarrow
             : Strategies.Types.EnumShape.IsWide(enumType) ? "'enumLong'" : "'enum'";
 
+    /// <summary>
+    /// How the property name System.Text.Json writes for a key of this type becomes the key (a
+    /// <c>HydrationKey</c> of <c>utils/hydrate.ts</c>): a number, a bool, or a compat scalar by its tag.
+    /// Null where the name IS the key: a string, a char, a <c>Guid</c>. A <c>[Flags]</c> enum's key is its
+    /// number's text (EqJson), and a number here (#442), a 64-bit one's a BigInt, as a long's key is (#551);
+    /// any other enum's is its member's camelCase name, or a value no member names as its digits
+    /// (<see cref="EnumTag"/>).
+    /// </summary>
     private static string? KeyTag(ITypeSymbol key)
     {
         var type = key.UnwrapNullable() ?? key;
