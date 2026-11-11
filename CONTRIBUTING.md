@@ -131,6 +131,12 @@ It answers the two questions the pull-request page cannot: does GitHub still cal
 (it falls back to the file's path when it cannot read it), and did the run for this branch create
 any jobs at all.
 
+**CI runs what your change can affect.** A pull request that changes only documents runs the test
+groups that read documents and the guards, and skips the build, the conformance suite, the Mac jobs
+and the samples; one that changes only the VS Code extension builds the extension; anything else runs
+everything. `scripts/ci-changes.sh` decides, and the `changes` job prints what it read and what it
+decided. A skipped job's check still reports success, so the pull request can merge.
+
 - **Start from an issue.** Every change has one on the board; if none exists, create it as a
   sub-issue of the epic or feature it belongs to, with the right type.
 - **Branch first**, from `main`, named `<type>/<slug>` (`feat/`, `fix/`, `chore/`, `refactor/`,
