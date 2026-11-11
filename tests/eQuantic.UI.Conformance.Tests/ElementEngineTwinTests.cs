@@ -124,9 +124,11 @@ public class ElementEngineTwinTests
 
     /// <summary>The twins of the components above, over the runtime's classes, and the frame helper.</summary>
     private static string Prelude(string runtime) => $$"""
-        import { BuildOwner, StatefulComponent, Column, Text, InFlow } from '{{runtime}}';
+        import { BuildOwner, StatefulComponent, Column, Text, InFlow, ComponentContext } from '{{runtime}}';
         const trace = [];
-        const context = { theme: null };
+        // The browser's own context, as a component's build receives it: what it reports is what the
+        // C# components read through theirs (InFlow, above all).
+        const context = new ComponentContext(null);
         const owner = new BuildOwner((component, context, depth) => component.build(context));
         const frame = (root, rebuildAll = true) => { const element = owner.build(root, context, 'compact', rebuildAll); owner.endFrame(); return element; };
         const componentAt = (element) => element.component;
@@ -178,7 +180,7 @@ public class ElementEngineTwinTests
         class ReadsInFlow extends StatefulComponent {
           constructor(seen, name) { super(); this._seen = seen; this._name = name; }
           touch() { this.setState(() => {}); }
-          build(context) { this._seen.push(this._name + ':' + (InFlow.current ? 'in' : 'out')); return new Text('x', 'bodyM'); }
+          build(context) { this._seen.push(this._name + ':' + (context.inFlow ? 'in' : 'out')); return new Text('x', 'bodyM'); }
         }
         const placed = (first, second) => { const column = new Column(); column.children.push(first, second); return column; };
         """;
