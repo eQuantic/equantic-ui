@@ -13,4 +13,4 @@
 ## 3. Documentation and the suites
 
 - [x] 3.1 A ledger entry under `docs/ledger/`
-- [ ] 3.2 The suites, each read by its exit code: Compiler, Web, Server, Conformance, and the runtime's `TestRuntime`
+- [x] 3.2 The suites, each read by its exit code: Compiler, Web, Server, Conformance, and the runtime's `TestRuntime`
