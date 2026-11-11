@@ -70,9 +70,12 @@ public sealed class AppBuildOptions
     /// <summary>What each module's source map carries.</summary>
     public SourceMapMode SourceMaps { get; init; } = SourceMapMode.Full;
 
-    /// <summary>Whether the CLI stays and compiles again on every change of a source (<c>--watch</c>).
-    /// The build itself reads nothing of it.</summary>
-    public bool Watch { get; init; }
+    /// <summary>
+    /// Whether the CLI stays and compiles again each time it reads <c>compile</c> on its standard input
+    /// (<c>--serve</c>), which the server of an app in development starts once and asks on each save
+    /// (#1276). The build itself reads nothing of it.
+    /// </summary>
+    public bool Serve { get; init; }
 
     /// <summary>The options that are followed by a value.</summary>
     private static readonly HashSet<string> ValueOptions = new(StringComparer.Ordinal)
@@ -86,18 +89,20 @@ public sealed class AppBuildOptions
     /// <c>@&lt;file&gt;</c>, the ones that file holds, one a line. The SDK hands eqc a file and never
     /// writes a value of the project into the command, because a shell reads the command first:
     /// <c>Cash$Flow</c> reached eqc as <c>Cash</c>, and a backtick ran as a command (#836). A line is
-    /// an argument whatever characters it holds, and an empty line is none.
+    /// an argument whatever characters it holds, and an empty line is none. The arguments after the
+    /// file follow its own: the server of an app in development starts eqc with the file the build
+    /// wrote and <c>--serve</c> after it (#1276).
     /// </summary>
     /// <exception cref="IOException">The file the command line names cannot be read.</exception>
     public static IReadOnlyList<string> ReadArguments(IReadOnlyList<string> commandLine) =>
-        commandLine is [var only] && only.StartsWith('@')
-            ? File.ReadAllLines(only[1..]).Where(line => line.Length > 0).ToList()
+        commandLine.Count > 0 && commandLine[0].StartsWith('@')
+            ? File.ReadAllLines(commandLine[0][1..]).Where(line => line.Length > 0).Concat(commandLine.Skip(1)).ToList()
             : commandLine;
 
     /// <summary>
     /// The options the arguments hold, as eqc reads them: the source roots, separated by a
     /// semicolon, and the output folder first, then each option followed by its value, and
-    /// <c>--watch</c>, which takes none.
+    /// <c>--serve</c>, which takes none.
     /// </summary>
     /// <exception cref="ArgumentException">There are not the two folders first, an option has no
     /// value after it, or <c>--source-maps</c> names no mode.</exception>
@@ -108,15 +113,15 @@ public sealed class AppBuildOptions
             throw new ArgumentException("eqc is handed the source roots and the output folder first.");
 
         // Read in order, an option and then its value: a value that reads like an option (a folder
-        // named `--refs`, an assembly named `--watch`) is the value it stands as. Found anywhere in the
-        // list, `--watch` as an assembly's name kept a build waiting forever (found in review of #843).
+        // named `--refs`, an assembly named `--serve`) is the value it stands as. Found anywhere in the
+        // list, a flag as an assembly's name kept a build waiting forever (found in review of #843).
         var values = new Dictionary<string, string>(StringComparer.Ordinal);
-        var watch = false;
+        var serve = false;
         for (var at = 2; at < arguments.Count; at++)
         {
-            if (arguments[at] == "--watch")
+            if (arguments[at] == "--serve")
             {
-                watch = true;
+                serve = true;
                 continue;
             }
             if (!ValueOptions.Contains(arguments[at])) continue;
@@ -163,7 +168,7 @@ public sealed class AppBuildOptions
             // InternalsVisibleTo names.
             AssemblyName = Value("--assembly-name")?.Trim(),
             BunPath = Value("--bun"),
-            Watch = watch,
+            Serve = serve,
             SourceMaps = sourceMaps.ToLowerInvariant() switch
             {
                 "full" => SourceMapMode.Full,

@@ -1,4 +1,5 @@
 import type { FontFamily, FontFile } from './value-types';
+import { createStyleElement } from '../utils/page-nonce';
 
 /**
  * The faces of the families a page names, declared in the document the first time the runtime sets or
@@ -181,9 +182,7 @@ function documentHas(name: string): boolean {
 function facesSheet(): CSSStyleSheet | null {
   let element = document.getElementById(ELEMENT_ID) as HTMLStyleElement | null;
   if (!element) {
-    element = document.createElement('style');
-    element.id = ELEMENT_ID;
-    document.head.appendChild(element);
+    element = createStyleElement(ELEMENT_ID);
   }
   return element.sheet;
 }
