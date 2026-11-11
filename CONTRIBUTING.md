@@ -65,7 +65,11 @@ dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
 
 ## The bar
 
-Three rules decide most reviews here; they are in [CLAUDE.md](CLAUDE.md) at length.
+Three rules decide most reviews here; they are in [CLAUDE.md](CLAUDE.md) at length. Every rule, with
+the case it came from, is in [docs/PRINCIPLES.md](docs/PRINCIPLES.md), and how a change is proved
+(an A/B both ways, .NET as the oracle, both targets driven) in [docs/PROVING.md](docs/PROVING.md).
+Copilot's review reads the same rules, from `.github/copilot-instructions.md`, so a pull request
+meets them there before anyone else reads it.
 
 1. **A developer using the SDK never writes a platform artifact.** No Swift, no plist, no manifest, no
    CSS. If a feature works but makes someone learn one, it is not done.
@@ -130,6 +134,12 @@ scripts/ci-doctor.sh
 It answers the two questions the pull-request page cannot: does GitHub still call the workflow `CI`
 (it falls back to the file's path when it cannot read it), and did the run for this branch create
 any jobs at all.
+
+**CI runs what your change can affect.** A pull request that changes only documents runs the test
+groups that read documents and the guards, and skips the build, the conformance suite, the Mac jobs
+and the samples; one that changes only the VS Code extension builds the extension; anything else runs
+everything. `scripts/ci-changes.sh` decides, and the `changes` job prints what it read and what it
+decided. A skipped job's check still reports success, so the pull request can merge.
 
 - **Start from an issue.** Every change has one on the board; if none exists, create it as a
   sub-issue of the epic or feature it belongs to, with the right type and its points, with
