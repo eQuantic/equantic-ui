@@ -320,7 +320,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         var cultureController = app.Services.GetService(typeof(PhotonCultureController)) as PhotonCultureController;
         cultureController?.Apply(AndroidLocale.Resolve());
 
-        _host = new PhotonHost(app.Root(), app.Options.Theme, Mode(), metrics.WidthPixels / scale,
+        _host = new PhotonHost(app.Root(), app.Theme, Mode(), metrics.WidthPixels / scale,
             metrics.HeightPixels / scale, text)
         {
             RecycleFrames = true,   // production owns its frames (LayoutNodePool)
