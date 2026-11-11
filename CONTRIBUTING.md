@@ -54,6 +54,13 @@ dotnet test tests/eQuantic.UI.Compiler.Tests
 dotnet workload install android            # if you change the Android shell
 ```
 
+On Linux the whole test suite runs, as it does in CI, where every test project runs on Ubuntu: a case
+only a Mac can answer is skipped with its reason, never filtered out. `scripts/test-groups.sh
+--projects conformance|web|rest` lists the projects of each of CI's test jobs. What Linux cannot do
+is open a Photon window, since Photon has no Linux shell: a change to what Photon draws is seen on the
+Android emulator (the Android shell builds on Linux, with the workload and the Android SDK) and held
+by the tests, and a change to the web is seen in a browser, with `samples/DefaultUIDashboard`.
+
 The samples build against the framework's **projects**, never against packages — see the wiki's
 [Build Flow](https://github.com/eQuantic/equantic-ui/wiki/BuildFlow). CI's `samples` job builds them
 on macOS; on another host, a change that touches the SDK, the compiler or a realizer is proved by
