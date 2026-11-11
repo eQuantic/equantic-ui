@@ -2380,9 +2380,13 @@ public class TypeScriptEmitter
         // maps to `NavigableMove[]` before this runs, and the enum is one level further in than a
         // single pass over TypeArguments can see. Walking only the top level left that emitting the
         // C# spelling with no import — the exact defect this block exists to end, one nesting down.
-        if (!echoed && resolved is INamedTypeSymbol { TypeArguments.Length: > 0 } generic)
+        // And inside an array, echoed or not, since the mapper keeps an array's element as C# spells it:
+        // `CodeCommand[]` named an enum no module exports, and the runtime's tsc refused the twin (#1064).
+        if (resolved is IArrayTypeSymbol || !echoed && resolved is INamedTypeSymbol { TypeArguments.Length: > 0 })
         {
-            foreach (var argument in generic.TypeArguments.SelectMany(Nested))
+            var inside = resolved is IArrayTypeSymbol array ? Nested(array.ElementType)
+                : ((INamedTypeSymbol)resolved).TypeArguments.SelectMany(Nested);
+            foreach (var argument in inside)
             {
                 // An exception and a delegate are the same defect two kinds along (TsStandIn):
                 // `Action<Exception>` named an `Exception` no module defines.
@@ -2516,6 +2520,12 @@ public class TypeScriptEmitter
     /// </summary>
     private static IEnumerable<ITypeSymbol> Nested(ITypeSymbol type)
     {
+        // An array's element is one level further in, as a generic's argument is (#1064).
+        if (type is IArrayTypeSymbol array)
+        {
+            foreach (var inner in Nested(array.ElementType)) yield return inner;
+            yield break;
+        }
         yield return type;
         if (type is not INamedTypeSymbol { TypeArguments.Length: > 0 } generic) yield break;
         foreach (var argument in generic.TypeArguments)
