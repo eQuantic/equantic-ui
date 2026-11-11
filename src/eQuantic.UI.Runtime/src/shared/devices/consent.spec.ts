@@ -5,7 +5,7 @@
  */
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { CONSENT_COOKIE, WebConsent } from './consent';
+import { CONSENT_COOKIE, SECURE_CONSENT_COOKIE, WebConsent } from './consent';
 
 function clearCookie(): void {
   document.cookie = `${CONSENT_COOKIE}=; path=/; max-age=0`;
@@ -45,5 +45,27 @@ describe('WebConsent (IConsent realization)', () => {
   it('treats a malformed escape as unanswered instead of throwing mid-render', () => {
     document.cookie = `${CONSENT_COOKIE}=%E0%A4%A; path=/`;
     expect(new WebConsent().state).toBe('unknown');
+  });
+
+  // #1294: over HTTPS the answer lives in the cookie only the page's own host can write.
+  describe('on a page served over HTTPS', () => {
+    const at = (url: string) =>
+      (window as unknown as { happyDOM?: { setURL?: (u: string) => void } }).happyDOM?.setURL?.(url);
+    const before = location.href;
+    afterEach(() => {
+      document.cookie = `${SECURE_CONSENT_COOKIE}=; path=/; max-age=0; secure`;
+      at(before);
+    });
+
+    it('keeps the answer in the secure cookie, and reads only that one', () => {
+      at('https://app.example/');
+      document.cookie = `${CONSENT_COOKIE}=granted; path=/`;
+      expect(new WebConsent().state).toBe('unknown');
+
+      new WebConsent().grant();
+
+      expect(document.cookie).toContain(`${SECURE_CONSENT_COOKIE}=granted`);
+      expect(new WebConsent().state).toBe('granted');
+    });
   });
 });

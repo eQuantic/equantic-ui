@@ -259,6 +259,26 @@ export function tupleTextGroup(value: unknown, elements: readonly (Printed | nul
 }
 
 /**
+ * The text .NET writes for a `KeyValuePair`, `[key, value]`, each half as a concatenation writes it,
+ * a null one as nothing, by what its type says ({@link Printed}). An empty `Nullable` one writes nothing.
+ */
+export function pairText(value: unknown, parts: readonly (Printed | null)[] = []): string {
+  if (value === null || value === undefined) return '';
+  const pair = value as { readonly key: unknown; readonly value: unknown };
+  return `[${printed(pair.key, parts[0])}, ${printed(pair.value, parts[1])}]`;
+}
+
+/** The delegate of a `KeyValuePair`'s `ToString` method group: {@link pairText} of the value it was made with. */
+export function pairTextGroup(value: unknown, parts: readonly (Printed | null)[] = []): () => string {
+  return () => pairText(value, parts);
+}
+
+/** Whether a value is a `KeyValuePair`, which alone among the arrays here answers `key` and `value`. */
+function isPair(value: unknown): boolean {
+  return Array.isArray(value) && 'key' in value && 'value' in value;
+}
+
+/**
  * The method group `value.ToString` of a value the browser holds as data, `Func<string> text =
  * curve.ToString`: a delegate writing the {@link recordText} of the value as it is when the delegate
  * is made, over the members a call writes. The compiler passes the receiver here, so it is read once,
@@ -1473,6 +1493,7 @@ function general(value: unknown, kind: NumberKind = 'unknown'): string {
   if (typeof value === 'boolean') return value ? 'True' : 'False';
   const moment = momentOf(value);
   if (moment !== null) return formatDate(moment, null);
+  if (isPair(value)) return pairText(value);
   return String(value);
 }
 

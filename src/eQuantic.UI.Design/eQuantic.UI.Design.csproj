@@ -24,4 +24,8 @@
         <ProjectReference Include="..\eQuantic.UI.Design.Photon\eQuantic.UI.Design.Photon.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="eQuantic.UI.Design.Tests" />
+    </ItemGroup>
+
 </Project>
