@@ -265,6 +265,40 @@ export class CancellationTokenRegistration {
   }
 }
 
+/** What an `await` of a task cancelled by `token` throws: a `TaskCanceledException` that carries it. */
+function taskCanceled(token: CancellationToken): Error {
+  const error = exception('System.Threading.Tasks.TaskCanceledException', 'A task was canceled.');
+  Object.defineProperty(error, 'cancellationToken', { value: token });
+  return error;
+}
+
+/**
+ * A task that has already ended, whatever reads it. A task nobody awaits ends a .NET program no
+ * differently, so a rejection with no reader yet is taken as read here, or the browser would report it.
+ */
+function ended(error: unknown): Promise<never> {
+  const task = Promise.reject(error);
+  task.catch(() => undefined);
+  return task;
+}
+
+/** `Task.FromException`: a task that ended faulted with `error`, which an `await` of it throws. */
+export function fromException(error: unknown): Promise<never> {
+  if (error === null || error === undefined)
+    throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'exception')");
+  return ended(error);
+}
+
+/** `Task.FromCanceled`: a task that ended canceled by `token`, which has to have been cancelled. */
+export function fromCanceled(token: CancellationToken): Promise<never> {
+  if (!token.isCancellationRequested)
+    throw exception(
+      'System.ArgumentOutOfRangeException',
+      "Specified argument was out of the range of valid values. (Parameter 'cancellationToken')",
+    );
+  return ended(taskCanceled(token));
+}
+
 /**
  * `Task.Delay(delay, cancellationToken)`: a task that ends after `delay`, as .NET's does. A number is
  * the milliseconds overload and a `TimeSpan` the other, each refused below -1 with its own message and
@@ -288,11 +322,7 @@ export function delay(delay: Delay, token?: CancellationToken): Promise<void> {
         "less than or equal to the maximum allowed timer duration. (Parameter 'delay')",
     );
   }
-  const canceled = (): Error => {
-    const error = exception('System.Threading.Tasks.TaskCanceledException', 'A task was canceled.');
-    Object.defineProperty(error, 'cancellationToken', { value: token ?? CancellationToken.none });
-    return error;
-  };
+  const canceled = (): Error => taskCanceled(token ?? CancellationToken.none);
   if (token?.isCancellationRequested) return Promise.reject(canceled());
   // No wait at all is a task already done, as .NET's Task.CompletedTask: a token cancelled after the call
   // cannot change it.

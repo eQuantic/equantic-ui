@@ -90,6 +90,17 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
     expect(materializeTheme(base).type('display').fluid).toBeNull();
   });
 
+  it("answers Code from the theme's own palette, which crosses with the rest (#936)", () => {
+    const data = photonData as unknown as ThemeData;
+    const ink = data.surfaces.background;
+    const themed = materializeTheme({ ...data, code: { ...data.code, keyword: ink } } as unknown as ThemeData);
+
+    expect(themed.code('keyword')).toEqual(materializeTheme(data).background);
+    expect(Object.keys(data.code ?? {})).toContain('keyword');
+    for (const kind of Object.keys(data.code ?? {}))
+      expect(materializeTheme(data).code(kind)).toEqual(photonTheme.code(kind));
+  });
+
   it("carries the theme's code face, and omits it when there is none", () => {
     const base = photonData as unknown as ThemeData;
     const branded = materializeTheme({ ...base, monoFamily: 'JetBrains Mono' } as ThemeData);

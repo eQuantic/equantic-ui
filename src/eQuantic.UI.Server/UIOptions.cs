@@ -64,15 +64,17 @@ public class UIOptions
 
     /// <summary>
     /// Phase 3 hot reload (SSE + eqc rebuild on save). Null = auto: on in Development, and under
-    /// <c>dotnet watch</c> whatever the environment, since an app run without a launch profile is a
-    /// Production one.
+    /// <c>dotnet watch</c> in any environment but Production, whose app serves the relay only when this
+    /// says <c>true</c> (#1297). A run under <c>dotnet watch</c> with no launch profile is a Production
+    /// one, so a developer who runs that way sets <c>ASPNETCORE_ENVIRONMENT=Development</c> or says it here.
     /// </summary>
     public bool? HotReload { get; set; }
 
     /// <summary>
     /// Whether this app rebuilds its modules on a save and reloads the browsers watching it:
     /// <see cref="HotReload"/> when the app says, otherwise the Development environment or a run under
-    /// <c>dotnet watch</c>, which sets <c>DOTNET_WATCH</c> to 1 on the app it runs. One decision, read
+    /// <c>dotnet watch</c>, which sets <c>DOTNET_WATCH</c> to 1 on the app it runs, in any environment
+    /// but Production (#1297). One decision, read
     /// by the stream that announces a rebuild, the cache of the modules a rebuild rewrites and the
     /// client that listens, which agreed before only while nothing set them apart (#627). Its first
     /// answer, the one MapUI maps the stream by at startup, is every later reader's, whatever the
@@ -85,7 +87,7 @@ public class UIOptions
 
     /// <summary><see cref="HotReloads(IHostEnvironment)"/> with the variable dotnet watch sets given.</summary>
     internal bool HotReloads(IHostEnvironment environment, string? dotnetWatch) =>
-        HotReload ?? (environment.IsDevelopment() || dotnetWatch == "1");
+        HotReload ?? (environment.IsDevelopment() || (dotnetWatch == "1" && !environment.IsProduction()));
 
     public UIOptions WithSsr(bool enabled = true)
     {
