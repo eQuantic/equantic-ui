@@ -10,8 +10,8 @@
 
 - [x] 2.1 `ServerRenderingService` keeps a structural host for a write-once page and runs its rounds through `ServerDataRounds`; an escape-hatch page draws as before. Verify: `APrefetchRound_DrawsTheInstanceThatLoaded` fails on main and passes here
 - [x] 2.2 A navigation's discovery of a write-once page runs the same rounds. Verify: `WhatAComponentLoaded_ThatIsNotAValue_ComposesTheNextRound_OnALoadAndANavigation` fails on main and passes here
-- [ ] 2.3 The server suite, the SSR fixtures and the hydration contract. Verify: the server and web suites pass with no pinned markup or payload regenerated
-- [ ] 2.4 Compiler and Conformance through the lock. Verify: both pass
+- [x] 2.3 The server suite, the SSR fixtures and the hydration contract. Verify: the server and web suites pass with no pinned markup or payload regenerated
+- [x] 2.4 Compiler and Conformance through the lock. Verify: both pass
 
 ## 3. Proved against the real thing
 
