@@ -139,10 +139,12 @@ build stops handing SHALL come out whole, leaving the controller's own in their 
 On the web, `CodeCommand.Copy` and `CodeCommand.Cut` SHALL write through the browser's own copy event, which
 the key's handler fires (`document.execCommand('copy')`), on whatever key they are bound to, as VS Code's
 do, and the command bound to the key SHALL decide, never the key. A cut SHALL delete only what that event
-took to the clipboard, and a write the browser refused SHALL leave the key to the browser. A paste SHALL be
-the browser's paste event: on a key the browser pastes on, the key goes on to the browser, whose event
-brings the text, and a key an app binds to `CodeCommand.Paste` elsewhere finds nothing to read, since a
-page reads the clipboard only in a paste event.
+took to the clipboard, and a write the browser refused SHALL leave the key to the browser. A paste SHALL
+read the clipboard after its key, through `ITextClipboard.ReadAsync`: on a key the browser pastes on, the
+key goes on to the browser and the paste waits for its paste event, which brings the text, and on any other
+key an app binds to `CodeCommand.Paste` it reads through `navigator.clipboard.readText()`, which may first
+ask the person's permission. The text SHALL be pasted when it arrives, drawn, and heard by the app as an
+edit, and a read the browser refused SHALL paste nothing.
 
 #### Scenario: Copy on a key of the app's own
 
@@ -161,5 +163,27 @@ page reads the clipboard only in a paste event.
 
 #### Scenario: Paste on ⌘V
 
-- **WHEN** ⌘V is pressed on the web
-- **THEN** the editor does not claim the key, and the browser's paste event pastes the clipboard's text
+- **WHEN** ⌘V is pressed on the web over the whole document selected, and the browser's paste event brings
+  `pasted`
+- **THEN** the editor does not claim the key, the document is `pasted`, nothing is asked of the Clipboard API,
+  and the app hears `pasted`
+
+#### Scenario: Paste on a key of the app's own
+
+- **WHEN** an app binds ⌘J to `CodeCommand.Paste` on the web, and ⌘J is pressed at the end of `pasted` while
+  `navigator.clipboard.readText()` answers ` and read`
+- **THEN** the editor claims the key, the document is `pasted and read` once the read answers, and the app
+  hears it
+
+#### Scenario: A read the browser refused
+
+- **WHEN** a key bound to `CodeCommand.Paste` is pressed on the web and `navigator.clipboard.readText()` is
+  refused
+- **THEN** the editor claims the key, and the document is as it was
+
+#### Scenario: A clipboard that answers later
+
+- **WHEN** `CodeCommand.Paste` runs at the `n` of `one` with a clipboard whose read has not answered yet, and it
+  then answers `x`
+- **THEN** the document is `one` until it answers and `oxne` after, and `CodeEditorController.Pasted` is raised
+  once, after the text is in
