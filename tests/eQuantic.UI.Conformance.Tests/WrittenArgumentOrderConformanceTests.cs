@@ -44,6 +44,17 @@ public class WrittenArgumentOrderConformanceTests
             public string Value { get; } = Calls.Pair(b: Seq.Int(6), a: Seq.Int(5));
         }
 
+        public class Pairing
+        {
+            public string Value;
+            public Pairing(int a, int b) { Value = a + "," + b; }
+        }
+
+        public sealed class Chained : Pairing
+        {
+            public Chained() : base(b: Seq.Int(2), a: Seq.Int(1)) { }
+        }
+
         public static class Shared
         {
             // A static constructor, so .NET runs the initializer at the first access and not before it.
@@ -75,6 +86,8 @@ public class WrittenArgumentOrderConformanceTests
             "Seq.Seen = \"\"; var h = new Holder(); return h.Value + \"|\" + h.Prop + \"|\" + Seq.Seen;"),
         ("a record's property initializer, named arguments out of order",
             "Seq.Seen = \"\"; var r = new Rec(1); return r.Value + \"|\" + Seq.Seen;"),
+        ("a constructor's base call, named arguments out of order",
+            "Seq.Seen = \"\"; var c = new Chained(); return c.Value + \"|\" + Seq.Seen;"),
         ("a static's initializer, named arguments out of order",
             "Seq.Seen = \"\"; var v = Shared.Value; return v + \"|\" + Seq.Seen;"),
     ];
