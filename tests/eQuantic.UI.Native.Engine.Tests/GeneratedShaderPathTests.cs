@@ -19,10 +19,11 @@ public class GeneratedShaderPathTests
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", "..",
             "src", "eQuantic.UI.Native.Engine", "Shaders", "Generated"));
 
-    /// <summary>A rooted path as a machine spells it: a drive (<c>C:\</c>, <c>C:/</c>) or a POSIX root
-    /// under one of the folders a checkout lives in.</summary>
+    /// <summary>A rooted path as a machine spells it: a drive and a whole folder (<c>C:\Users\</c>), or a
+    /// POSIX root under one of the folders a checkout lives in. A folder after the drive, so a binary's
+    /// chance bytes that read <c>x:/</c> are no path.</summary>
     private static readonly Regex MachinePath = new(
-        @"(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|/(?:Users|home|Volumes|private|tmp|var|opt|mnt|root|workspace|__w)/)",
+        @"(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/][A-Za-z0-9._ -]{2,}[\\/]|/(?:Users|home|Volumes|private|tmp|var|opt|mnt|root|workspace|__w)/)",
         RegexOptions.Compiled);
 
     [Fact]
