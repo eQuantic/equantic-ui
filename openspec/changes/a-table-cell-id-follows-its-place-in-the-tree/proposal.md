@@ -16,4 +16,4 @@ A label is not unique on a page. Every `Spreadsheet` is labelled alike, an unlab
 
 ## Impact
 
-The web realizer (`WebLoweringVisitor` and the new `LoweringPath`) and the browser runtime's lowering (`lowering.ts`). The cells' ids change spelling, from the label's hash to the path's, on both producers alike, so hydration adopts them as before. The segment rules are written once on each side, and the component parity fixture is what holds them equal; a TypeScript twin generated from `LoweringPath` is a follow-up.
+The web realizer (`WebLoweringVisitor` and the new `LoweringPath`) and the browser runtime's lowering (`lowering.ts`). The cells' ids change spelling, from the label's hash to the path's, on both producers alike, so hydration adopts them as before. The segment rules are written once on each side, and the component parity fixture is what holds them equal; a TypeScript twin generated from `LoweringPath` is a follow-up (#1410).

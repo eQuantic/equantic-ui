@@ -145,7 +145,7 @@ test.describe('Write-once SSR + hydration', () => {
 
     await page.goto('/sheet');
     await page.waitForLoadState('networkidle');
-    await expect(page.getByText('Click a cell, type, Enter').first()).toBeVisible();
+    await expect(page.getByRole('grid', { name: 'Spreadsheet' })).toBeVisible();
     const ids = await page.evaluate(() =>
       [...document.querySelectorAll('[id^="eq-tcell-"]')].map((element) => element.id),
     );
