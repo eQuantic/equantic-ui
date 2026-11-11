@@ -31,6 +31,7 @@ export class CodeEditorController {
         this.tabMovesFocus = false;
         this.changed = null;
         this.selectionChanged = null;
+        this.pasted = null;
         this._desiredAdvance = -1;
         this._cells = $eq.collections.dictionary();
         this._advances = $eq.collections.dictionary();
@@ -103,6 +104,7 @@ export class CodeEditorController {
     tabMovesFocus!: boolean;
     changed!: ((codeChange: CodeChange) => void) | null;
     selectionChanged!: ((codeRange: CodeRange) => void) | null;
+    pasted!: (() => void) | null;
     _desiredAdvance!: number;
     _cells!: any;
     _advances!: any;
@@ -585,208 +587,205 @@ export class CodeEditorController {
     }
 
     execute(command: CodeCommandValue, clipboard: any = null) {
-        {
-            let pasted: any;
-            switch (command) {
-                case 'cursorLeft':
-                    return this.step('character', 'backward', false);
-                case 'cursorLeftSelect':
-                    return this.step('character', 'backward', true);
-                case 'cursorRight':
-                    return this.step('character', 'forward', false);
-                case 'cursorRightSelect':
-                    return this.step('character', 'forward', true);
-                case 'cursorUp':
-                    return this.step('line', 'backward', false);
-                case 'cursorUpSelect':
-                    return this.step('line', 'backward', true);
-                case 'cursorDown':
-                    return this.step('line', 'forward', false);
-                case 'cursorDownSelect':
-                    return this.step('line', 'forward', true);
-                case 'cursorWordLeft':
-                    return this.step('word', 'backward', false);
-                case 'cursorWordLeftSelect':
-                    return this.step('word', 'backward', true);
-                case 'cursorWordRight':
-                    return this.step('word', 'forward', false);
-                case 'cursorWordRightSelect':
-                    return this.step('word', 'forward', true);
-                case 'cursorLineStart':
-                    return this.step('lineBoundary', 'backward', false);
-                case 'cursorLineStartSelect':
-                    return this.step('lineBoundary', 'backward', true);
-                case 'cursorLineEnd':
-                    return this.step('lineBoundary', 'forward', false);
-                case 'cursorLineEndSelect':
-                    return this.step('lineBoundary', 'forward', true);
-                case 'cursorDocumentStart':
-                    return this.step('documentBoundary', 'backward', false);
-                case 'cursorDocumentStartSelect':
-                    return this.step('documentBoundary', 'backward', true);
-                case 'cursorDocumentEnd':
-                    return this.step('documentBoundary', 'forward', false);
-                case 'cursorDocumentEndSelect':
-                    return this.step('documentBoundary', 'forward', true);
-                case 'cursorPageUp':
-                    return this.step('page', 'backward', false);
-                case 'cursorPageUpSelect':
-                    return this.step('page', 'backward', true);
-                case 'cursorPageDown':
-                    return this.step('page', 'forward', false);
-                case 'cursorPageDownSelect':
-                    return this.step('page', 'forward', true);
-                case 'selectAll':
-                    this.selectAll();
-                    return true;
-                case 'newLine':
-                    return this.insertNewLine();
-                case 'deleteLeft':
-                    return this.deleteBackward('character');
-                case 'deleteRight':
-                    return this.deleteForward('character');
-                case 'deleteWordLeft':
-                    return this.deleteBackward('word');
-                case 'deleteWordRight':
-                    return this.deleteForward('word');
-                case 'deleteToLineStart':
-                    return this.deleteBackward('lineBoundary');
-                case 'indent':
-                    return !this.readOnly && !this.tabMovesFocus && this.indent();
-                case 'outdent':
-                    return !this.readOnly && !this.tabMovesFocus && this.outdent();
-                case 'toggleLineComment':
-                    return this.toggleLineComment();
-                case 'undo':
-                    return this.undo();
-                case 'redo':
-                    return this.redo();
-                case 'moveLinesUp':
-                    return this.moveLines('backward');
-                case 'moveLinesDown':
-                    return this.moveLines('forward');
-                case 'copyLinesUp':
-                    return this.copyLines('backward');
-                case 'copyLinesDown':
-                    return this.copyLines('forward');
-                case 'deleteLines':
-                    return this.deleteLines();
-                case 'joinLines':
-                    return this.joinLines();
-                case 'sortLinesAscending':
-                    return this.sortLines(false);
-                case 'sortLinesDescending':
-                    return this.sortLines(true);
-                case 'insertLineAbove':
-                    return this.insertLine('backward');
-                case 'insertLineBelow':
-                    return this.insertLine('forward');
-                case 'addCursorAbove':
-                    return this.addCursor('backward');
-                case 'addCursorBelow':
-                    return this.addCursor('forward');
-                case 'addNextOccurrence':
-                    return this.addNextOccurrence();
-                case 'selectAllOccurrences':
-                    return this.selectAllOccurrences();
-                case 'removeSecondaryCursors':
-                    return this.droppingAnUnshownList(this.removeSecondaryCursors());
-                case 'nextTabStop':
-                    return !this.readOnly && !this.tabMovesFocus && this.snippet.next();
-                case 'previousTabStop':
-                    return !this.readOnly && !this.tabMovesFocus && this.snippet.previous();
-                case 'leaveSnippet':
-                    return this.droppingAnUnshownList(this.snippet.leave());
-                case 'goToLine':
-                    this.goTo.open('line');
-                    return true;
-                case 'goToSymbol':
-                    this.goTo.open('symbol');
-                    return true;
-                case 'navigateBack':
-                    return this.jumpList.back();
-                case 'navigateForward':
-                    return this.jumpList.forward();
-                case 'goToDefinition':
-                    return this.goTo.definition('definition');
-                case 'goToDeclaration':
-                    return this.goTo.definition('declaration');
-                case 'goToTypeDefinition':
-                    return this.goTo.definition('typeDefinition');
-                case 'goToImplementation':
-                    return this.goTo.definition('implementation');
-                case 'findReferences':
-                    return this.goTo.references();
-                case 'nextReference':
-                    return this.goTo.nextPlace();
-                case 'previousReference':
-                    return this.goTo.previousPlace();
-                case 'fold':
-                    return this.hidesFolds && this.folding.fold(this._selection.focus.line);
-                case 'unfold':
-                    return this.hidesFolds && this.folding.unfold(this._selection.focus.line);
-                case 'foldRecursively':
-                    return this.hidesFolds && this.folding.foldRecursively(this._selection.focus.line);
-                case 'unfoldRecursively':
-                    return this.hidesFolds && this.folding.unfoldRecursively(this._selection.focus.line);
-                case 'toggleFold':
-                    return this.hidesFolds && this.folding.toggle(this._selection.focus.line);
-                case 'foldAll':
-                    return this.hidesFolds && this.folding.foldAll();
-                case 'unfoldAll':
-                    return this.hidesFolds && this.folding.unfoldAll();
-                case 'copy':
-                    if (clipboard == null) return false;
-                    clipboard.write(this.copyText());
-                    return true;
-                case 'cut':
-                    if (clipboard == null) return false;
-                    clipboard.write(this.copyText());
-                    this.cut();
-                    return true;
-                case 'paste':
-                    if (clipboard == null) return false;
-                    if ((($0) => (($0 != null && $0.length > 0) && (pasted = $0, true)))(clipboard.read())) this.paste(pasted);
-                    return true;
-                case 'completionShow':
-                    return this.completion.invoke();
-                case 'completionNext':
-                    return this.completion.isOpen && this.completion.move(1);
-                case 'completionPrevious':
-                    return this.completion.isOpen && this.completion.move(-1);
-                case 'completionNextPage':
-                    return this.completion.isOpen && this.completion.movePage(1);
-                case 'completionPreviousPage':
-                    return this.completion.isOpen && this.completion.movePage(-1);
-                case 'completionAccept':
-                    return this.completion.isOpen && this.completion.accept();
-                case 'completionAcceptChangingText':
-                    return this.completion.isOpen && this.completion.acceptChangesText && this.completion.accept();
-                case 'completionHide':
-                    return this.completion.isOpen && this.completion.dismiss();
-                case 'signatureHelpShow':
-                    return this.signatureHelp.invoke();
-                case 'signatureHelpNext':
-                    return !this.hover.isOpen && this.signatureHelp.move(1);
-                case 'signatureHelpPrevious':
-                    return !this.hover.isOpen && this.signatureHelp.move(-1);
-                case 'signatureHelpHide':
-                    return this.droppingAnUnshownList(this.signatureHelp.dismiss());
-                case 'hoverShow':
-                    return this.hover.showAt(this.caret);
-                case 'hoverHide':
-                    return this.droppingAnUnshownList(this.hover.dismiss());
-                case 'problemNext':
-                    return !(this.diagnostics.next(false) == null);
-                case 'problemPrevious':
-                    return !(this.diagnostics.next(true) == null);
-                case 'releaseKeyboard':
-                    this.completion.dismiss();
-                    this.tabMovesFocus = true;
-                    return false;
-                default:
-                    return false;
-            }
+        switch (command) {
+            case 'cursorLeft':
+                return this.step('character', 'backward', false);
+            case 'cursorLeftSelect':
+                return this.step('character', 'backward', true);
+            case 'cursorRight':
+                return this.step('character', 'forward', false);
+            case 'cursorRightSelect':
+                return this.step('character', 'forward', true);
+            case 'cursorUp':
+                return this.step('line', 'backward', false);
+            case 'cursorUpSelect':
+                return this.step('line', 'backward', true);
+            case 'cursorDown':
+                return this.step('line', 'forward', false);
+            case 'cursorDownSelect':
+                return this.step('line', 'forward', true);
+            case 'cursorWordLeft':
+                return this.step('word', 'backward', false);
+            case 'cursorWordLeftSelect':
+                return this.step('word', 'backward', true);
+            case 'cursorWordRight':
+                return this.step('word', 'forward', false);
+            case 'cursorWordRightSelect':
+                return this.step('word', 'forward', true);
+            case 'cursorLineStart':
+                return this.step('lineBoundary', 'backward', false);
+            case 'cursorLineStartSelect':
+                return this.step('lineBoundary', 'backward', true);
+            case 'cursorLineEnd':
+                return this.step('lineBoundary', 'forward', false);
+            case 'cursorLineEndSelect':
+                return this.step('lineBoundary', 'forward', true);
+            case 'cursorDocumentStart':
+                return this.step('documentBoundary', 'backward', false);
+            case 'cursorDocumentStartSelect':
+                return this.step('documentBoundary', 'backward', true);
+            case 'cursorDocumentEnd':
+                return this.step('documentBoundary', 'forward', false);
+            case 'cursorDocumentEndSelect':
+                return this.step('documentBoundary', 'forward', true);
+            case 'cursorPageUp':
+                return this.step('page', 'backward', false);
+            case 'cursorPageUpSelect':
+                return this.step('page', 'backward', true);
+            case 'cursorPageDown':
+                return this.step('page', 'forward', false);
+            case 'cursorPageDownSelect':
+                return this.step('page', 'forward', true);
+            case 'selectAll':
+                this.selectAll();
+                return true;
+            case 'newLine':
+                return this.insertNewLine();
+            case 'deleteLeft':
+                return this.deleteBackward('character');
+            case 'deleteRight':
+                return this.deleteForward('character');
+            case 'deleteWordLeft':
+                return this.deleteBackward('word');
+            case 'deleteWordRight':
+                return this.deleteForward('word');
+            case 'deleteToLineStart':
+                return this.deleteBackward('lineBoundary');
+            case 'indent':
+                return !this.readOnly && !this.tabMovesFocus && this.indent();
+            case 'outdent':
+                return !this.readOnly && !this.tabMovesFocus && this.outdent();
+            case 'toggleLineComment':
+                return this.toggleLineComment();
+            case 'undo':
+                return this.undo();
+            case 'redo':
+                return this.redo();
+            case 'moveLinesUp':
+                return this.moveLines('backward');
+            case 'moveLinesDown':
+                return this.moveLines('forward');
+            case 'copyLinesUp':
+                return this.copyLines('backward');
+            case 'copyLinesDown':
+                return this.copyLines('forward');
+            case 'deleteLines':
+                return this.deleteLines();
+            case 'joinLines':
+                return this.joinLines();
+            case 'sortLinesAscending':
+                return this.sortLines(false);
+            case 'sortLinesDescending':
+                return this.sortLines(true);
+            case 'insertLineAbove':
+                return this.insertLine('backward');
+            case 'insertLineBelow':
+                return this.insertLine('forward');
+            case 'addCursorAbove':
+                return this.addCursor('backward');
+            case 'addCursorBelow':
+                return this.addCursor('forward');
+            case 'addNextOccurrence':
+                return this.addNextOccurrence();
+            case 'selectAllOccurrences':
+                return this.selectAllOccurrences();
+            case 'removeSecondaryCursors':
+                return this.droppingAnUnshownList(this.removeSecondaryCursors());
+            case 'nextTabStop':
+                return !this.readOnly && !this.tabMovesFocus && this.snippet.next();
+            case 'previousTabStop':
+                return !this.readOnly && !this.tabMovesFocus && this.snippet.previous();
+            case 'leaveSnippet':
+                return this.droppingAnUnshownList(this.snippet.leave());
+            case 'goToLine':
+                this.goTo.open('line');
+                return true;
+            case 'goToSymbol':
+                this.goTo.open('symbol');
+                return true;
+            case 'navigateBack':
+                return this.jumpList.back();
+            case 'navigateForward':
+                return this.jumpList.forward();
+            case 'goToDefinition':
+                return this.goTo.definition('definition');
+            case 'goToDeclaration':
+                return this.goTo.definition('declaration');
+            case 'goToTypeDefinition':
+                return this.goTo.definition('typeDefinition');
+            case 'goToImplementation':
+                return this.goTo.definition('implementation');
+            case 'findReferences':
+                return this.goTo.references();
+            case 'nextReference':
+                return this.goTo.nextPlace();
+            case 'previousReference':
+                return this.goTo.previousPlace();
+            case 'fold':
+                return this.hidesFolds && this.folding.fold(this._selection.focus.line);
+            case 'unfold':
+                return this.hidesFolds && this.folding.unfold(this._selection.focus.line);
+            case 'foldRecursively':
+                return this.hidesFolds && this.folding.foldRecursively(this._selection.focus.line);
+            case 'unfoldRecursively':
+                return this.hidesFolds && this.folding.unfoldRecursively(this._selection.focus.line);
+            case 'toggleFold':
+                return this.hidesFolds && this.folding.toggle(this._selection.focus.line);
+            case 'foldAll':
+                return this.hidesFolds && this.folding.foldAll();
+            case 'unfoldAll':
+                return this.hidesFolds && this.folding.unfoldAll();
+            case 'copy':
+                if (clipboard == null) return false;
+                clipboard.write(this.copyText());
+                return true;
+            case 'cut':
+                if (clipboard == null) return false;
+                clipboard.write(this.copyText());
+                this.cut();
+                return true;
+            case 'paste':
+                if (clipboard == null) return false;
+                this.pasteFromAsync(clipboard);
+                return true;
+            case 'completionShow':
+                return this.completion.invoke();
+            case 'completionNext':
+                return this.completion.isOpen && this.completion.move(1);
+            case 'completionPrevious':
+                return this.completion.isOpen && this.completion.move(-1);
+            case 'completionNextPage':
+                return this.completion.isOpen && this.completion.movePage(1);
+            case 'completionPreviousPage':
+                return this.completion.isOpen && this.completion.movePage(-1);
+            case 'completionAccept':
+                return this.completion.isOpen && this.completion.accept();
+            case 'completionAcceptChangingText':
+                return this.completion.isOpen && this.completion.acceptChangesText && this.completion.accept();
+            case 'completionHide':
+                return this.completion.isOpen && this.completion.dismiss();
+            case 'signatureHelpShow':
+                return this.signatureHelp.invoke();
+            case 'signatureHelpNext':
+                return !this.hover.isOpen && this.signatureHelp.move(1);
+            case 'signatureHelpPrevious':
+                return !this.hover.isOpen && this.signatureHelp.move(-1);
+            case 'signatureHelpHide':
+                return this.droppingAnUnshownList(this.signatureHelp.dismiss());
+            case 'hoverShow':
+                return this.hover.showAt(this.caret);
+            case 'hoverHide':
+                return this.droppingAnUnshownList(this.hover.dismiss());
+            case 'problemNext':
+                return !(this.diagnostics.next(false) == null);
+            case 'problemPrevious':
+                return !(this.diagnostics.next(true) == null);
+            case 'releaseKeyboard':
+                this.completion.dismiss();
+                this.tabMovesFocus = true;
+                return false;
+            default:
+                return false;
         }
     }
 
@@ -1606,6 +1605,13 @@ export class CodeEditorController {
             return this.edit(this._selection, '', false);
         });
         return text;
+    }
+
+    async pasteFromAsync(clipboard: any) {
+        let pasted: any; 
+        if ((($0) => !((($0 != null && $0.length > 0) && (pasted = $0, true))))(await clipboard.readAsync())) return;
+        this.paste(pasted);
+        this.pasted?.();
     }
 
     paste(text: string) {

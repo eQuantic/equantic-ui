@@ -1,1 +1,2 @@
 #nullable enable
+eQuantic.UI.Code.CodeEditorController.Pasted -> System.Action?

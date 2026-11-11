@@ -1,1 +1,3 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Primitives.ITextClipboard.Read() -> string?
+eQuantic.UI.Primitives.ITextClipboard.ReadAsync() -> System.Threading.Tasks.Task<string?>!

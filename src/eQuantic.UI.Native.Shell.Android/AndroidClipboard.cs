@@ -22,7 +22,9 @@ internal sealed class AndroidClipboard : ITextClipboard
     private static ClipboardManager? Manager =>
         PhotonActivity.Current?.GetSystemService(Context.ClipboardService) as ClipboardManager;
 
-    public string? Read()
+    public Task<string?> ReadAsync() => Task.FromResult(Read());
+
+    private static string? Read()
     {
         if (PhotonActivity.Current is not { } activity || Manager?.PrimaryClip is not { ItemCount: > 0 } clip)
             return null;

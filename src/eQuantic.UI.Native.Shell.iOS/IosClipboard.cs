@@ -14,7 +14,7 @@ namespace eQuantic.UI.Native.Shell.iOS;
 /// </summary>
 internal sealed class IosClipboard : ITextClipboard
 {
-    public string? Read() => UIPasteboard.General.String;
+    public Task<string?> ReadAsync() => Task.FromResult(UIPasteboard.General.String);
 
     public void Write(string text) => UIPasteboard.General.String = text;
 }

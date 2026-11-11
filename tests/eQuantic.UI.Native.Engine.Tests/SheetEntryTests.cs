@@ -53,7 +53,7 @@ public class SheetEntryTests
     {
         public string? Held;
         public void Write(string text) => Held = text;
-        public string? Read() => Held;
+        public Task<string?> ReadAsync() => Task.FromResult(Held);
     }
 
     // ---- the entry is a text document ------------------------------------------------------------------

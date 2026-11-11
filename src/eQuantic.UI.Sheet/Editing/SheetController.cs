@@ -887,6 +887,18 @@ public sealed class SheetController : ISheetSurfaceModel
     }
 
     /// <summary>
+    /// Pastes what <paramref name="clipboard"/> holds once it hands it over, and tells the views to build again:
+    /// at once on Photon, whose shells answer at once, and on the web when the browser has, after the key that
+    /// asked (#1028). A clipboard that holds no text, or was refused it, pastes nothing.
+    /// </summary>
+    internal async Task PasteFromAsync(ITextClipboard clipboard)
+    {
+        if (await clipboard.ReadAsync() is not { Length: > 0 } pasted) return;
+        Paste(pasted);
+        Refresh();
+    }
+
+    /// <summary>
     /// Pastes a TSV grid with its top-left at the selection's top-left (growing the sheet if it
     /// must), selects the pasted rectangle, and records ONE undo step.
     /// </summary>

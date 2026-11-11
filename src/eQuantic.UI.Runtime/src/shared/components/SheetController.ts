@@ -697,6 +697,13 @@ export class SheetController {
         return text;
     }
 
+    async pasteFromAsync(clipboard: any) {
+        let pasted: any; 
+        if ((($0) => !((($0 != null && $0.length > 0) && (pasted = $0, true))))(await clipboard.readAsync())) return;
+        this.paste(pasted);
+        this.refresh();
+    }
+
     paste(text: string) {
         if (this.editing) return this.entry.paste(text);
         let grid = TsvCodec.parse(text);

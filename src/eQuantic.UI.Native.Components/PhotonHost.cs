@@ -1643,6 +1643,17 @@ public sealed class PhotonHost
 
     /// <summary>The editing keys — what Backspace and the arrows mean inside a field. Returns false
     /// for anything it does not claim, so Tab and Escape go on meaning what they mean everywhere.</summary>
+    /// <summary>
+    /// Types what <paramref name="clipboard"/> holds into the focused field once it hands it over, which Photon's
+    /// shells do at once (#1028). A pasted newline would end the line rather than extend it: this is a
+    /// single-line field, and the paste is flattened to match what it can show.
+    /// </summary>
+    private async Task PasteFromAsync(ITextClipboard clipboard)
+    {
+        if (await clipboard.ReadAsync() is not { Length: > 0 } pasted) return;
+        TextInput(pasted.ReplaceLineEndings(" "));
+    }
+
     private bool EditKey(TextEntry entry, string key, KeyModifiers modifiers)
     {
         if (entry.Disabled) return false;
@@ -1683,10 +1694,7 @@ public sealed class PhotonHost
                     return true;
 
                 case 'v':
-                    if (Clipboard?.Read() is not { Length: > 0 } pasted) return true;
-                    // A pasted newline would end the line rather than extend it: this is a
-                    // single-line field, and the paste is flattened to match what it can show.
-                    TextInput(pasted.ReplaceLineEndings(" "));
+                    if (Clipboard is { } clipboard) _ = PasteFromAsync(clipboard);
                     return true;
             }
         }

@@ -1,1 +1,3 @@
 #nullable enable
+*REMOVED*[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsClipboard.Read() -> string?
+[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsClipboard.ReadAsync() -> System.Threading.Tasks.Task<string?>!

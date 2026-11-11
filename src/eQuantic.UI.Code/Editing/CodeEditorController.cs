@@ -446,6 +446,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public event Action<CodeRange>? SelectionChanged;
 
     /// <summary>
+    /// Raised once a <see cref="CodeCommand.Paste"/> has put the clipboard's text in the document. The web's
+    /// clipboard answers after the key that asked (<see cref="ITextClipboard.ReadAsync"/>), so the views are told
+    /// to draw the paste, and the app to hear it, as they are told of a definition gone to after its key (#1028).
+    /// </summary>
+    public event Action? Pasted;
+
+    /// <summary>
     /// Where along the line a vertical move AIMS: a count of cells on a monospaced grid, a distance in
     /// a measured one (<see cref="AdvanceOf"/>), -1 when no move aims. Moving down through a short line
     /// and on to a long one returns to where you started from — losing it on the short line is the
@@ -991,7 +998,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 // Claimed even when it finds nothing to paste: going on to another command could only do
                 // something nobody asked for.
                 if (clipboard is null) return false;
-                if (clipboard.Read() is { Length: > 0 } pasted) Paste(pasted);
+                _ = PasteFromAsync(clipboard);
                 return true;
             case CodeCommand.CompletionShow: return Completion.Invoke();
             case CodeCommand.CompletionNext: return Completion.IsOpen && Completion.Move(1);
@@ -2418,6 +2425,18 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// with the caret staying where it was in its text. Every editor worth using pastes a copied line
     /// that way; inserting it at the caret splits the line you were on in two.
     /// </summary>
+    /// <summary>
+    /// Pastes what <paramref name="clipboard"/> holds once it hands it over: at once on Photon, whose shells
+    /// answer at once, and on the web when the browser has, after the key that asked (#1028). A clipboard that
+    /// holds no text, or was refused it, pastes nothing.
+    /// </summary>
+    private async Task PasteFromAsync(ITextClipboard clipboard)
+    {
+        if (await clipboard.ReadAsync() is not { Length: > 0 } pasted) return;
+        Paste(pasted);
+        Pasted?.Invoke();
+    }
+
     public bool Paste(string text)
     {
         if (GoTo.IsOpen)
