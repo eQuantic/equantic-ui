@@ -16,9 +16,10 @@ public partial class Program
     {
         var builder = PhotonApplication.CreateBuilder(args);
 
+        builder.UseTheme(PhotonTheme.Instance);   // try MaterialTheme.FromSeed(...) to rebrand
+
         builder.Configure(photon =>
         {
-            photon.Theme = PhotonTheme.Instance;   // try MaterialTheme.FromSeed(...) to rebrand
             photon.Title = "EQuanticNativeApp";
             photon.Width = 900;
             photon.Height = 620;
