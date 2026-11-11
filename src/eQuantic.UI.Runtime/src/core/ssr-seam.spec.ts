@@ -4,7 +4,9 @@ import { HtmlElement, type HtmlNode } from './types';
 import type { VisualNodeValue } from '../shared/nodes';
 import { Column, Text } from '../shared/vocabulary';
 import { VisualNodeComponent } from '../shared/visual-node-component';
-import { ComponentInstanceStore } from '../shared/instance-store';
+import { ElementRoots, enterPass, exitPass } from '../shared/element-roots';
+import { lowerVisualNode } from '../shared/lowering';
+import { ambientLoweringContext } from '../shared/photon-context';
 
 interface Payload {
   __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
@@ -222,25 +224,33 @@ describe('the SSR-to-client seam', () => {
     expect(agreeing.textContent).toContain('A-state');
   });
 
-  it('retains an instance by the same identity, so a B.Row at a path never becomes the A.Row there', () => {
-    // The OTHER place the runtime asks "is this the same component": the store that keeps a nested
-    // stateful instance, and its state, across a page's re-renders. It keyed by the class name, so
-    // after the walk had learned the full identity the store could still hand an A.Row's instance
-    // to a B.Row built at the same path.
+  it('keeps an instance by the same identity, so a B.Row at a position never becomes the A.Row there', () => {
+    // The OTHER place the runtime asks "is this the same component": the element tree that keeps a
+    // nested stateful instance, and its state, across a page's re-renders. The store it replaced
+    // keyed by the class name once, so after the walk had learned the full identity it could still
+    // hand an A.Row's instance to a B.Row built at the same path. A position keeps its instance only
+    // for a node of the same runtime type.
     const ARow = rowIn('A');
     const BRow = rowIn('B');
-    const store = new ComponentInstanceStore();
+    const roots = new ElementRoots(null);
+    const render = (row: StatefulComponent) => {
+      const column = new Column(0);
+      column.add(row);
+      enterPass(roots, null, true);
+      try {
+        lowerVisualNode(column as never, ambientLoweringContext());
+      } finally {
+        exitPass();
+      }
+    };
 
-    store.beginPass();
-    const first = store.reconcile('r0/0', new ARow(), null);
-    store.endPass();
-
-    store.beginPass();
+    const first = new ARow();
+    render(first);
     const fresh = new BRow();
-    const resolved = store.reconcile('r0/0', fresh, null);
-    store.endPass();
+    render(fresh);
 
-    expect(first).toBeInstanceOf(ARow);
-    expect(resolved).toBe(fresh);
+    expect(first.mountedAt).toBeNull();
+    expect(fresh.mountedAt).not.toBeNull();
+    roots.unmountAll();
   });
 });

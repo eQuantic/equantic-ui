@@ -17,10 +17,12 @@
  * what a node's identity becomes when the paths go (E3b-2, #1454).
  */
 
-// Through the barrel the generated modules import from, not their files: reached directly, tsc meets
-// the engine's modules in another order and reports an inference cycle inside the generated
-// `Element.ts` (TS7023), which nobody may edit by hand.
-import { ComponentElement, NodeElement, type Element } from './runtime-exports';
+// The engine's types through the barrel the generated modules import from, not their files: reached
+// directly, tsc meets the engine's modules in another order and reports an inference cycle inside
+// the generated `Element.ts` (TS7023), which nobody may edit by hand. Its classes come through the
+// seam the barrel registers them in (element-engine.ts says why).
+import type { Element } from './runtime-exports';
+import { elementEngine } from './element-engine';
 import type { UiComponent } from '../core/component';
 import type { VisualNode } from './vocabulary';
 
@@ -53,7 +55,7 @@ export class ElementFrame {
    */
   at(component: object): ComponentPosition {
     const element = this.positions.get(component);
-    if (element instanceof ComponentElement) {
+    if (element instanceof elementEngine().ComponentElement) {
       return { kept: element.component, built: element.childAt(0)?.configuration ?? null };
     }
     throw new Error(
@@ -82,11 +84,21 @@ export class ElementFrame {
    */
   show(holder: object, layer: VisualNode): VisualNode {
     const element = this.positions.get(holder);
-    if (!(element instanceof NodeElement)) {
+    if (!(element instanceof elementEngine().NodeElement)) {
       throw new Error(`A ${nameOf(holder)}'s layer was lowered that this frame has no position for.`);
     }
     this.index((element as unknown as DeferredHolder).showDeferred(layer));
     return layer;
+  }
+
+  /**
+   * Takes in the positions of a tree built BESIDE the one this frame was made from: an arm the web
+   * draws next to the one an adaptive node's position holds, which the C# visitor lowers with no
+   * frame and the browser builds through a structural owner for one render (`lowering.ts`,
+   * `holdArm`), so every component in it still has a position the lowering can ask about.
+   */
+  include(root: Element): void {
+    this.index(root);
   }
 
   /**

@@ -14,7 +14,14 @@
  * (`test-runtime.ts`); a lowering that runs before it says so instead of building nothing.
  */
 
-import type { BuildOwner, ComponentElement, NodeElement } from './runtime-exports';
+import type {
+  BuildContext,
+  BuildOwner,
+  ComponentElement,
+  NodeElement,
+  UiComponent,
+  VisualNode,
+} from './runtime-exports';
 
 export interface ElementEngine {
   readonly BuildOwner: typeof BuildOwner;
@@ -35,4 +42,22 @@ export function elementEngine(): ElementEngine {
     );
   }
   return engine;
+}
+
+/** How a component builds, as an owner is handed it: its build, for a context, at a depth of components. */
+export type BuildComponent = (component: UiComponent, context: BuildContext, depth: number) => VisualNode;
+
+/**
+ * THE ONE PLACE the browser makes a live owner: a tree kept across renders, which mounts and unmounts
+ * what it holds and asks for a render when a position is marked. Every owner the runtime makes comes
+ * from here or from `structuralOwner`, so what each one is handed is decided once.
+ */
+export function liveOwner(build: BuildComponent): BuildOwner {
+  return new (elementEngine().BuildOwner)(build);
+}
+
+/** THE ONE PLACE the browser makes a structural owner: a tree laid out once and discarded, which calls
+ *  no lifecycle hook. */
+export function structuralOwner(build: BuildComponent): BuildOwner {
+  return elementEngine().BuildOwner.structural(build);
 }
