@@ -10,8 +10,9 @@ namespace eQuantic.UI.Compiler.Services;
 /// </summary>
 internal sealed class ReferencedProject
 {
-    private ReferencedProject(string assemblyPath, string projectFile)
+    private ReferencedProject(string assemblyPath, string projectFile, ProjectSources? sources)
     {
+        Sources = sources;
         AssemblyPath = assemblyPath;
         ProjectFile = projectFile;
         Directory = Path.TrimEndingDirectorySeparator(Path.GetDirectoryName(projectFile)!) + Path.DirectorySeparatorChar;
@@ -40,8 +41,18 @@ internal sealed class ReferencedProject
     /// declaration is taken from the assembly that carries it.</summary>
     public IReadOnlyList<string> FriendAssemblies { get; }
 
-    /// <summary>Whether <paramref name="file"/> is inside the project's directory.</summary>
-    public bool Holds(string file) => Path.GetFullPath(file).StartsWith(Directory, StringComparison.Ordinal);
+    /// <summary>What the C# compiler compiled for the project, as the SDK handed it (#828); null where it
+    /// handed none, and the project's directory is walked.</summary>
+    public ProjectSources? Sources { get; }
+
+    /// <summary>What the project's files are parsed with: its own symbols, where the SDK handed them.</summary>
+    public Microsoft.CodeAnalysis.CSharp.CSharpParseOptions ParseOptions => Sources?.ParseOptions ?? ParseDefaults.Options;
+
+    /// <summary>Whether <paramref name="file"/> is the project's: one it compiled, a file it links from
+    /// outside its directory included, or, where no list was handed, one inside its directory.</summary>
+    public bool Holds(string file) => Sources is { } sources
+        ? sources.Compiles(file)
+        : Path.GetFullPath(file).StartsWith(Directory, StringComparison.Ordinal);
 
     /// <summary>
     /// The projects a <c>--projects</c> file lists, each as two lines: the path of the assembly MSBuild
@@ -58,7 +69,12 @@ internal sealed class ReferencedProject
     /// wrong with no diagnostic (found in review of #827).
     /// </para>
     /// </summary>
-    public static IReadOnlyList<ReferencedProject> ReadList(string? projectsFile)
+    /// <param name="projectsFile">The list.</param>
+    /// <param name="sources">What each project compiled, by its project file's full path
+    /// (<see cref="ProjectSources.ReadAll"/>); null or empty reads each project's directory. Handed, it
+    /// answers for every project the list holds, and one it does not answer for stops the build.</param>
+    public static IReadOnlyList<ReferencedProject> ReadList(string? projectsFile,
+        IReadOnlyDictionary<string, ProjectSources>? sources = null)
     {
         if (string.IsNullOrEmpty(projectsFile)) return [];
         if (!File.Exists(projectsFile))
@@ -91,7 +107,11 @@ internal sealed class ReferencedProject
                 || !System.IO.Directory.Exists(directory))
                 throw new DirectoryNotFoundException($"the project line {projectNumber} lists is not there: '{projectFile}'");
             if (!seen.Add(Path.GetFileName(assembly))) continue;
-            projects.Add(new ReferencedProject(assembly, Path.GetFullPath(projectFile)));
+            var fullProjectFile = Path.GetFullPath(projectFile);
+            ProjectSources? compiled = null;
+            if (sources is { Count: > 0 } && !sources.TryGetValue(fullProjectFile, out compiled))
+                throw new InvalidDataException($"the list of sources says nothing of the project line {projectNumber} lists: '{fullProjectFile}'");
+            projects.Add(new ReferencedProject(assembly, fullProjectFile, compiled));
         }
         if (projects.Count == 0)
             throw new InvalidDataException($"the list of projects holds no project: '{projectsFile}'");
@@ -99,12 +119,14 @@ internal sealed class ReferencedProject
     }
 
     /// <summary>
-    /// The project's own source, by the rule the app's own is read by: every <c>.cs</c> under its
-    /// directory outside its <c>bin</c> and <c>obj</c>, and its generated global usings. A
-    /// sub-directory that holds a project file of its own is another project's, and is left to it.
+    /// The project's own source, by the rule the app's own is read by: what it compiled, where the SDK
+    /// handed that (#828), and otherwise every <c>.cs</c> under its directory outside its <c>bin</c> and
+    /// <c>obj</c>, and its generated global usings. A sub-directory that holds a project file of its own is
+    /// another project's, and is left to it.
     /// </summary>
     public IReadOnlyList<string> SourceFiles()
     {
+        if (Sources is { } sources) return sources.Files;
         var files = new List<string>();
         void Walk(string directory, bool isRoot)
         {
