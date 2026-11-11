@@ -2,15 +2,7 @@ import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } f
 
 export class XmlLanguage {
     constructor() {
-        this.rules = (() => {
-        const $o = new CodeLanguageRules();
-        $o.blockComment = ['<!--', '-->'];
-        $o.brackets = [['<', '>'], ['(', ')'], ['[', ']']];
-        $o.indentAfter = ['>'];
-        $o.outdentOn = ['<'];
-        $o.indentWidth = 2;
-        return $o;
-    })();
+        this.rules = (() => { let $n0: CodeLanguageRules; return ($n0 = new CodeLanguageRules(), $n0.blockComment = ['<!--', '-->'], $n0.brackets = [['<', '>'], ['(', ')'], ['[', ']']], $n0.indentAfter = ['>'], $n0.outdentOn = ['<'], $n0.indentWidth = 2, $n0); })();
     }
 
     rules!: CodeLanguageRules;

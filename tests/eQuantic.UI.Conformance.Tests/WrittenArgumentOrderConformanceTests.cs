@@ -31,6 +31,25 @@ public class WrittenArgumentOrderConformanceTests
             public static bool Try(out int found, int a = 1, int b = 2) { found = a * 10 + b; return true; }
             public static string Listed(int head, params int[] rest) => head + ":" + string.Join(",", rest);
         }
+
+        // Initializers, where no statement is open to declare a temporary (#1201).
+        public sealed class Holder
+        {
+            public string Value = Calls.Pair(b: Seq.Int(2), a: Seq.Int(1));
+            public string Prop { get; } = Calls.Pair(b: Seq.Int(4), a: Seq.Int(3));
+        }
+
+        public sealed record Rec(int X)
+        {
+            public string Value { get; } = Calls.Pair(b: Seq.Int(6), a: Seq.Int(5));
+        }
+
+        public static class Shared
+        {
+            // A static constructor, so .NET runs the initializer at the first access and not before it.
+            static Shared() { }
+            public static string Value = Calls.Pair(b: Seq.Int(8), a: Seq.Int(7));
+        }
         """;
 
     private static readonly (string Name, string Statements)[] Cases =
@@ -52,6 +71,12 @@ public class WrittenArgumentOrderConformanceTests
         ("a vocabulary record with a twin of its own, built with named arguments out of order",
             "Seq.Seen = \"\"; var style = new TypeStyle(LineHeight: Seq.F(24), Size: Seq.F(16), Weight: FontWeight.Bold, Tracking: 0, MaxScale: Seq.F(2)); "
             + "return style.Size + \",\" + style.LineHeight + \",\" + style.MaxScale + \"|\" + Seq.Seen;"),
+        ("a field's and a property's initializers, named arguments out of order",
+            "Seq.Seen = \"\"; var h = new Holder(); return h.Value + \"|\" + h.Prop + \"|\" + Seq.Seen;"),
+        ("a record's property initializer, named arguments out of order",
+            "Seq.Seen = \"\"; var r = new Rec(1); return r.Value + \"|\" + Seq.Seen;"),
+        ("a static's initializer, named arguments out of order",
+            "Seq.Seen = \"\"; var v = Shared.Value; return v + \"|\" + Seq.Seen;"),
     ];
 
     [SkippableTheory]
