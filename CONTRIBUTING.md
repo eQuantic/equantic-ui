@@ -65,7 +65,11 @@ dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
 
 ## The bar
 
-Three rules decide most reviews here; they are in [CLAUDE.md](CLAUDE.md) at length.
+Three rules decide most reviews here; they are in [CLAUDE.md](CLAUDE.md) at length. Every rule, with
+the case it came from, is in [docs/PRINCIPLES.md](docs/PRINCIPLES.md), and how a change is proved
+(an A/B both ways, .NET as the oracle, both targets driven) in [docs/PROVING.md](docs/PROVING.md).
+Copilot's review reads the same rules, from `.github/copilot-instructions.md`, so a pull request
+meets them there before anyone else reads it.
 
 1. **A developer using the SDK never writes a platform artifact.** No Swift, no plist, no manifest, no
    CSS. If a feature works but makes someone learn one, it is not done.
