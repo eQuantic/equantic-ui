@@ -65,7 +65,7 @@ culture and page state, and was written with no `Cache-Control`, while the JSON 
 was sent `no-store`. Now both answers of a page's route are sent `no-store`, from one place.
 
 ```text
-src/eQuantic.UI.Server/UIExtensions.cs:850  context.Response.Headers.CacheControl = "no-store";
+src/eQuantic.UI.Server/UIExtensions.cs:879  context.Response.Headers.CacheControl = "no-store";
 ```
 
 **#1295, low, fixed in 0.2.0-preview.68 (#1338).** The atomic sheet wrote a style value as it came
@@ -154,11 +154,11 @@ backplane are written without the check the publisher makes.
 **Holds.** It is a server-sent event stream, not SignalR. A client cannot send anything, it only
 receives a keep-alive and `reload`, and rebuilds start from the file watcher, never from a request.
 
-**#1297, low.** It is on whenever `DOTNET_WATCH` is set, Production included, and each stream gets an
-unbounded channel.
+**#1297, low.** It was on whenever `DOTNET_WATCH` was set, Production included, and each stream gets an
+unbounded channel. Since #1361, Production streams no rebuilds unless the app asks for them:
 
 ```text
-src/eQuantic.UI.Server/UIOptions.cs:88  HotReload ?? (environment.IsDevelopment() || dotnetWatch == "1");
+src/eQuantic.UI.Server/UIOptions.cs:90  HotReload ?? (environment.IsDevelopment() || (dotnetWatch == "1" && !environment.IsProduction()));
 src/eQuantic.UI.Server/HotReload/HotReloadService.cs:275  var channel = Channel.CreateUnbounded<string>();
 ```
 
@@ -181,12 +181,14 @@ echoes the name as JavaScript, and the culture redirect builds its `Location` fr
 and never from a request, and with consent the container is fetched only after a grant, with Consent
 Mode defaulting to denied.
 
-**#1294, low.** A revocation is ignored on the page, one grant grants all four signals, the consent
-cookie is not `Secure`, and the strings are quoted by hand, the pattern #526 removed from the shell.
-Whether the plain `UseGtm(...)` should ask for consent by default is a product decision recorded there.
+**#1294, low.** A revocation was ignored on the page, one grant granted all four signals, the consent
+cookie was not `Secure`, and the strings were quoted by hand, the pattern #526 removed from the shell.
+Since #1360 consent follows each answer, a grant gives analytics alone by default, the cookie is kept
+where only the page's host can write it, the plain `UseGtm(...)` waits for consent, and every string
+is encoded as JSON:
 
 ```text
-src/eQuantic.UI.Gtm/GtmExtensions.cs:160  value.Replace("\\", "\\\\").Replace("'", "\\'").Replace("</", "<\\/");
+src/eQuantic.UI.Gtm/GtmExtensions.cs:159  private static string Js(string value) => $"\"{JsonEncodedText.Encode(value)}\"";
 ```
 
 ## The image optimizer
@@ -237,12 +239,13 @@ The findings above are as measured on 2026-11-09. Their fixes, by the release th
 | #1290 and #1291 (low), Server Actions | #1316 | 0.2.0-preview.68 |
 | #1293 (low), uploads | #1326 | 0.2.0-preview.68 |
 | #1295 (low), the atomic sheet | #1338 | 0.2.0-preview.68 |
+| #1294 (low), GTM's consent | #1360 | the next release |
+| #1296 and #1297 (low), the routes and hot reload | #1361 | the next release |
 | #1292 (low), server events | #1358, open | |
-| #1294 (low), GTM's consent | #1360, open | |
-| #1296 and #1297 (low), the routes and hot reload | #1361, open | |
 
 The response headers the review found missing came with the Content-Security-Policy, also in
 0.2.0-preview.68: an app turns it on with `UseContentSecurityPolicy` (#1267), every script and style
 the SDK writes carries the request's nonce (#1266, #1268), the policy brings `nosniff` and
 `Referrer-Policy`, and only the app's own origin may frame a page unless it says otherwise. The build
-refuses an escape-hatch inline handler under it (EQ2115, #1269), and #1270 proves it in a browser.
+refuses an escape-hatch inline handler under it (EQ2115, #1269), and a real browser runs the dashboard
+under it, failing on a violation (#1270, #1370).
