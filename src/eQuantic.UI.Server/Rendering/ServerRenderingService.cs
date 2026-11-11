@@ -139,7 +139,8 @@ public class ServerRenderingService : IServerRenderingService
             // And the density the browser reported (#623), for the whole request: every write-once
             // bridge is built at it, the drawing's and the navigation's discovery walk alike, or a page
             // that composes by its density answers a navigation from a tree the browser never builds.
-            Web.VisualNodeComponent.AmbientDensity = DensityCookie.Resolve(context);
+            var density = DensityCookie.Resolve(context);
+            Web.VisualNodeComponent.AmbientDensity = density;
             // Every in-app href picks up THIS request's language prefix. The culture is the one
             // UseRequestLocalization negotiated — from the path segment first — so a page served
             // at /pt-BR/pricing links to /pt-BR/about without any page saying so.
@@ -205,11 +206,24 @@ public class ServerRenderingService : IServerRenderingService
                 string? vectorDefs = null;
                 if (draw)
                 {
+                    // A WRITE-ONCE PAGE is drawn through an element tree the request owns
+                    // (docs/ELEMENT-TREE-PLAN.md, E4): each round is a frame of ONE tree, a component
+                    // that loaded has its position marked, and only that subtree builds again, with the
+                    // instance that loaded. Nothing is written back onto a fresh instance, because none
+                    // is drawn. An escape-hatch page makes its write-once bridges anew on every render,
+                    // so they have no position to keep an owner at: each is a tree drawn once, and what
+                    // loaded is put back by its name.
+                    var page = component as Web.VisualNodeComponent;
+                    var host = page is null ? null : Web.MarkupHost.Structural(Theme, 1f, density);
+                    var data = host is null ? null : new Web.ServerDataRounds(host);
+                    var counted = 0;
+
                     // The loop repeats because the SET of components can depend on the data: what a
                     // page composes after loading a list is not knowable before loading it. It ends
                     // the moment a round finds no component it has not already asked, which for a
-                    // page with no prefetch at all is the first one.
-                    for (var round = 0; round < MaxPrefetchRounds; round++)
+                    // page with no prefetch at all is the first one, and at the bound on the rounds,
+                    // which each path counts below.
+                    for (var round = 0; ; round++)
                     {
                         assets = new AssetCollection();
                         vectorDefs = null;
@@ -246,7 +260,16 @@ public class ServerRenderingService : IServerRenderingService
                         Web.ComponentExpansionScope.Ambient = renderScope;
                         try
                         {
-                            html = RenderComponent(component);
+                            if (host is not null)
+                            {
+                                host.Build(page!.Node, ServerSizeClass);
+                                html = HtmlRenderer.RenderToString(host.Lower(styles));
+                                host.EndFrame();
+                            }
+                            else
+                            {
+                                html = RenderComponent(component);
+                            }
                         }
                         finally
                         {
@@ -274,6 +297,34 @@ public class ServerRenderingService : IServerRenderingService
 
                         // The page's own paint servers, rendered the same way the page was.
                         if (!gradients.IsEmpty) vectorDefs = RenderComponent(gradients.Container());
+
+                        if (data is not null)
+                        {
+                            var due = data.Next(renderScope);
+                            if (due.Count == 0) break;
+
+                            // The same bound and the same reason as below, counted as the tester counts
+                            // it: a round that only asks a component that waited its turn below another
+                            // reached nothing new, and spends none.
+                            if (data.ReachedNew && ++counted >= MaxPrefetchRounds)
+                            {
+                                _logger.LogWarning(
+                                    "[SSR Prefetch] Stopped at {Rounds} rounds with {Count} component(s) still "
+                                    + "asking for data; they render their defaults. A chain this deep usually "
+                                    + "means a component loads what another one had to load first.",
+                                    MaxPrefetchRounds, data.Pending.Count);
+                                break;
+                            }
+
+                            // One at a time, for the reason given below.
+                            foreach (var loader in due)
+                            {
+                                await loader.PrefetchAsync(context.RequestServices, context.RequestAborted);
+                                data.Loaded(loader);
+                            }
+
+                            continue;
+                        }
 
                         // ASKED ONCE, except where the key now names a DIFFERENT component: a page
                         // whose own data chooses what it composes can put another row at the same
@@ -388,9 +439,11 @@ public class ServerRenderingService : IServerRenderingService
                     // OFF THE INSTANCE THAT DREW, or not at all. A component discovered in an earlier
                     // round but absent from the final tree has nothing on the page for its state to
                     // belong to, and shipping it would hand the client a key its own walk never reaches.
+                    // Every component that loads data was asked by the time the last round drew it, or
+                    // reached past the bound and drew its defaults, which then travel with it.
                     foreach (var (key, drew) in renderScope.Expanded)
                     {
-                        if (asked.Contains(key) || CarriesProjection(drew)) payload[key] = Snapshot(drew);
+                        if (drew is Primitives.IServerPrefetch || CarriesProjection(drew)) payload[key] = Snapshot(drew);
                     }
                 }
                 else if (navigationPayload is not null)
@@ -450,6 +503,17 @@ public class ServerRenderingService : IServerRenderingService
     /// hung request is not.
     /// </summary>
     private const int MaxPrefetchRounds = 5;
+
+    /// <summary>
+    /// The window size class a page's tree resolves an adaptive node's arm for. The server cannot see
+    /// the window, and the markup is the same for every class, since every arm lowers behind its own
+    /// media gate: it decides only which arm's components keep their instances from one prefetch round
+    /// to the next, while the others are drawn once per round.
+    /// </summary>
+    private const WindowSizeClass ServerSizeClass = WindowSizeClass.Expanded;
+
+    /// <summary>The theme every write-once page and bridge builds with: the app's, or the SDK's.</summary>
+    private IAppTheme Theme => _options.Theme ?? Primitives.PhotonTheme.Instance;
 
     /// <summary>
     /// Loads the server data for EVERY <see cref="Primitives.IServerPrefetch"/> the page expands,
@@ -660,7 +724,7 @@ public class ServerRenderingService : IServerRenderingService
         // hydrates directly (v1 fence: no server-driven initial state — field defaults render).
         if (instance is Primitives.UiComponent visual)
         {
-            return new Web.VisualNodeComponent(visual, _options.Theme);
+            return new Web.VisualNodeComponent(visual, Theme);
         }
 
         throw new InvalidOperationException($"Cannot create instance of component type: {componentType.Name}");

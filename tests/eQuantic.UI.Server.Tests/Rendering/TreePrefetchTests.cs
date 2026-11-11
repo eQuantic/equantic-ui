@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Server.Rendering;
@@ -984,5 +985,55 @@ public class TreePrefetchTests
         // in the hydration payload. None of it is state the client rebuilds from a payload.
         fields.EnumerateObject().Select(field => field.Name).Should().Equal(["_downloads"],
             $"a component ships what it DECLARES; payload was: {result.SerializedState}");
+    }
+
+    /// <summary>A component that loads, and draws whether the instance drawing it is the one that
+    /// loaded: a field put back onto a fresh instance carries the other one's identity.</summary>
+    private sealed class SaysWhoLoaded : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private int _loadedBy;
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _loadedBy = RuntimeHelpers.GetHashCode(this);
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) => new Text(
+            _loadedBy == 0 ? "nothing loaded"
+            : _loadedBy == RuntimeHelpers.GetHashCode(this) ? "drawn by the instance that loaded"
+            : "drawn by another instance", TypeRole.BodyM);
+    }
+
+    [Page("/tree-prefetch-kept")]
+    private sealed class PageWhoseLoaderIsKept : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2);
+            column.Add(new Text("title", TypeRole.Heading));
+            column.Add(new SaysWhoLoaded());
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// A PREFETCH ROUND KEEPS THE INSTANCE (docs/ELEMENT-TREE-PLAN.md, E4). A write-once page is drawn
+    /// through an element tree the request owns: the component that loaded has its position marked,
+    /// and only that position builds again, with the same instance, so what it loaded is drawn by the
+    /// instance that loaded it. Before, every round built the whole page anew and wrote the loaded
+    /// fields onto the fresh instance, which works for a field and loses anything that is not one.
+    /// </summary>
+    [Fact]
+    public async Task APrefetchRound_DrawsTheInstanceThatLoaded()
+    {
+        var context = RequestWith(out _);
+
+        var result = await CreateService().RenderPageAsync(typeof(PageWhoseLoaderIsKept), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("drawn by the instance that loaded")
+            .And.NotContain("drawn by another instance");
     }
 }
