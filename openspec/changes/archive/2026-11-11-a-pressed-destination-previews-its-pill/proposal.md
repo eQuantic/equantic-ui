@@ -18,9 +18,9 @@ hover = SurfaceSubtle pill"), so a press previewed nothing of the selection it w
 
 Two halves of the handoff stay out of this change. The hover: a box's hover is the box's own on both
 targets, so a hover on the pill would light only while the pointer is over the pill, not over the
-destination; a hover scoped to the control is a mechanism of its own, filed apart. The filter chip:
+destination; a hover scoped to the control is a mechanism of its own, #1456. The filter chip:
 reading the handoff's frames showed that the unselected filter chip RESTS outlined, so its press is
-not fixed without its rest, and that waits on the maintainer's decision on the pull request.
+not fixed without its rest, which is #1460.
 
 ## Impact
 

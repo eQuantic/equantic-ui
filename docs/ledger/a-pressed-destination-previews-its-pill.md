@@ -3,5 +3,6 @@
   The pill of every destination but the selected one is now pressed into the selection's own pill at 40%, on the
   web and on Photon, pinned by `PressedFillPlacementTests` and `PressedFillPlacementRealizerTests`. The hover the
   handoff asks for is not added: a box's hover is the box's own, so the pill would light only under the pointer
-  and not across the destination. The filter chip's half waits on a decision, since the handoff's frames draw
-  the unselected filter chip outlined.
+  and not across the destination ([#1456](https://github.com/eQuantic/equantic-ui/issues/1456)). The filter chip's
+  half is [#1460](https://github.com/eQuantic/equantic-ui/issues/1460): the handoff's frames draw the unselected
+  filter chip outlined, so its press is not fixed without its rest.
