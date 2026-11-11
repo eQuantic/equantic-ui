@@ -2236,7 +2236,7 @@
         {
           "tag": "div",
           "attrs": {
-            "class": "eq-anchor-panel eq-anchor-t-center eq-low5pc",
+            "class": "eq-12ue1rl eq-anchor-panel eq-anchor-t-center eq-low5pc",
             "id": "eq-tip-1xtgw69",
             "role": "tooltip"
           },
@@ -2602,8 +2602,8 @@
                     {
                       "tag": "span",
                       "attrs": {
-                        "aria-live": "polite",
-                        "class": "eq-desc"
+                        "class": "eq-desc",
+                        "hidden": ""
                       },
                       "events": [],
                       "children": []
@@ -2740,8 +2740,8 @@
                             {
                               "tag": "span",
                               "attrs": {
-                                "aria-live": "polite",
-                                "class": "eq-desc"
+                                "class": "eq-desc",
+                                "hidden": ""
                               },
                               "events": [],
                               "children": []
@@ -2757,12 +2757,24 @@
           ]
         },
         {
-          "tag": "span",
+          "tag": "div",
           "attrs": {
-            "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
+            "aria-atomic": "true",
+            "aria-live": "polite",
+            "class": "eq-1jixn86",
+            "role": "status"
           },
           "events": [],
-          "children": []
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
         }
       ]
     }

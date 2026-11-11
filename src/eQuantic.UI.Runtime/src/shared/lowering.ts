@@ -1497,13 +1497,15 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
   }
   if (node.invalid === true) input.attributes['aria-invalid'] = 'true';
 
-  // C# twin: the STABLE .eq-field shell — input + the sr-only description twin, present (empty)
-  // from the first paint so a later error swap ANNOUNCES, and so the shape never flips (a
-  // presence-flip would replace the <input> and drop focus mid-edit). The id is the content's
-  // FNV hash — the atomizer's identity rule, deterministic across SSR and client.
+  // C# twin: the STABLE .eq-field shell — input + the HIDDEN description twin, the field's
+  // description through aria-describedby and no line of the page: the component that draws the
+  // message draws it in a LiveRegion of its own, announced once and read once (#1332). Present
+  // (empty) from the first paint so the shape never flips (a presence-flip would replace the
+  // <input> and drop focus mid-edit). The id is the content's FNV hash — the atomizer's identity
+  // rule, deterministic across SSR and client.
   const description = element('span', {});
   prependClass(description, 'eq-desc');
-  description.attributes['aria-live'] = 'polite';
+  description.attributes['hidden'] = '';
   if (node.description) {
     const descriptionId = `eq-desc-${hashDeclaration(node.description)}`;
     description.attributes['id'] = descriptionId;
