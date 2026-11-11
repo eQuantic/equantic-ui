@@ -13,31 +13,51 @@ This page says where.
 - **[docs/ARCHITECTURE-AUDIT.md](docs/ARCHITECTURE-AUDIT.md)** ends with an *order of attack*: every
   open structural item, measured and sized, with the Flutter answer it follows. If you want to take
   one, say so on its issue or open one, so two people do not take the same step.
+- **Take an issue by assigning it to yourself**, and move it to *In progress* on the
+  [board](https://github.com/orgs/eQuantic/projects/11), before you branch. Every issue starts
+  assigned to the owner's account, which the owner's agent sessions work as, so an issue assigned to
+  anyone else is that person's: no session starts it or pushes to its branch, and the same holds for
+  every issue labelled `good first issue`, which is kept for a person. An issue already *In progress*
+  is someone's, whoever it is assigned to.
 - Correctness of the transpiler, layout parity between the web and Photon realizers, the Photon
   engine and its shells, accessibility bridges, and the write-once contract on more host and target
   combinations are the areas where help matters most.
 
 ## Building
 
-You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and nothing else — no Node.js, no
-npm. The TypeScript runtime is built by an embedded Bun the build unpacks itself, and the Photon
-shaders are committed (only framework developers changing a shader run `scripts/generate-shaders.sh`).
-The one exception is outside the build: the change workflow runs the OpenSpec CLI, which needs
-Node >= 20.19, and `./scripts/openspec.sh` installs the pinned version from its lockfile on first
-use. CI validates your change either way.
+You need the [.NET 10 SDK](https://dotnet.microsoft.com/download), and, to build the whole solution,
+the two phone workloads below. No Node.js, no npm. The TypeScript runtime is built by an embedded
+Bun the build unpacks itself, and the Photon shaders are committed (only framework developers
+changing a shader run `scripts/generate-shaders.sh`). The one exception is outside the build: the
+change workflow runs the OpenSpec CLI, which needs Node >= 20.19, and `./scripts/openspec.sh`
+installs the pinned version from its lockfile on first use. CI validates your change either way.
 
 ```bash
 git clone https://github.com/eQuantic/equantic-ui.git
 cd equantic-ui
+dotnet workload install ios android        # once: the phone shells (macOS, with Xcode for iOS)
 dotnet build                               # the whole solution
 dotnet test                                # every test project
 dotnet build samples/DefaultUIDashboard    # a web app against the source tree
-dotnet build samples/PhotonDesktop         # a Photon app (macOS)
+dotnet build samples/PhotonDesktop         # a Photon app (macOS or Windows)
+```
+
+The solution holds the two phone shells, `net10.0-ios` and `net10.0-android`, which is why the whole
+solution needs their workloads; CI installs the same two. GitHub's macOS runners also carry Xcode,
+the Android SDK and a JDK; on a machine without the last two, the Android workload's
+`InstallAndroidDependencies` target installs them. The iOS shell builds on macOS only, so on Linux
+and Windows build and test the projects you change rather than the solution, as CI's jobs do:
+
+```bash
+dotnet build src/eQuantic.UI.Compiler
+dotnet test tests/eQuantic.UI.Compiler.Tests
+dotnet workload install android            # if you change the Android shell
 ```
 
 The samples build against the framework's **projects**, never against packages — see the wiki's
-[Build Flow](https://github.com/eQuantic/equantic-ui/wiki/BuildFlow). CI does not build them, so a
-change that touches the SDK, the compiler or a realizer is proved by building them locally.
+[Build Flow](https://github.com/eQuantic/equantic-ui/wiki/BuildFlow). CI's `samples` job builds them
+on macOS; on another host, a change that touches the SDK, the compiler or a realizer is proved by
+building them locally.
 
 **The build has no warnings, and fails on one.** `TreatWarningsAsErrors` is set in
 `Directory.Build.props`, so a warning is a broken build rather than a line nobody reads — which is
@@ -118,10 +138,10 @@ workflow whose `if:` expression did not parse failed before it created a single 
 notice, and for an hour seven pull requests merged on local runs alone. Two pull requests that each
 passed alone also broke `main` together (#453).
 
-Once the ruleset merges through GitHub's merge queue (#1308), a reviewed, green pull request enters
-it with `gh pr merge <n>`, and the queue runs CI on it together with every pull request ahead of it
-and squash-merges it when that run is green: nobody merges `main` into a pull request only to bring
-it up to date. Until then, one that `main` moved past has to take `main` and run again.
+The ruleset merges through GitHub's merge queue (#1308): a reviewed, green pull request enters it
+with `gh pr merge <n>`, and the queue runs CI on it together with every pull request ahead of it and
+squash-merges it when that run is green. Nobody merges `main` into a pull request only to bring it up
+to date; a pull request takes `main` to resolve a conflict, and for nothing else.
 
 ```bash
 scripts/ci-doctor.sh

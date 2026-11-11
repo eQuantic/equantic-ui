@@ -38,6 +38,12 @@ work moves (an issue starts, a pull request merges), `python3 scripts/roadmap.py
 real dates and the forecast of the rest, each milestone's included, and `--apply` writes them to the
 board; `docs/ROADMAP-FORECAST.md` is the method.
 
+An issue is taken by assigning it. Every issue starts assigned to the owner's account, which every
+session works as, so one assigned to anyone else is that person's, and so is one labelled
+`good first issue`, which is kept for a person's first step: no session starts it, and no session
+pushes to a branch of its. A contributor takes an issue by assigning it to themselves and moving it
+to In progress, and an issue already In progress is someone's, whoever it is assigned to.
+
 ### Branches
 
 `<type>/<slug>`: the type is one of `feat/`, `fix/`, `chore/`, `refactor/`, `docs/`, `test/`,
