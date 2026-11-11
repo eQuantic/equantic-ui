@@ -74,7 +74,7 @@ export class Avatar extends StatelessComponent {
     withStatusDot(face: VisualNode, side: number, theme: any) {
         let slot = theme.badge;
         let dotSide = $eq.math.roundSingle(Math.fround(side / Math.fround(3.3)));
-        let dotFill = this.status === 'online' ? theme.colors('success').base : slot?.avatarGlyphColor ?? theme.textMuted;
+        let dotFill = this.status === 'online' ? theme.colors('success').base : slot?.offlineColor ?? theme.textMuted;
         let dot = new Box(new BoxStyle({ width: dotSide, height: dotSide, background: dotFill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: slot?.ringWidth ?? 2, borderColor: slot?.ringColor ?? theme.surface }));
         let stack = new Stack();
         stack.add(face);

@@ -108,7 +108,7 @@ public sealed class Avatar : StatelessComponent
         var dotSide = MathF.Round(side / 3.3f);
         var dotFill = Status == PresenceStatus.Online
             ? theme.Colors(Variant.Success).Base
-            : slot?.AvatarGlyphColor ?? theme.TextMuted;
+            : slot?.OfflineColor ?? theme.TextMuted;
         var dot = new Box(new BoxStyle
         {
             Width = dotSide,

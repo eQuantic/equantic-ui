@@ -34,7 +34,7 @@ public sealed record TableTheme
     public float? RowMinHeight { get; init; }
 
     /// <summary>A Table header's colour (<see cref="IAppTheme.TextSecondary"/>).</summary>
-    public ColorToken? HeaderColor { get; init; }
+    public ColorToken? TableHeaderColor { get; init; }
 
     // ---- DataTable --------------------------------------------------------------------------------
 

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { materializeTheme, type ThemeData } from './theme-bridge';
 import { photonTheme } from './design-system.generated';
 import { FontFile, type AppTheme } from './value-types';
+import { AppThemeExtensions, MarkdownTheme, NavigationTheme } from './theme-slots';
 // The SAME fixture the C# ThemeBridgeTests pins (ThemeBridge.SerializeJson(PhotonTheme.Instance)).
 // Round-tripping it back to the generated photonTheme proves the C# serializer and the TS materializer
 // agree byte-for-byte — the guarantee that a client hydrates the exact theme the server rendered.
@@ -221,7 +222,10 @@ describe('theme bridge: the navigation and collection slots and the document\'s 
     for (const family of families) {
       const written = (photonData as unknown as Record<string, Record<string, unknown>>)[family];
       const read = theme[family] as unknown as Record<string, unknown>;
-      for (const name of Object.keys(written)) expect(read[name], `${family}.${name}`).not.toBeNull();
+      for (const name of Object.keys(written)) {
+        expect(name in read, `${family}.${name} is declared by its mirror`).toBe(true);
+        expect(read[name], `${family}.${name}`).not.toBeNull();
+      }
     }
     expect(theme.navigation?.tabHeight).toBe(48);
     expect(theme.navigation?.inactiveColor).toEqual(photonTheme.textMuted);
@@ -230,12 +234,25 @@ describe('theme bridge: the navigation and collection slots and the document\'s 
     expect(theme.table?.headerUppercase).toBe(true);
   });
 
-  it('refuses a member the mirror does not declare', () => {
-    expect(() =>
-      materializeTheme({
-        ...(photonData as unknown as ThemeData),
-        list: { itemHeight: 52, rowSpacing: 4 },
-      }),
-    ).toThrow(/ListTheme has no member 'rowSpacing'/);
+  it('skips a member the mirror does not declare, and keeps the rest', () => {
+    const newer = materializeTheme({
+      ...(photonData as unknown as ThemeData),
+      list: { itemHeight: 60, rowSpacing: 4 },
+    });
+    expect(newer.list?.itemHeight).toBe(60);
+    expect('rowSpacing' in (newer.list as object)).toBe(false);
+  });
+
+  it('With replaces each of the six slots it is given and forwards the rest', () => {
+    const navigation = new NavigationTheme({ tabHeight: 60 });
+    const markdown = new MarkdownTheme({ blockGap: 30 });
+    const replaced = AppThemeExtensions.with(theme, null, null, navigation, null, null, null, null, markdown);
+    expect(replaced.navigation).toBe(navigation);
+    expect(replaced.markdown).toBe(markdown);
+    for (const family of ['list', 'table', 'badge', 'calendar'] as const) {
+      expect(replaced[family], family).toBe(theme[family]);
+    }
+    expect(replaced.button).toBe(theme.button);
+    expect(replaced.colors('primary')).toEqual(theme.colors('primary'));
   });
 });

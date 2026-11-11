@@ -173,7 +173,7 @@ export class TableTheme {
   hoverFill: ColorToken | null = null;
   columnGap: number | null = null;
   rowMinHeight: number | null = null;
-  headerColor: ColorToken | null = null;
+  tableHeaderColor: ColorToken | null = null;
   dataRowHeight: number | null = null;
   selectionColumnWidth: number | null = null;
   headerFill: ColorToken | null = null;
@@ -208,6 +208,7 @@ export class BadgeTheme {
   avatarGlyphSize: SizeLadder | null = null;
   avatarFill: ColorToken | null = null;
   avatarGlyphColor: ColorToken | null = null;
+  offlineColor: ColorToken | null = null;
   wellSize: number | null = null;
   wellFill: ColorToken | null = null;
   wellIconSize: number | null = null;
@@ -389,13 +390,14 @@ export function sheetTheme(data: SlotData): SheetTheme {
  * A family's slot the bridge wrote, read member by member into its mirror. The wire has one form per
  * kind, so a member's shape says how to read it: a light/dark tuple is a colour, an object is a size
  * ladder (the only record these slots nest), and anything else (a number, a flag, an enum's name)
- * crosses as itself. The mirror declares every member, so a name it does not declare is a bridge and a
- * runtime of different builds, refused here rather than carried along unread.
+ * crosses as itself. A name the mirror does not declare is skipped, so a page whose runtime is older
+ * than its server's theme keeps every look it can read: `theme-bridge.spec.ts` holds the mirrors to
+ * every member the server writes, where a refusal would fail the test and not a page.
  */
 function familySlot<T extends object>(slot: T, data: SlotData): T {
   const members = slot as unknown as Record<string, unknown>;
   for (const [name, value] of Object.entries(data)) {
-    if (!(name in members)) throw new Error(`${slot.constructor.name} has no member '${name}'`);
+    if (!(name in members)) continue;
     members[name] = Array.isArray(value)
       ? slotToken(value)
       : value !== null && typeof value === 'object'

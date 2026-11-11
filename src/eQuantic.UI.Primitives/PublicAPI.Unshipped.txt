@@ -136,6 +136,8 @@ eQuantic.UI.Primitives.BadgeTheme.AvatarFill.get -> eQuantic.UI.Primitives.Color
 eQuantic.UI.Primitives.BadgeTheme.AvatarFill.init -> void
 eQuantic.UI.Primitives.BadgeTheme.AvatarGlyphColor.get -> eQuantic.UI.Primitives.ColorToken?
 eQuantic.UI.Primitives.BadgeTheme.AvatarGlyphColor.init -> void
+eQuantic.UI.Primitives.BadgeTheme.OfflineColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.BadgeTheme.OfflineColor.init -> void
 eQuantic.UI.Primitives.BadgeTheme.WellSize.get -> float?
 eQuantic.UI.Primitives.BadgeTheme.WellSize.init -> void
 eQuantic.UI.Primitives.BadgeTheme.WellFill.get -> eQuantic.UI.Primitives.ColorToken?
@@ -487,8 +489,8 @@ eQuantic.UI.Primitives.TableTheme.ColumnGap.get -> float?
 eQuantic.UI.Primitives.TableTheme.ColumnGap.init -> void
 eQuantic.UI.Primitives.TableTheme.RowMinHeight.get -> float?
 eQuantic.UI.Primitives.TableTheme.RowMinHeight.init -> void
-eQuantic.UI.Primitives.TableTheme.HeaderColor.get -> eQuantic.UI.Primitives.ColorToken?
-eQuantic.UI.Primitives.TableTheme.HeaderColor.init -> void
+eQuantic.UI.Primitives.TableTheme.TableHeaderColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.TableTheme.TableHeaderColor.init -> void
 eQuantic.UI.Primitives.TableTheme.DataRowHeight.get -> float?
 eQuantic.UI.Primitives.TableTheme.DataRowHeight.init -> void
 eQuantic.UI.Primitives.TableTheme.SelectionColumnWidth.get -> float?

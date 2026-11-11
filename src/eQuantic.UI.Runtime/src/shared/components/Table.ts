@@ -21,7 +21,7 @@ export class Table extends StatelessComponent {
         let gap = slot?.columnGap ?? 12;
         let padding = EdgeInsets.symmetric(slot?.cellPaddingX ?? 12, slot?.cellPaddingY ?? 8);
         let header = new Grid(tracks, gap, null, { width: SizeValue.fill });
-        for (const column of this.columns) header.add(new Text(column, 'label', slot?.headerColor ?? theme.textSecondary, 1));
+        for (const column of this.columns) header.add(new Text(column, 'label', slot?.tableHeaderColor ?? theme.textSecondary, 1));
         let table = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         table.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: padding, borderWidth: 0 }), header));
         table.add(new Divider());

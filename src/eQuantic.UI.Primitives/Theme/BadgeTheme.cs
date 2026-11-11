@@ -68,9 +68,12 @@ public sealed record BadgeTheme
     /// <summary>The fill of an avatar without initials (<see cref="IAppTheme.SurfaceSubtle"/>).</summary>
     public ColorToken? AvatarFill { get; init; }
 
-    /// <summary>The person glyph's colour, and an offline status dot's
-    /// (<see cref="IAppTheme.TextMuted"/>).</summary>
+    /// <summary>The person glyph's colour (<see cref="IAppTheme.TextMuted"/>).</summary>
     public ColorToken? AvatarGlyphColor { get; init; }
+
+    /// <summary>An offline status dot's fill (<see cref="IAppTheme.TextMuted"/>). An online one is the
+    /// success variant's.</summary>
+    public ColorToken? OfflineColor { get; init; }
 
     // ---- EmptyState -------------------------------------------------------------------------------
 

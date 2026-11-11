@@ -32,7 +32,7 @@ public sealed class Table : StatelessComponent
 
         var header = new Grid(tracks, gap: gap) { Width = SizeValue.Fill };
         foreach (var column in Columns)
-            header.Add(new Text(column, TypeRole.Label, slot?.HeaderColor ?? theme.TextSecondary, maxLines: 1));
+            header.Add(new Text(column, TypeRole.Label, slot?.TableHeaderColor ?? theme.TextSecondary, maxLines: 1));
 
         var table = new Column(gap: 0) { Width = SizeValue.Fill };
         table.Add(new Box(new BoxStyle
