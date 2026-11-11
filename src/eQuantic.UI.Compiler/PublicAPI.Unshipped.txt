@@ -1,6 +1,11 @@
 #nullable enable
 eQuantic.UI.Compiler.Models.StateField.Slot.get -> string!
 eQuantic.UI.Compiler.Models.StateField.Slot.set -> void
+*REMOVED*static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnits(System.Collections.Generic.IReadOnlyList<string!>! sourceDirectories, string? generatedDirectory) -> System.Collections.Generic.IEnumerable<(string! Directory, string! File, bool IsGenerated)>!
+eQuantic.UI.Compiler.Services.AppBuildOptions.SourcesFile.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.SourcesFile.init -> void
+static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnits(System.Collections.Generic.IReadOnlyList<string!>! sourceDirectories, string? generatedDirectory, System.Collections.Generic.IReadOnlyList<string!>? projectFiles = null) -> System.Collections.Generic.IEnumerable<(string! Directory, string! File, bool IsGenerated)>!
+eQuantic.UI.Compiler.Services.SemanticModelProvider.OptionsFor(string? path) -> Microsoft.CodeAnalysis.CSharp.CSharpParseOptions!
 const eQuantic.UI.Compiler.CodeGen.Eq.PairText = "$eq.text.pair" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.PairTextGroup = "$eq.text.pairGroup" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TaskFromCanceled = "$eq.task.fromCanceled" -> string!

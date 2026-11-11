@@ -61,8 +61,9 @@ public class ComponentParser
     public IEnumerable<ComponentDefinition> ParseSource(string sourceCode, string sourcePath = "")
     {
         // The provider knows which language version the surrounding compilation speaks — a tree
-        // that will JOIN it must speak the same one (mixed versions are an ArgumentException).
-        var options = _semanticModelProvider?.JoinOptions ?? Services.ParseDefaults.Options;
+        // that will JOIN it must speak the same one (mixed versions are an ArgumentException) — and
+        // which symbols the project the file belongs to defined (#828).
+        var options = _semanticModelProvider?.OptionsFor(sourcePath) ?? Services.ParseDefaults.Options;
         var tree = CSharpSyntaxTree.ParseText(sourceCode, options, path: sourcePath);
         var root = tree.GetCompilationUnitRoot();
         var results = new List<ComponentDefinition>();
