@@ -54,7 +54,8 @@ public sealed record InputTheme
     /// <summary>The search field's fill (<see cref="IAppTheme.SurfaceSubtle"/>).</summary>
     public ColorToken? SearchFill { get; init; }
 
-    /// <summary>The size of a field's leading glyph (20).</summary>
+    /// <summary>The size of a field's leading glyph (20), on the §07 whitelist (16, 20, 24 or 32): an
+    /// icon of any other size throws when it is built.</summary>
     public float? IconSize { get; init; }
 
     /// <summary>The gap between the text field's label and its container (6).</summary>

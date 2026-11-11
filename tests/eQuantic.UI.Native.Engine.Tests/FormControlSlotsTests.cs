@@ -147,6 +147,47 @@ public class FormControlSlotsTests
         missing.Should().BeEmpty("MaterialTheme fills the form control slots from Material 3's specifications");
     }
 
+    /// <summary>Every glyph a slot sizes is held to the §07 whitelist, which an icon enforces by throwing:
+    /// a Material 3 size off it (the chip's 18) turned the control into its boundary's error panel. Each
+    /// control that draws a slot-sized glyph is built under both themes and must not fall back.</summary>
+    [Fact]
+    public void EveryGlyphASlotSizes_BuildsUnderBothThemes()
+    {
+        VisualNode[] glyphs =
+        [
+            new IconButton(new Icon(Icons.Search), "Search", size: SizeVariant.Small),
+            new IconButton(new Icon(Icons.Search), "Search", size: SizeVariant.XLarge),
+            new TextInput("ana", _ => { }, label: "Email", leading: Icons.Mail),
+            new SearchField("harbour", _ => { }),
+            new TimePicker(new TimeOnly(9, 30), _ => { }),
+            new Stepper(2, _ => { }),
+            new Chip("All", ChipKind.Filter, selected: true, onPressed: () => { }),
+            new Chip("Ana", ChipKind.Input, onRemove: () => { }),
+        ];
+
+        foreach (var theme in new IAppTheme[] { Photon, MaterialTheme.Instance })
+        {
+            var broken = glyphs.Where(node => FellBack(node, theme)).Select(node => node.GetType().Name).ToList();
+            broken.Should().BeEmpty($"every slot-sized glyph is on the §07 whitelist under {theme.GetType().Name}");
+        }
+    }
+
+    private static bool FellBack(VisualNode node, IAppTheme theme)
+    {
+        var result = PhotonRealizer.Realize(node, 400, 400, theme, ThemeMode.Light, new DisplayListBuilder());
+        return Any(result.Root, n => n.Source is Text { Content: var content }
+            && (content.Contains("could not be displayed", StringComparison.Ordinal)
+                || content.Contains("failed to render", StringComparison.Ordinal)));
+    }
+
+    private static bool Any(LayoutNode node, Func<LayoutNode, bool> match)
+    {
+        if (match(node)) return true;
+        foreach (var child in node.Children)
+            if (Any(child, match)) return true;
+        return false;
+    }
+
     private static bool Near(float a, float b) => MathF.Abs(a - b) < 0.5f;
 
     private static List<Rect> Boxes(VisualNode node, IAppTheme theme, Density density)

@@ -34,6 +34,7 @@ public sealed record SegmentedTheme
     /// <summary>The stepper's border colour (<see cref="IAppTheme.BorderStrong"/>).</summary>
     public ColorToken? BorderColor { get; init; }
 
-    /// <summary>The size of the stepper's minus and plus glyphs (20).</summary>
+    /// <summary>The size of the stepper's minus and plus glyphs (20), on the §07 whitelist (16, 20, 24
+    /// or 32): an icon of any other size throws when it is built.</summary>
     public float? IconSize { get; init; }
 }

@@ -16,7 +16,8 @@ public sealed record IconButtonTheme
     /// <summary>A ladder for icon buttons alone, ahead of the theme's: the button's side is its height.</summary>
     public ControlsTheme? Controls { get; init; }
 
-    /// <summary>The glyph's size per button size (16, 20, 24 and 24, the §07 whitelist).</summary>
+    /// <summary>The glyph's size per button size (16, 20, 24 and 24), each on the §07 whitelist (16, 20,
+    /// 24 or 32): an icon of any other size throws when it is built.</summary>
     public SizeLadder? IconSize { get; init; }
 
     /// <summary>The corner radius (the theme's full shape: a circle).</summary>

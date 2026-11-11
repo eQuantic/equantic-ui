@@ -184,7 +184,8 @@ public sealed class MaterialTheme : IAppTheme
 
     /// <summary>
     /// M3's segmented button (Segmented buttons, Specs): 40dp tall, fully rounded, its label in Label
-    /// large (14), 12dp of padding, flat, with no lip around the selected segment and a 1dp outline.
+    /// large (14), 12dp of padding, flat, with no lip around the selected segment and a 1dp outline;
+    /// its 18dp icons take the §07 whitelist's next step, 20.
     /// </summary>
     public SegmentedTheme? Segmented { get; } = new()
     {
@@ -198,13 +199,14 @@ public sealed class MaterialTheme : IAppTheme
         Inset = 0,
         ThumbElevation = 0,
         BorderWidth = 1,
-        IconSize = 18,
+        IconSize = IconSize.Dense,
     };
 
     /// <summary>
     /// M3's chip (Chips, Specs): 32dp tall with a small (8dp) corner, 16dp of padding and 8dp between
-    /// its 18dp icons and its label in Label large; a selected filter chip is filled rather than
-    /// outlined.
+    /// its icons and its label in Label large; a selected filter chip is filled rather than outlined.
+    /// M3 draws the icons at 18dp, which is not on the §07 whitelist an icon is held to, so they take
+    /// its next step, 20.
     /// </summary>
     public ChipTheme? Chip { get; } = new()
     {
@@ -220,8 +222,8 @@ public sealed class MaterialTheme : IAppTheme
         LabelTracking = 0.1f,
         Radius = 8,
         SelectedBorderWidth = 0,
-        IconSize = 18,
-        RemoveIconSize = 18,
+        IconSize = IconSize.Dense,
+        RemoveIconSize = IconSize.Dense,
     };
 
     // ---- Elevation — the M3 levels (seed-independent) --------------------------------------------

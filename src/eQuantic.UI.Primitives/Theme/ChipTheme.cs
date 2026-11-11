@@ -47,9 +47,10 @@ public sealed record ChipTheme
     /// <summary>The opacity of the pressed colour over a selected filter chip (0.24).</summary>
     public float? PressOpacity { get; init; }
 
-    /// <summary>The size of a selected filter chip's check (16).</summary>
+    /// <summary>The size of a selected filter chip's check (16), a size on the §07 whitelist (16, 20, 24
+    /// or 32): an icon of any other size throws when it is built.</summary>
     public float? IconSize { get; init; }
 
-    /// <summary>The size of an input chip's remove glyph (20).</summary>
+    /// <summary>The size of an input chip's remove glyph (20), on the §07 whitelist.</summary>
     public float? RemoveIconSize { get; init; }
 }
