@@ -30,4 +30,12 @@ public sealed record ButtonTheme
 
     /// <summary>The link variant's horizontal padding, which has no fill to pad (6).</summary>
     public float? LinkPaddingX { get; init; }
+
+    /// <summary>The outline variant's border (<see cref="IAppTheme.BorderStrong"/>). The colours a variant
+    /// fills with are <see cref="IAppTheme.Colors"/>'; a slot carries the ones the button chooses itself.</summary>
+    public ColorToken? OutlineColor { get; init; }
+
+    /// <summary>The fill an outline or a ghost button takes when hovered or pressed
+    /// (<see cref="IAppTheme.SurfaceSubtle"/>).</summary>
+    public ColorToken? QuietFill { get; init; }
 }

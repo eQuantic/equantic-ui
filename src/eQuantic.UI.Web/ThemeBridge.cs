@@ -18,7 +18,16 @@ public static class ThemeBridge
     /// <summary>The theme as a single-line JSON object: surfaces, disabledOpacity, per-variant color
     /// groups, the type scale, elevations 0–5, the shape scale and the data palette — colors as <c>[[r,g,b,a],[r,g,b,a]]</c>
     /// light/dark tuples, keys camelCased to match the enum-lowered names the client looks up.</summary>
-    public static string SerializeJson(IAppTheme theme)
+    public static string SerializeJson(IAppTheme theme) => Serialized.GetValue(theme, Write);
+
+    /// <summary>
+    /// The JSON once per theme instance: the shell writes it on every page request, and a theme is the
+    /// design system's data, which does not change under a running app (<see cref="ThemeVarMap"/> keeps
+    /// its own map per instance for the same reason).
+    /// </summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IAppTheme, string> Serialized = new();
+
+    private static string Write(IAppTheme theme)
     {
         var sb = new StringBuilder();
         sb.Append('{');
@@ -155,22 +164,6 @@ public static class ThemeBridge
         Tokens(sb, [data.Status.Good, data.Status.Warning, data.Status.Serious, data.Status.Critical]);
         sb.Append('}');
 
-        // The spreadsheet's slot, when the theme answers one, with the members it names: a member
-        // left out is the spreadsheet's own colour on the client as on the server.
-        if (theme.Sheet is { } sheet)
-        {
-            sb.Append(",\"sheet\":{");
-            first = true;
-            foreach (var (name, value) in SheetMembers(sheet))
-            {
-                if (value is not { } named) continue;
-                Comma(sb, ref first);
-                Key(sb, name);
-                Token(sb, named);
-            }
-            sb.Append('}');
-        }
-
         // The code palette, every kind's colour (#936): the browser's `code(kind)` answers from it, so
         // a theme that overrides `Code` colours a code block alike on the server, on Photon and in the
         // browser once it renders again. Always written, since every theme answers one.
@@ -184,134 +177,102 @@ public static class ThemeBridge
         }
         sb.Append('}');
 
-        // The component slots (docs/ELEMENT-TREE-PLAN.md §3.10), each when the theme answers one, with
-        // the members it names: a member left out is the next step of the slot order on the client as
-        // on the server. A value that varies by density crosses with both sides, since the density is
-        // the browser's to report.
-        if (theme.Controls is { } controls)
+        // The component slots (docs/ELEMENT-TREE-PLAN.md §3.10), every one the theme answers, under the
+        // member's camel-cased name and with the members it names: a member left out is the next step
+        // of the slot order on the client as on the server. Read by reflection, so a slot a family adds
+        // crosses with nothing written here.
+        foreach (var (name, slot) in Slots(theme))
         {
-            sb.Append(",\"controls\":");
-            Controls(sb, controls);
-        }
-        if (theme.Button is { } button)
-        {
-            sb.Append(",\"button\":{");
-            first = true;
-            if (button.Controls is { } ladder)
-            {
-                Comma(sb, ref first);
-                Key(sb, "controls");
-                Controls(sb, ladder);
-            }
-            foreach (var (name, value) in ButtonMembers(button))
-            {
-                if (value is null) continue;
-                Comma(sb, ref first);
-                Key(sb, name);
-                sb.Append(value);
-            }
-            sb.Append('}');
+            sb.Append(',');
+            Key(sb, name);
+            sb.Append(SlotJson(slot));
         }
         sb.Append('}');
         return sb.ToString();
     }
 
-    /// <summary>The control ladder's members by the name the browser reads them under, each a ladder
-    /// per size or per size and density. <c>ThemeBridgeTests</c> holds it to every property the record
-    /// has.</summary>
-    internal static IEnumerable<(string Name, object? Value)> ControlsMembers(ControlsTheme controls) =>
-    [
-        ("height", controls.Height),
-        ("paddingX", controls.PaddingX),
-        ("labelSize", controls.LabelSize),
-        ("gap", controls.Gap),
-        ("icon", controls.Icon),
-        ("radius", controls.Radius),
-    ];
+    /// <summary>Every slot the theme answers, by the name the browser reads it under: each member of
+    /// <see cref="IAppTheme"/> whose type is a slot record, in declaration order.</summary>
+    internal static IEnumerable<(string Name, object Slot)> Slots(IAppTheme theme) =>
+        SlotProperties()
+            .Select(property => (Camel(property.Name), property.GetValue(theme)))
+            .Where(slot => slot.Item2 is not null)
+            .Select(slot => (slot.Item1, slot.Item2!));
 
-    /// <summary>The Button slot's members beside its ladder, by name and as the JSON value each writes;
-    /// <c>ThemeBridgeTests</c> holds it to every property the record has.</summary>
-    internal static IEnumerable<(string Name, string? Value)> ButtonMembers(ButtonTheme button) =>
-    [
-        ("minWidth", button.MinWidth is { } minWidth ? Num(minWidth) : null),
-        ("labelWeight", button.LabelWeight is { } weight ? $"\"{Camel(weight.ToString())}\"" : null),
-        ("labelTracking", button.LabelTracking is { } tracking ? Num(tracking) : null),
-        ("outlineWidth", button.OutlineWidth is { } outline ? Num(outline) : null),
-        ("linkPaddingX", button.LinkPaddingX is { } link ? Num(link) : null),
-    ];
+    /// <summary>The members of <see cref="IAppTheme"/> that are slots: a record of the vocabulary named
+    /// for what it styles (<c>ButtonTheme</c>, <c>SheetTheme</c>…).</summary>
+    internal static IEnumerable<System.Reflection.PropertyInfo> SlotProperties() => SlotMembers;
 
-    private static void Controls(StringBuilder sb, ControlsTheme controls)
+    private static readonly System.Reflection.PropertyInfo[] SlotMembers = typeof(IAppTheme).GetProperties()
+        .Where(property => property.PropertyType is { IsClass: true } type
+            && type.Assembly == typeof(IAppTheme).Assembly
+            && type.Name.EndsWith("Theme", StringComparison.Ordinal))
+        .ToArray();
+
+    /// <summary>
+    /// A slot record as JSON: each member that answers, under its camel-cased name. A number (a float, an
+    /// int) as itself, a flag as true or false, an enum by its camel-cased name, a colour as the light/dark tuple, insets as
+    /// <c>[start, top, end, bottom]</c>, a type style as the type scale writes one, and a nested record
+    /// (a ladder, a family's own ladder) the same way. <c>ThemeSlotsTests</c> holds every member of every
+    /// slot to having a form here.
+    /// </summary>
+    internal static string SlotJson(object record)
     {
+        var sb = new StringBuilder();
         sb.Append('{');
         var first = true;
-        foreach (var (name, value) in ControlsMembers(controls))
+        foreach (var property in record.GetType().GetProperties()
+                     .Where(property => property.GetMethod is { IsPublic: true } && property.GetIndexParameters().Length == 0))
         {
-            if (value is null) continue;
-            Comma(sb, ref first);
-            Key(sb, name);
-            switch (value)
-            {
-                case DensityLadder density: Ladder(sb, density); break;
-                case SizeLadder size: Ladder(sb, size); break;
-            }
+            if (property.GetValue(record) is not { } value) continue;
+            Comma(ref first, sb);
+            Key(sb, Camel(property.Name));
+            SlotValue(sb, value);
         }
         sb.Append('}');
+        return sb.ToString();
     }
 
-    private static void Ladder(StringBuilder sb, DensityLadder ladder)
+    private static void SlotValue(StringBuilder sb, object value)
     {
-        sb.Append('{');
-        var first = true;
-        foreach (var (name, side) in new[] { ("comfortable", ladder.Comfortable), ("compact", ladder.Compact) })
+        switch (value)
         {
-            if (side is null) continue;
-            Comma(sb, ref first);
-            Key(sb, name);
-            Ladder(sb, side);
+            case float number:
+                sb.Append(Num(number));
+                break;
+            case int count:
+                sb.Append(count.ToString(CultureInfo.InvariantCulture));
+                break;
+            case bool flag:
+                sb.Append(flag ? "true" : "false");
+                break;
+            case Enum named:
+                sb.Append('"').Append(Camel(named.ToString())).Append('"');
+                break;
+            case ColorToken token:
+                Token(sb, token);
+                break;
+            case EdgeInsets insets:
+                sb.Append('[').Append(Num(insets.Start)).Append(',').Append(Num(insets.Top)).Append(',')
+                  .Append(Num(insets.End)).Append(',').Append(Num(insets.Bottom)).Append(']');
+                break;
+            case TypeStyle style:
+                sb.Append('[').Append(Num(style.Size)).Append(',').Append(Num(style.LineHeight))
+                  .Append(",\"").Append(Camel(style.Weight.ToString())).Append("\",")
+                  .Append(Num(style.Tracking)).Append(',').Append(Num(style.MaxScale)).Append(']');
+                break;
+            case var nested when nested.GetType() is { IsClass: true } type
+                                 && type.Assembly == typeof(IAppTheme).Assembly:
+                sb.Append(SlotJson(nested));
+                break;
+            default:
+                throw new NotSupportedException(
+                    $"A slot member of type {value.GetType().Name} has no form in the theme's JSON: a slot holds "
+                    + "numbers, enums, colours, insets, type styles and records of them.");
         }
-        sb.Append('}');
     }
 
-    private static void Ladder(StringBuilder sb, SizeLadder ladder)
-    {
-        sb.Append('{');
-        var first = true;
-        foreach (var (name, rung) in new[]
-                 {
-                     ("small", ladder.Small), ("medium", ladder.Medium), ("large", ladder.Large),
-                     ("xLarge", ladder.XLarge),
-                 })
-        {
-            if (rung is not { } value) continue;
-            Comma(sb, ref first);
-            Key(sb, name);
-            sb.Append(Num(value));
-        }
-        sb.Append('}');
-    }
-
-    /// <summary>Every member of the spreadsheet's slot by the name the browser reads it under.
-    /// <c>ThemeBridgeTests</c> holds it to every property the record has.</summary>
-    internal static IEnumerable<(string Name, ColorToken? Value)> SheetMembers(SheetTheme sheet) =>
-    [
-        ("gridline", sheet.Gridline),
-        ("headerBackground", sheet.HeaderBackground),
-        ("headerText", sheet.HeaderText),
-        ("headerSelectedBackground", sheet.HeaderSelectedBackground),
-        ("headerSelectedText", sheet.HeaderSelectedText),
-        ("cellBackground", sheet.CellBackground),
-        ("cellText", sheet.CellText),
-        ("rangeFill", sheet.RangeFill),
-        ("activeOutline", sheet.ActiveOutline),
-        ("fillPreview", sheet.FillPreview),
-        ("fillHandle", sheet.FillHandle),
-        ("entrySelection", sheet.EntrySelection),
-        ("rangeOutline", sheet.RangeOutline),
-        ("headerWholeBackground", sheet.HeaderWholeBackground),
-        ("headerWholeText", sheet.HeaderWholeText),
-        ("dimmedRangeFill", sheet.DimmedRangeFill),
-        ("dimmedOutline", sheet.DimmedOutline),
-    ];
+    private static void Comma(ref bool first, StringBuilder sb) => Comma(sb, ref first);
 
     private static void Tokens(StringBuilder sb, IReadOnlyList<ColorToken> tokens)
     {

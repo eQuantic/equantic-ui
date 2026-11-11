@@ -260,3 +260,8 @@ eQuantic.UI.Primitives.NoticeTheme.BannerTitleWeight.get -> eQuantic.UI.Primitiv
 eQuantic.UI.Primitives.NoticeTheme.BannerTitleWeight.init -> void
 eQuantic.UI.Primitives.NoticeTheme.BannerBodyWeight.get -> eQuantic.UI.Primitives.FontWeight?
 eQuantic.UI.Primitives.NoticeTheme.BannerBodyWeight.init -> void
+static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null) -> eQuantic.UI.Primitives.IAppTheme!
+eQuantic.UI.Primitives.ButtonTheme.OutlineColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ButtonTheme.OutlineColor.init -> void
+eQuantic.UI.Primitives.ButtonTheme.QuietFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ButtonTheme.QuietFill.init -> void

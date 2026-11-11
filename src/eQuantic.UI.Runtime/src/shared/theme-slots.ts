@@ -7,7 +7,9 @@
  */
 
 import { hashesByValue } from '../utils/hash';
-import type { AppTheme } from './value-types';
+import { ColorToken, EdgeInsets, TypeStyle, type AppTheme } from './value-types';
+import type { ColorValue } from './nodes';
+import { SheetTheme } from './sheet-theme';
 
 /** A value per size, each optional (`small` · `medium` · `large` · `xLarge`). */
 export class SizeLadder {
@@ -53,6 +55,8 @@ export class ButtonTheme {
   labelTracking: number | null = null;
   outlineWidth: number | null = null;
   linkPaddingX: number | null = null;
+  outlineColor: ColorToken | null = null;
+  quietFill: ColorToken | null = null;
 
   constructor(config?: Partial<ButtonTheme>) {
     if (config) Object.assign(this, config);
@@ -65,54 +69,94 @@ hashesByValue(DensityLadder);
 hashesByValue(ControlsTheme);
 hashesByValue(ButtonTheme);
 
-/** The JSON shapes the bridge writes (C# `ThemeBridge.Controls` and `ButtonMembers`). */
-export type SizeLadderData = Partial<Record<'small' | 'medium' | 'large' | 'xLarge', number>>;
-export type DensityLadderData = { comfortable?: SizeLadderData; compact?: SizeLadderData };
-export type ControlsData = {
-  height?: DensityLadderData;
-  paddingX?: DensityLadderData;
-  labelSize?: DensityLadderData;
-  gap?: SizeLadderData;
-  icon?: SizeLadderData;
-  radius?: SizeLadderData;
+// ---- from the bridge's JSON (C# `ThemeBridge.SlotJson`) ------------------------------------------
+// The bridge writes every slot by one rule: a member under its camel-cased name, a number as itself, an
+// enum by its camel-cased name, a colour as a light/dark tuple, insets as `[start, top, end, bottom]`, a
+// type style as the type scale writes one, a nested record as an object. A family's builder below turns
+// its slot's object into its mirror with these converters, and registers itself in `slotBuilders`.
+
+type RgbaTuple = readonly [number, number, number, number];
+/** A colour on the wire. */
+export type TokenTuple = readonly [RgbaTuple, RgbaTuple];
+/** Insets on the wire: `[start, top, end, bottom]`. */
+export type InsetsTuple = readonly [number, number, number, number];
+/** A type style on the wire: `[size, lineHeight, weight, tracking, maxScale]`. */
+export type TypeTuple = readonly [number, number, string, number, number];
+/** A slot record on the wire: its members by name. */
+export type SlotData = Record<string, unknown>;
+
+const color = (t: RgbaTuple): ColorValue => ({ r: t[0], g: t[1], b: t[2], a: t[3] });
+
+export const slotToken = (t: unknown): ColorToken | null =>
+  t ? new ColorToken(color((t as TokenTuple)[0]), color((t as TokenTuple)[1])) : null;
+
+export const slotInsets = (t: unknown): EdgeInsets | null => {
+  if (!t) return null;
+  const [start, top, end, bottom] = t as InsetsTuple;
+  return new EdgeInsets(start, top, end, bottom);
 };
-export type ButtonData = {
-  controls?: ControlsData;
-  minWidth?: number;
-  labelWeight?: string;
-  labelTracking?: number;
-  outlineWidth?: number;
-  linkPaddingX?: number;
+
+export const slotType = (t: unknown): TypeStyle | null => {
+  if (!t) return null;
+  const [size, lineHeight, weight, tracking, maxScale] = t as TypeTuple;
+  return new TypeStyle(size, lineHeight, weight, tracking, maxScale);
 };
 
-const sizeLadder = (data: SizeLadderData | undefined): SizeLadder | null => (data ? new SizeLadder(data) : null);
+/** A number, a flag or an enum's name crosses as itself; absent is null, as a C# member left unset. */
+export const slotValue = <T>(v: unknown): T | null => (v === undefined || v === null ? null : (v as T));
 
-const densityLadder = (data: DensityLadderData | undefined): DensityLadder | null =>
-  data ? new DensityLadder({ comfortable: sizeLadder(data.comfortable), compact: sizeLadder(data.compact) }) : null;
+export const slotSizeLadder = (data: unknown): SizeLadder | null => (data ? new SizeLadder(data as Partial<SizeLadder>) : null);
 
-/** The control ladder the bridge wrote, as the records the transpiled components read. */
-export function controlsTheme(data: ControlsData): ControlsTheme {
+export const slotDensityLadder = (data: unknown): DensityLadder | null => {
+  if (!data) return null;
+  const d = data as SlotData;
+  return new DensityLadder({ comfortable: slotSizeLadder(d.comfortable), compact: slotSizeLadder(d.compact) });
+};
+
+/** The control ladder the bridge wrote. */
+export function controlsTheme(data: SlotData): ControlsTheme {
   return new ControlsTheme({
-    height: densityLadder(data.height),
-    paddingX: densityLadder(data.paddingX),
-    labelSize: densityLadder(data.labelSize),
-    gap: sizeLadder(data.gap),
-    icon: sizeLadder(data.icon),
-    radius: sizeLadder(data.radius),
+    height: slotDensityLadder(data.height),
+    paddingX: slotDensityLadder(data.paddingX),
+    labelSize: slotDensityLadder(data.labelSize),
+    gap: slotSizeLadder(data.gap),
+    icon: slotSizeLadder(data.icon),
+    radius: slotSizeLadder(data.radius),
   });
 }
 
 /** The Button slot the bridge wrote. */
-export function buttonTheme(data: ButtonData): ButtonTheme {
+export function buttonTheme(data: SlotData): ButtonTheme {
   return new ButtonTheme({
-    controls: data.controls ? controlsTheme(data.controls) : null,
-    minWidth: data.minWidth ?? null,
-    labelWeight: data.labelWeight ?? null,
-    labelTracking: data.labelTracking ?? null,
-    outlineWidth: data.outlineWidth ?? null,
-    linkPaddingX: data.linkPaddingX ?? null,
+    controls: data.controls ? controlsTheme(data.controls as SlotData) : null,
+    minWidth: slotValue<number>(data.minWidth),
+    labelWeight: slotValue<string>(data.labelWeight),
+    labelTracking: slotValue<number>(data.labelTracking),
+    outlineWidth: slotValue<number>(data.outlineWidth),
+    linkPaddingX: slotValue<number>(data.linkPaddingX),
+    outlineColor: slotToken(data.outlineColor),
+    quietFill: slotToken(data.quietFill),
   });
 }
+
+/** The spreadsheet's slot the bridge wrote: every member a colour. */
+export function sheetTheme(data: SlotData): SheetTheme {
+  const sheet = new SheetTheme();
+  for (const [name, value] of Object.entries(data)) {
+    if (value) (sheet as unknown as Record<string, ColorToken | null>)[name] = slotToken(value);
+  }
+  return sheet;
+}
+
+/**
+ * Every slot the browser's theme carries, by the name the bridge writes it under and the builder that
+ * reads it. `materializeTheme` walks this, so a family adds its slot here and nowhere in the bridge.
+ */
+export const slotBuilders: Record<string, (data: SlotData) => unknown> = {
+  sheet: sheetTheme,
+  controls: controlsTheme,
+  button: buttonTheme,
+};
 
 /**
  * The twin of C# `AppThemeExtensions`, as the static home its extension lowers to (`theme.With(…)` is

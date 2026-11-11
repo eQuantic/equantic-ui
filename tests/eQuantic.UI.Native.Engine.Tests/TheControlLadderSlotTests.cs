@@ -10,7 +10,8 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// <summary>
 /// Photon's half of the control ladder's slot (E6a, #1241): a theme that changes how tall a medium
 /// control is changes every medium control, at the density the host is in. Measured by where each
-/// control landed, the bounds its semantics stop carries.
+/// control landed: the rounded rectangles it paints (a fill, a border) and the bounds its semantics
+/// stop carries, since a field's stop is its entry, inside the box it draws.
 /// </summary>
 public class TheControlLadderSlotTests
 {
@@ -53,8 +54,12 @@ public class TheControlLadderSlotTests
         var host = new PhotonHost(root, theme, ThemeMode.Light, 480, 320) { Density = density };
         try
         {
-            host.RenderFrame(new DisplayListBuilder());
-            return host.Semantics().Select(stop => MathF.Round(stop.Bounds.Height)).ToArray();
+            var builder = new DisplayListBuilder();
+            host.RenderFrame(builder);
+            var painted = builder.Build().Commands.ToArray()
+                .Where(command => command.Kind is DrawCommandKind.FillRRect or DrawCommandKind.StrokeRRect)
+                .Select(command => MathF.Round(command.Shape.Rect.Height));
+            return painted.Concat(host.Semantics().Select(stop => MathF.Round(stop.Bounds.Height))).ToArray();
         }
         finally
         {

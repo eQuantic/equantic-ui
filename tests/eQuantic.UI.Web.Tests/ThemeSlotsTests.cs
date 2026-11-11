@@ -72,13 +72,66 @@ public class ThemeSlotsTests
         missing.Should().BeEmpty("every member of the theme reaches the browser, or a re-render there answers another theme");
     }
 
+    /// <summary>
+    /// Every member of every slot has a form in the theme's JSON: each slot record, every member set,
+    /// written and read back by name, nested records included. A member of a kind the writer has no form
+    /// for throws there, so a slot a family adds is held here with nothing written.
+    /// </summary>
     [Fact]
-    public void EveryMemberOfTheSlots_HasANameOnTheWire()
+    public void EveryMemberOfEverySlot_CrossesUnderItsName()
     {
-        ThemeBridge.ControlsMembers(new ControlsTheme()).Select(member => member.Name)
-            .Should().BeEquivalentTo(Names<ControlsTheme>());
-        ThemeBridge.ButtonMembers(new ButtonTheme()).Select(member => member.Name).Append("controls")
-            .Should().BeEquivalentTo(Names<ButtonTheme>());
+        var slots = ThemeBridge.SlotProperties().Select(property => property.PropertyType).ToList();
+        slots.Should().Contain([typeof(SheetTheme), typeof(ControlsTheme), typeof(ButtonTheme)]);
+
+        var missing = new List<string>();
+        foreach (var slot in slots)
+        {
+            var record = Populated(slot);
+            using var json = JsonDocument.Parse(ThemeBridge.SlotJson(record));
+            Walk(slot.Name, record, json.RootElement, missing);
+        }
+
+        missing.Should().BeEmpty("a slot member the browser never reads is a look the page loses when it hydrates");
+    }
+
+    private static void Walk(string path, object record, JsonElement written, List<string> missing)
+    {
+        foreach (var property in SlotMembers(record.GetType()))
+        {
+            var name = char.ToLowerInvariant(property.Name[0]) + property.Name[1..];
+            if (!written.TryGetProperty(name, out var value)) { missing.Add($"{path}.{name}"); continue; }
+            if (IsRecord(property.PropertyType)) Walk($"{path}.{name}", property.GetValue(record)!, value, missing);
+        }
+    }
+
+    private static IEnumerable<PropertyInfo> SlotMembers(Type record) =>
+        record.GetProperties().Where(property => property.SetMethod is { IsPublic: true });
+
+    private static bool IsRecord(Type type) =>
+        type is { IsClass: true } && type.Assembly == typeof(IAppTheme).Assembly && type != typeof(string);
+
+    /// <summary>A slot record with every member set to a value of its kind.</summary>
+    private static object Populated(Type record)
+    {
+        var instance = Activator.CreateInstance(record)!;
+        foreach (var property in SlotMembers(record))
+        {
+            var type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            object value = type switch
+            {
+                _ when type == typeof(float) => 1f,
+                _ when type == typeof(int) => 1,
+                _ when type == typeof(bool) => true,
+                { IsEnum: true } => Enum.GetValues(type).GetValue(0)!,
+                _ when type == typeof(ColorToken) => new ColorToken(Color.Black),
+                _ when type == typeof(EdgeInsets) => new EdgeInsets(1, 2, 3, 4),
+                _ when type == typeof(TypeStyle) => TypeStyle.OfSize(13, FontWeight.SemiBold),
+                _ when IsRecord(type) => Populated(type),
+                _ => throw new NotSupportedException($"{record.Name}.{property.Name} is a {type.Name}, which this test cannot set"),
+            };
+            property.SetValue(instance, value);
+        }
+        return instance;
     }
 
     [Fact]
@@ -219,6 +272,23 @@ public class ThemeSlotsTests
         }
 
         unchanged.Should().BeEmpty("every medium control reads the theme's height");
+    }
+
+    /// <summary>
+    /// An icon is drawn only at a size of the §07 ladder, and refuses any other: a slot that names an icon
+    /// size off it puts every button with an icon behind its boundary's fallback, which a gallery of
+    /// buttons without icons never shows. Every shipped theme, every size, with an icon.
+    /// </summary>
+    [Fact]
+    public void AButtonWithAnIcon_BuildsUnderEveryShippedTheme()
+    {
+        foreach (var theme in new IAppTheme[] { Photon, eQuantic.UI.Material.MaterialTheme.Instance })
+            foreach (var size in Enum.GetValues<SizeVariant>())
+            {
+                var html = HtmlRenderer.RenderNode(WebRealizer.Lower(new Button("Search", size: size) { Leading = Icons.Search }, theme).Render());
+                html.Should().NotContain("could not be displayed", $"{theme.GetType().Name} at {size}")
+                    .And.NotContain("failed to render", $"{theme.GetType().Name} at {size}");
+            }
     }
 
     private static string Css(VisualNode node, IAppTheme theme, Density density)
