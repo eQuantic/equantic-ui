@@ -1,0 +1,59 @@
+name: Pack an embedded-bun runtime pair
+description: >-
+  Packs the two runtime packages of one platform, eQuantic.UI.Runtime.<runtime> and
+  .<runtime2>, at the version the run builds, and uploads them as runtime-<runtime>-package. Shared
+  by the Linux and Windows legs of build-platform-runtimes and by the macOS job beside them, which
+  is a job of its own so that it can be left out of a pull request's run under its check's name
+  (#1385). Packing only zips the right bun binary, so it does not depend on the host's architecture.
+inputs:
+  runtime:
+    description: The first runtime package's suffix, such as Osx64.
+    required: true
+  runtime2:
+    description: The second runtime package's suffix, such as OsxArm64.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    # A release tag IS the version (v0.2.0-preview.1 is 0.2.0-preview.1), a run by hand may name
+    # one, and anything else reads Directory.Build.props, the single source of truth. The ref and
+    # the input arrive through the environment, never written into the script.
+    - name: Determine Version
+      id: version
+      shell: bash
+      env:
+        REF: ${{ github.ref }}
+        REQUESTED: ${{ github.event.inputs.version }}
+      run: |
+        if [[ "$REF" == refs/tags/v* ]]; then
+          echo "VERSION=${REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+        elif [ -n "$REQUESTED" ]; then
+          echo "VERSION=$REQUESTED" >> "$GITHUB_OUTPUT"
+        else
+          VERSION=$(grep -o '<Version>[^<]*</Version>' Directory.Build.props | sed 's/<Version>//;s/<\/Version>//')
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Using version from Directory.Build.props: $VERSION"
+        fi
+
+    - name: Build and pack Runtime.${{ inputs.runtime }} + ${{ inputs.runtime2 }}
+      shell: bash
+      env:
+        VERSION: ${{ steps.version.outputs.VERSION }}
+        RUNTIME: ${{ inputs.runtime }}
+        RUNTIME2: ${{ inputs.runtime2 }}
+      run: |
+        dotnet pack "src/eQuantic.UI.Runtime.$RUNTIME/eQuantic.UI.Runtime.$RUNTIME.csproj" -c Release -p:Version="$VERSION"
+        dotnet pack "src/eQuantic.UI.Runtime.$RUNTIME2/eQuantic.UI.Runtime.$RUNTIME2.csproj" -c Release -p:Version="$VERSION"
+
+    - name: Upload Runtime.${{ inputs.runtime }} + ${{ inputs.runtime2 }} packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: runtime-${{ inputs.runtime }}-package
+        path: |
+          src/eQuantic.UI.Runtime.${{ inputs.runtime }}/bin/Release/*.nupkg
+          src/eQuantic.UI.Runtime.${{ inputs.runtime2 }}/bin/Release/*.nupkg
