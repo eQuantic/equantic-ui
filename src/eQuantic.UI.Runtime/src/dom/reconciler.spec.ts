@@ -572,6 +572,19 @@ describe('a key a shortcut took', () => {
  * a text the server decided otherwise is made the client's then, or no later render ever corrects it.
  */
 describe('Hydration takes the client attributes and text', () => {
+  const node = (tag: string, attributes: Record<string, string>, children: HtmlNode[] = []): HtmlNode => ({
+    tag,
+    attributes,
+    events: {},
+    children,
+  });
+  const text = (content: string): HtmlNode => ({
+    tag: '#text',
+    textContent: content,
+    attributes: {},
+    events: {},
+    children: [],
+  });
   const served = (html: string) => {
     const container = document.createElement('div');
     container.innerHTML = html;
