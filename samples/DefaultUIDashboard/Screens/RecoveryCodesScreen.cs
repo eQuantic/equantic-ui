@@ -62,7 +62,7 @@ public sealed class RecoveryCodesScreen : StatefulComponent
                     TypeRole.BodyM, theme.TextSecondary),
                 codes,
                 Row(gap: Space.S3, children: [
-                    new Button("Download .txt", onPressed: () => _ = Download()) { Disabled = _saver is null },
+                    new Button("Download .txt", onPressed: () => _ = Download()) { Disabled = _saver is not { IsAvailable: true } },
                     new Button("Copy all", Variant.Outline, onPressed: () => SetState(() =>
                     {
                         _clipboard?.Write(AllCodes());
