@@ -192,19 +192,18 @@ public sealed class PhotonTheme : IAppTheme
     };
 
     // The form controls' slots (E6b): what each control drew, now the design system's. Their own
-    // ladders stay null, so the theme's Controls above reaches them, and a colour is the role the
-    // control chose. Cached on first read, since a role is an instance member.
+    // ladders stay null, so the theme's Controls above reaches them. A colour a control takes from one
+    // of the theme's roles stays null too: the control reads the role itself, so a theme that changes
+    // the role (a decorator, or a spread of this theme in the browser) recolours the control, which a
+    // copy of the role taken here would not. Cached on first read.
 
-    /// <summary>The IconButton (spec A13): the §07 glyph ladder, a circle, and the quiet kinds on the
-    /// subtle surface, their glyph secondary, the tonal press at 24%.</summary>
+    /// <summary>The IconButton (spec A13): the §07 glyph ladder, a circle, a 1dp outline, and the tonal
+    /// press at 24%.</summary>
     public IconButtonTheme? IconButton => field ??= new IconButtonTheme
     {
         IconSize = new SizeLadder { Small = IconSize.Sm, Medium = IconSize.Dense, Large = IconSize.Md, XLarge = IconSize.Md },
         Radius = Radius.Full,
         OutlineWidth = 1,
-        OutlineColor = BorderStrong,
-        GlyphColor = TextSecondary,
-        QuietFill = SurfaceSubtle,
         TonalPressOpacity = 0.24f,
     };
 
@@ -219,19 +218,14 @@ public sealed class PhotonTheme : IAppTheme
         PickerGap = Space.S2,
         BorderWidth = 1,
         FocusBorderWidth = 2,
-        BorderColor = BorderStrong,
         Radius = Radius.Md,
         SearchRadius = Radius.Full,
-        Fill = Surface,
-        DisabledFill = SurfaceSubtle,
-        SearchFill = SurfaceSubtle,
         IconSize = IconSize.Dense,
         LabelGap = 6,
         CaptionGap = 5,
         LabelRole = TypeRole.Label,
         CaptionRole = TypeRole.Caption,
         PanelElevation = 2,
-        PanelBorderColor = Border,
     };
 
     /// <summary>The selection controls (spec B11-B13, C7): Sizing's selection ladder, a 2dp border, the
@@ -240,7 +234,6 @@ public sealed class PhotonTheme : IAppTheme
     {
         Box = ByDensityAlone(Sizing.SelectionBox),
         BorderWidth = 2,
-        BorderColor = BorderStrong,
         CheckboxRadius = Radius.Xs,
         RadioDot = ByDensityAlone(Sizing.RadioDot),
         RadioRowHeight = 44,
@@ -249,15 +242,11 @@ public sealed class PhotonTheme : IAppTheme
         SwitchHeight = ByDensityAlone(Sizing.SwitchHeight),
         SwitchThumb = ByDensityAlone(Sizing.SwitchThumb),
         SwitchInset = Sizing.SwitchInset,
-        SwitchOffTrack = BorderStrong,
-        ThumbFill = Surface,
         SwitchThumbElevation = 1,
         SliderTrackHeight = 4,
         SliderThumbSize = 24,
         SliderThumbBorder = 1,
-        SliderThumbBorderColor = Border,
         SliderThumbElevation = 2,
-        SliderRestTrack = SurfaceSubtle,
         SliderMinWidth = 120,
     };
 
@@ -266,11 +255,8 @@ public sealed class PhotonTheme : IAppTheme
     public SegmentedTheme? Segmented => field ??= new SegmentedTheme
     {
         Inset = 3,
-        TrackFill = SurfaceSubtle,
-        ThumbFill = Surface,
         ThumbElevation = 1,
         BorderWidth = 1,
-        BorderColor = BorderStrong,
         IconSize = IconSize.Dense,
     };
 
@@ -285,7 +271,6 @@ public sealed class PhotonTheme : IAppTheme
         LabelWeight = FontWeight.SemiBold,
         LabelTracking = 0,
         Radius = Radius.Full,
-        Fill = SurfaceSubtle,
         SelectedBorderWidth = 1,
         PressOpacity = 0.24f,
         IconSize = IconSize.Sm,

@@ -213,9 +213,24 @@ describe('theme bridge: the form control slots cross (E6b, #1242)', () => {
     expect(theme.chip?.paddingX).toBe(12);
     expect(theme.iconButton?.iconSize?.small).toBe(16);
     expect(theme.selectionControls?.box?.compact).toBe(20);
-    expect(theme.input?.borderColor?.light).toEqual(photonTheme.borderStrong.light);
     expect(theme.input?.labelRole).toBe('label');
     expect(theme.chip?.labelWeight).toBe('semiBold');
+  });
+
+  // Photon leaves a colour that is one of its roles null, so the control reads the role itself and a
+  // theme that changes the role recolours it; a colour crosses when a theme names one of its own.
+  it('carries a colour a theme names in a slot, and leaves a role Photon reads itself null', () => {
+    expect(theme.input?.borderColor).toBeNull();
+    const green: [number[], number[]] = [
+      [0, 128, 0, 255],
+      [0, 160, 0, 255],
+    ];
+    const custom = materializeTheme({
+      ...(photonData as unknown as ThemeData),
+      input: { borderColor: green },
+    } as unknown as ThemeData);
+    expect(custom.input?.borderColor?.light).toEqual({ r: 0, g: 128, b: 0, a: 255 });
+    expect(custom.input?.borderColor?.dark).toEqual({ r: 0, g: 160, b: 0, a: 255 });
   });
 
   it("answers a member the server's theme names, and leaves a slot it does not answer null", () => {
