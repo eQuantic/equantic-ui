@@ -114,11 +114,47 @@ public class CollectionMemberConformanceTests
     // A string's elements are its chars, and a culture order finds "a" before "B".
     [InlineData("var s = new SortedSet<char> { 'b', 'z' }; s.UnionWith(\"abc\"); s.ExceptWith(\"z\"); return string.Join(\",\", s) + \"|\" + s.SetEquals(\"cab\");")]
     [InlineData("var s = new SortedSet<string> { \"B\", \"c\" }; s.UnionWith(new[] { \"a\", \"C\" }); return string.Join(\",\", s) + \"|\" + s.Overlaps(new[] { \"b\" });")]
-    // RemoveWhere asks the predicate of every element, then removes, and answers how many. The order
-    // it asks in is its tree's in .NET and the set's here (#766), so the predicate keeps no record.
+    // RemoveWhere asks the predicate of every element, then removes, and answers how many.
     [InlineData("var s = new SortedSet<int> { 3, 1, 2, 4 }; var n = s.RemoveWhere(x => x % 2 == 0); return n + \":\" + string.Join(\",\", s);")] // 2:1,3
     [InlineData("var s = new SortedSet<int> { 3, 1, 2 }; try { s.RemoveWhere(x => x == 3 ? throw new InvalidOperationException(\"x\") : x == 1); } catch (InvalidOperationException) { } return string.Join(\",\", s);")] // 1,2,3
     public void SortedSet_SetOperationsAnswerAsDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    [SkippableTheory]
+    // RemoveWhere asks its predicate breadth first through the red-black tree .NET holds the set in, so a
+    // predicate that keeps a record sees the tree's shape, which every Add, Remove, copy, merge and view
+    // builds (#766). It asked in the set's order.
+    // A set built by Add, the order of #766.
+    [InlineData("var s = new SortedSet<int> { 1, 2, 3, 4, 5, 6, 7 }; var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]   // 2,1,4,3,6,5,7
+    // Adds in another order, a 4-node split on the way down.
+    [InlineData("var s = new SortedSet<int> { 5, 2, 8, 1, 9, 3, 7, 4, 6 }; var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]
+    // Removes, found and not, each turning the 2-nodes on its way.
+    [InlineData("var s = new SortedSet<int>(); for (var i = 1; i <= 12; i++) s.Add(i); s.Remove(4); s.Remove(99); s.Remove(1); s.Remove(8); var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]
+    // A set built from a list: sorted, then built from the sorted array.
+    [InlineData("var s = new SortedSet<int>(new List<int> { 5, 3, 8, 1, 4, 7, 9, 2, 6, 3 }); var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]
+    // A copy of a sorted set keeps its tree.
+    [InlineData("var a = new SortedSet<int> { 1, 2, 3, 4, 5, 6, 7, 8 }; var s = new SortedSet<int>(a); var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]
+    // A union merged from a set of the same comparer.
+    [InlineData("var s = new SortedSet<int> { 1, 5, 9 }; s.UnionWith(new SortedSet<int> { 2, 3, 4, 6, 7, 8 }); var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]
+    // A union into an empty set copies the other.
+    [InlineData("var s = new SortedSet<int>(); s.UnionWith(new SortedSet<int> { 4, 1, 3, 2, 5 }); var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]
+    // An intersection merged from a set of the same comparer.
+    [InlineData("var s = new SortedSet<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; s.IntersectWith(new SortedSet<int> { 2, 3, 5, 7, 8 }); var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]
+    // A symmetric difference toggles one by one.
+    [InlineData("var s = new SortedSet<int> { 1, 2, 3, 4, 5 }; s.SymmetricExceptWith(new[] { 4, 6, 7, 1 }); var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]
+    // A view walks from the root of its range.
+    [InlineData("var t = new SortedSet<int>(); for (var i = 1; i <= 15; i++) t.Add(i); var v = t.GetViewBetween(4, 11); var seen = new List<int>(); v.RemoveWhere(x => { seen.Add(x); return x % 3 == 0; }); return string.Join(\",\", seen) + \"|\" + string.Join(\",\", t);")]
+    // A view cleared removes from its set from the last it walks.
+    [InlineData("var s = new SortedSet<int>(); for (var i = 1; i <= 10; i++) s.Add(i); s.GetViewBetween(3, 6).Clear(); var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]
+    // A RemoveWhere removes from the last it asked, which shapes the next.
+    [InlineData("var s = new SortedSet<int>(); for (var i = 1; i <= 10; i++) s.Add(i); s.RemoveWhere(x => x % 2 == 0); var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]
+    // A longer history.
+    [InlineData("var s = new SortedSet<int>(); var x = 7; for (var i = 0; i < 60; i++) { x = (x * 31 + 11) % 101; s.Add(x); } for (var i = 0; i < 25; i++) { x = (x * 17 + 5) % 101; s.Remove(x); } var seen = new List<int>(); s.RemoveWhere(x => { seen.Add(x); return false; }); return string.Join(\",\", seen);")]
+    [InlineData("var s = new SortedSet<decimal>(new[] { 2m, 1.00m, 3m, 1.0m }); return string.Join(\"|\", s);")]   // the 1 the sort puts first
+    public void SortedSet_RemoveWhere_AsksItsTreeBreadthFirst(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);

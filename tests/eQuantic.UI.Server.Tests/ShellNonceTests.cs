@@ -81,7 +81,8 @@ public class ShellNonceTests
     {
         await using var app = await StartAsync(environment, options =>
         {
-            options.UseGtm("GTM-ABC1234", gtm => gtm.WithConsent());
+            // Consent-gated, which is UseGtm's default (#1294).
+            options.UseGtm("GTM-ABC1234");
             options.ConfigureHtmlShell(shell => shell
                 .AddStyles("body { margin: 0; }")
                 .AddScript(new Uri("https://cdn.example/app.js"))
