@@ -391,47 +391,37 @@ public static class UIExtensions
             await context.Response.WriteAsync(document);
         });
 
-        // The faces the app ships (#1055), by the hash of their bytes: immutable, and only what the
-        // theme, the app's catalogs and its pages named, since a name is the only way in. Public as the
+        // The faces the theme's stylesheet declares (#1055), by the hash of their bytes: immutable, and only
+        // what the theme and the app's catalogs named, since a name is the only way in. Public as the
         // runtime is: a sign-in page under a fallback policy is set in them too.
-        endpoints.MapGetAndHead("/_equantic/fonts/{name}", async context =>
+        endpoints.MapGetAndHead("/_equantic/fonts/{name}", context =>
         {
-            var font = context.RequestServices.GetRequiredService<ServedFonts>().Find((string?)context.GetRouteValue("name") ?? "");
-            if (font is null)
-            {
-                context.Response.StatusCode = 404;
-                return;
-            }
-            // Compressed once when the set was read, and sent so to a browser that takes Brotli, which
-            // every current one does: the app's own response compression is not relied on, since no
-            // middleware of it runs unless the app adds one.
-            var brotli = context.Request.GetTypedHeaders().AcceptEncoding
-                .Any(encoding => encoding.Value.Equals("br", StringComparison.OrdinalIgnoreCase) && encoding.Quality is not 0);
-            var body = brotli ? font.Brotli : font.Bytes;
-            context.Response.ContentType = font.ContentType;
-            if (brotli) context.Response.Headers.ContentEncoding = "br";
-            context.Response.Headers.Vary = "Accept-Encoding";
-            context.Response.ContentLength = body.Length;
-            context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
-            await context.Response.Body.WriteAsync(body);
-        }).AllowAnonymous();
-
-        // A face a page the browser builds names (#1056), asked for by its identity, an assembly and a
-        // resource, since the browser does not know the bytes' hash: sent on to the content-addressed URL,
-        // so every page shares one cached copy of a file. Only a face an eQuantic build embedded, in an
-        // assembly the app's deployment carries, or a file the theme serves (ServedFonts.Locate). The redirect itself is asked again every
-        // time, so a new build's file is found under its new hash.
-        endpoints.MapGetAndHead("/_equantic/fonts/{assembly}/{**resource}", context =>
-        {
-            var font = context.RequestServices.GetRequiredService<ServedFonts>().Locate(
-                (string?)context.GetRouteValue("assembly") ?? "", (string?)context.GetRouteValue("resource") ?? "");
-            if (font is null)
+            if (context.RequestServices.GetRequiredService<ServedFonts>().Find((string?)context.GetRouteValue("name") ?? "") is not { } font)
             {
                 context.Response.StatusCode = 404;
                 return Task.CompletedTask;
             }
+            return SendFont(context, font);
+        }).AllowAnonymous();
+
+        // A face by its identity, an assembly and a resource (#1056): what a page the server rendered names
+        // a face outside the theme's stylesheet by, with the hash of its bytes as its version, which every
+        // instance answers by loading the assembly by its name (#1080), and what a page the browser builds
+        // asks for, without the version, since it does not know the bytes' hash. Only a face an eQuantic
+        // build embedded, or a file the theme serves (ServedFonts.Locate). Its own version is the file;
+        // anything else is sent on to the URL a page names the file by, and the redirect is asked again
+        // every time, so a new build's file is found under its new hash.
+        endpoints.MapGetAndHead("/_equantic/fonts/{assembly}/{**resource}", context =>
+        {
+            if (context.RequestServices.GetRequiredService<ServedFonts>().Locate(
+                (string?)context.GetRouteValue("assembly") ?? "", (string?)context.GetRouteValue("resource") ?? "") is not (var font, var url))
+            {
+                context.Response.StatusCode = 404;
+                return Task.CompletedTask;
+            }
+            if (context.Request.Query["v"] == font.Version) return SendFont(context, font);
             context.Response.Headers["Cache-Control"] = "no-cache";
-            context.Response.Redirect(font.Url);
+            context.Response.Redirect(url);
             return Task.CompletedTask;
         }).AllowAnonymous();
 
@@ -645,6 +635,24 @@ public static class UIExtensions
     }
 
     /// <summary>The head links for the generated icon set — empty when an app declared no icon.</summary>
+    /// <summary>
+    /// A face's bytes, immutable, since every URL that answers them names their hash. Compressed once when
+    /// it was read, and sent so to a browser that takes Brotli, which every current one does: the app's own
+    /// response compression is not relied on, since no middleware of it runs unless the app adds one.
+    /// </summary>
+    private static async Task SendFont(HttpContext context, ServedFont font)
+    {
+        var brotli = context.Request.GetTypedHeaders().AcceptEncoding
+            .Any(encoding => encoding.Value.Equals("br", StringComparison.OrdinalIgnoreCase) && encoding.Quality is not 0);
+        var body = brotli ? font.Brotli : font.Bytes;
+        context.Response.ContentType = font.ContentType;
+        if (brotli) context.Response.Headers.ContentEncoding = "br";
+        context.Response.Headers.Vary = "Accept-Encoding";
+        context.Response.ContentLength = body.Length;
+        context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+        await context.Response.Body.WriteAsync(body);
+    }
+
     private static IReadOnlyList<string> GeneratedIconTags(HttpContext context) => Icons(context).Tags;
 
     /// <summary>

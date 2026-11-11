@@ -107,6 +107,66 @@ describe('the SSR-to-client seam', () => {
     expect(root.querySelector('#go')).toBeNull();
   });
 
+  it('names the next page\'s components from ITS payload when a navigation lands, a stateless one nested among them', () => {
+    // A component without state is a `component` node too, so a page's nested stateless component
+    // is named in the lowering's `component` arm now, where it named itself in its own render().
+    // Hydration defects show on NAVIGATION rather than on the first load: the second page has to
+    // read the payload the router handed it, from the top of a count of its own.
+    class Section extends StatelessComponent {
+      static $typeId = 'App.Components.Section';
+      static $hydration = { heading: 'declared' } as const;
+      heading = 'no heading';
+      constructor(readonly inner: Probe) {
+        super();
+      }
+      build(): VisualNodeValue {
+        const column = new Column();
+        column.children.push(new Text(this.heading) as never, this.inner as never);
+        return column;
+      }
+    }
+    class FirstPage extends StatelessComponent {
+      static $typeId = 'App.Pages.First';
+      build(): VisualNodeValue {
+        const column = new Column();
+        column.children.push(new Section(new Probe()) as never);
+        return column;
+      }
+    }
+    class SecondPage extends StatelessComponent {
+      static $typeId = 'App.Pages.Second';
+      build(): VisualNodeValue {
+        const column = new Column();
+        column.children.push(new Section(new Probe()) as never, new Probe() as never);
+        return column;
+      }
+    }
+    win.__INITIAL_STATE__ = {
+      'App.Components.Section#0': { heading: 'first heading' },
+      'App.Components.Probe#0': { label: 'first page' },
+    };
+    const root = host();
+    const first = new FirstPage();
+    first.mount(root);
+    expect(root.textContent).toContain('first heading');
+    expect(root.textContent).toContain('first page');
+
+    // The router replaces the hydration state with the next page's, then mounts it over the first.
+    win.__INITIAL_STATE__ = {
+      'App.Components.Section#0': { heading: 'second heading' },
+      'App.Components.Probe#0': { label: 'in the section' },
+      'App.Components.Probe#1': { label: 'beside it' },
+    };
+    const second = new SecondPage();
+    second.mountReconcile(root, first.getCurrentTree());
+    first.disposeQuietly();
+
+    expect(root.textContent).toContain('second heading');
+    expect(root.textContent).toContain('in the section');
+    expect(root.textContent).toContain('beside it');
+    expect(root.textContent).not.toContain('first');
+  });
+
   it('is ONE walk: the page takes its reserved key, and sibling bridges continue a single count', () => {
     // What the server ships for this page: the root under the key it reserved for it, then every
     // component in depth-first order across the WHOLE page render, both bridges included.
