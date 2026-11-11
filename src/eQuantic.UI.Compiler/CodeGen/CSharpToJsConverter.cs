@@ -350,6 +350,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<PrimitiveStaticStrategy>(); // .NET 7+ statics on the primitives themselves
         _strategyRegistry.Register<TextElementStrategy>();     // StringInfo: grapheme clusters, from the platform
         _strategyRegistry.Register<UnicodeCategoryStrategy>(); // a character's general category, from the platform
+        _strategyRegistry.Register<PrimitiveEqualsStrategy>(); // a primitive's Equals, by the other value's type
         _strategyRegistry.Register<BclSurfaceTailStrategy>();  // instance tail: Equals/String/Dictionary/List QoL
         _strategyRegistry.Register<ReverseStrategy>();
         _strategyRegistry.Register<LinqTableStrategy>(); // the LINQ surface as a table of shapes
@@ -760,7 +761,7 @@ public class CSharpToJsConverter
         new([
             JsStatement.Hoisted(
                 ExpressionVariableScanner.Declarations(expression, _context.TypeAnnotations)
-                    + ExpressionVariableScanner.Declarations(temporaries, _context.TypeAnnotations),
+                    + _context.Temporaries.Declarations(temporaries, _context.TypeAnnotations),
                 returns ? JsStatement.Return(converted) : JsStatement.Expression(converted)) with { Origin = expression },
         ]);
 
@@ -852,7 +853,7 @@ public class CSharpToJsConverter
             converted = Marked(converted);
             return bound.Count == 0
                 ? converted
-                : JsStatement.Hoisted(ExpressionVariableScanner.Declarations(bound, _context.TypeAnnotations), converted)
+                : JsStatement.Hoisted(_context.Temporaries.Declarations(bound, _context.TypeAnnotations), converted)
                     with { Origin = stmt };
         }
 

@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Reflection;
@@ -161,11 +162,13 @@ public class NotFoundFallbackTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    /// <summary>The document head, which is where everything a render result contributes lands.</summary>
+    /// <summary>The document head, which is where everything a render result contributes lands,
+    /// without the request's nonce: two requests carry two nonces by design (<c>ShellNonceTests</c>).</summary>
     private static string Head(string html)
     {
         var start = html.IndexOf("<head", StringComparison.OrdinalIgnoreCase);
         var end = html.IndexOf("</head>", StringComparison.OrdinalIgnoreCase);
-        return start >= 0 && end > start ? html[start..end] : html;
+        var head = start >= 0 && end > start ? html[start..end] : html;
+        return Regex.Replace(head, " nonce=\"[^\"]+\"", "");
     }
 }

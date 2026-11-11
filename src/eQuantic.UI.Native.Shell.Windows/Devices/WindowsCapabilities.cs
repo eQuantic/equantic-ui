@@ -21,6 +21,10 @@ public sealed class WindowsCapabilities : IPhotonCapabilities
         // The file system IS the photo library on a desktop; the picker is the grant.
         services.TryAddSingleton<IPhotoLibrary>(provider =>
             new WindowsPhotoLibrary(provider.GetRequiredService<IFileDialogs>()));
+        // A file the page made, offered through the save panel and written where the person chose
+        // (#1022).
+        services.TryAddSingleton<IFileSaver>(provider =>
+            new DialogFileSaver(provider.GetRequiredService<IFileDialogs>()));
         // The same two-method clipboard the text fields use, offered as a SERVICE.
         services.TryAddSingleton<ITextClipboard, WindowsClipboard>();
         // The app's own durable key/value store — the registry, under the app's own key.

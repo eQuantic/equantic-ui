@@ -23,6 +23,10 @@ public sealed class AppBuild
     /// which is built exactly as it was before there was such a layer.</summary>
     private ReferencedModules? _referenced;
 
+    /// <summary>The compilations of the projects the app references, read for what every source of the
+    /// build is held to (<see cref="InlineHandlers"/>); empty for an app that references none.</summary>
+    private IReadOnlyList<Compilation> _referencedCompilations = [];
+
     /// <param name="options">What the build is handed.</param>
     /// <param name="output">Where the build narrates; the console when null.</param>
     /// <param name="errors">Where diagnostics go, in MSBuild's canonical form; the console's error
@@ -236,6 +240,7 @@ public sealed class AppBuild
                     _output.WriteLine($"   Compiling {built.Count} referenced project(s) from source: " +
                         string.Join(", ", built.Keys.Select(project => project.AssemblyName)));
                     _referenced = new ReferencedModules(built, _primarySourceDir);
+                    _referencedCompilations = built.Values.ToList();
                     _compiler.SetReferencedModules(_referenced);
                     // One catalogue id per resource class for the whole build: two projects may
                     // each have a Strings, and a file sees only its own project's.
@@ -342,11 +347,18 @@ public sealed class AppBuild
     }
 
     /// <summary>
+    /// How long the last <see cref="CompileAndBundle"/> spent in bun, so a caller timing the build can
+    /// tell bundling from compiling: eqc writes it for the edit-to-view measurement (#900).
+    /// </summary>
+    public TimeSpan BundleElapsed { get; private set; }
+
+    /// <summary>
     /// Compiles every module, writes the string catalogs and bundles. True when it produced an error,
     /// so the process can exit non-zero and fail the build.
     /// </summary>
     public bool CompileAndBundle()
     {
+        BundleElapsed = TimeSpan.Zero;
         var sourceDirs = _options.SourceDirectories;
         var outputDir = _options.OutputDirectory;
         var bunPath = _options.BunPath;
@@ -354,6 +366,19 @@ public sealed class AppBuild
         try
         {
             var hasErrors = false;
+
+            // The escape hatch's inline handlers, refused in every source of the build when the app
+            // turned on the Content-Security-Policy (#1269): a strict policy refuses them in the
+            // browser, wherever their markup was written.
+            if (Compilation is { } app)
+            {
+                foreach (var refused in InlineHandlers.Refused(app, new[] { app }.Concat(_referencedCompilations)))
+                {
+                    hasErrors = true;
+                    _errors.WriteLine(FormatDiagnostic(refused, "error"));
+                }
+            }
+
             // Which names are already taken — see EmittedTwins for why a name collision is an error.
             var written = new EmittedTwins();
             var entryPoints = new List<string>();
@@ -518,8 +543,11 @@ public sealed class AppBuild
                 // proves a thrown error's frame leads back to its C# line runs exactly this. bun runs
                 // in the project's folder, where the build has always run it, so a chunk keeps its
                 // name wherever eqc itself runs.
-                if (ModuleBundler.Bundle(bunPath!, _primarySourceDir, entryPoints, outputDir, _intermediateDir,
-                        _options.SourceMaps, _errors.WriteLine) is { } bunError)
+                var bundling = System.Diagnostics.Stopwatch.StartNew();
+                var bunError = ModuleBundler.Bundle(bunPath!, _primarySourceDir, entryPoints, outputDir,
+                    _intermediateDir, _options.SourceMaps, _errors.WriteLine);
+                BundleElapsed = bundling.Elapsed;
+                if (bunError is not null)
                 {
                     _errors.WriteLine("❌ Bun compilation failed:");
                     _errors.WriteLine(bunError);

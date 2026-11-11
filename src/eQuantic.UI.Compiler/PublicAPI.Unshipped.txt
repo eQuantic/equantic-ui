@@ -1,6 +1,11 @@
 #nullable enable
-const eQuantic.UI.Compiler.CodeGen.Eq.Guard = "$eq.guard" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.PairText = "$eq.text.pair" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.PairTextGroup = "$eq.text.pairGroup" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ProvideService = "$eq.services.provide" -> string!
-const eQuantic.UI.Compiler.CodeGen.Eq.TypesNamed = "$eq.types.named" -> string!
-const eQuantic.UI.Compiler.CodeGen.Eq.TypesOf = "$eq.types.of" -> string!
-const eQuantic.UI.Compiler.CodeGen.Eq.TypesSame = "$eq.types.same" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TaskFromCanceled = "$eq.task.fromCanceled" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TaskFromException = "$eq.task.fromException" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.PrimitiveEqualsStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.Priority.get -> int

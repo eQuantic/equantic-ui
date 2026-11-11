@@ -84,10 +84,13 @@ SHALL build the marked positions, ancestors before descendants, and nothing else
 draws only because something moves (a glide, a transition, a presence, a loop, a frame ticker's
 subscriber) SHALL build nothing. A frame after input SHALL build what the input reached: the
 positions the handlers it ran marked. Input the host routes into a field, a code surface or a
-spreadsheet SHALL be handed to the app's handler, and a frame after such a handler that called no
-`SetState` SHALL rebuild every component, because the host cannot see where the value lives. A frame
-the host draws for work posted to its thread SHALL build what the work marked. A frame after an invalidation the host was told of, a
-resize, a density change or a hot reload SHALL rebuild every component.
+spreadsheet SHALL be handed to the app's handler. A frame after a key typed into a field SHALL build
+what the field's handler marked and nothing else, because the field keeps what was typed itself. A
+frame after a code surface's or a spreadsheet's handler that called no `SetState` SHALL rebuild every
+component, because the host cannot see which component shows what the surface's model holds. A frame
+the host draws for work posted to its thread SHALL build what the work marked. A frame after an
+invalidation the host was told of, a resize, a density change or a hot reload SHALL rebuild every
+component.
 
 #### Scenario: A loop runs
 
@@ -121,7 +124,7 @@ resize, a density change or a hot reload SHALL rebuild every component.
 
 - **WHEN** a stateful form keeps its field's value without `SetState`, directly or through a field
   component with state of its own, and keys are typed into the field
-- **THEN** each next frame rebuilds every component, and the field shows every key typed
+- **THEN** no component builds in the frames after the keys, and the field shows every key typed
 
 #### Scenario: Work posted to the thread that draws
 
@@ -296,6 +299,57 @@ A component that keeps the fresh instance whole as its configuration SHALL count
 - **THEN** the editor keeps the document someone is typing in, and the baseline names `CodeEditor.InitialCode`
   with its reason
 
+### Requirement: The engine is written in what eqc translates
+
+The element engine (`Element`, `ComponentElement`, `NodeElement`, `BuildOwner`, `ChildSlots` and
+`NodeSlots` in `eQuantic.UI.Primitives`) SHALL go through eqc with its `[ServerOnly]` marks lifted with
+no error and no warning, and SHALL yield a module for every one of its files. A construct eqc cannot
+translate, written into the engine, SHALL fail the build's tests naming its file.
+
+#### Scenario: The engine compiles through eqc
+
+- **WHEN** the engine's sources, their `[ServerOnly]` marks removed, are transpiled by eqc
+- **THEN** every file yields a module, and no diagnostic is reported
+
+#### Scenario: A construct eqc refuses
+
+- **WHEN** a call eqc has no translation for is written into one of the engine's files
+- **THEN** the test fails, naming the file and eqc's diagnostic
+
+### Requirement: Every node kind has its children's slots
+
+The engine SHALL read the children of every concrete node kind the vocabulary declares. A node whose
+kind it does not know SHALL fail with an exception that names the kind, never with an empty answer.
+
+#### Scenario: Every kind is mounted
+
+- **WHEN** one instance of every concrete `VisualNode` in Primitives is mounted through an owner
+- **THEN** each is mounted without the unknown-kind exception, apart from the kinds a baseline names
+  because no instance can be built for them, and that baseline only shrinks
+
+#### Scenario: A kind is forgotten
+
+- **WHEN** the arm for one node kind is removed
+- **THEN** mounting that kind fails with an exception that names it
+
+### Requirement: A component builds through its owner
+
+A component's position SHALL build its component through the owner it belongs to, at the depth of
+components the tree reads, and the owner SHALL be handed how a component is built by whoever makes
+it. On Photon and on the server that is the error boundary they build through, with its report, its
+containment and its depth bound unchanged.
+
+#### Scenario: The owner's build is the one used
+
+- **WHEN** an owner made with a build of its own mounts a page that holds two components
+- **THEN** that build is asked for the page at depth 0 and for each component at depth 1, and nothing
+  else builds them
+
+#### Scenario: A build that throws is contained
+
+- **WHEN** a component's `Build` throws inside a tree an owner from `ComponentBoundary` builds
+- **THEN** the exception is contained and reported as it was before this change
+
 ### Requirement: A frame of the tree is lowered on the web from its positions
 
 `WebRealizer.LowerFrame` SHALL lower the tree a `BuildOwner` has just built, between its `Build` and
@@ -362,3 +416,25 @@ with the instance it keeps.
 - **WHEN** a stateless component a page builds anew on every build loads its data, its position is
   marked, and the owner builds
 - **THEN** only that position builds, with the instance that loaded, and draws what it loaded
+
+### Requirement: A component is a node in the browser too
+
+A component, with or without state, SHALL be a node of the vocabulary in the browser as it is in C#:
+its kind SHALL be `component` at run time, and it SHALL carry every member the vocabulary's node
+declares, a type check failing when the node gains one the component lacks. The DOM escape hatch
+(`HtmlElement`) SHALL NOT be one, as in C#.
+
+#### Scenario: A component without state
+
+- **WHEN** a component without state is made in the browser
+- **THEN** its kind is `component`, and it is assignable to the vocabulary's node
+
+#### Scenario: The escape hatch
+
+- **WHEN** an `HtmlElement` is made in the browser
+- **THEN** it carries no node kind, and the lowering lets it render itself
+
+#### Scenario: The node gains a member
+
+- **WHEN** the vocabulary's node declares a member the component does not
+- **THEN** the runtime's type check fails

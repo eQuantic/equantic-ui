@@ -189,12 +189,15 @@ internal sealed partial class EmitVisitor
         if (!entry.Disabled) input.Add(new TextRegion(node.Bounds, entry, PositionOf(node)));
 
         var editing = press.TextAt is not null && ReferenceEquals(node.Element, press.TextAt);
+        // What the field holds is what its position keeps: what was typed, until the page builds it
+        // again (#996). The measure broke these same lines from the same text.
+        var text = FieldText.Of(node.Element, entry);
         // The composition in flight renders INSIDE the value at the caret — underlined below, caret
         // at its end — while the VALUE stays untouched until the platform commits. An obscured
         // field composes blind: echoing the composition would echo the secret.
         var marked = editing && !entry.Obscure ? press.MarkedText : "";
-        var caretInValue = Math.Min(press.CaretIndex, entry.Value.Length);
-        var composed = marked.Length > 0 ? entry.Value.Insert(caretInValue, marked) : entry.Value;
+        var caretInValue = Math.Min(press.CaretIndex, text.Length);
+        var composed = marked.Length > 0 ? text.Insert(caretInValue, marked) : text;
         var value = entry.Obscure ? new string('•', composed.Length) : composed;
         var effectiveCaret = Math.Min(caretInValue + marked.Length, value.Length);
         var shown = value.Length > 0 ? value : entry.Placeholder ?? "";
@@ -208,7 +211,7 @@ internal sealed partial class EmitVisitor
             // No platform text service — headless tests, and any surface where glyphs are not
             // available yet. The soft bar is the same stand-in `Text` falls back to; the caret still
             // draws, because where it is remains the useful thing to see.
-            EmitEntryPlaceholder(node, entry, theme, mode, builder);
+            EmitEntryPlaceholder(node, text, theme, mode, builder);
         }
         else if (shown.Length > 0)
         {
@@ -259,7 +262,7 @@ internal sealed partial class EmitVisitor
         // desktop's sits at the caret outside the value; a phone keyboard's is a range of the value.
         var (underlineFrom, underlineTo) = marked.Length > 0
             ? (caretInValue, caretInValue + marked.Length)
-            : !entry.Obscure && press.Composing is { } composing && composing.Text == entry.Value
+            : !entry.Obscure && press.Composing is { } composing && composing.Text == text
                 ? (composing.Start, composing.End)
                 : (0, 0);
         if (underlineTo > underlineFrom && motion.TextRasterizer is { } markedRasterizer)
@@ -301,10 +304,10 @@ internal sealed partial class EmitVisitor
             Paint.Solid(theme.TextPrimary.Resolve(mode)));
     }
 
-    private static void EmitEntryPlaceholder(LayoutNode node, TextEntry entry, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder)
+    private static void EmitEntryPlaceholder(LayoutNode node, string text, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder)
     {
         if (node.Text is not { } measurement || measurement.Lines.Count == 0) return;
-        var hasValue = entry.Value.Length > 0;
+        var hasValue = text.Length > 0;
         var token = hasValue ? theme.TextPrimary : theme.Placeholder;
         var color = token.Resolve(mode).WithOpacity(0.30f);
         var line = measurement.Lines[0];

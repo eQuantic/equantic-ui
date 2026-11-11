@@ -505,11 +505,56 @@ the parity rows it closes flip.
    and the browser matches by index until E3 drives it with the same engine. And Android's virtual
    view id stays the node's index in the frame's semantic list, which leads to its id, until the
    provider makes it stable.
+
+   **The field followed** (#996, `openspec/changes/archive/2026-11-09-a-photon-field-keeps-what-was-typed`): a field's
+   position keeps what was typed (`FieldText`), and the field shows it until the page builds it again,
+   when it shows what the page holds, whether or not that value changed. That is the rule the web
+   settled in #1026, not "take the app's value only when it differs", which left typed digits over a
+   field its page had reset. A key now builds what the field's handler marked and nothing else; the
+   rebuild of every component stays for a code surface's or a spreadsheet's handler that calls no
+   `SetState`. Measured with recycled frames: a frame after a key typed into a field whose form keeps
+   the value without `SetState`, above the stateful dashboard, 96,992 to 30,864 bytes.
 3. **E3, the browser.** The runtime's stores, module maps and path attributes move onto the
    transpiled engine; hydration builds the element tree; the shell an app declares in `Program.cs`
    stays mounted across client navigations, and the dashboard sample moves its frame into it. Proof:
    the runtime's own suites, the hydration contract, the sidebar's state across a navigation, and a
    page that still builds its own frame patching as it does today.
+
+   **E3a, the engine into the runtime (#1127), split in two.** Its first part landed
+   (`openspec/changes/archive/2026-11-09-the-element-engine-is-written-in-what-eqc-translates`): the
+   engine is written in what eqc translates, and a test holds it there.
+   - `ChildSlots` is one switch over `NodeKind` with a typed read per arm, not a visitor. The
+     guarantee the visitor gave moved to a test that mounts one instance of every concrete
+     `VisualNode` through an owner, so a kind with no arm fails by name.
+   - The owner is handed how a component builds, as Flutter's is handed `onBuildScheduled`, and
+     `ComponentBoundary.Owner()` hands it the boundary every .NET target builds through: the first
+     step of 3.6, and the engine no longer names a host-only class. It is the one signature an app
+     meets, against section 4's promise: a test that mounted a component through `new BuildOwner()`
+     makes the owner with `ComponentBoundary.Owner()`, because an owner with no build is not one a
+     test can be handed.
+   - With the visitor gone a fifth refusal showed, `Array.Empty<T>()`, and the arm is written
+     without it.
+
+   Then the modules eqc wrote failed the runtime's `tsc`, which no slice had foreseen: six emission
+   defects of eqc's, one silent (a member named `Component` read bare was written `this._component`,
+   so a read from outside the class saw its default), filed under the bug sweep (#1299, #1303 to
+   #1307); and a browser component model that differs from the one the engine drives (a component is
+   no `VisualNode` there, and its stateful component has no `MountedAt`, `Place` or `Leave`). The
+   engine stays `[ServerOnly]` until E3a-3 (#1301) brings the browser's component to it, and
+   `ElementEngineTranspilesTests` passes the engine through eqc meanwhile, so nothing written into
+   it can go unseen. Photon's frame, main against the change: allocation identical to the byte in
+   every scene of the perf harness, the dense scene's realize p50 within noise.
+
+   E3a-3 starts with a slice of its own, because it changes how the browser builds every component
+   without state: **a component is a node in the browser too**
+   (`openspec/changes/archive/2026-11-10-a-component-is-a-node-in-the-browser`). The engine's position
+   for a component is a node, and in the browser only a stateful component carried
+   `nodeKind = 'component'`; a stateless one carried none on purpose and rendered itself through the
+   lowering's mixing seam. The runtime gains `UiComponent` between the web `Component` and the two
+   kinds, its kind at run time and the node's members held to `VisualNode` by a type test, and a
+   stateless component takes the `component` arm a stateful one takes. `HtmlElement` stays outside,
+   as in C#. No server-data ordinal moves, measured on a mixed page and on a client navigation with
+   the old routing put back, and the boundary contains what it contained.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.

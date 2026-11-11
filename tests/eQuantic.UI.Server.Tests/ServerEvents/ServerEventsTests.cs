@@ -587,7 +587,7 @@ public class ServerEventsTests
 
         var sources = Regex.Matches(html, @"<script\b[^>]*?\bsrc\s*=\s*[""']?([^""'\s>]+)", RegexOptions.IgnoreCase)
             .Select(match => match.Groups[1].Value);
-        var importMap = Regex.Match(html, @"<script type=""importmap"">(.*?)</script>", RegexOptions.Singleline).Groups[1].Value;
+        var importMap = Regex.Match(html, @"<script type=""importmap""[^>]*>(.*?)</script>", RegexOptions.Singleline).Groups[1].Value;
         var imports = JsonDocument.Parse(importMap).RootElement.GetProperty("imports").EnumerateObject()
             .Select(entry => entry.Value.GetString()!).ToList();
 

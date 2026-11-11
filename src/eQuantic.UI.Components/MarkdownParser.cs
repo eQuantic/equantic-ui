@@ -35,7 +35,12 @@ internal sealed class MarkdownBulletMatch
 /// about code is full of identifiers_with_underscores); an image renders as its alt text linking
 /// to the source (an <see cref="Primitives.Image"/> is an explicitly sized slot by spec, and
 /// markdown carries no dimensions); raw HTML never passes through (an injection surface on web,
-/// meaningless on Photon); fenced code only, no four-space indent blocks.
+/// meaningless on Photon); fenced code only, no four-space indent blocks. A link's target is kept as
+/// it was written, up to the first <c>)</c>, and is not checked here: the web realizer writes an href
+/// only for a scheme it may carry (<c>http</c>, <c>https</c>, <c>mailto</c>, <c>tel</c> or none), so a
+/// <c>javascript:</c> target from a reader's Markdown links nowhere (#1286). Photon hands a pressed
+/// link's target to the app's navigation handler, and an <c>IUrlLauncher</c> opens only what the app's
+/// <c>OpenUrlPolicy</c> allows.
 /// </summary>
 public static class MarkdownParser
 {

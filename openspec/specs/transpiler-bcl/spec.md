@@ -1621,6 +1621,46 @@ A `Convert` call whose value C# boxed for the `object` overload SHALL convert by
 - **WHEN** a program evaluates `checked((Small)i)` over an int of 300, where `Small` is a byte enum
 - **THEN** the cast throws `OverflowException`, as in .NET
 
+### Requirement: An enum is held and combined at its underlying type's width
+
+A value of an enum SHALL be held at its underlying type's width: a number for a type of 32 bits or
+fewer, never negative for an unsigned one, and a BigInt for a `long` or a `ulong`, as a `long` is held.
+A cast into or out of an enum SHALL convert as the numeric conversion between the underlying types
+converts, throwing where .NET throws in a checked context. The operators C# defines on an enum (`|`,
+`&`, `^`, `~`, `+`, `-`, `++`, `--`, their compound assignments, the relations and a relational
+pattern), `HasFlag` and `CompareTo` SHALL compute on the values at that width, a lifted one answering
+null for an absent operand. A 64-bit enum SHALL cross between the server and the browser as a `long`
+does, as a value and as a dictionary key.
+
+#### Scenario: A member past 2^53
+
+- **WHEN** browser-side code reads `(long)Huge.Top` and `Huge.Top.ToString("X")` of
+  `[Flags] enum Huge : long { None = 0, A = 1, B = 1L << 40, Top = 1L << 62 }`
+- **THEN** they are 4611686018427387904 and `4000000000000000`, as in .NET
+
+#### Scenario: Flags past 32 bits
+
+- **WHEN** browser-side code reads `(long)(a | b)` for `var a = Huge.A; var b = Huge.B;`
+- **THEN** it is 1099511627777, as in .NET, where it was 1
+
+#### Scenario: A uint flag's high bit
+
+- **WHEN** browser-side code reads `(a | t).HasFlag(t)` for `var a = UFlags.A; var t = UFlags.Top;` of
+  `[Flags] enum UFlags : uint { None = 0, A = 1, Top = 0x80000000 }`
+- **THEN** it is true, as in .NET, where it was false
+
+#### Scenario: A checked cast
+
+- **WHEN** browser-side code runs `checked((int)t)` for `var t = Huge.Top;`
+- **THEN** it throws an `OverflowException`, as in .NET, and `unchecked((int)t)` is 0
+
+#### Scenario: Crossing from the server
+
+- **WHEN** the server renders a page whose field holds `CrossingReach.Far | CrossingReach.Near` of
+  `[Flags] enum CrossingReach : long { None = 0, Near = 1, Far = 1L << 62 }`, and a dictionary keyed by it
+- **THEN** the browser's first build draws `4611686018427387905 Near, Far` and finds the dictionary's
+  keys, as the server drew them
+
 ### Requirement: A string's search with no comparison is refused
 
 `StartsWith`, `EndsWith`, `IndexOf` and `LastIndexOf` of a string with no `StringComparison`, with a start and a
@@ -1664,3 +1704,59 @@ does: a number or a date in the culture in force, and a type of the app's by its
 
 - **WHEN** `IFormattable x = 1.5; return $"{x}";` runs on a pt-BR page
 - **THEN** it answers `1,5`, as .NET does; it answered `1.5`
+
+### Requirement: A primitive's Equals answers by its own type
+
+`Equals` on `bool`, `char`, every integer width, `float`, `double` and `decimal`, typed or taking `object`, SHALL build, and `Equals(object)` SHALL be true only for an equal value of the receiver's own type, with both values evaluated, the receiver first. The other value's type SHALL be read from the bound tree before C# boxed it. A `double` and a `float` SHALL find NaN equal to NaN. A value already held as `object` SHALL compare by what it holds, where an int and a double of one value, or a char and a text of one, cannot be told apart.
+
+#### Scenario: A value of another type
+
+- **WHEN** a program evaluates `1.Equals((object)1.0)`, `'a'.Equals((object)"a")` or `1.Equals((object)1L)`
+- **THEN** the answer is False, as in .NET
+
+#### Scenario: Every primitive builds
+
+- **WHEN** a program evaluates `((byte)1).Equals((object)(byte)1)`, `1m.Equals((object)1m)` or `double.NaN.Equals((object)double.NaN)`
+- **THEN** the build succeeds and the answer is True, as in .NET
+
+#### Scenario: Both values are evaluated
+
+- **WHEN** a program evaluates `A().Equals((object)B())`, where `A` returns an int and `B` a double
+- **THEN** `A` runs, then `B`, and the answer is False
+
+### Requirement: A KeyValuePair writes its text as .NET does
+
+A `KeyValuePair<TKey, TValue>` SHALL write `[key, value]` through a hole, a concatenation, `ToString`, `string.Join`, `string.Format`, `StringBuilder.Append` and a `ToString` method group, each half as its type writes it in the culture in force, a null one as nothing.
+
+#### Scenario: Each route into text
+
+- **WHEN** a program writes `new KeyValuePair<int, string>(1, "a")` into any of those routes
+- **THEN** the text is `[1, a]`
+
+#### Scenario: Held as object
+
+- **WHEN** a program writes a pair held in an `object` into a hole
+- **THEN** the text is `[1, a]`
+
+### Requirement: A task already ended is read by whoever awaits it
+
+`Task.FromException` and `Task.FromCanceled`, generic or not, SHALL build. An `await` of the first SHALL throw its exception, and of the second a `TaskCanceledException`. A null exception and a token not cancelled SHALL be refused at the call in .NET's words. A task of either kind nobody awaits SHALL report nothing.
+
+#### Scenario: An awaited faulted task
+
+- **WHEN** a program awaits `Task.FromException(new InvalidOperationException("boom"))`
+- **THEN** the `await` throws that exception
+
+#### Scenario: A token not cancelled
+
+- **WHEN** a program calls `Task.FromCanceled(CancellationToken.None)`
+- **THEN** the call throws `ArgumentOutOfRangeException` naming `cancellationToken`
+
+### Requirement: A reference tuple is refused by the build
+
+`Tuple.Create` and `new Tuple<…>` SHALL fail the build with EQ2004 naming the member.
+
+#### Scenario: Tuple.Create
+
+- **WHEN** a client component calls `System.Tuple.Create(1, "a")`
+- **THEN** the build fails with EQ2004
