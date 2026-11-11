@@ -33,7 +33,7 @@ sweep() {
   # A run waits in one of these until it ends; the API filters by one status a call.
   for status in queued in_progress waiting requested pending; do
     runs=$(gh api "repos/$repo/actions/workflows/$workflow/runs?event=merge_group&status=$status&per_page=100" \
-      --jq '.workflow_runs[] | "\(.id) \(.head_branch) \(.head_sha)"')
+      --paginate --jq '.workflow_runs[] | "\(.id) \(.head_branch) \(.head_sha)"')
     while read -r id branch sha; do
       [ -n "$id" ] || continue
       if out=$(gh api "repos/$repo/git/ref/heads/$branch" --jq .ref 2>&1); then
