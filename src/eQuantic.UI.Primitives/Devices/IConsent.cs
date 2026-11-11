@@ -6,7 +6,8 @@ namespace eQuantic.UI.Primitives;
 /// <see cref="IAnalytics"/>: a page asks for it the way it asks for a camera, shows the question
 /// while the answer is <see cref="ConsentState.Unknown"/>, and never learns who stores the reply.
 /// <para>
-/// The realizations agree on ONE cookie, <c>eq-consent</c>, so every side reads the same answer:
+/// The realizations agree on ONE cookie, so every side reads the same answer: <c>__Host-eq-consent</c>
+/// on a page served over HTTPS, which only the page's own host can write, and <c>eq-consent</c> over HTTP:
 /// the browser writes it and announces the change on the document as <c>eq:consent</c>; the server
 /// reads it from the request, which is why a visitor who answered last week gets a first paint
 /// with no banner in it; and the GTM installer's head script loads the container only when the
