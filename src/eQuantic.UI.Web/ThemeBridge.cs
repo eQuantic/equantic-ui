@@ -16,7 +16,7 @@ namespace eQuantic.UI.Web;
 public static class ThemeBridge
 {
     /// <summary>The theme as a single-line JSON object: surfaces, disabledOpacity, per-variant color
-    /// groups, the type scale, elevations 0–5, the shape scale and the data palette — colors as <c>[[r,g,b,a],[r,g,b,a]]</c>
+    /// groups, the type scale, elevations 0–5, the shape scale, the data palette and the code palette — colors as <c>[[r,g,b,a],[r,g,b,a]]</c>
     /// light/dark tuples, keys camelCased to match the enum-lowered names the client looks up.</summary>
     public static string SerializeJson(IAppTheme theme)
     {
@@ -138,6 +138,18 @@ public static class ThemeBridge
             Comma(sb, ref first);
             Key(sb, Camel(scale.ToString()));
             sb.Append(Num(theme.Shape(scale)));
+        }
+        sb.Append('}');
+
+        // The colour of every kind of code token: the browser's theme answers Code from these, or a theme
+        // that overrides it would colour a CodeBlock on the server and lose it once the page rendered (#936).
+        sb.Append(",\"code\":{");
+        first = true;
+        foreach (var kind in Enum.GetValues<CodeTokenKind>())
+        {
+            Comma(sb, ref first);
+            Key(sb, Camel(kind.ToString()));
+            Token(sb, theme.Code(kind));
         }
         sb.Append('}');
 

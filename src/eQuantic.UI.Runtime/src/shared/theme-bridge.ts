@@ -48,6 +48,8 @@ export interface ThemeData {
   onSelection?: TokenTuple;
   elevations: ReadonlyArray<readonly [number, number, number, TokenTuple]>;
   shape: Record<string, number>;
+  /** The colour of every kind of code token, by the enum's lowered name. */
+  code?: Record<string, TokenTuple>;
   /** The data palette: series and sequential as token lists, diverging as [negative, midpoint,
    * positive], status as [good, warning, serious, critical]. */
   data: {
@@ -142,6 +144,8 @@ export function materializeTheme(data: ThemeData): AppTheme {
       token(data.data.status[3]),
     ),
   );
+  const code: Record<string, ColorToken> = {};
+  for (const [kind, color] of Object.entries(data.code ?? {})) code[kind] = token(color);
   let sheet: SheetTheme | null = null;
   if (data.sheet) {
     sheet = new SheetTheme();
@@ -167,7 +171,7 @@ export function materializeTheme(data: ThemeData): AppTheme {
       return elevations[Math.max(0, Math.min(5, Math.trunc(level)))];
     },
     code(kind: string): ColorToken {
-      return codeTokenColor(this as unknown as AppTheme, kind);
+      return code[kind] ?? codeTokenColor(this as unknown as AppTheme, kind);
     },
     shape(scale: string): number {
       return data.shape[scale] ?? data.shape.medium;
