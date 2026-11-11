@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -121,6 +122,11 @@ public static class UIExtensions
         // Add authorization service for Server Actions
         // TryAdd allows users to override with their own implementation
         services.TryAddSingleton<IServerActionAuthorizationService, ServerActionAuthorizationService>();
+        // An action and a page are decided by the app's policy provider and evaluator, which ASP.NET Core
+        // registers with AddAuthorization: an app that only marked an action [Authorize] never called it,
+        // and its action would be refused for want of them. It adds what is missing and changes nothing
+        // the app registered (#1320).
+        services.AddAuthorization();
         // A refused CLIENT NAVIGATION into a page that requires authorization is answered 401 or 403,
         // which the router acts on, instead of a challenge a fetch cannot follow (#673).
         // It WRAPS the handler the app registered before AddUI, so the app's own answers stand for
@@ -159,6 +165,7 @@ public static class UIExtensions
         services.TryAddSingleton<eQuantic.UI.Primitives.ITextClipboard, AbsentCapabilities.Clipboard>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IPhotoLibrary, AbsentCapabilities.PhotoLibrary>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IFilePicker, AbsentCapabilities.FilePicker>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.IFileSaver, AbsentCapabilities.FileSaver>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IUploads, AbsentCapabilities.Uploads>();
         services.TryAddSingleton<eQuantic.UI.Primitives.ICamera, AbsentCapabilities.Camera>();
         services.TryAddSingleton<eQuantic.UI.Primitives.ILocation, AbsentCapabilities.Location>();
@@ -171,17 +178,26 @@ public static class UIExtensions
         services.TryAddSingleton<eQuantic.UI.Primitives.IClock, AbsentCapabilities.Clock>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IFrameTicker, AbsentCapabilities.FrameTicker>();
 
-        // Add response compression (Brotli + Gzip for JS, CSS, HTML)
+        // Response compression for what every user receives alike: the runtime, the modules, the styles and
+        // the pictures. A page's HTML and an action's JSON answer one user, and may hold a secret beside text
+        // that user's request put there, which compressed over HTTPS is the shape BREACH reads through the
+        // response's length. They are left as they are, and an app that wants them compressed says so.
         services.AddResponseCompression(opts =>
         {
             opts.EnableForHttps = true;
-            opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
-            {
+            opts.MimeTypes =
+            [
                 "application/javascript",
+                "text/javascript",
                 "text/css",
-                "image/svg+xml"
-            });
+                "image/svg+xml",
+                "application/wasm",
+            ];
         });
+        // The compression has to be applied as well as registered, and the developer writes nothing for it:
+        // it stands in front of the pipeline, so what the runtime's endpoint, the static files and a page
+        // answer all pass through it (#1002). Once, however many times AddUI is called.
+        services.TryAddEnumerable(ServiceDescriptor.Transient<IStartupFilter, ResponseCompressionFirst>());
         services.Configure<BrotliCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
         services.Configure<GzipCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
 
@@ -375,49 +391,59 @@ public static class UIExtensions
             await context.Response.WriteAsync(document);
         });
 
-        // The faces the app ships (#1055), by the hash of their bytes: immutable, and only what the
-        // theme, the app's catalogs and its pages named, since a name is the only way in. Public as the
+        // The faces the theme's stylesheet declares (#1055), by the hash of their bytes: immutable, and only
+        // what the theme and the app's catalogs named, since a name is the only way in. Public as the
         // runtime is: a sign-in page under a fallback policy is set in them too.
-        endpoints.MapGetAndHead("/_equantic/fonts/{name}", async context =>
+        endpoints.MapGetAndHead("/_equantic/fonts/{name}", context =>
         {
-            var font = context.RequestServices.GetRequiredService<ServedFonts>().Find((string?)context.GetRouteValue("name") ?? "");
-            if (font is null)
-            {
-                context.Response.StatusCode = 404;
-                return;
-            }
-            // Compressed once when the set was read, and sent so to a browser that takes Brotli, which
-            // every current one does: the app's own response compression is not relied on, since no
-            // middleware of it runs unless the app adds one.
-            var brotli = context.Request.GetTypedHeaders().AcceptEncoding
-                .Any(encoding => encoding.Value.Equals("br", StringComparison.OrdinalIgnoreCase) && encoding.Quality is not 0);
-            var body = brotli ? font.Brotli : font.Bytes;
-            context.Response.ContentType = font.ContentType;
-            if (brotli) context.Response.Headers.ContentEncoding = "br";
-            context.Response.Headers.Vary = "Accept-Encoding";
-            context.Response.ContentLength = body.Length;
-            context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
-            await context.Response.Body.WriteAsync(body);
-        }).AllowAnonymous();
-
-        // A face a page the browser builds names (#1056), asked for by its identity, an assembly and a
-        // resource, since the browser does not know the bytes' hash: sent on to the content-addressed URL,
-        // so every page shares one cached copy of a file. Only a face an eQuantic build embedded, in an
-        // assembly the app's deployment carries, or a file the theme serves (ServedFonts.Locate). The redirect itself is asked again every
-        // time, so a new build's file is found under its new hash.
-        endpoints.MapGetAndHead("/_equantic/fonts/{assembly}/{**resource}", context =>
-        {
-            var font = context.RequestServices.GetRequiredService<ServedFonts>().Locate(
-                (string?)context.GetRouteValue("assembly") ?? "", (string?)context.GetRouteValue("resource") ?? "");
-            if (font is null)
+            if (context.RequestServices.GetRequiredService<ServedFonts>().Find((string?)context.GetRouteValue("name") ?? "") is not { } font)
             {
                 context.Response.StatusCode = 404;
                 return Task.CompletedTask;
             }
+            return SendFont(context, font);
+        }).AllowAnonymous();
+
+        // A face by its identity, an assembly and a resource (#1056): what a page the server rendered names
+        // a face outside the theme's stylesheet by, with the hash of its bytes as its version, which every
+        // instance answers by loading the assembly by its name (#1080), and what a page the browser builds
+        // asks for, without the version, since it does not know the bytes' hash. Only a face an eQuantic
+        // build embedded, or a file the theme serves (ServedFonts.Locate). Its own version is the file;
+        // anything else is sent on to the URL a page names the file by, and the redirect is asked again
+        // every time, so a new build's file is found under its new hash.
+        endpoints.MapGetAndHead("/_equantic/fonts/{assembly}/{**resource}", context =>
+        {
+            if (context.RequestServices.GetRequiredService<ServedFonts>().Locate(
+                (string?)context.GetRouteValue("assembly") ?? "", (string?)context.GetRouteValue("resource") ?? "") is not (var font, var url))
+            {
+                context.Response.StatusCode = 404;
+                return Task.CompletedTask;
+            }
+            if (context.Request.Query["v"] == font.Version) return SendFont(context, font);
             context.Response.Headers["Cache-Control"] = "no-cache";
-            context.Response.Redirect(font.Url);
+            context.Response.Redirect(url);
             return Task.CompletedTask;
         }).AllowAnonymous();
+
+        // The tab's icon at the address every browser and every crawler asks for, whatever a page
+        // links (#1240): the favicon.ico the build wrote from the app's icon. An app's own favicon.ico
+        // wins, wherever its web root has it, a referenced project's static web assets included: with
+        // minimal hosting the routing runs before UseStaticFiles, and the static files serve nothing a
+        // route matched, so this route answers from the same file provider they read. Under
+        // MapStaticAssets, where the file is an endpoint too, this one's order is after it rather than
+        // beside it, which routing would refuse as ambiguous. Not immutable: the address never changes
+        // and the icon may, so a browser asks again daily.
+        endpoints.MapGetAndHead("/favicon.ico", async context =>
+        {
+            if (Icons(context).Favicon is not { } favicon)
+            {
+                context.Response.StatusCode = 404;
+                return;
+            }
+            context.Response.ContentType = "image/x-icon";
+            context.Response.Headers["Cache-Control"] = "public, max-age=86400";
+            await context.Response.SendFileAsync(favicon);
+        }).AllowAnonymous().WithOrder(1);
 
         // Map Runtime JS (immutable via BuildId in URL, long cache)
         endpoints.MapGetAndHead("/_equantic/runtime.js", async context =>
@@ -445,11 +471,20 @@ public static class UIExtensions
         endpoints.MapGetAndHead("/_equantic/{name}.js", async context =>
         {
             var name = (string?)context.GetRouteValue("name");
-            var path = AssetPaths.Resolve(
-                Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic"),
-                name, ".js");
+            var environment = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
+            var path = AssetPaths.Resolve(Path.Combine(environment.WebRootPath, "_equantic"), name, ".js");
+            // Not under the web root: the local directory, as a development run lays it out, and only in
+            // Development, where it is the build the developer is running. Found there, the module is
+            // served as one found under the web root is, and its status is 200: a browser refuses to
+            // run a module answered 404 (#1296).
+            var localPath = environment.IsDevelopment()
+                ? AssetPaths.Resolve(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js")
+                : null;
+            var found = path is not null && File.Exists(path) ? path
+                : localPath is not null && File.Exists(localPath) ? localPath
+                : null;
 
-            if (path is not null && File.Exists(path))
+            if (found is not null)
             {
                 context.Response.ContentType = "application/javascript";
                 // Hot reload rewrites fixed-name bundles in place, and the build id in their URL is
@@ -460,28 +495,18 @@ public static class UIExtensions
                 context.Response.Headers["Cache-Control"] = hotReloads
                     ? "no-cache"
                     : "public, max-age=31536000, immutable";
-                await context.Response.SendFileAsync(path);
+                await context.Response.SendFileAsync(found);
             }
             else
             {
                 context.Response.StatusCode = 404;
-                // Try finding it in the local directory (Dev scenario)
-                var localPath = AssetPaths.Resolve(
-                    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js");
-                if (localPath is not null && File.Exists(localPath))
+                // Plain text, and only Development says where it looked: the paths are the server's
+                // own, and this route serves anyone, so no other environment writes back what the
+                // request named (#1296).
+                if (path is not null && environment.IsDevelopment())
                 {
-                    context.Response.ContentType = "application/javascript";
-                    await context.Response.SendFileAsync(localPath);
-                }
-                else if (path is not null)
-                {
-                    // The paths are the server's own, and this route serves anyone: they are for a
-                    // developer, so only Development writes them.
-                    context.Response.ContentType = "application/javascript";
-                    await context.Response.WriteAsync(
-                        context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment()
-                            ? $"// 404: Component {name} not found at {path} or {localPath}"
-                            : $"// 404: Component {name} not found");
+                    context.Response.ContentType = "text/plain; charset=utf-8";
+                    await context.Response.WriteAsync($"Component {name} not found at {path} or {localPath}");
                 }
             }
         }).AllowAnonymous();
@@ -610,31 +635,73 @@ public static class UIExtensions
     }
 
     /// <summary>The head links for the generated icon set — empty when an app declared no icon.</summary>
-    private static IReadOnlyList<string> GeneratedIconTags(HttpContext context)
+    /// <summary>
+    /// A face's bytes, immutable, since every URL that answers them names their hash. Compressed once when
+    /// it was read, and sent so to a browser that takes Brotli, which every current one does: the app's own
+    /// response compression is not relied on, since no middleware of it runs unless the app adds one.
+    /// </summary>
+    private static async Task SendFont(HttpContext context, ServedFont font)
     {
-        if (_iconTags is not null) return _iconTags;
-
-        var environment = context.RequestServices.GetService<IWebHostEnvironment>();
-        var root = environment?.WebRootPath;
-        var icons = root is null ? null : Path.Combine(root, "_equantic", "icons");
-        if (icons is null || !Directory.Exists(icons)) return _iconTags = [];
-
-        var tags = new List<string>();
-        void Link(string file, HtmlTag tag)
-        {
-            if (File.Exists(Path.Combine(icons, file))) tags.Add(tag.Render());
-        }
-
-        // 32 is the tab, 180 is what iOS Safari pins to a home screen, and the manifest carries the
-        // install icons — each answers a different question, so each gets its own link.
-        Link("favicon-32.png", HtmlTag.Link("icon", "/_equantic/icons/favicon-32.png").Attr("type", "image/png"));
-        Link("apple-touch-icon.png", HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png"));
-        Link("site.webmanifest", HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest"));
-        return _iconTags = tags;
+        var brotli = context.Request.GetTypedHeaders().AcceptEncoding
+            .Any(encoding => encoding.Value.Equals("br", StringComparison.OrdinalIgnoreCase) && encoding.Quality is not 0);
+        var body = brotli ? font.Brotli : font.Bytes;
+        context.Response.ContentType = font.ContentType;
+        if (brotli) context.Response.Headers.ContentEncoding = "br";
+        context.Response.Headers.Vary = "Accept-Encoding";
+        context.Response.ContentLength = body.Length;
+        context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+        await context.Response.Body.WriteAsync(body);
     }
 
-    /// <summary>Computed once: the icon set is a build output and cannot change under a running app.</summary>
-    private static IReadOnlyList<string>? _iconTags;
+    private static IReadOnlyList<string> GeneratedIconTags(HttpContext context) => Icons(context).Tags;
+
+    /// <summary>
+    /// What the app's web root holds of its icon: the links every page carries, and the file that
+    /// answers <c>/favicon.ico</c>. Read through the web root's file provider, the one UseStaticFiles
+    /// reads, so a file a referenced project contributes as a static web asset counts as the app's own.
+    /// </summary>
+    private sealed record IconSet(IReadOnlyList<string> Tags, IFileInfo? Favicon)
+    {
+        public static readonly IconSet None = new([], null);
+    }
+
+    private static IconSet Icons(HttpContext context)
+    {
+        var files = context.RequestServices.GetService<IWebHostEnvironment>()?.WebRootFileProvider;
+        return files is null ? IconSet.None : IconSets.GetValue(files, ReadIcons);
+    }
+
+    private static IconSet ReadIcons(IFileProvider files)
+    {
+        IFileInfo? Find(string path) => files.GetFileInfo(path) is { Exists: true, IsDirectory: false } file ? file : null;
+        var own = Find("favicon.ico");
+        var built = Find("_equantic/icons/favicon.ico");
+
+        // The tab's 16, 32 and 48 in one file at the root (#1240), 180 is what iOS Safari pins to a
+        // home screen, and the manifest carries the install icons — each answers a different
+        // question, so each gets its own link. The root's favicon is linked whichever file answers
+        // it, and the sizes are the built file's, so an app's own favicon.ico is linked without them.
+        var tags = new List<string>();
+        if ((own ?? built) is not null)
+        {
+            var link = HtmlTag.Link("icon", "/favicon.ico");
+            tags.Add((own is null ? link.Attr("sizes", "16x16 32x32 48x48") : link).Render(nonce: null));
+        }
+        if (Find("_equantic/icons/apple-touch-icon.png") is not null)
+            tags.Add(HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png").Render(nonce: null));
+        if (Find("_equantic/icons/site.webmanifest") is not null)
+            tags.Add(HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest").Render(nonce: null));
+        return new IconSet(tags, own ?? built);
+    }
+
+    /// <summary>
+    /// Read once per web root's file provider: the icon set is a build output and cannot change under
+    /// a running app. Keyed by the PROVIDER rather than per process, since a process may host more
+    /// than one app and the first one asked answered for all of them, and rather than by the root's
+    /// path, which two hosts can share with different providers. Weak, so a stopped host's entry goes
+    /// with its provider.
+    /// </summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IFileProvider, IconSet> IconSets = new();
 
     /// <summary>
     /// The header a CLIENT NAVIGATION sends. The request goes to the target URL itself rather than
@@ -695,8 +762,6 @@ public static class UIExtensions
     private static async Task ServePageState(HttpContext context, Type? page, DeclaredPage? declared)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
-        // Never cached: this is the page's data, and the next visitor's is not this one's.
-        context.Response.Headers["Cache-Control"] = "no-store";
         // The answer to a navigation says so, with the header the request carried, whatever its
         // status: a page that answers 404 for content that does not exist still sends its title, its
         // head and its state, and the client applies them as a full load of it shows them. Read off
@@ -759,7 +824,7 @@ public static class UIExtensions
     /// 302, not 301: the preference is the reader's, and it changes. A URL that already carries a
     /// segment is left alone, and so is the default culture, which has none.
     /// </summary>
-    private static bool RedirectToLanguageUrl(HttpContext context, UIOptions options)
+    internal static bool RedirectToLanguageUrl(HttpContext context, UIOptions options)
     {
         if (options.CultureRoutes is not { } map) return false;
         var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
@@ -776,9 +841,22 @@ public static class UIExtensions
         // until the browser gave up with ERR_TOO_MANY_REDIRECTS.
         if (!map.IsDefault(map.Split(path).Culture)) return false;
 
-        context.Response.Redirect(map.PathFor(culture, path) + context.Request.QueryString, permanent: false);
+        // The path as a URL writes it: a decoded one holds what a header cannot carry, and a page whose
+        // address has an accent answered 500 instead of its redirect (#1296).
+        var target = map.PathFor(culture, context.Request.Path.ToUriComponent()) + context.Request.QueryString;
+        // Only ever to this app: the target starts with the language's segment, so it is a path of this
+        // origin, and the guard says so where a reader, and an analyzer, can see it (#1296).
+        if (!IsLocalPath(target)) return false;
+        context.Response.Redirect(target, permanent: false);
         return true;
     }
+
+    /// <summary>Whether a redirect target is a path of this origin: rooted, and neither protocol-relative
+    /// (<c>//</c>) nor a backslash a browser reads as one (<c>/\</c>), so it names no other host. The rule
+    /// of ASP.NET Core's own local redirect.</summary>
+    internal static bool IsLocalPath(string target) =>
+        target.Length > 0 && target[0] == '/'
+        && (target.Length == 1 || (target[1] != '/' && target[1] != '\\'));
 
     /// <summary>The theme's stylesheet for each mode a request can paint in, written once per theme:
     /// it depends on nothing else, and every page carries it.</summary>
@@ -793,6 +871,13 @@ public static class UIExtensions
 
     private static async Task ServeAppShell(HttpContext context, Type? page, DeclaredPage? declared)
     {
+        // Never stored, by the browser or by any cache between it and the server, and said here once
+        // for both answers of a page's route: the document carries what this visitor's cookies chose
+        // (theme, density, culture) and the page's own state, and so does the data a navigation asks
+        // for. The next visitor's is not this one's. The document went with no Cache-Control at all,
+        // so a CDN rule that caches HTML served one visitor's prefetched data to the next (#1288).
+        context.Response.Headers.CacheControl = "no-store";
+
         // A client navigation asks the same route for the page's data instead of a document.
         if (context.Request.Headers.ContainsKey(NavigationHeader))
         {
@@ -804,9 +889,12 @@ public static class UIExtensions
         if (RedirectToLanguageUrl(context, options)) return;
 
         var shell = options.HtmlShell;
-        // Per-request copy of the head tags. The HtmlShell is a singleton, so mutating
-        // shell.HeadTags directly is not thread-safe and leaks tags across requests.
-        var headTags = new List<string>(shell.HeadTags);
+        // The request's nonce, on every script and style the shell writes (#1266): the template's
+        // own, the app's head tags and CSS, and the page's assets.
+        var nonce = ShellNonce.Of(context);
+        // The head tags rendered for THIS request: the HtmlShell is a singleton, so this list is the
+        // request's own, and what the page adds below never reaches the next request.
+        var headTags = shell.HeadTags.Select(tag => tag.Render(nonce)).ToList();
 
         // The theme's stylesheet, on EVERY page: the theme the app chose (options.UseTheme), or
         // Photon's, the one the browser runtime falls back to. It carries the document's rules and
@@ -882,7 +970,7 @@ public static class UIExtensions
             // with none of its classes defined.
             if (adopted.Assets != null)
             {
-                foreach (var tag in adopted.Assets.RenderTags())
+                foreach (var tag in adopted.Assets.RenderTags(nonce))
                 {
                     if (!headTags.Contains(tag))
                         headTags.Add(tag);
@@ -1018,6 +1106,8 @@ public static class UIExtensions
 
         var isDevelopment = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
 
+        var hotReloads = options.HotReloads(context.RequestServices.GetRequiredService<IWebHostEnvironment>());
+
         // The client's configuration, written by System.Text.Json and nothing else. Its strings were
         // quoted by hand, escaping the backslash and the quote, so a route title holding a line break
         // was a syntax error in a script every page carries, and stopped the client of the whole app
@@ -1031,7 +1121,7 @@ public static class UIExtensions
             Version: BuildId,
             Ssr: ssrEnabled,
             // Whether this server streams rebuilds, so the page listens exactly when there is a stream.
-            HotReload: options.HotReloads(context.RequestServices.GetRequiredService<IWebHostEnvironment>()),
+            HotReload: hotReloads,
             // What the page was rendered at: hydration adopts this markup, so it lowers at the same
             // density and then switches the whole page to the browser's own at once (#623).
             Density: DensityCookie.NameOf(DensityCookie.Resolve(context)),
@@ -1061,15 +1151,19 @@ public static class UIExtensions
         var html = template.Render(ctx =>
         {
             // Variables
-            ctx.Set("HtmlClass", shell.HtmlClass)
+            // The nonce first: a value written before it can never be read as its placeholder.
+            ctx.Set("Nonce", nonce)
+               .Set("HtmlClass", shell.HtmlClass)
                .Set("HtmlLang", htmlLang)
                .Set("Title", System.Web.HttpUtility.HtmlEncode(metadata.Title ?? string.Empty))
                .Set("MetadataTags", metadata.RenderTags())
                .SetOrEmpty("FontPreloads", fonts.Preloads)
                .Set("BuildId", BuildId)
-               .Set("ThemeStyles", themeStyles)
+               // A style element's text, which nothing in it can end (#1295).
+               .Set("ThemeStyles", StyleElementText.Of(themeStyles))
                // One element per AddStyles call, so a malformed chunk cannot swallow the next one.
-               .SetOrEmpty("AppStyles", string.Join("\n        ", shell.Styles.Select(css => $"<style>{css}</style>")))
+               .SetOrEmpty("AppStyles", string.Join("\n        ",
+                   shell.Styles.Select(css => $"<style{ShellNonce.Attribute(nonce)}>{StyleElementText.Of(css)}</style>")))
                .Set("HeadTags", string.Join("\n    ", headTags))
                .Set("SsrEnabled", ssrEnabled.ToString().ToLowerInvariant())
                .Set("SsrContent", ssrContent)
@@ -1085,9 +1179,18 @@ public static class UIExtensions
                .When("HasInitialState", serializedState != null)
                .When("SsrEnabled", ssrEnabled)
                .When("HasServerActions", hasServerActions)
+               // The rebuild stream is the page's one source of reloads (HotReloadService), so the
+               // refresh script dotnet watch injects into every page it serves is told the page is
+               // taken, by the guard it keeps against connecting twice. It reloaded the page as soon
+               // as the server took an edit, with the modules from before it, and the rebuild
+               // reloaded it again seconds later (#1275). WatchScriptGuardTests pins the guard's name
+               // in the SDK global.json selects.
+               .When("HotReloads", hotReloads)
                ;
         });
 
+        // The page's policy, with the nonce its scripts carry, when the app turned one on (#1267).
+        context.RequestServices.GetService<ContentSecurityPolicy>()?.WriteTo(context.Response, nonce);
         context.Response.ContentType = "text/html";
         await context.Response.WriteAsync(html);
     }

@@ -89,7 +89,7 @@ public static class JsExprWriter
         _ => throw new InvalidOperationException($"No writer for IR node {expr.GetType().Name}."),
     };
 
-    private static string ArrowHead(bool isAsync, string parameters) => $"{(isAsync ? "async " : "")}({parameters}) => ";
+    private static string ArrowHead(bool isAsync, string parameters, string returns = "") => $"{(isAsync ? "async " : "")}({parameters}){returns} => ";
 
     private static JsWritten RenderArrow(JsArrow arrow)
     {
@@ -113,7 +113,7 @@ public static class JsExprWriter
     private static JsWritten RenderArrowBlock(JsArrowBlock arrow)
     {
         var block = LaidOut.GetValue(arrow, laid => JsStatementWriter.Written(laid.Block, laid.Layout, laid.Depth));
-        var text = new JsWrittenBuilder().Add(ArrowHead(arrow.IsAsync, arrow.Parameters)).Add(block);
+        var text = new JsWrittenBuilder().Add(ArrowHead(arrow.IsAsync, arrow.Parameters, arrow.Returns)).Add(block);
         return (block.Text.Contains('\n') ? text.Resume() : text).Done();
     }
 

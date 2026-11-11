@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Every rule that decides a design, each with the case it came from and the test that holds it, is in
+[docs/PRINCIPLES.md](docs/PRINCIPLES.md), and how a change is proved is in
+[docs/PROVING.md](docs/PROVING.md). GitHub Copilot reviews every pull request with the same rules,
+from `.github/copilot-instructions.md` and `.github/instructions/`. This file states the main ones at
+length; where the two differ, this file wins and the page is corrected.
+
 ## THE PRODUCT PRINCIPLE (read this first — it decides designs)
 
 **A developer using eQuantic.UI never writes a line of Swift, an Xcode setting, an Android
@@ -152,6 +158,12 @@ work moves (an issue starts, a pull request merges), `python3 scripts/roadmap.py
 real dates and the forecast of the rest, each milestone's included, and `--apply` writes them to the
 board; `docs/ROADMAP-FORECAST.md` is the method.
 
+An issue is taken by assigning it. Every issue starts assigned to the owner's account, which every
+session works as, so one assigned to anyone else is that person's, and so is one labelled
+`good first issue`, which is kept for a person's first step: no session starts it, and no session
+pushes to a branch of its. A contributor takes an issue by assigning it to themselves and moving it
+to In progress, and an issue already In progress is someone's, whoever it is assigned to.
+
 ### Branches
 
 `<type>/<slug>`: the type is one of `feat/`, `fix/`, `chore/`, `refactor/`, `docs/`, `test/`,
@@ -238,16 +250,27 @@ is not the owner's.
    after the third in any case: a defect found later is still fixed and proved, and anything else
    is sorted as in any round, without asking for another. When the account's GitHub credits are
    exhausted and Copilot cannot review, skip this step.
-4. **Squash-merge on green CI, composing nothing.** The ruleset requires thirteen of the CI's jobs
-   and a branch up to date with `main` (#287), so when `main` moved after the CI ran, merge `main`
-   into the pull request first: CI runs again, and it costs no Copilot round. Then
-   `gh pr merge <n> --squash` takes the repository's squash default, the pull request's title and
-   its commits' messages, so the commit's subject IS the title that was already read and its body is
-   what the `commit-messages` job read on the pull request. If a message is composed
-   anyway, it goes in a file and `./scripts/check-commit-messages.sh --file <file>` reads it before
-   the merge. Last, merge the pull request's wiki branch, when it has one, into the wiki's master
-   (see Documentation below): main and the wiki move in the same step, and the next pull request's
-   guards read both.
+4. **Squash-merge on green CI, composing nothing.** The ruleset requires the CI's jobs (the list is
+   the `working-agreement` spec's) on a run that saw the `main` the pull request lands on (#287). Once ruleset 21198869 merges
+   through GitHub's merge queue (#1308), a reviewed, green pull request enters the queue through the
+   GraphQL mutation `enqueuePullRequest(input: {pullRequestId: "<the pull request's node id>"})`,
+   which answers its position: `gh pr merge <n>` asks for auto-merge, which this repository refuses
+   ("Auto merge is not allowed for this repository"). The queue runs CI on it together with every
+   pull request ahead of it, merges it
+   with a squash when that run is green, and nobody merges `main` into a pull request only to bring
+   it up to date. A pull request's own run skips the four macOS jobs, which hold the scarcest
+   runners and report as skipped, satisfying their checks: the queue's run is the one that runs them
+   (#1385), and a pull request that changes the Apple track asks for them on its branch first with
+   `gh workflow run ci.yml --ref <branch>`. Until the queue is on, when `main` moved after the CI ran, merge `main` into the
+   pull request first (CI runs again, and it costs no Copilot round), then `gh pr merge <n> --squash`.
+   Either way the squash takes the repository's default, the pull request's title and its commits'
+   messages, so the commit's subject IS the title that was already read and its body is what the
+   `commit-messages` job read on the pull request, and reads again in the queue's run before it
+   reaches `main`. If a message is composed anyway, it goes in a file and
+   `./scripts/check-commit-messages.sh --file <file>` reads it before the merge. Last, once the pull
+   request is on `main`, merge its wiki branch, when it has one, into the wiki's master (see
+   Documentation below): the next pull request's guards read both, and a queue's run reads the wiki
+   branches of its whole group already merged onto master.
 5. **A release is Edgar's call.** Merging a pull request never implies one; `CLAUDE.md`'s Version
    Management section says what a bump touches.
 
@@ -370,6 +393,8 @@ The TypeScript runtime is built using **embedded Bun** (bundled in platform-spec
 # Type-check (tsc) and test (vitest run) the runtime through the embedded Bun — no Node, any OS.
 # The build unpacks the bun of the sibling package for this OS and architecture
 # (src/eQuantic.UI.Runtime.<Os><Arch>/tools/bun/*.zip), and the target installs from bun.lock first.
+# bun.lock is the authority. package-lock.json beside it is its mirror, the file Dependabot reads:
+# a dependency moves in both in one change, and RuntimeLockfilesTests fails when they differ.
 dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
 
 # That bun's path, for running it by hand:
@@ -652,7 +677,7 @@ suite compares, and CI reports the page modules' on every pull request):
    one of them with a hash: `NotFoundScreen-<hash>.js` in the dashboard sample is its console
    shell, not a second type of that name. There is no `pages/` folder
 3. **strings/`<culture>`.json** — the culture catalogs, when the app has `.resx`
-4. **icons/** — the app icon sizes and the web manifest, when an `AppIcon` is declared
+4. **icons/** — the app icon sizes, the tab's `favicon.ico` (answered at `/favicon.ico` too) and the web manifest, when an `AppIcon` is declared
 
 The styles are not a file: the token sheet and the atomic classes are written inline by the server
 (`<style id="eq-atomic">` among them). A base stylesheet was copied here until #335, and no page had
@@ -734,7 +759,7 @@ public class TodoList : StatefulComponent
 **Compiles to:**
 ```javascript
 async loadTodos() {
-    return await this._serverActions.invoke("TodoList/LoadTodos", []);
+    return await this._serverActions.invoke("MyApp.Pages.TodoList/LoadTodos", []);
 }
 ```
 

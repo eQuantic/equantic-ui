@@ -5,6 +5,16 @@ What lives here, and in what order to read it. The user-facing documentation is 
 measured audits of the SDK's own structure, the plans for the work in flight, and the record of the
 plans that finished.
 
+## How we decide, and how we prove
+
+Read these before a first change: they are the rules a review holds a pull request to, and GitHub
+Copilot's review reads the same ones from `.github/copilot-instructions.md`.
+
+| Document | What it answers |
+|---|---|
+| [PRINCIPLES.md](PRINCIPLES.md) | *What decides a design here?* — every rule, each with the case it came from and the test that holds it, where one does. |
+| [PROVING.md](PROVING.md) | *When is a change shown to be right?* — the A/B both ways, .NET as the oracle, instruments exercised in their condition, both targets driven, and the other lessons from the times a green suite was wrong. |
+
 ## Architecture, measured
 
 Read these first, in this order. Every claim in the first two is held by a test, and both say which.
@@ -15,6 +25,8 @@ Read these first, in this order. Every claim in the first two is held by a test,
 | [FLUTTER-PARITY.md](FLUTTER-PARITY.md) | *How does Flutter solve this?* — one row per Flutter concept, with a verdict (SAME, DIFFERENT, PARTIAL, GAP) measured against the tree. Pinned by `FlutterParityPinTests`. |
 | [VOCABULARY-DISPATCH-PLAN.md](VOCABULARY-DISPATCH-PLAN.md) | The plan for the audit's step 2: one visitor per realizer, slice by slice. |
 | [HANDOFF-FIDELITY-AUDIT.md](HANDOFF-FIDELITY-AUDIT.md) | The design system's component blocks compared with the shipped components, claim by claim. A snapshot (2026-08-16) with a "closed since" ledger. |
+| [SECURITY-REVIEW.md](SECURITY-REVIEW.md) | *What does a request reach, and what can it make the server write or spend?* — the hardening review #306 asked for (2026-11-09): what holds in each area, with the line that shows it, and each finding filed as its own issue. |
+| [SERVED-RUNTIME-GROWTH.md](SERVED-RUNTIME-GROWTH.md) | *What did each pull request add to the runtime every page loads?* — the served runtime measured before and after each merge since its budget was recorded with #1219, the way `ServedRuntimeBudgetTests` measures it, and the one growth out of proportion. A snapshot (2026-11-10), its numbers each at a named commit. |
 | [DIAGNOSTICS.md](DIAGNOSTICS.md) | Every `EQxxxx` diagnostic the compiler and the build raise, held to the code by `DiagnosticsDocumentedTests`. |
 | [design/](design/README.md) | The Photon Design System handoff itself — the normative `tokens.json` and the design pages — corrected here and pinned to the implementation. |
 

@@ -167,8 +167,10 @@ public class TheHostFindsAControlByItsPositionTests
     [Fact]
     public void ACancelledPress_LeavesNoPressedFill()
     {
-        var host = Open(new Pressable(new Box(new BoxStyle { Width = 60, Height = 30, Background = BaseFill }),
-            () => { }) { PressedBackground = PressedFill });
+        var host = Open(new Pressable(new Box(new BoxStyle
+        {
+            Width = 60, Height = 30, Background = BaseFill, Pressed = new StyleDiff { Background = PressedFill },
+        }), () => { }));
         var paintsPressed = (DrawCommand[] commands) => commands.Any(command =>
             command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == PressedFill.Resolve(ThemeMode.Light));
 

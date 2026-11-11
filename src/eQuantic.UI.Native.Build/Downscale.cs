@@ -7,6 +7,12 @@ public static class Downscale
     /// A box filter: every destination pixel is the AVERAGE of the source pixels it covers. Point
     /// sampling would be one line shorter and would shred an icon's edges at 32dp, which is the one
     /// size a user sees most.
+    /// <para>
+    /// The colour is averaged WEIGHTED BY ALPHA, since the pixels are straight alpha. A transparent
+    /// pixel is black at zero alpha, and an unweighted average folded that black into every edge of a
+    /// transparent icon, a dark rim around the mark (#1240). An opaque icon weighs every pixel alike,
+    /// so its result is the plain average, byte for byte.
+    /// </para>
     /// </summary>
     public static byte[] Box(byte[] source, int sourceSize, int size)
     {
@@ -30,18 +36,22 @@ public static class Downscale
                     for (var sx = left; sx < right && sx < sourceSize; sx++)
                     {
                         var i = (sy * sourceSize + sx) * 4;
-                        r += source[i];
-                        g += source[i + 1];
-                        b += source[i + 2];
-                        a += source[i + 3];
+                        var alpha = source[i + 3];
+                        r += source[i] * alpha;
+                        g += source[i + 1] * alpha;
+                        b += source[i + 2] * alpha;
+                        a += alpha;
                         count++;
                     }
                 }
 
                 var destination = (y * size + x) * 4;
-                result[destination] = (byte)(r / count);
-                result[destination + 1] = (byte)(g / count);
-                result[destination + 2] = (byte)(b / count);
+                if (a > 0)
+                {
+                    result[destination] = (byte)(r / a);
+                    result[destination + 1] = (byte)(g / a);
+                    result[destination + 2] = (byte)(b / a);
+                }
                 result[destination + 3] = (byte)(a / count);
             }
         }

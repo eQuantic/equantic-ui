@@ -298,7 +298,7 @@
         project reached a shell (#836): it is a target of its own so a test runs it as it ships.
     -->
     <Target Name="_EQuanticCompilerInputs"
-        DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences;GenerateGlobalUsings"
+        DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences;AddImplicitDefineConstants;GenerateGlobalUsings"
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <PropertyGroup>
             <!-- Standard components source files are packaged in eQuantic.UI.Components package -->
@@ -410,6 +410,58 @@
             <_EqcProject Include="@(_EqcReferencedProject)"
                 Condition="!Exists('%(RootDir)%(Directory)EQuanticIconPack.marker') And ('$(_EqSdkSourceRoot)' == '' Or !$([System.String]::Copy('%(FullPath)').StartsWith('$(_EqSdkSourceRoot)')))" />
         </ItemGroup>
+
+        <!--
+            WHAT THE C# COMPILER COMPILED (#828, #1003): for the app and for each project above, its
+            Compile items and its DefineConstants, the implicit ones of the target framework among them.
+            eqc walked each directory and parsed with no symbol: a file a project removes became a module,
+            a file it links from outside its directory was never read, `#if DEBUG` took the branch neither
+            configuration builds, and a Release build after a Debug one read both configurations' global
+            usings. The app's are at hand here. A referenced project's are its own, so it is asked, with
+            the global properties the ProjectReference protocol hands it and a file imported for that
+            question alone (EQuanticProjectSources.targets): nothing else of it runs. Asked only of the
+            projects eqc compiles from source, keyed by the path the protocol knows them by.
+        -->
+        <PropertyGroup>
+            <_EqcSourcesFile>$(MSBuildProjectDirectory)/$(IntermediateOutputPath)equantic.sources.txt</_EqcSourcesFile>
+        </PropertyGroup>
+        <ItemGroup>
+            <_EqcSourcesLine Remove="@(_EqcSourcesLine)" />
+            <_EqcAppCompile Remove="@(_EqcAppCompile)" />
+            <_EqcAppCompile Include="@(Compile)" Condition="'%(Compile.Extension)' == '.cs'" />
+            <!-- The app's own source is what eqc writes modules for: what its folder holds outside obj, and
+                 what it links from outside. What its build generated under obj and C# a package hands it are
+                 compiled and never a module of the app, as the walk, which entered neither, had it. -->
+            <_EqcAppOwn Remove="@(_EqcAppOwn)" />
+            <_EqcAppOwn Include="@(_EqcAppCompile)"
+                Condition="'%(_EqcAppCompile.NuGetPackageId)' == '' And !$([System.String]::Copy('%(_EqcAppCompile.FullPath)').StartsWith('$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)'))'))" />
+            <_EqcAppCompiledOnly Remove="@(_EqcAppCompiledOnly)" />
+            <_EqcAppCompiledOnly Include="@(_EqcAppCompile)" Exclude="@(_EqcAppOwn)" />
+            <_EqcSourcesLine Include="app" Value="app: $(MSBuildProjectFullPath)" />
+            <_EqcSourcesLine Include="app-symbols" Value="symbols: $(DefineConstants)" />
+            <_EqcSourcesLine Include="@(_EqcAppOwn)">
+                <Value>%(_EqcAppOwn.FullPath)</Value>
+            </_EqcSourcesLine>
+            <_EqcSourcesLine Include="@(_EqcAppCompiledOnly)">
+                <Value>compiled: %(_EqcAppCompiledOnly.FullPath)</Value>
+            </_EqcSourcesLine>
+            <_EqcReferenceByPath Remove="@(_EqcReferenceByPath)" />
+            <_EqcReferenceByPath Include="@(_MSBuildProjectReferenceExistent->'%(FullPath)')" />
+            <_EqcReferenceNotCompiled Remove="@(_EqcReferenceNotCompiled)" />
+            <_EqcReferenceNotCompiled Include="@(_EqcReferenceByPath)" Exclude="@(_EqcProject)" />
+            <_EqcSourcesProject Remove="@(_EqcSourcesProject)" />
+            <_EqcSourcesProject Include="@(_EqcReferenceByPath)" Exclude="@(_EqcReferenceNotCompiled)" />
+        </ItemGroup>
+        <MSBuild Projects="@(_EqcSourcesProject)"
+            Targets="EQuanticProjectSources"
+            Properties="%(_EqcSourcesProject.SetConfiguration);%(_EqcSourcesProject.SetPlatform);%(_EqcSourcesProject.SetTargetFramework);CustomAfterMicrosoftCommonTargets=$(MSBuildThisFileDirectory)EQuanticProjectSources.targets"
+            RemoveProperties="%(_EqcSourcesProject.GlobalPropertiesToRemove);$(_GlobalPropertiesToRemoveFromProjectReferences)"
+            Condition="'@(_EqcSourcesProject)' != ''">
+            <Output TaskParameter="TargetOutputs" ItemName="_EqcSourcesLine" />
+        </MSBuild>
+        <WriteLinesToFile File="$(_EqcSourcesFile)"
+            Lines="@(_EqcSourcesLine->'%(Value)')"
+            Overwrite="true" WriteOnlyWhenDifferent="true" />
     </Target>
 
     <!--
@@ -459,6 +511,9 @@
                  project's InternalsVisibleTo opens its internal types to this name and to no other. -->
             <_EqcArgument Include="assembly-name" Value="--assembly-name" Condition="'$(AssemblyName)' != ''" />
             <_EqcArgument Include="assembly-name-value" Value="$(AssemblyName)" Condition="'$(AssemblyName)' != ''" />
+            <!-- What the C# compiler compiled, for the app and each project above (#828). -->
+            <_EqcArgument Include="sources-list" Value="--sources" Condition="'$(_EqcSourcesFile)' != ''" />
+            <_EqcArgument Include="sources-list-file" Value="$(_EqcSourcesFile)" Condition="'$(_EqcSourcesFile)' != ''" />
             <_EqcArgument Include="ref-sources" Value="--ref-sources" Condition="'@(_EqcRefSourceFinal)' != ''" />
             <_EqcArgument Include="ref-sources-file" Value="$(_EqcRefSourcesFile)" Condition="'@(_EqcRefSourceFinal)' != ''" />
             <!-- The generated tree for THIS configuration. eqc cannot infer it: a project built Debug
@@ -604,9 +659,10 @@
 
     <!--
         The app icon, from the same source the device SDK uses: `Assets/AppIcon.png` (artwork a
-        designer made) or `Assets/AppIcon.cs` (an IAppIcon the engine draws). A browser asks for the
-        sizes up front and for a manifest describing them, so those are written into wwwroot and the
-        shell links them — an app states its icon ONCE and it appears wherever it belongs.
+        designer made) or `Assets/AppIcon.cs` (an IAppIcon the engine draws, with a small cut for the
+        tab when its brand has one). A browser asks for the sizes up front, for a manifest describing
+        them and for /favicon.ico, so those are written into wwwroot and the server links and answers
+        them — an app states its icon ONCE and it appears wherever it belongs.
         The property names are shared with eQuantic.UI.Sdk.Native on purpose.
     -->
     <PropertyGroup>
@@ -831,13 +887,40 @@
         </ItemGroup>
     </Target>
 
-    <Target Name="EQuanticWebAppIcon" BeforeTargets="Build"
+    <!--
+        What an icon written in C# compiles with besides its own file (#1240), since it is a file of
+        the app and is written like one: the app's `Using` items, so `Box(...)` is the factory there as
+        it is everywhere else, and the app's vector catalog, so the icon draws the brand from the SVG
+        under Assets. eqicon keeps the usings the vocabulary resolves and drops the rest (a web host's
+        ASP.NET namespaces), so the whole list goes over. Each using is spelled as a directive is after
+        its keyword. The same target lives in eQuantic.UI.Sdk.Native, whose icon has no catalog.
+    -->
+    <Target Name="_EQuanticAppIconInputs">
+        <ItemGroup>
+            <_EqIconUsing Include="@(Using)" Spelling="%(Using.Identity)" />
+            <_EqIconUsing Condition="'%(_EqIconUsing.Static)' == 'true'">
+                <Spelling>static %(Identity)</Spelling>
+            </_EqIconUsing>
+            <_EqIconUsing Condition="'%(_EqIconUsing.Alias)' != ''">
+                <Spelling>%(_EqIconUsing.Alias) = %(Identity)</Spelling>
+            </_EqIconUsing>
+            <_EqAppIconInput Include="using" Option="--using" Value="%(_EqIconUsing.Spelling)"
+                Condition="'%(_EqIconUsing.Spelling)' != ''" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_EqAppIconSources>$(EQuanticAppIconSource)</_EqAppIconSources>
+            <_EqAppIconSources Condition="$(EQuanticAppIconSource.EndsWith('.cs')) AND Exists('$(EQuanticVectorsFile)')">$(EQuanticAppIconSource);$(EQuanticVectorsFile)</_EqAppIconSources>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="EQuanticWebAppIcon" BeforeTargets="Build" DependsOnTargets="_EQuanticAppIconInputs"
         Condition="'$(EQuanticAppIconSource)' != ''">
         <ItemGroup>
             <_EqWebIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
-            <_EqWebIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
+            <_EqWebIconArgument Include="source" Option="--source" Value="$(_EqAppIconSources)" />
             <_EqWebIconArgument Include="icons" Option="--web" Value="$(MSBuildProjectDirectory)/wwwroot/_equantic/icons" />
             <_EqWebIconArgument Include="title" Option="--app" Value="$(ApplicationTitle)" />
+            <_EqWebIconArgument Include="@(_EqAppIconInput)" />
         </ItemGroup>
         <RunProgram Program="dotnet" Arguments="@(_EqWebIconArgument)" StandardOutputImportance="normal" />
     </Target>

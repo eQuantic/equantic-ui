@@ -10,6 +10,12 @@ on:
     tags: ["v*", "ext-v*"]
   pull_request:
     branches: ["main"]
+  # GitHub's merge queue (#1308): a reviewed, green pull request waits in the queue, which runs this
+  # workflow on the pull request together with every one ahead of it and merges the group when the
+  # required jobs pass. Every job those checks name runs here; the publishing jobs, which run on a
+  # push to main or a tag, do not.
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
     inputs:
       version:
@@ -17,12 +23,77 @@ on:
         required: false
         default: ""
 
+# A new push to a pull request cancels the run of the head it replaces (#1309): a stale run held
+# runners every other pull request waited for. The scarcest kind, macOS, a pull request's run no longer
+# takes at all (#1385). A push to main does the same to the run of the push before it (#1421): since
+# the merge queue, every merge is a push to main whose run repeats the suite the queue just ran on the
+# same tree, and on 2026-11-11 a merge group waited for macOS behind twelve of them, eleven already
+# superseded. What a push to main adds is the convenience feed's packages, and the newest push's
+# packages are the ones it wants. A run on a tag, on a merge group or by hand gets a group of its own
+# run, so nothing ever cancels it or queues it behind another. The reasons live here and not inside
+# the expressions, where a `#` is not a comment but a parse error that fails the whole workflow before
+# any job starts.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('ci-pull-request-{0}', github.event.pull_request.number) || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'ci-main' || format('ci-run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+
 jobs:
+  # What the change can affect (#1421), read once and handed to the jobs below as three switches,
+  # each "false" only when that job's work cannot fail because of the change: `code` (the build, the
+  # runtime's tests, conformance, the Mac jobs, the samples), `dotnet_tests` (the .NET test groups at
+  # all) and `extension`. scripts/ci-changes.sh decides, and fails OPEN: anything it does not know,
+  # a push, a tag or a manual run is the whole pipeline. The jobs read the switches as `!= 'false'`,
+  # so a failure of this job runs everything rather than nothing.
+  #
+  # The required checks keep their names whatever runs. A job skipped by its `if:` reports success,
+  # but a MATRIX job skipped as a whole never creates its per-entry checks, and the ruleset waits for
+  # them forever: the matrix jobs (`test`, `build-platform-runtimes`) always run and skip their steps,
+  # on Ubuntu when their own runner would be Windows with nothing to do.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.scope.outputs.code }}
+      dotnet_tests: ${{ steps.scope.outputs.dotnet_tests }}
+      extension: ${{ steps.scope.outputs.extension }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # A pull request's run checks out its merge commit, whose first parent is the base it would
+          # merge into: the two commits are the change, whatever the base did meanwhile.
+          fetch-depth: 2
+
+      - name: The classifier still classifies
+        run: ./scripts/ci-changes.sh --self-test
+
+      - name: What this change touches
+        id: scope
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+        run: |
+          set -uo pipefail
+          paths=$(mktemp)
+          case "$EVENT" in
+            pull_request)
+              git diff --name-only HEAD^1 HEAD > "$paths" || : > "$paths" ;;
+            merge_group)
+              { git fetch --no-tags --depth=1 origin "$QUEUE_BASE" && git diff --name-only "$QUEUE_BASE" HEAD > "$paths"; } || : > "$paths" ;;
+            *)
+              : > "$paths" ;;
+          esac
+          echo "::group::$(wc -l < "$paths" | tr -d ' ') paths changed"
+          cat "$paths"
+          echo "::endgroup::"
+          ./scripts/ci-changes.sh < "$paths" | tee -a "$GITHUB_OUTPUT"
+
   # A commit message says something about the change and nothing about what composed it. Three
   # squash messages on main ended with the scaffolding of the tool that wrote them before anything
   # compared, so this compares. On a pull request it reads the branch's commits, which is
-  # prevention; on a push to main it reads what was actually squashed, which is the only place that
-  # message exists — and by then the merge has happened, so the job going red IS the report.
+  # prevention; in a merge queue's run it reads the squash commits the queue composed, before they
+  # reach main, which is prevention of the merge-time message itself (#1308); on a push to main it
+  # reads what was actually squashed, and by then the merge has happened, so the job going red IS
+  # the report.
   commit-messages:
     runs-on: ubuntu-latest
     steps:
@@ -36,12 +107,10 @@ jobs:
         run: ./scripts/check-commit-messages.sh --self-test
 
       - name: No commit message carries what a tool left behind
-        # Through the environment rather than interpolated into the command: a ref is data, and
-        # `${{ }}` substitution happens before the shell ever sees it.
-        env:
-          EQ_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          EQ_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: ./scripts/check-commit-messages.sh --range "$EQ_BASE" "$EQ_HEAD"
+        # The range comes from the event itself, read by the script (GITHUB_EVENT_NAME, the event's
+        # JSON and GITHUB_SHA), where its self-test holds an event of every kind. An expression here
+        # chose it once, and under a merge group it gave an empty base: the group's last commit alone.
+        run: ./scripts/check-commit-messages.sh --event
 
   # Every OpenSpec change and spec, validated strictly by the CLI tools/openspec/package-lock.json
   # pins, through the same script a developer runs. The plain `openspec validate --all --strict`
@@ -116,6 +185,33 @@ jobs:
       - name: The wiki checkout still discriminates
         run: ./scripts/checkout-wiki.sh --self-test
 
+  # The merge queue discards a group when an entry ahead of it fails or leaves, and does not cancel its
+  # run: each group's ref is its own, so the concurrency above never groups it with the run that replaced
+  # it, and its macOS jobs waited for the plan's five runners beside the live groups' (#1446: eleven
+  # discarded runs on 2026-11-11, and #1378 timed out of the queue twice). Every merge group's run, every
+  # push to main and a run by hand cancel the merge-group runs whose ref the queue deleted, the sweeping
+  # run's own included, last. A group the queue still holds keeps its ref, a group that merged is on main,
+  # and a lookup that fails any other way cancels nothing. On a pull request or a tag only the self-test
+  # runs. Not a required check, so nothing in the ruleset names it, and a sweep the API failed marks its
+  # step rather than turning main red: housekeeping nothing waits on.
+  discarded-merge-groups:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The sweep still tells a discarded group from a live one
+        run: ./scripts/cancel-discarded-merge-groups.sh --self-test
+
+      - name: Cancel the runs of the merge groups the queue discarded
+        if: github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/cancel-discarded-merge-groups.sh
+
   # The loop that publishes a release, run against a stub of the push and of nuget.org's index. The
   # jobs that publish run only on a `v*` tag or by hand, so this is the only place the loop runs
   # before a release depends on it: 0.2.0-preview.61 stopped after 33 of 50 packages on three 500s
@@ -137,6 +233,8 @@ jobs:
   # the Server's own build, in every job that builds it, and a library build of the same sources
   # used to travel from here to the packages instead (#335).
   test-runtime:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -151,6 +249,8 @@ jobs:
 
   # Build platform-specific runtime packages
   package-extension:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.extension != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -182,68 +282,70 @@ jobs:
           path: extensions/vscode/equantic-ui.vsix
 
   build-platform-runtimes:
-    needs: test-runtime
-    runs-on: ${{ matrix.os }}
+    needs: [changes, test-runtime]
+    # Runs whenever the runtime's tests passed or were not needed, so its two checks always report;
+    # with no code changed it skips its steps, on Ubuntu (see `changes`).
+    if: ${{ !cancelled() && (needs.test-runtime.result == 'success' || needs.test-runtime.result == 'skipped') }}
+    runs-on: ${{ needs.changes.outputs.code != 'false' && matrix.os || 'ubuntu-latest' }}
+    env:
+      EQ_RUN: ${{ needs.changes.outputs.code != 'false' }}
     strategy:
       matrix:
         include:
           # Each OS leg packs BOTH architectures of its platform — packing only zips the right
-          # Bun binary, it does not depend on the host arch. The SDK references all six.
+          # Bun binary, it does not depend on the host arch. The SDK references all six. macOS packs
+          # in the job below, which a pull request's run leaves out (#1385).
           - os: ubuntu-latest
             runtime: Linux64
             runtime2: LinuxArm64
           - os: windows-latest
             runtime: Win64
             runtime2: WinArm64
-          - os: macos-latest
-            runtime: Osx64
-            runtime2: OsxArm64
 
+    steps:
+      - name: Nothing here for this change
+        if: env.EQ_RUN != 'true'
+        run: echo "No code changed, so the runtime packages are not built for this change and this check reports success."
+
+      - uses: actions/checkout@v4
+        if: env.EQ_RUN == 'true'
+
+      - uses: ./.github/actions/pack-runtime
+        if: env.EQ_RUN == 'true'
+        with:
+          runtime: ${{ matrix.runtime }}
+          runtime2: ${{ matrix.runtime2 }}
+
+  # The macOS runtimes, out of the matrix above and under the check's own name (#1385). GitHub Free
+  # runs five macOS jobs at once, and every push to a pull request held four of them, so pull requests
+  # queued behind each other and behind the release's own tag run. The macOS jobs now run where a merge
+  # is decided, the merge queue (#1308), and on main, on a tag and by hand; a pull request's run skips
+  # them, and so does a change that touches no code (#1421). A job skipped by its own `if` reports as
+  # skipped under its name, which satisfies a required check, while a matrix leg cannot be skipped
+  # alone: a job-level `if` cannot read the matrix, and a matrix skipped whole reports under its
+  # unexpanded name, which no required check names.
+  build-platform-runtimes-macos:
+    name: build-platform-runtimes (macos-latest, Osx64, OsxArm64)
+    needs: [changes, test-runtime]
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: ./.github/actions/pack-runtime
         with:
-          dotnet-version: 10.0.x
-
-      - name: Determine Version
-        id: version
-        shell: bash
-        run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            # A release tag IS the version: v0.2.0-preview.1 -> 0.2.0-preview.1
-            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.inputs.version }}" != "" ]; then
-            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            # Read version from Directory.Build.props (single source of truth)
-            VERSION=$(grep -o '<Version>[^<]*</Version>' Directory.Build.props | sed 's/<Version>//;s/<\/Version>//')
-            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-            echo "Using version from Directory.Build.props: $VERSION"
-          fi
-
-      - name: Build and Pack Runtime.${{ matrix.runtime }} + ${{ matrix.runtime2 }}
-        shell: bash
-        run: |
-          VERSION="${{ steps.version.outputs.VERSION }}"
-          dotnet pack src/eQuantic.UI.Runtime.${{ matrix.runtime }}/eQuantic.UI.Runtime.${{ matrix.runtime }}.csproj -c Release -p:Version=$VERSION
-          dotnet pack src/eQuantic.UI.Runtime.${{ matrix.runtime2 }}/eQuantic.UI.Runtime.${{ matrix.runtime2 }}.csproj -c Release -p:Version=$VERSION
-
-      - name: Upload Runtime.${{ matrix.runtime }} + ${{ matrix.runtime2 }} Packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: runtime-${{ matrix.runtime }}-package
-          path: |
-            src/eQuantic.UI.Runtime.${{ matrix.runtime }}/bin/Release/*.nupkg
-            src/eQuantic.UI.Runtime.${{ matrix.runtime2 }}/bin/Release/*.nupkg
+          runtime: Osx64
+          runtime2: OsxArm64
 
   # Build core packages (platform-agnostic)
   build-packages:
-    needs: build-platform-runtimes
+    needs: [changes, build-platform-runtimes, build-platform-runtimes-macos]
     # macOS: the package set includes the iOS/Android shells, whose target frameworks need
-    # platform workloads that only install on a Mac (and the full native test suite runs here
-    # instead of skipping its Apple-framework facts).
+    # platform workloads that only install on a Mac. It builds, packs and checks the packages, and
+    # runs no test: the suite ran here a third time, 13 minutes 38 seconds on the run's longest path,
+    # for the facts only a Mac answers, which `test-macos` now runs beside it (#1311). A pull
+    # request's run skips it, as it skips every macOS job; the merge queue runs it (#1385).
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.build-platform-runtimes.result == 'success' && needs.build-platform-runtimes-macos.result == 'success' }}
     runs-on: macos-latest
 
     steps:
@@ -253,6 +355,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      # The packages a restore downloads, kept between runs, keyed on what the repository declares (#1312).
+      - name: Cache the NuGet packages
+        uses: ./.github/actions/nuget-cache
+        with:
+          scope: ${{ github.job }}
 
       - name: Install mobile workloads (iOS/Android shells)
         run: dotnet workload install ios android
@@ -306,8 +414,7 @@ jobs:
             name=$(basename "$(dirname "$csproj")")
             case " $SEPARATE " in *" $name "*) continue;; esac
             case "$name" in eQuantic.UI.Runtime.*) continue;; esac
-            # tr, not ${var,,}: the macOS runner's bash is 3.2, which has no case conversion —
-            # the same reason the Test step avoids globstar.
+            # tr, not ${var,,}: the macOS runner's bash is 3.2, which has no case conversion.
             packable=$(dotnet msbuild "$csproj" -getProperty:IsPackable -nologo 2>/dev/null | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
             if [ "$packable" = "false" ]; then continue; fi
             echo "::group::pack $name"
@@ -340,75 +447,6 @@ jobs:
           cmp packed-runtime.js src/eQuantic.UI.Server/wwwroot/runtime.js
           grep -q 'function boot' packed-runtime.js
           echo "$package ships the served runtime ($(wc -c < packed-runtime.js) bytes)."
-
-      # The wiki is a SEPARATE repository, and the version-mark guard reads it from beside this
-      # one. Without this the guard passes here having checked nothing, and a wrong "Since
-      # 0.2.0-preview.N" reaches the site — which mirrors the wiki — unchallenged.
-      # The version-mark guard compares each release's tree with the one before it, so it needs the
-      # release tags and none of the history between them: depth one is enough. Without them it
-      # would answer "unreleased" for everything and pass having checked nothing. The release tags
-      # only, not every branch as well, which the guard never reads (#999).
-      - name: Fetch the release tags (for the version-mark guard)
-        shell: bash
-        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
-
-      - name: Check out the wiki (for the docs guards)
-        shell: bash
-        continue-on-error: true
-        env:
-          # A pull request that changes what the wiki must say carries its pages on a wiki branch
-          # named like its own, and the guards read that branch; anything else reads master (#406).
-          # Only this repository's pull requests: a branch name is unique here, and only here can
-          # anyone push a wiki branch, while a fork's branch can repeat one of ours and would read
-          # another pull request's pages. Through the environment: a branch name is text someone
-          # else wrote, and `${{ }}` substitution happens before the shell ever sees it.
-          EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
-        run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
-
-      - name: Test
-        shell: bash
-        env:
-          # Conformance must FAIL (not skip) if no JS engine works on the runner.
-          EQ_REQUIRE_JS: "1"
-        run: |
-          set -uo pipefail
-          # EVERY project reports, and the step fails at the END. `set -e` with a plain loop stops
-          # at the first red project, so the ones after it never run — and the report reads as one
-          # failure when it is an unknown number. The same reason the matrix sets fail-fast: false,
-          # one level further in. Measured: Web.Tests went red on both legs and hid eight projects.
-          #
-          # Sorted, because `find` returns filesystem order: without it, WHICH project hides the
-          # others changes from one machine to the next.
-          #
-          # find, not globstar: macOS ships bash 3.2, which has no globstar. Process substitution
-          # rather than a pipe, so the loop body is not a subshell and `status` survives it.
-          status=0
-          ran=0
-          failed=""
-          while IFS= read -r test_project; do
-            echo "::group::$test_project"
-            ran=$((ran + 1))
-            dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 15m --blame-hang-dump-type none || {
-              status=1
-              failed="$failed$test_project"$'\n'
-            }
-            echo "::endgroup::"
-          done < <(find tests -name "*.csproj" | sort)
-
-          # An empty list is not a pass. Without this the step is green when `find` matches nothing —
-          # a renamed folder, a wrong working directory — having tested exactly nothing, which is the
-          # same silence this whole job exists to break.
-          if [ "$ran" -eq 0 ]; then
-            echo "::error::Found no test projects under tests/. That is not a green suite."
-            exit 1
-          fi
-          echo "Ran $ran test projects on ${{ runner.os }}."
-
-          if [ "$status" -ne 0 ]; then
-            echo "::error::These test projects failed on ${{ runner.os }}:"
-            printf '%s' "$failed"
-          fi
-          exit $status
 
       - name: Collect All NuGet Packages
         shell: bash
@@ -461,34 +499,63 @@ jobs:
   # So the same suite runs on Linux and Windows too. No filter and no hand-picked subset: the point
   # is to LEARN which projects are OS-specific rather than to assume. What fails is a defect or a
   # fence, and a fence is a Skip whose text names the OS and the reason — never a filter here,
-  # which would hide the fact in a file nobody reads while running the tests.
+  # which would hide the fact in a file nobody reads while running the tests. macOS runs the projects
+  # that hold what only a Mac answers, in `test-macos` below, derived from the tests themselves.
+  #
+  # Each system's projects run as three jobs side by side (#1310): one after another, a leg took 13
+  # minutes on Ubuntu and 15 to 17 on Windows, 5 minutes 32 of it Conformance alone. The groups are
+  # scripts/test-groups.sh's: Conformance, Web, and every other project found under tests/, so a new
+  # project lands in `rest` without an edit here, and a group that finds no project fails.
   test:
-    needs: test-runtime
-    runs-on: ${{ matrix.os }}
+    needs: [changes, test-runtime]
+    # Every entry runs and reports, so the six checks always exist (see `changes`). A change to
+    # documents still runs `web` and `rest`, whose projects read docs/, the ledger, the design handoff,
+    # the wiki and CLAUDE.md; it skips `conformance`, which reads code only. A change to the extension
+    # alone runs none of them.
+    if: ${{ !cancelled() && (needs.test-runtime.result == 'success' || needs.test-runtime.result == 'skipped') }}
+    runs-on: ${{ (needs.changes.outputs.dotnet_tests == 'false' || (needs.changes.outputs.code == 'false' && matrix.group == 'conformance')) && 'ubuntu-latest' || matrix.os }}
+    env:
+      EQ_RUN: ${{ needs.changes.outputs.dotnet_tests != 'false' && !(needs.changes.outputs.code == 'false' && matrix.group == 'conformance') }}
     strategy:
-      # Both legs always report. Cancelling one because the other failed is how a two-OS gap gets
-      # read as a one-OS gap.
+      # Every job always reports. Cancelling one because another failed is how a two-OS gap gets
+      # read as a one-OS gap, and how a red group hides the state of the other two.
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        group: [conformance, web, rest]
 
     steps:
+      - name: Nothing here for this change
+        if: env.EQ_RUN != 'true'
+        run: echo "This group cannot be affected by this change (see the changes job), so its projects do not run and this check reports success."
+
       - uses: actions/checkout@v4
+        if: env.EQ_RUN == 'true'
 
       - name: Setup .NET
+        if: env.EQ_RUN == 'true'
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      # The packages a restore downloads, kept between runs, keyed on what the repository declares (#1312).
+      - name: Cache the NuGet packages
+        if: env.EQ_RUN == 'true'
+        uses: ./.github/actions/nuget-cache
+        with:
+          scope: ${{ github.job }}
 
       # The version-mark guard compares each release's tree with the one before it, so it needs the
       # release tags and none of the history between them: depth one is enough. Without them it
       # would answer "unreleased" for everything and pass having checked nothing. The release tags
       # only, not every branch as well, which the guard never reads (#999).
       - name: Fetch the release tags (for the version-mark guard)
+        if: env.EQ_RUN == 'true'
         shell: bash
         run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
 
       - name: Check out the wiki (for the docs guards)
+        if: env.EQ_RUN == 'true'
         shell: bash
         continue-on-error: true
         env:
@@ -499,13 +566,30 @@ jobs:
           # another pull request's pages. Through the environment: a branch name is text someone
           # else wrote, and `${{ }}` substitution happens before the shell ever sees it.
           EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
+          # A merge queue's run reads master with the wiki branch of every pull request in its group
+          # merged onto it (#1308); the script asks the API for them, with the run's token.
+          EQ_QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+          EQ_QUEUE_HEAD: ${{ github.event.merge_group.head_sha }}
+          EQ_QUEUE_REF: ${{ github.event.merge_group.head_ref }}
+          GH_TOKEN: ${{ github.token }}
         run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
 
+      # Once a run, for an answer that is the same on every system and group: the split of a fixture
+      # tree, and what moves the NuGet cache's key.
+      - name: The test groups and the cache key still discriminate
+        if: env.EQ_RUN == 'true' && matrix.group == 'rest'
+        shell: bash
+        run: |
+          ./scripts/test-groups.sh --self-test
+          ./scripts/nuget-cache-key.sh --self-test
+
       - name: Test
+        if: env.EQ_RUN == 'true'
         shell: bash
         env:
           # Conformance must FAIL (not skip) if no JS engine works on the runner.
           EQ_REQUIRE_JS: "1"
+          EQ_TEST_GROUP: ${{ matrix.group }}
         run: |
           set -uo pipefail
           # EVERY project reports, and the step fails at the END. `set -e` with a plain loop stops at
@@ -516,13 +600,19 @@ jobs:
           # Sorted, because `find` returns filesystem order: without it, WHICH project hides the
           # others changes from one machine to the next.
           #
-          # find, not globstar: the same reason the macOS leg avoids it, and the Windows leg runs
-          # this through Git Bash, whose bash is not the one on the PATH of the other two. Process
-          # substitution rather than a pipe, so the loop body is not a subshell and `status` survives.
+          # The group's projects come from scripts/test-groups.sh, which finds them under tests/. The list
+          # is read whole first, so a script that fails fails the step, rather than handing the loop the
+          # part of the tree it reached. A here-string rather than a pipe, so the loop body is not a
+          # subshell and `status` survives.
+          if ! projects=$(./scripts/test-groups.sh --projects "$EQ_TEST_GROUP"); then
+            echo "::error::The test group '$EQ_TEST_GROUP' could not be listed."
+            exit 1
+          fi
           status=0
           ran=0
           failed=""
           while IFS= read -r test_project; do
+            [ -n "$test_project" ] || continue
             echo "::group::$test_project"
             ran=$((ran + 1))
             dotnet test "$test_project" --configuration Release --verbosity normal --blame-hang-timeout 15m --blame-hang-dump-type none || {
@@ -530,14 +620,14 @@ jobs:
               failed="$failed$test_project"$'\n'
             }
             echo "::endgroup::"
-          done < <(find tests -name "*.csproj" | sort)
+          done <<< "$projects"
 
           # An empty list is not a pass: a renamed folder and the step is green having tested nothing.
           if [ "$ran" -eq 0 ]; then
-            echo "::error::Found no test projects under tests/. That is not a green suite."
+            echo "::error::The test group '$EQ_TEST_GROUP' ran no project. That is not a green suite."
             exit 1
           fi
-          echo "Ran $ran test projects on ${{ runner.os }}."
+          echo "Ran $ran test projects of '$EQ_TEST_GROUP' on ${{ runner.os }}."
 
           if [ "$status" -ne 0 ]; then
             echo "::error::These test projects failed on ${{ runner.os }}:"
@@ -545,6 +635,63 @@ jobs:
           fi
           exit $status
 
+
+  # What only a Mac answers (#1311): CoreText, CoreGraphics, Metal, AppKit, the Objective-C runtime and
+  # the Apple workloads, which Linux and Windows skip. It ran inside `build-packages` with the whole
+  # suite, a third run of it, on the run's longest path. Which projects run is derived from the tests,
+  # never listed here: one that references the Apple track, or whose test asks for macOS, runs WHOLE,
+  # since a fact asks for a Mac in more ways than a scan of its file can see (a Metal device it probes,
+  # a workload it looks for, a helper elsewhere); a project that runs no test fails the step.
+  test-macos:
+    name: test (macos-latest)
+    needs: [changes, test-runtime]
+    # In the merge queue, on main, on a tag and by hand, never on a pull request's push (#1385), and
+    # only when the change touches code (#1421).
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # The packages a restore downloads, kept between runs, keyed on what the repository declares (#1312).
+      - name: Cache the NuGet packages
+        uses: ./.github/actions/nuget-cache
+        with:
+          scope: ${{ github.job }}
+
+      # The native suite's workload facts (an Android font packed once, the iOS platform version)
+      # skip without them, as they did nowhere while this suite ran in build-packages, which installs them.
+      - name: Install mobile workloads (the native suite's workload facts)
+        run: dotnet workload install ios android
+
+      # Web.Tests is one of the projects that run here, whole, and its docs guards read the release
+      # tags and the wiki exactly as on the other legs: without them the guards FAIL on CI by design
+      # rather than pass having read nothing. The same two steps as `test` above, for the same reasons.
+      - name: Fetch the release tags (for the version-mark guard)
+        shell: bash
+        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
+
+      - name: Check out the wiki (for the docs guards)
+        shell: bash
+        continue-on-error: true
+        env:
+          EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
+          # In a merge queue's run, the wiki as the group will leave it, as on the other legs (#1308).
+          EQ_QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+          EQ_QUEUE_HEAD: ${{ github.event.merge_group.head_sha }}
+          EQ_QUEUE_REF: ${{ github.event.merge_group.head_ref }}
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
+
+      - name: The derivation still discriminates
+        run: ./scripts/macos-tests.sh --self-test
+
+      - name: Run the tests that need a Mac
+        run: ./scripts/macos-tests.sh --run
 
   # NOTHING HERE HAD EVER BUILT A MOBILE APP.
   #
@@ -559,9 +706,11 @@ jobs:
   # something about anyone else's. Debug, because that is the configuration a developer runs and
   # the one `IsEQuanticDevMode` wires to project references.
   samples:
-    needs: test-runtime
+    needs: [changes, test-runtime]
     # macOS is the only runner that can build every target framework the samples declare: ios and
-    # android need workloads that install on a Mac, and the desktop head needs CoreGraphics.
+    # android need workloads that install on a Mac, and the desktop head needs CoreGraphics. So it
+    # runs in the merge queue, on main, on a tag and by hand, never on a pull request's push (#1385).
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
     runs-on: macos-latest
 
     steps:
@@ -571,6 +720,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      # The packages a restore downloads, kept between runs, keyed on what the repository declares (#1312).
+      - name: Cache the NuGet packages
+        uses: ./.github/actions/nuget-cache
+        with:
+          scope: ${{ github.job }}
 
       - name: Install mobile workloads (the samples' ios and android heads)
         run: dotnet workload install ios android
@@ -821,11 +976,26 @@ jobs:
         shell: bash
         run: ./scripts/check-ios-launch.sh
 
+      # The roadmap's bar is an edit on screen in under a second (#900), timed as a developer meets it:
+      # each sample under dotnet watch, a component's file changed on disk, the clock stopped when a
+      # window or a browser DRAWS the change, each part of the path timed on its own. LAST in the job,
+      # because it edits the samples' sources while it runs: the steps above read what the builds wrote.
+      # The desktop holds the bar's budget and fails over it. The web is tens of seconds over the bar, and
+      # fails over a ceiling that only comes down as the slices of #900 make each part of it faster.
+      - name: Edit to view, timed on both samples
+        shell: bash
+        run: |
+          set -uo pipefail
+          status=0
+          dotnet run scripts/measure-edit-to-view.cs -- desktop --runs 6 --budget scripts/edit-to-view.budget.json || status=1
+          dotnet run scripts/measure-edit-to-view.cs -- web --runs 4 --budget scripts/edit-to-view.budget.json || status=1
+          exit $status
+
 
   # GitHub Packages is a convenience feed for every main push — a light ubuntu job so the heavy
   # macOS build job never dies on the upload (exit 137).
   publish-github:
-    needs: [build-packages, gate-templates, test, samples]
+    needs: [build-packages, gate-templates, test, test-macos, samples]
     # The cross-OS suite is a GATE, not a report: `needs.test` below. Without it a red Linux or
     # Windows leg sat beside a green macOS build and the packages published anyway — coverage that
     # cannot stop anything is a comment with a check's authority.
@@ -862,6 +1032,7 @@ jobs:
       && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       && needs.build-packages.result == 'success'
       && needs.test.result == 'success'
+      && needs.test-macos.result == 'success'
       && needs.samples.result == 'success'
       && (needs.gate-templates.result == 'success' || needs.gate-templates.result == 'skipped')
     runs-on: ubuntu-latest
@@ -896,7 +1067,7 @@ jobs:
   # scaffold and BUILD (and on the web template, PUBLISH) against the exact packages being
   # released. The native template gates on macOS only (its icon pipeline needs CoreGraphics).
   gate-templates:
-    needs: [build-packages, test, samples]
+    needs: [build-packages, test, test-macos, samples]
     # `refs/tags/v` matches by PREFIX, so any tag beginning with v enters here — the extension's
     # releases are tagged `ext-v*` for exactly that reason.
     if: startsWith(github.ref, 'refs/tags/v')
@@ -1021,6 +1192,20 @@ jobs:
         with:
           node-version: 22
 
+      # The extension's manifest and lockfile, and nothing else: the vsce that publishes is the one
+      # package-lock.json pinned, the tree package-extension installed and Dependabot watches. An
+      # `npx @vscode/vsce@^3.9.2` resolved its own tree here, at publish time, unpinned, in the one job
+      # that holds the Marketplace credential (#1180). Checkout runs first because it cleans the
+      # workspace, and the archive below lands in it.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            extensions/vscode/package.json
+            extensions/vscode/package-lock.json
+          sparse-checkout-cone-mode: false
+          # Nothing below runs git, and the install below runs other people's scripts.
+          persist-credentials: false
+
       # The SAME archive the packaging job built and verified, not a rebuild of it. A rebuild is a
       # different artifact, and the one that was checked would not be the one that shipped.
       - name: Download the extension
@@ -1043,6 +1228,19 @@ jobs:
           fi
           echo "publishing $packaged"
 
+      # `npm ci` installs exactly the lockfile, integrity hashes checked, and fails on a drift from the
+      # manifest instead of resolving around it: the same install package-extension ran. It runs the
+      # tree's install scripts, so the Marketplace credentials the job reads are blanked for this step:
+      # an install needs none of them.
+      - name: Install the vsce the lockfile pinned
+        working-directory: extensions/vscode
+        env:
+          VSCE_PAT: ''
+          AZURE_CLIENT_ID: ''
+          AZURE_TENANT_ID: ''
+          AZURE_SUBSCRIPTION_ID: ''
+        run: npm ci --no-audit --no-fund
+
       # Microsoft Entra, when it is configured. `vsce publish --azure-credential` acquires its token
       # through the Azure CLI, so something has to log that CLI in first — on GitHub Actions that is
       # this action with workload identity federation, and no secret is stored.
@@ -1058,11 +1256,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          vsce=extensions/vscode/node_modules/.bin/vsce
           if [ -n "${AZURE_CLIENT_ID:-}" ]; then
-            npx @vscode/vsce@^3.9.2 publish --packagePath equantic-ui.vsix --azure-credential
+            "$vsce" publish --packagePath equantic-ui.vsix --azure-credential
           elif [ -n "${VSCE_PAT:-}" ]; then
             # Retires 2026-12-01. Kept because it is the only path that needs nothing but a secret.
-            npx @vscode/vsce@^3.9.2 publish --packagePath equantic-ui.vsix
+            "$vsce" publish --packagePath equantic-ui.vsix
           else
             echo "::error::No Marketplace credential. Set VSCE_PAT, or AZURE_CLIENT_ID + AZURE_TENANT_ID + AZURE_SUBSCRIPTION_ID for Entra."
             echo "::error::(vsce 3.9.2 has no --oidc; trusted publishing is on the tool's main branch and not released yet.)"

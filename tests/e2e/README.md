@@ -69,6 +69,19 @@ The sample's `/uploads` page sends files through `FileUpload` to the real upload
    nothing reaches the endpoint.
 3. **The server's own refusal reaches the row in its words**: a creation answered 413 shows its body.
 
+### `content-security.spec.ts`
+
+The sample turns on the strict Content-Security-Policy with `UseContentSecurityPolicy()` and names no
+source of its own (#1270). The browser is the judge: a listener installed before the page's first
+script hears every `securitypolicyviolation`, and each test fails on the first one, naming the page,
+the directive and what it refused:
+
+1. **Every page is served with the policy, and loads with no violation**: each route the home page
+   links to is loaded by its address, and its response carries the enforced policy with
+   `'strict-dynamic'`, so a report-only header cannot pass.
+2. **Client navigation through every screen raises no violation**: each route is reached by a click,
+   so the runtime builds the screen inside a document already under the policy.
+
 `E2E_PORT` runs the server on another port, beside another checkout's.
 
 ## Estrutura
@@ -77,6 +90,7 @@ The sample's `/uploads` page sends files through `FileUpload` to the real upload
 tests/e2e/
 ├── playwright.config.ts    # Configuração do Playwright
 ├── tests/
+│   ├── content-security.spec.ts # The strict policy in a real browser (#1270)
 │   ├── passkeys.spec.ts       # Passkeys through IPasskeys (#1017)
 │   ├── uploads.spec.ts        # Uploads through FileUpload (#1215)
 │   └── ssr-hydration.spec.ts  # Testes de SSR/hidratação

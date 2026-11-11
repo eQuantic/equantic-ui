@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
@@ -103,10 +104,11 @@ public sealed class PhotonHost
     /// Asks for a frame that builds EVERY component, for what changes what every build reads: an
     /// invalidation the host is told of, a resize, a density change, a hot reload. Every other
     /// request builds what is marked, as on the web (#976): a <c>SetState</c> marks its own position
-    /// (<see cref="RequestFrame"/>), input the host routes into a field or a surface is handed to
-    /// the app, which says what it changed (<see cref="RebuildUnlessTold"/>), and the press, the
-    /// focus, the hover, a caret and an offset are the host's own to paint, so a frame for them
-    /// builds nothing.
+    /// (<see cref="RequestFrame"/>), a key typed into a field shows from the field's position and
+    /// builds what its handler marked (#996), input the host routes into a surface is handed to the
+    /// app, which says what it changed (<see cref="RebuildUnlessTold"/>), and the press, the focus,
+    /// the hover, a caret and an offset are the host's own to paint, so a frame for them builds
+    /// nothing.
     /// </summary>
     private void RebuildAll()
     {
@@ -115,14 +117,17 @@ public sealed class PhotonHost
     }
 
     /// <summary>
-    /// After the host handed input it routed into a field or a surface to the app's handler, which
-    /// ran while the owner's count of <c>SetState</c>s stood at <paramref name="marks"/>. The app says
-    /// with <c>SetState</c> what it changed, as on the web, and the next frame builds what it marked
-    /// (#976). A handler that called none leaves the host unable to see where the value lives,
-    /// because nothing in the tree says so: a form can keep a field's value without a
-    /// <c>SetState</c>, and the stateful component nearest above a field is not where its value lives
-    /// when it is a field component of its own, as <c>TextInput</c> is. So that frame rebuilds every
-    /// component, as every frame after input did before, and the key still shows.
+    /// After the host handed input it routed into a code surface or a spreadsheet to the app's
+    /// handler, which ran while the owner's count of <c>SetState</c>s stood at
+    /// <paramref name="marks"/>. The app says with <c>SetState</c> what it changed, as on the web, and
+    /// the next frame builds what it marked (#976). A handler that called none leaves the host unable
+    /// to see which component shows what the surface's model holds, so that frame rebuilds every
+    /// component, as every frame after input did before.
+    /// <para>
+    /// A field no longer comes here: it keeps what was typed on its position and shows it with no
+    /// build at all (#996), so a form that keeps a field's value without a <c>SetState</c> costs its
+    /// keys nothing beyond the field.
+    /// </para>
     /// </summary>
     private void RebuildUnlessTold(int marks)
     {
@@ -219,6 +224,13 @@ public sealed class PhotonHost
     /// regions stay in dp; the emitted commands are wrapped in one root scale so the GPU
     /// rasters at native resolution (retina).</summary>
     public float RenderScale { get; set; } = 1f;
+
+    /// <summary>
+    /// What a frame is cleared to before anything is drawn. Null, the default, is the theme's
+    /// background, which a window shows. An app icon's small cut is drawn on
+    /// <see cref="Color.Transparent"/>, since it stands on a browser's tab, which shows through it (#1240).
+    /// </summary>
+    public Color? Backdrop { get; init; }
 
     /// <summary>
     /// The margins the DISPLAY owns — notch, status bar, home indicator. A desktop window has none,
@@ -320,9 +332,11 @@ public sealed class PhotonHost
         // An edit landed since the last frame: drop the content caches BEFORE realizing, on this
         // thread, where they are owned. Most edits would miss them anyway (the keys are content),
         // but a patched rasterizer or an edited icon path re-rasters fresh — once.
+        var drawsEdit = false;
         if (_hotReloadGeneration != PhotonHotReload.Generation)
         {
             _hotReloadGeneration = PhotonHotReload.Generation;
+            drawsEdit = true;
             _textCache.Clear();
             _iconCache.Clear();
             _imageCache.Clear();
@@ -330,14 +344,12 @@ public sealed class PhotonHost
             Volatile.Write(ref _rebuildAll, 1);
         }
 
-        // What was typed since the last frame is in the tree now, as the app took it: the frame's
-        // value is the field's again. The caret is placed first, against the value it was moved in:
-        // read after, it clamped to the last frame's shorter text and drew a character behind.
+        // The caret and the selection the frame draws, against the text the field holds: what was
+        // typed, which its position keeps until the page builds the field again (#996).
         var caretIndex = CaretIndex;
         var selection = Selection;
-        _edited = null;
 
-        builder.Clear(_theme.Background.Resolve(Mode));
+        builder.Clear(Backdrop ?? _theme.Background.Resolve(Mode));
         if (RenderScale != 1f) builder.PushTransform(Matrix2D.Scale(RenderScale, RenderScale));
         if (_lift != 0) builder.PushTransform(Matrix2D.Translation(0, -_lift));
         _lastTimeMs = timeMs;
@@ -373,7 +385,7 @@ public sealed class PhotonHost
         if (RenderScale != 1f) builder.Pop();
         // The frame shows what the app made of the keyboard's edit. A composition in a text the app
         // did not keep is over (see _composing): the keyboard is about to be told that text.
-        if (_composing is { } composing && TextTarget?.Value != composing.Text) _composing = null;
+        if (_composing is { } composing && EditedValue != composing.Text) _composing = null;
         // The frame we just replaced is OURS to discard — nobody else holds production frames.
         // (Opt-in: anything that retains RealizeResults — tests, tooling — leaves this off and
         // every tree stays untouched forever.)
@@ -435,12 +447,17 @@ public sealed class PhotonHost
         _nextFrameDueMs = caretDue is { } caret && announcementDue is { } owed
             ? MathF.Min(caret, owed)
             : caretDue ?? announcementDue;
+        // Said once per edit, on the frame that draws it, as the web's server says each rebuild: the
+        // person sees how long an edit took to reach the window, and the edit-to-view measurement
+        // (#900) reads the same line. The shell presents this frame next, within a vsync.
+        if (drawsEdit)
+            Console.WriteLine($"[eQuantic.HotReload] drew the edit {Stopwatch.GetElapsedTime(PhotonHotReload.AppliedAt).TotalMilliseconds:F0}ms after it was applied");
         return _lastFrame;
     }
 
     /// <summary>The tree this host keeps across frames: every position, the instances it retains, and
     /// the order its components mount and unmount in, the root's included (see BuildOwner).</summary>
-    private readonly BuildOwner _owner = new();
+    private readonly BuildOwner _owner = ComponentBoundary.Owner();
 
 
     private Pressable? _pressed;
@@ -943,8 +960,9 @@ public sealed class PhotonHost
     // ── Text editing ──────────────────────────────────────────────────────────────────────────
     //
     // The app owns the string: it hands the field a Value and gets an OnChanged back, exactly as on
-    // web. What lives HERE is the part the app does not have — which field is being edited and where
-    // the caret sits — because both must survive the rebuild that each keystroke causes.
+    // web. What the field SHOWS lives on its position (FieldText): what was typed, until the page
+    // builds the field again (#996). What lives HERE is the part neither has: which field is being
+    // edited and where the caret sits.
 
     /// <summary>The position of the field, code surface or spreadsheet being edited, or null.</summary>
     private Element? _textAt;
@@ -1006,9 +1024,10 @@ public sealed class PhotonHost
     /// after it, which is what every text field does and what makes clicking feel aimed rather
     /// than approximate.
     /// </summary>
-    private int IndexAt(TextEntry entry, float localX)
+    private int IndexAt(TextRegion field, float localX)
     {
-        var value = entry.Value;
+        var entry = field.Entry;
+        var value = TextOf(field);
         if (value.Length == 0 || localX <= 0) return 0;
         var measurer = _measurer ?? ApproximateTextMeasurer.Instance;
         var style = entry.Resolve(_theme).AtWindow(this.Width);
@@ -1037,9 +1056,9 @@ public sealed class PhotonHost
 
     /// <summary>Selects the word the caret is in — both edges found by the same rule, so a click
     /// between two words picks the one the nearest boundary belongs to.</summary>
-    private void SelectWordAt(TextEntry entry)
+    private void SelectWordAt(TextRegion field)
     {
-        var value = entry.Value;
+        var value = TextOf(field);
         if (value.Length == 0) return;
         var at = Math.Clamp(CaretIndex, 0, value.Length);
         // On a boundary, prefer the word BEHIND the caret — the one the click was visually inside.
@@ -1199,16 +1218,16 @@ public sealed class PhotonHost
     public int CaretIndex => Math.Clamp(_caret, 0, EditedValue?.Length ?? 0);
 
     /// <summary>
-    /// The value last handed to the field's <c>OnChanged</c> and not yet drawn, or null. A keyboard
-    /// edits twice between two frames (an autocorrection deletes the word and types its fix, a
-    /// keyboard batches its edits), and the second edit has to start from what the first one made:
-    /// read off the frame, it started from the value before both and undid the first.
+    /// The text the field being edited holds, which its position keeps (<see cref="FieldText"/>): what
+    /// was typed, until the page builds the field again. Every edit starts from it. A keyboard edits
+    /// twice between two frames (an autocorrection deletes the word and types its fix, a keyboard
+    /// batches its edits), and the second edit has to start from what the first one made: read off the
+    /// frame's node, it started from the value before both and undid the first.
     /// </summary>
-    private string? _edited;
+    private string? EditedValue => TextTarget is { } entry ? FieldText.Of(_textAt, entry) : null;
 
-    /// <summary>The focused field's value as the next edit has to see it: the last one typed, until
-    /// a frame draws what the app made of it.</summary>
-    private string? EditedValue => _edited ?? TextTarget?.Value;
+    /// <summary>The text a field region shows: its position's.</summary>
+    private static string TextOf(TextRegion field) => FieldText.Of(field.Element, field.Entry);
 
     /// <summary>A phone keyboard's composition, as a range of the value (see
     /// <see cref="TextEditingValue"/>), or null. Drawn underlined, like the desktop's marked text.
@@ -1333,7 +1352,7 @@ public sealed class PhotonHost
         System.Runtime.CompilerServices.StrongBox<int>> _sheetFocusRequests = new();
 
     private void BeginEditing(TextRegion field, float? localX = null) =>
-        BeginEditing(field.Entry, field.Element, localX is { } x ? IndexAt(field.Entry, x) : null);
+        BeginEditing(field.Entry, field.Element, localX is { } x ? IndexAt(field, x) : null);
 
     private void BeginEditing(TextEntry entry, Element at, int? caret = null)
     {
@@ -1345,9 +1364,8 @@ public sealed class PhotonHost
         // a form where four boxes all look like the active one.
         if (changed) EndEditing();
         _textAt = field.Element;
-        if (changed) _edited = null;
         // Where the pointer fell, or the end of the text when it arrived by Tab.
-        Caret = caret ?? field.Entry.Value.Length;
+        Caret = caret ?? FieldText.Of(at, entry).Length;
         _anchor = caret is null ? null : _caret;
         _focused = null;
         ForgetFocus();
@@ -1379,7 +1397,6 @@ public sealed class PhotonHost
         }
         _textAt = null;
         _marked = "";
-        _edited = null;
         Caret = 0;
         _anchor = null;
         NeedsRender = true;
@@ -1414,7 +1431,7 @@ public sealed class PhotonHost
         if (TextTarget is not { } entry || entry.Disabled) return false;
         // Typing over a selection REPLACES it — the one behaviour that makes selecting worth doing.
         var (start, end) = Selection;
-        var value = _edited ?? entry.Value;
+        var value = FieldText.Of(_textAt, entry);
         Commit(entry, value[..start] + text + value[end..], start + text.Length, clearAnchor: true);
         return true;
     }
@@ -1469,7 +1486,7 @@ public sealed class PhotonHost
         if (TextTarget is { } entry && !entry.Disabled)
         {
             var (start, end) = Selection;
-            var value = _edited ?? entry.Value;
+            var value = FieldText.Of(_textAt, entry);
             if (end > start)
                 Commit(entry, value[..start] + value[end..], start, clearAnchor: true);
         }
@@ -1511,7 +1528,7 @@ public sealed class PhotonHost
         get
         {
             if (TextTarget is not { } entry) return null;
-            var text = _edited ?? entry.Value;
+            var text = FieldText.Of(_textAt, entry);
             var caret = CaretIndex;
             var anchor = _anchor is { } held ? Math.Clamp(held, 0, text.Length) : caret;
             return _composing is { } composing && composing.Text == text
@@ -1536,7 +1553,7 @@ public sealed class PhotonHost
         var extent = Math.Clamp(value.SelectionExtent, 0, text.Length);
         var anchor = Math.Clamp(value.SelectionBase, 0, text.Length);
 
-        if (text != (_edited ?? entry.Value)) Commit(entry, text, extent);
+        if (text != FieldText.Of(_textAt, entry)) Commit(entry, text, extent);
         Caret = extent;
         _anchor = anchor == extent ? null : anchor;
         // After the caret, whose every move drops it: this is the one move that keeps it.
@@ -1600,8 +1617,9 @@ public sealed class PhotonHost
             var bounds = fields[i].Bounds;
             var entry = fields[i].Entry;
             var style = entry.Resolve(_theme).AtWindow(this.Width);
-            var caretInValue = Math.Min(CaretIndex, entry.Value.Length);
-            var composed = _marked.Length > 0 ? entry.Value.Insert(caretInValue, _marked) : entry.Value;
+            var text = TextOf(fields[i]);
+            var caretInValue = Math.Min(CaretIndex, text.Length);
+            var composed = _marked.Length > 0 ? text.Insert(caretInValue, _marked) : text;
             var upTo = Math.Min(caretInValue + _marked.Length, composed.Length);
             var advance = 0f;
             if (upTo > 0 && TextRasterizer is { } rasterizer)
@@ -1642,7 +1660,7 @@ public sealed class PhotonHost
     private bool EditKey(TextEntry entry, string key, KeyModifiers modifiers)
     {
         if (entry.Disabled) return false;
-        var value = _edited ?? entry.Value;
+        var value = FieldText.Of(_textAt, entry);
         var caret = CaretIndex;
         var (start, end) = Selection;
         var selecting = modifiers.HasFlag(KeyModifiers.Shift);
@@ -1756,10 +1774,11 @@ public sealed class PhotonHost
         // The caret moves whether or not the app takes the change: a field with no OnChanged is a
         // read-only field, and pretending the character landed would be a lie the next frame undoes.
         if (entry.OnChanged is null) return;
-        _edited = value;
-        var marks = _owner.Marks;
+        // The key shows at once, from the field's position, which keeps it until the page builds the
+        // field again (#996). So the frame builds what the handler marked with SetState and nothing
+        // else: a handler that kept the value without saying so has nothing left to rebuild.
+        FieldText.Typed(_textAt, entry, value);
         entry.OnChanged(value);
-        RebuildUnlessTold(marks);
     }
 
     /// <summary>Clears keyboard focus (pointer interaction, escape).</summary>
@@ -2097,13 +2116,13 @@ public sealed class PhotonHost
         // A press that began in a field is DRAWING a selection: the anchor stays where the press
         // landed and the caret follows the pointer, so dragging back past the start reverses the
         // range instead of collapsing it.
-        if (_dragSelecting && TextTarget is { } editing && _lastFrame is not null)
+        if (_dragSelecting && TextTarget is not null && _lastFrame is not null)
         {
             var fields = _lastFrame.TextRegions;
             for (var i = 0; i < fields.Count; i++)
             {
                 if (!ReferenceEquals(fields[i].Element, _textAt)) continue;
-                var index = IndexAt(editing, ToLocal(fields, i, fields[i].Bounds, new Point(x, y)).X);
+                var index = IndexAt(fields[i], ToLocal(fields, i, fields[i].Bounds, new Point(x, y)).X);
                 if (index == Caret) break;
                 Caret = index;
                 NeedsRender = true;
@@ -2692,8 +2711,8 @@ public sealed class PhotonHost
             BeginEditing(fields[i], ToLocal(fields, i, fields[i].Bounds, point).X);
             // Double-click: the word under the point. Triple: everything. The platform counts the
             // clicks (its double-click interval is a system setting, not ours to guess).
-            if (clickCount >= 3) { _anchor = 0; Caret = fields[i].Entry.Value.Length; }
-            else if (clickCount == 2) SelectWordAt(fields[i].Entry);
+            if (clickCount >= 3) { _anchor = 0; Caret = TextOf(fields[i]).Length; }
+            else if (clickCount == 2) SelectWordAt(fields[i]);
             _dragSelecting = clickCount < 2;   // a drag right after a double-click keeps the word
             NeedsRender = true;
             return true;

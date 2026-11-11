@@ -29,8 +29,12 @@ async function withAuthenticator(page: Page) {
   return { cdp, authenticatorId };
 }
 
-/** Every server action the page calls goes to this one endpoint, named in the body. */
-const actions = '**/api/_equantic/actions';
+/**
+ * Every server action the page calls goes to this one endpoint, named in the body. Matched by its path: the
+ * address carries the page's culture in its query (`?culture=en&ui-culture=en`, #1194), which a glob of the
+ * path alone never matched, so no outage the cases below stage reached the page (#1369).
+ */
+const actions = (url: URL) => url.pathname === '/api/_equantic/actions';
 
 function actionOf(request: Request): string {
   const body = request.postDataJSON() as { actionId?: string } | null;
@@ -86,7 +90,7 @@ test.describe('Passkeys', () => {
     // The first answer the page hands its server meets an outage.
     let refused = false;
     await page.route(actions, async (route) => {
-      if (!refused && actionOf(route.request()) === 'PasskeyScreen/FinishRegistration') {
+      if (!refused && actionOf(route.request()) === 'eQuantic.Console.PasskeyScreen/FinishRegistration') {
         refused = true;
         await route.fulfill({ status: 503, body: 'down for a moment' });
         return;

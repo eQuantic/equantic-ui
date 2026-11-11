@@ -257,7 +257,9 @@ rejected.)
    values via `HtmlStyle.CustomProperties`, emitted at the style tail — cross-pinned C#/TS); native =
    `PhotonHost.PressDown/PressUp` (topmost capture, release-outside cancels, disabled swallows) with
    the realizer swapping the first descendant Box fill while held (pressed-button golden). Button
-   (filled=Pressed token, Outline/Ghost=SurfaceSubtle, Link=fence) and Chip Filter wire it. Interaction slice 2: FOCUS RING ✅ (2026-07-05, spec §01) — the double ring (2dp Surface gap +
+   (filled=Pressed token, Outline/Ghost=SurfaceSubtle, Link=fence) and Chip Filter wire it. (Replaced in
+   #616: a pressed fill is the `Pressed` diff of the box it fills, one mechanism on both targets, and
+   `PressedBackground`, the custom property, the swap rules and the first-box convention are gone.) Interaction slice 2: FOCUS RING ✅ (2026-07-05, spec §01) — the double ring (2dp Surface gap +
    2dp FocusRing) as an ACCESSIBILITY DEFAULT: every enabled Pressable carries `.eq-pressable`; the
    generated stylesheet adds `:focus-visible > :first-child` box-shadows from the GLOBAL token
    custom properties (keyboard-only, `outline: none`); native gains `PhotonHost.FocusNext()`
