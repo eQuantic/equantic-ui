@@ -52,6 +52,7 @@ import { declareInView } from './in-view';
 import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
 import {
   adaptiveGateOpen,
+  adaptiveThresholdMedia,
   atomicDeclaration,
   atomizeEntries,
   atomizePseudo,
@@ -5026,6 +5027,11 @@ function lowerAdaptive(
   // switches at 1024 gets 1024 gates, not the spec's 600/840.
   const mediumFrom = node.mediumFrom ?? 600;
   const expandedFrom = node.expandedFrom ?? 840;
+  // The page builds again when the window crosses one of them, so the arm a gate shows is the arm
+  // the position holds (element-roots.ts).
+  const roots = getActivePass()?.roots;
+  if (node.medium) roots?.noteThreshold(adaptiveThresholdMedia(mediumFrom));
+  if (node.expanded) roots?.noteThreshold(adaptiveThresholdMedia(expandedFrom));
   addVariant(node.compact, gateCompactUntil(node.medium ? mediumFrom : expandedFrom), 0);
   if (node.medium)
     addVariant(node.medium, gateMediumFrom(mediumFrom, node.expanded ? expandedFrom : 0), 1);

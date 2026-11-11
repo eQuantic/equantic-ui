@@ -9,7 +9,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StatefulComponent, resetComponentKeys } from '../core/component';
-import { Column, Pressable, Text } from './vocabulary';
+import { AdaptiveNode, Column, Pressable, Text } from './vocabulary';
 import type { VisualNodeValue } from './nodes';
 
 const nextFrame = () =>
@@ -158,6 +158,51 @@ describe('the browser builds through the element engine', () => {
       // value: never its default first.
       expect(seen).toEqual(['first from the server', 'second from the server']);
       expect(server.textContent).toContain('second from the server');
+    });
+  });
+
+  describe('a window that crosses a threshold', () => {
+    const happyDOM = (
+      window as unknown as { happyDOM: { setViewport(viewport: { width: number; height: number }): void } }
+    ).happyDOM;
+    const at = (width: number) => happyDOM.setViewport({ width, height: 900 });
+
+    afterEach(() => at(1024));
+
+    // The web draws every arm behind a media gate, and a resize opens another one without a render.
+    // The arm a position holds is the one the page's last build resolved, and only that one keeps its
+    // instances: a crossing nothing built for would show an arm whose component answers no press.
+    // It crosses UPWARD: happy-dom's media list starts from "not matching" whatever the width, so it
+    // reports a list that starts to match and stays quiet about one that stops.
+    it('builds the page again, so a component in the arm it shows keeps its state', async () => {
+      at(500);
+      class Page extends StatefulComponent {
+        build(): VisualNodeValue {
+          built('page');
+          return new AdaptiveNode(
+            new Counter('compact') as never,
+            null,
+            new Counter('expanded') as never,
+          ) as unknown as VisualNodeValue;
+        }
+      }
+      const page = new Page();
+      const container = mount(page);
+
+      at(1024);
+      await nextFrame();
+      expect(builds.page).toBe(2);
+
+      await press(container, 'bump expanded');
+      await press(container, 'bump expanded');
+
+      expect(container.textContent).toContain('expanded: 2');
+      // A page that leaves stops listening: no crossing builds it again.
+      page.disposeQuietly();
+      at(500);
+      at(1024);
+      await nextFrame();
+      expect(builds.page).toBe(2);
     });
   });
 
