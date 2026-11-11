@@ -1,10 +1,15 @@
 IAppTheme.button
+IAppTheme.card
 IAppTheme.code
 IAppTheme.controls
 IAppTheme.data
+IAppTheme.menu
+IAppTheme.modal
 IAppTheme.monoFamily
+IAppTheme.notice
 IAppTheme.onSelection
 IAppTheme.placeholder
+IAppTheme.progress
 IAppTheme.scrollbarThumb
 IAppTheme.scrollbarTrack
 IAppTheme.selection

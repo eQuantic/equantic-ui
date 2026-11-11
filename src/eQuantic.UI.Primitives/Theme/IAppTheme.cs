@@ -148,9 +148,9 @@ public interface IAppTheme
     /// </summary>
     ButtonTheme? Button => null;
 
-    /// <summary>The slot of the Dialog, the BottomSheet and the Drawer (<see cref="SurfaceTheme"/>), NULL by default, which each reads as its own
+    /// <summary>The slot of the Dialog, the BottomSheet and the Drawer (<see cref="ModalTheme"/>), NULL by default, which each reads as its own
     /// defaults. Plural, since <see cref="Surface"/> is the colour they are filled with.</summary>
-    SurfaceTheme? Surfaces => null;
+    ModalTheme? Modal => null;
 
     /// <summary>The slot of the Popover, the Menu and the Tooltip (<see cref="MenuTheme"/>), NULL by default, which each reads as its own
     /// defaults.</summary>

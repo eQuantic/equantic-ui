@@ -29,7 +29,7 @@ public sealed class BottomSheet : StatelessComponent
     {
         var theme = context.Theme;
         // The surfaces' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
-        var slot = theme.Surfaces;
+        var slot = theme.Modal;
 
         var scrim = new Pressable(new Box(new BoxStyle
         {

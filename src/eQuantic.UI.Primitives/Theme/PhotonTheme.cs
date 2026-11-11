@@ -193,7 +193,7 @@ public sealed class PhotonTheme : IAppTheme
 
     /// <summary>The surfaces (spec C2): a dialog of at most 480 at extra-large corners and elevation 5,
     /// a sheet rising at elevation 4 with a 32 by 4 handle, a drawer at elevation 3.</summary>
-    public SurfaceTheme? Surfaces => field ??= new()
+    public ModalTheme? Modal => field ??= new()
     {
         DialogMaxWidth = 480,
         DialogShape = ShapeScale.ExtraLarge,

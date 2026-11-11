@@ -60,8 +60,8 @@ public sealed class Drawer : StatelessComponent
             Height = context.InFlow ? default : SizeValue.Fill,
             Background = theme.Surface,
             // The surfaces' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
-            Elevation = theme.Surfaces?.DrawerElevation ?? 3,
-            Padding = theme.Surfaces?.DrawerPadding ?? EdgeInsets.All(Space.S4),
+            Elevation = theme.Modal?.DrawerElevation ?? 3,
+            Padding = theme.Modal?.DrawerPadding ?? EdgeInsets.All(Space.S4),
         }, Content);
 
         if (context.InFlow) return panel;

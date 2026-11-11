@@ -38,6 +38,11 @@ public class ThemeSlotsTests
         [nameof(IAppTheme.Code)] = "code",
         [nameof(IAppTheme.Controls)] = "controls",
         [nameof(IAppTheme.Button)] = "button",
+        [nameof(IAppTheme.Modal)] = "modal",
+        [nameof(IAppTheme.Menu)] = "menu",
+        [nameof(IAppTheme.Notice)] = "notice",
+        [nameof(IAppTheme.Progress)] = "progress",
+        [nameof(IAppTheme.Card)] = "card",
     };
 
     [Fact]
@@ -323,6 +328,11 @@ public class ThemeSlotsTests
         public SheetTheme? Sheet => new() { Gridline = new ColorToken(Color.Black) };
         public ControlsTheme? Controls => inner.Controls;
         public ButtonTheme? Button => inner.Button;
+        public ModalTheme? Modal => inner.Modal;
+        public MenuTheme? Menu => inner.Menu;
+        public NoticeTheme? Notice => inner.Notice;
+        public ProgressTheme? Progress => inner.Progress;
+        public CardTheme? Card => inner.Card;
         public ColorToken Code(CodeTokenKind kind) => new(Color.FromRgb(0x11, 0x22, (byte)kind));
         public float DisabledOpacity => inner.DisabledOpacity;
         public VariantColors Colors(Variant variant) => inner.Colors(variant);

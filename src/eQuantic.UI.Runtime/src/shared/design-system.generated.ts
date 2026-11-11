@@ -9,7 +9,7 @@ import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 import { DataPalette, DivergingScale, StatusScale } from './data-palette';
 import { MotionSpec } from './primitive-values';
-import { buttonTheme, controlsTheme } from './theme-slots';
+import { buttonTheme, cardTheme, controlsTheme, menuTheme, modalTheme, noticeTheme, progressTheme } from './theme-slots';
 
 const c = (r: number, g: number, b: number, a: number): ColorValue => ({ r, g, b, a });
 const t = (light: ColorValue, dark: ColorValue): ColorToken => new ColorToken(light, dark);
@@ -356,6 +356,11 @@ export const photonTheme: AppTheme = {
   disabledOpacity: 0.38,
   controls: controlsTheme({"height":{"comfortable":{"small":32,"medium":40,"large":48,"xLarge":56},"compact":{"small":26,"medium":32,"large":40,"xLarge":48}},"paddingX":{"comfortable":{"small":12,"medium":16,"large":20,"xLarge":24},"compact":{"small":8,"medium":12,"large":16,"xLarge":20}},"labelSize":{"comfortable":{"small":13,"medium":15,"large":16,"xLarge":17},"compact":{"small":11.5,"medium":13,"large":14.5,"xLarge":15.5}},"gap":{"small":6,"medium":8,"large":8,"xLarge":10},"icon":{"small":16,"medium":20,"large":20,"xLarge":24},"radius":{"small":10,"medium":10,"large":10,"xLarge":14}}),
   button: buttonTheme({"minWidth":64,"labelWeight":"semiBold","labelTracking":0.1,"outlineWidth":1,"linkPaddingX":6,"outlineColor":[[201,206,214,255],[76,86,100,255]],"quietFill":[[239,241,244,255],[28,35,43,255]]}),
+  modal: modalTheme({"dialogMaxWidth":480,"dialogShape":"extraLarge","dialogElevation":5,"dialogPadding":[20,20,20,20],"dialogGap":20,"dialogTextGap":8,"dialogActionGap":8,"dialogGutter":24,"bottomSheetShape":"extraLarge","bottomSheetElevation":4,"bottomSheetPadding":[20,12,20,24],"bottomSheetGap":12,"handleWidth":32,"handleHeight":4,"handleColor":[[201,206,214,255],[76,86,100,255]],"drawerElevation":3,"drawerPadding":[16,16,16,16]}),
+  menu: menuTheme({"panelShape":"medium","panelBorderWidth":1,"panelElevation":2,"popoverPadding":[12,12,12,12],"menuMinWidth":180,"menuPadding":[0,4,0,4],"itemPadding":[12,0,12,0],"itemGap":8,"tooltipShape":"small","tooltipPadding":[8,4,8,4],"tooltipFill":[[23,27,33,255],[242,244,247,255]],"tooltipText":[[255,255,255,255],[23,27,33,255]]}),
+  notice: noticeTheme({"toastFill":[[23,27,33,255],[242,244,247,255]],"toastText":[[255,255,255,255],[23,27,33,255]],"toastShape":"full","toastElevation":3,"toastPadding":[16,12,16,12],"toastMaxWidth":480,"toastDot":8,"toastGap":12,"toastMargin":[16,24,16,24],"bannerShape":"large","bannerPadding":[14,12,14,12],"bannerIconGap":10,"bannerGap":4,"bannerTextSize":13,"bannerLineHeight":18,"bannerTitleWeight":"semiBold","bannerBodyWeight":"regular","consentShape":"large","consentElevation":2,"consentBorderWidth":1,"consentPadding":[16,16,16,16]}),
+  progress: progressTheme({"barHeight":4,"prominentBarHeight":8,"barShape":"full","trackColor":[[239,241,244,255],[28,35,43,255]],"refreshSpinner":20,"skeletonLineHeight":12,"skeletonShape":"medium","skeletonFill":[[239,241,244,255],[28,35,43,255]],"skeletonHighlight":[[255,255,255,140],[255,255,255,18]]}),
+  card: cardTheme({"shape":"large","borderWidth":1,"elevation":1,"filledColor":[[239,241,244,255],[28,35,43,255]],"elevatedBorderColor":[[0,0,0,0],[42,50,61,255]]}),
   colors(variant: string): VariantColors {
     return variantColors[variant] ?? variantColors.primary;
   },

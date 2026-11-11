@@ -11,7 +11,7 @@ namespace eQuantic.UI.Primitives;
 /// defaults.
 /// </para>
 /// </summary>
-public sealed record SurfaceTheme
+public sealed record ModalTheme
 {
     /// <summary>The dialog's widest (480).</summary>
     public float? DialogMaxWidth { get; init; }

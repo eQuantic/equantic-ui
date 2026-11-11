@@ -133,7 +133,7 @@ public sealed class MaterialTheme : IAppTheme
     /// wide. Its bottom sheet: extra-large top corners, level 1, a 32 by 4dp drag handle in
     /// on-surface-variant at 40%. Its modal navigation drawer: level 1, 12dp of padding.
     /// </summary>
-    public SurfaceTheme? Surfaces => field ??= new()
+    public ModalTheme? Modal => field ??= new()
     {
         DialogMaxWidth = 560,
         DialogShape = ShapeScale.ExtraLarge,

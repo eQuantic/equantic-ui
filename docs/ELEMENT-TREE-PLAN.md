@@ -389,7 +389,7 @@ proves it.
 | `Segmented` | SegmentedControl, Stepper |
 | `Chip` | Chip |
 | `Navigation` | Tabs, BottomNavigation, NavigationRail, AppBar, Breadcrumb, Pagination, PageIndicator |
-| `Surface` | Dialog, BottomSheet, Drawer |
+| `Modal` | Dialog, BottomSheet, Drawer (not `Surface`, which `IAppTheme` already names as a colour and the theme's JSON already writes as `surfaces`) |
 | `Menu` | Popover, Menu, Tooltip |
 | `Notice` | Toast, Banner, CookieConsent |
 | `Progress` | ProgressBar, PullToRefresh, Skeleton |

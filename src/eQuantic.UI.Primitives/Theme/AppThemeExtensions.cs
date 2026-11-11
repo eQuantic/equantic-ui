@@ -11,6 +11,6 @@ public static class AppThemeExtensions
     /// §3.10).
     /// <code>ui.UseTheme(PhotonTheme.Instance.With(button: new ButtonTheme { MinWidth = 88 }));</code>
     /// </summary>
-    public static IAppTheme With(this IAppTheme theme, ControlsTheme? controls = null, ButtonTheme? button = null, SurfaceTheme? surfaces = null, MenuTheme? menu = null, NoticeTheme? notice = null, ProgressTheme? progress = null, CardTheme? card = null) =>
-        new OverriddenTheme(theme, controls, button, surfaces, menu, notice, progress, card);
+    public static IAppTheme With(this IAppTheme theme, ControlsTheme? controls = null, ButtonTheme? button = null, ModalTheme? modal = null, MenuTheme? menu = null, NoticeTheme? notice = null, ProgressTheme? progress = null, CardTheme? card = null) =>
+        new OverriddenTheme(theme, controls, button, modal, menu, notice, progress, card);
 }

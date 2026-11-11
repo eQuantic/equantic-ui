@@ -47,7 +47,7 @@ public sealed class Dialog : StatelessComponent
     {
         var theme = context.Theme;
         // The surfaces' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
-        var slot = theme.Surfaces;
+        var slot = theme.Modal;
 
         var content = new Column(gap: slot?.DialogTextGap ?? 8);
         content.Add(new Text(Title, TypeRole.Title));
