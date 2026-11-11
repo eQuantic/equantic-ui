@@ -274,6 +274,23 @@ public class ThemeSlotsTests
         unchanged.Should().BeEmpty("every medium control reads the theme's height");
     }
 
+    /// <summary>
+    /// An icon is drawn only at a size of the §07 ladder, and refuses any other: a slot that names an icon
+    /// size off it puts every button with an icon behind its boundary's fallback, which a gallery of
+    /// buttons without icons never shows. Every shipped theme, every size, with an icon.
+    /// </summary>
+    [Fact]
+    public void AButtonWithAnIcon_BuildsUnderEveryShippedTheme()
+    {
+        foreach (var theme in new IAppTheme[] { Photon, eQuantic.UI.Material.MaterialTheme.Instance })
+            foreach (var size in Enum.GetValues<SizeVariant>())
+            {
+                var html = HtmlRenderer.RenderNode(WebRealizer.Lower(new Button("Search", size: size) { Leading = Icons.Search }, theme).Render());
+                html.Should().NotContain("could not be displayed", $"{theme.GetType().Name} at {size}")
+                    .And.NotContain("failed to render", $"{theme.GetType().Name} at {size}");
+            }
+    }
+
     private static string Css(VisualNode node, IAppTheme theme, Density density)
     {
         var sink = new StyleSink();

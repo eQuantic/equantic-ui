@@ -103,8 +103,9 @@ public sealed class MaterialTheme : IAppTheme
 
     /// <summary>
     /// M3's common button: a fully rounded container, its label in Label large (14, weight 500,
-    /// tracking 0.1), 24dp of padding, an 18dp icon and an 8dp gap at the medium size it specifies, a 1dp
-    /// outline, and a text button's 12dp padding for the link variant.
+    /// tracking 0.1), 24dp of padding and an 8dp gap at the medium size it specifies, a 1dp outline, and
+    /// a text button's 12dp padding for the link variant. M3's icon is 18dp, which the icon ladder does not
+    /// hold (§07: 16, 20, 24, 32, the sizes an icon is drawn crisp at), so it takes the next rung, 20.
     /// </summary>
     public ButtonTheme? Button { get; } = new()
     {
@@ -113,7 +114,7 @@ public sealed class MaterialTheme : IAppTheme
             PaddingX = new DensityLadder { Comfortable = new SizeLadder { Medium = 24 } },
             LabelSize = new DensityLadder { Comfortable = new SizeLadder { Medium = 14 } },
             Gap = new SizeLadder { Medium = 8 },
-            Icon = new SizeLadder { Medium = 18 },
+            Icon = new SizeLadder { Medium = IconSize.Dense },
             Radius = new SizeLadder { Small = 999, Medium = 999, Large = 999, XLarge = 999 },
         },
         LabelWeight = FontWeight.Medium,
