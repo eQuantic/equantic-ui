@@ -1,1 +1,2 @@
 #nullable enable
+const eQuantic.UI.Server.ConsentCookie.SecureName = "__Host-eq-consent" -> string!

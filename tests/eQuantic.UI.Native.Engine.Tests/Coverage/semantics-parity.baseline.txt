@@ -1,0 +1,79 @@
+# Differences between what a screen reader hears on the web and on Photon from one component, and
+# why each is right or which bug it waits on. SemanticsParityTests reads every component with a
+# semantic role on both targets and fails on a difference not named here.
+#
+# This list may ONLY SHRINK. An entry is written BY HAND, with its reason after two spaces.
+# Regenerate with EQ_UPDATE_SEMANTICS_PARITY_BASELINE=1 after a REMOVAL: it keeps every reason
+# already written and never adds an entry.
+case date-picker opened: Button "Dismiss" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: Button "Dismiss" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: ColumnHeader "Fri" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: ColumnHeader "Mon" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: ColumnHeader "Sat" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: ColumnHeader "Sun" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: ColumnHeader "Thu" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: ColumnHeader "Tue" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: ColumnHeader "Wed" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: Grid "July 2026" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: Group "" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: Group "July 2026" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: StaticText "Fri" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: StaticText "Mon" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: StaticText "Sat" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: StaticText "Sun" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: StaticText "Thu" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: StaticText "Tue" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case date-picker opened: StaticText "Wed" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+case disabled select: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
+case disabled select: ComboBox "Lisbon" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
+case select opened: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
+case select opened: ComboBox "Lisbon" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
+case select: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
+case select: ComboBox "Lisbon" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
+case table-view Group: StaticText "0:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "0:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "0:1" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "0:1" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "0:2" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "0:2" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "0:3" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "0:3" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "1:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "1:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "2:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "2:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "3:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "3:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "4:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "4:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "5:0" is announced on Photon only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case table-view Group: StaticText "5:0" is announced on the web only  waits on #1331: a table view read as a group is read in bands on the web and row by row on Photon
+case text-input: Group "" is announced on the web only  waits on #1332: the web writes a live region in every field and its error twice, Photon reads the error once and not live
+eQuantic.UI.Components.Calendar: ColumnHeader "Fri" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: ColumnHeader "Mon" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: ColumnHeader "Sat" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: ColumnHeader "Sun" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: ColumnHeader "Thu" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: ColumnHeader "Tue" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: ColumnHeader "Wed" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: Grid "July 2026" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: Group "July 2026" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: StaticText "Fri" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: StaticText "Mon" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: StaticText "Sat" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: StaticText "Sun" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: StaticText "Thu" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: StaticText "Tue" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.Calendar: StaticText "Wed" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
+eQuantic.UI.Components.DatePicker: Group "" is announced on the web only  waits on #1332: the web writes a live region in every field and its error twice, Photon reads the error once and not live
+eQuantic.UI.Components.DateTimePicker: Group "" is announced on the web only  waits on #1332: the web writes a live region in every field and its error twice, Photon reads the error once and not live
+eQuantic.UI.Components.SearchField: Group "" is announced on the web only  waits on #1332: the web writes a live region in every field and its error twice, Photon reads the error once and not live
+eQuantic.UI.Components.Select: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
+eQuantic.UI.Components.Select: ComboBox "Select…" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
+eQuantic.UI.Components.TextInput: Group "" is announced on the web only  waits on #1332: the web writes a live region in every field and its error twice, Photon reads the error once and not live
+eQuantic.UI.Components.Tooltip: StaticText "x" is announced on the web only  waits on #1329: a closed tooltip stays in the web's reading order, opacity hides it from sight only
+eQuantic.UI.Spreadsheets.NameBox: StaticText "A1" is announced on the web only  waits on #1333: a code surface's text is read beside an empty field on the web and not at all on Photon
+eQuantic.UI.Spreadsheets.Spreadsheet: Group "" is announced on the web only  waits on #1332: the web writes a live region in every field and its error twice, Photon reads the error once and not live
+eQuantic.UI.Spreadsheets.Spreadsheet: StaticText "A1, blank" is announced on the web only  waits on #1333: a code surface's text is read beside an empty field on the web and not at all on Photon
+eQuantic.UI.Spreadsheets.Spreadsheet: TextField "Spreadsheet" is announced on Photon only  waits on #1333: a code surface's text is read beside an empty field on the web and not at all on Photon
+eQuantic.UI.Spreadsheets.Spreadsheet: TextField "Spreadsheet" is announced on the web only  waits on #1333: a code surface's text is read beside an empty field on the web and not at all on Photon
