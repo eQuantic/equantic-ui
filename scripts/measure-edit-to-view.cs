@@ -208,7 +208,7 @@ string WhyItDrewOver(JsonNode state, JsonNode reloaded, double saved)
         .Select(f => f!["data"]!.GetValue<string>());
     var said = lines.Where(l => l.At > saved && l.Text.Contains("[eQuantic.HotReload] the page", StringComparison.Ordinal))
         .Select(l => l.Text.Trim());
-    return $"The boot said: {reloaded["drew"]?.GetValue<string>() ?? "nothing"}; the streams heard rebuilt: [{string.Join(", ", frames)}]; the reload carried hydrate: "
+    return $"The boot said: {reloaded["drew"]?.GetValue<string>() ?? "nothing, in 30s after the edit was on screen"}; the streams heard rebuilt: [{string.Join(", ", frames)}]; the reload carried hydrate: "
         + $"{reloaded["told"]?.ToJsonString() ?? "nothing"}; the server rendered it: {reloaded["ssr"]?.ToJsonString() ?? "unknown"}; "
         + $"the server said: {(said.Any() ? string.Join(" | ", said) : "nothing")}.";
 }
@@ -235,6 +235,26 @@ async Task<Dictionary<string, double>> MeasureWeb(string marker, double saved)
     }, TimeSpan.FromMinutes(5), $"the browser did not draw \"{marker}\" in a document the rebuild reloaded");
     var drawnAt = settled!["at"]!.GetValue<double>();
     var document = settled["document"]!.GetValue<double>();
+
+    // The boot says whether it hydrates only once the page's module has arrived, and the server's
+    // markup already holds the edit, so the marker settles at parse, before the boot has decided: the
+    // verdict is read once the boot gives one. Read off the snapshot the marker settled in, it judged
+    // a page whose boot had not decided yet, and every signal of the server said it hydrated (#1373).
+    var verdict = TimeSpan.FromSeconds(30);
+    try
+    {
+        await Until(async () =>
+        {
+            state = await page!.Evaluate("sessionStorage.getItem('eq-edit-to-view')") is JsonValue text
+                ? JsonNode.Parse(text.GetValue<string>()) : state;
+            var mine = state!["documents"]!.AsArray().FirstOrDefault(d => d!["origin"]!.GetValue<double>() == document);
+            return mine?["hydrated"] is not null || mine?["drew"] is not null;
+        }, verdict, "the boot gave no verdict");
+    }
+    catch (TimeoutException)
+    {
+        // Judged below: a boot that neither hydrated nor said why it drew over in this long drew over.
+    }
 
     var parts = new Dictionary<string, double> { ["total"] = drawnAt - saved };
     var draws = state!["draws"]!.AsArray().Where(d => d!["marker"]!.GetValue<string>() == marker).ToList();
