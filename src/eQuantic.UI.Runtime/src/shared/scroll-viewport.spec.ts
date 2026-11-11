@@ -12,6 +12,8 @@ import { commitScrollViewports, declareScrollViewport, scheduleScrollViewportCom
 import { photonTheme } from './design-system.generated';
 import { effectiveStyle } from './style-atomizer';
 import type { HtmlNode } from '../core/types';
+import { positionsOf } from './test-positions';
+import { Text } from './vocabulary';
 
 function context(): LoweringContext {
   return { textPrimary: photonTheme.textPrimary } as LoweringContext;
@@ -216,13 +218,16 @@ describe('ScrollView web out-channels', () => {
       commitScrollViewports();
       expect(observers[0].target).toBe(other);
 
-      // Another root's pass declares a scroll view of its own, at a path of its own (a root in a pass
-      // takes a prefix of its own), and none of the first root's.
+      // Another root's pass declares a scroll view of its own, at a position of its own, and none of
+      // the first root's.
+      const [another] = positionsOf(new Text('another root', 'bodyM'));
       const mine = document.createElement('div');
-      mine.setAttribute('data-eq-scroll', 'r1/0');
+      mine.setAttribute(
+        'data-eq-scroll',
+        declareScrollViewport(another, { horizontal: false, onViewportChanged: () => {} }),
+      );
       Object.defineProperty(mine, 'clientHeight', { value: 300, configurable: true });
       document.body.append(mine);
-      declareScrollViewport('r1/0', { horizontal: false, onViewportChanged: () => {} });
       scheduleScrollViewportCommit();
       await Promise.resolve();
 

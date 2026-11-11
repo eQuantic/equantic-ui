@@ -1,8 +1,10 @@
 /**
  * The after-pass half of a table viewport on the web (the C# twin is Photon's host and emit): lowering
- * DECLARES each viewport, keyed by the path stamped on its element as `data-eq-table`, with the
- * offset its cells were placed at; the commit, once the pass is written, finds the element and drives
- * the scroll model the node carries.
+ * DECLARES each viewport on the state its POSITION keeps (`TableViewportState`), whose id is stamped on
+ * its element as `data-eq-table`, with the offset its cells were placed at; the commit, once the pass
+ * is written, finds the element and drives the scroll model the node carries. What was last reported
+ * to the owner is the position's too: a table that took another's place, on the element the
+ * reconciler handed it, is told where its own grid stands even when the numbers match (#1454).
  *
  * The model owns the offset (the browser scrolls nothing: an element is at most 16 777 214 px tall,
  * which a million rows pass). So this half reads the window's size, hands the model the wheel, the
@@ -17,6 +19,8 @@
 import { logger } from '../utils/logger';
 import { modifiersOf } from './css-values';
 import type { TableScrollModelLike, TableViewCellNode, TableViewportNode } from './nodes';
+import type { Element as Position } from './runtime-exports';
+import { nodeStateFor, type NodeState } from './node-states';
 
 /** What the latest pass said about one viewport. */
 export interface TableViewportDeclaration {
@@ -30,15 +34,45 @@ export interface TableViewportDeclaration {
 /** A wheel's line, in points: the C# `Touch.WheelLine`. */
 const WHEEL_LINE = 16;
 
-const declared = new Map<string, TableViewportDeclaration>();
+/**
+ * What a table viewport's position keeps between passes: the latest declaration, the element it
+ * drives, and what it last told the owner. Driving another element tells the owner afresh.
+ */
+export class TableViewportState implements NodeState {
+  declaration: TableViewportDeclaration | null = null;
+  view: TableElement | null = null;
+  reported: { across: number; down: number; width: number; height: number } | undefined = undefined;
 
-/** Marker properties live on the ELEMENT: the reconciler reuses it, so what was attached survives. */
+  /** Drives `view`, which another position may have driven before. */
+  adopt(view: TableElement): void {
+    const before = view.__eqTableState;
+    if (before && before !== this && before.view === view) before.view = null;
+    this.view = view;
+    this.reported = undefined;
+    view.__eqTableState = this;
+  }
+
+  dispose(): void {
+    const view = this.view;
+    if (view?.__eqTableState === this) {
+      stopWatching(view);
+      view.__eqTableState = undefined;
+    }
+    this.view = null;
+    this.declaration = null;
+  }
+}
+
+/** The viewports the latest passes declared, by their position's id, until the commit reads them. */
+const declared = new Map<string, TableViewportState>();
+
+/** Marker properties live on the ELEMENT: the reconciler reuses it, so what was attached survives.
+ * Its listeners and its observer act for whichever position drives it now (`__eqTableState`). */
 interface TableElement extends HTMLElement {
-  __eqTable?: TableViewportDeclaration;
+  __eqTableState?: TableViewportState;
   __eqTableObserver?: ResizeObserver;
   __eqTableListening?: boolean;
   __eqTableFrame?: number;
-  __eqTableReported?: { across: number; down: number; width: number; height: number };
   __eqTableLogged?: number;
   /** The axes whose extent this half set from a scroller (1 across, 2 down), and the scroller. */
   __eqTableFitted?: number;
@@ -49,8 +83,16 @@ interface TableElement extends HTMLElement {
   __eqTableLeaving?: boolean;
 }
 
-export function declareTableViewport(path: string, declaration: TableViewportDeclaration): void {
-  declared.set(path, declaration);
+/**
+ * Declares the viewport at `position`, on the state the position keeps, and answers the id the
+ * lowering stamps on its element as `data-eq-table`.
+ */
+export function declareTableViewport(position: Position, declaration: TableViewportDeclaration): string {
+  const state = nodeStateFor(position, TableViewportState);
+  state.declaration = declaration;
+  const id = String(position.id);
+  declared.set(id, state);
+  return id;
 }
 
 const watched = new Set<TableElement>();
@@ -92,9 +134,10 @@ export function commitTableViewports(): void {
     return;
   }
   for (const view of document.querySelectorAll<TableElement>('[data-eq-table]')) {
-    const declaration = declared.get(view.getAttribute('data-eq-table') ?? '');
-    if (!declaration) continue;
-    view.__eqTable = declaration;
+    const state = declared.get(view.getAttribute('data-eq-table') ?? '');
+    const declaration = state?.declaration;
+    if (!state || !declaration) continue;
+    if (state.view !== view) state.adopt(view);
     listen(view);
     arrange(view, true);
     const { node } = declaration;
@@ -167,7 +210,7 @@ interface GlidingMark extends HTMLElement {
  * it starts where it stands.
  */
 function glideMarks(view: TableElement): void {
-  const declaration = view.__eqTable;
+  const declaration = view.__eqTableState?.declaration;
   if (!declaration) return;
   const { node } = declaration;
   const reduceMotion =
@@ -231,7 +274,7 @@ function pinnedColumnsOf(node: TableViewportNode): number {
  * window's, as Photon's layout does, and the development log says so once.
  */
 function arrange(view: TableElement, decide: boolean): void {
-  const declaration = view.__eqTable;
+  const declaration = view.__eqTableState?.declaration;
   if (!declaration) return;
   const { node } = declaration;
   const width = fit(view, node, 'width', decide);
@@ -301,7 +344,7 @@ function scrollerAround(view: HTMLElement, axis: 'width' | 'height'): HTMLElemen
 /** The bands' layers moved to the model's offset, the bands short of the scrollbars, the scrollbars
  * where the model puts them. */
 function paint(view: TableElement): void {
-  const declaration = view.__eqTable;
+  const declaration = view.__eqTableState?.declaration;
   if (!declaration) return;
   const { node, base } = declaration;
   const scroll = node.scroll;
@@ -353,13 +396,15 @@ function placeScrollbar(track: HTMLElement | undefined, scroll: TableScrollModel
 
 /** Tells the owner where the grid stands and how large the window is, each once per change. */
 function report(view: TableElement): void {
-  const declaration = view.__eqTable;
+  const declaration = view.__eqTableState?.declaration;
   if (!declaration) return;
   const { node } = declaration;
   const offset = node.scroll.offset;
   const viewport = node.scroll.viewport;
-  const last = view.__eqTableReported;
-  view.__eqTableReported = {
+  const state = view.__eqTableState;
+  if (!state) return;
+  const last = state.reported;
+  state.reported = {
     across: offset.across,
     down: offset.down,
     width: viewport.width,
@@ -378,7 +423,7 @@ function animate(view: TableElement): void {
   if (view.__eqTableFrame !== undefined || typeof requestAnimationFrame !== 'function') return;
   const step = () => {
     view.__eqTableFrame = undefined;
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     if (!declaration || !view.isConnected) return;
     const moving = declaration.node.scroll.advance(performance.now());
     paint(view);
@@ -396,7 +441,7 @@ function listen(view: TableElement): void {
   view.addEventListener(
     'wheel',
     (event: WheelEvent) => {
-      const declaration = view.__eqTable;
+      const declaration = view.__eqTableState?.declaration;
       if (!declaration) return;
       const scroll = declaration.node.scroll;
       const unit =
@@ -439,7 +484,7 @@ function listen(view: TableElement): void {
 
   view.addEventListener('pointerdown', (event: PointerEvent) => {
     view.__eqTablePointerAt = performance.now();
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     if (!declaration) return;
     const scroll = declaration.node.scroll;
     const at = local(event);
@@ -458,7 +503,7 @@ function listen(view: TableElement): void {
 
   view.addEventListener('pointermove', (event: PointerEvent) => {
     if (!press || press.id !== event.pointerId) return;
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     if (!declaration) return;
     const scroll = declaration.node.scroll;
     const at = local(event);
@@ -483,7 +528,7 @@ function listen(view: TableElement): void {
     const ended = press;
     press = null;
     if (!ended.active) return;
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     if (!declaration) return;
     declaration.node.scroll.pointer(phase, local(event), ended.kind, performance.now());
     // Handled: the release of a pan is no tap, and what composes the table reads it so (a spreadsheet's
@@ -501,7 +546,7 @@ function listen(view: TableElement): void {
   // moves along, before the browser would scroll a clipping box to it. Its cells past the window are
   // built, and Tab reaches them.
   view.addEventListener('focusin', (event: FocusEvent) => {
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     const target = event.target as Element | null;
     if (!declaration || !target || view.__eqTableLeaving) return;
     // Shift+Tab from past the table lands on the last control the document holds in it; the last one
@@ -531,7 +576,7 @@ function listen(view: TableElement): void {
   // On the viewport itself the keys scroll it; Tab walks its cells' controls row by row, across the
   // bands they are painted in, where the document's own order would visit them band by band.
   view.addEventListener('keydown', (event: KeyboardEvent) => {
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     if (!declaration) return;
     if (event.key === 'Tab') {
       tab(view, event);

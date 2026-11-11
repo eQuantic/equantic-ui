@@ -15,31 +15,79 @@
  * which puts every `p.size.width / 2` in the top-left corner. A canvas with a FIXED size skips all of
  * this: its box was knowable, so SSR draws the final picture and hydration changes nothing.
  *
- * The declaration is collected during the pass and committed after the DOM is written, the same
- * shape `in-view` uses and for the same reason: an element cannot be measured before it exists.
+ * The declaration is collected during the pass, on the state the canvas's POSITION keeps, and
+ * committed after the DOM is written, the same shape `in-view` uses and for the same reason: an
+ * element cannot be measured before it exists. The observer and the size last drawn at belong to the
+ * position and the element it measures, together, and go when the position leaves the tree (#1454).
  */
 
 import { paintCanvas } from './canvas-painter';
 import { num } from './css-values';
 import type { ICanvasPainter } from './nodes';
+import type { Element as Position } from './runtime-exports';
+import { nodeStateFor, type NodeState } from './node-states';
 
 interface CanvasDeclaration {
   draw: (painter: ICanvasPainter) => void;
 }
 
-const declared = new Map<string, CanvasDeclaration>();
-
-/** Marker properties live on the ELEMENT: the reconciler reuses it across passes, so the observer
- * attached last pass is still the right one and must not be attached twice. */
+/** The element a filling canvas's position measures, and which position that is. */
 interface MeasuredCanvas extends SVGElement {
-  __eqCanvasObserver?: ResizeObserver;
-  __eqCanvasDraw?: (painter: ICanvasPainter) => void;
-  __eqCanvasSize?: string;
+  __eqCanvas?: CanvasState;
 }
 
-/** Declares the filling canvas at `path` as needing measurement. Called by the lowering, once per pass. */
-export function declareCanvas(path: string, declaration: CanvasDeclaration): void {
-  declared.set(path, declaration);
+/**
+ * What a filling canvas's position keeps between passes: the latest drawing, the element it measures,
+ * its observer, and the size it last drew at. Measuring another element starts all of it again.
+ */
+export class CanvasState implements NodeState {
+  /** The drawing of the latest pass: a new closure over new state every pass. */
+  draw: ((painter: ICanvasPainter) => void) | null = null;
+  view: MeasuredCanvas | null = null;
+  observer: ResizeObserver | undefined = undefined;
+  /** The box last drawn at, so a resize that is not a new size redraws nothing. */
+  size: string | undefined = undefined;
+
+  /** Measures `view`, letting go of whatever measured it before, this position or another. */
+  measure(view: MeasuredCanvas): void {
+    const before = view.__eqCanvas;
+    if (before && before !== this && before.view === view) before.letGo();
+    this.letGo();
+    this.view = view;
+    view.__eqCanvas = this;
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => repaint(this));
+    observer.observe(view);
+    this.observer = observer;
+  }
+
+  /** Stops measuring the element. */
+  letGo(): void {
+    this.observer?.disconnect();
+    this.observer = undefined;
+    this.size = undefined;
+    this.view = null;
+  }
+
+  dispose(): void {
+    this.letGo();
+    this.draw = null;
+  }
+}
+
+/** The filling canvases the latest passes declared, by their position's id, until the commit reads them. */
+const declared = new Map<string, CanvasState>();
+
+/**
+ * Declares the filling canvas at `position` as needing measurement, on the state the position keeps,
+ * and answers the id the lowering stamps on its element as `data-eq-canvas-fill`. Called once per pass.
+ */
+export function declareCanvas(position: Position, declaration: CanvasDeclaration): string {
+  const state = nodeStateFor(position, CanvasState);
+  state.draw = declaration.draw;
+  const id = String(position.id);
+  declared.set(id, state);
+  return id;
 }
 
 /** Commits AFTER the pass's DOM has been written — see `in-view` for why a microtask. */
@@ -53,9 +101,10 @@ export function scheduleCanvasCommit(): void {
 }
 
 /** Draws one canvas at the size it currently occupies, replacing what it drew before. */
-function repaint(element: MeasuredCanvas): void {
-  const draw = element.__eqCanvasDraw;
-  if (!draw) return;
+function repaint(state: CanvasState): void {
+  const element = state.view;
+  const draw = state.draw;
+  if (!element || !draw) return;
   const box = element.getBoundingClientRect();
   if (box.width <= 0 || box.height <= 0) return;
 
@@ -70,8 +119,8 @@ function repaint(element: MeasuredCanvas): void {
   // a new size (a re-observe, a scrollbar settling), and redrawing then would throw away the DOM
   // the reconciler just diffed.
   const size = `${width}x${height}`;
-  if (element.__eqCanvasSize === size) return;
-  element.__eqCanvasSize = size;
+  if (state.size === size) return;
+  state.size = size;
 
   const painter = paintCanvas(width, height);
   draw(painter);
@@ -92,21 +141,15 @@ export function commitCanvasSurfaces(): void {
   }
 
   for (const element of document.querySelectorAll<SVGElement>('[data-eq-canvas-fill]')) {
-    const measured = element as MeasuredCanvas;
-    const declaration = declared.get(element.getAttribute('data-eq-canvas-fill') ?? '');
-    if (!declaration) continue;
+    const state = declared.get(element.getAttribute('data-eq-canvas-fill') ?? '');
+    if (!state?.draw) continue;
 
-    // The callback is replaced every pass (new state, new closure); the OBSERVER is not.
-    measured.__eqCanvasDraw = declaration.draw;
+    // The drawing is replaced every pass (new state, new closure); the OBSERVER is not.
+    if (state.view !== element) state.measure(element as MeasuredCanvas);
     // The state behind the drawing changed even if the box did not, so the remembered size is
     // cleared: this is the re-render's own repaint, not a resize.
-    measured.__eqCanvasSize = undefined;
-    repaint(measured);
-
-    if (measured.__eqCanvasObserver || typeof ResizeObserver === 'undefined') continue;
-    const observer = new ResizeObserver(() => repaint(measured));
-    observer.observe(element);
-    measured.__eqCanvasObserver = observer;
+    state.size = undefined;
+    repaint(state);
   }
 
   declared.clear();

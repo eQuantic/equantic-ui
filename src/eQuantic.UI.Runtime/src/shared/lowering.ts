@@ -132,6 +132,7 @@ import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
 import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
+import { nodeStateFor, positionOf, type NodeState } from './node-states';
 
 /** The C# `Anchored.MotionLiftDp` twin — the open/close nudge toward the anchor. */
 const ANCHOR_MOTION_LIFT = 8;
@@ -462,7 +463,7 @@ function lowerNodeKind(
     }
     // C# twin (W3): the app's own shapes as inline SVG, in call order.
     case 'canvas':
-      return lowerCanvas(node as unknown as CanvasNodeValue, path);
+      return lowerCanvas(node as unknown as CanvasNodeValue, context);
     // C# twin: artwork stays VECTOR in the DOM — one <path> per shape, the paint the file chose.
     case 'drawing':
       return lowerDrawing(node as unknown as DrawingNode);
@@ -644,9 +645,14 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     [],
   );
   prependClass(surface, 'eq-code-surface');
-  // The surface's identity across rebuilds: anything that has to find it AFTER the render (see
-  // revealCaret) resolves by this, never by a reference.
-  surface.attributes['data-eq-code'] = path;
+  // The surface's identity across rebuilds: its position's id, which it keeps while it lives and no
+  // other node is ever given. Anything that has to find it AFTER the render (see revealCaret)
+  // resolves by this, never by a reference.
+  const position = positionOf(context.frame, node);
+  const id = String(position.id);
+  const state = nodeStateFor(position, CodeSurfaceState);
+  state.id = id;
+  surface.attributes['data-eq-code'] = id;
 
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) {
@@ -698,7 +704,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   // Keyed, so it is always the same element whatever stands around it: matched by place among the
   // carets before it and the notes after, a press that added carets while a note appeared matched it
   // with a new caret's mark, and the input made anew in its place left the keyboard on the page (#1012).
-  input.key = `${path}/input`;
+  input.key = `${id}/input`;
   surface.children.push(input);
 
   // What the surface EXPLAINS (C# twin: LowerCodeSurface): each note over the code and the caret, at
@@ -740,7 +746,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   if (node.options) {
     const offered = lowerNode(node.options, context, null, path + '/1');
     if (offered) {
-      const listId = `eq-options-${hashDeclaration(path)}`;
+      const listId = `eq-options-${id}`;
       const origin = node.optionsOrigin ?? { x: 0, y: 0 };
       const list = element(
         'div',
@@ -771,10 +777,11 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   if (typeof document === 'undefined') return surface; // SSR: the marks are enough
 
   // A caret the model MOVED since the last render is brought into view — by a key, a command, a
-  // find stepping to a match. The first render of a surface moves nothing: it is where it opened.
-  const revealed = revealedVersions.get(path);
-  revealedVersions.set(path, model.revealVersion);
-  if (revealed !== undefined && revealed !== model.revealVersion) revealCaret(path);
+  // find stepping to a match. The first render of a surface moves nothing: it is where it opened. A
+  // surface that takes another's place is a first render too: what was revealed is its position's.
+  const revealed = state.revealed;
+  state.revealed = model.revealVersion;
+  if (revealed !== undefined && revealed !== model.revealVersion) revealCaret(id);
 
   // The model ASKED for the keyboard (C# twin: PhotonHost.AdoptFocusRequests): an IDE after a file
   // opens, the editor's own find bar as it closes. Remembered per model and counted from 0, so a
@@ -782,7 +789,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   // is not honoured again when the surface is drawn once more.
   if ((focusedVersions.get(model) ?? 0) !== model.focusVersion) {
     focusedVersions.set(model, model.focusVersion);
-    focusSurface(path);
+    focusSurface(id);
   }
 
   const changed = () => node.onChanged?.();
@@ -869,7 +876,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       const held = doorModifiers(event, convention);
       const element = event.currentTarget as HTMLElement;
       if (phase === 'hover') {
-        resting = { model, element, path, clientX: event.clientX, clientY: event.clientY, modifiers: held, changed };
+        resting = { model, element, id, clientX: event.clientX, clientY: event.clientY, modifiers: held, changed };
       } else if (resting?.model === model) resting = null;
       if (model.handlePointer(phase, at, held, 0)) changed();
       element.style.cursor = cssCursor(model.cursorAt(at));
@@ -893,7 +900,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     if (event.pointerType === 'touch') return;
     const box = element.getBoundingClientRect();
     if (at.x < 0 || at.y < 0 || at.x > box.width || at.y > box.height) return;
-    resting = { model, element, path, clientX: event.clientX, clientY: event.clientY, modifiers: held, changed };
+    resting = { model, element, id, clientX: event.clientX, clientY: event.clientY, modifiers: held, changed };
     element.style.cursor = cssCursor(model.cursorAt(at));
   }) as unknown as EventHandler;
 
@@ -1074,8 +1081,18 @@ function openTextDoor(
   }) as unknown as EventHandler;
 }
 
-/** The reveal version each code surface was last rendered at, by path — see lowerCodeSurface. */
-const revealedVersions = new Map<string, number>();
+/**
+ * What a code surface's position keeps between renders: the reveal version it was last rendered at
+ * (see lowerCodeSurface), and its id, so that leaving lets go of a pointer resting over it.
+ */
+class CodeSurfaceState implements NodeState {
+  id = '';
+  revealed: number | undefined = undefined;
+
+  dispose(): void {
+    if (resting?.id === this.id) resting = null;
+  }
+}
 
 /** The focus request each code surface's MODEL was last given the keyboard for (see lowerCodeSurface). */
 const focusedVersions = new WeakMap<object, number>();
@@ -1155,7 +1172,7 @@ function wordModifier(convention: 'apple' | 'standard'): number {
  * is there a caret element at the new position to scroll to. `nearest` on both axes scrolls the
  * least that works — an editor already fully in view does not drag the page with it.
  */
-function revealCaret(path: string): void {
+function revealCaret(id: string): void {
   // Scrolling is a courtesy; a keystroke is not. An environment that cannot schedule skips it.
   if (typeof document === 'undefined') return;
 
@@ -1165,10 +1182,10 @@ function revealCaret(path: string): void {
     // frame delivered after teardown. A deferred callback that assumes its world outlived it
     // throws where nothing can catch it: two unhandled ReferenceErrors, in CI only.
     if (typeof document === 'undefined') return;
-    // By PATH, never by a captured element. The keystroke rebuilds the tree, so the surface the
+    // By ID, never by a captured element. The keystroke rebuilds the tree, so the surface the
     // handler ran on is a corpse by the time this runs — and scrollIntoView on a detached caret
     // succeeds silently, which is how this looked implemented and did nothing.
-    const caret = document.querySelector(`[data-eq-code="${path}"] .eq-code-caret`);
+    const caret = document.querySelector(`[data-eq-code="${id}"] .eq-code-caret`);
     caret?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   };
 
@@ -1188,8 +1205,8 @@ function revealCaret(path: string): void {
 }
 
 /**
- * Gives the surface at `path` the keyboard, after the render that draws it: the same timing and the
- * same two routes as {@link revealCaret}, and found by path for the same reason (the element the
+ * Gives the surface with `id` the keyboard, after the render that draws it: the same timing and the
+ * same two routes as {@link revealCaret}, and found by its id for the same reason (the element the
  * request arrived with is replaced by the render).
  *
  * Unlike a reveal, a focus given twice is not harmless. Where frames arrive, the timeout ran 16 ms
@@ -1198,12 +1215,12 @@ function revealCaret(path: string): void {
  * nothing to focus, or when nothing has the keyboard any more, which is the render taking the
  * focused element away.
  */
-function focusSurface(path: string, attribute = 'data-eq-code'): void {
+function focusSurface(id: string, attribute = 'data-eq-code'): void {
   if (typeof document === 'undefined') return;
   let given = false;
   const focus = () => {
     if (typeof document === 'undefined') return;
-    const input = document.querySelector<HTMLElement>(`[${attribute}="${path}"] textarea.eq-code-input`);
+    const input = document.querySelector<HTMLElement>(`[${attribute}="${id}"] textarea.eq-code-input`);
     if (!input) return;
     if (given && document.activeElement !== null && document.activeElement !== document.body) return;
     given = true;
@@ -1705,8 +1722,10 @@ function lowerSheetSurface(
   prependClass(view, 'eq-sheet-surface');
   // No role of its own (#1081): the table it holds is the grid a reader walks, and the door is the field
   // that takes the sheet's keys, named as the sheet is.
-  // The surface's identity across rebuilds, which a focus request finds it by after the render.
-  view.attributes['data-eq-sheet'] = path;
+  // The surface's identity across rebuilds, which a focus request finds it by after the render: its
+  // position's id, kept while it lives.
+  const id = String(positionOf(context.frame, node).id);
+  view.attributes['data-eq-sheet'] = id;
 
   const model = node.model;
 
@@ -1752,7 +1771,7 @@ function lowerSheetSurface(
   // the name box is done with it. Remembered per model and counted from 0, as a code surface's.
   if (typeof document !== 'undefined' && (focusedVersions.get(model) ?? 0) !== model.focusVersion) {
     focusedVersions.set(model, model.focusVersion);
-    focusSurface(path, 'data-eq-sheet');
+    focusSurface(id, 'data-eq-sheet');
   }
 
   const local = (target: HTMLElement, clientX: number, clientY: number) => {
@@ -1978,8 +1997,7 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
   // declines, for a component that composes it and keeps the keyboard.
   if (node.canRequestFocus !== false) view.attributes['tabindex'] = '0';
   if (node.label) view.attributes['aria-label'] = node.label;
-  view.attributes['data-eq-table'] = path;
-  declareTableViewport(path, {
+  view.attributes['data-eq-table'] = declareTableViewport(positionOf(context.frame, node), {
     node,
     base: { across: offset.across, down: offset.down },
     pinnedAcross,
@@ -2249,8 +2267,7 @@ function lowerScrollView(
     }) as EventHandler;
   }
   if (node.onViewportChanged || node.offset || node.request) {
-    view.attributes['data-eq-scroll'] = path;
-    declareScrollViewport(path, {
+    view.attributes['data-eq-scroll'] = declareScrollViewport(positionOf(context.frame, node), {
       horizontal,
       offset: node.offset,
       request: node.request ?? undefined,
@@ -2637,7 +2654,12 @@ function gradientElement(id: string, paint: VectorPaintValue): HtmlNode {
 }
 
 /** W3: the app's own drawing as one inline `<svg>`, with its pointer handlers attached. */
-function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
+function lowerCanvas(node: CanvasNodeValue, context: LoweringContext): HtmlNode {
+  // Its position's id keys its element, as its path did, so a canvas that takes another's place is
+  // given an element of its own; and, when it fills, the drawing the after-pass makes once it is
+  // measured.
+  const position = positionOf(context.frame, node);
+  const id = String(position.id);
   const width = node.width?.kind === 'fixed' ? node.width.value : 0;
   const height = node.height?.kind === 'fixed' ? node.height.value : 0;
   const measured = width > 0 && height > 0;
@@ -2648,7 +2670,7 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   // zero would put every `p.size.width / 2` in the top-left corner and leave it there.
   const painter = new DomCanvasPainter(width, height);
   if (measured) node.draw(painter);
-  else declareCanvas(path, { draw: node.draw });
+  else declareCanvas(position, { draw: node.draw });
 
   // Whether anything listens decides the pointer declaration below, so it is settled BEFORE the
   // style is built rather than appended to a finished string.
@@ -2680,7 +2702,7 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   // browser lays out, so nothing should scale.
   if (measured) attributes['viewBox'] = `0 0 ${num(width)} ${num(height)}`;
   // The marker the surface controller finds after the DOM is written.
-  if (!measured) attributes['data-eq-canvas-fill'] = path;
+  if (!measured) attributes['data-eq-canvas-fill'] = id;
   if (node.label) {
     attributes['role'] = 'img';
     attributes['aria-label'] = node.label;
@@ -2729,7 +2751,7 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   if (node.onPointerLeave) {
     events['pointerleave'] = () => node.onPointerLeave?.();
   }
-  return { tag: 'svg', attributes, events, children: painter.shapes, key: path };
+  return { tag: 'svg', attributes, events, children: painter.shapes, key: id };
 }
 
 function lowerDrawing(node: DrawingNode): HtmlNode {
@@ -4088,17 +4110,17 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
       ? `eq-tip-${hashDeclaration(visualTextOf(node.panel))}`
       : null;
 
-  // The menu/listbox contract: the id hashes the PATH, not the text — an adaptive shell mounts
-  // the same menu twice (desktop and compact layouts), and two open clones hashing their text
-  // would collide, sending aria-activedescendant to whichever came first in the document. The
-  // path is unique per instance by construction. It NEED not match the C# producer's spelling:
-  // an open panel never comes from SSR (it opens by interaction), so hydration never compares
-  // these ids — the one place both spellings could meet.
+  // The menu/listbox contract: the id is the POSITION's, not a hash of the text — an adaptive shell
+  // mounts the same menu twice (desktop and compact layouts), and two open clones hashing their
+  // text would collide, sending aria-activedescendant to whichever came first in the document. A
+  // position's id is given to no other node in the document. It NEED not match the C# producer's
+  // spelling: an open panel never comes from SSR (it opens by interaction), so hydration never
+  // compares these ids — the one place both spellings could meet.
   const panelRole =
     node.panelRole === 'menu' || node.panelRole === 'listbox' || node.panelRole === 'dialog'
       ? node.panelRole
       : null;
-  const panelId = panelRole ? `eq-panel-${hashDeclaration(path)}` : null;
+  const panelId = panelRole ? `eq-panel-${positionOf(context.frame, node).id}` : null;
 
   const anchor = lowerNode(node.anchor, context, null, path + '/0');
   if (anchor) {
@@ -4251,9 +4273,10 @@ function lowerShortcut(
     let live = arms;
     if (node.focusScoped) {
       // The chord is the subtree's own: it answers while the keyboard is inside it. Nested
-      // shortcuts share one child root, so the first stamps the scope and the rest read it. Only
-      // the client stamps it, as it does a scroll view's observer: hydration adds an attribute.
-      const scope = child.attributes[FOCUS_SCOPE] ?? path;
+      // shortcuts share one child root, so the first stamps the scope, its position's id, and the
+      // rest read it. Only the client stamps it, as it does a scroll view's observer: hydration adds
+      // an attribute.
+      const scope = child.attributes[FOCUS_SCOPE] ?? String(positionOf(context.frame, node).id);
       child.attributes[FOCUS_SCOPE] = scope;
       live = () => focusWithin(scope) && (arms === undefined || arms());
     }
@@ -4265,8 +4288,9 @@ function lowerShortcut(
 /** The attribute a focus-scoped shortcut's subtree carries, whose value names the scope. */
 const FOCUS_SCOPE = 'data-eq-focus-scope';
 
-/** Whether the keyboard focus is inside the element stamped with this scope. C# twin:
- * PhotonHost.FocusIsWithin, over the focused path. */
+/** Whether the keyboard focus is inside the element stamped with this scope: the focused element's
+ * parents are walked for the scope's id, never a path compared by its prefix. C# twin:
+ * PhotonHost.FocusIsWithin. */
 function focusWithin(scope: string): boolean {
   if (typeof document === 'undefined') return false;
   for (let at = document.activeElement; at; at = at.parentElement)
@@ -4665,8 +4689,7 @@ function lowerInView(
   // faithfully and reports about a place the heading never is. The wrapper still exists because the
   // server emits it and hydration is an attribute diff; it just has nothing to measure.
   const observed = child.tag ? child : wrapper;
-  observed.attributes['data-eq-inview'] = path;
-  declareInView(path, {
+  observed.attributes['data-eq-inview'] = declareInView(positionOf(context.frame, node), {
     threshold: node.threshold ?? 0,
     onChanged: node.onChanged ?? (() => {}),
   });
@@ -5046,7 +5069,8 @@ function caretAtEnd(element: HTMLInputElement | HTMLTextAreaElement): void {
 type CodeRest = {
   model: CodeSurfaceModelLike;
   element: HTMLElement;
-  path: string;
+  /** The surface's id, which finds it again when the render replaced its element. */
+  id: string;
   clientX: number;
   clientY: number;
   modifiers: number;
@@ -5057,7 +5081,7 @@ let resting: CodeRest | null = null;
 /** Where `rest` falls on its surface now, or null when the surface is gone. */
 function restingAt(rest: CodeRest): { x: number; y: number } | null {
   const element = rest.element.isConnected === false
-    ? (typeof document === 'undefined' ? null : (document.querySelector(`[data-eq-code="${rest.path}"]`) as HTMLElement | null))
+    ? (typeof document === 'undefined' ? null : (document.querySelector(`[data-eq-code="${rest.id}"]`) as HTMLElement | null))
     : rest.element;
   if (!element) return null;
   rest.element = element;

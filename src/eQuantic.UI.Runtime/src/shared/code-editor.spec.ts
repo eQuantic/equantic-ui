@@ -208,7 +208,7 @@ describe('code surface (web)', () => {
    * and not by the reference the handler ran on. Holding the element instead looked implemented
    * and did nothing: scrollIntoView on a detached caret succeeds in silence.
    */
-  it('carries its path, so it can be found again after the render that replaced it', () => {
+  it("carries its position's id, so it can be found again after the render that replaced it", () => {
     const { lowered } = surfaceFor('var x = 1;');
 
     expect(lowered.attributes['data-eq-code']).toBeTruthy();
@@ -1440,15 +1440,15 @@ describe('the find bar', () => {
       measureText: (text: string) => text.length * 7,
       monoAdvance: () => 7,
     };
-    const pathOf = (node: HtmlNode): string | undefined =>
-      node.attributes['data-eq-code'] ?? node.children.map(pathOf).find((path) => path !== undefined);
+    const idOf = (node: HtmlNode): string | undefined =>
+      node.attributes['data-eq-code'] ?? node.children.map(idOf).find((id) => id !== undefined);
     const editor = new CodeEditor('var needle = 1;', 'csharp');
 
     resetShortcuts();
-    const before = pathOf(lowerVisualNode(editor.build(context as never) as never, context as never));
+    const before = idOf(lowerVisualNode(editor.build(context as never) as never, context as never));
     commitShortcuts();
     activeShortcuts().find((binding) => binding.chord === 'command+f')!.handler();
-    const after = pathOf(lowerVisualNode(editor.build(context as never) as never, context as never));
+    const after = idOf(lowerVisualNode(editor.build(context as never) as never, context as never));
     commitShortcuts();
 
     expect(after).toBe(before);
