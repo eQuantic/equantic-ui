@@ -38,9 +38,10 @@ public sealed class ComponentElement : Element
     /// a stateful component hears it (<c>OnDependenciesChanged</c>) before it builds again.</summary>
     internal bool DependenciesChanged { get; private set; }
 
-    /// <summary>Whether this position read what its owner's frame hands every build (the theme, the
-    /// density, the type scale), so a frame that hands others builds it again.</summary>
-    internal bool ReadsFrame { get; set; }
+    /// <summary>Where this position stands among those that read what its owner's frame hands every build
+    /// (the theme, the density, the type scale), so a frame that hands others builds it again; -1 for
+    /// one that read none of it.</summary>
+    internal int FrameReaderIndex { get; set; } = -1;
 
     /// <summary>
     /// What this position builds with: ONE context for as long as the position lives, a view of where it
@@ -184,6 +185,7 @@ public sealed class ComponentElement : Element
 
     private protected override void OnDeactivated()
     {
+        Owner.ForgetFrameReader(this);
         if (_dependencies is not null)
         {
             foreach (var dependency in _dependencies) dependency.RemoveDependent(this);

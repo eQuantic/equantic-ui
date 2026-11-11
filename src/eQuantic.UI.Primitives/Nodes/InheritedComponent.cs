@@ -17,12 +17,19 @@ namespace eQuantic.UI.Primitives;
 /// position until #1395, and a context there answers null.
 /// </para>
 /// </summary>
-public abstract class InheritedComponent : SingleChildNode
+public abstract class InheritedComponent : VisualNode
 {
     /// <summary>A value for <paramref name="child"/> and everything below it.</summary>
-    protected InheritedComponent(VisualNode child) : base(child)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0022",
+        Justification = "The second seam an app subclasses, as UiComponent is the first (see VisualNode's constructor): the visitor answers it once, so the vocabulary stays closed.")]
+    protected InheritedComponent(VisualNode child)
     {
+        ArgumentNullException.ThrowIfNull(child);
+        Child = child;
     }
+
+    /// <summary>The subtree this value is for.</summary>
+    public VisualNode Child { get; }
 
     /// <summary>All inherited components share one wire kind: a visitor answers "pass through" once.</summary>
     public sealed override string NodeKind => "inherited";
