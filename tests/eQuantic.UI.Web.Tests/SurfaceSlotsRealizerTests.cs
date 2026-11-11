@@ -32,7 +32,7 @@ public class SurfaceSlotsRealizerTests
         new Case("Progress", () => new ProgressBar(0.4f),
             Photon.With(progress: new ProgressTheme { BarHeight = 13 }), "height:13px"),
         new Case("Card", () => new Card(new Text("Hi"), CardKind.Outlined),
-            Photon.With(card: new CardTheme { BorderWidth = 3 }), "3px"),
+            Photon.With(card: new CardTheme { BorderWidth = 3 }), "border:3px solid"),
     };
 
     [Theory]

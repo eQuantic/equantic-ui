@@ -32,9 +32,10 @@ public class SurfaceSlotsTests
         new Case("Modal", () => new Dialog("Delete the file?", Long, [new DialogAction("Delete", () => { })]),
             Photon.With(modal: new ModalTheme { DialogMaxWidth = 312 }), 312, null),
         new Case("Menu", () => new Popover(new Text("Open"), new Box(new BoxStyle { Width = 40, Height = 40 }), open: true),
-            Photon.With(menu: new MenuTheme { PopoverPadding = EdgeInsets.All(23) }), 86, 86),
+            // The 40-point box, the slot's 23 on each side and the panel's border of 1.
+            Photon.With(menu: new MenuTheme { PopoverPadding = EdgeInsets.All(23) }), 88, 88),
         new Case("Notice", () => new Toast(Long),
-            Photon.With(notice: new NoticeTheme { ToastMaxWidth = 311 }), 311, null),
+            Photon.With(notice: new NoticeTheme { ToastDot = 9 }), 9, 9),
         new Case("Progress", () => new ProgressBar(0.4f),
             Photon.With(progress: new ProgressTheme { BarHeight = 13 }), null, 13),
         new Case("Card", () => new Card(new Box(new BoxStyle { Width = 40, Height = 40 }), CardKind.Outlined),
@@ -53,12 +54,17 @@ public class SurfaceSlotsTests
             return;
         }
 
-        bool Fits(Rect r) => (c.Width is not { } w || Near(r.Width, w)) && (c.Height is not { } h || Near(r.Height, h));
-        slotted.Should().Contain(r => Fits(r), $"the {c.Family} slot names a box of {c.Width}x{c.Height}");
-        plain.Should().NotContain(r => Fits(r), $"no {c.Family} box is {c.Width}x{c.Height} under Photon");
+        var width = c.Width ?? float.NaN;
+        var height = c.Height ?? float.NaN;
+        slotted.Should().Contain(r => Fits(r, width, height), $"the {c.Family} slot names a box of {c.Width}x{c.Height}");
+        plain.Should().NotContain(r => Fits(r, width, height), $"no {c.Family} box is {c.Width}x{c.Height} under Photon");
     }
 
     private static bool Near(float a, float b) => MathF.Abs(a - b) < 0.5f;
+
+    /// <summary>A box of the size a case names, a side it leaves out (NaN) matching any.</summary>
+    private static bool Fits(Rect r, float width, float height) =>
+        (float.IsNaN(width) || Near(r.Width, width)) && (float.IsNaN(height) || Near(r.Height, height));
 
     private static List<Rect> Boxes(VisualNode node, IAppTheme theme)
     {
