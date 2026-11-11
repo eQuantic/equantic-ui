@@ -5,4 +5,8 @@
   the first rebuild had reloaded into hydrating markup reloaded again and drew over it, about once in four saves of
   the `samples` job. A rebuild now answers only the saves made since the last one, an event for a path already gone no longer dates a save after its edit, and the server writes why each
   rebuild hydrates or mounts; the edit-to-view measurement records the frames each document heard, what the reload
-  carried and whether the server rendered it, and names them when a save draws over.
+  carried and whether the server rendered it, and names them when a save draws over. What it named last was itself:
+  the server's markup already holds the edit, so the text is on screen at parse, and the boot says whether it
+  hydrates only once the page's module arrives, which on CI's runners came after the measurement had read the
+  document. It now reads the boot's verdict once the boot gives one: with 400 ms of latency in the browser, the
+  old reading failed 4 saves of 4 that the boot hydrated, and the new one none.

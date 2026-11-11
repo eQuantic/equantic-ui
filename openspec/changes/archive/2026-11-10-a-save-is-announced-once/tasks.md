@@ -12,7 +12,8 @@
 
 ## 3. Proved against the real thing
 
-- [x] 3.1 The web edit-to-view measurement, locally at a load near 50. Verify: 30 saves in five rounds, 29 hydrated; the one that drew over had every server-side signal saying hydrate, before the boot said why, and 18 of 18 hydrated once it did. The `samples` job hydrating every save over several runs stays open in #1373, which this change is part of
+- [x] 3.1 The web edit-to-view measurement, locally at a load near 50. Verify: 30 saves in five rounds, 29 hydrated; the one that drew over had every server-side signal saying hydrate, before the boot said why, and 18 of 18 hydrated once it did. On the `samples` job the boot then said nothing on the saves the measurement failed, while every server-side signal said hydrate
+- [x] 3.2 The measurement reads the boot's verdict once the boot gives one, never off the snapshot the edit's text first appeared in, which the server's markup puts on screen before the page's module arrives. Verify: with 400 ms of latency in the browser, the old reading failed 4 saves of 4 as drawn over while the boot hydrated them, and the new one passed 4 of 4; with none, both pass
 
 ## 4. Documentation
 
