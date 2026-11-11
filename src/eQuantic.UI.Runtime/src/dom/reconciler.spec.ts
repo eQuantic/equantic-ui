@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Reconciler, UNMEASURED_MARK } from './reconciler';
 import { commitShortcuts, declareShortcut, resetShortcuts } from './shortcuts';
 import { RenderManager } from './renderer';
@@ -595,16 +595,17 @@ describe('Hydration takes the client attributes and text', () => {
   it('enables a button the server drew disabled, and keeps it the same element', () => {
     const container = served('<div class="page"><button class="save" disabled="">Save</button></div>');
     const button = container.querySelector('button')!;
+    const pressed = vi.fn();
+    const save = { ...node('button', { class: 'save' }, [text('Save')]), events: { click: pressed } };
 
-    const result = new Reconciler().hydrateRoot(
-      container,
-      node('div', { class: 'page' }, [node('button', { class: 'save' }, [text('Save')])]),
-    );
+    const result = new Reconciler().hydrateRoot(container, node('div', { class: 'page' }, [save]));
 
     expect(result.success).toBe(true);
     expect(container.querySelector('button')).toBe(button);
     expect(button.disabled).toBe(false);
     expect(button.hasAttribute('disabled')).toBe(false);
+    button.click();
+    expect(pressed).toHaveBeenCalledTimes(1);
     container.remove();
   });
 
@@ -640,6 +641,43 @@ describe('Hydration takes the client attributes and text', () => {
     new Reconciler().hydrateRoot(container, node('div', { class: 'page' }, [node('span', {}, [text('x')])]));
 
     expect(container.firstElementChild?.getAttribute('data-eq-island')).toBe('a1');
+    container.remove();
+  });
+
+  it("writes the client's value of a framework marker both sides name", () => {
+    const container = served('<div class="page" data-eq-island="server"><span>x</span></div>');
+
+    new Reconciler().hydrateRoot(
+      container,
+      node('div', { class: 'page', 'data-eq-island': 'client' }, [node('span', {}, [text('x')])]),
+    );
+
+    expect(container.firstElementChild?.getAttribute('data-eq-island')).toBe('client');
+    container.remove();
+  });
+
+  it('keeps what a person typed or ticked before the runtime loaded, and fills a field nobody used', () => {
+    const container = served(
+      '<div class="page"><input class="typed" value=""><input class="untouched" value="">' +
+        '<input class="ticked" type="checkbox"></div>',
+    );
+    const typed = container.querySelector<HTMLInputElement>('.typed')!;
+    const ticked = container.querySelector<HTMLInputElement>('.ticked')!;
+    typed.value = 'what I wrote';
+    ticked.checked = true;
+
+    new Reconciler().hydrateRoot(
+      container,
+      node('div', { class: 'page' }, [
+        node('input', { class: 'typed', value: 'draft' }),
+        node('input', { class: 'untouched', value: 'draft' }),
+        node('input', { class: 'ticked', type: 'checkbox' }),
+      ]),
+    );
+
+    expect(typed.value).toBe('what I wrote');
+    expect(ticked.checked).toBe(true);
+    expect(container.querySelector<HTMLInputElement>('.untouched')!.value).toBe('draft');
     container.remove();
   });
 });

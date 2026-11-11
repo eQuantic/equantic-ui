@@ -22,6 +22,8 @@ render. The defect was the case hydration accepts, same structure, other attribu
   kept, so its focus, its scroll and the listeners attached to it survive.
 - The framework's `data-eq-*` markers are the one exception: one the server wrote that the client's
   tree does not name stays, as it did.
+- A field the person already used before the runtime loaded keeps what they typed or ticked:
+  writing the client's `value` or `checked` would set the property and throw it away.
 - A text node the server wrote with other text takes the client's.
 - The dashboard sample's recovery codes page gates its Download button on `IFileSaver.IsAvailable`,
   so the page shows the case live.

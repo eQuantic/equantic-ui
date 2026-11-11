@@ -975,11 +975,17 @@ export class Reconciler {
     // FRAMEWORK MARKERS are the one exception: `data-eq-*` attributes are client infrastructure
     // (after-pass sweeps find their elements by them), not content, and one the server wrote that the
     // client's tree does not name stays, while one the client names is written.
-    const wanted = plainBag(virtualNode.attributes);
+    // A field the person already used is the other: a value typed or a box ticked before the runtime
+    // loaded is theirs, and writing the client's value would set the property and throw it away.
+    const wanted = { ...plainBag(virtualNode.attributes) };
     const written: Record<string, string | undefined> = {};
     for (const attribute of Array.from(existingElement.attributes)) {
       if (attribute.name.startsWith('data-eq-') && !hasOwn(wanted, attribute.name)) continue;
       written[attribute.name] = attribute.value;
+    }
+    for (const name of Reconciler.usedByThePerson(existingElement)) {
+      delete wanted[name];
+      delete written[name];
     }
     this.updateAttributes(existingElement, written, wanted);
 
@@ -1012,6 +1018,21 @@ export class Reconciler {
     }
 
     return result;
+  }
+
+  /**
+   * The field attributes a person changed on a served element before hydration: the live property
+   * stands apart from the default the server's markup gave it.
+   */
+  private static usedByThePerson(element: Element): string[] {
+    if (element instanceof HTMLInputElement) {
+      const used: string[] = [];
+      if (element.value !== element.defaultValue) used.push('value');
+      if (element.checked !== element.defaultChecked) used.push('checked');
+      return used;
+    }
+    if (element instanceof HTMLTextAreaElement && element.value !== element.defaultValue) return ['value'];
+    return [];
   }
 
   /** How many listeners a virtual subtree carries, counted the way the adopted path counts them. */
