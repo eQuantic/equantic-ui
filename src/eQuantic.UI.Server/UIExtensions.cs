@@ -178,17 +178,26 @@ public static class UIExtensions
         services.TryAddSingleton<eQuantic.UI.Primitives.IClock, AbsentCapabilities.Clock>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IFrameTicker, AbsentCapabilities.FrameTicker>();
 
-        // Add response compression (Brotli + Gzip for JS, CSS, HTML)
+        // Response compression for what every user receives alike: the runtime, the modules, the styles and
+        // the pictures. A page's HTML and an action's JSON answer one user, and may hold a secret beside text
+        // that user's request put there, which compressed over HTTPS is the shape BREACH reads through the
+        // response's length. They are left as they are, and an app that wants them compressed says so.
         services.AddResponseCompression(opts =>
         {
             opts.EnableForHttps = true;
-            opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
-            {
+            opts.MimeTypes =
+            [
                 "application/javascript",
+                "text/javascript",
                 "text/css",
-                "image/svg+xml"
-            });
+                "image/svg+xml",
+                "application/wasm",
+            ];
         });
+        // The compression has to be applied as well as registered, and the developer writes nothing for it:
+        // it stands in front of the pipeline, so what the runtime's endpoint, the static files and a page
+        // answer all pass through it (#1002). Once, however many times AddUI is called.
+        services.TryAddEnumerable(ServiceDescriptor.Transient<IStartupFilter, ResponseCompressionFirst>());
         services.Configure<BrotliCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
         services.Configure<GzipCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
 
