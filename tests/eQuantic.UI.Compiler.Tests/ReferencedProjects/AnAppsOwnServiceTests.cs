@@ -193,7 +193,7 @@ public sealed class AnAppsOwnServiceTests : IClassFixture<AnAppsOwnServiceTests.
     {
         // .NET's container builds Ledger with the LedgerOptions it holds: so does the browser.
         using var solution = Solution(
-            program: Program + "services.AddSingleton<LedgerOptions>();\n",
+            program: Program + "services.AddSingleton<LedgerOptions>();\nservices.AddSingleton<IOpening, Opening>();\n",
             ledger: """
                 namespace Wallet;
 
@@ -202,9 +202,19 @@ public sealed class AnAppsOwnServiceTests : IClassFixture<AnAppsOwnServiceTests.
                     decimal Balance { get; }
                 }
 
-                public sealed class LedgerOptions
+                public interface IOpening
                 {
-                    public decimal Opening { get; set; } = 120m;
+                    decimal Amount { get; }
+                }
+
+                public sealed class Opening : IOpening
+                {
+                    public decimal Amount => 120m;
+                }
+
+                public sealed class LedgerOptions(IOpening opening)
+                {
+                    public decimal Opening => opening.Amount;
                 }
 
                 public sealed class Ledger(IRates rates, LedgerOptions options) : ILedger
@@ -215,8 +225,10 @@ public sealed class AnAppsOwnServiceTests : IClassFixture<AnAppsOwnServiceTests.
         var built = solution.Build();
         built.Errors.Should().NotContain("EQ2116");
         built.Module("Home").Should().Contain(
-            "$eq.services.resolve($eq.services.provide('LedgerOptions', () => new LedgerOptions(), 'singleton'))");
-        built.SiblingImportsOf("Home").Should().Contain("LedgerOptions");
+            "$eq.services.resolve($eq.services.provide('LedgerOptions', () => new LedgerOptions("
+            + "$eq.services.resolve($eq.services.provide('IOpening', () => new Opening(), 'singleton'))), 'singleton'))");
+        // What the class registered under itself takes comes with it, or its module would not load.
+        built.SiblingImportsOf("Home").Should().Contain(["LedgerOptions", "Opening"]);
     }
 
     [Fact]

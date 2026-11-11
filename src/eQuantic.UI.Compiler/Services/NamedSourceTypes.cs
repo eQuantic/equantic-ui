@@ -203,11 +203,12 @@ internal sealed class NamedSourceTypes
     /// <summary>
     /// The class an app's service is built as in the browser, and what its constructor takes in turn,
     /// as <see cref="CodeGen.BrowserServices"/> writes the construction: an interface of the app that
-    /// a registration names brings its implementation.
+    /// a registration names brings its implementation, and a class registered under itself
+    /// (<c>AddSingleton&lt;LedgerOptions&gt;()</c>) brings what its own constructor takes.
     /// </summary>
     private void Built(INamedTypeSymbol type)
     {
-        if (type.TypeKind != TypeKind.Interface
+        if (type.TypeKind is not (TypeKind.Interface or TypeKind.Class)
             || _services.Find(type.Name) is not { Implementation: { } implementation }
             || !_built.Add(implementation))
             return;
