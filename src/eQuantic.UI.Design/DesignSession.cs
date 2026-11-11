@@ -25,6 +25,9 @@ namespace eQuantic.UI.Design;
 /// </summary>
 public sealed class DesignSession
 {
+    /// <summary>How long a page has to produce a frame.</summary>
+    private static readonly TimeSpan RendererDeadline = TimeSpan.FromSeconds(10);
+
     // DesignMode: every node construction is stamped with the C# span that built it, which is the
     // identity click-to-select runs on. Nothing else in the product turns this on.
     private readonly ComponentCompiler _compiler = new() { TypeAnnotations = false, DesignMode = true };
@@ -806,20 +809,21 @@ public sealed class DesignSession
             // The whole reason this is a process: the user's Build() may never return, and ten
             // seconds of nothing is an answer — "your page hung", said to the panel, with the host
             // still alive behind it.
-            if (!child.WaitForExit(TimeSpan.FromSeconds(10)))
+            var run = ChildOutput.Read(child, RendererDeadline);
+            if (!run.Ended)
             {
                 child.Kill(entireProcessTree: true);
                 return NativeFrameResult.Refused(
-                    "The page did not produce a frame within 10 seconds — its Build() may not be returning.");
+                    $"`dotnet {Path.GetFileName(renderer)} --type {fullName}` did not finish within {RendererDeadline.TotalSeconds:F0} seconds: its Build() may not be returning.");
             }
 
             if (child.ExitCode != 0 || !File.Exists(pngPath))
             {
-                var reason = child.StandardError.ReadToEnd().Trim();
+                var reason = run.Error.Trim();
                 return NativeFrameResult.Refused(reason.Length > 0 ? reason : "The Photon renderer failed.");
             }
 
-            var status = child.StandardOutput.ReadToEnd();
+            var status = run.Output;
             watch.Stop();
 
             // The frame's hit map: every laid-out node that knows where it came from, in paint order.

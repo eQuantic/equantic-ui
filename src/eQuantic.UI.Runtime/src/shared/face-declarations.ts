@@ -13,7 +13,8 @@ import { createStyleElement } from '../utils/page-nonce';
  * `Roboto+Mono` or a quoted one was a different family depending on the browser. A family the document
  * already has a face of was declared by the server, in the theme's stylesheet or the page's head, and is
  * left as it is. Each file is asked for by its identity, an assembly and a resource, since the browser
- * does not know the hash of its bytes, and the server sends it on to the file's content-addressed URL.
+ * does not know the hash of its bytes, and the server sends it on to the URL a page it renders names the
+ * file by: the content-addressed one for a file the theme serves, its identity with that hash otherwise.
  */
 
 /** The element the document's faces are declared in: the server's head element (C# `FaceSink.ElementId`), or one added here. */
