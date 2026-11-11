@@ -1,7 +1,11 @@
 # theme-slots Specification
 
 ## Purpose
-TBD - created by archiving change a-theme-slot-reaches-a-component-in-order. Update Purpose after archive.
+What makes a component look like itself is the theme's to say. A theme answers a slot per component
+family (`docs/ELEMENT-TREE-PLAN.md` section 3.10), each a record of data whose members are all optional,
+and a component resolves every value it draws from its slot, the theme's control ladder and its own
+default, in that order, on the web and on Photon alike. The slots cross to the browser with the rest of
+the theme, so a page keeps them after it hydrates.
 
 ## Requirements
 
