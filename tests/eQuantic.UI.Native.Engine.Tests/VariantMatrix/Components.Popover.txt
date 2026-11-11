@@ -1,0 +1,30 @@
+## Comfortable
+### web
+<div class="eq-anchorhost">
+<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+</div>
+### css
+.eq-16x7aca{display:block}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+### semantics
+StaticText "x"
+### photon
+Popover 0 0 480x24
+  Anchored 0 0 480x24
+    Text 0 0 480x24
+
+## Compact
+### web
+<div class="eq-anchorhost">
+<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+</div>
+### css
+.eq-16x7aca{display:block}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+### semantics
+StaticText "x"
+### photon
+Popover 0 0 480x24
+  Anchored 0 0 480x24
+    Text 0 0 480x24
+

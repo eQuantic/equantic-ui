@@ -1,0 +1,1214 @@
+## Comfortable
+### web
+<div class="eq-11yg588 eq-19dgm5h eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-titlesmall eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">July 2026</span>
+<div class="eq-168ghzj eq-5ew4ww">
+<div aria-hidden="true" class="eq-168ghzj">
+</div>
+</div>
+<button aria-label="Previous month" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z">
+</path>
+</svg>
+</div>
+</div>
+</button>
+<button aria-label="Next month" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z">
+</path>
+</svg>
+</div>
+</div>
+</button>
+</div>
+<div role="grid" tabindex="0" aria-label="July 2026">
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Sun</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Mon</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Tue</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Wed</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Thu</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Fri</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Sat</span>
+</div>
+</div>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<button id="eq-cell-1du8uvv-1-0" tabindex="-1" role="gridcell" aria-label="Wednesday, 1 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">1</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-1-1" tabindex="-1" role="gridcell" aria-label="Thursday, 2 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">2</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-1-2" tabindex="-1" role="gridcell" aria-label="Friday, 3 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">3</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-1-3" tabindex="-1" role="gridcell" aria-label="Saturday, 4 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">4</span>
+</div>
+</div>
+</button>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<button id="eq-cell-1du8uvv-2-0" tabindex="-1" role="gridcell" aria-label="Sunday, 5 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">5</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-1" tabindex="-1" role="gridcell" aria-label="Monday, 6 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">6</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-2" tabindex="-1" role="gridcell" aria-label="Tuesday, 7 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">7</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-3" tabindex="-1" role="gridcell" aria-label="Wednesday, 8 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">8</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-4" tabindex="-1" role="gridcell" aria-label="Thursday, 9 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">9</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-5" tabindex="-1" role="gridcell" aria-label="Friday, 10 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">10</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-6" tabindex="-1" role="gridcell" aria-label="Saturday, 11 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">11</span>
+</div>
+</div>
+</button>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<button id="eq-cell-1du8uvv-3-0" tabindex="-1" role="gridcell" aria-label="Sunday, 12 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">12</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-1" tabindex="-1" role="gridcell" aria-label="Monday, 13 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">13</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-2" tabindex="-1" role="gridcell" aria-label="Tuesday, 14 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">14</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-3" tabindex="-1" role="gridcell" aria-label="Wednesday, 15 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">15</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-4" tabindex="-1" role="gridcell" aria-label="Thursday, 16 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">16</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-5" tabindex="-1" role="gridcell" aria-label="Friday, 17 July 2026" aria-selected="true" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-1k117pa eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-1dakdsg eq-epaxs4 eq-mbtjfn">17</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-6" tabindex="-1" role="gridcell" aria-label="Saturday, 18 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">18</span>
+</div>
+</div>
+</button>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<button id="eq-cell-1du8uvv-4-0" tabindex="-1" role="gridcell" aria-label="Sunday, 19 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">19</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-1" tabindex="-1" role="gridcell" aria-label="Monday, 20 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">20</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-2" tabindex="-1" role="gridcell" aria-label="Tuesday, 21 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">21</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-3" tabindex="-1" role="gridcell" aria-label="Wednesday, 22 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">22</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-4" tabindex="-1" role="gridcell" aria-label="Thursday, 23 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">23</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-5" tabindex="-1" role="gridcell" aria-label="Friday, 24 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">24</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-6" tabindex="-1" role="gridcell" aria-label="Saturday, 25 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">25</span>
+</div>
+</div>
+</button>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<button id="eq-cell-1du8uvv-5-0" tabindex="-1" role="gridcell" aria-label="Sunday, 26 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">26</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-5-1" tabindex="-1" role="gridcell" aria-label="Monday, 27 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">27</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-5-2" tabindex="-1" role="gridcell" aria-label="Tuesday, 28 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">28</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-5-3" tabindex="-1" role="gridcell" aria-label="Wednesday, 29 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">29</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-5-4" tabindex="-1" role="gridcell" aria-label="Thursday, 30 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">30</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-5-5" tabindex="-1" role="gridcell" aria-label="Friday, 31 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">31</span>
+</div>
+</div>
+</button>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-11yg588{align-items:stretch}
+.eq-1566de{white-space:pre}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-19dgm5h{gap:8px}
+.eq-19vml7g{width:16px}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1efxekf{width:44px}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fo26cq{height:28px}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+.eq-1or4gpz{height:16px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1xtjgfe{width:32px}
+.eq-1y88iiz{display:contents}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-p7nbpw{text-align:start}
+.eq-pi24e6{border-radius:22px}
+.eq-vwp2xk{height:44px}
+### semantics
+StaticText "July 2026"
+Button "Previous month"
+Button "Next month"
+Grid "July 2026"
+ColumnHeader "Sun"
+ColumnHeader "Mon"
+ColumnHeader "Tue"
+ColumnHeader "Wed"
+ColumnHeader "Thu"
+ColumnHeader "Fri"
+ColumnHeader "Sat"
+GridCell "Wednesday, 1 July 2026" (not selected)
+GridCell "Thursday, 2 July 2026" (not selected)
+GridCell "Friday, 3 July 2026" (not selected)
+GridCell "Saturday, 4 July 2026" (not selected)
+GridCell "Sunday, 5 July 2026" (not selected)
+GridCell "Monday, 6 July 2026" (not selected)
+GridCell "Tuesday, 7 July 2026" (not selected)
+GridCell "Wednesday, 8 July 2026" (not selected)
+GridCell "Thursday, 9 July 2026" (not selected)
+GridCell "Friday, 10 July 2026" (not selected)
+GridCell "Saturday, 11 July 2026" (not selected)
+GridCell "Sunday, 12 July 2026" (not selected)
+GridCell "Monday, 13 July 2026" (not selected)
+GridCell "Tuesday, 14 July 2026" (not selected)
+GridCell "Wednesday, 15 July 2026" (not selected)
+GridCell "Thursday, 16 July 2026" (not selected)
+GridCell "Friday, 17 July 2026" (selected)
+GridCell "Saturday, 18 July 2026" (not selected)
+GridCell "Sunday, 19 July 2026" (not selected)
+GridCell "Monday, 20 July 2026" (not selected)
+GridCell "Tuesday, 21 July 2026" (not selected)
+GridCell "Wednesday, 22 July 2026" (not selected)
+GridCell "Thursday, 23 July 2026" (not selected)
+GridCell "Friday, 24 July 2026" (not selected)
+GridCell "Saturday, 25 July 2026" (not selected)
+GridCell "Sunday, 26 July 2026" (not selected)
+GridCell "Monday, 27 July 2026" (not selected)
+GridCell "Tuesday, 28 July 2026" (not selected)
+GridCell "Wednesday, 29 July 2026" (not selected)
+GridCell "Thursday, 30 July 2026" (not selected)
+GridCell "Friday, 31 July 2026" (not selected)
+### photon
+Calendar 0 0 480x332
+  Column 0 0 480x332
+    Row 0 0 480x32
+      Text 0 6 62.4x20
+      Flexible 66.4 16 341.6x0
+        Spacer 66.4 16 341.6x0
+      IconButton 412 0 32x32
+        Pressable 412 0 32x32
+          Box 412 0 32x32
+            Row 412 0 32x32
+              Icon 420 8 16x16
+      IconButton 448 0 32x32
+        Pressable 448 0 32x32
+          Box 448 0 32x32
+            Row 448 0 32x32
+              Icon 456 8 16x16
+    Navigable 0 40 480x292
+      Row 0 40 480x28
+        Box 0 40 44x28
+          Row 0 40 44x28
+            Text 12.34 46 19.32x16
+        Box 44 40 44x28
+          Row 44 40 44x28
+            Text 54.54 46 22.92x16
+        Box 88 40 44x28
+          Row 88 40 44x28
+            Text 100.34 46 19.32x16
+        Box 132 40 44x28
+          Row 132 40 44x28
+            Text 142.54 46 22.92x16
+        Box 176 40 44x28
+          Row 176 40 44x28
+            Text 188.34 46 19.32x16
+        Box 220 40 44x28
+          Row 220 40 44x28
+            Text 233.78 46 16.44x16
+        Box 264 40 44x28
+          Row 264 40 44x28
+            Text 276.34 46 19.32x16
+      Row 0 68 480x44
+        Box 0 68 44x44
+        Box 44 68 44x44
+        Box 88 68 44x44
+        Pressable 132 68 44x44
+          Box 132 68 44x44
+            Row 132 68 44x44
+              Text 150.1 80 7.8x20
+        Pressable 176 68 44x44
+          Box 176 68 44x44
+            Row 176 68 44x44
+              Text 194.1 80 7.8x20
+        Pressable 220 68 44x44
+          Box 220 68 44x44
+            Row 220 68 44x44
+              Text 238.1 80 7.8x20
+        Pressable 264 68 44x44
+          Box 264 68 44x44
+            Row 264 68 44x44
+              Text 282.1 80 7.8x20
+      Row 0 112 480x44
+        Pressable 0 112 44x44
+          Box 0 112 44x44
+            Row 0 112 44x44
+              Text 18.1 124 7.8x20
+        Pressable 44 112 44x44
+          Box 44 112 44x44
+            Row 44 112 44x44
+              Text 62.1 124 7.8x20
+        Pressable 88 112 44x44
+          Box 88 112 44x44
+            Row 88 112 44x44
+              Text 106.1 124 7.8x20
+        Pressable 132 112 44x44
+          Box 132 112 44x44
+            Row 132 112 44x44
+              Text 150.1 124 7.8x20
+        Pressable 176 112 44x44
+          Box 176 112 44x44
+            Row 176 112 44x44
+              Text 194.1 124 7.8x20
+        Pressable 220 112 44x44
+          Box 220 112 44x44
+            Row 220 112 44x44
+              Text 234.2 124 15.6x20
+        Pressable 264 112 44x44
+          Box 264 112 44x44
+            Row 264 112 44x44
+              Text 278.2 124 15.6x20
+      Row 0 156 480x44
+        Pressable 0 156 44x44
+          Box 0 156 44x44
+            Row 0 156 44x44
+              Text 14.2 168 15.6x20
+        Pressable 44 156 44x44
+          Box 44 156 44x44
+            Row 44 156 44x44
+              Text 58.2 168 15.6x20
+        Pressable 88 156 44x44
+          Box 88 156 44x44
+            Row 88 156 44x44
+              Text 102.2 168 15.6x20
+        Pressable 132 156 44x44
+          Box 132 156 44x44
+            Row 132 156 44x44
+              Text 146.2 168 15.6x20
+        Pressable 176 156 44x44
+          Box 176 156 44x44
+            Row 176 156 44x44
+              Text 190.2 168 15.6x20
+        Pressable 220 156 44x44
+          Box 220 156 44x44
+            Row 220 156 44x44
+              Text 234.2 168 15.6x20
+        Pressable 264 156 44x44
+          Box 264 156 44x44
+            Row 264 156 44x44
+              Text 278.2 168 15.6x20
+      Row 0 200 480x44
+        Pressable 0 200 44x44
+          Box 0 200 44x44
+            Row 0 200 44x44
+              Text 14.2 212 15.6x20
+        Pressable 44 200 44x44
+          Box 44 200 44x44
+            Row 44 200 44x44
+              Text 58.2 212 15.6x20
+        Pressable 88 200 44x44
+          Box 88 200 44x44
+            Row 88 200 44x44
+              Text 102.2 212 15.6x20
+        Pressable 132 200 44x44
+          Box 132 200 44x44
+            Row 132 200 44x44
+              Text 146.2 212 15.6x20
+        Pressable 176 200 44x44
+          Box 176 200 44x44
+            Row 176 200 44x44
+              Text 190.2 212 15.6x20
+        Pressable 220 200 44x44
+          Box 220 200 44x44
+            Row 220 200 44x44
+              Text 234.2 212 15.6x20
+        Pressable 264 200 44x44
+          Box 264 200 44x44
+            Row 264 200 44x44
+              Text 278.2 212 15.6x20
+      Row 0 244 480x44
+        Pressable 0 244 44x44
+          Box 0 244 44x44
+            Row 0 244 44x44
+              Text 14.2 256 15.6x20
+        Pressable 44 244 44x44
+          Box 44 244 44x44
+            Row 44 244 44x44
+              Text 58.2 256 15.6x20
+        Pressable 88 244 44x44
+          Box 88 244 44x44
+            Row 88 244 44x44
+              Text 102.2 256 15.6x20
+        Pressable 132 244 44x44
+          Box 132 244 44x44
+            Row 132 244 44x44
+              Text 146.2 256 15.6x20
+        Pressable 176 244 44x44
+          Box 176 244 44x44
+            Row 176 244 44x44
+              Text 190.2 256 15.6x20
+        Pressable 220 244 44x44
+          Box 220 244 44x44
+            Row 220 244 44x44
+              Text 234.2 256 15.6x20
+        Box 264 244 44x44
+      Row 0 288 480x44
+        Box 0 288 44x44
+        Box 44 288 44x44
+        Box 88 288 44x44
+        Box 132 288 44x44
+        Box 176 288 44x44
+        Box 220 288 44x44
+        Box 264 288 44x44
+
+## Compact
+### web
+<div class="eq-11yg588 eq-19dgm5h eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-titlesmall eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">July 2026</span>
+<div class="eq-168ghzj eq-5ew4ww">
+<div aria-hidden="true" class="eq-168ghzj">
+</div>
+</div>
+<button aria-label="Previous month" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-17a2pwz eq-1amv73n eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z">
+</path>
+</svg>
+</div>
+</div>
+</button>
+<button aria-label="Next month" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-17a2pwz eq-1amv73n eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z">
+</path>
+</svg>
+</div>
+</div>
+</button>
+</div>
+<div role="grid" tabindex="0" aria-label="July 2026">
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Sun</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Mon</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Tue</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Wed</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Thu</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Fri</span>
+</div>
+</div>
+<div role="columnheader" class="eq-1eb13m5 eq-1efxekf eq-1fo26cq eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Sat</span>
+</div>
+</div>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<button id="eq-cell-1du8uvv-1-0" tabindex="-1" role="gridcell" aria-label="Wednesday, 1 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">1</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-1-1" tabindex="-1" role="gridcell" aria-label="Thursday, 2 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">2</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-1-2" tabindex="-1" role="gridcell" aria-label="Friday, 3 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">3</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-1-3" tabindex="-1" role="gridcell" aria-label="Saturday, 4 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">4</span>
+</div>
+</div>
+</button>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<button id="eq-cell-1du8uvv-2-0" tabindex="-1" role="gridcell" aria-label="Sunday, 5 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">5</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-1" tabindex="-1" role="gridcell" aria-label="Monday, 6 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">6</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-2" tabindex="-1" role="gridcell" aria-label="Tuesday, 7 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">7</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-3" tabindex="-1" role="gridcell" aria-label="Wednesday, 8 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">8</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-4" tabindex="-1" role="gridcell" aria-label="Thursday, 9 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">9</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-5" tabindex="-1" role="gridcell" aria-label="Friday, 10 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">10</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-2-6" tabindex="-1" role="gridcell" aria-label="Saturday, 11 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">11</span>
+</div>
+</div>
+</button>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<button id="eq-cell-1du8uvv-3-0" tabindex="-1" role="gridcell" aria-label="Sunday, 12 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">12</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-1" tabindex="-1" role="gridcell" aria-label="Monday, 13 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">13</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-2" tabindex="-1" role="gridcell" aria-label="Tuesday, 14 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">14</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-3" tabindex="-1" role="gridcell" aria-label="Wednesday, 15 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">15</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-4" tabindex="-1" role="gridcell" aria-label="Thursday, 16 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">16</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-5" tabindex="-1" role="gridcell" aria-label="Friday, 17 July 2026" aria-selected="true" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-1k117pa eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-1dakdsg eq-epaxs4 eq-mbtjfn">17</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-3-6" tabindex="-1" role="gridcell" aria-label="Saturday, 18 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">18</span>
+</div>
+</div>
+</button>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<button id="eq-cell-1du8uvv-4-0" tabindex="-1" role="gridcell" aria-label="Sunday, 19 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">19</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-1" tabindex="-1" role="gridcell" aria-label="Monday, 20 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">20</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-2" tabindex="-1" role="gridcell" aria-label="Tuesday, 21 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">21</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-3" tabindex="-1" role="gridcell" aria-label="Wednesday, 22 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">22</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-4" tabindex="-1" role="gridcell" aria-label="Thursday, 23 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">23</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-5" tabindex="-1" role="gridcell" aria-label="Friday, 24 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">24</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-4-6" tabindex="-1" role="gridcell" aria-label="Saturday, 25 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">25</span>
+</div>
+</div>
+</button>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<button id="eq-cell-1du8uvv-5-0" tabindex="-1" role="gridcell" aria-label="Sunday, 26 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">26</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-5-1" tabindex="-1" role="gridcell" aria-label="Monday, 27 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">27</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-5-2" tabindex="-1" role="gridcell" aria-label="Tuesday, 28 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">28</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-5-3" tabindex="-1" role="gridcell" aria-label="Wednesday, 29 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">29</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-5-4" tabindex="-1" role="gridcell" aria-label="Thursday, 30 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">30</span>
+</div>
+</div>
+</button>
+<button id="eq-cell-1du8uvv-5-5" tabindex="-1" role="gridcell" aria-label="Friday, 31 July 2026" aria-selected="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl eq-pi24e6 eq-vwp2xk eq-189q21e">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">31</span>
+</div>
+</div>
+</button>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+</div>
+</div>
+<div class="eq-1y88iiz" role="row">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+<div class="eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-kngwsg eq-vwp2xk">
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-11kg7e8{height:26px}
+.eq-11yg588{align-items:stretch}
+.eq-1566de{white-space:pre}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-19dgm5h{gap:8px}
+.eq-19vml7g{width:16px}
+.eq-1amv73n{width:26px}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1efxekf{width:44px}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fo26cq{height:28px}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+.eq-1or4gpz{height:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1y88iiz{display:contents}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-p7nbpw{text-align:start}
+.eq-pi24e6{border-radius:22px}
+.eq-vwp2xk{height:44px}
+### semantics
+StaticText "July 2026"
+Button "Previous month"
+Button "Next month"
+Grid "July 2026"
+ColumnHeader "Sun"
+ColumnHeader "Mon"
+ColumnHeader "Tue"
+ColumnHeader "Wed"
+ColumnHeader "Thu"
+ColumnHeader "Fri"
+ColumnHeader "Sat"
+GridCell "Wednesday, 1 July 2026" (not selected)
+GridCell "Thursday, 2 July 2026" (not selected)
+GridCell "Friday, 3 July 2026" (not selected)
+GridCell "Saturday, 4 July 2026" (not selected)
+GridCell "Sunday, 5 July 2026" (not selected)
+GridCell "Monday, 6 July 2026" (not selected)
+GridCell "Tuesday, 7 July 2026" (not selected)
+GridCell "Wednesday, 8 July 2026" (not selected)
+GridCell "Thursday, 9 July 2026" (not selected)
+GridCell "Friday, 10 July 2026" (not selected)
+GridCell "Saturday, 11 July 2026" (not selected)
+GridCell "Sunday, 12 July 2026" (not selected)
+GridCell "Monday, 13 July 2026" (not selected)
+GridCell "Tuesday, 14 July 2026" (not selected)
+GridCell "Wednesday, 15 July 2026" (not selected)
+GridCell "Thursday, 16 July 2026" (not selected)
+GridCell "Friday, 17 July 2026" (selected)
+GridCell "Saturday, 18 July 2026" (not selected)
+GridCell "Sunday, 19 July 2026" (not selected)
+GridCell "Monday, 20 July 2026" (not selected)
+GridCell "Tuesday, 21 July 2026" (not selected)
+GridCell "Wednesday, 22 July 2026" (not selected)
+GridCell "Thursday, 23 July 2026" (not selected)
+GridCell "Friday, 24 July 2026" (not selected)
+GridCell "Saturday, 25 July 2026" (not selected)
+GridCell "Sunday, 26 July 2026" (not selected)
+GridCell "Monday, 27 July 2026" (not selected)
+GridCell "Tuesday, 28 July 2026" (not selected)
+GridCell "Wednesday, 29 July 2026" (not selected)
+GridCell "Thursday, 30 July 2026" (not selected)
+GridCell "Friday, 31 July 2026" (not selected)
+### photon
+Calendar 0 0 480x326
+  Column 0 0 480x326
+    Row 0 0 480x26
+      Text 0 3 62.4x20
+      Flexible 66.4 13 353.6x0
+        Spacer 66.4 13 353.6x0
+      IconButton 424 0 26x26
+        Pressable 424 0 26x26
+          Box 424 0 26x26
+            Row 424 0 26x26
+              Icon 429 5 16x16
+      IconButton 454 0 26x26
+        Pressable 454 0 26x26
+          Box 454 0 26x26
+            Row 454 0 26x26
+              Icon 459 5 16x16
+    Navigable 0 34 480x292
+      Row 0 34 480x28
+        Box 0 34 44x28
+          Row 0 34 44x28
+            Text 12.34 40 19.32x16
+        Box 44 34 44x28
+          Row 44 34 44x28
+            Text 54.54 40 22.92x16
+        Box 88 34 44x28
+          Row 88 34 44x28
+            Text 100.34 40 19.32x16
+        Box 132 34 44x28
+          Row 132 34 44x28
+            Text 142.54 40 22.92x16
+        Box 176 34 44x28
+          Row 176 34 44x28
+            Text 188.34 40 19.32x16
+        Box 220 34 44x28
+          Row 220 34 44x28
+            Text 233.78 40 16.44x16
+        Box 264 34 44x28
+          Row 264 34 44x28
+            Text 276.34 40 19.32x16
+      Row 0 62 480x44
+        Box 0 62 44x44
+        Box 44 62 44x44
+        Box 88 62 44x44
+        Pressable 132 62 44x44
+          Box 132 62 44x44
+            Row 132 62 44x44
+              Text 150.1 74 7.8x20
+        Pressable 176 62 44x44
+          Box 176 62 44x44
+            Row 176 62 44x44
+              Text 194.1 74 7.8x20
+        Pressable 220 62 44x44
+          Box 220 62 44x44
+            Row 220 62 44x44
+              Text 238.1 74 7.8x20
+        Pressable 264 62 44x44
+          Box 264 62 44x44
+            Row 264 62 44x44
+              Text 282.1 74 7.8x20
+      Row 0 106 480x44
+        Pressable 0 106 44x44
+          Box 0 106 44x44
+            Row 0 106 44x44
+              Text 18.1 118 7.8x20
+        Pressable 44 106 44x44
+          Box 44 106 44x44
+            Row 44 106 44x44
+              Text 62.1 118 7.8x20
+        Pressable 88 106 44x44
+          Box 88 106 44x44
+            Row 88 106 44x44
+              Text 106.1 118 7.8x20
+        Pressable 132 106 44x44
+          Box 132 106 44x44
+            Row 132 106 44x44
+              Text 150.1 118 7.8x20
+        Pressable 176 106 44x44
+          Box 176 106 44x44
+            Row 176 106 44x44
+              Text 194.1 118 7.8x20
+        Pressable 220 106 44x44
+          Box 220 106 44x44
+            Row 220 106 44x44
+              Text 234.2 118 15.6x20
+        Pressable 264 106 44x44
+          Box 264 106 44x44
+            Row 264 106 44x44
+              Text 278.2 118 15.6x20
+      Row 0 150 480x44
+        Pressable 0 150 44x44
+          Box 0 150 44x44
+            Row 0 150 44x44
+              Text 14.2 162 15.6x20
+        Pressable 44 150 44x44
+          Box 44 150 44x44
+            Row 44 150 44x44
+              Text 58.2 162 15.6x20
+        Pressable 88 150 44x44
+          Box 88 150 44x44
+            Row 88 150 44x44
+              Text 102.2 162 15.6x20
+        Pressable 132 150 44x44
+          Box 132 150 44x44
+            Row 132 150 44x44
+              Text 146.2 162 15.6x20
+        Pressable 176 150 44x44
+          Box 176 150 44x44
+            Row 176 150 44x44
+              Text 190.2 162 15.6x20
+        Pressable 220 150 44x44
+          Box 220 150 44x44
+            Row 220 150 44x44
+              Text 234.2 162 15.6x20
+        Pressable 264 150 44x44
+          Box 264 150 44x44
+            Row 264 150 44x44
+              Text 278.2 162 15.6x20
+      Row 0 194 480x44
+        Pressable 0 194 44x44
+          Box 0 194 44x44
+            Row 0 194 44x44
+              Text 14.2 206 15.6x20
+        Pressable 44 194 44x44
+          Box 44 194 44x44
+            Row 44 194 44x44
+              Text 58.2 206 15.6x20
+        Pressable 88 194 44x44
+          Box 88 194 44x44
+            Row 88 194 44x44
+              Text 102.2 206 15.6x20
+        Pressable 132 194 44x44
+          Box 132 194 44x44
+            Row 132 194 44x44
+              Text 146.2 206 15.6x20
+        Pressable 176 194 44x44
+          Box 176 194 44x44
+            Row 176 194 44x44
+              Text 190.2 206 15.6x20
+        Pressable 220 194 44x44
+          Box 220 194 44x44
+            Row 220 194 44x44
+              Text 234.2 206 15.6x20
+        Pressable 264 194 44x44
+          Box 264 194 44x44
+            Row 264 194 44x44
+              Text 278.2 206 15.6x20
+      Row 0 238 480x44
+        Pressable 0 238 44x44
+          Box 0 238 44x44
+            Row 0 238 44x44
+              Text 14.2 250 15.6x20
+        Pressable 44 238 44x44
+          Box 44 238 44x44
+            Row 44 238 44x44
+              Text 58.2 250 15.6x20
+        Pressable 88 238 44x44
+          Box 88 238 44x44
+            Row 88 238 44x44
+              Text 102.2 250 15.6x20
+        Pressable 132 238 44x44
+          Box 132 238 44x44
+            Row 132 238 44x44
+              Text 146.2 250 15.6x20
+        Pressable 176 238 44x44
+          Box 176 238 44x44
+            Row 176 238 44x44
+              Text 190.2 250 15.6x20
+        Pressable 220 238 44x44
+          Box 220 238 44x44
+            Row 220 238 44x44
+              Text 234.2 250 15.6x20
+        Box 264 238 44x44
+      Row 0 282 480x44
+        Box 0 282 44x44
+        Box 44 282 44x44
+        Box 88 282 44x44
+        Box 132 282 44x44
+        Box 176 282 44x44
+        Box 220 282 44x44
+        Box 264 282 44x44
+

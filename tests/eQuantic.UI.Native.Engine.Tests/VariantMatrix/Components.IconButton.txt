@@ -1,0 +1,400 @@
+## Small · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz" fill="currentColor" aria-hidden="true">
+<path>
+</path>
+</svg>
+</div>
+</div>
+</button>
+### css
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-19vml7g{width:16px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1or4gpz{height:16px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1xtjgfe{width:32px}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-p7nbpw{text-align:start}
+### semantics
+Button "x"
+### photon
+IconButton 0 0 32x32
+  Pressable 0 0 32x32
+    Box 0 0 32x32
+      Row 0 0 32x32
+        Icon 8 8 16x16
+
+## Small · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-17a2pwz eq-1amv73n eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz" fill="currentColor" aria-hidden="true">
+<path>
+</path>
+</svg>
+</div>
+</div>
+</button>
+### css
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-11kg7e8{height:26px}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-19vml7g{width:16px}
+.eq-1amv73n{width:26px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1or4gpz{height:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-p7nbpw{text-align:start}
+### semantics
+Button "x"
+### photon
+IconButton 0 0 26x26
+  Pressable 0 0 26x26
+    Box 0 0 26x26
+      Row 0 0 26x26
+        Icon 5 5 16x16
+
+## Medium · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1xrfuoj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-115fhry eq-16x7aca eq-96qelu eq-i95eb9" fill="currentColor" aria-hidden="true">
+<path>
+</path>
+</svg>
+</div>
+</div>
+</button>
+### css
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1xrfuoj{width:40px}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-p7nbpw{text-align:start}
+### semantics
+Button "x"
+### photon
+IconButton 0 0 40x40
+  Pressable 0 0 40x40
+    Box 0 0 40x40
+      Row 0 0 40x40
+        Icon 10 10 20x20
+
+## Medium · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-115fhry eq-16x7aca eq-96qelu eq-i95eb9" fill="currentColor" aria-hidden="true">
+<path>
+</path>
+</svg>
+</div>
+</div>
+</button>
+### css
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1xtjgfe{width:32px}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-p7nbpw{text-align:start}
+### semantics
+Button "x"
+### photon
+IconButton 0 0 32x32
+  Pressable 0 0 32x32
+    Box 0 0 32x32
+      Row 0 0 32x32
+        Icon 6 6 20x20
+
+## Large · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-17a2pwz eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-ra6ajf eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-10z2v8p eq-115fhry eq-16x7aca eq-rwnvja" fill="currentColor" aria-hidden="true">
+<path>
+</path>
+</svg>
+</div>
+</div>
+</button>
+### css
+.eq-10z2v8p{width:24px}
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-p7nbpw{text-align:start}
+.eq-ra6ajf{width:48px}
+.eq-rwnvja{height:24px}
+### semantics
+Button "x"
+### photon
+IconButton 0 0 48x48
+  Pressable 0 0 48x48
+    Box 0 0 48x48
+      Row 0 0 48x48
+        Icon 12 12 24x24
+
+## Large · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1xrfuoj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-10z2v8p eq-115fhry eq-16x7aca eq-rwnvja" fill="currentColor" aria-hidden="true">
+<path>
+</path>
+</svg>
+</div>
+</div>
+</button>
+### css
+.eq-10z2v8p{width:24px}
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1xrfuoj{width:40px}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-p7nbpw{text-align:start}
+.eq-rwnvja{height:24px}
+### semantics
+Button "x"
+### photon
+IconButton 0 0 40x40
+  Pressable 0 0 40x40
+    Box 0 0 40x40
+      Row 0 0 40x40
+        Icon 8 8 24x24
+
+## XLarge · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1fdhaeb eq-bo3n4y eq-g7fowl eq-xil8w0 eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-10z2v8p eq-115fhry eq-16x7aca eq-rwnvja" fill="currentColor" aria-hidden="true">
+<path>
+</path>
+</svg>
+</div>
+</div>
+</button>
+### css
+.eq-10z2v8p{width:24px}
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fdhaeb{height:56px}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-p7nbpw{text-align:start}
+.eq-rwnvja{height:24px}
+.eq-xil8w0{width:56px}
+### semantics
+Button "x"
+### photon
+IconButton 0 0 56x56
+  Pressable 0 0 56x56
+    Box 0 0 56x56
+      Row 0 0 56x56
+        Icon 16 16 24x24
+
+## XLarge · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-17a2pwz eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-ra6ajf eq-189q21e eq-a51p1u">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-10z2v8p eq-115fhry eq-16x7aca eq-rwnvja" fill="currentColor" aria-hidden="true">
+<path>
+</path>
+</svg>
+</div>
+</div>
+</button>
+### css
+.eq-10z2v8p{width:24px}
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-p7nbpw{text-align:start}
+.eq-ra6ajf{width:48px}
+.eq-rwnvja{height:24px}
+### semantics
+Button "x"
+### photon
+IconButton 0 0 48x48
+  Pressable 0 0 48x48
+    Box 0 0 48x48
+      Row 0 0 48x48
+        Icon 12 12 24x24
+

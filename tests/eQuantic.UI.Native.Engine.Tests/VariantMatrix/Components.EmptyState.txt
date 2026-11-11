@@ -1,0 +1,118 @@
+## Comfortable
+### web
+<div class="eq-1eb13m5 eq-1m2fmjk eq-5ew4ww eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-17a2pwz eq-1b1jdyl eq-1eb13m5 eq-8y94ea eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-1su9m49 eq-1xtjgfe eq-lgp7n6" fill="currentColor" aria-hidden="true">
+<path>
+</path>
+</svg>
+</div>
+</div>
+<div aria-hidden="true" class="eq-1or4gpz eq-bo3n4y">
+</div>
+<span class="eq-type-title eq-114sn1y eq-12qw9lh eq-7gvrt4 eq-h7owsy eq-mbtjfn eq-mxq5ld eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+### css
+.eq-114sn1y{font-size:20px}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+.eq-1b1jdyl{width:64px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1gudvpj{min-height:0}
+.eq-1jjc6f6{height:100%}
+.eq-1m2fmjk{padding:48px 16px 48px 16px}
+.eq-1or4gpz{height:16px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1xtjgfe{width:32px}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-8y94ea{height:64px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-h7owsy{display:-webkit-box}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mxq5ld{line-height:26px}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+StaticText "x"
+### photon
+EmptyState 0 0 480x202
+  Column 0 0 480x202
+    Box 208 48 64x64
+      Row 208 48 64x64
+        Icon 224 64 32x32
+    Text 234.8 128 10.4x26
+
+## Compact
+### web
+<div class="eq-1eb13m5 eq-1m2fmjk eq-5ew4ww eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-17a2pwz eq-1b1jdyl eq-1eb13m5 eq-8y94ea eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-1su9m49 eq-1xtjgfe eq-lgp7n6" fill="currentColor" aria-hidden="true">
+<path>
+</path>
+</svg>
+</div>
+</div>
+<div aria-hidden="true" class="eq-1or4gpz eq-bo3n4y">
+</div>
+<span class="eq-type-title eq-114sn1y eq-12qw9lh eq-7gvrt4 eq-h7owsy eq-mbtjfn eq-mxq5ld eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+### css
+.eq-114sn1y{font-size:20px}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+.eq-1b1jdyl{width:64px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1gudvpj{min-height:0}
+.eq-1jjc6f6{height:100%}
+.eq-1m2fmjk{padding:48px 16px 48px 16px}
+.eq-1or4gpz{height:16px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1xtjgfe{width:32px}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-8y94ea{height:64px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-h7owsy{display:-webkit-box}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mxq5ld{line-height:26px}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+StaticText "x"
+### photon
+EmptyState 0 0 480x202
+  Column 0 0 480x202
+    Box 208 48 64x64
+      Row 208 48 64x64
+        Icon 224 64 32x32
+    Text 234.8 128 10.4x26
+

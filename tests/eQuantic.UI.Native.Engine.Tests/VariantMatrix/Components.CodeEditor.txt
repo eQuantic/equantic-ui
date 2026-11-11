@@ -1,0 +1,1296 @@
+## Small · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-1jjc6f6 eq-akjizx" data-eq-shortcut="command+f">
+<div class="eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-11yg588 eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-11yg588 eq-1eb13m5 eq-1xtjgfe eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
+</div>
+<div class="eq-15y68qx eq-1eb13m5 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-p7ntc">
+<div class="eq-15y68qx eq-1eb13m5 eq-1uhnwvg eq-1xtjgfe eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1x60j26 eq-5augbd eq-a53ok4 eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
+</div>
+</div>
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-bo3n4y eq-ewlixa eq-hqijl0 eq-i95eb9 eq-kngwsg eq-m92pvu">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5 eq-m92pvu">
+<div class="eq-code-surface eq-1566de eq-1dw337v eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-bo3n4y eq-g7fowl eq-gzfd3n eq-olitnf">
+<div class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-1ogof62 eq-1pwthtl eq-3vlp5d eq-mfc69x">
+<div class="eq-15y68qx eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl eq-p7ntc">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-15y68qx eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-g7fowl eq-hw1jqi">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1x60j26 eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi"> </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="eq-code-caret" style="position:absolute;left:12px;top:12px;width:2px;height:18px;background-color:light-dark(#171b21, #f2f4f7);pointer-events:none;">
+</div>
+<textarea class="eq-code-input" style="left:12px;top:12px;height:18px;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Code editor">
+</textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-1566de{white-space:pre}
+.eq-15y68qx{height:18px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-18plna0{max-width:100%}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1avhl7d{display:grid}
+.eq-1ayg6m8{isolation:isolate}
+.eq-1dw337v{flex-grow:1}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o3sr2w{cursor:text}
+.eq-1ogof62{left:0}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1x60j26{line-height:16px}
+.eq-1xtjgfe{width:32px}
+.eq-2l5nkt{width:0}
+.eq-372o7v{overflow-x:auto}
+.eq-3vlp5d{top:12px}
+.eq-5augbd{font-variant-numeric:tabular-nums}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-94p0gr{height:12px}
+.eq-a486u3{-webkit-user-select:none}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gzfd3n{user-select:none}
+.eq-hqijl0{justify-content:flex-end}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-i95eb9{width:20px}
+.eq-iwaszp{overflow-y:hidden}
+.eq-jzi5e5{overflow-anchor:none}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-olitnf{outline:none}
+.eq-oy7q1x{font-weight:400}
+.eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-q6da9m{padding:12px 0 12px 0}
+.eq-swcwi{font-family:var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)}
+### semantics
+StaticText "1"
+TextField "Code editor" (value "")
+### photon
+CodeEditor 0 0 480x800
+  Box 0 0 480x800
+    Shortcut 0 0 480x800
+      Shortcut 0 0 480x800
+        Shortcut 0 0 480x800
+          Shortcut 0 0 480x800
+            Shortcut 0 0 480x800
+              Shortcut 0 0 480x800
+                Shortcut 0 0 480x800
+                  Shortcut 0 0 480x800
+                    Shortcut 0 0 480x800
+                      Stack 0 0 480x800
+                        Box 0 0 480x42
+                          Row 0 0 480x42
+                            Column 0 0 46x42
+                              Box 0 12 46x18
+                                Row 0 12 46x18
+                                  Box 0 12 14x18
+                                    Row 0 12 14x18
+                                      Text 7.24 13 6.76x16
+                                  Row 14 12 20x18
+                            Flexible 46 0 434x42
+                              ScrollView 46 0 434x42
+                                CodeSurface 46 0 6.76x42
+                                  CodeBlock 46 0 6.76x42
+                                    Box 46 0 6.76x42
+                                      Stack 46 0 6.76x42
+                                        Stack 46 0 6.76x0
+                                          Positioned 46 12 6.76x18
+                                            Box 46 12 6.76x18
+                                        Box 46 0 6.76x42
+                                          Column 46 12 6.76x18
+                                            Row 46 12 6.76x18
+                                              Box 46 13 24x16
+                                                Row 58 13 0x16
+                                                  Text 58 13 0x16
+
+## Small · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-1jjc6f6 eq-akjizx" data-eq-shortcut="command+f">
+<div class="eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-11yg588 eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-11yg588 eq-1eb13m5 eq-1xtjgfe eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
+</div>
+<div class="eq-1eb13m5 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-p7ntc eq-u2glnw">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-1xtjgfe eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp eq-u2glnw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-5augbd eq-eo53tp eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-quo2cj eq-swcwi">1</span>
+</div>
+</div>
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-bo3n4y eq-ewlixa eq-hqijl0 eq-i95eb9 eq-kngwsg eq-m92pvu">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5 eq-m92pvu">
+<div class="eq-code-surface eq-1566de eq-1dw337v eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-bo3n4y eq-g7fowl eq-gzfd3n eq-olitnf">
+<div class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-1ogof62 eq-1pwthtl eq-3vlp5d eq-mfc69x">
+<div class="eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl eq-p7ntc eq-u2glnw">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp eq-u2glnw">
+<div class="eq-1eb13m5 eq-g7fowl eq-hw1jqi">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-7gvrt4 eq-eo53tp eq-epaxs4 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-quo2cj eq-swcwi"> </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="eq-code-caret" style="position:absolute;left:12px;top:12px;width:2px;height:17px;background-color:light-dark(#171b21, #f2f4f7);pointer-events:none;">
+</div>
+<textarea class="eq-code-input" style="left:12px;top:12px;height:17px;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Code editor">
+</textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-1566de{white-space:pre}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-18plna0{max-width:100%}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1avhl7d{display:grid}
+.eq-1ayg6m8{isolation:isolate}
+.eq-1dw337v{flex-grow:1}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o3sr2w{cursor:text}
+.eq-1ogof62{left:0}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xtjgfe{width:32px}
+.eq-2l5nkt{width:0}
+.eq-372o7v{overflow-x:auto}
+.eq-3vlp5d{top:12px}
+.eq-5augbd{font-variant-numeric:tabular-nums}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-94p0gr{height:12px}
+.eq-a486u3{-webkit-user-select:none}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-eo53tp{line-height:14.5px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gzfd3n{user-select:none}
+.eq-hqijl0{justify-content:flex-end}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-i95eb9{width:20px}
+.eq-iwaszp{overflow-y:hidden}
+.eq-jzi5e5{overflow-anchor:none}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-olitnf{outline:none}
+.eq-oy7q1x{font-weight:400}
+.eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-q6da9m{padding:12px 0 12px 0}
+.eq-quo2cj{font-size:11.5px}
+.eq-swcwi{font-family:var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)}
+.eq-u2glnw{height:17px}
+### semantics
+StaticText "1"
+TextField "Code editor" (value "")
+### photon
+CodeEditor 0 0 480x800
+  Box 0 0 480x800
+    Shortcut 0 0 480x800
+      Shortcut 0 0 480x800
+        Shortcut 0 0 480x800
+          Shortcut 0 0 480x800
+            Shortcut 0 0 480x800
+              Shortcut 0 0 480x800
+                Shortcut 0 0 480x800
+                  Shortcut 0 0 480x800
+                    Shortcut 0 0 480x800
+                      Stack 0 0 480x800
+                        Box 0 0 480x41
+                          Row 0 0 480x41
+                            Column 0 0 44x41
+                              Box 0 12 44x17
+                                Row 0 12 44x17
+                                  Box 0 12 12x17
+                                    Row 0 12 12x17
+                                      Text 6.02 13.25 5.98x14.5
+                                  Row 12 12 20x17
+                            Flexible 44 0 436x41
+                              ScrollView 44 0 436x41
+                                CodeSurface 44 0 5.98x41
+                                  CodeBlock 44 0 5.98x41
+                                    Box 44 0 5.98x41
+                                      Stack 44 0 5.98x41
+                                        Stack 44 0 5.98x0
+                                          Positioned 44 12 5.98x17
+                                            Box 44 12 5.98x17
+                                        Box 44 0 5.98x41
+                                          Column 44 12 5.98x17
+                                            Row 44 12 5.98x17
+                                              Box 44 13.25 24x14.5
+                                                Row 56 13.25 0x14.5
+                                                  Text 56 13.25 0x14.5
+
+## Medium · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-1jjc6f6 eq-akjizx" data-eq-shortcut="command+f">
+<div class="eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-11yg588 eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-11yg588 eq-1eb13m5 eq-1xtjgfe eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
+</div>
+<div class="eq-1eb13m5 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-iuiqgs eq-p7ntc">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-1xtjgfe eq-bo3n4y eq-ewlixa eq-iuiqgs eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1cb9own eq-5augbd eq-epaxs4 eq-jsw0f2 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
+</div>
+</div>
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-bo3n4y eq-ewlixa eq-hqijl0 eq-i95eb9 eq-kngwsg eq-m92pvu">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5 eq-m92pvu">
+<div class="eq-code-surface eq-1566de eq-1dw337v eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-bo3n4y eq-g7fowl eq-gzfd3n eq-olitnf">
+<div class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-1ogof62 eq-1pwthtl eq-3vlp5d eq-mfc69x">
+<div class="eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl eq-iuiqgs eq-p7ntc">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-iuiqgs eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-g7fowl eq-hw1jqi">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1cb9own eq-7gvrt4 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi"> </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="eq-code-caret" style="position:absolute;left:12px;top:12px;width:2px;height:22px;background-color:light-dark(#171b21, #f2f4f7);pointer-events:none;">
+</div>
+<textarea class="eq-code-input" style="left:12px;top:12px;height:22px;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Code editor">
+</textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-1566de{white-space:pre}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-18plna0{max-width:100%}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1avhl7d{display:grid}
+.eq-1ayg6m8{isolation:isolate}
+.eq-1cb9own{line-height:19px}
+.eq-1dw337v{flex-grow:1}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o3sr2w{cursor:text}
+.eq-1ogof62{left:0}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xtjgfe{width:32px}
+.eq-2l5nkt{width:0}
+.eq-372o7v{overflow-x:auto}
+.eq-3vlp5d{top:12px}
+.eq-5augbd{font-variant-numeric:tabular-nums}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-94p0gr{height:12px}
+.eq-a486u3{-webkit-user-select:none}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gzfd3n{user-select:none}
+.eq-hqijl0{justify-content:flex-end}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-i95eb9{width:20px}
+.eq-iuiqgs{height:22px}
+.eq-iwaszp{overflow-y:hidden}
+.eq-jsw0f2{font-size:15px}
+.eq-jzi5e5{overflow-anchor:none}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-olitnf{outline:none}
+.eq-oy7q1x{font-weight:400}
+.eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-q6da9m{padding:12px 0 12px 0}
+.eq-swcwi{font-family:var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)}
+### semantics
+StaticText "1"
+TextField "Code editor" (value "")
+### photon
+CodeEditor 0 0 480x800
+  Box 0 0 480x800
+    Shortcut 0 0 480x800
+      Shortcut 0 0 480x800
+        Shortcut 0 0 480x800
+          Shortcut 0 0 480x800
+            Shortcut 0 0 480x800
+              Shortcut 0 0 480x800
+                Shortcut 0 0 480x800
+                  Shortcut 0 0 480x800
+                    Shortcut 0 0 480x800
+                      Stack 0 0 480x800
+                        Box 0 0 480x46
+                          Row 0 0 480x46
+                            Column 0 0 48x46
+                              Box 0 12 48x22
+                                Row 0 12 48x22
+                                  Box 0 12 16x22
+                                    Row 0 12 16x22
+                                      Text 8.2 13.5 7.8x19
+                                  Row 16 12 20x22
+                            Flexible 48 0 432x46
+                              ScrollView 48 0 432x46
+                                CodeSurface 48 0 7.8x46
+                                  CodeBlock 48 0 7.8x46
+                                    Box 48 0 7.8x46
+                                      Stack 48 0 7.8x46
+                                        Stack 48 0 7.8x0
+                                          Positioned 48 12 7.8x22
+                                            Box 48 12 7.8x22
+                                        Box 48 0 7.8x46
+                                          Column 48 12 7.8x22
+                                            Row 48 12 7.8x22
+                                              Box 48 13.5 24x19
+                                                Row 60 13.5 0x19
+                                                  Text 60 13.5 0x19
+
+## Medium · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-1jjc6f6 eq-akjizx" data-eq-shortcut="command+f">
+<div class="eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-11yg588 eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-11yg588 eq-1eb13m5 eq-1xtjgfe eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
+</div>
+<div class="eq-15y68qx eq-1eb13m5 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-p7ntc">
+<div class="eq-15y68qx eq-1eb13m5 eq-1uhnwvg eq-1xtjgfe eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1x60j26 eq-5augbd eq-a53ok4 eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
+</div>
+</div>
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-bo3n4y eq-ewlixa eq-hqijl0 eq-i95eb9 eq-kngwsg eq-m92pvu">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5 eq-m92pvu">
+<div class="eq-code-surface eq-1566de eq-1dw337v eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-bo3n4y eq-g7fowl eq-gzfd3n eq-olitnf">
+<div class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-1ogof62 eq-1pwthtl eq-3vlp5d eq-mfc69x">
+<div class="eq-15y68qx eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl eq-p7ntc">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-15y68qx eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-g7fowl eq-hw1jqi">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1x60j26 eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi"> </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="eq-code-caret" style="position:absolute;left:12px;top:12px;width:2px;height:18px;background-color:light-dark(#171b21, #f2f4f7);pointer-events:none;">
+</div>
+<textarea class="eq-code-input" style="left:12px;top:12px;height:18px;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Code editor">
+</textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-1566de{white-space:pre}
+.eq-15y68qx{height:18px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-18plna0{max-width:100%}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1avhl7d{display:grid}
+.eq-1ayg6m8{isolation:isolate}
+.eq-1dw337v{flex-grow:1}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o3sr2w{cursor:text}
+.eq-1ogof62{left:0}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1x60j26{line-height:16px}
+.eq-1xtjgfe{width:32px}
+.eq-2l5nkt{width:0}
+.eq-372o7v{overflow-x:auto}
+.eq-3vlp5d{top:12px}
+.eq-5augbd{font-variant-numeric:tabular-nums}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-94p0gr{height:12px}
+.eq-a486u3{-webkit-user-select:none}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gzfd3n{user-select:none}
+.eq-hqijl0{justify-content:flex-end}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-i95eb9{width:20px}
+.eq-iwaszp{overflow-y:hidden}
+.eq-jzi5e5{overflow-anchor:none}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-olitnf{outline:none}
+.eq-oy7q1x{font-weight:400}
+.eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-q6da9m{padding:12px 0 12px 0}
+.eq-swcwi{font-family:var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)}
+### semantics
+StaticText "1"
+TextField "Code editor" (value "")
+### photon
+CodeEditor 0 0 480x800
+  Box 0 0 480x800
+    Shortcut 0 0 480x800
+      Shortcut 0 0 480x800
+        Shortcut 0 0 480x800
+          Shortcut 0 0 480x800
+            Shortcut 0 0 480x800
+              Shortcut 0 0 480x800
+                Shortcut 0 0 480x800
+                  Shortcut 0 0 480x800
+                    Shortcut 0 0 480x800
+                      Stack 0 0 480x800
+                        Box 0 0 480x42
+                          Row 0 0 480x42
+                            Column 0 0 46x42
+                              Box 0 12 46x18
+                                Row 0 12 46x18
+                                  Box 0 12 14x18
+                                    Row 0 12 14x18
+                                      Text 7.24 13 6.76x16
+                                  Row 14 12 20x18
+                            Flexible 46 0 434x42
+                              ScrollView 46 0 434x42
+                                CodeSurface 46 0 6.76x42
+                                  CodeBlock 46 0 6.76x42
+                                    Box 46 0 6.76x42
+                                      Stack 46 0 6.76x42
+                                        Stack 46 0 6.76x0
+                                          Positioned 46 12 6.76x18
+                                            Box 46 12 6.76x18
+                                        Box 46 0 6.76x42
+                                          Column 46 12 6.76x18
+                                            Row 46 12 6.76x18
+                                              Box 46 13 24x16
+                                                Row 58 13 0x16
+                                                  Text 58 13 0x16
+
+## Large · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-1jjc6f6 eq-akjizx" data-eq-shortcut="command+f">
+<div class="eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-11yg588 eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-11yg588 eq-1eb13m5 eq-1xtjgfe eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
+</div>
+<div class="eq-1dj6liv eq-1eb13m5 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-p7ntc">
+<div class="eq-1dj6liv eq-1eb13m5 eq-1uhnwvg eq-1xtjgfe eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1o5c7c3 eq-5augbd eq-da01c7 eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
+</div>
+</div>
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-bo3n4y eq-ewlixa eq-hqijl0 eq-i95eb9 eq-kngwsg eq-m92pvu">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5 eq-m92pvu">
+<div class="eq-code-surface eq-1566de eq-1dw337v eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-bo3n4y eq-g7fowl eq-gzfd3n eq-olitnf">
+<div class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-1ogof62 eq-1pwthtl eq-3vlp5d eq-mfc69x">
+<div class="eq-1dj6liv eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl eq-p7ntc">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1dj6liv eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-g7fowl eq-hw1jqi">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1o5c7c3 eq-7gvrt4 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi"> </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="eq-code-caret" style="position:absolute;left:12px;top:12px;width:2px;height:23px;background-color:light-dark(#171b21, #f2f4f7);pointer-events:none;">
+</div>
+<textarea class="eq-code-input" style="left:12px;top:12px;height:23px;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Code editor">
+</textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-1566de{white-space:pre}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-18plna0{max-width:100%}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1avhl7d{display:grid}
+.eq-1ayg6m8{isolation:isolate}
+.eq-1dj6liv{height:23px}
+.eq-1dw337v{flex-grow:1}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o3sr2w{cursor:text}
+.eq-1o5c7c3{font-size:16px}
+.eq-1ogof62{left:0}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xtjgfe{width:32px}
+.eq-2l5nkt{width:0}
+.eq-372o7v{overflow-x:auto}
+.eq-3vlp5d{top:12px}
+.eq-5augbd{font-variant-numeric:tabular-nums}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-94p0gr{height:12px}
+.eq-a486u3{-webkit-user-select:none}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gzfd3n{user-select:none}
+.eq-hqijl0{justify-content:flex-end}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-i95eb9{width:20px}
+.eq-iwaszp{overflow-y:hidden}
+.eq-jzi5e5{overflow-anchor:none}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-olitnf{outline:none}
+.eq-oy7q1x{font-weight:400}
+.eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-q6da9m{padding:12px 0 12px 0}
+.eq-swcwi{font-family:var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)}
+### semantics
+StaticText "1"
+TextField "Code editor" (value "")
+### photon
+CodeEditor 0 0 480x800
+  Box 0 0 480x800
+    Shortcut 0 0 480x800
+      Shortcut 0 0 480x800
+        Shortcut 0 0 480x800
+          Shortcut 0 0 480x800
+            Shortcut 0 0 480x800
+              Shortcut 0 0 480x800
+                Shortcut 0 0 480x800
+                  Shortcut 0 0 480x800
+                    Shortcut 0 0 480x800
+                      Stack 0 0 480x800
+                        Box 0 0 480x47
+                          Row 0 0 480x47
+                            Column 0 0 49x47
+                              Box 0 12 49x23
+                                Row 0 12 49x23
+                                  Box 0 12 17x23
+                                    Row 0 12 17x23
+                                      Text 8.68 13.5 8.32x20
+                                  Row 17 12 20x23
+                            Flexible 49 0 431x47
+                              ScrollView 49 0 431x47
+                                CodeSurface 49 0 8.32x47
+                                  CodeBlock 49 0 8.32x47
+                                    Box 49 0 8.32x47
+                                      Stack 49 0 8.32x47
+                                        Stack 49 0 8.32x0
+                                          Positioned 49 12 8.32x23
+                                            Box 49 12 8.32x23
+                                        Box 49 0 8.32x47
+                                          Column 49 12 8.32x23
+                                            Row 49 12 8.32x23
+                                              Box 49 13.5 24x20
+                                                Row 61 13.5 0x20
+                                                  Text 61 13.5 0x20
+
+## Large · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-1jjc6f6 eq-akjizx" data-eq-shortcut="command+f">
+<div class="eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-11yg588 eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-11yg588 eq-1eb13m5 eq-1xtjgfe eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
+</div>
+<div class="eq-13vgh9p eq-1eb13m5 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-p7ntc">
+<div class="eq-13vgh9p eq-1eb13m5 eq-1uhnwvg eq-1xtjgfe eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
+<span class="eq-type-labelsmall eq-1566de eq-15cxjk8 eq-16x7aca eq-5augbd eq-epaxs4 eq-gxup24 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
+</div>
+</div>
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-bo3n4y eq-ewlixa eq-hqijl0 eq-i95eb9 eq-kngwsg eq-m92pvu">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5 eq-m92pvu">
+<div class="eq-code-surface eq-1566de eq-1dw337v eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-bo3n4y eq-g7fowl eq-gzfd3n eq-olitnf">
+<div class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-1ogof62 eq-1pwthtl eq-3vlp5d eq-mfc69x">
+<div class="eq-13vgh9p eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl eq-p7ntc">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-13vgh9p eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-g7fowl eq-hw1jqi">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-labelsmall eq-1566de eq-15cxjk8 eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-gxup24 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi"> </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="eq-code-caret" style="position:absolute;left:12px;top:12px;width:2px;height:21px;background-color:light-dark(#171b21, #f2f4f7);pointer-events:none;">
+</div>
+<textarea class="eq-code-input" style="left:12px;top:12px;height:21px;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Code editor">
+</textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-13vgh9p{height:21px}
+.eq-1566de{white-space:pre}
+.eq-15cxjk8{font-size:14.5px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-18plna0{max-width:100%}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1avhl7d{display:grid}
+.eq-1ayg6m8{isolation:isolate}
+.eq-1dw337v{flex-grow:1}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o3sr2w{cursor:text}
+.eq-1ogof62{left:0}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xtjgfe{width:32px}
+.eq-2l5nkt{width:0}
+.eq-372o7v{overflow-x:auto}
+.eq-3vlp5d{top:12px}
+.eq-5augbd{font-variant-numeric:tabular-nums}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-94p0gr{height:12px}
+.eq-a486u3{-webkit-user-select:none}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-gzfd3n{user-select:none}
+.eq-hqijl0{justify-content:flex-end}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-i95eb9{width:20px}
+.eq-iwaszp{overflow-y:hidden}
+.eq-jzi5e5{overflow-anchor:none}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-olitnf{outline:none}
+.eq-oy7q1x{font-weight:400}
+.eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-q6da9m{padding:12px 0 12px 0}
+.eq-swcwi{font-family:var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)}
+### semantics
+StaticText "1"
+TextField "Code editor" (value "")
+### photon
+CodeEditor 0 0 480x800
+  Box 0 0 480x800
+    Shortcut 0 0 480x800
+      Shortcut 0 0 480x800
+        Shortcut 0 0 480x800
+          Shortcut 0 0 480x800
+            Shortcut 0 0 480x800
+              Shortcut 0 0 480x800
+                Shortcut 0 0 480x800
+                  Shortcut 0 0 480x800
+                    Shortcut 0 0 480x800
+                      Stack 0 0 480x800
+                        Box 0 0 480x45
+                          Row 0 0 480x45
+                            Column 0 0 48x45
+                              Box 0 12 48x21
+                                Row 0 12 48x21
+                                  Box 0 12 16x21
+                                    Row 0 12 16x21
+                                      Text 8.46 13.5 7.54x18
+                                  Row 16 12 20x21
+                            Flexible 48 0 432x45
+                              ScrollView 48 0 432x45
+                                CodeSurface 48 0 7.54x45
+                                  CodeBlock 48 0 7.54x45
+                                    Box 48 0 7.54x45
+                                      Stack 48 0 7.54x45
+                                        Stack 48 0 7.54x0
+                                          Positioned 48 12 7.54x21
+                                            Box 48 12 7.54x21
+                                        Box 48 0 7.54x45
+                                          Column 48 12 7.54x21
+                                            Row 48 12 7.54x21
+                                              Box 48 13.5 24x18
+                                                Row 60 13.5 0x18
+                                                  Text 60 13.5 0x18
+
+## XLarge · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-1jjc6f6 eq-akjizx" data-eq-shortcut="command+f">
+<div class="eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-11yg588 eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-11yg588 eq-1eb13m5 eq-1xtjgfe eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
+</div>
+<div class="eq-1eb13m5 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-p7ntc eq-rwnvja">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-1xtjgfe eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp eq-rwnvja">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1hme0ng eq-5augbd eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi eq-tgoca0">1</span>
+</div>
+</div>
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-bo3n4y eq-ewlixa eq-hqijl0 eq-i95eb9 eq-kngwsg eq-m92pvu">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5 eq-m92pvu">
+<div class="eq-code-surface eq-1566de eq-1dw337v eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-bo3n4y eq-g7fowl eq-gzfd3n eq-olitnf">
+<div class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-1ogof62 eq-1pwthtl eq-3vlp5d eq-mfc69x">
+<div class="eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl eq-p7ntc eq-rwnvja">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp eq-rwnvja">
+<div class="eq-1eb13m5 eq-g7fowl eq-hw1jqi">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1hme0ng eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi eq-tgoca0"> </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="eq-code-caret" style="position:absolute;left:12px;top:12px;width:2px;height:24px;background-color:light-dark(#171b21, #f2f4f7);pointer-events:none;">
+</div>
+<textarea class="eq-code-input" style="left:12px;top:12px;height:24px;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Code editor">
+</textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-1566de{white-space:pre}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-18plna0{max-width:100%}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1avhl7d{display:grid}
+.eq-1ayg6m8{isolation:isolate}
+.eq-1dw337v{flex-grow:1}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1hme0ng{line-height:21px}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o3sr2w{cursor:text}
+.eq-1ogof62{left:0}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xtjgfe{width:32px}
+.eq-2l5nkt{width:0}
+.eq-372o7v{overflow-x:auto}
+.eq-3vlp5d{top:12px}
+.eq-5augbd{font-variant-numeric:tabular-nums}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-94p0gr{height:12px}
+.eq-a486u3{-webkit-user-select:none}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gzfd3n{user-select:none}
+.eq-hqijl0{justify-content:flex-end}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-i95eb9{width:20px}
+.eq-iwaszp{overflow-y:hidden}
+.eq-jzi5e5{overflow-anchor:none}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-olitnf{outline:none}
+.eq-oy7q1x{font-weight:400}
+.eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-q6da9m{padding:12px 0 12px 0}
+.eq-rwnvja{height:24px}
+.eq-swcwi{font-family:var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)}
+.eq-tgoca0{font-size:17px}
+### semantics
+StaticText "1"
+TextField "Code editor" (value "")
+### photon
+CodeEditor 0 0 480x800
+  Box 0 0 480x800
+    Shortcut 0 0 480x800
+      Shortcut 0 0 480x800
+        Shortcut 0 0 480x800
+          Shortcut 0 0 480x800
+            Shortcut 0 0 480x800
+              Shortcut 0 0 480x800
+                Shortcut 0 0 480x800
+                  Shortcut 0 0 480x800
+                    Shortcut 0 0 480x800
+                      Stack 0 0 480x800
+                        Box 0 0 480x48
+                          Row 0 0 480x48
+                            Column 0 0 50x48
+                              Box 0 12 50x24
+                                Row 0 12 50x24
+                                  Box 0 12 18x24
+                                    Row 0 12 18x24
+                                      Text 9.16 13.5 8.84x21
+                                  Row 18 12 20x24
+                            Flexible 50 0 430x48
+                              ScrollView 50 0 430x48
+                                CodeSurface 50 0 8.84x48
+                                  CodeBlock 50 0 8.84x48
+                                    Box 50 0 8.84x48
+                                      Stack 50 0 8.84x48
+                                        Stack 50 0 8.84x0
+                                          Positioned 50 12 8.84x24
+                                            Box 50 12 8.84x24
+                                        Box 50 0 8.84x48
+                                          Column 50 12 8.84x24
+                                            Row 50 12 8.84x24
+                                              Box 50 13.5 24x21
+                                                Row 62 13.5 0x21
+                                                  Text 62 13.5 0x21
+
+## XLarge · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-1jjc6f6 eq-akjizx" data-eq-shortcut="command+f">
+<div class="eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-11yg588 eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-11yg588 eq-1eb13m5 eq-1xtjgfe eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
+</div>
+<div class="eq-1eb13m5 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-iuiqgs eq-p7ntc">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-1xtjgfe eq-bo3n4y eq-ewlixa eq-iuiqgs eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1w14u2f eq-5augbd eq-79lkgi eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
+</div>
+</div>
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-bo3n4y eq-ewlixa eq-hqijl0 eq-i95eb9 eq-kngwsg eq-m92pvu">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5 eq-m92pvu">
+<div class="eq-code-surface eq-1566de eq-1dw337v eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-bo3n4y eq-g7fowl eq-gzfd3n eq-olitnf">
+<div class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1avhl7d eq-1eviv88 eq-akjizx">
+<div class="eq-1ogof62 eq-1pwthtl eq-3vlp5d eq-mfc69x">
+<div class="eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl eq-iuiqgs eq-p7ntc">
+</div>
+</div>
+</div>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-iuiqgs eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-g7fowl eq-hw1jqi">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1w14u2f eq-79lkgi eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi"> </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="eq-code-caret" style="position:absolute;left:12px;top:12px;width:2px;height:22px;background-color:light-dark(#171b21, #f2f4f7);pointer-events:none;">
+</div>
+<textarea class="eq-code-input" style="left:12px;top:12px;height:22px;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Code editor">
+</textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-1566de{white-space:pre}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-18plna0{max-width:100%}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1avhl7d{display:grid}
+.eq-1ayg6m8{isolation:isolate}
+.eq-1dw337v{flex-grow:1}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o3sr2w{cursor:text}
+.eq-1ogof62{left:0}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w14u2f{font-size:15.5px}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xtjgfe{width:32px}
+.eq-2l5nkt{width:0}
+.eq-372o7v{overflow-x:auto}
+.eq-3vlp5d{top:12px}
+.eq-5augbd{font-variant-numeric:tabular-nums}
+.eq-5ew4ww{min-width:0}
+.eq-79lkgi{line-height:19.5px}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-94p0gr{height:12px}
+.eq-a486u3{-webkit-user-select:none}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gzfd3n{user-select:none}
+.eq-hqijl0{justify-content:flex-end}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-i95eb9{width:20px}
+.eq-iuiqgs{height:22px}
+.eq-iwaszp{overflow-y:hidden}
+.eq-jzi5e5{overflow-anchor:none}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-olitnf{outline:none}
+.eq-oy7q1x{font-weight:400}
+.eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-q6da9m{padding:12px 0 12px 0}
+.eq-swcwi{font-family:var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)}
+### semantics
+StaticText "1"
+TextField "Code editor" (value "")
+### photon
+CodeEditor 0 0 480x800
+  Box 0 0 480x800
+    Shortcut 0 0 480x800
+      Shortcut 0 0 480x800
+        Shortcut 0 0 480x800
+          Shortcut 0 0 480x800
+            Shortcut 0 0 480x800
+              Shortcut 0 0 480x800
+                Shortcut 0 0 480x800
+                  Shortcut 0 0 480x800
+                    Shortcut 0 0 480x800
+                      Stack 0 0 480x800
+                        Box 0 0 480x46
+                          Row 0 0 480x46
+                            Column 0 0 49x46
+                              Box 0 12 49x22
+                                Row 0 12 49x22
+                                  Box 0 12 17x22
+                                    Row 0 12 17x22
+                                      Text 8.94 13.25 8.06x19.5
+                                  Row 17 12 20x22
+                            Flexible 49 0 431x46
+                              ScrollView 49 0 431x46
+                                CodeSurface 49 0 8.06x46
+                                  CodeBlock 49 0 8.06x46
+                                    Box 49 0 8.06x46
+                                      Stack 49 0 8.06x46
+                                        Stack 49 0 8.06x0
+                                          Positioned 49 12 8.06x22
+                                            Box 49 12 8.06x22
+                                        Box 49 0 8.06x46
+                                          Column 49 12 8.06x22
+                                            Row 49 12 8.06x22
+                                              Box 49 13.25 24x19.5
+                                                Row 61 13.25 0x19.5
+                                                  Text 61 13.25 0x19.5
+

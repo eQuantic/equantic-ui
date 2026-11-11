@@ -1,0 +1,72 @@
+## Comfortable
+### web
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-5ew4ww eq-7njlci eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eb13m5 eq-1iu691c eq-akjizx eq-ax7sge">
+</div>
+</div>
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-rx01wr eq-yjvyu6">
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1iu691c{gap:12px}
+.eq-5ew4ww{min-width:0}
+.eq-7njlci{padding:8px 12px 8px 12px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-ax7sge{grid-template-columns:}
+.eq-bo3n4y{flex-shrink:0}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-rx01wr{height:1px}
+.eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
+### semantics
+### photon
+Table 0 0 480x17
+  Column 0 0 480x17
+    Box 0 0 480x16
+      Grid 12 8 456x0
+    Divider 0 16 480x1
+      Box 0 16 480x1
+
+## Compact
+### web
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-5ew4ww eq-7njlci eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eb13m5 eq-1iu691c eq-akjizx eq-ax7sge">
+</div>
+</div>
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-rx01wr eq-yjvyu6">
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1iu691c{gap:12px}
+.eq-5ew4ww{min-width:0}
+.eq-7njlci{padding:8px 12px 8px 12px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-ax7sge{grid-template-columns:}
+.eq-bo3n4y{flex-shrink:0}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-rx01wr{height:1px}
+.eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
+### semantics
+### photon
+Table 0 0 480x17
+  Column 0 0 480x17
+    Box 0 0 480x16
+      Grid 12 8 456x0
+    Divider 0 16 480x1
+      Box 0 16 480x1
+

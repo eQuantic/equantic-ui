@@ -1,0 +1,172 @@
+## Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1ogof62 eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-8y94ea eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-spinner eq-13zzdqz eq-96qelu eq-i95eb9" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+<rect class="eq-153eepm" x="7" y="0" width="2" height="5" rx="1" transform="rotate(0 8 8)">
+</rect>
+<rect class="eq-1x7lrpl" x="7" y="0" width="2" height="5" rx="1" transform="rotate(45 8 8)">
+</rect>
+<rect class="eq-1uka0o0" x="7" y="0" width="2" height="5" rx="1" transform="rotate(90 8 8)">
+</rect>
+<rect class="eq-1rys0p3" x="7" y="0" width="2" height="5" rx="1" transform="rotate(135 8 8)">
+</rect>
+<rect class="eq-1lc4svq" x="7" y="0" width="2" height="5" rx="1" transform="rotate(180 8 8)">
+</rect>
+<rect class="eq-1e3tu7p" x="7" y="0" width="2" height="5" rx="1" transform="rotate(225 8 8)">
+</rect>
+<rect class="eq-bzqht8" x="7" y="0" width="2" height="5" rx="1" transform="rotate(270 8 8)">
+</rect>
+<rect class="eq-fh9n7" x="7" y="0" width="2" height="5" rx="1" transform="rotate(315 8 8)">
+</rect>
+</svg>
+</div>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-1fgorjw eq-5ew4ww eq-akjizx eq-g7fowl" data-eq-drag="y" data-eq-drag-min="0" data-eq-drag-max="64" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-13zzdqz{color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+.eq-153eepm{animation-delay:-0ms}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1e3tu7p{animation-delay:-500ms}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1eviv88{position:relative}
+.eq-1fgorjw{background-color:var(--eq-color-background, light-dark(#f5f6f8, #0c0f13))}
+.eq-1jjc6f6{height:100%}
+.eq-1lc4svq{animation-delay:-400ms}
+.eq-1ogof62{left:0}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1rys0p3{animation-delay:-300ms}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uka0o0{animation-delay:-200ms}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1x7lrpl{animation-delay:-100ms}
+.eq-1xlbso6{top:0}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-8y94ea{height:64px}
+.eq-96qelu{height:20px}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-bzqht8{animation-delay:-600ms}
+.eq-ewlixa{align-items:center}
+.eq-fh9n7{animation-delay:-700ms}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-z6eb5z{right:0}
+### semantics
+StaticText "x"
+### photon
+PullToRefresh 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 0 0 480x64
+        Row 0 0 480x64
+          Spinner 230 22 20x20
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24
+
+## Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1ogof62 eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-8y94ea eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-spinner eq-13zzdqz eq-96qelu eq-i95eb9" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+<rect class="eq-153eepm" x="7" y="0" width="2" height="5" rx="1" transform="rotate(0 8 8)">
+</rect>
+<rect class="eq-1x7lrpl" x="7" y="0" width="2" height="5" rx="1" transform="rotate(45 8 8)">
+</rect>
+<rect class="eq-1uka0o0" x="7" y="0" width="2" height="5" rx="1" transform="rotate(90 8 8)">
+</rect>
+<rect class="eq-1rys0p3" x="7" y="0" width="2" height="5" rx="1" transform="rotate(135 8 8)">
+</rect>
+<rect class="eq-1lc4svq" x="7" y="0" width="2" height="5" rx="1" transform="rotate(180 8 8)">
+</rect>
+<rect class="eq-1e3tu7p" x="7" y="0" width="2" height="5" rx="1" transform="rotate(225 8 8)">
+</rect>
+<rect class="eq-bzqht8" x="7" y="0" width="2" height="5" rx="1" transform="rotate(270 8 8)">
+</rect>
+<rect class="eq-fh9n7" x="7" y="0" width="2" height="5" rx="1" transform="rotate(315 8 8)">
+</rect>
+</svg>
+</div>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-1fgorjw eq-5ew4ww eq-akjizx eq-g7fowl" data-eq-drag="y" data-eq-drag-min="0" data-eq-drag-max="64" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-13zzdqz{color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+.eq-153eepm{animation-delay:-0ms}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1e3tu7p{animation-delay:-500ms}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1eviv88{position:relative}
+.eq-1fgorjw{background-color:var(--eq-color-background, light-dark(#f5f6f8, #0c0f13))}
+.eq-1jjc6f6{height:100%}
+.eq-1lc4svq{animation-delay:-400ms}
+.eq-1ogof62{left:0}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1rys0p3{animation-delay:-300ms}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uka0o0{animation-delay:-200ms}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1x7lrpl{animation-delay:-100ms}
+.eq-1xlbso6{top:0}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-8y94ea{height:64px}
+.eq-96qelu{height:20px}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-bzqht8{animation-delay:-600ms}
+.eq-ewlixa{align-items:center}
+.eq-fh9n7{animation-delay:-700ms}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-z6eb5z{right:0}
+### semantics
+StaticText "x"
+### photon
+PullToRefresh 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 0 0 480x64
+        Row 0 0 480x64
+          Spinner 230 22 20x20
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24
+
