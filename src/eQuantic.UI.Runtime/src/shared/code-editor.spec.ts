@@ -2474,4 +2474,25 @@ describe('a reader hears the field and its text as one thing', () => {
       parent.remove();
     }
   });
+
+  // A phone's keyboard composes and corrects in the text around its caret, and the door never tells the
+  // model which range a correction replaces: under a finger the door holds nothing, as it always did.
+  it('holds nothing under a finger', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'requestAnimationFrame'] });
+    const parent = document.createElement('div');
+    const matchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ matches: query === '(pointer: coarse)' })) as never;
+    try {
+      const editor = new CodeEditorController('one\ntwo', CodeLanguages.for('csharp'));
+      document.body.append(parent);
+      new Reconciler().reconcile(parent, null, lower(editor));
+      vi.advanceTimersByTime(100);
+
+      expect(parent.querySelector('textarea')!.value).toBe('');
+    } finally {
+      window.matchMedia = matchMedia;
+      vi.useRealTimers();
+      parent.remove();
+    }
+  });
 });

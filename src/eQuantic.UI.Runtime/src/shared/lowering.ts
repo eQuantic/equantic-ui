@@ -787,7 +787,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     focusSurface(path);
   }
 
-  readAfterRender('data-eq-code', path, model, () => model.reading);
+  readAfterRender('data-eq-code', path, model, reading);
 
   const changed = () => node.onChanged?.();
   // Copy and Cut run through the browser's copy event on whatever key the editor binds them to.
@@ -1035,7 +1035,8 @@ function openTextDoor(
         remember(ime, event.data);
       } else model.setComposition('');
     }
-    (event.target as HTMLTextAreaElement).value = '';
+    // What the input method left in the door is no part of the document: the render this asks for puts
+    // the door's reading back (readAfterRender), rather than emptying it for a frame a reader would hear.
     changed();
   }) as unknown as EventHandler;
 
@@ -1088,19 +1089,23 @@ function openTextDoor(
  * After the render, as revealCaret runs, and by path, never by a captured element. Never while an input
  * method composes: moving the selection under it would cancel the composition.
  * </p>
+ * <p>
+ * Not under a finger: a phone's keyboard reads the text around its caret and composes, corrects and
+ * replaces words in it, and the door hands the model what is typed, never which range a correction meant
+ * to replace, so a door holding the text would have the keyboard rewrite words it had already written
+ * (#1333). There the door holds nothing, as it always did.
+ * </p>
  */
-function readAfterRender(
-  attribute: string,
-  path: string,
-  model: object,
-  readingOf: () => TextReadingLike,
-): void {
+function readAfterRender(attribute: string, path: string, model: object, reading: TextReadingLike): void {
   if (typeof document === 'undefined') return;
   const read = () => {
     if (typeof document === 'undefined') return;
     const door = document.querySelector<HTMLTextAreaElement>(`[${attribute}="${path}"] textarea.eq-code-input`);
     if (!door || compositionOf(model).open) return;
-    const reading = readingOf();
+    if (underAFinger()) {
+      if (door.value !== '') door.value = '';
+      return;
+    }
     if (door.value !== reading.text) door.value = reading.text;
     const start = Math.min(reading.anchor, reading.focus);
     const end = Math.max(reading.anchor, reading.focus);
@@ -1111,6 +1116,12 @@ function readAfterRender(
   };
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(read));
   if (typeof setTimeout === 'function') setTimeout(read, 48);
+}
+
+/** Whether the page's primary pointer is a finger, whose keyboard composes in the text around its caret. */
+function underAFinger(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    && window.matchMedia('(pointer: coarse)').matches;
 }
 
 /** The reveal version each code surface was last rendered at, by path — see lowerCodeSurface. */
@@ -1780,7 +1791,7 @@ function lowerSheetSurface(
   const said = node.announcement ?? '';
   if (said.length > 0) input.children = [textLeaf(said)];
   view.children.push(input);
-  readAfterRender('data-eq-sheet', path, model, () => ({ text: said, anchor: said.length, focus: said.length }));
+  readAfterRender('data-eq-sheet', path, model, { text: said, anchor: said.length, focus: said.length });
 
   // What the grid says now (C# twin: LowerSheetSurface, #1081): a visually hidden polite status, which a
   // reader speaks each time its words change, wherever its focus is.
