@@ -9,6 +9,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Async;
 /// - Task.Delay(ms) -> Promise delay
 /// - Task.Run(fn) -> Promise wrapper
 /// - Task.WhenAll(tasks) -> Promise.all
+/// - Task.FromException(e), Task.FromCanceled(token) -> a task already ended, read by whoever awaits it
 /// </summary>
 public class TaskMethodStrategy : IConversionStrategy
 {
@@ -44,7 +45,12 @@ public class TaskMethodStrategy : IConversionStrategy
 
         if (!IsTaskType(expr)) return false;
 
-        return name is "Delay" or "Run" or "WhenAll" or "WhenAny" or "FromResult" or "Yield";
+        // A class of the app's that shares the name is its own, as its methods are.
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { ContainingType: { } owner }
+            && owner.ToDisplayString() != "System.Threading.Tasks.Task") return false;
+
+        return name is "Delay" or "Run" or "WhenAll" or "WhenAny" or "FromResult" or "Yield"
+            or "FromException" or "FromCanceled";
     }
 
     /// <summary>Whether this <c>ConfigureAwait</c> is the BCL's, on a task or a value task.</summary>
@@ -134,6 +140,13 @@ public class TaskMethodStrategy : IConversionStrategy
         {
             var val = context.Converter.ConvertExpression(args[0].Expression);
             return $"Promise.resolve({val})";
+        }
+
+        if (name is "FromException" or "FromCanceled")
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var helper = name == "FromException" ? Eq.TaskFromException : Eq.TaskFromCanceled;
+            return $"{helper}({context.Converter.ConvertExpression(args[0].Expression)})";
         }
 
         return context.Unhandled(node, "Task");
