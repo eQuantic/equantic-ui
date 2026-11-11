@@ -46,7 +46,10 @@ sweep() {
         continue
       fi
       # The queue deletes a group's ref when it merges as well as when it discards it. A merged group's
-      # commit is on main, and its run's last jobs are left to end.
+      # commit is on main, and its run's last jobs are left to end. The pull request's own state would
+      # not do: a discarded group's pull request merges later in another group, and its old run would
+      # then be left waiting for ever. Were a merged commit ever not on main, the cost is the tail of a
+      # run whose required checks had already passed, since that is what merging took.
       if out=$(gh api "repos/$repo/compare/$sha...main" --jq .status 2>&1); then
         if [ "$out" = "ahead" ] || [ "$out" = "identical" ]; then
           merged=$((merged + 1))
