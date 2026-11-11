@@ -48,6 +48,7 @@ Each of these has a test that names its handoff block, so the figure cannot drif
 | A13 IconButton · B8 Chip | `Selected` changed the paint and never reached `Pressable.Selected`, so no `aria-pressed` | `ToggleHandoffFidelityTests` |
 | B2 ListItem · B8 Chip | no §10 hover on an interactive row or on any chip kind | `PointerContractFidelityTests` |
 | B10 SearchField | the clear affordance was a 20dp glyph with a 20dp hit rect | `PointerContractFidelityTests` |
+| B4 BottomNavigation · C16 NavigationRail | a pressed destination painted the hover's SurfaceSubtle instead of the selection's pill at 40% | `PressedFillPlacementTests`, `PressedFillPlacementRealizerTests` |
 | A10 Icon | a labelled glyph carried a name and no `role="img"` | `DestinationSemanticsTests` |
 | B3 AppBar | the screen's title was a span, so a page had no level-1 heading | `HeadingOutlineTests` |
 | C7 Slider | thumb 20dp with a 2dp accent ring; the unfilled track painted BorderStrong | `SliderHandoffFidelityTests` |
@@ -1113,7 +1114,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/NavigationRail.cs`
 - **Handoff**: "Pointer — Item hover = SurfaceSubtle pill (§10); cursor pointer."
-- **Code**: The destination carries only a PRESSED fill (line 123). BoxStyle.Hover (the StyleDiff that lowers to CSS :hover — src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) is never set on the pill, the cell or the Pressable, and the generated stylesheet gives .eq-pressable only :active and :focus-visible rules (ThemeStylesheet.cs:91-106). Result: on a desktop pointer the rail gives no hover feedback at all — the fill only appears while the mouse button is held. The other pointer-tier components do set it (Menu.cs:88, Pagination.cs:108, Accordion.cs:76, DataTable.cs:199 all use `Hover = new StyleDiff { Background = theme.SurfaceSubtle }`). The `cursor: pointer` half of the clause IS satisfied — lowerPressable emits it unconditionally (lowering.ts:2873).
+- **Code**: The destination carries only a PRESSED fill (line 105). BoxStyle.Hover (the StyleDiff that lowers to CSS :hover — src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) is never set on the pill, the cell or the Pressable, and the generated stylesheet gives .eq-pressable only :active and :focus-visible rules (ThemeStylesheet.cs:91-106). Result: on a desktop pointer the rail gives no hover feedback at all — the fill only appears while the mouse button is held. The other pointer-tier components do set it (Menu.cs:88, Pagination.cs:108, Accordion.cs:76, DataTable.cs:199 all use `Hover = new StyleDiff { Background = theme.SurfaceSubtle }`). The `cursor: pointer` half of the clause IS satisfied — lowerPressable emits it unconditionally (lowering.ts:2873).
 - **Evidence**:
 
   ```
@@ -1522,11 +1523,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/BottomNavigation.cs`
 - **Handoff**: Select: pill scales-in from 0.6 + fades, Base 200ms standard; glyph crossfades outline→filled 100ms. Press-down shows the pill at 40% instantly.
-- **Code**: The pill BoxStyle has no Transform and no TransitionSpec, and the glyph swap is a bare conditional — the only motion in the rendered output is the global `.eq-pressable > :first-child` background-color transition (ThemeStylesheet.cs:92). Press-down is also the wrong shape: that :first-child is the item COLUMN, so the SurfaceSubtle wash covers the whole (hugged) column rather than showing the pill at 40%. (Since #616 the press fills the pill, on both targets; its colour is still SurfaceSubtle rather than the pill at 40%, which is #1254.) Neither is among the two fences the class doc names (E2 shadow, safe-area); PageIndicator.cs:62 shows the Colors|Size + Motion.State facility this needs.
+- **Code**: The pill BoxStyle has no Transform and no TransitionSpec, and the glyph swap is a bare conditional — the only motion in the rendered output is the global `.eq-pressable > :first-child` background-color transition (ThemeStylesheet.cs:92). Press-down is also the wrong shape: that :first-child is the item COLUMN, so the SurfaceSubtle wash covers the whole (hugged) column rather than showing the pill at 40%. (Since #616 the press fills the pill, on both targets, and since #1254 it is the selection's own pill at 40% rather than SurfaceSubtle, the hover's colour; the select motion is what the row still holds.) Neither is among the two fences the class doc names (E2 shadow, safe-area); PageIndicator.cs:62 shows the Colors|Size + Motion.State facility this needs.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:73  Pressed = isActive ? null : new StyleDiff { Background = theme.SurfaceSubtle },   // on the pill of an unselected destination since #616
+  BottomNavigation.cs:73  Pressed = isActive ? null : new StyleDiff { Background = primary.Subtle.WithOpacity(0.4f) },   // the pill at 40% since #1254
   ```
 
 ### B4 BottomNavigation · missing-feature · **unverified**
@@ -2616,7 +2617,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/NavigationRail.cs`
 - **Handoff**: "A11y · usage: Navigation landmark \"primary\"; items announce label + 'current' when selected." and "Semantics: Navigation landmark + aria-current=\"page\"."
-- **Code**: The rail's root is a plain Box (NavigationRail.cs:148-160) that lowers to a bare <div>: no landmark role, no accessible name. Only the per-item half of the contract exists (Role = PressableRole.Destination at line 126 → aria-current="page" in lowering.ts:2925). There is no landmark vocabulary anywhere in the framework — grep for landmark/nav roles across src/eQuantic.UI.Primitives, src/eQuantic.UI.Web/WebRealizer.cs and Runtime lowering.ts returns nothing but a prose FENCE note in ListItem.cs:53. So a screen-reader user gets four buttons in the page body, with no "navigation" region to jump to.
+- **Code**: The rail's root is a plain Box (NavigationRail.cs:148-160) that lowers to a bare <div>: no landmark role, no accessible name. Only the per-item half of the contract exists (Role = PressableRole.Destination at line 130 → aria-current="page" in lowering.ts:2925). There is no landmark vocabulary anywhere in the framework — grep for landmark/nav roles across src/eQuantic.UI.Primitives, src/eQuantic.UI.Web/WebRealizer.cs and Runtime lowering.ts returns nothing but a prose FENCE note in ListItem.cs:53. So a screen-reader user gets four buttons in the page body, with no "navigation" region to jump to.
 - **Evidence**:
 
   ```
