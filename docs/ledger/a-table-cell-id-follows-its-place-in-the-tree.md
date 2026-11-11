@@ -3,5 +3,6 @@
   `Navigable` grid's, took ids scoped by the grid's label, hashed, so two spreadsheets on one page, two
   unlabelled tables or two calendars of one month wrote the same ids, and a reader in the second grid heard
   the first grid's values. The server's lowering now follows the tree as the browser's does, by the
-  segments of `LoweringPath`, and the scope is the grid's path below its root, the same on the server's
-  first pass and after hydration.
+  segments of `LoweringPath`, and the scope is the grid's path below its root, read past the step into what
+  a component builds, which the browser takes for a component inside a tree and not for a page it mounts as
+  a root: the same on the server's first pass and after hydration, as the dashboard's `/sheet` measures.
