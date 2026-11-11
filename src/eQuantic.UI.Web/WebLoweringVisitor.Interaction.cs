@@ -324,9 +324,9 @@ internal sealed partial class WebLoweringVisitor
             };
         // Ids are scoped to THIS grid: two calendars on one page would otherwise both call their
         // cells eq-cell-1-1, which is a duplicate id and an activedescendant that may resolve into
-        // the wrong grid. The scope is the grid's own name, hashed with the atomizer's FNV — the
-        // one hash both producers compute identically, which is what SSR hydration needs.
-        var scope = NavigableScope(navigable);
+        // the wrong grid. The scope is the grid's place in the tree, which both producers follow the
+        // same way, so the server's first pass and hydration write the same ids (#1115).
+        var scope = LoweringPath.Scope(_path);
         if (navigable.ActiveCell is { } active)
             element.RawAttributes["aria-activedescendant"] = NavigableCellId(scope, active.Row, active.Item);
 
@@ -380,13 +380,6 @@ internal sealed partial class WebLoweringVisitor
     /// same string, or the attribute points at nothing.</summary>
     internal string NavigableCellId(string scope, int row, int item) =>
         $"eq-cell-{scope}-{row}-{item}";
-
-    /// <summary>What makes one grid's cell ids distinct from another's on the same page: the
-    /// grid's NAME, hashed. Two grids that also share a name (the same month rendered twice) would
-    /// still collide — a documented limit, and the point where a caller should give them names
-    /// that differ, which a screen reader needs anyway.</summary>
-    internal string NavigableScope(Navigable navigable) =>
-        StyleAtomizer.Hash(navigable.Label);
     /// <summary>
     /// Spec §06 loop motion: a layout-transparent div carrying the GENERATED keyframe animation —
     /// the effect maps to a keyframe name, endpoints ride custom properties at the style tail

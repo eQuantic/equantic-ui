@@ -468,9 +468,11 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     ),
     spreadsheet: still(spreadsheet()),
     'spreadsheet-editing': still(new Spreadsheet(editing(), { width: SizeValue.fill, height: SizeValue.fixed(240) })),
-    // Two spreadsheets on one page, and two tables with no label, each owning its own cells (#1115).
+    // Two spreadsheets on one page, two tables with no label and two grids of one label (the same month
+    // twice), each owning its own cells (#1115).
     'two-spreadsheets': still(column(8, spreadsheet(), spreadsheet())),
     'two-unlabelled-tables': still(column(8, unlabelled(), unlabelled())),
+    'two-calendars': still(column(8, new Calendar(dateOnly(2026, 7, 17)), new Calendar(dateOnly(2026, 7, 17)))),
     'formula-bar': still(new FormulaBar(editing())),
     'name-box': still(new NameBox(editing())),
     'status-bar': still(new StatusBar(summing())),

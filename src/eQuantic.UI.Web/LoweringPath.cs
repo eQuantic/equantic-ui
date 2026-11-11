@@ -8,8 +8,9 @@ namespace eQuantic.UI.Web;
 /// Each container names the step to each child by one of these segments, the same one on both sides, so what a
 /// node is scoped by is the same on the server's first pass and after hydration, with nothing counted.
 /// <para>
-/// A table's cells are what it scopes today: two tables that shared a label, two spreadsheets or two unlabelled
-/// tables, wrote the same cell ids, and a reader in the second grid heard the first grid's values (#1115).
+/// The cells of a table and of a <c>Navigable</c> grid are what it scopes: two tables that shared a label, two
+/// spreadsheets or two unlabelled tables, wrote the same cell ids, and a reader in the second grid heard the first
+/// grid's values (#1115).
 /// </para>
 /// </summary>
 internal static class LoweringPath
@@ -43,12 +44,13 @@ internal static class LoweringPath
     public static string Below(string parent, string segment) => parent + "/" + segment;
 
     /// <summary>
-    /// What a node is scoped by: its path below its root, the same on both sides whichever root the browser's
-    /// pass gave it. A table's cells' ids hash it.
+    /// The scope a grid's or a table's cells' ids are unique in: its path below its root, hashed with the
+    /// atomizer's FNV, the same on both sides whichever root the browser's pass gave it. The label was the
+    /// scope, so two grids of one label, two spreadsheets or two unlabelled tables shared their cells' ids.
     /// </summary>
     public static string Scope(string path)
     {
         var below = path.IndexOf('/');
-        return below < 0 ? "" : path[below..];
+        return StyleAtomizer.Hash(below < 0 ? "" : path[below..]);
     }
 }

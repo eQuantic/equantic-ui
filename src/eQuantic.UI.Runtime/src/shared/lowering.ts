@@ -1924,7 +1924,7 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
   const role = node.role ?? 'group';
   // A table or a grid reads as rows of cells (C# twin: LowerTableViewport, #1081); a group adds nothing.
   const semantics: TableSemantics | null =
-    role === 'group' ? null : { grid: role === 'grid', scope: hashDeclaration(pathScope(path)) };
+    role === 'group' ? null : { grid: role === 'grid', scope: pathScope(path) };
   const children: HtmlNode[] = [];
   for (let marks = 0; marks < 2; marks++) {
     for (let band = 0; band < 4; band++) {
@@ -2032,23 +2032,23 @@ function lowerTableBand(
 }
 
 /** What a table or a grid adds for a reader (#1081): whether it is a grid, and the scope its cells' ids
- * are unique in, the label hashed as a `Navigable` grid's are (`navigableScope`). */
+ * are unique in, its place in the tree (`pathScope`), as a `Navigable` grid's are. */
 interface TableSemantics {
   readonly grid: boolean;
   readonly scope: string;
 }
 
-/** The id a table's cell answers to, which its row's `aria-owns` names (C# twin: TableCellId). */
 /**
- * What a node is scoped by: its path below its root, the same on both sides whichever root this pass gave it
- * (C# twin: LoweringPath.Scope). A table's cells' ids hash it: its label was the scope, so two tables of one
- * label, two spreadsheets or two unlabelled tables, shared their cells' ids (#1115).
+ * The scope a grid's or a table's cells' ids are unique in: its path below its root, hashed with the atomizer's
+ * FNV, the same on both sides whichever root this pass gave it (C# twin: LoweringPath.Scope). The label was the
+ * scope, so two grids of one label, two spreadsheets or two unlabelled tables shared their cells' ids (#1115).
  */
 function pathScope(path: string): string {
   const below = path.indexOf('/');
-  return below < 0 ? '' : path.slice(below);
+  return hashDeclaration(below < 0 ? '' : path.slice(below));
 }
 
+/** The id a table's cell answers to, which its row's `aria-owns` names (C# twin: TableCellId). */
 function tableCellId(scope: string, row: number, column: number): string {
   return `eq-tcell-${scope}-${row}-${column}`;
 }
@@ -4428,17 +4428,6 @@ function navigableCellId(scope: string, row: number, item: number): string {
 }
 
 /**
- * What makes one grid's cell ids distinct from another's on the same page: the grid's NAME, hashed
- * with the atomizer's FNV — the one hash both producers compute identically, which is what SSR
- * hydration needs. Two grids that also share a name (the same month rendered twice) would still
- * collide, which is the point where a caller should give them names that differ; a screen reader
- * needs that anyway.
- */
-function navigableScope(node: NavigableNode): string {
-  return hashDeclaration(node.label ?? '');
-}
-
-/**
  * A KEY, as the MOVE it means (C# twin: NavigableMove). The design system's C15 keyboard: arrows
  * walk a day, PgUp/PgDn a month, +Shift a year, Home/End the week's bounds. Returns null for a key
  * this composite does not claim — which must then reach the page untouched, or an inline grid
@@ -4481,7 +4470,7 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
   host.attributes['role'] = node.role ?? 'grid';
   host.attributes['tabindex'] = '0';
   if (node.label) host.attributes['aria-label'] = node.label;
-  const scope = navigableScope(node);
+  const scope = pathScope(path);
   if (node.activeCell)
     host.attributes['aria-activedescendant'] = navigableCellId(
       scope,

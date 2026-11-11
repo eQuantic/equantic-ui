@@ -51,7 +51,7 @@ internal sealed partial class WebLoweringVisitor
         // A table or a grid reads as rows of cells (TS twin: lowerTableViewport, #1081); a group adds nothing.
         TableSemantics? semantics = viewport.Role == TableRole.Group
             ? null
-            : new TableSemantics(viewport.Role == TableRole.Grid, StyleAtomizer.Hash(LoweringPath.Scope(_path)));
+            : new TableSemantics(viewport.Role == TableRole.Grid, LoweringPath.Scope(_path));
         element.RawAttributes = new Dictionary<string, string>
         {
             ["role"] = viewport.Role switch { TableRole.Table => "table", TableRole.Grid => "grid", _ => "group" },
