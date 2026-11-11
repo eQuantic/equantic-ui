@@ -269,7 +269,11 @@ three `build-platform-runtimes`, `build-packages`, `commit-messages`, `openspec`
 lands on: on its own head kept up to date with main, or, once the ruleset merges through GitHub's merge
 queue, on the queue's run of it together with every pull request ahead of it. The CI SHALL run every
 one of those jobs on a merge group, and no job that publishes. Every job in a dependency chain SHALL be
-required, since GitHub counts a job skipped for a failed dependency as passed.
+required, since GitHub counts a job skipped for a failed dependency as passed. The four jobs that run on
+macOS (`test (macos-latest)`, `samples`, `build-packages` and the macOS `build-platform-runtimes`) SHALL
+run on a merge group, a push to main, a tag and a run by hand, and SHALL be skipped by their own
+condition on a pull request's run, where each reports as skipped under the name its required check
+names.
 
 #### Scenario: main moved after the CI ran
 
@@ -290,7 +294,13 @@ required, since GitHub counts a job skipped for a failed dependency as passed.
 #### Scenario: A red fact only a Mac answers
 
 - **WHEN** a pull request turns a `[MacFact]` red
-- **THEN** `test (macos-latest)` fails and the pull request cannot merge
+- **THEN** `test (macos-latest)` fails in the merge queue's run and the pull request does not merge
+
+#### Scenario: A pull request's own run
+
+- **WHEN** a push to a pull request runs the CI
+- **THEN** the four macOS jobs report as skipped under their check names, the required checks are
+  satisfied, and no macOS runner is taken
 
 #### Scenario: A red test in one group
 
