@@ -177,11 +177,16 @@ internal sealed class RunningCompiler : IModuleCompiler
     /// file, and the properties that say where eqc and that file are. The same evaluation the build ran,
     /// so the arguments are the build's, configuration and references included.
     /// </summary>
-    private ProcessStartInfo? Discover(string contentRoot)
-    {
-        var info = Started("dotnet", contentRoot,
+    private ProcessStartInfo? Discover(string contentRoot) => Asked(
+        Started("dotnet", contentRoot,
             ["msbuild", "-t:_EQuanticCompilerArguments", "-getProperty:EqcCliPath",
-             "-getProperty:_EqcArgumentsPath", "-getProperty:MSBuildProjectDirectory", "-nologo", "-v:q"]);
+             "-getProperty:_EqcArgumentsPath", "-getProperty:MSBuildProjectDirectory", "-nologo", "-v:q"]),
+        contentRoot, DiscoveryLimit);
+
+    /// <summary>What <paramref name="info"/>, an MSBuild asked how to start eqc, answered within
+    /// <paramref name="limit"/>, which a test sets; null when it did not say.</summary>
+    internal ProcessStartInfo? Asked(ProcessStartInfo info, string contentRoot, TimeSpan limit)
+    {
         using var msbuild = new Process { StartInfo = info };
         lock (_gate)
         {
@@ -193,10 +198,20 @@ internal sealed class RunningCompiler : IModuleCompiler
         {
             var output = msbuild.StandardOutput.ReadToEndAsync();
             var errors = msbuild.StandardError.ReadToEndAsync();
-            if (!msbuild.WaitForExit(DiscoveryLimit))
+            var clock = Stopwatch.StartNew();
+            if (!msbuild.WaitForExit(limit))
             {
                 Stop(msbuild);
-                Console.WriteLine($"[eQuantic.HotReload] MSBuild did not say how to start eqc in {DiscoveryLimit.TotalMinutes:F0} minutes, and was stopped");
+                Console.WriteLine($"[eQuantic.HotReload] MSBuild did not say how to start eqc in {limit.TotalMinutes:F0} minutes, and was stopped");
+                return null;
+            }
+            // What it wrote, within what is left of its time: a stream ends when the last process holding
+            // it closes it, not when MSBuild exits, and an unbounded read held the save that asked, and
+            // every save after it (#997).
+            var left = limit - clock.Elapsed;
+            if (!Task.WhenAll(output, errors).Wait(left > TimeSpan.Zero ? left : TimeSpan.Zero))
+            {
+                Console.WriteLine("[eQuantic.HotReload] MSBuild exited, and something it started still holds its output");
                 return null;
             }
             // A stop kills it: that is no failure to report.
@@ -232,7 +247,7 @@ internal sealed class RunningCompiler : IModuleCompiler
     }
 
     /// <summary>A program started with a list of arguments and no shell, without dotnet watch's
-    /// variables, its output read by this server.</summary>
+    /// variables and with no build server to outlive it, its output read by this server.</summary>
     internal static ProcessStartInfo Started(string program, string directory, IEnumerable<string> arguments)
     {
         var info = new ProcessStartInfo(program)
@@ -244,6 +259,13 @@ internal sealed class RunningCompiler : IModuleCompiler
         };
         foreach (var argument in arguments) info.ArgumentList.Add(argument);
         foreach (var variable in WatchVariables) info.Environment.Remove(variable);
+        // Nothing left running behind it: a worker node, an MSBuild server or a compiler server that
+        // outlived the MSBuild would keep its streams open, which is how the Web suite hung until #971
+        // measured it, and here would hold the save that asked (#997).
+        info.Environment.Remove("MSBUILDENSURESTDOUTFORTASKPROCESSES");
+        info.Environment["MSBUILDDISABLENODEREUSE"] = "1";
+        info.Environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
+        info.Environment["UseSharedCompilation"] = "false";
         return info;
     }
 

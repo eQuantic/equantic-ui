@@ -14,8 +14,9 @@ export { CalendarNames } from './shared/calendar-names';
 
 export { StatelessComponent, StatefulComponent } from './core/component';
 // The C# `eQuantic.UI.Primitives.UiComponent` base surfaces in transpiled signatures (e.g. the
-// reconciler's `AdoptConfig(UiComponent next)`) — on the runtime it aliases the Component base.
-export { Component as UiComponent } from './core/types';
+// reconciler's `AdoptConfig(UiComponent next)`): the component that IS a node, as in C#, between
+// the web `Component` (which `HtmlElement` extends) and the stateless and stateful kinds.
+export { UiComponent } from './core/component';
 export {
   ServiceProvider,
   ServiceCollectionBuilder,
