@@ -40,8 +40,9 @@ export class DatePicker extends StatefulComponent {
         let shown = this._typing ?? ((value = this.selected) != null ? DatePicker.format(value) : '');
         let typed: any; 
         let invalid = (($0) => (($0 != null && $0.length > 0) && (typed = $0, true)))(this._typing) && DatePicker.parse(typed) == null;
-        let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.all(12) }), new Calendar(this.selected, this.pick.bind(this), this.min, this.max));
-        let opener: VisualNode = new Anchored(new Pressable(new Icon(IconGlyph.fromIcons('calendar'), 20, theme.textSecondary), this.toggle.bind(this), { label: SdkStrings.chooseDate, expanded: this._open }), panel, { open: this._open && !this.disabled, onDismiss: this.close.bind(this), panelRole: 'dialog' });
+        let slot = theme.calendar;
+        let panel = new Box(new BoxStyle({ background: slot?.panelFill ?? theme.surface, cornerRadius: new CornerRadii(slot?.panelRadius ?? theme.shape('medium')), borderWidth: slot?.panelBorderWidth ?? 1, borderColor: slot?.panelBorderColor ?? theme.border, elevation: slot?.panelElevation ?? 2, padding: EdgeInsets.all(slot?.panelPadding ?? 12) }), new Calendar(this.selected, this.pick.bind(this), this.min, this.max));
+        let opener: VisualNode = new Anchored(new Pressable(new Icon(IconGlyph.fromIcons('calendar'), slot?.openerIconSize ?? 20, slot?.openerColor ?? theme.textSecondary), this.toggle.bind(this), { label: SdkStrings.chooseDate, expanded: this._open }), panel, { open: this._open && !this.disabled, onDismiss: this.close.bind(this), panelRole: 'dialog' });
         opener = new Shortcut(opener, KeyChord.escape, this.close.bind(this), { enabled: this._open && !this.disabled });
         return new TextInput(shown, this.type.bind(this), this.label, SdkStrings.dateFormatHint, null, invalid ? SdkStrings.dateFormatHint : null, null, 'large', this.disabled ? null : opener, { disabled: this.disabled });
     }

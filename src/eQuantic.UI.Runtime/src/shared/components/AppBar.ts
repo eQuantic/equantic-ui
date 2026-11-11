@@ -26,17 +26,19 @@ export class AppBar extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
+        let slot = theme.navigation;
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center' });
         let leading: any; 
         if ((leading = this.leading) != null) row.add(leading);
-        let title = new Text(this.title, 'title', theme.textPrimary, 1, 'start', false, false, null, 0, { headingLevel: 1, styleOverride: new TypeStyle(20, 26, 'semiBold', 0, Math.fround(1.3)) });
-        let titlePad = new Box(new BoxStyle({ padding: new EdgeInsets(this.leading == null ? 12 : 8, 0, 8, 0) }), title);
+        let title = new Text(this.title, 'title', slot?.titleColor ?? theme.textPrimary, 1, 'start', false, false, null, 0, { headingLevel: 1, styleOverride: new TypeStyle(slot?.titleSize ?? 20, slot?.titleLineHeight ?? 26, slot?.titleWeight ?? 'semiBold', 0, Math.fround(1.3)) });
+        let titleGap = slot?.titleGap ?? 8;
+        let titlePad = new Box(new BoxStyle({ padding: new EdgeInsets(this.leading == null ? slot?.titleInset ?? 12 : titleGap, 0, titleGap, 0) }), title);
         row.add(new Flexible(titlePad));
         let actions: any; 
         if ((actions = this.actions) != null) {
             for (const action of actions) row.add(action);
         }
-        return new Box(new BoxStyle({ width: SizeValue.fill, height: 56, padding: EdgeInsets.symmetric(4, 0), background: this.scrolled ? theme.surface : null, elevation: this.scrolled ? 2 : 0 }), row);
+        return new Box(new BoxStyle({ width: SizeValue.fill, height: slot?.appBarHeight ?? 56, padding: EdgeInsets.symmetric(slot?.appBarPaddingX ?? 4, 0), background: this.scrolled ? slot?.background ?? theme.surface : null, elevation: this.scrolled ? slot?.scrolledElevation ?? 2 : 0 }), row);
     }
 }
 

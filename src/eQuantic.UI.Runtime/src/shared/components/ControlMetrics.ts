@@ -32,5 +32,9 @@ export class ControlMetrics {
     static rungAt(ladder: DensityLadder | null, size: SizeVariantValue, density: DensityValue) {
         return ControlMetrics.rung(density === 'compact' ? (ladder?.compact ?? null) : (ladder?.comfortable ?? null), size);
     }
+
+    static atSize(ladder: SizeLadder | null, size: SizeVariantValue) {
+        return ControlMetrics.rung(ladder, size);
+    }
 }
 

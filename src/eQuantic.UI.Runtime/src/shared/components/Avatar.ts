@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Icon, IconGlyph, Image, Positioned, SizeVariantValue, Sizing, Stack, StatelessComponent, Text, TypeStyle, VariantValue, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, IconGlyph, Image, Positioned, SizeVariantValue, Sizing, Stack, StatelessComponent, Text, TypeStyle, VariantValue, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Avatar extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Avatar';
@@ -48,8 +48,9 @@ export class Avatar extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let side = Sizing.avatar(this.size);
-        let labelSize = Sizing.avatarInitials(this.size);
+        let slot = theme.badge;
+        let side = Avatar.sideOf(theme, this.size);
+        let labelSize = ControlMetrics.atSize((slot?.avatarLabelSize ?? null), this.size) ?? Sizing.avatarInitials(this.size);
         let source: any; 
         if ((source = this.imageSource) != null) {
             let photo = new Image(source, side, side, 'cover', this.name ?? this.initials, { cornerRadius: new CornerRadii(theme.shape('full')) });
@@ -59,17 +60,22 @@ export class Avatar extends StatelessComponent {
         let tint = theme.colors(Avatar.tintPalette[$eq.num.intRem(seed.length, Avatar.tintPalette.length)]);
         let clipped = this.initials.length > 2 ? $eq.text.substring(this.initials, 0, 2) : this.initials;
         let hasInitials = clipped.length > 0;
-        let glyphSize = (() => { const $s = this.size; if ($s === 'small') return 16; if ($s === 'medium') return 20; if ($s === 'large') return 24; return 32; })();
-        let face = hasInitials ? new Text(clipped, 'caption', tint.onSubtle, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(labelSize, labelSize, 'semiBold', 0, Math.fround(1.3)) }) : new Icon(IconGlyph.fromIcons('person'), glyphSize, theme.textMuted);
+        let glyphSize = ControlMetrics.atSize((slot?.avatarGlyphSize ?? null), this.size) ?? (() => { const $s = this.size; if ($s === 'small') return 16; if ($s === 'medium') return 20; if ($s === 'large') return 24; return 32; })();
+        let face = hasInitials ? new Text(clipped, 'caption', tint.onSubtle, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(labelSize, labelSize, slot?.avatarLabelWeight ?? 'semiBold', 0, Math.fround(1.3)) }) : new Icon(IconGlyph.fromIcons('person'), glyphSize, slot?.avatarGlyphColor ?? theme.textMuted);
         let content = VisualNodeExtensions.centered(face);
-        let circle = new Box(new BoxStyle({ width: side, height: side, background: hasInitials ? tint.subtle : theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')) }), content);
+        let circle = new Box(new BoxStyle({ width: side, height: side, background: hasInitials ? tint.subtle : slot?.avatarFill ?? theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')) }), content);
         return this.status === 'none' ? circle : this.withStatusDot(circle, side, theme);
     }
 
+    static sideOf(theme: any, size: SizeVariantValue) {
+        return ControlMetrics.atSize((theme.badge?.avatarSize ?? null), size) ?? Sizing.avatar(size);
+    }
+
     withStatusDot(face: VisualNode, side: number, theme: any) {
+        let slot = theme.badge;
         let dotSide = $eq.math.roundSingle(Math.fround(side / Math.fround(3.3)));
-        let dotFill = this.status === 'online' ? theme.colors('success').base : theme.textMuted;
-        let dot = new Box(new BoxStyle({ width: dotSide, height: dotSide, background: dotFill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: 2, borderColor: theme.surface }));
+        let dotFill = this.status === 'online' ? theme.colors('success').base : slot?.avatarGlyphColor ?? theme.textMuted;
+        let dot = new Box(new BoxStyle({ width: dotSide, height: dotSide, background: dotFill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: slot?.ringWidth ?? 2, borderColor: slot?.ringColor ?? theme.surface }));
         let stack = new Stack();
         stack.add(face);
         stack.add(new Positioned(dot, null, 0, 0));

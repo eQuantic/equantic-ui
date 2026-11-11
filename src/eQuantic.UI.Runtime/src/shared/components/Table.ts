@@ -17,16 +17,19 @@ export class Table extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let tracks = GridTrack.repeat($eq.collections.count(this.columns), GridTrack.flex());
-        let header = new Grid(tracks, 12, null, { width: SizeValue.fill });
-        for (const column of this.columns) header.add(new Text(column, 'label', theme.textSecondary, 1));
+        let slot = theme.table;
+        let gap = slot?.columnGap ?? 12;
+        let padding = EdgeInsets.symmetric(slot?.cellPaddingX ?? 12, slot?.cellPaddingY ?? 8);
+        let header = new Grid(tracks, gap, null, { width: SizeValue.fill });
+        for (const column of this.columns) header.add(new Text(column, 'label', slot?.headerColor ?? theme.textSecondary, 1));
         let table = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        table.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8), borderWidth: 0 }), header));
+        table.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: padding, borderWidth: 0 }), header));
         table.add(new Divider());
         for (let r = 0; r < $eq.collections.count(this.rows); r++) {
-            let row = new Grid(tracks, 12, null, { width: SizeValue.fill });
+            let row = new Grid(tracks, gap, null, { width: SizeValue.fill });
             let cells = $eq.collections.item(this.rows, r);
             for (let c = 0; c < $eq.collections.count(this.columns); c++) row.add(new Text(c < $eq.collections.count(cells) ? $eq.collections.item(cells, c) : '', 'bodyM', null, 1));
-            table.add(new Box(new BoxStyle({ width: SizeValue.fill, minHeight: 44, padding: EdgeInsets.symmetric(12, 8), hover: new StyleDiff({ background: theme.surfaceSubtle }) }), row));
+            table.add(new Box(new BoxStyle({ width: SizeValue.fill, minHeight: slot?.rowMinHeight ?? 44, padding: padding, hover: new StyleDiff({ background: slot?.hoverFill ?? theme.surfaceSubtle }) }), row));
             if (r < $eq.collections.count(this.rows) - 1) table.add(new Divider());
         }
         return table;

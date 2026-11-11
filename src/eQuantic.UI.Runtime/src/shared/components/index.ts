@@ -152,7 +152,6 @@ export { MarkdownListItem } from './MarkdownListItem';
 export { MarkdownParser } from './MarkdownParser';
 export { MarkdownRow } from './MarkdownRow';
 export { MarkdownRun } from './MarkdownRun';
-export { MarkdownStyle } from './MarkdownStyle';
 export { Menu } from './Menu';
 export { MenuItem } from './MenuItem';
 export { Mermaid } from './Mermaid';

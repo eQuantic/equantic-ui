@@ -2,7 +2,6 @@ import { Box, BoxStyle, BuildContext, Column, Draggable, Icon, IconGlyph, IconsV
 
 export class SwipeableRow extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.SwipeableRow';
-    static actionWidth: number = 96;
     declare child: VisualNode;
     declare actionLabel: string;
     declare actionIcon: IconsValue;
@@ -30,19 +29,17 @@ export class SwipeableRow extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let colors = theme.colors(this.actionVariant);
-        let actionContent = new Column(3, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
-        actionContent.add(new Icon(IconGlyph.fromIcons(this.actionIcon), 20, colors.onBase));
+        let slot = theme.list;
+        let actionWidth = slot?.swipeActionWidth ?? 96;
+        let actionContent = new Column(slot?.swipeActionGap ?? 3, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
+        actionContent.add(new Icon(IconGlyph.fromIcons(this.actionIcon), slot?.swipeIconSize ?? 20, colors.onBase));
         actionContent.add(new Text(this.actionLabel, 'caption', colors.onBase, 1));
-        let action = new Pressable(new Box(new BoxStyle({ width: SwipeableRow.actionWidth, height: SizeValue.fill, background: colors.base }), actionContent), this.onAction, { label: this.actionLabel });
-        let surface = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surface }), this.child);
+        let action = new Pressable(new Box(new BoxStyle({ width: actionWidth, height: SizeValue.fill, background: colors.base }), actionContent), this.onAction, { label: this.actionLabel });
+        let surface = new Box(new BoxStyle({ width: SizeValue.fill, background: slot?.swipeSurface ?? theme.surface }), this.child);
         let revealed = new Stack();
         revealed.add(new Positioned(action, 0, 0, 0));
-        revealed.add(new Draggable(surface, this.onReleased.bind(this), { axis: 'horizontal', min: -SwipeableRow.actionWidth, max: 0, restOffset: this.open ? -SwipeableRow.actionWidth : 0 }));
+        revealed.add(new Draggable(surface, (offset: number) => this.onOpenChanged?.(offset <= Math.fround(-actionWidth / 2)), { axis: 'horizontal', min: -actionWidth, max: 0, restOffset: this.open ? -actionWidth : 0 }));
         return new Box(new BoxStyle({ width: SizeValue.fill, clip: true }), revealed);
-    }
-
-    onReleased(offset: number) {
-        return this.onOpenChanged?.(offset <= Math.fround(-SwipeableRow.actionWidth / 2));
     }
 }
 
