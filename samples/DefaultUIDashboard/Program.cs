@@ -36,6 +36,10 @@ builder.Services.AddUI(options =>
            // The files the uploads screen takes: 3D models and notes, under the policy the page reads
            // too, sent in parts to the endpoint this maps and received by the page's Server Action.
            .UseUploads(uploads => uploads.Accept(eQuantic.Console.SampleUploads.Models))
+           // The strict Content-Security-Policy: every script and style the SDK writes carries the
+           // request's nonce, GTM's hosts are the SDK's to add, and nothing here names a source. The
+           // e2e suite loads every page under it and fails on a single violation (#1270).
+           .UseContentSecurityPolicy()
            // The document (its surface, text, face, selection and scrollbars) is the theme's, so
            // the shell says only what the page is.
            .ConfigureHtmlShell(shell => shell

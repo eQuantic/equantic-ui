@@ -138,8 +138,9 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   an open decision (#286).
 - **Security**: hardened (deserialization allow-list, payload cap); needs a formal hardening review
   and a CSP the SDK writes (#306). **Consent before cookies (2026-09)**: `IConsent` as
-  a capability, the `CookieConsent` card, and `UseGtm(...).WithConsent()` — Consent Mode defaults to
-  denied and the container is fetched only on a granted answer, on the first paint and live.
+  a capability, the `CookieConsent` card, and a `UseGtm` that waits for consent by default (#1294) —
+  Consent Mode defaults to denied and the container is fetched only on a granted answer, on the first
+  paint and live.
 - **Server events (2026-10)**: a component hears what the server publishes to a typed topic
   (`ServerTopic<T>`, the `IServerEvents` capability) over one Server-Sent Events stream per page, each
   topic authorized by route templates and ASP.NET Core policies, with seams for the backplane and the

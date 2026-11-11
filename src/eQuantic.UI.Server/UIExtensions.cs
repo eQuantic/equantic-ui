@@ -178,17 +178,26 @@ public static class UIExtensions
         services.TryAddSingleton<eQuantic.UI.Primitives.IClock, AbsentCapabilities.Clock>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IFrameTicker, AbsentCapabilities.FrameTicker>();
 
-        // Add response compression (Brotli + Gzip for JS, CSS, HTML)
+        // Response compression for what every user receives alike: the runtime, the modules, the styles and
+        // the pictures. A page's HTML and an action's JSON answer one user, and may hold a secret beside text
+        // that user's request put there, which compressed over HTTPS is the shape BREACH reads through the
+        // response's length. They are left as they are, and an app that wants them compressed says so.
         services.AddResponseCompression(opts =>
         {
             opts.EnableForHttps = true;
-            opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
-            {
+            opts.MimeTypes =
+            [
                 "application/javascript",
+                "text/javascript",
                 "text/css",
-                "image/svg+xml"
-            });
+                "image/svg+xml",
+                "application/wasm",
+            ];
         });
+        // The compression has to be applied as well as registered, and the developer writes nothing for it:
+        // it stands in front of the pipeline, so what the runtime's endpoint, the static files and a page
+        // answer all pass through it (#1002). Once, however many times AddUI is called.
+        services.TryAddEnumerable(ServiceDescriptor.Transient<IStartupFilter, ResponseCompressionFirst>());
         services.Configure<BrotliCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
         services.Configure<GzipCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
 
@@ -472,11 +481,20 @@ public static class UIExtensions
         endpoints.MapGetAndHead("/_equantic/{name}.js", async context =>
         {
             var name = (string?)context.GetRouteValue("name");
-            var path = AssetPaths.Resolve(
-                Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic"),
-                name, ".js");
+            var environment = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
+            var path = AssetPaths.Resolve(Path.Combine(environment.WebRootPath, "_equantic"), name, ".js");
+            // Not under the web root: the local directory, as a development run lays it out, and only in
+            // Development, where it is the build the developer is running. Found there, the module is
+            // served as one found under the web root is, and its status is 200: a browser refuses to
+            // run a module answered 404 (#1296).
+            var localPath = environment.IsDevelopment()
+                ? AssetPaths.Resolve(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js")
+                : null;
+            var found = path is not null && File.Exists(path) ? path
+                : localPath is not null && File.Exists(localPath) ? localPath
+                : null;
 
-            if (path is not null && File.Exists(path))
+            if (found is not null)
             {
                 context.Response.ContentType = "application/javascript";
                 // Hot reload rewrites fixed-name bundles in place, and the build id in their URL is
@@ -487,28 +505,18 @@ public static class UIExtensions
                 context.Response.Headers["Cache-Control"] = hotReloads
                     ? "no-cache"
                     : "public, max-age=31536000, immutable";
-                await context.Response.SendFileAsync(path);
+                await context.Response.SendFileAsync(found);
             }
             else
             {
                 context.Response.StatusCode = 404;
-                // Try finding it in the local directory (Dev scenario)
-                var localPath = AssetPaths.Resolve(
-                    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js");
-                if (localPath is not null && File.Exists(localPath))
+                // Plain text, and only Development says where it looked: the paths are the server's
+                // own, and this route serves anyone, so no other environment writes back what the
+                // request named (#1296).
+                if (path is not null && environment.IsDevelopment())
                 {
-                    context.Response.ContentType = "application/javascript";
-                    await context.Response.SendFileAsync(localPath);
-                }
-                else if (path is not null)
-                {
-                    // The paths are the server's own, and this route serves anyone: they are for a
-                    // developer, so only Development writes them.
-                    context.Response.ContentType = "application/javascript";
-                    await context.Response.WriteAsync(
-                        context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment()
-                            ? $"// 404: Component {name} not found at {path} or {localPath}"
-                            : $"// 404: Component {name} not found");
+                    context.Response.ContentType = "text/plain; charset=utf-8";
+                    await context.Response.WriteAsync($"Component {name} not found at {path} or {localPath}");
                 }
             }
         }).AllowAnonymous();
@@ -808,7 +816,7 @@ public static class UIExtensions
     /// 302, not 301: the preference is the reader's, and it changes. A URL that already carries a
     /// segment is left alone, and so is the default culture, which has none.
     /// </summary>
-    private static bool RedirectToLanguageUrl(HttpContext context, UIOptions options)
+    internal static bool RedirectToLanguageUrl(HttpContext context, UIOptions options)
     {
         if (options.CultureRoutes is not { } map) return false;
         var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
@@ -825,9 +833,22 @@ public static class UIExtensions
         // until the browser gave up with ERR_TOO_MANY_REDIRECTS.
         if (!map.IsDefault(map.Split(path).Culture)) return false;
 
-        context.Response.Redirect(map.PathFor(culture, path) + context.Request.QueryString, permanent: false);
+        // The path as a URL writes it: a decoded one holds what a header cannot carry, and a page whose
+        // address has an accent answered 500 instead of its redirect (#1296).
+        var target = map.PathFor(culture, context.Request.Path.ToUriComponent()) + context.Request.QueryString;
+        // Only ever to this app: the target starts with the language's segment, so it is a path of this
+        // origin, and the guard says so where a reader, and an analyzer, can see it (#1296).
+        if (!IsLocalPath(target)) return false;
+        context.Response.Redirect(target, permanent: false);
         return true;
     }
+
+    /// <summary>Whether a redirect target is a path of this origin: rooted, and neither protocol-relative
+    /// (<c>//</c>) nor a backslash a browser reads as one (<c>/\</c>), so it names no other host. The rule
+    /// of ASP.NET Core's own local redirect.</summary>
+    internal static bool IsLocalPath(string target) =>
+        target.Length > 0 && target[0] == '/'
+        && (target.Length == 1 || (target[1] != '/' && target[1] != '\\'));
 
     /// <summary>The theme's stylesheet for each mode a request can paint in, written once per theme:
     /// it depends on nothing else, and every page carries it.</summary>

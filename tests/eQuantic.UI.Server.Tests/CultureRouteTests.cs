@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using System.Net;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Server;
@@ -170,6 +171,61 @@ public class CultureRouteTests
         response.StatusCode.Should().Be(HttpStatusCode.Found);
         response.Headers.Location!.ToString().Should().Be("/pt-BR/pricing?tab=2");
     }
+
+    /// <summary>#1296: a path with a character a header cannot carry is redirected in its encoded form.</summary>
+    [Fact]
+    public async Task ABareUrlWithAnAccent_GoesToItsAddress_Encoded()
+    {
+        var (app, client) = await StartAppAsync();
+        await using var _ = app;
+        client.DefaultRequestHeaders.Add("Cookie", ".AspNetCore.Culture=c%3Dpt-BR%7Cuic%3Dpt-BR");
+
+        var response = await client.GetAsync("/not%C3%ADcias");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Found);
+        response.Headers.Location!.OriginalString.Should().Be("/pt-BR/not%C3%ADcias");
+    }
+
+    /// <summary>The redirect's target is always this app's own: it starts with the language's segment, so
+    /// a path that names another host stays a path under it. Driven on the request itself, since an HTTP
+    /// client reads such a path as another host before it is sent.</summary>
+    [Theory]
+    [InlineData("//elsewhere.example/x", "/pt-BR//elsewhere.example/x")]
+    [InlineData("/\\elsewhere.example", "/pt-BR/%5Celsewhere.example")]
+    public void TheRedirect_StaysOnThisApp_WhateverThePathNames(string path, string expected)
+    {
+        var options = new UIOptions();
+        options.UseCultureRoutes("en", "pt-BR", "es");
+        var context = new DefaultHttpContext();
+        context.Request.Path = new PathString(path);
+        var before = System.Globalization.CultureInfo.CurrentUICulture;
+        System.Globalization.CultureInfo.CurrentUICulture = new System.Globalization.CultureInfo("pt-BR");
+        try
+        {
+            UIExtensions.RedirectToLanguageUrl(context, options).Should().BeTrue();
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = before;
+        }
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status302Found);
+        context.Response.Headers.Location.ToString().Should().Be(expected);
+    }
+
+    /// <summary>The guard every culture redirect passes: a path of this origin, never one a browser reads as
+    /// another host.</summary>
+    [Theory]
+    [InlineData("/", true)]
+    [InlineData("/pt-BR/pricing?tab=2", true)]
+    [InlineData("/pt-BR//elsewhere.example", true)]
+    [InlineData("//elsewhere.example", false)]
+    [InlineData("/\\elsewhere.example", false)]
+    [InlineData("https://elsewhere.example", false)]
+    [InlineData("elsewhere.example", false)]
+    [InlineData("", false)]
+    public void ARedirectTarget_IsLocal_OnlyAsAPathOfThisOrigin(string target, bool local) =>
+        UIExtensions.IsLocalPath(target).Should().Be(local);
 
     [Fact]
     public async Task TheRouteValue_WinsOverTheCookie()
