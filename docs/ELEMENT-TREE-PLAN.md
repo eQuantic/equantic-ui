@@ -555,6 +555,18 @@ the parity rows it closes flip.
    stateless component takes the `component` arm a stateful one takes. `HtmlElement` stays outside,
    as in C#. No server-data ordinal moves, measured on a mixed page and on a client navigation with
    the old routing put back, and the boundary contains what it contained.
+
+   Then **the engine runs in the browser**
+   (`openspec/changes/archive/<date>-the-element-engine-runs-in-the-browser`), which closes E3a. The
+   engine leaves `[ServerOnly]`, its modules are pinned beside the other engines' and accepted by the
+   runtime's `tsc`, and eleven of `ElementTreeTests`' cases run on .NET and on the transpiled engine with
+   equal traces. They found what the browser's components lacked: C#'s empty `AdoptConfig` default, and
+   the position a stateful instance is mounted at, whose `Place` and `Leave` became `EnterPosition` and
+   `LeavePosition` because a JavaScript class has one namespace and two library components already had a
+   private `Place`. A library module that extends a sibling now imports the base from its module, since
+   the runtime's aggregator defines a re-export only once the barrel has loaded. eqc met one more
+   emission defect on the way (#1396, a downcast to a type whose member is inherited), fixed by the bug
+   sweep. The served runtime grows by the engine's modules, recorded in its budget.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.

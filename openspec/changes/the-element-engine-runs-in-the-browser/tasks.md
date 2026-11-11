@@ -14,5 +14,5 @@
 
 ## 3. Documentation
 
-- [ ] 3.1 `docs/ELEMENT-TREE-PLAN.md`, E3a: E3a landed.
-- [ ] 3.2 One ledger entry under `docs/ledger/`, citing #1301.
+- [x] 3.1 `docs/ELEMENT-TREE-PLAN.md`, E3a: E3a landed.
+- [x] 3.2 One ledger entry under `docs/ledger/`, citing #1301.
