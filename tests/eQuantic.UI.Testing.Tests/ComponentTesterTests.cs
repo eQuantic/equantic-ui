@@ -374,4 +374,46 @@ public class ComponentTesterTests
         (await pump.Should().ThrowAsync<InvalidOperationException>())
             .Which.Message.Should().Contain("still asks for data after 5 rounds").And.Contain(nameof(Chain));
     }
+
+    // ---- what a screen reader reads, as the browser builds its tree (#339) ------------------------
+
+    [Fact]
+    public void ATableWrittenInBands_IsReadRowByRow_ThroughAriaOwns()
+    {
+        // The cells are added down the columns, and the web writes pinned and scrolled cells in bands of
+        // their own: a reader meets the rows through aria-owns, each row's cells by column.
+        var rows = new eQuantic.UI.Components.UniformTableSpans(2, 28);
+        var columns = new eQuantic.UI.Components.UniformTableSpans(2, 96);
+        var scroll = new eQuantic.UI.Components.TableScroll();
+        scroll.Arrange(new Size(400, 300), columns.Total, rows.Total, 96, 28, reduceMotion: true);
+        var viewport = new TableViewport(rows, columns, scroll) { Label = "Ledger", Role = TableRole.Table };
+        foreach (var (row, column) in new[] { (0, 0), (1, 0), (0, 1), (1, 1) })
+            viewport.Add(new TableViewCell(row, column, Text($"{row}:{column}")));
+        using var tester = new ComponentTester();
+
+        tester.Pump(viewport);
+
+        tester.Semantics.Select(stop => stop.Name).Should().Equal("Ledger", "0:0", "0:1", "1:0", "1:1");
+    }
+
+    [Fact]
+    public void AFieldWithNoLabel_IsNamedByItsPlaceholder()
+    {
+        using var tester = new ComponentTester();
+
+        tester.Pump(TextInput("", placeholder: "Search the archive"));
+
+        tester.Find(SemanticRole.TextField, "Search the archive").Value.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ALiveRegion_IsTheVocabularysGroup_AroundWhatItSays()
+    {
+        using var tester = new ComponentTester();
+
+        tester.Pump(Toast("Saved"));
+
+        tester.Semantics.Select(stop => (stop.Role, stop.Name)).Should()
+            .ContainInOrder((SemanticRole.Group, ""), (SemanticRole.StaticText, "Saved"));
+    }
 }
