@@ -197,3 +197,31 @@ describe('theme bridge: the slots and the code palette cross (E6a, #1241; #936)'
     expect(bare.button).toBeNull();
   });
 });
+
+describe('theme bridge: the form control slots cross (E6b, #1242)', () => {
+  const theme = materializeTheme(photonData as unknown as ThemeData);
+
+  it('carries the five slots as the generated Photon theme holds them', () => {
+    expect(theme.iconButton).toEqual(photonTheme.iconButton);
+    expect(theme.input).toEqual(photonTheme.input);
+    expect(theme.selectionControls).toEqual(photonTheme.selectionControls);
+    expect(theme.segmented).toEqual(photonTheme.segmented);
+    expect(theme.chip).toEqual(photonTheme.chip);
+  });
+
+  it('carries each kind of member: a number, a ladder, a value by density, a colour and an enum', () => {
+    expect(theme.chip?.paddingX).toBe(12);
+    expect(theme.iconButton?.iconSize?.small).toBe(16);
+    expect(theme.selectionControls?.box?.compact).toBe(20);
+    expect(theme.input?.borderColor?.light).toEqual(photonTheme.borderStrong.light);
+    expect(theme.input?.labelRole).toBe('label');
+    expect(theme.chip?.labelWeight).toBe('semiBold');
+  });
+
+  it("answers a member the server's theme names, and leaves a slot it does not answer null", () => {
+    const custom = materializeTheme({ ...(photonData as unknown as ThemeData), chip: { paddingX: 20 }, input: undefined });
+    expect(custom.chip?.paddingX).toBe(20);
+    expect(custom.chip?.gap).toBeNull();
+    expect(custom.input).toBeNull();
+  });
+});
