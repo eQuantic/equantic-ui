@@ -29,4 +29,20 @@ public sealed class UploadsOptions
     /// <summary>How long an upload is kept from the moment it starts, finished or not. A day by
     /// default.</summary>
     public TimeSpan Expiry { get; set; } = TimeSpan.FromHours(24);
+
+    /// <summary>How many uploads one person may keep, finished or not, until they expire. A hundred by
+    /// default. A finished upload counted for nothing, so anyone could finish any number of them (#1287).</summary>
+    public int MaxUploadsPerOwner { get; set; } = 100;
+
+    /// <summary>How many bytes one person's uploads may take, finished or not, until they expire. A
+    /// gibibyte by default.</summary>
+    public long MaxBytesPerOwner { get; set; } = 1L << 30;
+
+    /// <summary>How many uploads the server keeps at a time, everyone's together. Ten thousand by default.
+    /// A browser that sends no cookie is a new person each time, so only a limit on the whole store stops
+    /// a script that never keeps one (#1287).</summary>
+    public int MaxTotalUploads { get; set; } = 10_000;
+
+    /// <summary>How many bytes the server's uploads may take, everyone's together. Ten gibibytes by default.</summary>
+    public long MaxTotalBytes { get; set; } = 10L << 30;
 }

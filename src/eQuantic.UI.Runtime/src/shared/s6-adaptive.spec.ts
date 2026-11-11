@@ -7,8 +7,24 @@ import {
   resetAtomizerForTests,
 } from './style-atomizer';
 import { photonTheme } from './design-system.generated';
+import { StatelessComponent } from '../core/component';
+import type { HtmlNode } from '../core/types';
+import { AdaptiveNode, Box, BoxStyle } from './vocabulary';
 import type { LoweringContext } from './lowering';
 import type { VisualNodeValue } from './nodes';
+
+/** A write-once stateless twin, which declares no `nodeKind` and renders itself (the mixing seam). */
+class BuildsIt extends StatelessComponent {
+  constructor(private readonly built: VisualNodeValue) {
+    super();
+  }
+
+  build(): VisualNodeValue {
+    return this.built;
+  }
+}
+
+const styles = (node: HtmlNode): string[] => [effectiveStyle(node), ...node.children.flatMap(styles)];
 
 const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
 const marker = (): VisualNodeValue =>
@@ -233,6 +249,67 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
     expect(effectiveStyle(line[0].children[0])).not.toContain('align-self');
     expect(effectiveStyle(cells[1].children[0])).toContain('grid-column: span 2');
     expect(effectiveStyle(cells[0].children[0])).not.toContain('grid-column');
+  });
+
+  // The SAME arms S6AdaptiveRealizerTests pins on the server, out of a component (#738). A stateful
+  // one takes the store's door and a stateless twin renders itself, and both reach the same arms.
+  it('a line and a grid see through a component to the arms it builds', () => {
+    const sized = (extra: Record<string, unknown>) =>
+      ({
+        nodeKind: 'box',
+        style: { width: { kind: 'fixed', value: 10 }, height: { kind: 'fixed', value: 10 } },
+        ...extra,
+      }) as unknown as VisualNodeValue;
+    const marker = () => ({ nodeKind: 'box', style: {} }) as unknown as VisualNodeValue;
+    const builds = (built: VisualNodeValue) =>
+      ({ nodeKind: 'component', build: () => built }) as unknown as VisualNodeValue;
+    const twinArms = () => {
+      const expanded = new Box(new BoxStyle({ width: 10, height: 10 }));
+      expanded.alignSelf = 'end';
+      return new AdaptiveNode(new Box(new BoxStyle({})), null, expanded) as unknown as VisualNodeValue;
+    };
+    const arms = (extra: Record<string, unknown>) =>
+      ({ nodeKind: 'adaptive', compact: marker(), expanded: sized(extra) }) as unknown as VisualNodeValue;
+    const row = (child: VisualNodeValue) =>
+      ({ nodeKind: 'row', gap: 0, main: 'start', cross: 'start', children: [child] }) as unknown as VisualNodeValue;
+    const grid = {
+      nodeKind: 'grid',
+      columns: [
+        { kind: 'fill', value: 1 },
+        { kind: 'fill', value: 1 },
+      ],
+      gap: 0,
+      children: [builds(arms({ gridSpan: 2 }))],
+    } as unknown as VisualNodeValue;
+
+    const twin = new BuildsIt(twinArms()) as unknown as VisualNodeValue;
+    for (const child of [builds(builds(arms({ alignSelf: 'end' }))), twin]) {
+      const line = lowerVisualNode(row(child), ctx).children[0].children;
+      expect(effectiveStyle(line[1].children[0])).toContain('align-self: flex-end');
+    }
+    const cells = lowerVisualNode(grid, ctx).children[0].children;
+    expect(effectiveStyle(cells[1].children[0])).toContain('grid-column: span 2');
+  });
+
+  it('the rule stops at the first node that is neither a component nor the arms', () => {
+    const inner = {
+      nodeKind: 'box',
+      style: { width: { kind: 'fixed', value: 10 } },
+      child: {
+        nodeKind: 'adaptive',
+        compact: { nodeKind: 'box', style: {} },
+        expanded: { nodeKind: 'box', style: {}, alignSelf: 'end' },
+      },
+    } as unknown as VisualNodeValue;
+    const row = {
+      nodeKind: 'row',
+      gap: 0,
+      main: 'start',
+      cross: 'start',
+      children: [{ nodeKind: 'component', build: () => inner }],
+    } as unknown as VisualNodeValue;
+
+    expect(styles(lowerVisualNode(row, ctx)).join(';')).not.toContain('align-self');
   });
 
   it('the rules are the C# AdaptiveGates.Css blobs, byte for byte', () => {

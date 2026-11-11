@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 
@@ -172,19 +173,25 @@ public class SimulatedStateTests
             .Should().NotContain("light-dark(#ffffff, #14181e)");
     }
 
+    /// <summary>A pictured press lays the surface's Pressed diff, its fill included, where a real
+    /// press would select it: no marker on the control and no rule of the control's (#616).</summary>
     [Fact]
     public void APressedSubtree_CarriesTheSameDeclarationAPressDoes()
     {
-        var pressable = new Pressable(new Primitives.Box(new BoxStyle { Background = Theme.Surface },
-            new Text("Go", TypeRole.Label)))
+        var pressable = new Pressable(new Primitives.Box(new BoxStyle
         {
-            PressedBackground = Theme.Colors(Variant.Primary).Base,
-        };
+            Background = Theme.Surface,
+            Pressed = new StyleDiff { Background = Theme.Colors(Variant.Primary).Base },
+        }, new Text("Go", TypeRole.Label)));
 
-        var (html, _) = Render(new Simulated(SimulatedState.Pressed, pressable));
+        var (html, css) = Render(new Simulated(SimulatedState.Pressed, pressable));
 
-        html.Should().Contain("eq-pressed");
+        css.Should().MatchRegex(
+            $@"\{{background-color:[^{{}}]*{Regex.Escape(TokenCss.Value(Theme.Colors(Variant.Primary).Base))}[^{{}}]*\}}",
+            "the pressed fill is drawn");
+        css.Should().NotContain(":active", "drawn, not deferred to the pseudo-class");
         html.Should().Contain("eq-pressable", "it is still the control it is picturing");
+        html.Should().NotContain("eq-pressed");
     }
 
     /// <summary>Nested previews COMBINE — a hovered card holding a pressed button is two nodes, and
@@ -192,20 +199,22 @@ public class SimulatedStateTests
     [Fact]
     public void NestedSimulations_Combine()
     {
-        var inner = new Pressable(new Primitives.Box(new BoxStyle { Background = Theme.Surface },
-            new Text("Go", TypeRole.Label)))
+        var inner = new Pressable(new Primitives.Box(new BoxStyle
         {
-            PressedBackground = Theme.Colors(Variant.Primary).Base,
-        };
+            Background = Theme.Surface,
+            Pressed = new StyleDiff { Background = Theme.Colors(Variant.Primary).Base },
+        }, new Text("Go", TypeRole.Label)));
         var card = new Primitives.Box(new BoxStyle
         {
             Background = Theme.Surface,
             Hover = new StyleDiff { Elevation = 2 },
         }, new Simulated(SimulatedState.Pressed, inner));
 
-        var (html, css) = Render(new Simulated(SimulatedState.Hovered, card));
+        var (_, css) = Render(new Simulated(SimulatedState.Hovered, card));
 
-        html.Should().Contain("eq-pressed", "the inner press survives the outer hover");
+        css.Should().MatchRegex(
+            $@"\{{background-color:[^{{}}]*{Regex.Escape(TokenCss.Value(Theme.Colors(Variant.Primary).Base))}[^{{}}]*\}}",
+            "the inner press survives the outer hover");
         css.Should().NotContain(":hover", "and the outer hover is drawn, not deferred to a pseudo");
     }
 

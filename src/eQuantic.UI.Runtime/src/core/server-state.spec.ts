@@ -298,12 +298,11 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
   });
 
   it('NAMES a component the lowering renders, because the server named it too', () => {
-    // A write-once StatelessComponent twin carries NO `nodeKind` — only StatefulComponent declares
-    // one — so the lowering reaches it through the mixing seam and calls its render(). The C#
-    // realizer meanwhile ENTERS it like any other UiComponent and consumes an ordinal for it. The
-    // seam has to consume the same one: the lowering names what it renders, exactly as it does for
-    // a `component` node, and the render inside is then a step in the walk rather than the start of
-    // one.
+    // An object with NO `nodeKind` that renders itself reaches the lowering through the mixing seam,
+    // and when its render() names it (as a page base's does) that render is a step in the walk
+    // rather than the start of one, so it consumes ONE ordinal. Every component with or without state
+    // is a `component` node now and is named in that arm instead (the case above); this keeps the
+    // seam's half of the contract for what still renders itself.
     class StatsHeader {
       static $hydration = { _count: 'declared' } as const;
       _count = 0;
@@ -344,6 +343,68 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     expect(header._count).toBe(10);
     // ONE ordinal, not two: the seam names it and the render inside does not name it again.
     expect(footer._note).toBe('mine');
+  });
+
+  it('names every component of a page that mixes them with and without state, as the server does', async () => {
+    // A component with no state is a node of kind `component` too (C# `UiComponent : VisualNode`), so
+    // the lowering names it in the same arm as one with state, where it used to name itself in its own
+    // render(). Both sides count `Type#ordinal` per TYPE in depth-first order, so the move shifts no
+    // ordinal of either kind: each instance below adopts the entry the server wrote for it alone.
+    const { StatefulComponent, StatelessComponent } = await import('./component');
+    const { Column } = await import('../shared/vocabulary');
+    const column = (children: unknown[]) => {
+      const node = new Column();
+      node.children.push(...(children as never[]));
+      return node;
+    };
+    class Counter extends StatefulComponent {
+      static $typeId = 'App.Counter';
+      static $hydration = { _count: 'declared' } as const;
+      _count = 0;
+      build() {
+        return column([]) as never;
+      }
+    }
+    class Section extends StatelessComponent {
+      static $typeId = 'App.Section';
+      static $hydration = { _title: 'declared' } as const;
+      _title = 'default';
+      constructor(readonly inner: Counter) {
+        super();
+      }
+      build() {
+        return column([this.inner]) as never;
+      }
+    }
+    win.__INITIAL_STATE__ = {
+      'App.Section#0': { _title: 'first section' },
+      'App.Counter#0': { _count: 1 },
+      'App.Counter#1': { _count: 2 },
+      'App.Section#1': { _title: 'second section' },
+      'App.Counter#2': { _count: 3 },
+    };
+    const inFirst = new Counter();
+    const between = new Counter();
+    const inSecond = new Counter();
+    const first = new Section(inFirst);
+    const second = new Section(inSecond);
+
+    runComponentWalk(new HomePage(), true, () =>
+      lowerVisualNode(column([first, between, second]) as unknown as VisualNodeValue, {
+        textPrimary: {
+          light: { r: 0, g: 0, b: 0, a: 255 },
+          dark: { r: 255, g: 255, b: 255, a: 255 },
+        },
+      }),
+    );
+
+    expect([first._title, inFirst._count, between._count, second._title, inSecond._count]).toEqual([
+      'first section',
+      1,
+      2,
+      'second section',
+      3,
+    ]);
   });
 
   it('names a component the seam reaches with NOTHING in progress either', () => {

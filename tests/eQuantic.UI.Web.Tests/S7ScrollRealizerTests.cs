@@ -39,4 +39,28 @@ public class S7ScrollRealizerTests
 
         style.Should().Contain("overflow-x: auto").And.Contain("overflow-y: auto");
     }
+
+    /// <summary>
+    /// A size fixed on the line's axis is not squeezed, as a box's is not: `min-width: 0` alone let a
+    /// line shrink a scroller the app gave a size (#1186). On the other axis the line has nothing to
+    /// take, and a hugging scroller still gives way.
+    /// CROSS-PIN: <c>s7-scroll.spec.ts</c> asserts the same on the twin.
+    /// </summary>
+    [Fact]
+    public void AScrollerFixedOnTheLinesAxis_IsNotSqueezed()
+    {
+        static string Style(FlexNode line, ScrollView scroller)
+        {
+            line.Add(scroller);
+            return WebRealizer.Lower(line, PhotonTheme.Instance).Render().Children[0].Attributes["style"]!;
+        }
+        static ScrollView Scroller(SizeValue width, SizeValue height) =>
+            new(new Primitives.Box(new BoxStyle()), ScrollAxis.Both) { Width = width, Height = height };
+
+        Style(new Row(gap: 0), Scroller(540, SizeValue.Hug)).Should().Contain("flex-shrink: 0");
+        Style(new Column(gap: 0), Scroller(SizeValue.Hug, 540)).Should().Contain("flex-shrink: 0");
+        Style(new Row(gap: 0), Scroller(SizeValue.Hug, 540)).Should().NotContain("flex-shrink");
+        Style(new Column(gap: 0), Scroller(540, SizeValue.Hug)).Should().NotContain("flex-shrink");
+        Style(new Row(gap: 0), Scroller(SizeValue.Fill, SizeValue.Hug)).Should().NotContain("flex-shrink");
+    }
 }

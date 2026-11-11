@@ -194,23 +194,15 @@ public static class ThemeStylesheet
             css.AppendLine($".eq-elevation-{level} {{ box-shadow: {TokenCss.Shadow(theme.Elevation(level))}; }}");
         }
 
-        // Interaction mechanics (spec §01 pressed = token swap; feedback at Fast motion). The VALUES
-        // arrive per element as custom properties set by the realizers; only the mechanics live here.
+        // Interaction mechanics (spec §01; feedback at Fast motion). A pressed fill is no mechanic of
+        // the control's: it is the Pressed diff of the box it fills, written as an atomic rule in the
+        // pressed family (#616), and nothing here may outrank it.
         css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
         // The fill's fade is a DEFAULT, at zero specificity: at (0,2,0) it replaced the surface's own
         // transition (0,1,0), so a press that scales and a hover that lifts a control snapped,
         // measured in Chromium as `background-color 0.1s ease-out` on a surface that declared
         // `transform 0.2s` (#508). A surface that declares a transition keeps it.
         css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");
-        // Only a control that HAS a pressed fill swaps to it (eq-press-fill, set beside the custom
-        // property): a var() with no value and no fallback makes the declaration compute to the
-        // property's initial value, so every pressable without one went TRANSPARENT while pressed,
-        // measured in Chromium as rgba(0, 0, 0, 0) (#508).
-        css.AppendLine(".eq-press-fill:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
-        // A SIMULATED press (the Simulated node) reuses the same declaration rather than a copy of
-        // it: a documentation gallery showing a state that drifted from the real one is worse than
-        // showing none, and one selector list cannot drift from itself.
-        css.AppendLine(".eq-pressed.eq-press-fill > :first-child { background-color: var(--eq-pressed-bg) !important; }");
         // Focus (spec §01): the double ring — 2dp Surface gap + 2dp FocusRing — on keyboard focus only
         // (:focus-visible). It sits on the CHILD so it follows the control's border-radius.
         css.AppendLine(".eq-pressable { outline: none; }");
