@@ -10,7 +10,7 @@
 - [x] 2.1 `scripts/ci-changes.sh`, with a self-test of 29 cases that the `changes` job runs before it classifies
 - [x] 2.2 The `changes` job, the single jobs gated by `if:`, the matrix jobs gated by step, and main's runs in one concurrency group that cancels the superseded run
 - [x] 2.3 `actionlint` finds nothing new in the workflow (the same 17 shellcheck notes as main)
-- [ ] 2.4 Prove it live: this pull request's run is `full`; a draft stacked on it that changes one document is `docs`, skips what it should, and every required check reports success
+- [x] 2.4 Prove it live: this pull request's run is `full` (43064534335); a draft stacked on it that changes one document is `docs` (43070269976, on the final workflow after main's #1386): it skipped `test-runtime`, `build-packages`, the macOS runtimes, `test (macos-latest)`, `samples` and `package-extension`, ran the `web` and `rest` groups, ran the `conformance` entries' one step on Ubuntu, and every required check reported success
 
 ## 3. Documentation
 

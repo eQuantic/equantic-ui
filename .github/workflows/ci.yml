@@ -9,8 +9,7 @@ on:
     # tag triggered nothing at all.
     tags: ["v*", "ext-v*"]
   pull_request:
-    # TEMPORARY (#1421): a draft stacked on this branch proves the `docs` scope; removed before review.
-    branches: ["main", "ci/**"]
+    branches: ["main"]
   # GitHub's merge queue (#1308): a reviewed, green pull request waits in the queue, which runs this
   # workflow on the pull request together with every one ahead of it and merges the group when the
   # required jobs pass. Every job those checks name runs here; the publishing jobs, which run on a
