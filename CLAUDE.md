@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Every rule that decides a design, each with the case it came from and the test that holds it, is in
+[docs/PRINCIPLES.md](docs/PRINCIPLES.md), and how a change is proved is in
+[docs/PROVING.md](docs/PROVING.md). GitHub Copilot reviews every pull request with the same rules,
+from `.github/copilot-instructions.md` and `.github/instructions/`. This file states the main ones at
+length; where the two differ, this file wins and the page is corrected.
+
 ## THE PRODUCT PRINCIPLE (read this first — it decides designs)
 
 **A developer using eQuantic.UI never writes a line of Swift, an Xcode setting, an Android
