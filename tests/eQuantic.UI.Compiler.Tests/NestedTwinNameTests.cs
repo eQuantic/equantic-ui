@@ -281,10 +281,30 @@ public class NestedTwinNameTests
             .And.NotContain("./Kit$Part");
     }
 
+    /// <summary>A type nested inside one named like a global is named by its owner's twin and its own name,
+    /// <c>Math$$Ops</c>, which no other type can take: the module eqc writes and the import a reference
+    /// writes agree on it, as the server's <c>TwinName.OfType</c> does (the secondary review of #1400).</summary>
+    [Fact]
+    public void ATypeNestedInsideOneNamedLikeAGlobal_IsOneNameEverywhere()
+    {
+        var results = CompileScannedAll("""
+            public class Math { public class Ops { public int Two() => 2; } }
+            public class Calc { public int Run() => new Math.Ops().Two(); }
+            """);
+
+        results.Select(result => result.ComponentName).Should().Contain("Math$$Ops");
+        results.Single(result => result.ComponentName == "Calc").TypeScript.Should().Contain("new Math$$Ops()")
+            .And.MatchRegex(@"import \{[^}]*(?<![\w$])Math\$\$Ops(?![\w$])[^}]*\} from ""\./Math\$\$Ops""");
+    }
+
     /// <summary>A file compiled as eqc compiles a project's: scanned by the dependency resolver first,
     /// whose module set decides every import a module writes, then compiled with it. A compile with no
     /// scan imports none of the app's modules, so it cannot show one imported, or refused.</summary>
-    private static CompilationResult CompileScanned(string source, string component)
+    private static CompilationResult CompileScanned(string source, string component) =>
+        CompileScannedAll(source).Single(result => result.ComponentName == component);
+
+    /// <summary>Every module <see cref="CompileScanned"/> writes for the file.</summary>
+    private static IReadOnlyList<CompilationResult> CompileScannedAll(string source)
     {
         var dir = Directory.CreateTempSubdirectory("eq-nested-").FullName;
         try
@@ -295,7 +315,7 @@ public class NestedTwinNameTests
             resolver.ScanSourceDirectories([dir]);
             var compiler = new ComponentCompiler { SymbolsAreAuthoritative = false };
             compiler.SetDependencyResolver(resolver);
-            return compiler.CompileFile(path).Single(result => result.ComponentName == component);
+            return compiler.CompileFile(path).ToList();
         }
         finally
         {

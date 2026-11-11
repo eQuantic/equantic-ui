@@ -66,6 +66,7 @@ public class TwinTypeNameTests
     public void APageNamedLikeAGlobal_IsServedByItsTwin_AndCalledByItsClrName()
     {
         TwinName.OfType(typeof(ReservedPages.Map)).Should().Be("Map$");
+        TwinName.OfType(typeof(ReservedPages.Map.Pin)).Should().Be("Map$$Pin", "a nested type follows its owner's twin, as eqc names it");
 
         var options = new UIOptions();
         options.ScanAssembly(typeof(TwinTypeNameTests).Assembly);

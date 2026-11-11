@@ -12,4 +12,7 @@ public sealed class Map : StatelessComponent
     public Task<int> Pins() => Task.FromResult(2);
 
     public override VisualNode Build(ComponentContext context) => new Text("the map", TypeRole.Heading);
+
+    /// <summary>A type nested in it, whose twin follows its owner's: <c>Map$$Pin</c>.</summary>
+    public sealed class Pin { }
 }
