@@ -49,7 +49,7 @@ public class UiDispatcherTests
         public Mounted()
         {
             Owner.BuildRequested += () => Requests++;
-            Owner.Build(Counter, new ComponentContext(PhotonTheme.Instance), WindowSizeClass.Compact, rebuildAll: true);
+            Owner.Build(Counter, new ComponentContext(PhotonTheme.Instance), 400f, rebuildAll: true);
             Owner.EndFrame();
         }
 

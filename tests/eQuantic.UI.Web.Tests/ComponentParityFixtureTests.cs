@@ -556,10 +556,10 @@ public class ComponentParityFixtureTests
     /// </para>
     /// </summary>
     [Theory]
-    [InlineData(WindowSizeClass.Compact)]
-    [InlineData(WindowSizeClass.Medium)]
-    [InlineData(WindowSizeClass.Expanded)]
-    public void TheFirstFrameOfALiveTree_LowersTheMarkupTheServerWrites(WindowSizeClass sizeClass)
+    [InlineData(400f)]
+    [InlineData(700f)]
+    [InlineData(1200f)]
+    public void TheFirstFrameOfALiveTree_LowersTheMarkupTheServerWrites(float windowWidth)
     {
         var previousCulture = CultureInfo.CurrentCulture;
         var previousUiCulture = CultureInfo.CurrentUICulture;
@@ -576,7 +576,7 @@ public class ComponentParityFixtureTests
 
                 var owner = ComponentBoundary.Owner();
                 var root = owner.Build(framed, new ComponentContext(Theme, 1f, Density.Comfortable, static (_, _) => 0f),
-                    sizeClass, rebuildAll: false);
+                    windowWidth, rebuildAll: false);
                 var frame = HtmlRenderer.RenderNode(WebRealizer.LowerFrame(root, Theme, 1f, new StyleSink()).Render());
                 owner.EndFrame();
                 owner.UnmountAll();

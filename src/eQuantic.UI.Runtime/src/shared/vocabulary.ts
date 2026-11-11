@@ -457,7 +457,7 @@ interface AdaptiveConfig {
   key?: string | null;
 }
 
-/** Mirror of the C# `AdaptiveNode` (spec S6): up to three size-class variants. */
+/** Mirror of the C# `AdaptiveNode` (spec S6): up to three variants, switched at the node's own thresholds. */
 export class AdaptiveNode extends VisualNode {
   readonly nodeKind = 'adaptive';
   mediumFrom = 600;
@@ -471,6 +471,14 @@ export class AdaptiveNode extends VisualNode {
   ) {
     super();
     if (config) Object.assign(this, config);
+  }
+
+  /** The variant for a window `widthDp` wide, at this node's thresholds: the one every target holds and
+   * draws, the gates showing it at the same widths (C# twin: `ResolveWidth`, #1465). */
+  resolveWidth(widthDp: number): VisualNode {
+    if (this.expanded && widthDp >= this.expandedFrom) return this.expanded;
+    if (this.medium && widthDp >= this.mediumFrom) return this.medium;
+    return this.compact;
   }
 }
 

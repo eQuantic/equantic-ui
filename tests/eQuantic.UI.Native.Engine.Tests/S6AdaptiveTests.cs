@@ -2,6 +2,7 @@ using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Web;
 using FluentAssertions;
 
 namespace eQuantic.UI.Native.Engine.Tests;
@@ -36,14 +37,57 @@ public class S6AdaptiveTests
             "only the matching variant measures and paints");
     }
 
+    /// <summary>
+    /// A node's OWN threshold switches its arm at the same width on every target (#735, #1465): the element
+    /// tree holds the arm <see cref="AdaptiveNode.ResolveWidth"/> answers for the window's width, Photon lays
+    /// that arm out and paints it, and the web's gates show it. Photon and the element tree resolved by the
+    /// spec's size classes, so the dashboard's payments page (<c>ExpandedFrom = 1024</c>) drew its grid on
+    /// Photon at 900 dp where the web stacked it, and an arm the web showed was one no element held. The
+    /// rows of #735: a threshold above the spec's 840, and one below it, at fractional dp.
+    /// </summary>
+    [Theory]
+    [InlineData(1024f, 900f)]
+    [InlineData(980f, 840f)]
+    [InlineData(980f, 979f)]
+    [InlineData(980f, 980f)]
+    [InlineData(703.704f, 704f)]
+    [InlineData(703.704f, 839f)]
+    [InlineData(703.704f, 840f)]
+    public void ANodesOwnThreshold_PicksTheSameArm_InTheElementTree_OnPhoton_AndInTheWebsGates(float expandedFrom,
+        float width)
+    {
+        var expanded = width >= expandedFrom;
+        AdaptiveNode Node() => new(Marker(0x10), medium: null, expanded: Marker(0x30)) { ExpandedFrom = expandedFrom };
+
+        var node = Node();
+        var root = ComponentBoundary.StructuralOwner().Build(node, new ComponentContext(PhotonTheme.Instance), width,
+            rebuildAll: true);
+        VisualNode? held = null;
+        root.VisitChildren(child => held = child.Configuration);
+        held.Should().BeSameAs(expanded ? node.Expanded : node.Compact, "the element tree holds the arm for the width");
+
+        var host = new PhotonHost(Node(), PhotonTheme.Instance, ThemeMode.Light, width, 200);
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+        var fills = new List<byte>();
+        foreach (var command in builder.Build().Commands)
+            if (command.Kind == DrawCommandKind.FillRRect) fills.Add(command.Paint.Color.R);
+        fills.Should().Contain(expanded ? (byte)0x30 : (byte)0x10, "Photon paints the arm for the width")
+            .And.NotContain(expanded ? (byte)0x10 : (byte)0x30);
+
+        var sink = new StyleSink();
+        WebRealizer.Lower(Node(), PhotonTheme.Instance, 1f, sink);
+        sink.HidesAt(AdaptiveGates.ExpandedFrom(expandedFrom), width).Should().Be(!expanded, "the web's gate for Expanded");
+        sink.HidesAt(AdaptiveGates.CompactUntil(expandedFrom), width).Should().Be(expanded, "the web's gate for Compact");
+    }
+
     [Fact]
     public void MissingVariants_FallBackTowardCompact()
     {
         var adaptive = new AdaptiveNode(Marker(0x10), medium: null, expanded: Marker(0x30));
-        WindowSizeClasses.FromWidth(700).Should().Be(WindowSizeClass.Medium);
-        adaptive.Resolve(WindowSizeClass.Medium).Should().BeSameAs(adaptive.Compact,
+        adaptive.ResolveWidth(700).Should().BeSameAs(adaptive.Compact,
             "no Medium variant → Compact serves the medium range");
-        adaptive.Resolve(WindowSizeClass.Expanded).Should().BeSameAs(adaptive.Expanded);
+        adaptive.ResolveWidth(1000).Should().BeSameAs(adaptive.Expanded);
     }
 
     /// <summary>

@@ -95,8 +95,10 @@ public sealed class BuildOwner
     /// that would set state or start work for a tree nobody draws again.</summary>
     public bool Live { get; }
 
-    /// <summary>The window size class this frame resolves an adaptive node's arm against.</summary>
-    internal WindowSizeClass SizeClass { get; private set; }
+    /// <summary>How wide the window is this frame, in dp: what an adaptive node's arm is resolved against, at
+    /// the node's own thresholds (<see cref="AdaptiveNode.ResolveWidth"/>), as the web's gates and Photon's
+    /// layout resolve it (#1465).</summary>
+    internal float WindowWidth { get; private set; }
 
     /// <summary>The context every component of this frame builds with.</summary>
     internal ComponentContext Context =>
@@ -112,10 +114,10 @@ public sealed class BuildOwner
     /// positions build, shallowest first, and a frame nothing marked builds nothing.
     /// </summary>
     /// <returns>The root's position, for the layout to measure against.</returns>
-    public Element Build(VisualNode root, ComponentContext context, WindowSizeClass sizeClass, bool rebuildAll)
+    public Element Build(VisualNode root, ComponentContext context, float windowWidth, bool rebuildAll)
     {
         _context = context;
-        SizeClass = sizeClass;
+        WindowWidth = windowWidth;
         Frame++;
         RebuildingAll = rebuildAll;
         EnterBuild();

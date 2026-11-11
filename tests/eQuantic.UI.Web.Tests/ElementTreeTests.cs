@@ -14,7 +14,7 @@ public class ElementTreeTests
 
     private static Element Frame(BuildOwner owner, VisualNode root, bool rebuildAll = true)
     {
-        var element = owner.Build(root, Context, WindowSizeClass.Compact, rebuildAll);
+        var element = owner.Build(root, Context, 400f, rebuildAll);
         owner.EndFrame();
         return element;
     }
@@ -343,14 +343,14 @@ public class ElementTreeTests
         var column = new Column();
         column.Add(overlay);
 
-        var root = owner.Build(column, Context, WindowSizeClass.Compact, rebuildAll: true);
+        var root = owner.Build(column, Context, 400f, rebuildAll: true);
         var holder = (NodeElement)root.ChildAt(0)!;
         holder.ChildAt(0).Should().BeNull("the build phase leaves the slot to the realizer");
         holder.ShowDeferred(overlay.Child);
         owner.EndFrame();
         log.Should().Equal("mounted");
 
-        owner.Build(column, Context, WindowSizeClass.Compact, rebuildAll: false);
+        owner.Build(column, Context, 400f, rebuildAll: false);
         owner.EndFrame();
 
         log.Should().Equal("mounted", "unmounted");
@@ -653,13 +653,13 @@ public class ElementTreeTests
         column.Add(overlay);
         column.Add(new Box(new BoxStyle()));
 
-        var root = owner.Build(column, Context, WindowSizeClass.Compact, rebuildAll: true);
+        var root = owner.Build(column, Context, 400f, rebuildAll: true);
         var holder = (NodeElement)root.ChildAt(0)!;
         ((NodeElement)holder.ShowDeferred(overlay.Child)).State = new Kept(log, "layer");
         ((NodeElement)root.ChildAt(1)!).State = new Kept(log, "page");
         owner.EndFrame();
 
-        owner.Build(column, Context, WindowSizeClass.Compact, rebuildAll: false);
+        owner.Build(column, Context, 400f, rebuildAll: false);
         owner.EndFrame();
         log.Should().Equal(new[] { "layer" }, "a frame that does not show the layer takes what it held out");
 

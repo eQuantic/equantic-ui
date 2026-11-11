@@ -37,7 +37,6 @@ public sealed class ComponentTester : IDisposable
 
     private readonly BuildOwner _owner = ComponentBoundary.Owner();
     private readonly ComponentContext _context;
-    private readonly WindowSizeClass _sizeClass;
     private VisualNode? _root;
     private HtmlNode? _frame;
     private AnnouncedTree? _announced;
@@ -49,8 +48,8 @@ public sealed class ComponentTester : IDisposable
     /// <c>AddUI</c> serves without <c>UseTheme</c>.</param>
     /// <param name="culture">The culture a component formats with and reads its own labels in; the
     /// invariant one when null, so a test reads the same on every machine.</param>
-    /// <param name="width">The viewport's width in dp, which decides the size class and which arm of
-    /// an adaptive node shows; a desktop's by default.</param>
+    /// <param name="width">The viewport's width in dp, which decides which arm of an adaptive node shows, at
+    /// the node's own thresholds; a desktop's by default.</param>
     /// <param name="density">The density the target asks for.</param>
     /// <param name="services">What a page's prefetch resolves its dependencies from.</param>
     public ComponentTester(IAppTheme? theme = null, CultureInfo? culture = null, float width = 1280f,
@@ -63,7 +62,6 @@ public sealed class ComponentTester : IDisposable
         Width = width;
         Density = density;
         Services = services ?? NoServices.Instance;
-        _sizeClass = WindowSizeClasses.FromWidth(width);
         // No font to measure with, as on the server: a component that asks is answered 0, and the
         // markup is the markup the server writes for it.
         _context = new ComponentContext(Theme, 1f, density, static (_, _) => 0f);
@@ -240,7 +238,7 @@ public sealed class ComponentTester : IDisposable
     private void Draw(bool rebuildAll)
     {
         using var culture = new CultureScope(Culture);
-        var root = _owner.Build(_root!, _context, _sizeClass, rebuildAll);
+        var root = _owner.Build(_root!, _context, Width, rebuildAll);
         // Through a style sink, as the server lowers: the sink is what knows which of a node's classes
         // hide it, an adaptive arm's gate among them.
         var styles = new StyleSink();
@@ -268,7 +266,7 @@ public sealed class ComponentTester : IDisposable
         ComponentExpansionScope.Ambient = scope;
         try
         {
-            WebRealizer.LowerFrame(_owner.Build(page, _context, _sizeClass, rebuildAll: false), Theme, 1f, new StyleSink(), Density);
+            WebRealizer.LowerFrame(_owner.Build(page, _context, Width, rebuildAll: false), Theme, 1f, new StyleSink(), Density);
         }
         finally
         {

@@ -46,7 +46,7 @@ public class FrameLoweringTests
 
     private static HtmlNode Frame(BuildOwner owner, VisualNode root)
     {
-        var lowered = WebRealizer.LowerFrame(owner.Build(root, Context(), WindowSizeClass.Expanded, rebuildAll: false), Theme)
+        var lowered = WebRealizer.LowerFrame(owner.Build(root, Context(), 1200f, rebuildAll: false), Theme)
             .Render();
         owner.EndFrame();
         return lowered;
@@ -128,7 +128,7 @@ public class FrameLoweringTests
         // shows nothing in its slot, and the slot is taken out when the frame ends — the rule the
         // element tree states for a layer, and the one Photon follows.
         open = false;
-        WebRealizer.LowerFrame(owner.Build(page, Context(), WindowSizeClass.Expanded, rebuildAll: true), Theme);
+        WebRealizer.LowerFrame(owner.Build(page, Context(), 1200f, rebuildAll: true), Theme);
         owner.EndFrame();
 
         counter.Unmounts.Should().Be(1);
@@ -154,7 +154,7 @@ public class FrameLoweringTests
         try
         {
             // Every component builds again, so the page hands the position a FRESH counter.
-            WebRealizer.LowerFrame(owner.Build(page, Context(), WindowSizeClass.Expanded, rebuildAll: true), Theme);
+            WebRealizer.LowerFrame(owner.Build(page, Context(), 1200f, rebuildAll: true), Theme);
         }
         finally
         {
@@ -170,7 +170,7 @@ public class FrameLoweringTests
     {
         var owner = ComponentBoundary.Owner();
         var frame = new ElementFrame(owner.Build(new Page(() => new Text("only text", TypeRole.BodyM)), Context(),
-            WindowSizeClass.Expanded, rebuildAll: false));
+            1200f, rebuildAll: false));
 
         var stranger = new Counter();
         var lowering = () => frame.At(stranger);

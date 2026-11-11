@@ -1,1 +1,3 @@
 #nullable enable
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.SizeClass.get -> eQuantic.UI.Primitives.WindowSizeClass
+*REMOVED*[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.SizeClass.init -> void

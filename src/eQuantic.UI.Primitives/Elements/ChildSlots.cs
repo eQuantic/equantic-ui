@@ -25,11 +25,11 @@ namespace eQuantic.UI.Primitives;
 [ServerOnly]
 internal static class ChildSlots
 {
-    internal static NodeSlots Of(VisualNode node, WindowSizeClass sizeClass) => node.NodeKind switch
+    internal static NodeSlots Of(VisualNode node, float windowWidth) => node.NodeKind switch
     {
         // A component builds its one child; its element never asks this.
         "component" => NodeSlots.None,
-        "adaptive" => NodeSlots.One(((AdaptiveNode)node).Resolve(sizeClass)),
+        "adaptive" => NodeSlots.One(((AdaptiveNode)node).ResolveWidth(windowWidth)),
         "adjustable" => NodeSlots.One(((Adjustable)node).Child),
         // The panel is not a child of the anchor: the realizer shows it in a layer of its own, made when
         // the anchored node is painted and only while it is open, so that slot is built when it is shown.

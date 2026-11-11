@@ -150,14 +150,14 @@ public class NodeStateTests
     {
         var owner = ComponentBoundary.StructuralOwner();
         var context = new ComponentContext(PhotonTheme.Instance);
-        var view = owner.Build(new Box(new BoxStyle(), List()), context, WindowSizeClass.Compact, rebuildAll: true)
+        var view = owner.Build(new Box(new BoxStyle(), List()), context, 400f, rebuildAll: true)
             .ChildAt(0)!;
         var clock = new ScrollClock();
         clock.ScrollBy(view, 300, 600).Should().BeTrue();
         clock.Advance(0);
         clock.Advance(16).Should().BeTrue("the wheel's target is still ahead");
 
-        owner.Build(new Text("gone", TypeRole.BodyM), context, WindowSizeClass.Compact, rebuildAll: true);
+        owner.Build(new Text("gone", TypeRole.BodyM), context, 400f, rebuildAll: true);
 
         clock.Advance(32).Should().BeFalse("the view left the tree, and its glide with it");
         clock.Fling(view, 2, 600).Should().BeFalse("a position that left keeps nothing to move");
