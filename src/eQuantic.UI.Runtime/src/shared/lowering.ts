@@ -4722,7 +4722,9 @@ function buildAnchorPanel(node: AnchoredNode, context: LoweringContext, path: st
     transform: closed
       ? `translateY(${px(top ? ANCHOR_MOTION_LIFT : -ANCHOR_MOTION_LIFT)})`
       : undefined,
-    visibility: closed ? 'hidden' : undefined,
+    // C# twin: a hover panel at rest is hidden, not only transparent, or a reader meets a closed
+    // tooltip as a line of its own (#1329); the theme's reveal rules show it.
+    visibility: closed || node.openOnHover === true ? 'hidden' : undefined,
     'pointer-events': closed ? 'none' : undefined,
   });
   if (node.matchAnchorWidth === true) prependClass(panel, 'eq-anchor-match');
