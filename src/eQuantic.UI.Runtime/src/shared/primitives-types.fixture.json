@@ -198,6 +198,7 @@
   "TableViewport",
   "Text",
   "TextEntry",
+  "TextReading",
   "TextRun",
   "Touch",
   "Transform2D",
