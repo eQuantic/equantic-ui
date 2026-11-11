@@ -252,6 +252,7 @@ public class TypeScriptEmitter
     private void Dedent() => _builder.Dedent();
     private readonly CSharpToJsConverter _converter = new();
     private ComponentDependencyResolver? _dependencyResolver;
+    private (Compilation Compilation, ComponentDependencyResolver Modules)? _scanOfTheCompilation;
 
     /// <summary>
     /// C# primitive and .NET-compat type names that map to JS primitives or the <c>$eq.*</c> runtime,
@@ -2000,7 +2001,22 @@ public class TypeScriptEmitter
         // same sequence: written, it replaced the generic one and called itself (#612). So does an
         // explicit implementation that hands back what the member holding its name answers (#1139).
         if (ModelFor(m)?.GetDeclaredSymbol(m) is IMethodSymbol declared && ExplicitImplementations.LeavesOut(declared)) return;
+        if (m is { Body: null, ExpressionBody: null })
+        {
+            DeclareIfAbstract(m, c);
+            return;
+        }
         if (Lowering.Method(m, asStatic, DeclaredType, returns: TupleReturn) is { } member) c.Member(member, m);
+    }
+
+    /// <summary>A method with no body has no implementation to emit: the concrete subclass supplies
+    /// it. An ABSTRACT one is still DECLARED where the checker reads types, whatever its
+    /// accessibility, or every call the base makes to it is "Property does not exist" (#1304). The
+    /// declaration is type-only, so JavaScript, which has no <c>abstract</c>, gets nothing.</summary>
+    private void DeclareIfAbstract(MethodDeclarationSyntax method, TypeScriptCodeBuilder.ClassBuilder c)
+    {
+        if (CanDeclareTypeOnly && method.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword))
+            c.Member(AbstractMethod(method), method);
     }
 
     /// <summary>
@@ -2737,6 +2753,23 @@ public class TypeScriptEmitter
     private bool Resolvable(string name) =>
         IsAppModule(name) || _dependencyResolver?.GetRuntimeProvidedTypes().Contains(name) == true;
 
+    /// <summary>
+    /// What a class's module asks whether a name it imports became a module: the per-app scan when the
+    /// build has one, and otherwise the same rules over the compilation in hand, as a record's module
+    /// already asks. A class compiled with no scan (<c>CompileSource</c>, the playground, the runtime's
+    /// own transpiled modules) imported none of the app types it names besides its base, so a
+    /// parameter's type and the target of a downcast were names nothing defined (#1303). The scan is
+    /// made once per compilation, since every class of one compile shares it.
+    /// </summary>
+    private ComponentDependencyResolver? ModulesFor(SemanticModel? semanticModel)
+    {
+        if (_dependencyResolver is not null) return _dependencyResolver;
+        if (semanticModel?.Compilation is not { } compilation) return null;
+        if (_scanOfTheCompilation is not { } scan || !ReferenceEquals(scan.Compilation, compilation))
+            _scanOfTheCompilation = scan = (compilation, ComponentDependencyResolver.From(compilation));
+        return scan.Modules;
+    }
+
     public string EmitPlainClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel) =>
         EmitClassModule(cls, semanticModel, asStatic: false);
 
@@ -2802,7 +2835,10 @@ public class TypeScriptEmitter
                     Services.RuntimeProvidedTypeScanner.Collect(inherited, inheritedModel, asComponent: false, runtimeProvided,
                         referencedEnums, appTypes: null, hostOnly: hostOnlyInSignatures);
         }
-        else if (_dependencyResolver != null)
+        // A class with no model, and one in a host with no project's compilation, whose model is of this
+        // file alone and binds no [RuntimeProvided] type of another: the scan of the resolver answers, as it
+        // does for a component. What the module does not name is taken out below.
+        if (_dependencyResolver != null && (semanticModel == null || _converter.ProjectCompilation is null))
             runtimeProvided.UnionWith(_dependencyResolver.GetRuntimeProvidedTypes());
         // Names the CONVERSION introduced that the runtime provides — a reduced extension call sent
         // home (`VisualNodeExtensions.centered(node)`). The scanner above walks SYNTAX, and the home
@@ -2867,7 +2903,12 @@ public class TypeScriptEmitter
             // component and the record paths import: a constant read off one is inlined and leaves
             // no reference, and importing it there compiled a whole class of another project for a
             // literal. Measured on an app's `const string Serif = Theme.Serif;` (#624).
-            if (_dependencyResolver?.IsModule(ct) == true || Referenced.IsModule(ct) && NamedIn(emitted, ct))
+            // With no per-app scan, the scan of the compilation answers for a name the emitted text
+            // NAMES, as a referenced project's does: the syntax walk erases a generic to its bare name,
+            // and `List<string>`, written `string[]`, asked for the library's `List` component (#1303).
+            if (_dependencyResolver?.IsModule(ct) == true
+                || _dependencyResolver is null && ModulesFor(semanticModel)?.IsModule(ct) == true && NamedIn(emitted, ct)
+                || Referenced.IsModule(ct) && NamedIn(emitted, ct))
                 imports.Add(new JsImport([ct], $"./{ct}"));
             else if (!Referenced.IsModule(ct)) ReportIfKeptOut(ct, cls);
         }
@@ -2879,10 +2920,12 @@ public class TypeScriptEmitter
 
     private void EmitMethod(MethodDefinition method, TypeScriptCodeBuilder.ClassBuilder c, ComponentDefinition component, string? className = null)
     {
-        // Abstract methods (no body, no expression body) have nothing to emit — the concrete subclass
-        // supplies the implementation, and TS needs no abstract stub on the base.
-        if (method.SyntaxNode != null && method.SyntaxNode.Body == null && method.SyntaxNode.ExpressionBody == null)
+        // A method with no body is declared when abstract, and otherwise has nothing to emit.
+        if (method.SyntaxNode is { Body: null, ExpressionBody: null } bodiless)
+        {
+            DeclareIfAbstract(bodiless, c);
             return;
+        }
         // An explicit implementation that hands back what the member holding its name answers is that
         // member on the twin (#1139).
         if (method.SyntaxNode is { } node && ModelFor(node)?.GetDeclaredSymbol(node) is IMethodSymbol symbol
@@ -2971,6 +3014,46 @@ public class TypeScriptEmitter
         }
     }
     
+    /// <summary>
+    /// The type-only declaration of an abstract method: its name as every call reaches it, its
+    /// parameters typed as an override's are (an optional one marked optional, since a declaration
+    /// carries no default), and its return as C# declares it. An override that is
+    /// `async` answers a promise, so a task-shaped return is declared as one; `async` itself is not
+    /// legal on an abstract member. An `out` parameter leaves the signature and its value comes back
+    /// in the returned object (<see cref="OutParameters"/>), a shape no annotation here names, so
+    /// that method's return is left as `any`.
+    /// </summary>
+    private JsClassMember AbstractMethod(MethodDeclarationSyntax method)
+    {
+        var model = ModelFor(method);
+        var outNames = OutParameters.Of(method.ParameterList).Where(OutParameters.IsOut)
+            .Select(p => p.Identifier.ValueText).ToHashSet(StringComparer.Ordinal);
+        var parameters = string.Join(", ", method.ParameterList.Parameters
+            .Where(p => !outNames.Contains(p.Identifier.ValueText))
+            .Select(p => Lowering.ParamWithDefault(p.Identifier.ValueText.ToJsIdentifier(), DeclaredType(p.Type),
+                // A declaration takes no initializer (TS2371): an optional parameter is optional.
+                p.Default is null ? null : "undefined",
+                p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword))));
+        var generics = method.TypeParameterList is { Parameters.Count: > 0 } list
+            ? $"<{string.Join(", ", list.Parameters.Select(t => t.Identifier.ValueText.ToJsIdentifier()))}>"
+            : "";
+        var returns = outNames.Count > 0 ? "any" : AbstractReturn(method.ReturnType, model);
+        return JsClassMember.Field("abstract ", TwinMethodName.Of(method, model) + generics + $"({parameters})", $": {returns}");
+    }
+
+    /// <summary>What an abstract method's caller receives: a task as the promise its override answers.</summary>
+    private string AbstractReturn(TypeSyntax returnType, SemanticModel? model)
+    {
+        if (model?.GetTypeInfo(returnType).Type is INamedTypeSymbol { ContainingNamespace: var ns } task
+            && ns?.ToDisplayString() == "System.Threading.Tasks" && task.Name is "Task" or "ValueTask")
+        {
+            var generic = returnType as GenericNameSyntax ?? (returnType as QualifiedNameSyntax)?.Right as GenericNameSyntax;
+            var inner = generic is { TypeArgumentList.Arguments: [var argument] } ? DeclaredType(argument) : "void";
+            return $"Promise<{inner}>";
+        }
+        return returnType is PredefinedTypeSyntax { Keyword.ValueText: "void" } ? "void" : DeclaredType(returnType);
+    }
+
     /// <summary>
     /// The return annotation of a method that returns a TUPLE, and nothing for any other: a tuple
     /// crosses as an array literal, which TypeScript reads as an array of the union of its elements,

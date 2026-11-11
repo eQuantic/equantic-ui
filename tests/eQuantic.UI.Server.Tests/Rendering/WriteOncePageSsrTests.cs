@@ -463,7 +463,7 @@ public class WriteOncePageSsrTests
     }
 
     private static string AtomicCss(ServerRenderResult result) =>
-        string.Join("\n", result.Assets!.RenderTags()).Should().Contain("id=\"eq-atomic\"", "the SSR injects the collected rules")
+        string.Join("\n", result.Assets!.RenderTags(nonce: null)).Should().Contain("id=\"eq-atomic\"", "the SSR injects the collected rules")
             .And.Subject;
 
     [Fact]

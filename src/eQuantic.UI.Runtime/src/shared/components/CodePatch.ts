@@ -4,7 +4,7 @@ export class CodePatch {
     static parse(text: string) {
         const close = () => {
             if (open && (hunks.length > 0 || binary || !(originalPath == null) || !(modifiedPath == null))) {
-                let $n0: any; 
+                let $n0: CodePatchFile; 
                 files.push(($n0 = new CodePatchFile(originalPath, modifiedPath, hunks), $n0.binary = binary, $n0));
             }
             originalPath = null;
@@ -98,7 +98,7 @@ export class CodePatch {
             i++;
         }
         while (i < lines.length && lines[i].startsWith('\\')) i++;
-        let $n1: any; 
+        let $n1: CodePatchHunk; 
         hunks.push(($n1 = new CodePatchHunk(header[1] === 0 ? header[0] : header[0] - 1, header[1], header[3] === 0 ? header[2] : header[2] - 1, header[3], header[4], body), $n1.header = headerLine, $n1));
         return i;
     }

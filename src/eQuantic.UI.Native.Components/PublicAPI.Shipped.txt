@@ -170,6 +170,8 @@
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.ActivateFocused() -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.Adjust(int id, int direction) -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.Back() -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Backdrop.get -> eQuantic.UI.Primitives.Color?
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Backdrop.init -> void
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.CanGoBack.get -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.CaretIndex.get -> int
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.CaretRect() -> eQuantic.UI.Primitives.Rect?

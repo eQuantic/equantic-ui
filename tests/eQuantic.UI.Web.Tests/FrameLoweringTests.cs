@@ -71,7 +71,7 @@ public class FrameLoweringTests
     [Fact]
     public void ANestedStatefulComponent_KeepsItsStateFromOneFrameToTheNext()
     {
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         var page = new Page(() => new Counter());
 
         var first = Frame(owner, page);
@@ -99,7 +99,7 @@ public class FrameLoweringTests
     [Fact]
     public void ALayerIsShownBeforeItLowers_SoWhatItHoldsKeepsItsState()
     {
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         Counter? kept = null;
         var page = new Page(() => new Overlay(new Counter()));
 
@@ -116,7 +116,7 @@ public class FrameLoweringTests
     [Fact]
     public void ALayerTheFrameDoesNotLower_LeavesTheTreeWhenTheFrameEnds()
     {
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         var open = true;
         var page = new Page(() => new Anchored(new Text("anchor", TypeRole.BodyM), new Counter()) { Open = open });
 
@@ -144,7 +144,7 @@ public class FrameLoweringTests
     [Fact]
     public void ADiscoveryRound_NamesTheKeptInstance_NotTheOneAParentsBuildMade()
     {
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         var page = new Page(() => new Counter());
         Frame(owner, page);
         var kept = KeptCounter(owner.Root!);
@@ -168,7 +168,7 @@ public class FrameLoweringTests
     [Fact]
     public void AComponentTheFrameDidNotBuild_IsRefused_RatherThanDrawnAtItsDefaults()
     {
-        var owner = new BuildOwner();
+        var owner = ComponentBoundary.Owner();
         var frame = new ElementFrame(owner.Build(new Page(() => new Text("only text", TypeRole.BodyM)), Context(),
             WindowSizeClass.Expanded, rebuildAll: false));
 
