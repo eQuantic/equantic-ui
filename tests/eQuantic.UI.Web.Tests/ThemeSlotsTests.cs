@@ -38,6 +38,11 @@ public class ThemeSlotsTests
         [nameof(IAppTheme.Code)] = "code",
         [nameof(IAppTheme.Controls)] = "controls",
         [nameof(IAppTheme.Button)] = "button",
+        [nameof(IAppTheme.IconButton)] = "iconButton",
+        [nameof(IAppTheme.Input)] = "input",
+        [nameof(IAppTheme.SelectionControls)] = "selectionControls",
+        [nameof(IAppTheme.Segmented)] = "segmented",
+        [nameof(IAppTheme.Chip)] = "chip",
     };
 
     [Fact]
@@ -306,6 +311,11 @@ public class ThemeSlotsTests
         public SheetTheme? Sheet => new() { Gridline = new ColorToken(Color.Black) };
         public ControlsTheme? Controls => inner.Controls;
         public ButtonTheme? Button => inner.Button;
+        public IconButtonTheme? IconButton => inner.IconButton;
+        public InputTheme? Input => inner.Input;
+        public SelectionControlsTheme? SelectionControls => inner.SelectionControls;
+        public SegmentedTheme? Segmented => inner.Segmented;
+        public ChipTheme? Chip => inner.Chip;
         public ColorToken Code(CodeTokenKind kind) => new(Color.FromRgb(0x11, 0x22, (byte)kind));
         public float DisabledOpacity => inner.DisabledOpacity;
         public VariantColors Colors(Variant variant) => inner.Colors(variant);
