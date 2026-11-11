@@ -16,4 +16,5 @@
 ## 3. The ambients that stay are named
 
 - [x] 3.1 `AmbientChannelsTests` names every `AsyncLocal` in the source with its reason. Verify: it fails on a channel added without an entry, and on an entry whose channel is gone
-- [x] 3.2 Docs. Verify: `docs/ELEMENT-TREE-PLAN.md` records E4b, the wiki's Upgrading page carries the break in its two languages, and a ledger entry cites #1404
+- [x] 3.2 The dashboard sample served from this branch. Verify: `/server-data` loaded in a browser at the density its cookie names, with the values of both prefetch rounds in the served markup and after hydration, and again after a client navigation from another screen, with no console error
+- [x] 3.3 Docs. Verify: `docs/ELEMENT-TREE-PLAN.md` records E4b, the wiki's Upgrading page carries the break in its two languages, and a ledger entry cites #1404
