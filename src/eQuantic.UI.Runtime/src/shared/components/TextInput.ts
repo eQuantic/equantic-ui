@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, Row, SizeValue, SizeVariantValue, Sizing, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, Row, SizeValue, SizeVariantValue, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
 
 export class TextInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TextInput';
@@ -76,7 +76,7 @@ export class TextInput extends StatefulComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let height = Sizing.height(this.size, context.density);
+        let height = ControlMetrics.height(context, this.size);
         let hasError = !!this.error;
         let borderColor = hasError ? theme.colors('destructive').base : this._focused ? theme.colors('primary').base : theme.borderStrong;
         let borderWidth = this._focused ? 2 : 1;

@@ -760,16 +760,17 @@ public class SharedComponentTranspilationTests
         button.Should().Contain("new BoxStyle({ height: height");
         // A `const` INLINES at the use site — the same thing Roslyn does for a C# consumer, and what
         // lets a component default to a constant from an assembly the bundle never ships.
-        button.Should().Contain("minWidth: 64");
+        button.Should().Contain("minWidth: slot?.minWidth ?? 64");
 
-        // Each rung read on its own, the way every other component reads the ladder. This asserted a
-        // seven-slot array deconstruction while `ButtonStyles.metrics` existed to hand the twin a
-        // tuple; the numbers were always these calls, and now the twin makes them.
-        button.Should().Contain("let height = Sizing.height(this.size, context.density)");
-        button.Should().Contain("let labelSize = Sizing.labelSize(this.size, context.density)");
-        button.Should().Contain("let gap = Sizing.gap(this.size)");
+        // Each rung read on its own, through the theme's slots in the plan's order (#1241): the
+        // button's own ladder, then the theme's Controls, then Sizing, at the context's density.
+        button.Should().Contain("let slot = theme.button");
+        button.Should().Contain("let height = ControlMetrics.height(context, this.size, ladder)");
+        button.Should().Contain("let labelSize = ControlMetrics.labelSize(context, this.size, ladder)");
+        button.Should().Contain("let gap = ControlMetrics.gap(context, this.size, ladder)");
         button.Should().NotContain("ButtonStyles", "the tuple view is gone, and the ladder is the surface");
-        // Shape is theme-driven (Material overrides the ladder) — resolved from the enum member string.
+        // Shape is theme-driven (Material overrides the ladder) — resolved from the enum member string,
+        // as the default a slot's radius stands in front of.
         button.Should().Contain("theme.shape(this.size === 'xLarge' ? 'large' : 'medium')");
     }
 

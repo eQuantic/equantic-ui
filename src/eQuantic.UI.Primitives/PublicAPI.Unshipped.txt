@@ -287,3 +287,7 @@ eQuantic.UI.Primitives.PhotonTheme.IconButton.get -> eQuantic.UI.Primitives.Icon
 eQuantic.UI.Primitives.PhotonTheme.Input.get -> eQuantic.UI.Primitives.InputTheme?
 eQuantic.UI.Primitives.PhotonTheme.Segmented.get -> eQuantic.UI.Primitives.SegmentedTheme?
 eQuantic.UI.Primitives.PhotonTheme.SelectionControls.get -> eQuantic.UI.Primitives.SelectionControlsTheme?
+eQuantic.UI.Primitives.ButtonTheme.OutlineColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ButtonTheme.OutlineColor.init -> void
+eQuantic.UI.Primitives.ButtonTheme.QuietFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ButtonTheme.QuietFill.init -> void
