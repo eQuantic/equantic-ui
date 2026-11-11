@@ -1,1 +1,13 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Gtm.GtmOptions.WithConsent() -> eQuantic.UI.Gtm.GtmOptions!
+eQuantic.UI.Gtm.GtmOptions.WithConsentGrants(eQuantic.UI.Gtm.GtmConsentSignals grants) -> eQuantic.UI.Gtm.GtmOptions!
+eQuantic.UI.Gtm.GtmOptions.WithoutConsent() -> eQuantic.UI.Gtm.GtmOptions!
+eQuantic.UI.Gtm.GtmOptions.ConsentGrants.get -> eQuantic.UI.Gtm.GtmConsentSignals
+eQuantic.UI.Gtm.GtmOptions.ConsentGrants.set -> void
+eQuantic.UI.Gtm.GtmConsentSignals
+eQuantic.UI.Gtm.GtmConsentSignals.AdPersonalization = 8 -> eQuantic.UI.Gtm.GtmConsentSignals
+eQuantic.UI.Gtm.GtmConsentSignals.AdStorage = 2 -> eQuantic.UI.Gtm.GtmConsentSignals
+eQuantic.UI.Gtm.GtmConsentSignals.AdUserData = 4 -> eQuantic.UI.Gtm.GtmConsentSignals
+eQuantic.UI.Gtm.GtmConsentSignals.All = eQuantic.UI.Gtm.GtmConsentSignals.AnalyticsStorage | eQuantic.UI.Gtm.GtmConsentSignals.AdStorage | eQuantic.UI.Gtm.GtmConsentSignals.AdUserData | eQuantic.UI.Gtm.GtmConsentSignals.AdPersonalization -> eQuantic.UI.Gtm.GtmConsentSignals
+eQuantic.UI.Gtm.GtmConsentSignals.AnalyticsStorage = 1 -> eQuantic.UI.Gtm.GtmConsentSignals
+eQuantic.UI.Gtm.GtmConsentSignals.None = 0 -> eQuantic.UI.Gtm.GtmConsentSignals

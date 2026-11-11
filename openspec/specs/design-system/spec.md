@@ -118,3 +118,13 @@ under `color.more`, compared both ways.
 
 - **WHEN** PhotonTheme gives a token a More pair that `color.more` does not list
 - **THEN** `HandoffTokenPinTests` fails saying the SDK steps it up and the handoff lists no More pair
+
+### Requirement: A theme's code palette reaches the browser
+
+The shell's theme data SHALL carry the colour of every `CodeTokenKind`, and the browser's theme SHALL answer `Code` from
+it, so a theme that overrides `Code` colours a `CodeBlock` alike on the server, on Photon and in the browser.
+
+#### Scenario: A theme that overrides Code
+
+- **WHEN** a theme answers its own colour for `CodeTokenKind.Keyword`
+- **THEN** the theme data carries that colour, and the materialized theme answers it for `keyword`
