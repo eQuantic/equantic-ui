@@ -4,7 +4,7 @@ namespace eQuantic.UI.Primitives;
 /// The slot of the selection controls (<c>docs/ELEMENT-TREE-PLAN.md</c> §3.10): Checkbox, RadioGroup,
 /// Switch and Slider, every member OPTIONAL and the component's default when null. These controls have
 /// no size rung: a checkbox, a radio and a switch vary by density alone, so their sizes are a
-/// <see cref="DensityValue"/>, read at <c>context.Density</c>. The accent each takes from
+/// <see cref="DensityPair"/>, read at <c>context.Density</c>. The accent each takes from
 /// <see cref="IAppTheme.Colors"/> stays there.
 /// <para>
 /// <em>How does Flutter solve it?</em> <c>CheckboxThemeData</c>, <c>RadioThemeData</c>,
@@ -15,11 +15,11 @@ namespace eQuantic.UI.Primitives;
 public sealed record SelectionControlsTheme
 {
     /// <summary>The checkbox's square and the radio's circle (22, 20 compact).</summary>
-    public DensityValue? Box { get; init; }
+    public DensityPair? Box { get; init; }
 
     /// <summary>The radio's circle where it differs from the checkbox's square, ahead of
     /// <see cref="Box"/> for the radio (Material 3 draws an 18dp checkbox and a 20dp radio).</summary>
-    public DensityValue? RadioSize { get; init; }
+    public DensityPair? RadioSize { get; init; }
 
     /// <summary>The border width of an unchecked box and of the radio's ring (2).</summary>
     public float? BorderWidth { get; init; }
@@ -32,7 +32,7 @@ public sealed record SelectionControlsTheme
     public float? CheckboxRadius { get; init; }
 
     /// <summary>The radio's filled centre (10, 9 compact).</summary>
-    public DensityValue? RadioDot { get; init; }
+    public DensityPair? RadioDot { get; init; }
 
     /// <summary>The height of a radio's row (44).</summary>
     public float? RadioRowHeight { get; init; }
@@ -41,13 +41,13 @@ public sealed record SelectionControlsTheme
     public float? LabelGap { get; init; }
 
     /// <summary>The switch's track width (52, 44 compact).</summary>
-    public DensityValue? SwitchWidth { get; init; }
+    public DensityPair? SwitchWidth { get; init; }
 
     /// <summary>The switch's track height (32, 26 compact).</summary>
-    public DensityValue? SwitchHeight { get; init; }
+    public DensityPair? SwitchHeight { get; init; }
 
     /// <summary>The switch's knob (26, 20 compact).</summary>
-    public DensityValue? SwitchThumb { get; init; }
+    public DensityPair? SwitchThumb { get; init; }
 
     /// <summary>The knob's inset from every edge of the track (3); its travel is the track's slack.</summary>
     public float? SwitchInset { get; init; }

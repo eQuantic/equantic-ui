@@ -62,6 +62,6 @@ internal static class ControlMetrics
 
     /// <summary>The side of <paramref name="value"/> for <paramref name="density"/>, or null for none: a
     /// value a control varies by density alone (a checkbox's box, a switch's track).</summary>
-    public static float? AtDensity(DensityValue? value, Density density) =>
+    public static float? AtDensity(DensityPair? value, Density density) =>
         density == Density.Compact ? value?.Compact : value?.Comfortable;
 }

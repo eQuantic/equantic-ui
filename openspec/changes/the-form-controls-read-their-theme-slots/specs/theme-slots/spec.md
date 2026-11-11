@@ -18,7 +18,7 @@ A value that varies by density SHALL be read at `context.Density` at every step.
 
 #### Scenario: A slot reaches the web's lowering
 
-- **WHEN** a page under `PhotonTheme.Instance.With(selectionControls: new SelectionControlsTheme { Box = new DensityValue { Comfortable = 30 } })` holds a `Checkbox`
+- **WHEN** a page under `PhotonTheme.Instance.With(selectionControls: new SelectionControlsTheme { Box = new DensityPair { Comfortable = 30 } })` holds a `Checkbox`
 - **THEN** the checkbox's box lowers 30 wide and 30 tall on the web
 
 #### Scenario: A slot reaches Photon's layout
@@ -33,7 +33,7 @@ A value that varies by density SHALL be read at `context.Density` at every step.
 
 #### Scenario: The density picks its side
 
-- **WHEN** the slot's `Box` is `new DensityValue { Comfortable = 30, Compact = 24 }` and the page is compact
+- **WHEN** the slot's `Box` is `new DensityPair { Comfortable = 30, Compact = 24 }` and the page is compact
 - **THEN** the checkbox's box is 24 by 24
 
 ### Requirement: The SDK's themes fill the form control slots

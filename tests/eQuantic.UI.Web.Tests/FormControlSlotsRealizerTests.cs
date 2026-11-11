@@ -55,7 +55,7 @@ public class FormControlSlotsRealizerTests
         new Case("SelectionControls", () => new Checkbox(true, () => { }, "Remember me"),
             Photon.With(selectionControls: new SelectionControlsTheme
             {
-                Box = new DensityValue { Comfortable = 30, Compact = 24 },
+                Box = new DensityPair { Comfortable = 30, Compact = 24 },
             }),
             ["width:30px", "height:30px"], ["width:24px", "height:24px"]),
         new Case("Segmented", () => new SegmentedControl(["All", "Income"], 0, _ => { }),

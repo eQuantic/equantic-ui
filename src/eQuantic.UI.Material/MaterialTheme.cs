@@ -166,15 +166,15 @@ public sealed class MaterialTheme : IAppTheme
     /// </summary>
     public SelectionControlsTheme? SelectionControls { get; } = new()
     {
-        Box = new DensityValue { Comfortable = 18, Compact = 18 },
-        RadioSize = new DensityValue { Comfortable = 20, Compact = 20 },
+        Box = new DensityPair { Comfortable = 18, Compact = 18 },
+        RadioSize = new DensityPair { Comfortable = 20, Compact = 20 },
         BorderWidth = 2,
         CheckboxRadius = 2,
-        RadioDot = new DensityValue { Comfortable = 10, Compact = 10 },
+        RadioDot = new DensityPair { Comfortable = 10, Compact = 10 },
         RadioRowHeight = 48,
-        SwitchWidth = new DensityValue { Comfortable = 52, Compact = 52 },
-        SwitchHeight = new DensityValue { Comfortable = 32, Compact = 32 },
-        SwitchThumb = new DensityValue { Comfortable = 24, Compact = 24 },
+        SwitchWidth = new DensityPair { Comfortable = 52, Compact = 52 },
+        SwitchHeight = new DensityPair { Comfortable = 32, Compact = 32 },
+        SwitchThumb = new DensityPair { Comfortable = 24, Compact = 24 },
         SwitchInset = 4,
         SliderTrackHeight = 4,
         SliderThumbSize = 20,

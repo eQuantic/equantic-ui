@@ -292,7 +292,7 @@ public sealed class PhotonTheme : IAppTheme
         RemoveIconSize = IconSize.Dense,
     };
 
-    private static DensityValue ByDensityAlone(Func<Density, float> side) => new()
+    private static DensityPair ByDensityAlone(Func<Density, float> side) => new()
     {
         Comfortable = side(Density.Comfortable),
         Compact = side(Density.Compact),

@@ -48,7 +48,7 @@ and the picker's panel height.
 **The order is E6a's.** A ladder number goes through `ControlMetrics`, with the family's own
 `Controls` ladder as its third argument: the family slot, then the theme's `Controls`, then `Sizing`. A
 value outside the ladder reads `slot?.X ?? today's constant`. A selection control varies by density
-alone, not by size, so a new shared record `DensityValue { Comfortable, Compact }` holds those values,
+alone, not by size, so a new shared record `DensityPair { Comfortable, Compact }` holds those values,
 and `ControlMetrics.AtDensity` reads one at `context.Density`.
 
 **Where the defaults live:**
@@ -65,7 +65,7 @@ name is already taken on `IAppTheme` by the colour of selected text, so the slot
 
 ## Parts reached
 
-- **The vocabulary:** the five records, `DensityValue`, five default members of `IAppTheme`,
+- **The vocabulary:** the five records, `DensityPair`, five default members of `IAppTheme`,
   `OverriddenTheme` and `AppThemeExtensions.With`.
 - **The components:** the twelve this change names.
 - **The two themes:** `PhotonTheme` and `MaterialTheme`.

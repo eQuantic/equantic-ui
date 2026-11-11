@@ -65,11 +65,11 @@ export class ButtonTheme {
 }
 
 /** A number per density, each side optional, for a control that varies by density alone (E6b). */
-export class DensityValue {
+export class DensityPair {
   comfortable: number | null = null;
   compact: number | null = null;
 
-  constructor(config?: Partial<DensityValue>) {
+  constructor(config?: Partial<DensityPair>) {
     if (config) Object.assign(this, config);
   }
 }
@@ -120,17 +120,17 @@ export class InputTheme {
 
 /** The selection controls' slot: Checkbox, RadioGroup, Switch and Slider (E6b, #1242). */
 export class SelectionControlsTheme {
-  box: DensityValue | null = null;
-  radioSize: DensityValue | null = null;
+  box: DensityPair | null = null;
+  radioSize: DensityPair | null = null;
   borderWidth: number | null = null;
   borderColor: ColorToken | null = null;
   checkboxRadius: number | null = null;
-  radioDot: DensityValue | null = null;
+  radioDot: DensityPair | null = null;
   radioRowHeight: number | null = null;
   labelGap: number | null = null;
-  switchWidth: DensityValue | null = null;
-  switchHeight: DensityValue | null = null;
-  switchThumb: DensityValue | null = null;
+  switchWidth: DensityPair | null = null;
+  switchHeight: DensityPair | null = null;
+  switchThumb: DensityPair | null = null;
   switchInset: number | null = null;
   switchOffTrack: ColorToken | null = null;
   thumbFill: ColorToken | null = null;
@@ -190,7 +190,7 @@ hashesByValue(SizeLadder);
 hashesByValue(DensityLadder);
 hashesByValue(ControlsTheme);
 hashesByValue(ButtonTheme);
-hashesByValue(DensityValue);
+hashesByValue(DensityPair);
 hashesByValue(IconButtonTheme);
 hashesByValue(InputTheme);
 hashesByValue(SelectionControlsTheme);
@@ -276,8 +276,8 @@ export function sheetTheme(data: SlotData): SheetTheme {
   return sheet;
 }
 
-export const slotDensityValue = (data: unknown): DensityValue | null =>
-  data ? new DensityValue(data as Partial<DensityValue>) : null;
+export const slotDensityPair = (data: unknown): DensityPair | null =>
+  data ? new DensityPair(data as Partial<DensityPair>) : null;
 
 const slotControls = (data: unknown): ControlsTheme | null => (data ? controlsTheme(data as SlotData) : null);
 
@@ -324,17 +324,17 @@ export function inputTheme(data: SlotData): InputTheme {
 /** The selection controls' slot the bridge wrote. */
 export function selectionControlsTheme(data: SlotData): SelectionControlsTheme {
   return new SelectionControlsTheme({
-    box: slotDensityValue(data.box),
-    radioSize: slotDensityValue(data.radioSize),
+    box: slotDensityPair(data.box),
+    radioSize: slotDensityPair(data.radioSize),
     borderWidth: slotValue<number>(data.borderWidth),
     borderColor: slotToken(data.borderColor),
     checkboxRadius: slotValue<number>(data.checkboxRadius),
-    radioDot: slotDensityValue(data.radioDot),
+    radioDot: slotDensityPair(data.radioDot),
     radioRowHeight: slotValue<number>(data.radioRowHeight),
     labelGap: slotValue<number>(data.labelGap),
-    switchWidth: slotDensityValue(data.switchWidth),
-    switchHeight: slotDensityValue(data.switchHeight),
-    switchThumb: slotDensityValue(data.switchThumb),
+    switchWidth: slotDensityPair(data.switchWidth),
+    switchHeight: slotDensityPair(data.switchHeight),
+    switchThumb: slotDensityPair(data.switchThumb),
     switchInset: slotValue<number>(data.switchInset),
     switchOffTrack: slotToken(data.switchOffTrack),
     thumbFill: slotToken(data.thumbFill),

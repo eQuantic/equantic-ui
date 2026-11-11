@@ -58,7 +58,7 @@ public class FormControlSlotsTests
         new Case("SelectionControls", () => new Checkbox(true, () => { }, "Remember me"),
             Photon.With(selectionControls: new SelectionControlsTheme
             {
-                Box = new DensityValue { Comfortable = 30, Compact = 24 },
+                Box = new DensityPair { Comfortable = 30, Compact = 24 },
             }),
             (30, 30), (24, 24)),
         new Case("Segmented", () => new SegmentedControl(["All", "Income"], 0, _ => { }),
@@ -107,7 +107,7 @@ public class FormControlSlotsTests
     [Fact]
     public void AMemberLeftNull_IsTheComponentsOwn()
     {
-        var theme = Photon.With(selectionControls: new SelectionControlsTheme { Box = new DensityValue { Comfortable = 22 } });
+        var theme = Photon.With(selectionControls: new SelectionControlsTheme { Box = new DensityPair { Comfortable = 22 } });
 
         Boxes(new Checkbox(false, () => { }, "Remember me"), theme, Density.Comfortable)
             .Should().Equal(Boxes(new Checkbox(false, () => { }, "Remember me"), new BareTheme(Photon), Density.Comfortable));

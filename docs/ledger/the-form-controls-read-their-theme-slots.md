@@ -1,7 +1,7 @@
 - **2026-11-11 · The form controls read their theme slots**: five slots join the control ladder and
   the Button on `IAppTheme`: `IconButton`, `Input` (TextInput, SearchField, Select and TimePicker),
   `SelectionControls` (Checkbox, RadioGroup, Switch and Slider), `Segmented` (SegmentedControl and
-  Stepper) and `Chip`, with `DensityValue` for the sizes a selection control varies by density alone.
+  Stepper) and `Chip`, with `DensityPair` for the sizes a selection control varies by density alone.
   What each control wrote that is look moved into its slot: sizes, paddings, gaps, border widths,
   radii, elevations, the label's type and the colours it chose itself. A colour straight from
   `Colors(variant)` stays there, and behaviour stays in the component. Each control reads its

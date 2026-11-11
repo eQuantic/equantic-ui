@@ -6,7 +6,7 @@ namespace eQuantic.UI.Primitives;
 /// size each, with a compact side. Both sides cross to the browser, since the density is the browser's
 /// to report. A side left null is the component's own value at that density.
 /// </summary>
-public sealed record DensityValue
+public sealed record DensityPair
 {
     /// <summary>The value at <see cref="Density.Comfortable"/>.</summary>
     public float? Comfortable { get; init; }

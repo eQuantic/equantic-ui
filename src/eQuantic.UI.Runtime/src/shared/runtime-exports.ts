@@ -105,7 +105,7 @@ export {
   ControlsTheme,
   ButtonTheme,
   AppThemeExtensions,
-  DensityValue,
+  DensityPair,
   IconButtonTheme,
   InputTheme,
   SelectionControlsTheme,
