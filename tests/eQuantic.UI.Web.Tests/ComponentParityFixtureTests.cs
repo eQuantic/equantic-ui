@@ -600,9 +600,16 @@ public class ComponentParityFixtureTests
     /// inside a render whose channels carry the language's link policy, as the server lowers it.</summary>
     private static IEnumerable<HtmlNode> Frames(VisualNode node, int[] presses, Func<string, string>? linkPolicy)
     {
-        HtmlElement Lower() => linkPolicy is null
-            ? WebRealizer.Lower(node, Theme, 1f, new StyleSink())
-            : WebRealizer.Lower(node, Theme, 1f, new RenderChannels(linkPolicy: linkPolicy));
+        HtmlElement Lower()
+        {
+            if (linkPolicy is null) return WebRealizer.Lower(node, Theme, 1f, new StyleSink());
+            var channels = new RenderChannels(linkPolicy: linkPolicy);
+            var lowered = WebRealizer.Lower(node, Theme, 1f, channels);
+            // A render declares its paint servers beside the page, where the twin writes them inline:
+            // a case in a language compares its links, so it paints with none.
+            channels.Gradients.IsEmpty.Should().BeTrue("a case lowered in a language paints with no gradient");
+            return lowered;
+        }
 
         var frame = Lower().Render();
         ReferencesResolve(frame);

@@ -23,12 +23,14 @@ public class RenderChannelsTests
         public static readonly ManualResetEventSlim Compact = new();
         public static readonly ManualResetEventSlim Comfortable = new();
         public static readonly CountdownEvent Bridges = new(2);
+        private static int _arrivals;
 
         public static void Reset()
         {
             Compact.Reset();
             Comfortable.Reset();
             Bridges.Reset(2);
+            _arrivals = 0;
             Missed = false;
         }
 
@@ -38,15 +40,9 @@ public class RenderChannelsTests
         public static void ArriveAtTheBridge()
         {
             if (!Armed) return;
-            try
-            {
-                Bridges.Signal();
-            }
-            catch (InvalidOperationException)
-            {
-                return; // a later render of a request that already met
-            }
-
+            // The first two renders meet; a later render of a request that already met passes.
+            if (Interlocked.Increment(ref _arrivals) > 2) return;
+            Bridges.Signal();
             if (!Bridges.Wait(TimeSpan.FromSeconds(10))) Missed = true;
         }
 
