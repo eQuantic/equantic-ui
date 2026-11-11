@@ -115,6 +115,7 @@ public static class StringConversion
             return TupleText(tuple, converted, Eq.TupleText, context);
         if (real is INamedTypeSymbol { IsAnonymousType: true } anonymous)
             return AnonymousText(anonymous, converted, Eq.RecordText, context);
+        if (IsPair(real)) return PartsText(((INamedTypeSymbol)real).TypeArguments, converted, Eq.PairText, context);
 
         // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is a plain object, whose own
         // string is `[object Object]`. It reads as the record text .NET writes, from the members
@@ -229,10 +230,20 @@ public static class StringConversion
     /// <paramref name="helper"/> is <see cref="Eq.TupleText"/> for the text itself and
     /// <see cref="Eq.TupleTextGroup"/> for the delegate a <c>ToString</c> method group is (#762).
     /// </summary>
-    internal static JsExpr TupleText(INamedTypeSymbol tuple, JsExpr value, string helper, ConversionContext context)
+    internal static JsExpr TupleText(INamedTypeSymbol tuple, JsExpr value, string helper, ConversionContext context) =>
+        PartsText(tuple.TupleElements.Select(element => element.Type), value, helper, context);
+
+    /// <summary>Whether a type is <c>KeyValuePair&lt;TKey, TValue&gt;</c>, an array here, whose text is
+    /// <c>[key, value]</c> with each half as its type writes it (#905).</summary>
+    private static bool IsPair(ITypeSymbol? type) =>
+        type is INamedTypeSymbol { Name: "KeyValuePair", TypeArguments.Length: 2 } pair
+        && pair.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic";
+
+    /// <summary>The runtime's text of a value of several parts, handed what the type of each says.</summary>
+    private static JsExpr PartsText(IEnumerable<ITypeSymbol> parts, JsExpr value, string helper, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        var elements = tuple.TupleElements.Select(element => Printed(element.Type, context)).ToList();
+        var elements = parts.Select(part => Printed(part, context)).ToList();
         var said = elements.FindLastIndex(element => element is not null) + 1;
         return said == 0
             ? JsExpr.Call(JsExpr.Identifier(helper), value)
@@ -312,6 +323,7 @@ public static class StringConversion
         if (type is INamedTypeSymbol { IsTupleType: true } tuple) return TupleText(tuple, held, Eq.TupleTextGroup, context);
         if (type is INamedTypeSymbol { IsAnonymousType: true } anonymous)
             return AnonymousText(anonymous, held, Eq.RecordTextGroup, context);
+        if (IsPair(type)) return PartsText(((INamedTypeSymbol)type).TypeArguments, held, Eq.PairTextGroup, context);
         if (type is INamedTypeSymbol data && data.TwinIsData()) return RecordText(data, held, Eq.RecordTextGroup, context);
         if (OwnText(type, JsExpr.Identifier("$v"), context) is { } own)
         {
