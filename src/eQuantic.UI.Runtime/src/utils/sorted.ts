@@ -26,6 +26,18 @@ import { comparerOf, type Ordering } from './ordering';
 import { identityHash } from './hash';
 import { exception } from './exceptions';
 import { introSort } from './sort';
+import {
+  addIfNotPresent,
+  breadthFirst,
+  cloneTree,
+  constructFromSorted,
+  doRemove,
+  extreme,
+  findNode,
+  inOrder,
+  type Tree,
+  type TreeNode,
+} from './sorted-tree';
 import { liveView } from './view';
 
 /** `ArgumentNullException`'s words for a parameter. */
@@ -55,13 +67,6 @@ export function defaultCompare<T>(a: T, b: T): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** What a sorted set shares with every view taken of it: its elements, kept sorted and unique, and the
- *  version every change bumps (#865). */
-interface Tree<T> {
-  items: T[];
-  version: number;
-}
-
 /** A view's range: `GetViewBetween`'s bounds, both included. */
 interface Range<T> {
   readonly lower: T;
@@ -77,8 +82,8 @@ function outOfRange(parameter: string): Error {
 }
 
 /**
- * `SortedSet<T>` — a set whose enumeration is in sorted order. Backed by an array kept sorted and unique
- * (binary search for membership/insertion). `Add` returns false when the value is already present.
+ * `SortedSet<T>` — a set whose enumeration is in sorted order, held in the red-black tree .NET holds it
+ * in ({@link Tree}, `utils/sorted-tree.ts`). `Add` returns false when the value is already present.
  *
  * Its set operations, its questions and `CopyTo` are .NET's, refusals included (#723). Of two elements
  * its order finds equal, a union and an intersection keep the instance .NET keeps, which a decimal
@@ -87,9 +92,9 @@ function outOfRange(parameter: string): Error {
  * compare with the same function, which two sets of one element type do ({@link comparerOf} answers
  * one function per {@link Ordering}, an enum's included).
  *
- * `RemoveWhere` asks its predicate in this set's order, where .NET walks its red-black tree breadth
- * first (#766): a predicate with no effect of its own answers the same, and nothing else here sees
- * the tree's shape.
+ * `RemoveWhere` asks its predicate breadth first, as .NET walks its red-black tree, so the order it is
+ * asked in is the tree's shape, which every `Add`, `Remove`, copy and merge builds as .NET's builds it:
+ * it asked in the set's order (#766).
  *
  * A VIEW (`GetViewBetween`, #865) is a sorted set over the range of the set it was taken from: it shares
  * that set's tree, so each sees what the other changes, holds only the elements in its range, and
@@ -119,7 +124,7 @@ export class SortedSet<T> implements Iterable<T> {
    */
   constructor(initial?: Iterable<T>, compare: (a: T, b: T) => number = defaultCompare, view?: { tree: Tree<T>; range: Range<T> }) {
     this.compare = compare;
-    this.tree = view?.tree ?? { items: [], version: 0 };
+    this.tree = view?.tree ?? { root: null, count: 0, version: 0 };
     this.range = view?.range;
     if (initial) {
       for (const v of initial) this.add(v);
@@ -128,53 +133,28 @@ export class SortedSet<T> implements Iterable<T> {
 
   /** `Count`. A view counts its range, and keeps what it counted for its `ExceptWith`. */
   get count(): number {
-    const [start, end] = this.span();
-    if (this.range !== undefined && this.countedAt !== this.tree.version) {
-      this.counted = end - start;
+    if (this.range === undefined) return this.tree.count;
+    const count = this.held().length;
+    if (this.countedAt !== this.tree.version) {
+      this.counted = count;
       this.countedAt = this.tree.version;
     }
-    return end - start;
+    return count;
   }
 
   /** Smallest element, or `undefined` when empty (`.NET` `Min`). */
   get min(): T | undefined {
-    const [start, end] = this.span();
-    return end > start ? this.tree.items[start] : undefined;
+    return extreme(this.tree, this.compare, 'min', this.range);
   }
 
   /** Largest element, or `undefined` when empty (`.NET` `Max`). */
   get max(): T | undefined {
-    const [start, end] = this.span();
-    return end > start ? this.tree.items[end - 1] : undefined;
+    return extreme(this.tree, this.compare, 'max', this.range);
   }
 
-  /** Where this set's elements are among its tree's: the first index and the one after the last. */
-  private span(): [number, number] {
-    const items = this.tree.items;
-    if (this.range === undefined) return [0, items.length];
-    const { lower, upper } = this.range;
-    let lo = 0;
-    let hi = items.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >>> 1;
-      if (this.compare(lower, items[mid]) > 0) lo = mid + 1;
-      else hi = mid;
-    }
-    const start = lo;
-    hi = items.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >>> 1;
-      if (this.compare(upper, items[mid]) >= 0) lo = mid + 1;
-      else hi = mid;
-    }
-    return [start, lo];
-  }
-
-  /** This set's elements, in order: a set's own array, a view's copy of its range. Read, never written. */
-  private held(): readonly T[] {
-    if (this.range === undefined) return this.tree.items;
-    const [start, end] = this.span();
-    return this.tree.items.slice(start, end);
+  /** This set's elements, in order: a set's every one, a view's those of its range. A copy. */
+  private held(): T[] {
+    return inOrder(this.tree, this.compare, this.range);
   }
 
   /** Whether `value` is in this set's range, as .NET's `IsWithinRange` asks it; a set's holds everything. */
@@ -183,64 +163,45 @@ export class SortedSet<T> implements Iterable<T> {
     return this.compare(this.range.lower, value) <= 0 && this.compare(this.range.upper, value) >= 0;
   }
 
-  /** Index of `value` among the tree's elements, or the bitwise-complement insertion point (`~i`) when absent. */
-  private indexOf(value: T): number {
-    const items = this.tree.items;
-    let lo = 0;
-    let hi = items.length - 1;
-    while (lo <= hi) {
-      const mid = (lo + hi) >>> 1;
-      const c = this.compare(items[mid], value);
-      if (c === 0) return mid;
-      if (c < 0) lo = mid + 1;
-      else hi = mid - 1;
-    }
-    return ~lo;
+  /** The node holding an element its order finds equal to `value`, within this set's range, or null. */
+  private nodeOf(value: T): TreeNode<T> | null {
+    return this.inRange(value) ? findNode(this.tree, this.compare, value) : null;
   }
 
   /** `Add`: a view refuses an element outside its range before it changes anything. */
   add(value: T): boolean {
     if (!this.inRange(value)) throw outOfRange('item');
-    this.tree.version++;
-    const i = this.indexOf(value);
-    if (i >= 0) return false;
-    this.tree.items.splice(~i, 0, value);
-    return true;
+    return addIfNotPresent(this.tree, this.compare, value);
   }
 
   /** `Remove`: an element outside a view's range is not there to remove. */
   remove(value: T): boolean {
-    if (!this.inRange(value) || this.tree.items.length === 0) return false;
-    this.tree.version++;
-    const i = this.indexOf(value);
-    if (i < 0) return false;
-    this.tree.items.splice(i, 1);
-    return true;
+    if (!this.inRange(value)) return false;
+    return doRemove(this.tree, this.compare, value);
   }
 
   contains(value: T): boolean {
-    return this.inRange(value) && this.indexOf(value) >= 0;
+    return this.nodeOf(value) !== null;
   }
 
   /** `TryGetValue`: the element the set holds that its comparer finds equal to `value`, which may be
    *  another instance (`1.0m` for `1.00m`), or undefined where .NET answers false (#866). */
   tryGetValue(value: T): T | undefined {
-    if (!this.inRange(value)) return undefined;
-    const i = this.indexOf(value);
-    return i >= 0 ? this.tree.items[i] : undefined;
+    return this.nodeOf(value)?.item;
   }
 
-  /** `Clear`: a set's every element, a view's those of its range, which it leaves alone when it holds none. */
+  /** `Clear`: a set's every element; a view's those of its range, which it leaves alone when it holds
+   *  none, each removed from its set, from the last its breadth-first walk reaches to the first. */
   clear(): void {
     if (this.range === undefined) {
-      this.tree.items.length = 0;
+      this.tree.root = null;
+      this.tree.count = 0;
       this.tree.version++;
       return;
     }
     if (this.count === 0) return;
-    const [start, end] = this.span();
-    this.tree.items.splice(start, end - start);
-    this.tree.version++;
+    const removing = breadthFirst(this.tree, this.compare, this.range);
+    for (let at = removing.length - 1; at >= 0; at--) doRemove(this.tree, this.compare, removing[at]);
     this.counted = 0;
   }
 
@@ -250,9 +211,8 @@ export class SortedSet<T> implements Iterable<T> {
    *  walk ends at any change to its set's, inside its range or not. */
   *[Symbol.iterator](): Generator<T, undefined, unknown> {
     const version = this.tree.version;
-    const [start, end] = this.span();
-    for (let at = start; at < end; at++) {
-      yield this.tree.items[at];
+    for (const item of this.held()) {
+      yield item;
       if (this.tree.version !== version) throw collectionModifiedAfterInstantiation();
     }
     return undefined;
@@ -270,16 +230,16 @@ export class SortedSet<T> implements Iterable<T> {
 
   private *walkBackwards(): Generator<T, undefined, unknown> {
     const version = this.tree.version;
-    const [start, end] = this.span();
-    for (let at = end - 1; at >= start; at--) {
-      yield this.tree.items[at];
+    const items = this.held();
+    for (let at = items.length - 1; at >= 0; at--) {
+      yield items[at];
       if (this.tree.version !== version) throw collectionModifiedAfterInstantiation();
     }
     return undefined;
   }
 
   toArray(): T[] {
-    return this.held().slice();
+    return this.held();
   }
 
   /** `CopyTo(array)`, `CopyTo(array, index)` and `CopyTo(array, index, count)`: in order, from `index`,
@@ -321,8 +281,35 @@ export class SortedSet<T> implements Iterable<T> {
   /** The elements, replaced by `items`, which are in this set's order already: the tree .NET builds
    *  anew from a sorted array, which is a change whatever it holds. A set's only: a view never merges. */
   private replace(items: T[]): void {
-    this.tree.items = items;
+    this.tree.root = constructFromSorted(items, 0, items.length - 1, null);
+    this.tree.count = items.length;
     this.tree.version++;
+  }
+
+  /**
+   * `new SortedSet<T>(collection, comparer)`: a sorted set of `compare`'s, which is not a view, is copied
+   * tree and all; any other sequence is sorted as .NET's `Array.Sort` sorts it, the first of each run of
+   * elements the order finds equal kept, and its tree built from the sorted array. It added the elements
+   * one by one, so its tree was another, and of two equal elements the first one walked was kept.
+   */
+  static copying<T>(source: Iterable<T>, compare: (a: T, b: T) => number): SortedSet<T> {
+    const set = new SortedSet<T>(undefined, compare);
+    if (source instanceof SortedSet && source.range === undefined && source.compare === compare) {
+      const tree = (source as SortedSet<T>).tree;
+      if (tree.root !== null) {
+        set.tree.root = cloneTree(tree.root);
+        set.tree.count = tree.count;
+      }
+      return set;
+    }
+    const items = Array.from(source);
+    if (items.length === 0) return set;
+    introSort(items, 0, items.length, { compare, kind: 'comparer', name: '' });
+    let distinct = 1;
+    for (let at = 1; at < items.length; at++) if (compare(items[at], items[at - 1]) !== 0) items[distinct++] = items[at];
+    set.tree.root = constructFromSorted(items, 0, distinct - 1, null);
+    set.tree.count = distinct;
+    return set;
   }
 
   /**
@@ -336,12 +323,14 @@ export class SortedSet<T> implements Iterable<T> {
     if (this.range === undefined && other instanceof SortedSet && this.count === 0) {
       // Copied as `new SortedSet<T>(other)` copies it, which counts a view first.
       readAsACollection(other);
-      for (const value of (other as SortedSet<T>).held()) this.add(value);
+      const copy = SortedSet.copying(other as SortedSet<T>, this.compare);
+      this.tree.root = copy.tree.root;
+      this.tree.count = copy.tree.count;
       this.tree.version++;
       return;
     }
     if (this.range === undefined && this.sharesOrder(other) && other.count > Math.trunc(this.count / 2)) {
-      const mine = this.tree.items;
+      const mine = this.held();
       const theirs = other.held();
       const merged: T[] = [];
       let i = 0;
@@ -369,7 +358,7 @@ export class SortedSet<T> implements Iterable<T> {
     if (other == null) throw argumentNull('other');
     if (this.count === 0 || other === this) return;
     if (this.range === undefined && this.sharesOrder(other)) {
-      const mine = this.tree.items;
+      const mine = this.held();
       const theirs = other.held();
       const max = mine[mine.length - 1];
       const merged: T[] = [];
@@ -398,7 +387,7 @@ export class SortedSet<T> implements Iterable<T> {
    *  holds them, as .NET asks `Contains` of them first. A view asks the count it last counted. */
   exceptWith(other: Iterable<T> | string): void {
     if (other == null) throw argumentNull('other');
-    if ((this.range === undefined ? this.tree.items.length : this.counted) === 0) return;
+    if ((this.range === undefined ? this.tree.count : this.counted) === 0) return;
     if (other === this) {
       this.clear();
       return;
@@ -471,11 +460,11 @@ export class SortedSet<T> implements Iterable<T> {
       for (const _ of elements(other)) return [0, 1];
       return [0, 0];
     }
-    const found = new Set<number>();
+    const found = new Set<TreeNode<T>>();
     let unfound = 0;
     for (const value of elements(other)) {
-      const at = this.inRange(value) ? this.indexOf(value) : -1;
-      if (at >= 0) found.add(at);
+      const at = this.nodeOf(value);
+      if (at !== null) found.add(at);
       else {
         unfound++;
         if (stopAtUnfound) break;
@@ -543,12 +532,13 @@ export class SortedSet<T> implements Iterable<T> {
     return unique === this.count && unfound === 0;
   }
 
-  /** `RemoveWhere`: the predicate asked of every element first, then each it matched removed; answers
-   *  how many were. A predicate that throws removes nothing. */
+  /** `RemoveWhere`: the predicate asked of every element first, breadth first through the tree as .NET
+   *  walks it (#766), then each it matched removed, from the last asked; answers how many were. A
+   *  predicate that throws removes nothing. */
   removeWhere(match: ((value: T) => boolean) | null): number {
     if (match == null) throw argumentNull('match');
     if (this.count === 0) return 0;
-    const matched = this.held().filter((value) => match(value));
+    const matched = breadthFirst(this.tree, this.compare, this.range).filter((value) => match(value));
     let removed = 0;
     for (let at = matched.length - 1; at >= 0; at--) if (this.remove(matched[at])) removed++;
     return removed;
@@ -585,7 +575,8 @@ export function sortedSet<T>(
 ): SortedSet<T> {
   if (collection !== undefined && initial == null) throw argumentNull(collection);
   readAsACollection(initial);
-  return new SortedSet<T>(initial == null ? undefined : elements(initial), orderOf(compare));
+  const order = orderOf(compare);
+  return initial == null ? new SortedSet<T>(undefined, order) : SortedSet.copying(elements(initial), order);
 }
 
 /** The comparer a factory was handed: a function as it is, an {@link Ordering} by its comparer. */
