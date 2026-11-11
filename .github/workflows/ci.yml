@@ -133,6 +133,31 @@ jobs:
       - name: The wiki checkout still discriminates
         run: ./scripts/checkout-wiki.sh --self-test
 
+  # The merge queue discards a group when an entry ahead of it fails or leaves, and does not cancel its
+  # run: each group's ref is its own, so the concurrency above never groups it with the run that replaced
+  # it, and its macOS jobs waited for the plan's five runners beside the live groups' (#1446: eleven
+  # discarded runs on 2026-11-11, and #1378 timed out of the queue twice). Every merge group's run, every
+  # push to main and a run by hand cancel the merge-group runs whose ref the queue deleted, the sweeping
+  # run's own included. A group the queue still holds keeps its ref, and a lookup that fails any other way
+  # cancels nothing. On a pull request only the self-test runs. Not a required check, so nothing in the
+  # ruleset names it.
+  discarded-merge-groups:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The sweep still tells a discarded group from a live one
+        run: ./scripts/cancel-discarded-merge-groups.sh --self-test
+
+      - name: Cancel the runs of the merge groups the queue discarded
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/cancel-discarded-merge-groups.sh
+
   # The loop that publishes a release, run against a stub of the push and of nuget.org's index. The
   # jobs that publish run only on a `v*` tag or by hand, so this is the only place the loop runs
   # before a release depends on it: 0.2.0-preview.61 stopped after 33 of 50 packages on three 500s
