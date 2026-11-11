@@ -5,6 +5,16 @@ What lives here, and in what order to read it. The user-facing documentation is 
 measured audits of the SDK's own structure, the plans for the work in flight, and the record of the
 plans that finished.
 
+## How we decide, and how we prove
+
+Read these before a first change: they are the rules a review holds a pull request to, and GitHub
+Copilot's review reads the same ones from `.github/copilot-instructions.md`.
+
+| Document | What it answers |
+|---|---|
+| [PRINCIPLES.md](PRINCIPLES.md) | *What decides a design here?* — every rule, each with the case it came from and the test that holds it, where one does. |
+| [PROVING.md](PROVING.md) | *When is a change shown to be right?* — the A/B both ways, .NET as the oracle, instruments exercised in their condition, both targets driven, and the other lessons from the times a green suite was wrong. |
+
 ## Architecture, measured
 
 Read these first, in this order. Every claim in the first two is held by a test, and both say which.
