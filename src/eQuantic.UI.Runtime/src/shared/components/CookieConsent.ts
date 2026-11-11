@@ -34,7 +34,7 @@ export class CookieConsent extends StatefulComponent {
         column.add(new Text(config.title ?? SdkStrings.cookieConsentTitle, 'label', theme.textPrimary, 2));
         column.add(new Text(config.body ?? SdkStrings.cookieConsentBody, 'bodyM', theme.textSecondary, 6));
         column.add(actions);
-        return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.all(16), background: theme.surface, borderWidth: 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape('large')), elevation: 2 }), column);
+        return new Box(new BoxStyle({ width: SizeValue.fill, padding: theme.notice?.consentPadding ?? EdgeInsets.all(16), background: theme.surface, borderWidth: theme.notice?.consentBorderWidth ?? 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape(theme.notice?.consentShape ?? 'large')), elevation: theme.notice?.consentElevation ?? 2 }), column);
     }
 
     adoptConfig(next: UiComponent) {
