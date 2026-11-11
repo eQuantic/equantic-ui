@@ -424,9 +424,10 @@ public static class ThemeStylesheet
             + "-webkit-background-clip: text; background-clip: text; "
             + "-webkit-text-fill-color: var(--eq-color-text-primary); "
             + "caret-color: var(--eq-color-text-primary); }");
-        // The entry's description twin: clipped, NOT display:none — a hidden target still reads
-        // for aria-describedby, but only a rendered one announces as a live region.
-        css.AppendLine(".eq-desc, .eq-announcement { position: absolute; width: 1px; height: 1px; margin: -1px; border: 0; padding: 0; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }");
+        // A surface's announcement: clipped, NOT display:none — only a rendered region announces as
+        // a live region. The entry's description twin is no live region any more, and is `hidden`
+        // (#1332): aria-describedby reads it all the same.
+        css.AppendLine(".eq-announcement { position: absolute; width: 1px; height: 1px; margin: -1px; border: 0; padding: 0; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }");
 
         // Loop motion (spec §06, transform-only): ONE keyframe pair per effect reads its per-element
         // endpoints from custom properties the realizers set at the style tail; duration rides the

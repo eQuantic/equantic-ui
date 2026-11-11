@@ -136,9 +136,11 @@ public class TextInputRealizerTests
             "the container shows focus — the input itself is chrome-less");
         css.Should().Contain("::placeholder { color: var(--eq-color-placeholder); opacity: 1; }",
             "an entry's placeholder is the document's, in the theme's Placeholder (#1038)");
-        css.Should().Contain(".eq-desc, .eq-announcement { position: absolute;",
-            "the description twin and a surface's announcement are clipped, not display:none — hidden " +
-            "targets read for describedby but only a rendered one announces as a live region (#1081)");
+        css.Should().Contain(".eq-announcement { position: absolute;",
+            "a surface's announcement is clipped, not display:none: only a rendered region announces " +
+            "as a live region (#1081)");
+        css.Should().NotContain(".eq-desc",
+            "the description twin is hidden, no line of the page and no live region (#1332)");
     }
 
     [Fact]
