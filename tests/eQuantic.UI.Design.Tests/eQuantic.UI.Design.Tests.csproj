@@ -25,6 +25,8 @@
     <!-- The design host is an Exe; referencing it from a test project is fine and is how its
          session logic gets exercised without a process boundary in the way. -->
     <ProjectReference Include="..\..\src\eQuantic.UI.Design\eQuantic.UI.Design.csproj" />
+    <!-- How a test starts a program: one deadline over the exit and both streams (#971). -->
+    <Compile Include="..\Shared\ChildProcess.cs" Link="Shared\ChildProcess.cs" />
         <!-- Puts eqphoton.dll beside the test assembly — the same place it sits beside eqdesign in a
              publish, so RenderNative's "next to my own assembly" rule is exercised, not bypassed. -->
         <ProjectReference Include="..\..\src\eQuantic.UI.Design.Photon\eQuantic.UI.Design.Photon.csproj" />

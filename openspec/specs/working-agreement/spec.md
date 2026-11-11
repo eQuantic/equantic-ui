@@ -269,7 +269,11 @@ three `build-platform-runtimes`, `build-packages`, `commit-messages`, `openspec`
 lands on: on its own head kept up to date with main, or, once the ruleset merges through GitHub's merge
 queue, on the queue's run of it together with every pull request ahead of it. The CI SHALL run every
 one of those jobs on a merge group, and no job that publishes. Every job in a dependency chain SHALL be
-required, since GitHub counts a job skipped for a failed dependency as passed.
+required, since GitHub counts a job skipped for a failed dependency as passed. The four jobs that run on
+macOS (`test (macos-latest)`, `samples`, `build-packages` and the macOS `build-platform-runtimes`) SHALL
+run on a merge group, a push to main, a tag and a run by hand, and SHALL be skipped by their own
+condition on a pull request's run, where each reports as skipped under the name its required check
+names.
 
 #### Scenario: main moved after the CI ran
 
@@ -290,7 +294,13 @@ required, since GitHub counts a job skipped for a failed dependency as passed.
 #### Scenario: A red fact only a Mac answers
 
 - **WHEN** a pull request turns a `[MacFact]` red
-- **THEN** `test (macos-latest)` fails and the pull request cannot merge
+- **THEN** `test (macos-latest)` fails in the merge queue's run and the pull request does not merge
+
+#### Scenario: A pull request's own run
+
+- **WHEN** a push to a pull request runs the CI
+- **THEN** the four macOS jobs report as skipped under their check names, the required checks are
+  satisfied, and no macOS runner is taken
 
 #### Scenario: A red test in one group
 
@@ -775,3 +785,21 @@ publish time.
 - **WHEN** an `ext-v*` tag runs `publish-extension`
 - **THEN** it installs the extension's `package-lock.json` with `npm ci` and publishes the verified
   archive with the vsce that install put in `node_modules/.bin`
+
+### Requirement: No page holds a conflict a merge left
+
+The docs guards SHALL fail when a page of the wiki, in any of its languages, or a Markdown file git tracks in
+this repository holds a git conflict marker, naming the file and the line: `<<<<<<<`, `|||||||`, `=======` or
+`>>>>>>>`, alone on its line or followed by a space. A line of seven `=` SHALL count as a marker only inside a
+conflict another marker opened, under a blank line or at the start of a page, so a title's Setext underline
+never fails.
+
+#### Scenario: A conflict committed into a wiki page
+
+- **WHEN** the guards read the wiki at the commit before d7728c2, whose `Upgrading.md` holds a conflict
+- **THEN** they fail naming `Upgrading.md` and its markers' lines, where every docs guard passed
+
+#### Scenario: A title's underline
+
+- **WHEN** a page underlines a title with `=======` on the line under it
+- **THEN** the guards pass

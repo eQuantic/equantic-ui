@@ -4,6 +4,7 @@
 
 import { Component, HtmlNode, RenderContext } from './types';
 import type { VisualNodeValue } from '../shared/nodes';
+import type { CrossAlignValue } from '../shared/enums.generated';
 import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
@@ -215,7 +216,40 @@ function applyServerFields(target: object, payload: Record<string, unknown>): bo
   return adopted;
 }
 
-export abstract class StatelessComponent extends Component {
+/**
+ * The C# `UiComponent`: a component IS a node of the vocabulary (`UiComponent : VisualNode`), as a
+ * Flutter `StatelessWidget` is a `Widget`. Its kind is `component`, it carries the node's key, and
+ * nested inside an abstract tree the lowering expands it through the positional store, the server
+ * data its ordinal names and the error boundary: one door for every component, with or without state.
+ * <p>
+ * The web family (`HtmlElement`, the DOM escape hatch) is a `Component` and not one of these, as in
+ * C#, where `HtmlElement` is an `IComponent` and no node: it carries no `nodeKind`, and the lowering
+ * lets it render itself. `component-is-a-node.type-test.ts` holds this class to every member the
+ * vocabulary's `VisualNode` declares, so the two cannot drift apart in silence.
+ */
+export abstract class UiComponent extends Component {
+  /** The shared-vocabulary discriminator. As a page ROOT it is inert: a page mounts through render(). */
+  readonly nodeKind = 'component' as const;
+
+  /** The C# `VisualNode.Key` mirror: part of the reconciler identity (path + type + key). */
+  key: string | null = null;
+
+  /**
+   * The C# `VisualNode.Bookmark`, `AlignSelf` and `GridSpan`, which a component carries as any node
+   * does. Fields rather than `declare`d types: the lowering reads them off the component, and a field
+   * is what eqc's list of runtime members sees, so an app member of one of these names is refused
+   * at build time instead of becoming the element's id or its alignment.
+   */
+  bookmark?: string | null;
+  alignSelf?: CrossAlignValue | null;
+  gridSpan?: number;
+
+  abstract build(context: RenderContext): Component | VisualNodeValue;
+
+  abstract getVirtualNode(): HtmlNode;
+}
+
+export abstract class StatelessComponent extends UiComponent {
   private _renderManager: RenderManager = new RenderManager();
   private _instances = new ComponentInstanceStore();
   /** The page's own invalidator, ONE for its life: what a measure in a shipped face holds on to, weakly,
@@ -391,7 +425,7 @@ export class EscapeHatchPage extends StatelessComponent {
  * fields on the component itself and `setState` triggers the rebuild directly. eqc emits every
  * stateful component against this base.
  */
-export abstract class StatefulComponent extends Component {
+export abstract class StatefulComponent extends UiComponent {
   private _renderManager: RenderManager = new RenderManager();
   private _mounted = false;
   private _renderScheduled = false;
@@ -400,16 +434,6 @@ export abstract class StatefulComponent extends Component {
    *  to rebuild the page should the face be taken back (#1056). A function made per pass is a new one
    *  every render, so nothing could hold it without holding every render. */
   private readonly _invalidate = (): void => this._scheduleRender();
-
-  /**
-   * The shared-vocabulary discriminator: nested inside an abstract tree this IS a component node —
-   * the lowering expands it through the positional store (retention) instead of the plain mixing
-   * seam (an embedded self-render with a dead render manager). As a page ROOT the field is inert.
-   */
-  readonly nodeKind = 'component';
-
-  /** The C# `VisualNode.Key` mirror — part of the reconciler identity (path + type + key). */
-  key: string | null = null;
 
   /** Duck-type marker the instance store keys on (avoids an import cycle with shared/). */
   readonly _sharedStateful = true;
