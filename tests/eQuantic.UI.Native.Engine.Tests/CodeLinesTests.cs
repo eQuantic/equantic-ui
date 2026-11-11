@@ -279,6 +279,24 @@ public class CodeLinesTests : IDisposable
     }
 
     /// <summary>
+    /// Only a problem keeps its place in front of a line written at it (#1059): a caret there follows what is
+    /// written, as a snippet's stop and a place to go back to do. An app's edit that writes a line at another
+    /// caret's place leaves that caret after it, and the problem of no width at the same place where it was.
+    /// </summary>
+    [Fact]
+    public void ALineWrittenAtACaret_TakesTheCaret_AndLeavesTheProblem()
+    {
+        var editor = Editor("foo()\nbar", At(1, 3));
+        editor.Selections = [new CodeRange(At(1, 3)), new CodeRange(At(0, 5))];
+        editor.Diagnostics.Report([new CodeDiagnostic(new CodeRange(At(0, 5)), "; expected")]);
+
+        editor.Apply(new CodeRange(At(0, 5)), "\n  baz");
+
+        editor.Selections.Should().Contain(new CodeRange(At(1, 5)), "the caret follows what was written at it");
+        editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(At(0, 5)));
+    }
+
+    /// <summary>
     /// The replacements an undo and a redo raise carry the selection as it was before them and as they left
     /// it, the live one: a caret moved after the edit is the undo's selection before, and the restored one is
     /// every replacement's selection after (Copilot, #1058).

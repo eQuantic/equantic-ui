@@ -43,18 +43,26 @@ public sealed record CodeEdit(
     /// text goes to the start of the replacement and an end inside it to its end, so a range whose text
     /// was rewritten covers the rewrite, and one whose text was deleted is empty where the text was. A
     /// range never grows at its edges: text inserted where it starts or where it ends is not in it, and
-    /// an empty range stays with the text after it, unless what is inserted begins with a line break: a
-    /// line written below the place is no text of the place's, and an empty range there, a problem of no
-    /// width at a line's end where a semicolon is missing, stays in front of it (#1059). Without that, the
-    /// line a move passes past the document's last line, written after that line's end, took the problem
-    /// with it, and so did Enter typed where the semicolon was missing.
+    /// an empty range stays with the text after it.
     /// </summary>
     public CodeRange Carry(CodeRange range)
     {
-        var start = CarryStart(range.Start, range.IsEmpty);
+        var start = CarryStart(range.Start);
         var end = CarryEnd(range.End);
         return new CodeRange(start, end < start ? start : end);
     }
+
+    /// <summary>
+    /// Where a PROBLEM that stood at <paramref name="range"/> before this edit stands after it: as
+    /// <see cref="Carry"/>, except that one of no width right where the inserted text begins with a line
+    /// break stays in front of it (#1059). A line written below the place is no text of the place's: the
+    /// line a move passes past the document's last line is written after that line's end, at the very place
+    /// a missing semicolon's problem holds, and Enter typed there writes one too, and both took the problem
+    /// with them. Only a problem keeps its place so: a snippet's stop, a caret and a place to go back to
+    /// follow what is typed at them, as <see cref="Carry"/> carries them.
+    /// </summary>
+    internal CodeRange CarryProblem(CodeRange range) =>
+        range.IsEmpty && Range.IsEmpty && range.Start == Range.Start && BeginsWithBreak ? range : Carry(range);
 
     /// <summary>
     /// Where a place something is typed at, which stood at <paramref name="position"/> before this edit,
@@ -72,12 +80,12 @@ public sealed record CodeEdit(
     internal CodePosition CarryReach(CodePosition position) =>
         position == Range.Start && Range.IsEmpty ? InsertedRange.End : CarryEnd(position);
 
-    /// <summary>Where a range's start goes: past text inserted right at it, unless that text begins with a
-    /// line break and the range is empty, and to the start of a replacement it stood inside.</summary>
-    private CodePosition CarryStart(CodePosition position, bool empty)
+    /// <summary>Where a range's start goes: past text inserted right at it, and to the start of a
+    /// replacement it stood inside.</summary>
+    private CodePosition CarryStart(CodePosition position)
     {
         if (position < Range.Start) return position;
-        if (position == Range.Start && Range.IsEmpty) return empty && BeginsWithBreak ? position : Shifted(position);
+        if (position == Range.Start && Range.IsEmpty) return Shifted(position);
         if (position < Range.End) return Range.Start;
         return Shifted(position);
     }

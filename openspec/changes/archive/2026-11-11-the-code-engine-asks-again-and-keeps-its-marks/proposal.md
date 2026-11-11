@@ -22,8 +22,9 @@ Closes #1016 and #1059, Bugs of the code engine, and #1298, a test that failed n
   the list opened (a list a trigger character opened is asked as invoked), and filters its answer
   meanwhile. Only those providers are asked, not every one as VS Code does on a move left: an answer for a
   word the word typed still extends is still the whole of what its provider offers.
-- An empty range at an insertion point stays in front of the insertion when the inserted text begins with
-  a line break: a line written below the place is no text of the place's.
+- A problem of no width at an insertion point stays in front of the insertion when the inserted text
+  begins with a line break: a line written below the place is no text of the place's. A snippet's stop, a
+  caret and a place to go back to still follow what is typed at them.
 - The test drains what the editor posted as it was made before it waits for the answer.
 
 ## Capabilities

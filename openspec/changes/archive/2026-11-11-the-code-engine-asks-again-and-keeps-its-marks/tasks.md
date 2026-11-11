@@ -6,7 +6,7 @@
 
 ## 2. A problem of no width keeps its place
 
-- [x] 2.1 `CodeEdit.Carry` keeps an empty range in front of an insertion that begins with a line break. Verify: `CodeLinesTests.AProblemOfNoWidth_AtAMovedLinesEdge_StaysOnIt` with the two moves past the document's end, and `AProblemOfNoWidth_AtALinesEnd_StaysThereWhenEnterIsTypedAtIt`, both failing with the rule removed
+- [x] 2.1 `CodeEdit.CarryProblem`, which the problems are carried with, keeps one of no width in front of an insertion that begins with a line break, and `Carry` is unchanged for everything else. Verify: `CodeLinesTests.AProblemOfNoWidth_AtAMovedLinesEdge_StaysOnIt` with the two moves past the document's end, and `AProblemOfNoWidth_AtALinesEnd_StaysThereWhenEnterIsTypedAtIt`, both failing with the rule removed
 
 ## 3. The test that raced its dispatcher
 

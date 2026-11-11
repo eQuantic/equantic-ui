@@ -87,7 +87,7 @@ export class CodeDiagnostics {
     }
 
     static carried(problems: CodeDiagnostic[], edit: CodeEdit) {
-        return problems.map((problem) => $eq.withPatch(problem, { range: edit.carry(problem.range) })).slice();
+        return problems.map((problem) => $eq.withPatch(problem, { range: edit.carryProblem(problem.range) })).slice();
     }
 
     async ask(wait: boolean) {
