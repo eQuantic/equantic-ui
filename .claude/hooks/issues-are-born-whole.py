@@ -13,13 +13,17 @@ must not stop a session's work, and the roadmap's report still lists an incomple
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
+import tempfile
 
-# Where a command starts: the line's start, or after an operator, a subshell or a substitution, with
-# any environment assignments before it. A phrase quoted inside an argument (a commit message that
-# names the command) is not a command.
-START = (r"(?:^|[;&|(`{]|\$\(|\bthen\b|\bdo\b|\bxargs\b|\b(?:ba|z)?sh\s+-l?c\s*['\"])\s*"
+# Where a command starts: the line's start, or after an operator, a subshell or a substitution, or
+# inside a shell's `-c` string (with any flags before it) or an `eval`, with any wrappers and
+# environment assignments before it. A phrase quoted inside an argument (a commit message that names
+# the command) is not a command.
+START = (r"(?:^|[;&|(`{]|\$\(|\bthen\b|\bdo\b|\bxargs\b"
+         r"|\b(?:ba|z|da)?sh\s+(?:-[A-Za-z]+\s+)*-[A-Za-z]*c\s*['\"]|\beval\s+['\"]?)\s*"
          r"(?:(?:sudo|command|exec|env|nohup|time)\s+)*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*")
 GH_ISSUE_CREATE = re.compile(START + r"gh\s+issue\s+create\b", re.MULTILINE)
 GRAPHQL_CREATE = re.compile(r"\bcreateIssue\s*\(")
@@ -30,6 +34,10 @@ CURL = re.compile(START + r"curl\b", re.MULTILINE)
 # What makes `gh api` write: a method named, or a field or a body, which turn a GET into a POST.
 GH_WRITES = re.compile(r"(?:-X\s*|--method[=\s]+)POST\b|\s(?:-f|-F|--field|--raw-field|--input)(?:\s|=)")
 CURL_WRITES = re.compile(r"(?:-X\s*|--request[=\s]+)POST\b|\s(?:-d|--data(?:-raw|-binary)?|--json)(?:\s|=)")
+# A body a command reads from a file: `gh api -F query=@q.graphql`, `--input body.json`, `curl -d @body`.
+FILE_ARGUMENT = re.compile(r"""(?:=@|\s--input[=\s]+|\s(?:-d|--data(?:-raw|-binary)?)[=\s]+@)(?P<path>[^\s'";|&)]+)""")
+# How much of a file is read: a GraphQL query or a JSON body, never a large one.
+FILE_LIMIT = 1 << 20
 MCP_CREATE = re.compile(r"^mcp__.*create_issue")
 # A tool that writes issues by method (GitHub's own server names it issue_write): only `create` creates.
 MCP_WRITE = re.compile(r"^mcp__.*issue_write")
@@ -40,8 +48,27 @@ REASON = ("Issues are created with scripts/new-issue.py, which creates one whole
           "of CLAUDE.md, #1430.)")
 
 
-def creates_an_issue(command: str) -> bool:
+def files_hold_a_creation(command: str, cwd: str | None) -> bool:
+    """Whether a file the command hands GitHub as its body or query holds a `createIssue`: the
+    mutation a query file carries is not on the command line."""
+    for match in FILE_ARGUMENT.finditer(command):
+        path = match.group("path")
+        if path == "-":
+            continue
+        path = os.path.join(cwd or os.getcwd(), os.path.expanduser(path))
+        try:
+            with open(path, encoding="utf-8", errors="replace") as file:
+                if GRAPHQL_CREATE.search(file.read(FILE_LIMIT)):
+                    return True
+        except OSError:
+            continue
+    return False
+
+
+def creates_an_issue(command: str, cwd: str | None = None) -> bool:
     if GH_ISSUE_CREATE.search(command) or GRAPHQL_CREATE.search(command):
+        return True
+    if (GH_API.search(command) or CURL.search(command)) and files_hold_a_creation(command, cwd):
         return True
     if REST_ISSUES.search(command):
         if GH_API.search(command) and GH_WRITES.search(command):
@@ -57,7 +84,7 @@ def refuses(call: dict) -> bool:
         return True
     if MCP_WRITE.search(tool):
         return str((call.get("tool_input") or {}).get("method") or "").lower() == "create"
-    return tool == "Bash" and creates_an_issue((call.get("tool_input") or {}).get("command") or "")
+    return tool == "Bash" and creates_an_issue((call.get("tool_input") or {}).get("command") or "", call.get("cwd"))
 
 
 def self_test() -> int:
@@ -72,6 +99,8 @@ def self_test() -> int:
         "gh api --method POST repos/eQuantic/equantic-ui/issues --input -",
         "curl -X POST -H 'Authorization: token t' https://api.github.com/repos/eQuantic/equantic-ui/issues -d '{}'",
         "bash -c 'gh issue create --title x --body y'",
+        "bash -e -c 'gh issue create --title x --body y'",
+        "eval \"gh issue create --title x\"",
         "sh -c \"gh issue create --title x\"",
         "sudo gh issue create --title x",
         "command gh issue create --title x",
@@ -93,6 +122,22 @@ def self_test() -> int:
     ]
     failures = [f"not refused: {c}" for c in refused if not creates_an_issue(c)]
     failures += [f"refused: {c}" for c in passed if creates_an_issue(c)]
+    # A query or a body read from a file: the mutation is in the file, not on the command line.
+    with tempfile.TemporaryDirectory() as scratch:
+        creation, reading = os.path.join(scratch, "create.graphql"), os.path.join(scratch, "read.graphql")
+        with open(creation, "w", encoding="utf-8") as file:
+            file.write("mutation($i: CreateIssueInput!) {\n  createIssue(input: $i) { issue { number } }\n}\n")
+        with open(reading, "w", encoding="utf-8") as file:
+            file.write("{ repository(owner: \"eQuantic\", name: \"equantic-ui\") { issues(first: 1) { totalCount } } }\n")
+        from_files = [("gh api graphql -F query=@create.graphql -f i=x", True),
+                      ("gh api graphql --input create.graphql", True),
+                      ("curl -X POST https://api.github.com/graphql -d @create.graphql", True),
+                      ("gh api graphql -F query=@read.graphql", False),
+                      ("cat create.graphql", False)]
+        failures += [f"from a file, refused is {not want}: {c}" for c, want in from_files
+                     if creates_an_issue(c, scratch) != want]
+        refused += [c for c, want in from_files if want]
+        passed += [c for c, want in from_files if not want]
     calls = [({"tool_name": "mcp__github__create_issue", "tool_input": {}}, True),
              ({"tool_name": "mcp__github__issue_write", "tool_input": {"method": "create"}}, True),
              ({"tool_name": "mcp__github__issue_write", "tool_input": {"method": "update"}}, False),

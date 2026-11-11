@@ -84,7 +84,10 @@ def main():
         missing.append("nothing above it and no points: an epic is a lane, and its points are its sub-issues'")
     if missing:
         refuse(missing)
-    body = sys.stdin.read() if args.body_file == "-" else open(args.body_file, encoding="utf-8").read()
+    try:
+        body = sys.stdin.read() if args.body_file == "-" else open(args.body_file, encoding="utf-8").read()
+    except OSError as unread:
+        refuse([f"a body file that can be read ({unread.strerror}: {args.body_file})"])
     if not args.title.strip() or not body.strip():
         refuse(["a title and a body"])
 
@@ -148,7 +151,9 @@ def main():
             break
         time.sleep(3)
     if wrong:
-        print(f"#{number} was created, but not whole: " + "; ".join(wrong), file=sys.stderr)
+        print(f"#{number} {created['url']} was created, but not whole: " + "; ".join(wrong)
+              + ". Set what is missing on the issue and on the board; creating it again makes a second one.",
+              file=sys.stderr)
         sys.exit(1)
     print(f"#{number} {created['url']}")
 
