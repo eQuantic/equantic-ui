@@ -50,12 +50,14 @@ internal static class PartialMemberExtensions
         };
 
     /// <summary>What the two halves of one partial member share: a property's or an event's name, and an
-    /// indexer's parameter types.</summary>
+    /// indexer's parameter types, read without the whitespace C# ignores, so <c>Dictionary&lt;int, string&gt;</c>
+    /// and <c>Dictionary&lt;int,string&gt;</c> are one signature, as C# reads them.</summary>
     private static string? Key(MemberDeclarationSyntax member) => member switch
     {
         PropertyDeclarationSyntax property => "property " + property.Identifier.ValueText,
         IndexerDeclarationSyntax indexer =>
-            "indexer " + string.Join(",", indexer.ParameterList.Parameters.Select(parameter => parameter.Type?.ToString())),
+            "indexer " + string.Join(",", indexer.ParameterList.Parameters.Select(parameter =>
+                string.Concat(parameter.Type?.DescendantTokens().Select(token => token.Text) ?? []))),
         EventDeclarationSyntax handler => "event " + handler.Identifier.ValueText,
         EventFieldDeclarationSyntax { Declaration.Variables: [var variable] } => "event " + variable.Identifier.ValueText,
         _ => null,

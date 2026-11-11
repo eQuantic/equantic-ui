@@ -95,6 +95,8 @@ public class PartialMemberTests
     [InlineData("public sealed partial class Grid { public partial int this[int i] { get; } public partial int this[int i] { get => i * 2; } }")]
     [InlineData("public sealed partial record Grid(int N) { public partial int this[int i] { get; } public partial int this[int i] { get => i * N; } }")]
     [InlineData("public partial struct Grid { public partial int this[int i] { get; set; } public partial int this[int i] { get => i * 2; set { } } }")]
+    // The halves spell one parameter type with different spacing, which C# reads as one signature.
+    [InlineData("public sealed partial class Grid { public partial int this[System.Collections.Generic.Dictionary<int, string> d] { get; } public partial int this[System.Collections.Generic.Dictionary<int,string> d] { get => d.Count; } }")]
     public void APartialIndexer_IsOneIndexer(string source)
     {
         var result = Compile(source, "Grid");
