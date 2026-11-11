@@ -159,9 +159,15 @@ public sealed class HotReloadService : IDisposable
     {
         // Each event of a save restarts the wait, so a burst of writes is one rebuild.
         if (_disposed) return;
+        // A path gone by the time its event is read is a temp file an editor renamed onto the source:
+        // the watcher does not listen for deletions, and the rename raises its own event, for the source,
+        // which carries the save's write time. Dated by its arrival instead, it put the save after its
+        // edit, or opened a burst of its own after the rebuild had taken the save, and either way the
+        // page was told to mount and drew over (#1373).
+        if (path is not null && !File.Exists(path)) return;
         // The burst's last write, which the edit of its save follows: read off the file, never off
         // when this event arrived, which may be after dotnet watch applied the edit.
-        var written = path is not null && File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.UtcNow;
+        var written = path is not null ? File.GetLastWriteTimeUtc(path) : DateTime.UtcNow;
         long seen;
         do
         {
@@ -208,8 +214,12 @@ public sealed class HotReloadService : IDisposable
     private void RebuildOnce()
     {
         // The saves this rebuild answers; one after this line opens the next burst, rebuilt after it.
-        var burst = Interlocked.Exchange(ref _burstWritten, 0) is var ticks and > 0
-            ? new DateTime(ticks, DateTimeKind.Utc) : DateTime.UtcNow;
+        // None is a call for a save the last rebuild answered: its events straddled that rebuild's start,
+        // and the debounce asked again. Rebuilt, it had no write time but now, found no edit after it, and
+        // told the page the first one had reloaded to mount, which drew over the markup it hydrated (#1373).
+        var ticks = Interlocked.Exchange(ref _burstWritten, 0);
+        if (ticks == 0) return;
+        var burst = new DateTime(ticks, DateTimeKind.Utc);
         try
         {
             if (_disposed) return;
@@ -226,6 +236,11 @@ public sealed class HotReloadService : IDisposable
                 // page reloads ONCE and hydrates markup that agrees with its modules.
                 var held = _edits.ArrivedSince(burst, _stopping.Token);
                 if (_disposed) return;
+                // What the page is told, and why: the edit-to-view measurement reads this line when a
+                // save draws over the server's markup, which it could not explain before (#1373).
+                Console.WriteLine(held
+                    ? "[eQuantic.HotReload] the page hydrates: this server holds the save's edit"
+                    : $"[eQuantic.HotReload] the page mounts: {_edits.WhyNotSince(burst)}");
                 Send(Frame("rebuilt", held ? "hydrate" : "mount"));
             }
             else

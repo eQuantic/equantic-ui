@@ -159,7 +159,7 @@ unbounded channel. Since #1361, Production streams no rebuilds unless the app as
 
 ```text
 src/eQuantic.UI.Server/UIOptions.cs:90  HotReload ?? (environment.IsDevelopment() || (dotnetWatch == "1" && !environment.IsProduction()));
-src/eQuantic.UI.Server/HotReload/HotReloadService.cs:275  var channel = Channel.CreateUnbounded<string>();
+src/eQuantic.UI.Server/HotReload/HotReloadService.cs:290  var channel = Channel.CreateUnbounded<string>();
 ```
 
 ## File-serving routes

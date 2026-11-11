@@ -408,6 +408,17 @@ async function loadAndMountPage(
   const component = asPage(new ComponentClass());
   const hydrates =
     hasSSRContent && config.ssr !== false && !!component.getVirtualNode && servedMarkupAgrees;
+  // In Development the boot says why it draws over what the server sent, as it says that it hydrates:
+  // a save that drew over could not be told apart from one whose server lacked the edit (#1373).
+  if (!hydrates && isDev()) {
+    const why = [
+      !hasSSRContent && 'the server sent no markup',
+      config.ssr === false && 'the server did not render the page',
+      !component.getVirtualNode && 'the page has no tree to hydrate',
+      !servedMarkupAgrees && "the rebuild said the server's markup lacks the edit",
+    ].filter(Boolean);
+    console.log(`Drawing over: ${pageName} (${why.join('; ')})`);
+  }
 
   // A hot reload's replay hands the page the fields it held before the refresh. The server-data door
   // above takes only what the hydration manifest lists, and a write-once page's own state is in none
