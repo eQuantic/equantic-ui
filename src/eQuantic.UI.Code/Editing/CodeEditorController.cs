@@ -2420,12 +2420,6 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private string? _wholeLineCopy;
 
     /// <summary>
-    /// Text from the clipboard, placed the way a paste places it: over the selection, or — when it is
-    /// the whole line a copy with nothing selected just took — as a line of its own ABOVE the caret's,
-    /// with the caret staying where it was in its text. Every editor worth using pastes a copied line
-    /// that way; inserting it at the caret splits the line you were on in two.
-    /// </summary>
-    /// <summary>
     /// Pastes what <paramref name="clipboard"/> holds once it hands it over: at once on Photon, whose shells
     /// answer at once, and on the web when the browser has, after the key that asked (#1028). A clipboard that
     /// holds no text, or was refused it, pastes nothing.
@@ -2437,6 +2431,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         Pasted?.Invoke();
     }
 
+    /// <summary>
+    /// Text from the clipboard, placed the way a paste places it: over the selection, or — when it is
+    /// the whole line a copy with nothing selected just took — as a line of its own ABOVE the caret's,
+    /// with the caret staying where it was in its text. Every editor worth using pastes a copied line
+    /// that way; inserting it at the caret splits the line you were on in two.
+    /// </summary>
     public bool Paste(string text)
     {
         if (GoTo.IsOpen)

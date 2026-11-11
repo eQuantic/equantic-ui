@@ -9,7 +9,7 @@
 ## 2. The web reads later
 
 - [x] 2.1 The code surface's clipboard waits for the browser's paste event on its paste keys and reads through `navigator.clipboard.readText()` on any other key; the page's clipboard service reads the same way. Verify: the two paste cases of `code-editor.spec.ts`, which fail on main's runtime (⌘J pasted nothing, the refused read was never asked) and pass here
-- [ ] 2.2 The suites. Verify: Web, Server, Native.Engine, Compiler and Conformance pass, and the runtime's vitest
+- [x] 2.2 The suites. Verify: Web 1410, Server 595, Native.Engine 3387 (30 skipped), Compiler 2857 and Conformance 7801 (1 skipped) pass, `tsc` is clean, and vitest passes 2974 of 2976, the two others being the spreadsheet and table perf specs, which pass on their own under the same load
 
 ## 3. Documentation
 
