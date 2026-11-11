@@ -1924,7 +1924,7 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
   const role = node.role ?? 'group';
   // A table or a grid reads as rows of cells (C# twin: LowerTableViewport, #1081); a group adds nothing.
   const semantics: TableSemantics | null =
-    role === 'group' ? null : { grid: role === 'grid', scope: hashDeclaration(node.label ?? '') };
+    role === 'group' ? null : { grid: role === 'grid', scope: hashDeclaration(pathScope(path)) };
   const children: HtmlNode[] = [];
   for (let marks = 0; marks < 2; marks++) {
     for (let band = 0; band < 4; band++) {
@@ -2039,6 +2039,16 @@ interface TableSemantics {
 }
 
 /** The id a table's cell answers to, which its row's `aria-owns` names (C# twin: TableCellId). */
+/**
+ * What a node is scoped by: its path below its root, the same on both sides whichever root this pass gave it
+ * (C# twin: LoweringPath.Scope). A table's cells' ids hash it: its label was the scope, so two tables of one
+ * label, two spreadsheets or two unlabelled tables, shared their cells' ids (#1115).
+ */
+function pathScope(path: string): string {
+  const below = path.indexOf('/');
+  return below < 0 ? '' : path.slice(below);
+}
+
 function tableCellId(scope: string, row: number, column: number): string {
   return `eq-tcell-${scope}-${row}-${column}`;
 }

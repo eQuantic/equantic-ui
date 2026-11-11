@@ -20,7 +20,7 @@ internal sealed partial class WebLoweringVisitor
     public HtmlElement? Visit(TableViewport viewport, bool? horizontalAxis) => LowerTableViewport(viewport);
 
     /// <summary>A cell outside a viewport has nothing to be placed against: it is its child.</summary>
-    public HtmlElement? Visit(TableViewCell cell, bool? horizontalAxis) => Lower(cell.Child, horizontalAxis);
+    public HtmlElement? Visit(TableViewCell cell, bool? horizontalAxis) => Lower(cell.Child, horizontalAxis, LoweringPath.Child);
 
     private HtmlElement LowerTableViewport(TableViewport viewport)
     {
@@ -51,7 +51,7 @@ internal sealed partial class WebLoweringVisitor
         // A table or a grid reads as rows of cells (TS twin: lowerTableViewport, #1081); a group adds nothing.
         TableSemantics? semantics = viewport.Role == TableRole.Group
             ? null
-            : new TableSemantics(viewport.Role == TableRole.Grid, StyleAtomizer.Hash(viewport.Label ?? ""));
+            : new TableSemantics(viewport.Role == TableRole.Grid, StyleAtomizer.Hash(LoweringPath.Scope(_path)));
         element.RawAttributes = new Dictionary<string, string>
         {
             ["role"] = viewport.Role switch { TableRole.Table => "table", TableRole.Grid => "grid", _ => "group" },
@@ -82,8 +82,9 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>What a table or a grid adds for a reader (#1081): whether it is a grid, and the scope its
-    /// cells' ids are unique in, the label hashed as a <see cref="Navigable"/> grid's are
-    /// (<see cref="NavigableScope"/>).</summary>
+    /// cells' ids are unique in, its place in the tree hashed (<see cref="LoweringPath.Scope"/>), the same on the
+    /// server's first pass and after hydration. Its label was the scope, so two tables of one label, two
+    /// spreadsheets or two unlabelled tables, shared their cells' ids (#1115).</summary>
     private readonly record struct TableSemantics(bool Grid, string Scope);
 
     /// <summary>The id a table's cell answers to, which its row's <c>aria-owns</c> names (TS twin:
@@ -175,14 +176,16 @@ internal sealed partial class WebLoweringVisitor
         }
 
         var offset = viewport.Scroll.Offset;
-        foreach (var cell in viewport.Cells)
+        for (var index = 0; index < viewport.Cells.Count; index++)
         {
+            var cell = viewport.Cells[index];
             if (cell.Mark != marks) continue;
             var inPinnedRow = cell.Row < pinnedRows;
             var inPinnedColumn = cell.Column < pinnedColumns;
             if ((inPinnedColumn ? 1 : 0) + (inPinnedRow ? 2 : 0) != band) continue;
-            layer.Children.Add(LowerTableCell(viewport, cell, inPinnedRow, inPinnedColumn, pinnedAcross,
-                pinnedDown, offset, marks ? null : semantics));
+            // One step down at the cell's key, its position, as the browser's: the window moves its index.
+            layer.Children.Add(At(LoweringPath.Cell(cell.Key, index), () => LowerTableCell(viewport, cell, inPinnedRow,
+                inPinnedColumn, pinnedAcross, pinnedDown, offset, marks ? null : semantics)));
         }
         return box;
     }
@@ -218,7 +221,7 @@ internal sealed partial class WebLoweringVisitor
                 Height = TokenCss.Px((float)(rows.OffsetOf(endRow) - top)),
             },
         };
-        if (Lower(cell.Child, horizontalAxis: null) is { } child) wrapper.Children.Add(child);
+        if (Lower(cell.Child, horizontalAxis: null, LoweringPath.Child) is { } child) wrapper.Children.Add(child);
         if (semantics is { } table) DescribeTableCell(wrapper, cell, table);
         return Decorate(cell, wrapper)!;
     }

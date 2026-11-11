@@ -50,6 +50,31 @@ internal sealed partial class WebLoweringVisitor(
     /// as the real ones do (#616). A <see cref="Simulated"/> node starts it over.</summary>
     private bool _inControl;
 
+    /// <summary>This node's place in the tree, as the browser's lowering spells it (<see cref="LoweringPath"/>): a
+    /// table scopes its cells' ids by it (#1115). Each container steps down by the browser's segment for the same
+    /// child, through <see cref="Lower(VisualNode, bool?, string)"/> or <see cref="At{T}"/>.</summary>
+    private string _path = LoweringPath.Root;
+
+    /// <summary><paramref name="node"/> lowered one step down the tree, at <paramref name="segment"/>.</summary>
+    private HtmlElement? Lower(VisualNode node, bool? horizontalAxis, string segment) =>
+        At(segment, () => Lower(node, horizontalAxis));
+
+    /// <summary><paramref name="lower"/> run one step down the tree, at <paramref name="segment"/>: a container that
+    /// places its child through a rule of its own, which lowers it where it stands.</summary>
+    private T At<T>(string segment, Func<T> lower)
+    {
+        var parent = _path;
+        _path = LoweringPath.Below(parent, segment);
+        try
+        {
+            return lower();
+        }
+        finally
+        {
+            _path = parent;
+        }
+    }
+
     /// <summary>
     /// The single dispatch every node passes through — and therefore the one place the design-mode
     /// origin is attached, once, rather than in each of the branches below.
@@ -148,7 +173,7 @@ internal sealed partial class WebLoweringVisitor(
     /// <summary>A Positioned outside a Stack has no anchor frame — degrade to its child (parity
     /// with native).</summary>
     public HtmlElement? Visit(Positioned positioned, bool? horizontalAxis) =>
-        Lower(positioned.Child, horizontalAxis);
+        Lower(positioned.Child, horizontalAxis, LoweringPath.Child);
 
     public HtmlElement? Visit(Flexible flexible, bool? horizontalAxis) =>
         LowerFlexible(flexible, horizontalAxis);
@@ -249,7 +274,7 @@ internal sealed partial class WebLoweringVisitor(
         {
             var (kept, built) = frame.At(component);
             ComponentExpansionScope.Ambient?.Enter(kept);
-            return built is not null ? Lower(built, horizontalAxis) : null;
+            return built is not null ? Lower(built, horizontalAxis, LoweringPath.Child) : null;
         }
 
         // NAMED BEFORE IT BUILDS, and the order is the whole mechanism: ExpandContained runs
@@ -265,7 +290,7 @@ internal sealed partial class WebLoweringVisitor(
                 // Counted BEFORE the built tree lowers: the components inside it build during that
                 // lowering, and what they ask is theirs, not this one's.
                 var unmeasured = state.Visitor._measurer.Asks > state.Asked;
-                var element = state.Visitor.Lower(built, state.Axis);
+                var element = state.Visitor.Lower(built, state.Axis, LoweringPath.Child);
                 if (unmeasured && element is not null) MarkUnmeasured(element);
                 return element;
             });
