@@ -385,222 +385,38 @@ export function sheetTheme(data: SlotData): SheetTheme {
   return sheet;
 }
 
-/** The Navigation slot the bridge wrote. */
-export function navigationTheme(data: SlotData): NavigationTheme {
-  return new NavigationTheme({
-    inactiveColor: slotToken(data.inactiveColor),
-    quietFill: slotToken(data.quietFill),
-    background: slotToken(data.background),
-    tabHeight: slotValue<number>(data.tabHeight),
-    tabLabelSize: slotValue<number>(data.tabLabelSize),
-    tabLabelLineHeight: slotValue<number>(data.tabLabelLineHeight),
-    tabLabelWeight: slotValue<string>(data.tabLabelWeight),
-    tabSelectedLabelWeight: slotValue<string>(data.tabSelectedLabelWeight),
-    tabLabelTracking: slotValue<number>(data.tabLabelTracking),
-    indicatorThickness: slotValue<number>(data.indicatorThickness),
-    indicatorInset: slotValue<number>(data.indicatorInset),
-    indicatorRadius: slotValue<number>(data.indicatorRadius),
-    pillRadius: slotValue<number>(data.pillRadius),
-    pillLabelGap: slotValue<number>(data.pillLabelGap),
-    barHeight: slotValue<number>(data.barHeight),
-    barIconSize: slotValue<number>(data.barIconSize),
-    barPillWidth: slotValue<number>(data.barPillWidth),
-    barPillHeight: slotValue<number>(data.barPillHeight),
-    barLabelSize: slotValue<number>(data.barLabelSize),
-    barLabelLineHeight: slotValue<number>(data.barLabelLineHeight),
-    barLabelWeight: slotValue<string>(data.barLabelWeight),
-    barLabelTracking: slotValue<number>(data.barLabelTracking),
-    railWidth: slotValue<number>(data.railWidth),
-    railPaddingY: slotValue<number>(data.railPaddingY),
-    railGap: slotValue<number>(data.railGap),
-    railItemHeight: slotValue<number>(data.railItemHeight),
-    railIconSize: slotValue<number>(data.railIconSize),
-    railPillWidth: slotValue<number>(data.railPillWidth),
-    railPillHeight: slotValue<number>(data.railPillHeight),
-    railSelectedLabelSize: slotValue<number>(data.railSelectedLabelSize),
-    railSelectedLabelLineHeight: slotValue<number>(data.railSelectedLabelLineHeight),
-    railSelectedLabelWeight: slotValue<string>(data.railSelectedLabelWeight),
-    railBorderWidth: slotValue<number>(data.railBorderWidth),
-    railBorderColor: slotToken(data.railBorderColor),
-    appBarHeight: slotValue<number>(data.appBarHeight),
-    appBarPaddingX: slotValue<number>(data.appBarPaddingX),
-    titleSize: slotValue<number>(data.titleSize),
-    titleLineHeight: slotValue<number>(data.titleLineHeight),
-    titleWeight: slotValue<string>(data.titleWeight),
-    titleColor: slotToken(data.titleColor),
-    titleInset: slotValue<number>(data.titleInset),
-    titleGap: slotValue<number>(data.titleGap),
-    scrolledElevation: slotValue<number>(data.scrolledElevation),
-    crumbGap: slotValue<number>(data.crumbGap),
-    crumbColor: slotToken(data.crumbColor),
-    currentCrumbColor: slotToken(data.currentCrumbColor),
-    separatorSize: slotValue<number>(data.separatorSize),
-    separatorColor: slotToken(data.separatorColor),
-    pageCellSize: slotValue<number>(data.pageCellSize),
-    pageGap: slotValue<number>(data.pageGap),
-    paginationGap: slotValue<number>(data.paginationGap),
-    pageRadius: slotValue<number>(data.pageRadius),
-    pageColor: slotToken(data.pageColor),
-    ellipsisColor: slotToken(data.ellipsisColor),
-    dotSize: slotValue<number>(data.dotSize),
-    currentDotWidth: slotValue<number>(data.currentDotWidth),
-    dotGap: slotValue<number>(data.dotGap),
-    dotRadius: slotValue<number>(data.dotRadius),
-    dotColor: slotToken(data.dotColor),
-  });
+/**
+ * A family's slot the bridge wrote, read member by member into its mirror. The wire has one form per
+ * kind, so a member's shape says how to read it: a light/dark tuple is a colour, an object is a size
+ * ladder (the only record these slots nest), and anything else (a number, a flag, an enum's name)
+ * crosses as itself. The mirror declares every member, so a name it does not declare is a bridge and a
+ * runtime of different builds, refused here rather than carried along unread.
+ */
+function familySlot<T extends object>(slot: T, data: SlotData): T {
+  const members = slot as unknown as Record<string, unknown>;
+  for (const [name, value] of Object.entries(data)) {
+    if (!(name in members)) throw new Error(`${slot.constructor.name} has no member '${name}'`);
+    members[name] = Array.isArray(value)
+      ? slotToken(value)
+      : value !== null && typeof value === 'object'
+        ? slotSizeLadder(value)
+        : slotValue(value);
+  }
+  return slot;
 }
 
-/** The List slot the bridge wrote. */
-export function listTheme(data: SlotData): ListTheme {
-  return new ListTheme({
-    quietFill: slotToken(data.quietFill),
-    itemHeight: slotValue<number>(data.itemHeight),
-    twoLineItemHeight: slotValue<number>(data.twoLineItemHeight),
-    threeLineItemHeight: slotValue<number>(data.threeLineItemHeight),
-    itemPaddingX: slotValue<number>(data.itemPaddingX),
-    itemPaddingY: slotValue<number>(data.itemPaddingY),
-    itemGap: slotValue<number>(data.itemGap),
-    textGap: slotValue<number>(data.textGap),
-    titleSize: slotValue<number>(data.titleSize),
-    titleLineHeight: slotValue<number>(data.titleLineHeight),
-    titleWeight: slotValue<string>(data.titleWeight),
-    titleColor: slotToken(data.titleColor),
-    subtitleColor: slotToken(data.subtitleColor),
-    dividerThickness: slotValue<number>(data.dividerThickness),
-    dividerColor: slotToken(data.dividerColor),
-    dividerInset: slotValue<number>(data.dividerInset),
-    headerHeight: slotValue<number>(data.headerHeight),
-    sectionPaddingX: slotValue<number>(data.sectionPaddingX),
-    sectionPaddingBottom: slotValue<number>(data.sectionPaddingBottom),
-    headerGap: slotValue<number>(data.headerGap),
-    chevronSize: slotValue<number>(data.chevronSize),
-    chevronColor: slotToken(data.chevronColor),
-    swipeActionWidth: slotValue<number>(data.swipeActionWidth),
-    swipeActionGap: slotValue<number>(data.swipeActionGap),
-    swipeIconSize: slotValue<number>(data.swipeIconSize),
-    swipeSurface: slotToken(data.swipeSurface),
-  });
-}
-
-/** The Table slot the bridge wrote. */
-export function tableTheme(data: SlotData): TableTheme {
-  return new TableTheme({
-    cellPaddingX: slotValue<number>(data.cellPaddingX),
-    cellPaddingY: slotValue<number>(data.cellPaddingY),
-    hoverFill: slotToken(data.hoverFill),
-    columnGap: slotValue<number>(data.columnGap),
-    rowMinHeight: slotValue<number>(data.rowMinHeight),
-    headerColor: slotToken(data.headerColor),
-    dataRowHeight: slotValue<number>(data.dataRowHeight),
-    selectionColumnWidth: slotValue<number>(data.selectionColumnWidth),
-    headerFill: slotToken(data.headerFill),
-    dataHeaderColor: slotToken(data.dataHeaderColor),
-    sortedHeaderColor: slotToken(data.sortedHeaderColor),
-    headerUppercase: slotValue<boolean>(data.headerUppercase),
-    headerIconGap: slotValue<number>(data.headerIconGap),
-    sortIconSize: slotValue<number>(data.sortIconSize),
-    borderWidth: slotValue<number>(data.borderWidth),
-    borderColor: slotToken(data.borderColor),
-  });
-}
-
-/** The Badge slot the bridge wrote. */
-export function badgeTheme(data: SlotData): BadgeTheme {
-  return new BadgeTheme({
-    ringColor: slotToken(data.ringColor),
-    ringWidth: slotValue<number>(data.ringWidth),
-    dotSize: slotValue<number>(data.dotSize),
-    countHeight: slotValue<number>(data.countHeight),
-    countPaddingX: slotValue<number>(data.countPaddingX),
-    countLabelSize: slotValue<number>(data.countLabelSize),
-    countLabelLineHeight: slotValue<number>(data.countLabelLineHeight),
-    countLabelWeight: slotValue<string>(data.countLabelWeight),
-    neutralFill: slotToken(data.neutralFill),
-    neutralColor: slotToken(data.neutralColor),
-    avatarSize: slotSizeLadder(data.avatarSize),
-    avatarLabelSize: slotSizeLadder(data.avatarLabelSize),
-    avatarLabelWeight: slotValue<string>(data.avatarLabelWeight),
-    avatarGlyphSize: slotSizeLadder(data.avatarGlyphSize),
-    avatarFill: slotToken(data.avatarFill),
-    avatarGlyphColor: slotToken(data.avatarGlyphColor),
-    wellSize: slotValue<number>(data.wellSize),
-    wellFill: slotToken(data.wellFill),
-    wellIconSize: slotValue<number>(data.wellIconSize),
-    wellIconColor: slotToken(data.wellIconColor),
-    emptyPaddingX: slotValue<number>(data.emptyPaddingX),
-    emptyPaddingY: slotValue<number>(data.emptyPaddingY),
-    wellGap: slotValue<number>(data.wellGap),
-    bodyGap: slotValue<number>(data.bodyGap),
-    actionsGap: slotValue<number>(data.actionsGap),
-    actionSpacing: slotValue<number>(data.actionSpacing),
-    emptyTitleSize: slotValue<number>(data.emptyTitleSize),
-    emptyTitleLineHeight: slotValue<number>(data.emptyTitleLineHeight),
-    emptyTitleWeight: slotValue<string>(data.emptyTitleWeight),
-    emptyTitleColor: slotToken(data.emptyTitleColor),
-    emptyBodyColor: slotToken(data.emptyBodyColor),
-  });
-}
-
-/** The Calendar slot the bridge wrote. */
-export function calendarTheme(data: SlotData): CalendarTheme {
-  return new CalendarTheme({
-    cellSize: slotValue<number>(data.cellSize),
-    weekdayHeight: slotValue<number>(data.weekdayHeight),
-    headerGap: slotValue<number>(data.headerGap),
-    gap: slotValue<number>(data.gap),
-    titleRole: slotValue<TypeRoleValue>(data.titleRole),
-    titleColor: slotToken(data.titleColor),
-    weekdayRole: slotValue<TypeRoleValue>(data.weekdayRole),
-    weekdayColor: slotToken(data.weekdayColor),
-    dayRole: slotValue<TypeRoleValue>(data.dayRole),
-    dayColor: slotToken(data.dayColor),
-    dayHoverFill: slotToken(data.dayHoverFill),
-    todayRingWidth: slotValue<number>(data.todayRingWidth),
-    panelFill: slotToken(data.panelFill),
-    panelRadius: slotValue<number>(data.panelRadius),
-    panelBorderWidth: slotValue<number>(data.panelBorderWidth),
-    panelBorderColor: slotToken(data.panelBorderColor),
-    panelElevation: slotValue<number>(data.panelElevation),
-    panelPadding: slotValue<number>(data.panelPadding),
-    openerIconSize: slotValue<number>(data.openerIconSize),
-    openerColor: slotToken(data.openerColor),
-  });
-}
-
-/** The Markdown slot the bridge wrote. */
-export function markdownTheme(data: SlotData): MarkdownTheme {
-  return new MarkdownTheme({
-    heading1: slotValue<TypeRoleValue>(data.heading1),
-    heading2: slotValue<TypeRoleValue>(data.heading2),
-    heading3: slotValue<TypeRoleValue>(data.heading3),
-    heading4: slotValue<TypeRoleValue>(data.heading4),
-    body: slotValue<TypeRoleValue>(data.body),
-    blockGap: slotValue<number>(data.blockGap),
-    codeLineNumbers: slotValue<boolean>(data.codeLineNumbers),
-    codeInverse: slotValue<boolean>(data.codeInverse),
-    headingSpace: slotValue<number>(data.headingSpace),
-    subheadingSpace: slotValue<number>(data.subheadingSpace),
-    headingColor: slotToken(data.headingColor),
-    bodyColor: slotToken(data.bodyColor),
-    inlineCodeMaxSize: slotValue<number>(data.inlineCodeMaxSize),
-    inlineCodeColor: slotToken(data.inlineCodeColor),
-    quoteIndent: slotValue<number>(data.quoteIndent),
-    quotePaddingY: slotValue<number>(data.quotePaddingY),
-    quoteRuleWidth: slotValue<number>(data.quoteRuleWidth),
-    quoteRuleColor: slotToken(data.quoteRuleColor),
-    listGap: slotValue<number>(data.listGap),
-    markerGap: slotValue<number>(data.markerGap),
-    listIndent: slotValue<number>(data.listIndent),
-    markerColor: slotToken(data.markerColor),
-    tableRadius: slotValue<number>(data.tableRadius),
-    tableBorderWidth: slotValue<number>(data.tableBorderWidth),
-    tableBorderColor: slotToken(data.tableBorderColor),
-    tableHeaderFill: slotToken(data.tableHeaderFill),
-    tableCellPaddingX: slotValue<number>(data.tableCellPaddingX),
-    tableHeaderPaddingY: slotValue<number>(data.tableHeaderPaddingY),
-    tableCellPaddingY: slotValue<number>(data.tableCellPaddingY),
-  });
-}
+/** The navigation family's slot the bridge wrote. */
+export const navigationTheme = (data: SlotData): NavigationTheme => familySlot(new NavigationTheme(), data);
+/** The list family's slot the bridge wrote. */
+export const listTheme = (data: SlotData): ListTheme => familySlot(new ListTheme(), data);
+/** The table family's slot the bridge wrote. */
+export const tableTheme = (data: SlotData): TableTheme => familySlot(new TableTheme(), data);
+/** The badge family's slot the bridge wrote. */
+export const badgeTheme = (data: SlotData): BadgeTheme => familySlot(new BadgeTheme(), data);
+/** The calendar family's slot the bridge wrote. */
+export const calendarTheme = (data: SlotData): CalendarTheme => familySlot(new CalendarTheme(), data);
+/** The rendered document's slot the bridge wrote. */
+export const markdownTheme = (data: SlotData): MarkdownTheme => familySlot(new MarkdownTheme(), data);
 
 /**
  * Every slot the browser's theme carries, by the name the bridge writes it under and the builder that
