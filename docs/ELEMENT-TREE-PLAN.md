@@ -557,7 +557,7 @@ the parity rows it closes flip.
    the old routing put back, and the boundary contains what it contained.
 
    Then **the engine runs in the browser**
-   (`openspec/changes/archive/<date>-the-element-engine-runs-in-the-browser`), which closes E3a. The
+   (`openspec/changes/archive/2026-11-11-the-element-engine-runs-in-the-browser`), which closes E3a. The
    engine leaves `[ServerOnly]`, its modules are pinned beside the other engines' and accepted by the
    runtime's `tsc`, and eleven of `ElementTreeTests`' cases run on .NET and on the transpiled engine with
    equal traces. They found what the browser's components lacked: C#'s empty `AdoptConfig` default, and
