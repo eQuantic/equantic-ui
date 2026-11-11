@@ -13,7 +13,7 @@
 ## 3. Proved against the real thing
 
 - [x] 3.1 The dashboard's `/table` screen in Chromium at 1280 by 900: the table's bottom edge and its horizontal scrollbar stand at the page's visible end. Verify: the measured gap, before and after. Measured: the page shows 844 and the table starts 36 into it. On the rule as it was the table took 844 and ended 36 below the fold, and now it takes 808 and ends at the fold
-- [ ] 3.2 The Native.Engine, Web, Server, Compiler and Conformance suites and the runtime suite pass whole
+- [x] 3.2 The Native.Engine, Web, Server, Compiler and Conformance suites and the runtime suite pass whole. Verify: Native.Engine 3393 and Web 1410 locally, the runtime 2982, and Server, Compiler and Conformance, which this change does not reach, on CI
 
 ## 4. Documentation
 

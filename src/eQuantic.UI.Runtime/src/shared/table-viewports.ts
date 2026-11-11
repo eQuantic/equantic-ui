@@ -721,8 +721,11 @@ function passOn(around: PassedOn, scroll: TableScrollModelLike, travelledAcross:
     if (elapsed > 0) axis.velocity = (left - axis.last) / elapsed;
     axis.last = left;
     axis.lastTime = now;
-    if (horizontal) axis.scroller.scrollLeft = axis.from - left;
-    else axis.scroller.scrollTop = axis.from - left;
+    // Written only when it moves: a write of the value it holds still cancels a scroll the page has in flight.
+    const to = axis.from - left;
+    if (horizontal) {
+      if (axis.scroller.scrollLeft !== to) axis.scroller.scrollLeft = to;
+    } else if (axis.scroller.scrollTop !== to) axis.scroller.scrollTop = to;
   };
   move(around.across, travelledAcross, around.grid.across - scroll.offset.across, true);
   move(around.down, travelledDown, around.grid.down - scroll.offset.down, false);

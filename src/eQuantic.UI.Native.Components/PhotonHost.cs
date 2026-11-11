@@ -2376,7 +2376,8 @@ public sealed class PhotonHost
         var left = travelled - took;
         if (!around.Active)
         {
-            if (left == 0) return;
+            // Under half a point is the rounding of the frame's mapping, not travel the table left.
+            if (MathF.Abs(left) < 0.5f) return;
             around.Active = true;
             around.LastAt = 0;
             around.LastTimeMs = _lastTimeMs;
