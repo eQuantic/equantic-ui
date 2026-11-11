@@ -35,27 +35,32 @@ public sealed class BuildOwner
     private ComponentContext? _context;
     private int _building;
     private int _stamp;
-    private int _ids;
+    private readonly ElementIds _ids;
     private readonly Func<UiComponent, ComponentContext, int, VisualNode> _buildComponent;
 
     /// <summary>A live owner: the one a host keeps for the surface it draws.</summary>
     /// <param name="buildComponent">How a component builds: its <c>Build</c> for a context, at a depth
     /// of components, inside whatever boundary contains what it throws.</param>
-    public BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent)
-        : this(buildComponent, live: true)
+    /// <param name="ids">The count the tree takes its ids from, shared with the other trees of a host
+    /// that names their nodes in one space; a count of the tree's own when none is handed.</param>
+    public BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, ElementIds? ids = null)
+        : this(buildComponent, ids, live: true)
     {
     }
 
-    private BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool live)
+    private BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, ElementIds? ids, bool live)
     {
         ArgumentNullException.ThrowIfNull(buildComponent);
         _buildComponent = buildComponent;
+        _ids = ids ?? new ElementIds();
         Live = live;
     }
 
     /// <summary>An owner for a tree laid out once: it builds, and calls no lifecycle hook.</summary>
     /// <param name="buildComponent">How a component builds, as the live owner takes it.</param>
-    public static BuildOwner Structural(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent) => new(buildComponent, live: false);
+    /// <param name="ids">The count the tree takes its ids from, as the live owner takes it.</param>
+    public static BuildOwner Structural(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, ElementIds? ids = null) =>
+        new(buildComponent, ids, live: false);
 
     /// <summary>Builds a component the way this owner was handed.</summary>
     internal VisualNode BuildComponent(UiComponent component, ComponentContext context, int depth) =>
@@ -207,8 +212,8 @@ public sealed class BuildOwner
     internal int NextStamp() => ++_stamp;
 
     /// <summary>The next id of this tree (<see cref="Element.Id"/>, <see cref="NodeElement.PartId"/>),
-    /// counted from one, so zero is never an id.</summary>
-    internal int NextId() => ++_ids;
+    /// from the count it was handed.</summary>
+    internal int NextId() => _ids.Next();
 
     internal void Deactivate(Element element) => element.Deactivate();
 

@@ -716,6 +716,27 @@ public class ElementTreeTests
             "an id is never handed on, so a host holding the old one finds nothing rather than the newcomer");
     }
 
+    /// <summary>
+    /// A host that keeps several trees and names their nodes in one space hands each owner the same
+    /// count (the browser: a tree per root a page lowers, whose attributes carry an element's id), and
+    /// no two positions of those trees share an id. An owner handed none counts alone, as before.
+    /// </summary>
+    [Fact]
+    public void TreesHandedOneCount_NeverGiveTwoPositionsTheSameId()
+    {
+        var ids = new ElementIds();
+        Func<UiComponent, ComponentContext, int, VisualNode> build = (component, context, _) => component.Build(context);
+        var live = Frame(new BuildOwner(build, ids), new Page(["a", "b"]));
+        var structural = Frame(BuildOwner.Structural(build, ids), new Page(["c"]));
+        var part = ((NodeElement)Frame(BuildOwner.Structural(build, ids), Keyed("d"))).PartId(0);
+
+        Everything(live).Concat(Everything(structural)).Select(element => element.Id).Append(part)
+            .Should().OnlyHaveUniqueItems("the trees take their ids, parts included, from one count");
+
+        var alone = Frame(BuildOwner.Structural(build), new Page(["e"]));
+        alone.Id.Should().Be(1, "an owner handed no count counts its own from one");
+    }
+
     [Fact]
     public void APart_KeepsItsId_WhileItsPositionLives()
     {

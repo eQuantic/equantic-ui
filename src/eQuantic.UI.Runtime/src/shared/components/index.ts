@@ -128,6 +128,7 @@ export { DialogAction } from './DialogAction';
 export { Divider } from './Divider';
 export { Drawer } from './Drawer';
 export { Element } from './Element';
+export { ElementIds } from './ElementIds';
 export { EmptyState } from './EmptyState';
 export { EntryLines } from './EntryLines';
 export { FieldError } from './FieldError';

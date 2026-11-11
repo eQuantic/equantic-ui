@@ -1,16 +1,18 @@
-import { $eq, BuildContext, ComponentElement, Element, NodeElement, StatefulComponent, UiComponent, VisualNode, WindowSizeClassValue } from "../runtime-exports";
+import { $eq, BuildContext, ComponentElement, Element, ElementIds, NodeElement, StatefulComponent, UiComponent, VisualNode, WindowSizeClassValue } from "../runtime-exports";
 
 export class BuildOwner {
-    constructor(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode = undefined!, live: boolean = undefined!) {
-        if (arguments.length === 1) {
-            let $c0: any, $c1: any;
+    constructor(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode = undefined!, ids: ElementIds | null = undefined!, live: boolean = undefined!) {
+        if (arguments.length >= 1 && arguments.length <= 2) {
+            let $c0: any, $c1: any, $c2: any;
             {
-                let buildComponent: any = arguments[0];
+                let buildComponent: any = arguments[0], ids: any = arguments[1] === undefined ? null : arguments[1];
                 $c0 = buildComponent;
-                $c1 = true;
+                $c1 = ids;
+                $c2 = true;
             }
             buildComponent = $c0;
-            live = $c1;
+            ids = $c1;
+            live = $c2;
         }
         this._dirty = [];
         this._dirtyNextFrame = [];
@@ -22,7 +24,7 @@ export class BuildOwner {
         this._context = null;
         this._building = 0;
         this._stamp = 0;
-        this._ids = 0;
+        this._ids = null!;
         this._buildComponent = null!;
         this.buildRequested = null;
         this.root = null;
@@ -34,6 +36,7 @@ export class BuildOwner {
         this.keyScratch = $eq.collections.dictionary();
         $eq.guard.throwIfNull(buildComponent, 'buildComponent');
         this._buildComponent = buildComponent;
+        this._ids = ids ?? new ElementIds();
         this.live = live;
     }
 
@@ -47,7 +50,7 @@ export class BuildOwner {
     _context!: BuildContext | null;
     _building!: number;
     _stamp!: number;
-    _ids!: number;
+    _ids!: ElementIds;
     _buildComponent!: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode;
     buildRequested!: (() => void) | null;
     root!: Element | null;
@@ -92,8 +95,8 @@ export class BuildOwner {
         BuildOwner.$init().byDepth = value;
     }
 
-    static structural(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode) {
-        return new BuildOwner(buildComponent, false);
+    static structural(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode, ids: ElementIds | null = null) {
+        return new BuildOwner(buildComponent, ids, false);
     }
 
     buildComponent(component: UiComponent, context: BuildContext, depth: number) {
@@ -173,7 +176,7 @@ export class BuildOwner {
     }
 
     nextId() {
-        return ++this._ids;
+        return this._ids.next();
     }
 
     deactivate(element: Element) {
