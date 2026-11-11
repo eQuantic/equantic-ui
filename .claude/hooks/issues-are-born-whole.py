@@ -37,7 +37,7 @@ CURL = re.compile(START + r"curl\b", re.MULTILINE)
 GH_WRITES = re.compile(r"(?:-X\s*|--method[=\s]+)POST\b|\s(?:-f|-F|--field|--raw-field|--input)(?:\s|=)")
 CURL_WRITES = re.compile(r"(?:-X\s*|--request[=\s]+)POST\b|\s(?:-d|--data(?:-raw|-binary)?|--json)(?:\s|=)")
 # A body a command reads from a file: `gh api -F query=@q.graphql`, `--input body.json`, `curl -d @body`.
-FILE_ARGUMENT = re.compile(r"""(?:=@|\s--input[=\s]+|\s(?:-d|--data(?:-raw|-binary)?)[=\s]+@)(?P<path>[^\s'";|&)]+)""")
+FILE_ARGUMENT = re.compile(r"""(?:=@|\s--input[=\s]+|\s(?:-d|--data(?:-raw|-binary)?)[=\s]+@)['"]?(?P<path>[^\s'";|&)]+)""")
 # How much of a file is read: a GraphQL query or a JSON body, never a large one.
 FILE_LIMIT = 1 << 20
 MCP_CREATE = re.compile(r"^mcp__.*create_issue")
@@ -139,6 +139,8 @@ def self_test() -> int:
             file.write("{ repository(owner: \"eQuantic\", name: \"equantic-ui\") { issues(first: 1) { totalCount } } }\n")
         from_files = [("gh api graphql -F query=@create.graphql -f i=x", True),
                       ("gh api graphql --input create.graphql", True),
+                      ('gh api graphql --input "create.graphql"', True),
+                      ("gh api graphql -F query=@'create.graphql'", True),
                       ("curl -X POST https://api.github.com/graphql -d @create.graphql", True),
                       ("gh api graphql -F query=@read.graphql", False),
                       ("cat create.graphql", False)]

@@ -93,6 +93,8 @@ def main():
 
     meta = board.gql(board.META, owner=board.OWNER, repo=board.REPO, number=board.PROJECT)
     project = meta["organization"]["projectV2"]
+    if args.status not in {o["name"] for o in project["field"]["options"]}:
+        refuse([f"a status the board has ({args.status} is not one of its options)"])
     context = board.gql("""query($o: String!, $r: String!, $login: String!, $me: Boolean!) {
         viewer @include(if: $me) { id login }
         user(login: $login) @skip(if: $me) { id login }
@@ -123,11 +125,15 @@ def main():
     if reasons:
         refuse(reasons)
 
-    type_id = next(t["id"] for t in context["organization"]["issueTypes"]["nodes"] if t["name"] == args.type)
+    type_id = next((t["id"] for t in context["organization"]["issueTypes"]["nodes"] if t["name"] == args.type), None)
+    if type_id is None:
+        refuse([f"an issue type the organization has ({args.type} is not one of them)"])
     fields = []
     if args.priority:
-        priority = next(f for f in context["organization"]["issueFields"]["nodes"] if f and f.get("name") == "Priority")
-        option = next(o["id"] for o in priority["options"] if o["name"] == args.priority)
+        priority = next((f for f in context["organization"]["issueFields"]["nodes"] if f and f.get("name") == "Priority"), None)
+        option = next((o["id"] for o in (priority or {}).get("options", []) if o["name"] == args.priority), None)
+        if option is None:
+            refuse([f"a Priority field with the option {args.priority}, which the organization has not"])
         fields.append({"fieldId": priority["id"], "singleSelectOptionId": option})
 
     created = board.gql("""mutation($i: CreateIssueInput!) { createIssue(input: $i) { issue { id number url } } }""",
@@ -178,7 +184,7 @@ def finish(project: dict, created: dict, args):
 def whole(landed: dict, args, login: str) -> list:
     """What the issue as GitHub shows it differs in from what was asked for."""
     values = {v["field"]["name"]: v["name"] for v in landed["issueFieldValues"]["nodes"] if v and v.get("field")}
-    on_board = next((n for n in landed["projectItems"]["nodes"] if n["project"]["number"] == board.PROJECT),
+    on_board = next((n for n in landed["projectItems"]["nodes"] if (n.get("project") or {}).get("number") == board.PROJECT),
                     {"status": None, "estimate": None})
     wanted = {"type": (args.type, (landed["issueType"] or {}).get("name")),
               "parent": (args.parent, (landed["parent"] or {}).get("number")),
