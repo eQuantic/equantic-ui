@@ -31,6 +31,15 @@ for (index, frame) in frames.enumerated() {
     let y = CGFloat(height) - gap - CGFloat(row + 1) * cellHeight - CGFloat(row) * gap
     context.draw(frame, in: CGRect(x: x, y: y, width: cellWidth, height: cellHeight))
 }
-let bitmap = NSBitmapImageRep(cgImage: context.makeImage()!)
-try! bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: arguments[2]))
+guard let sheet = context.makeImage(),
+      let png = NSBitmapImageRep(cgImage: sheet).representation(using: .png, properties: [:]) else {
+    fputs("error: the contact sheet could not be drawn as a PNG\n", stderr)
+    exit(1)
+}
+do {
+    try png.write(to: URL(fileURLWithPath: arguments[2]))
+} catch {
+    fputs("error: \(arguments[2]) could not be written: \(error)\n", stderr)
+    exit(1)
+}
 print("\(frames.count) frames \(width)x\(height)")

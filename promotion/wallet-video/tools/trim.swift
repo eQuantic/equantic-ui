@@ -33,7 +33,11 @@ Task {
         render.frameDuration = CMTime(value: 1, timescale: 30)
         render.instructions = [instruction]
 
-        let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality)!
+        guard let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+            print("error: no export session for \(output.lastPathComponent) at the highest-quality preset")
+            done.signal()
+            return
+        }
         export.videoComposition = render
         export.outputURL = output
         export.outputFileType = .mp4

@@ -20,8 +20,11 @@ Task {
     while index + 1 < arguments.count {
         let time = CMTime(seconds: Double(arguments[index])!, preferredTimescale: 600)
         let image = try generator.copyCGImage(at: time, actualTime: nil)
-        let bitmap = NSBitmapImageRep(cgImage: image)
-        try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: arguments[index + 1]))
+        guard let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else {
+            throw NSError(domain: "probe", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "the frame at \(arguments[index]) s could not be drawn as a PNG"])
+        }
+        try png.write(to: URL(fileURLWithPath: arguments[index + 1]))
         index += 2
     }
     semaphore.signal()
