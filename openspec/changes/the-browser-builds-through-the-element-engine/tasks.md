@@ -5,7 +5,7 @@
 
 ## 2. The browser builds through the engine
 
-- [ ] 2.1 A frame of a built tree beside the lowering, with the C# frame's three questions and its refusal
+- [x] 2.1 A frame of a built tree beside the lowering, with the C# frame's three questions and its refusal
 - [ ] 2.2 The pass holds a page's owners, one per root slot, with the build callback (boundary and server state)
 - [ ] 2.3 `lowerVisualNode`, the component arm and the stack's component child lower from the frame
 - [ ] 2.4 The adaptive node's arms and the deferred layers ask the frame where the C# visitor does

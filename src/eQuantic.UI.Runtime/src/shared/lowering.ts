@@ -34,6 +34,7 @@ import {
   setFailureRenderer,
 } from './component-boundary';
 import { getActivePass } from './instance-store';
+import type { ElementFrame } from './element-frame';
 import { getPhotonTheme, photonComponentContext, setInFlow } from './photon-context';
 import { declareInView } from './in-view';
 import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
@@ -140,6 +141,12 @@ export interface LoweringContext {
   textPrimary: ColorTokenValue;
   /** Passed verbatim to `component.build(...)` when expanding shared components. */
   componentContext?: unknown;
+  /**
+   * The frame of the live element tree this lowering walks, when one built it: a component is then
+   * lowered from what its position built, and a layer is shown to the owner before it lowers (the
+   * C# visitor's `ElementFrame` field). Absent for a subtree the tree does not hold.
+   */
+  frame?: ElementFrame;
 }
 
 /**
