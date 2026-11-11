@@ -56,7 +56,9 @@ horizontally, and a trackpad SHALL scroll both axes by its movement. A finger dr
 scroll them with it on both axes, and a finger lifted while moving SHALL glide to rest within the
 extent. A mouse's or a trackpad pointer's drag over the cells SHALL be the cells', on a phone or a
 tablet as on a desktop, where the platform says which tool it is. The movement the viewport cannot take on an axis, at its end, SHALL pass to the scroller around
-it.
+it on that axis, from a wheel and from a finger alike: a finger's pan moves that scroller by its travel
+less what the grid took since the viewport took the pan. A drag surface inside a cell SHALL keep its
+own gesture under a finger.
 
 #### Scenario: The last row of Excel's grid in a browser
 
@@ -78,6 +80,22 @@ it.
 - **WHEN** the viewport is at its last row and the wheel keeps moving down over it inside a scrolling
   page
 - **THEN** the viewport stays at its last row and the page scrolls
+
+#### Scenario: A finger at the end of the grid
+
+- **WHEN** the viewport is at its last row inside a scrolling page and a finger pans the cells up by 100
+- **THEN** the viewport stays at its last row and the page scrolls by 100
+
+#### Scenario: A finger the grid follows part of the way
+
+- **WHEN** the viewport is two rows of 28 short of its last row inside a scrolling page and a finger pans
+  the cells up by 100
+- **THEN** the viewport moves to its last row and the page scrolls by the 44 that are left
+
+#### Scenario: A drag surface in a cell
+
+- **WHEN** a finger presses a drag surface inside a cell and moves
+- **THEN** the surface takes the drag, and neither the viewport nor the page scrolls
 
 ### Requirement: A scrollbar on each axis the grid overflows
 
@@ -192,17 +210,34 @@ and in each cell in the cell's own order, whatever order the bands are painted i
 
 ### Requirement: A viewport on an unbounded axis takes the visible extent of its scroller
 
-A viewport asked to fill an axis that has no bound SHALL take the visible extent of the nearest
-scroller around it on that axis, or the window's when no scroller is around it, and SHALL scroll its
-grid inside that extent. A development log SHALL say which viewport took which extent and why, once
-per viewport. A width of its own wider than the room its parent gives SHALL be held to that room, on
-every target; a height of its own SHALL stay its own.
+A viewport asked to fill an axis that has no bound SHALL take what the nearest scroller around it on
+that axis shows from where the viewport starts in that scroller's content, or what the window shows when
+no scroller is around it, and SHALL scroll its grid inside that extent. When what is left from where it
+starts is less than half of what the scroller shows, it SHALL take the whole extent the scroller shows
+instead. A development log SHALL say which viewport took which extent and why, once per viewport. A width
+of its own wider than the room its parent gives SHALL be held to that room, on every target; a height of
+its own SHALL stay its own.
 
 #### Scenario: A table in a scrolling page
 
-- **WHEN** a table that fills its height is placed in a page whose scroller shows 844 of its height
+- **WHEN** a table that fills its height is placed at the top of a page whose scroller shows 844 of its
+  height
 - **THEN** the viewport is 844 tall, its rows scroll inside it, and the development log names the
   viewport and the page's scroller
+
+#### Scenario: A table below the top of a scrolling page
+
+- **WHEN** a table that fills its height starts 36 below the top of a page whose scroller shows 844 of
+  its height
+- **THEN** the viewport is 808 tall, so its end and its horizontal scrollbar stand where the page's
+  visible part ends, on every frame, and the development log says it took what is left from where it
+  starts
+
+#### Scenario: A table far down a scrolling page
+
+- **WHEN** a table that fills its height starts 600 below the top of a page whose scroller shows 844 of
+  its height
+- **THEN** the viewport is 844 tall, the whole extent, since what is left is under half of it
 
 ### Requirement: A viewport may decline the focus
 
