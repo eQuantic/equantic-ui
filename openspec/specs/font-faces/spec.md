@@ -126,10 +126,14 @@ such family its text names that the theme's stylesheet does not. A page the brow
 such a family the first time the runtime sets or measures text in it, after asking for every file of it
 and only when every one is there, as `@font-face` rules with the family's name as a CSS string, unless the
 document already has a face of it, asking for each file at `/_equantic/fonts/<assembly>/<resource>`, which
-the server SHALL answer with a redirect to the file's content-addressed URL for a face an eQuantic build
-embedded in an assembly the app's deployment carries or a file the theme's stylesheet serves, and with 404
-for anything else. Every instance of the app SHALL serve the same files, whatever requests it has
-answered. A family SHALL be declared once on a page and once in a document. A family one of whose files
+the server SHALL answer with a redirect to the URL a page it renders names the file by, and with 404 for
+anything else. A page the server renders SHALL name a file the theme's stylesheet serves by its
+content-addressed URL, and any other face by its identity with the hash of its bytes as its version,
+`/_equantic/fonts/<assembly>/<resource>?v=<hash>`, which every instance of the app SHALL answer with the
+file's bytes, immutable, by loading the assembly the identity names as Photon loads it, whatever
+assemblies the host lists for the app's deployment. An identity SHALL name its assembly by its exact simple
+name, and SHALL NOT load one of the platform's own assemblies. Every instance of the app SHALL serve the
+same files, whatever requests it has answered. A family SHALL be declared once on a page and once in a document. A family one of whose files
 cannot be read, is not there or fails to load SHALL fall back whole, whoever declared it, as on Photon. A
 page that measured text in a family SHALL measure again when the runtime declares it and when it is taken
 back, whether the page named it, with files or without, or reached it through the theme's face, which
@@ -140,8 +144,8 @@ name, SHALL NOT be served on the web, and the server SHALL say so.
 
 - **WHEN** a page's `Text` names `new FontFamily("Probe Sans", file)`, over a font the app's build embedded,
   which the theme does not name
-- **THEN** the page's head declares the face with its content-addressed URL, and that URL answers the
-  file's bytes
+- **THEN** the page's head declares the face with its identity and the hash of its bytes, and that URL
+  answers the file's bytes, immutable
 
 #### Scenario: The same family named twice
 
@@ -164,13 +168,22 @@ name, SHALL NOT be served on the web, and the server SHALL say so.
 - **WHEN** a browser asks for `/_equantic/fonts/<assembly>/<resource>` for a face an eQuantic build
   embedded in an assembly the app's deployment carries, or for a file the theme's stylesheet serves
   wherever it is embedded
-- **THEN** the answer redirects to the file's content-addressed URL, and an assembly the deployment does
-  not carry, or a resource neither embedded as a face nor served by the theme, answers 404
+- **THEN** the answer redirects to the URL a page the server renders names the file by: the
+  content-addressed URL for a file the theme's stylesheet serves, and the identity with the hash of its
+  bytes for any other face. An assembly the deployment does not carry, a name that is not an assembly's
+  exact simple name, a platform assembly, or a resource neither embedded as a face nor served by the
+  theme, answers 404
+
+#### Scenario: A version a new build replaced
+
+- **WHEN** a browser asks for a face's identity with a version that is not the hash of the file's bytes
+- **THEN** the answer redirects to its identity with the hash of the bytes it has now, and is not kept
 
 #### Scenario: A library the app names only as text
 
 - **WHEN** a family names its assembly only as text, a library the app's deployment carries that no
-  assembly references in its metadata
+  assembly references in its metadata, in an app published as a single file, whose host lists none of the
+  assemblies its bundle carries
 - **THEN** its faces are served as any other's: the page declares them, and every instance answers their
   URLs and their identities
 

@@ -7,7 +7,9 @@ namespace eQuantic.UI.Web.Tests;
 /// <summary>
 /// What it takes to CALL a factory and the constructor it mirrors: plausible arguments for a
 /// mirrored prefix, the value an omitted argument really carries, and a value distinguishable from
-/// it. <see cref="UiFactoryConformanceTests"/> asks the questions; this answers "with what".
+/// it. <c>UiFactoryConformanceTests</c> asks the questions; this answers "with what". The native
+/// suite links this file too, to build every component for the semantics parity fixture (#339), so
+/// it names the tests of one project in words rather than a reference the other cannot resolve.
 ///
 /// <para>
 /// It lives in a type of its own because it is machinery rather than a rule — the tests beside it

@@ -11,19 +11,28 @@ sources, runs eqc again and tells the browsers watching it to reload, in Develop
 
 An app whose `UIOptions.HotReload` is unset SHALL rebuild its modules on a save of its C# and reload
 the browsers watching it when it runs in the Development environment, and SHALL do the same when it
-runs under `dotnet watch`, which sets `DOTNET_WATCH` to 1 on the app it runs, whatever its
-environment. An app that sets `HotReload` SHALL be rebuilt exactly as it says.
+runs under `dotnet watch`, which sets `DOTNET_WATCH` to 1 on the app it runs, in any environment but
+Production, which streams rebuilds only when the app sets `HotReload = true`. An app that sets
+`HotReload` SHALL be rebuilt exactly as it says.
 
 #### Scenario: dotnet watch without a launch profile
 
-- **WHEN** the dashboard sample runs under `dotnet watch --no-launch-profile`, so in Production, and
+- **WHEN** the dashboard sample runs under `dotnet watch --no-launch-profile`, so in Production, with
+  `HotReload` unset
+- **THEN** the server maps no relay and serves its modules `immutable`; with `HotReload = true` it streams
+  rebuilds as in Development
+
+#### Scenario: dotnet watch in a development environment
+
+- **WHEN** the dashboard sample runs under `dotnet watch` with `ASPNETCORE_ENVIRONMENT=Development`, and
   the text of a component's `.cs` is edited and saved
 - **THEN** eqc runs again, the page reloads, and it shows the new text
 
 #### Scenario: The decision
 
-- **WHEN** `HotReload` is unset, the environment is Production and `DOTNET_WATCH` is `1`
-- **THEN** the app rebuilds on a save; with `DOTNET_WATCH` absent it does not; with `HotReload = false`
+- **WHEN** `HotReload` is unset, the environment is Staging and `DOTNET_WATCH` is `1`
+- **THEN** the app rebuilds on a save; in Production with `DOTNET_WATCH` at `1` it does not; with
+  `DOTNET_WATCH` absent it does not; with `HotReload = false`
   in Development and `DOTNET_WATCH` at `1` it does not; with `HotReload = true` in Production it does
 
 ### Requirement: A page listens for rebuilds exactly when its server streams them
@@ -381,3 +390,14 @@ its limit SHALL kill it, and the next save SHALL start it again.
 - **WHEN** a save does not compile, and the next one does
 - **THEN** the first sends its errors to the development overlay, and the second reloads the page with
   the fix, with no restart of the app or of eqc
+
+### Requirement: Asking MSBuild how to start eqc never holds the loop
+
+The MSBuild the server asks how to start eqc SHALL leave no worker node or server behind holding its
+streams, and what it wrote SHALL be read within what is left of the time the server gives it, so a save
+that asks answers instead of waiting on a stream nothing will close.
+
+#### Scenario: An MSBuild that exits and leaves its output held
+
+- **WHEN** the MSBuild the server asks exits, and something it started goes on holding its output
+- **THEN** the asking ends within its limit, and the save answers that eqc could not be started
