@@ -8,7 +8,7 @@
 
 ## 2. The proof
 
-- [ ] 2.1 The native engine suite, and CI's samples job, which builds the desktop and mobile samples on macOS
+- [x] 2.1 The native engine (3386) and web (1408) suites, and the README's pictures of the two samples taken again on the desktop, an iOS simulator and an Android emulator. Verify: the desktop pictures are pixel-identical, the phones' differ by what main changed since they were taken (text weights, the emulator's status bar) and by a line #1442 follows
 
 ## 3. Documentation
 
