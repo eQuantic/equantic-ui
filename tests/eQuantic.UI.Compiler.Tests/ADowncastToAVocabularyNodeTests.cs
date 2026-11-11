@@ -56,6 +56,32 @@ public class ADowncastToAVocabularyNodeTests
         ts.Should().NotContain("as FlexNode", "FlexNode is the server's own base, with no twin to name");
     }
 
+    [Fact]
+    public void ADowncastToATypeInsideATypeOfTheRuntimeTheServerKeeps_WritesTheValueAlone()
+    {
+        // A type of the runtime's namespace declared inside a [ServerOnly] owner has no twin either, whether or
+        // not it repeats the attribute (Antigravity's first review of #1399).
+        var ts = Compile("""
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Primitives
+            {
+                [ServerOnly]
+                public static class Vault
+                {
+                    public sealed class Key { public int Id { get; init; } }
+                }
+            }
+
+            public static class Keys
+            {
+                public static int IdOf(object key) => ((Vault.Key)key).Id;
+            }
+            """, "Keys").TypeScript;
+
+        ts.Should().NotContain("as Vault", "the owner never crosses, so its nested type has no twin to name");
+    }
+
     private static CompilationResult Compile(string source, string component)
     {
         var path = component + ".cs";

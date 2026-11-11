@@ -154,10 +154,17 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         return JsExpr.Template("({0} as " + target.IntroduceTwin(context) + ")", value);
     }
 
-    /// <summary>Whether a type of the runtime is the server's own: marked <c>[ServerOnly]</c> itself, by the
-    /// attribute or by its name where the attribute binds to an error type.</summary>
-    private static bool StaysOnTheServer(INamedTypeSymbol type) =>
-        type.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly");
+    /// <summary>Whether a type of the runtime is the server's own: marked <c>[ServerOnly]</c> itself, or
+    /// declared inside a type that is, which the runtime carries no twin of either, by the attribute or by its
+    /// name where the attribute binds to an error type. Its base is no part of the question: the runtime's
+    /// twin of a node stands without the server's base.</summary>
+    private static bool StaysOnTheServer(INamedTypeSymbol type)
+    {
+        for (INamedTypeSymbol? current = type; current is not null; current = current.ContainingType)
+            if (current.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly"))
+                return true;
+        return false;
+    }
 
     /// <summary>The integer part of a value only spelled, never bound — Math.trunc as text.</summary>
     private static JsExpr Truncate(string text) => JsExpr.Callish($"Math.trunc({text})");

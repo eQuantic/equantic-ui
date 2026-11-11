@@ -1,3 +1,4 @@
+import { $eq, Pressable, Row, VisualNode } from "@equantic/runtime";
 import { EmittedCard } from "./EmittedCard";
 import { EmittedFramed } from "./EmittedFramed";
 import { EmittedRow } from "./EmittedRow";
@@ -19,6 +20,14 @@ export class EmittedShapes {
 
     static framed(shape: EmittedShape) {
         return (shape as EmittedFramed).child;
+    }
+
+    static pressed(node: VisualNode) {
+        return (node as Pressable).child;
+    }
+
+    static inARow(node: VisualNode) {
+        return $eq.collections.count((node as Row).children);
     }
 }
 
