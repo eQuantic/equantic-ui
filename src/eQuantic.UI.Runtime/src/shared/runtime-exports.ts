@@ -99,7 +99,19 @@ export {
 export { ComponentContext } from './photon-context';
 export { DataPalette, DivergingScale, StatusScale } from './data-palette';
 export { SheetTheme } from './sheet-theme';
-export { SizeLadder, DensityLadder, ControlsTheme, ButtonTheme, AppThemeExtensions } from './theme-slots';
+export {
+  SizeLadder,
+  DensityLadder,
+  ControlsTheme,
+  ButtonTheme,
+  AppThemeExtensions,
+  DensityValue,
+  IconButtonTheme,
+  InputTheme,
+  SelectionControlsTheme,
+  SegmentedTheme,
+  ChipTheme,
+} from './theme-slots';
 // Primitives types route to @equantic/runtime implicitly, so a page reading its route needs this
 // name to resolve here or it dies at hydration on an unresolvable import.
 export { RouteValues } from './route-values';

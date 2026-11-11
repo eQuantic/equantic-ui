@@ -34,26 +34,32 @@ export class Select extends StatefulComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
+        let slot = theme.input;
+        let height = ControlMetrics.height(context, 'medium', (slot?.controls ?? null));
+        let paddingX = slot?.pickerPaddingX ?? 12;
+        let gap = slot?.pickerGap ?? 8;
+        let radius = slot?.radius ?? theme.shape('medium');
+        let borderWidth = slot?.borderWidth ?? 1;
         let hasValue = this.selectedIndex >= 0 && this.selectedIndex < $eq.collections.count(this.options);
-        let fieldRow = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
+        let fieldRow = new Row(gap, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
         fieldRow.add(new Text(hasValue ? $eq.collections.item(this.options, this.selectedIndex) : this.placeholder ?? 'Select…', 'bodyM', hasValue ? theme.textPrimary : theme.textMuted, 1));
         fieldRow.add(new Flexible(new Spacer()));
         fieldRow.add(new Icon(IconGlyph.fromIcons('chevronDown'), 16, theme.textSecondary));
-        let field = new Box(new BoxStyle({ height: ControlMetrics.height(context, 'medium'), width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), fieldRow);
+        let field = new Box(new BoxStyle({ height: height, width: SizeValue.fill, padding: EdgeInsets.symmetric(paddingX, 0), background: slot?.fill ?? theme.surface, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: slot?.borderColor ?? theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), fieldRow);
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         for (let i = 0; i < $eq.collections.count(this.options); i++) {
             let index = i;
             let selected = i === this.selectedIndex;
-            let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
+            let row = new Row(gap, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
             row.add(new Text($eq.collections.item(this.options, i), 'bodyM', selected ? theme.colors('primary').onSubtle : theme.textPrimary, 1));
             if (selected) {
                 row.add(new Flexible(new Spacer()));
                 row.add(new Icon(IconGlyph.fromIcons('check'), 16, theme.colors('primary').onSubtle));
             }
             let highlighted = this._open && i === this._highlight;
-            list.add(new Pressable(new Box(new BoxStyle({ height: ControlMetrics.height(context, 'medium'), padding: EdgeInsets.symmetric(12, 0), width: SizeValue.fill, background: selected ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.choose(index), { role: 'option', selected: selected }));
+            list.add(new Pressable(new Box(new BoxStyle({ height: height, padding: EdgeInsets.symmetric(paddingX, 0), width: SizeValue.fill, background: selected ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.choose(index), { role: 'option', selected: selected }));
         }
-        let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
+        let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: slot?.panelBorderColor ?? theme.border, elevation: slot?.panelElevation ?? 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
         let trigger = new Pressable(field, this.disabled ? null : this.toggle.bind(this), { disabled: this.disabled, expanded: this._open && !this.disabled });
         let select: VisualNode = new Anchored(trigger, panel, { open: this._open && !this.disabled, onDismiss: () => this.setState(() => this._open = false), matchAnchorWidth: true, panelRole: 'listbox', activeIndex: this._open ? this._highlight : -1 });
         let live = this._open && !this.disabled && $eq.collections.count(this.options) > 0;

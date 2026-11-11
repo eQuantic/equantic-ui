@@ -41,26 +41,32 @@ export class TimePicker extends StatefulComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
+        let input = theme.input;
+        let height = ControlMetrics.height(context, 'medium', (input?.controls ?? null));
+        let paddingX = input?.pickerPaddingX ?? 12;
+        let gap = input?.pickerGap ?? 8;
+        let radius = input?.radius ?? theme.shape('medium');
+        let borderWidth = input?.borderWidth ?? 1;
         let open = this._open && !this.disabled;
         let times = open ? this.slots() : [];
         let highlight = $eq.collections.count(times) > 0 ? Math.min(this._highlight, $eq.collections.count(times) - 1) : -1;
-        let field = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
-        field.add(new Icon(IconGlyph.fromIcons('clock'), 20, theme.textMuted));
+        let field = new Row(gap, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
+        field.add(new Icon(IconGlyph.fromIcons('clock'), input?.iconSize ?? 20, theme.textMuted));
         let value: any; 
         field.add(new Text((value = this.selected) != null ? TimePicker.format(value) : SdkStrings.chooseTime, 'bodyM', this.selected == null ? theme.textMuted : theme.textPrimary, 1));
         field.add(new Flexible(new Spacer()));
         field.add(new Icon(IconGlyph.fromIcons('chevronDown'), 16, theme.textSecondary));
-        let box = new Box(new BoxStyle({ height: ControlMetrics.height(context, 'medium'), width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), field);
+        let box = new Box(new BoxStyle({ height: height, width: SizeValue.fill, padding: EdgeInsets.symmetric(paddingX, 0), background: input?.fill ?? theme.surface, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: input?.borderColor ?? theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), field);
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         for (let i = 0; i < $eq.collections.count(times); i++) {
             let slot = $eq.collections.item(times, i);
             let picked = $eq.equals(this.selected, slot);
             let highlighted = i === highlight;
-            let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
+            let row = new Row(gap, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
             row.add(new Text(TimePicker.format(slot), 'bodyM', picked ? theme.colors('primary').onSubtle : theme.textPrimary, 1));
-            list.add(new Pressable(new Box(new BoxStyle({ height: ControlMetrics.height(context, 'medium'), padding: EdgeInsets.symmetric(12, 0), width: SizeValue.fill, background: picked ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: picked ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.pick(slot), { role: 'option', selected: picked }));
+            list.add(new Pressable(new Box(new BoxStyle({ height: height, padding: EdgeInsets.symmetric(paddingX, 0), width: SizeValue.fill, background: picked ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: picked ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.pick(slot), { role: 'option', selected: picked }));
         }
-        let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), height: SizeValue.fixed(TimePicker.panelHeight), clip: true }), new ScrollView(list));
+        let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: input?.panelBorderColor ?? theme.border, elevation: input?.panelElevation ?? 2, padding: EdgeInsets.symmetric(0, 4), height: SizeValue.fixed(TimePicker.panelHeight), clip: true }), new ScrollView(list));
         let picker: VisualNode = new Anchored(new Pressable(box, this.disabled ? null : this.toggle.bind(this), { disabled: this.disabled, label: this.label.length > 0 ? this.label : SdkStrings.chooseTime, expanded: this._open && !this.disabled }), panel, { open: open, onDismiss: this.close.bind(this), matchAnchorWidth: true, panelRole: 'listbox', activeIndex: open ? highlight : -1 });
         let moving = open && highlight >= 0;
         picker = new Shortcut(picker, KeyChord.escape, this.close.bind(this), { enabled: open });

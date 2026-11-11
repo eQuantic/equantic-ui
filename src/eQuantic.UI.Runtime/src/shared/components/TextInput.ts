@@ -76,16 +76,20 @@ export class TextInput extends StatefulComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let height = ControlMetrics.height(context, this.size);
+        let slot = theme.input;
+        let height = ControlMetrics.height(context, this.size, (slot?.controls ?? null));
         let hasError = !!this.error;
-        let borderColor = hasError ? theme.colors('destructive').base : this._focused ? theme.colors('primary').base : theme.borderStrong;
-        let borderWidth = this._focused ? 2 : 1;
-        let paddingX = this._focused ? 13 : 14;
+        let borderColor = hasError ? theme.colors('destructive').base : this._focused ? theme.colors('primary').base : slot?.borderColor ?? theme.borderStrong;
+        let restBorder = slot?.borderWidth ?? 1;
+        let focusBorder = slot?.focusBorderWidth ?? 2;
+        let borderWidth = this._focused ? focusBorder : restBorder;
+        let restPadding = slot?.paddingX ?? 14;
+        let paddingX = this._focused ? Math.fround(restPadding - Math.fround(focusBorder - restBorder)) : restPadding;
         let caption = hasError ? this.error! : this.helper ?? '';
-        let row = new Row(10, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
+        let row = new Row(slot?.gap ?? 10, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
         let leading: any; 
         if ((leading = this.leading) != null) {
-            row.add(new Icon(IconGlyph.fromIcons(leading), 20, theme.textMuted));
+            row.add(new Icon(IconGlyph.fromIcons(leading), slot?.iconSize ?? 20, theme.textMuted));
         }
         row.add(new Flexible(new TextEntry(this.value, this.onChanged == null ? null : (value: string) => {
             this.value = value;
@@ -98,14 +102,14 @@ export class TextInput extends StatefulComponent {
         if ((trailing = this.trailing) != null) {
             row.add(trailing);
         }
-        let container = new Box(new BoxStyle({ width: SizeValue.fill, height: height, background: this.disabled ? theme.surfaceSubtle : theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: borderWidth, borderColor: borderColor, padding: EdgeInsets.symmetric(paddingX, 0) }), row);
-        let top = new Column(6, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        if (this.label.length > 0) top.add(new Text(this.label, 'label', theme.textSecondary));
+        let container = new Box(new BoxStyle({ width: SizeValue.fill, height: height, background: this.disabled ? slot?.disabledFill ?? theme.surfaceSubtle : slot?.fill ?? theme.surface, cornerRadius: new CornerRadii(slot?.radius ?? theme.shape('medium')), borderWidth: borderWidth, borderColor: borderColor, padding: EdgeInsets.symmetric(paddingX, 0) }), row);
+        let top = new Column(slot?.labelGap ?? 6, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
+        if (this.label.length > 0) top.add(new Text(this.label, slot?.labelRole ?? 'label', theme.textSecondary));
         top.add(container);
         let captionColor = hasError ? theme.colors('destructive').base : theme.textMuted;
-        let column = new Column(5, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
+        let column = new Column(slot?.captionGap ?? 5, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         column.add(top);
-        column.add(new Text(caption, 'caption', captionColor, 1));
+        column.add(new Text(caption, slot?.captionRole ?? 'caption', captionColor, 1));
         return column;
     }
 

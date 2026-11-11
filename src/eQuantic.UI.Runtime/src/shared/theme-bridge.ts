@@ -66,6 +66,12 @@ export interface ThemeData {
   controls?: SlotData;
   /** The Button's slot, by the same rule. */
   button?: SlotData;
+  /** The form controls' slots (E6b), by the same rule. */
+  iconButton?: SlotData;
+  input?: SlotData;
+  selectionControls?: SlotData;
+  segmented?: SlotData;
+  chip?: SlotData;
 }
 
 const color = (t: RgbaTuple): ColorValue => ({ r: t[0], g: t[1], b: t[2], a: t[3] });
