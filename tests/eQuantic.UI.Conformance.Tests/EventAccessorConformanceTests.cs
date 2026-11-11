@@ -48,6 +48,8 @@ public class EventAccessorConformanceTests
                 remove { _handlers.Remove(value); }
             }
             public void Post(int n) { foreach (var handler in _handlers) handler(n); }
+            // Subscribed by its bare name, inside its own type.
+            public void Listen(Action<int> handler) => Posted += handler;
         }
 
         public static class Hub
@@ -56,6 +58,7 @@ public class EventAccessorConformanceTests
             public static int Subscribed;
             public static event Action<string> Said { add { Subscribed++; _said += value; } remove => _said -= value; }
             public static void Say(string text) => _said?.Invoke(text);
+            public static void Listen(Action<string> handler) => Said += handler;
         }
         """;
 
@@ -69,6 +72,10 @@ public class EventAccessorConformanceTests
             "var count = 0; IRinger ringer = new Chime(); ringer.Rung += () => count += 7; ringer.Ring(); return count;"),
         ("a class event's own accessors",
             "var sum = 0; var board = new Board(); Action<int> add = n => sum += n; board.Posted += add; board.Posted += n => sum += n * 10; board.Post(2); board.Posted -= add; board.Post(3); return sum + \"|\" + board.Added;"),
+        ("an event subscribed by its bare name inside its own type",
+            "var sum = 0; var board = new Board(); board.Listen(n => sum += n); board.Post(4); return sum + \"|\" + board.Added;"),
+        ("a static event subscribed by its bare name inside its own type",
+            "var heard = \"\"; Hub.Listen(text => heard += text + \"!\"); Hub.Say(\"c\"); return heard;"),
         ("a static event's accessors",
             "var heard = \"\"; Hub.Said += text => heard += text; Hub.Say(\"a\"); Hub.Say(\"b\"); return heard + \"|\" + Hub.Subscribed;"),
     ];

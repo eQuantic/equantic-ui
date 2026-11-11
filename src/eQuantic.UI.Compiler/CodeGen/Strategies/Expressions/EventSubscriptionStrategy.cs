@@ -50,9 +50,8 @@ public class EventSubscriptionStrategy : IConversionStrategy
         // its explicit implementation's accessors never read.
         if (context.SemanticHelper.GetSymbol(assignment.Left) is IEventSymbol symbol
             && EventAccessors.Of(symbol) is var kind and not EventAccessors.Kind.FieldLike
-            && symbol.MemberTwinName() is var name && target.EndsWith("." + name, StringComparison.Ordinal))
+            && symbol.MemberTwinName() is var name && Receiver(assignment.Left, symbol, name, target, context) is { } receiver)
         {
-            var receiver = target[..^(name.Length + 1)];
             return kind == EventAccessors.Kind.Declared
                 ? $"{receiver}.{EventAccessors.Name(adds ? "add" : "remove", name)}({handler})"
                 : $"{(adds ? Eq.AddToEvent : Eq.RemoveFromEvent)}({receiver}, '{name}', {handler})";
@@ -61,6 +60,20 @@ public class EventSubscriptionStrategy : IConversionStrategy
         var helper = adds ? Eq.CombineDelegate : Eq.RemoveDelegate;
         return $"{target} = {helper}({target}, {handler})";
     }
+
+    /// <summary>
+    /// What the event is read off, from the syntax: the receiver a member access names, <c>this</c> for an
+    /// instance event named bare inside its type, and for a static one named bare the type its read was
+    /// written through (<paramref name="target"/> less the event's name), or null where none of these holds.
+    /// </summary>
+    private static string? Receiver(ExpressionSyntax left, IEventSymbol symbol, string name, string target,
+        ConversionContext context) => left switch
+    {
+        MemberAccessExpressionSyntax access => context.Converter.ConvertExpression(access.Expression),
+        IdentifierNameSyntax when !symbol.IsStatic => "this",
+        IdentifierNameSyntax when target.EndsWith("." + name, StringComparison.Ordinal) => target[..^(name.Length + 1)],
+        _ => null,
+    };
 
     /// <summary>Above the generic assignment path, which would emit the `+=` verbatim.</summary>
     public int Priority => 14;
