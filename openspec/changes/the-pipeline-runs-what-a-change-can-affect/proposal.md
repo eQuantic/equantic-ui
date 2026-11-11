@@ -27,7 +27,7 @@ main are where the queue is lost, and documents are the smaller, cheaper case.
   and nothing else: no build, no conformance, no runtime tests, no Mac jobs, no samples, no extension.
   A change to the extension alone builds the extension and runs no .NET test.
 - The 18 required checks keep their names: the matrix jobs always run and skip their steps (on
-  Ubuntu when their own runner would be a Mac or Windows with nothing to do), and the single jobs are
+  Ubuntu when their own runner would be Windows with nothing to do), and the single jobs are
   skipped by their `if:`, which GitHub reports as success.
 
 Nothing changes for a developer using the SDK.
