@@ -1,4 +1,4 @@
-import { $eq, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconGlyph, IconsValue, MainAlignValue, NavItem, Pressable, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconGlyph, IconsValue, MainAlignValue, NavItem, Pressable, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class NavigationRail extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.NavigationRail';
@@ -43,11 +43,11 @@ export class NavigationRail extends StatelessComponent {
             let tint = isActive ? primary.onSubtle : theme.textMuted;
             let icon = new Icon(IconGlyph.fromIcons(glyph), 20, tint);
             let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;
-            let pill = new Box(new BoxStyle({ width: 52, height: 30, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')) }), VisualNodeExtensions.centered(iconNode));
+            let pill = new Box(new BoxStyle({ width: 52, height: 30, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), VisualNodeExtensions.centered(iconNode));
             let column = new Column(2, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: 56, main: 'center', cross: 'center' });
             column.add(pill);
             column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, 0, { styleOverride: isActive ? new TypeStyle(12, 16, 'bold', 0, Math.fround(1.3)) : null }));
-            destinations.add(new Pressable(column, this.onSelect == null ? null : () => this.onSelect!(index), { label: item.label, pressedBackground: theme.surfaceSubtle, role: 'destination', selected: isActive }));
+            destinations.add(new Pressable(column, this.onSelect == null ? null : () => this.onSelect!(index), { label: item.label, role: 'destination', selected: isActive }));
         }
         let rail = new Column(8, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: this.alignment });
         let leading: any; 

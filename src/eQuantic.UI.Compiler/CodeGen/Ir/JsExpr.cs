@@ -78,8 +78,8 @@ public abstract record JsExpr
     /// <paramref name="depth"/>: where the lambda stands in the C#, which the writer of a string seam
     /// that places it does not know. Its statements keep their origins, so each one maps to its own
     /// line wherever a writer places the arrow (#384).</summary>
-    public static JsExpr ArrowBlock(string parameters, JsStatement block, JsLayout layout, int depth, bool isAsync = false) =>
-        new JsArrowBlock(parameters, block, isAsync, layout, depth);
+    public static JsExpr ArrowBlock(string parameters, JsStatement block, JsLayout layout, int depth, bool isAsync = false, string returns = "") =>
+        new JsArrowBlock(parameters, block, isAsync, layout, depth, returns);
 
     /// <summary>An array literal of <paramref name="elements"/>, a <see cref="JsSpread"/> among them
     /// spreading a sequence in.</summary>

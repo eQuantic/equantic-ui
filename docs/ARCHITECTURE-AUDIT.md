@@ -11,7 +11,7 @@ rot. What holds each claim here:
 | Claim | Instrument |
 |---|---|
 | every node reaches every dispatch, or is named there as an absence | the COMPILER — six visitors over `IVisualNodeVisitor`, plus `assertNever` on a generated union in the browser. `VocabularyCoverageTests` held this until the last dispatch crossed and is deleted; the plan keeps its record |
-| the layering — which core assembly may reference which, exactly | `AssemblyLayeringTests` — thirteen assemblies |
+| the layering — which core assembly may reference which, exactly | `AssemblyLayeringTests` — eighteen assemblies |
 | the handoff speaks the vocabulary's current names | `HandoffVocabularyTests` |
 | the handoff's numbers are the SDK's numbers | `HandoffTokenPinTests` |
 | every Flutter row is findable, and every gap still a gap | `FlutterParityPinTests` — 64 rows |
@@ -20,7 +20,7 @@ rot. What holds each claim here:
 | the wiki speaks the tree's current names | `WikiVocabularyTests` — both languages, allowances checked both ways |
 | every document at the top of `docs/` has a row in its index, and every local link there resolves | `DocsIndexTests` — the folder held to its README; nine dangling rows the day it was written (#216) |
 | a custom `[Fact]` in the tree is applied somewhere | `AFenceNobodyAppliesTests` — scans the source across `tests/`, since after the deletion no custom `Fact` remained to reflect over (#154) |
-| the suite runs where the code runs | `ci.yml` — `build-packages` on macOS and the `test` job on Ubuntu and Windows, every project under `tests/` (#139) |
+| the suite runs where the code runs | `ci.yml` — the `test` job on Ubuntu and Windows, every project under `tests/` (#139), and `test-macos` on macOS, whole, every project that references the Apple track or holds a test asking for macOS, derived by `scripts/macos-tests.sh` (#1311) |
 
 **Until 2026-09-14 the suite ran on one operating system**, and the record stays because the cost
 was measured. `ci.yml` had exactly one `dotnet test`, in `build-packages`, on `macos-latest`; the
@@ -35,7 +35,9 @@ defects in the design-origin tests, a POSIX path literal and the same test compa
 string literal's escaping to a raw path; and `tests/eQuantic.UI.Heroicons.Tests` and
 `tests/eQuantic.UI.Lucide.Tests`, which were not in `eQuantic.UI.sln`, so a developer's `dotnet test` at
 the root ran eight projects while CI's `find` over `tests/` ran ten — the two instruments agreed by
-accident. Both are in the solution now.
+accident. Both are in the solution now. Since #1311 macOS no longer runs the whole suite a third
+time inside `build-packages`, 13 minutes 38 seconds on the run's longest path: it runs, beside it, the
+projects that hold what the other two runners skip, and a project that runs no test fails.
 
 **Then, for three hours on the same day, the suite ran nowhere — and nothing said so.** #139 put
 three lines of prose inside `publish-github`'s `if: |` condition; a literal block scalar has no
@@ -130,6 +132,8 @@ move, its address does not.
 | `Native.Framework` — layout | 2,803 | 11 | 25 | Primitives, Engine |
 | `Native.Components` — the Photon realizer, semantics, the host | 4,707 | 12 | 27 | Primitives, Engine, Framework |
 | `Native.Hosting` — the native application builder | 998 | 12 | 14 | Primitives, Native.Components |
+| `Testing` — the component tester, on the web (added 2026-11-09, #1245) | 739 | 4 | 2 | Web |
+| `Native.Testing` — its native half (added 2026-11-09, #1246) | 321 | 3 | 2 | Native.Components, Native.Engine.Reference |
 | `Compiler` — eqc's library | 24,619 | 198 | 256 | Codegen |
 | the TypeScript runtime | 35,540 (+13,658 of spec) | | | |
 | the five shells | Windows 4,539 · Apple 2,365 · Android 1,832 · macOS 1,691 · iOS 836 | | | |
@@ -172,6 +176,13 @@ else. The vehicle that delivers `Components` to eqc was never this edge: it is t
 `PackageReference` with `GeneratePathProperty` in `Sdk.props`, which a transitive dependency cannot
 produce. `AssemblyLayeringTests` now holds the table above as exact sets, so the next edge added in
 passing fails a test and owes a sentence here.
+
+The two `Testing` rows are one package per target, each on the host it drives, and they are two
+packages for a reason the table can hold: a package's dependencies are every consumer's. Had the
+Photon half lived in `Testing`, the test project of an app that ships only to the web would restore
+the native engine to test a page, and meet EQX0001 for a track it never chose. So `Testing` sees
+the web realizer and nothing of the native track, `Native.Testing` drives a `PhotonHost` and paints
+through the reference backend, and `AssemblyLayeringTests` holds both to that.
 
 One coupling worth a line rather than a row: `Native.Build`, the icon tool, references BOTH the Apple
 and the Windows shell — for CoreText and DirectWrite, so a C# icon's lettering is real glyphs on

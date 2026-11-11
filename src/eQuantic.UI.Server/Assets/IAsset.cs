@@ -18,9 +18,10 @@ public interface IAsset
     string? Id { get; }
 
     /// <summary>
-    /// Renders the asset as an HTML tag (e.g., script or link tag).
+    /// Renders the asset as an HTML tag (e.g., script or link tag). A script or a style carries
+    /// <paramref name="nonce"/>, the request's, so a Content-Security-Policy can admit it (#1266).
     /// </summary>
-    string Render();
+    string Render(string? nonce);
 }
 
 /// <summary>
@@ -29,13 +30,13 @@ public interface IAsset
 public record ScriptAsset(string Src, bool Defer = true, string? Id = null) : IAsset
 {
     public string Key => $"script:{Src}";
-    public string Render()
+    public string Render(string? nonce)
     {
         var src = HttpUtility.HtmlAttributeEncode(Src);
         var idAttr = !string.IsNullOrWhiteSpace(Id) ? $" id=\"{HttpUtility.HtmlAttributeEncode(Id)}\"" : "";
         return Defer
-            ? $"<script src=\"{src}\" defer{idAttr}></script>"
-            : $"<script src=\"{src}\"{idAttr}></script>";
+            ? $"<script src=\"{src}\" defer{idAttr}{ShellNonce.Attribute(nonce)}></script>"
+            : $"<script src=\"{src}\"{idAttr}{ShellNonce.Attribute(nonce)}></script>";
     }
 }
 
@@ -45,10 +46,10 @@ public record ScriptAsset(string Src, bool Defer = true, string? Id = null) : IA
 public record InlineScriptAsset(string Content, string? Id = null) : IAsset
 {
     public string Key => $"inline-script:{Content.GetHashCode()}";
-    public string Render()
+    public string Render(string? nonce)
     {
         var idAttr = !string.IsNullOrWhiteSpace(Id) ? $" id=\"{HttpUtility.HtmlAttributeEncode(Id)}\"" : "";
-        return $"<script{idAttr}>{Content}</script>";
+        return $"<script{idAttr}{ShellNonce.Attribute(nonce)}>{Content}</script>";
     }
 }
 
@@ -58,11 +59,11 @@ public record InlineScriptAsset(string Content, string? Id = null) : IAsset
 public record StylesheetAsset(string Href, string? Id = null) : IAsset
 {
     public string Key => $"stylesheet:{Href}";
-    public string Render()
+    public string Render(string? nonce)
     {
         var href = HttpUtility.HtmlAttributeEncode(Href);
         var idAttr = !string.IsNullOrWhiteSpace(Id) ? $" id=\"{HttpUtility.HtmlAttributeEncode(Id)}\"" : "";
-        return $"<link rel=\"stylesheet\" href=\"{href}\"{idAttr}>";
+        return $"<link rel=\"stylesheet\" href=\"{href}\"{idAttr}{ShellNonce.Attribute(nonce)}>";
     }
 }
 
@@ -72,9 +73,10 @@ public record StylesheetAsset(string Href, string? Id = null) : IAsset
 public record InlineStyleAsset(string Content, string? Id = null) : IAsset
 {
     public string Key => $"inline-style:{Content.GetHashCode()}";
-    public string Render()
+    public string Render(string? nonce)
     {
         var idAttr = !string.IsNullOrWhiteSpace(Id) ? $" id=\"{HttpUtility.HtmlAttributeEncode(Id)}\"" : "";
-        return $"<style{idAttr}>{Content}</style>";
+        // What the sheet holds can never end the element (#1295).
+        return $"<style{idAttr}{ShellNonce.Attribute(nonce)}>{StyleElementText.Of(Content)}</style>";
     }
 }

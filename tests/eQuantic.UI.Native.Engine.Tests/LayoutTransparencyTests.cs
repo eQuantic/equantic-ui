@@ -114,6 +114,29 @@ public class LayoutTransparencyTests
     }
 
     /// <summary>
+    /// A transparent wrapper passes its child's FILL through, to the parent that has to know: a
+    /// Stack placing a positioned child that fills spans it between its anchors. The reader that
+    /// answers it kept a list of wrappers by hand, and the list had left a SafeArea out, the one
+    /// wrapper a page and a rail usually sit in.
+    /// </summary>
+    [Fact]
+    public void ATransparentWrapper_PassesItsChildsFill_ToAPositionedSpan()
+    {
+        var hugged = new List<string>();
+        foreach (var wrapper in Transparent(new Box(new BoxStyle { Width = 30, Height = SizeValue.Fill })))
+        {
+            // Anchored at the top only, 30dp down: a fill spans to the opposite edge, 60dp, where a
+            // child the stack does not see filling takes the whole room it was offered, 90.
+            var stack = new Stack { Width = SizeValue.Fixed(200), Height = SizeValue.Fixed(90) };
+            stack.Add(new Positioned(wrapper, top: 30, end: 0));
+            var laid = LayoutEngine.Layout(stack, 400, 400, Ctx);
+            if (laid.Children[0].Bounds.Height != 60) hugged.Add($"{wrapper.GetType().Name} ({laid.Children[0].Bounds.Height})");
+        }
+
+        hugged.Should().BeEmpty("every wrapper the vocabulary calls transparent takes its child's size, a fill included");
+    }
+
+    /// <summary>
     /// A transparent wrapper does NOT stretch a child that states its own size — in a column that
     /// fills, under either cross alignment.
     /// <para>

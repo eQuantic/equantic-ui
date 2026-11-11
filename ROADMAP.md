@@ -50,8 +50,8 @@ What exists, held by suites that fail rather than warn:
 
 What is not there yet, each with its issue: shared state beyond a component (#289), routes as types
 for programmatic navigation (#292), a component test harness an app can use and the variant matrix
-it carries (#294), the security review and a CSP the SDK writes (#306), and edit-to-view measured
-under a second (#900). Three decisions could change a shape an app writes, and Edgar took them on
+it carries (#294), the security review and a CSP the SDK writes (#306), and edit-to-view under a
+second on the web, where CI measures 23s on every pull request (#900). Three decisions could change a shape an app writes, and Edgar took them on
 2026-10-14, each 1.0 work: the Element is built before the release (#169), the spreadsheet's engine
 leaves Primitives as the code editor's did (#185, done: it is `eQuantic.UI.Sheet`), and
 per-component theme slots ship in it (#186). The design of the first and the last is
@@ -71,7 +71,7 @@ differently, and the new ones a week falling two weeks in a row.
 | Forms & validation | **Shipped** — `FormController`/`FormField`/`Rules` in Primitives (write-once, quiet-until-touched, cross-field, conditional via `Rules.When`/`relevantWhen`), `FormInput`/`FormSubmit` surface, async submit through Server Actions with `ApplyServerErrors`, and the `[FormModel]` DataAnnotations bridge (build-time, no second engine) |
 | State management | Component-local `SetState`, and a page's state survives a hot reload. Shared state (signals, context): #289 |
 | Server | SSR with hydration, Server Actions behind `[Authorize]`, server data before the first paint (`IServerPrefetch`), and server events: typed topics over one Server-Sent Events stream per page (#291) |
-| Hot reload | **Shipped on the web and on the desktop** — on the web a rebuild captures the page's fields and reloads, and the new code renders client-side with those fields handed back (module hot-swap without the reload is the v2 fence); a Photon desktop app applies an edit in process under `dotnet watch`. On a simulator or an emulator it is ahead: redeploy-on-save first, in-process reload across the device boundary later (Track W's W7). Edit-to-view under a second is not measured yet (#900) |
+| Hot reload | **Shipped on the web and on the desktop** — on the web a rebuild captures the page's fields and reloads, and the new code renders client-side with those fields handed back (module hot-swap without the reload is the v2 fence); a Photon desktop app applies an edit in process under `dotnet watch`. On a simulator or an emulator it is ahead: redeploy-on-save first, in-process reload across the device boundary later (Track W's W7). Edit-to-view is measured on every pull request (#900): a warm median of 0.3s on the desktop, inside the bar of a second, and 23s on the web, which the slices of #900 bring down (#1274 to #1281) |
 | Styling | The framework ships **one** styling engine: typed C# lowered to deduplicated atomic classes, byte-identical between SSR (C#) and hydration (TS) and cross-pinned by a shared fixture. Authoring is CSS-free; external CSS a consumer brings is their own build concern |
 | Debugging | C# in the browser: statement-level source maps, so a thrown error's frame names its C# statement (#293); `EQuanticSourceMaps` writes them with the C# in Debug, none elsewhere, and without the C# for an error reporter (#352); the development error overlay remaps a stack to C# frames |
 | Performance | The served runtime's gzip budget fails the suite, each page module's size is reported on every pull request, and the Photon frame has allocation ceilings (#290). Not yet: hydration-time benchmarks, tree-shaking verification |
@@ -111,7 +111,7 @@ once. Still missing: hydration-time benchmarks and tree-shaking verification.
 ### 3. Flutter-like DX
 The `Build(context)` model is genuinely Flutter-like, and hot reload keeps state on the web and on
 the desktop (Phase 3; the simulators and emulators are W7's). Missing the rest of the productivity
-multipliers: edit-to-view measured under a second (#900), module hot-swap without a page reload on
+multipliers: edit-to-view under a second on the web (#900, measured at 23s), module hot-swap without a page reload on
 the web, richer/more predictable layout components, and layout/diagnostic tooling.
 
 ### 4. shadcn-like components
@@ -138,8 +138,9 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   an open decision (#286).
 - **Security**: hardened (deserialization allow-list, payload cap); needs a formal hardening review
   and a CSP the SDK writes (#306). **Consent before cookies (2026-09)**: `IConsent` as
-  a capability, the `CookieConsent` card, and `UseGtm(...).WithConsent()` — Consent Mode defaults to
-  denied and the container is fetched only on a granted answer, on the first paint and live.
+  a capability, the `CookieConsent` card, and a `UseGtm` that waits for consent by default (#1294) —
+  Consent Mode defaults to denied and the container is fetched only on a granted answer, on the first
+  paint and live.
 - **Server events (2026-10)**: a component hears what the server publishes to a typed topic
   (`ServerTopic<T>`, the `IServerEvents` capability) over one Server-Sent Events stream per page, each
   topic authorized by route templates and ASP.NET Core policies, with seams for the backplane and the
@@ -484,8 +485,8 @@ The bar 1.0 holds the web track to (#898, criterion 3); each line says whether i
   #290 for the runtime every page loads (its budget fails the suite) and by the module graph for
   the routes (a page's module loads on the first navigation to it).
 - **Flutter DX**: hot reload preserves state; <1s edit-to-view. The state is kept on the web and on
-  the desktop (Phase 3), and on a simulator or an emulator hot reload waits for W7; the second has
-  never been measured (#900).
+  the desktop (Phase 3), and on a simulator or an emulator hot reload waits for W7. The second is
+  measured on every pull request: the desktop meets it (0.3s) and the web is at 23s (#900).
 - **Components**: every shipped component passes an a11y checklist + variant matrix tests. Not met
   (#294).
 - **CSS**: at least one first-party engine ships. Met by Phase 6; a provider contract was the

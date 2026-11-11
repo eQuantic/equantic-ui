@@ -99,8 +99,10 @@ describe('component boundary', () => {
 
     // The cases above hand-write `nodeKind: 'component'` onto a literal, so they exercise the
     // BRANCH. This one composes the real base a transpiled stateless component extends, which is
-    // how the library actually reaches the lowering — and the branch is only taken if that base
-    // says it is a component.
+    // how the library actually reaches the lowering. That base IS a component node now (C#
+    // `UiComponent : VisualNode`), so the throw is contained by the lowering's `component` arm, as
+    // C#'s ComponentBoundary contains every UiComponent's build. It was contained before too, by the
+    // catch in the component's own render(); the surface and the report it leaves are the same.
     const row = {
       nodeKind: 'row',
       gap: 8,
@@ -114,6 +116,7 @@ describe('component boundary', () => {
     expect(rendered).toContain('before');
     expect(rendered).toContain('after');
     expect(rendered).toContain('could not be displayed');
+    expect(errors.flat().map(String).join(' ')).toContain('BrokenCard');
   });
 
   it('names the component and quotes the throw when a developer is watching', () => {
