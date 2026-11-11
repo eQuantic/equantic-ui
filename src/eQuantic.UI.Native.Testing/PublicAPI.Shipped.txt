@@ -1,0 +1,25 @@
+#nullable enable
+[EQX0001]eQuantic.UI.Native.Testing.MeasuredNode
+[EQX0001]eQuantic.UI.Native.Testing.MeasuredNode.Bounds.get -> eQuantic.UI.Primitives.Rect
+[EQX0001]eQuantic.UI.Native.Testing.MeasuredNode.Children.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Testing.MeasuredNode!>!
+[EQX0001]eQuantic.UI.Native.Testing.MeasuredNode.Node.get -> eQuantic.UI.Primitives.VisualNode!
+[EQX0001]eQuantic.UI.Native.Testing.MeasuredNode.Text.get -> eQuantic.UI.Native.Framework.TextMeasurement?
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Culture.get -> System.Globalization.CultureInfo!
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Density.get -> eQuantic.UI.Primitives.Density
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Dispose() -> void
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Find(eQuantic.UI.Primitives.SemanticRole role, string! name) -> eQuantic.UI.Native.Testing.MeasuredNode!
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Find(string! name) -> eQuantic.UI.Native.Testing.MeasuredNode!
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.HasScheduledFrame.get -> bool
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Height.get -> float
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Layers.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Testing.MeasuredNode!>!
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Mode.get -> eQuantic.UI.Primitives.ThemeMode
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.PhotonTester(eQuantic.UI.Primitives.IAppTheme? theme = null, System.Globalization.CultureInfo? culture = null, float width = 1280, float height = 800, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, eQuantic.UI.Primitives.ThemeMode mode = eQuantic.UI.Primitives.ThemeMode.Light, float typeScale = 1) -> void
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Pump() -> void
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Pump(eQuantic.UI.Primitives.VisualNode! root) -> void
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.ReadPixelsSrgb() -> byte[]!
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Root.get -> eQuantic.UI.Native.Testing.MeasuredNode!
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.TypeScale.get -> float
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Width.get -> float
+[EQX0001]override eQuantic.UI.Native.Testing.MeasuredNode.ToString() -> string!

@@ -29,18 +29,19 @@ public class AssetCollection
     public bool HasAssets => _assets.Count > 0;
 
     /// <summary>
-    /// Renders all assets as HTML tags, ordered: stylesheets first, then scripts.
+    /// Renders all assets as HTML tags, ordered: stylesheets first, then scripts, each script and
+    /// style carrying <paramref name="nonce"/>.
     /// </summary>
-    public IEnumerable<string> RenderTags()
+    public IEnumerable<string> RenderTags(string? nonce)
     {
         // CSS before JS for proper render-blocking order
         foreach (var asset in _assets.Values.OfType<StylesheetAsset>())
-            yield return asset.Render();
+            yield return asset.Render(nonce);
         foreach (var asset in _assets.Values.OfType<InlineStyleAsset>())
-            yield return asset.Render();
+            yield return asset.Render(nonce);
         foreach (var asset in _assets.Values.OfType<ScriptAsset>())
-            yield return asset.Render();
+            yield return asset.Render(nonce);
         foreach (var asset in _assets.Values.OfType<InlineScriptAsset>())
-            yield return asset.Render();
+            yield return asset.Render(nonce);
     }
 }

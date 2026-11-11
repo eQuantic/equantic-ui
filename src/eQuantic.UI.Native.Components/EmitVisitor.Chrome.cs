@@ -98,14 +98,9 @@ internal sealed partial class EmitVisitor
             }
         }
 
-        // The pressed swap beats the hover's fill (§10): the hover diff is already in the effective
-        // style, and a pending press replaces whatever fill that left.
+        // The pressed fill beats the hover's (§10) inside the effective style itself: its Pressed diff
+        // is laid over its hover and its focus, so the fill drawn is the state's (#616).
         var fill = style.Background;
-        if (box is not null)
-        {
-            fill = s.Press.PendingFill ?? fill;
-            s.Press.PendingFill = null;
-        }
         var borderColor = style.BorderColor;
         var borderWidth = style.BorderWidth;
         // Spec S5: hover-reactive boxes register for the host's pointer tracking.
