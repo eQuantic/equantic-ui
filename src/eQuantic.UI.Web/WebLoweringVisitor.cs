@@ -9,9 +9,13 @@ namespace eQuantic.UI.Web;
 /// off a switch with a default arm and onto the visitor the compiler checks.
 /// </summary>
 internal sealed partial class WebLoweringVisitor(
-    ComponentContext context, FontlessMeasurer measurer, ElementFrame? frame = null)
+    ComponentContext context, FontlessMeasurer measurer, ElementFrame? frame = null, RenderChannels? channels = null)
     : IVisualNodeVisitor<bool?, HtmlElement?>
 {
+    /// <summary>What this render collects and reads (#1404): the expansion scope, the gradient and face
+    /// sinks and the link policy. Null for a lowering with no render around it, which collects nothing.</summary>
+    private readonly RenderChannels? _channels = channels;
+
     /// <summary>The theme and type scale this lowering runs against — fixed for the pass.</summary>
     private readonly ComponentContext _context = context;
 
@@ -248,7 +252,7 @@ internal sealed partial class WebLoweringVisitor(
         if (_frame is { } frame)
         {
             var (kept, built) = frame.At(component);
-            ComponentExpansionScope.Ambient?.Enter(kept);
+            _channels?.Expansion?.Enter(kept);
             if (built is null) return null;
             var lowered = Lower(built, horizontalAxis);
             if (lowered is not null && _measurer.BuiltUnmeasured(kept)) MarkUnmeasured(lowered);
@@ -260,7 +264,7 @@ internal sealed partial class WebLoweringVisitor(
         // has to be back on it by now or the build reads the empty defaults again. Null outside an
         // SSR expansion, which is every other caller — the web realizer is also the email one's and
         // the design host's, and neither prefetches.
-        ComponentExpansionScope.Ambient?.Enter(component);
+        _channels?.Expansion?.Enter(component);
 
         return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
             static (built, state) =>

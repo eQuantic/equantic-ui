@@ -216,10 +216,10 @@ public sealed class ComponentTester : IDisposable
         _host.Build(_root!, _sizeClass, rebuildAll);
         // Through a style sink, as the server lowers: the sink is what knows which of a node's classes
         // hide it, an adaptive arm's gate among them.
-        var styles = new StyleSink();
-        _frame = _host.Lower(styles).Render();
+        var channels = new RenderChannels();
+        _frame = _host.Lower(channels).Render();
         _host.EndFrame();
-        _announced = AnnouncedTree.Read(_frame, styles, Width);
+        _announced = AnnouncedTree.Read(_frame, channels.Styles, Width);
         _html = null;
     }
 
@@ -232,17 +232,8 @@ public sealed class ComponentTester : IDisposable
     {
         using var culture = new CultureScope(Culture);
         var scope = new ComponentExpansionScope();
-        ComponentExpansionScope.Ambient = scope;
-        try
-        {
-            _host.Build(page, _sizeClass);
-            _host.Lower(new StyleSink());
-        }
-        finally
-        {
-            ComponentExpansionScope.Ambient = null;
-        }
-
+        _host.Build(page, _sizeClass);
+        _host.Lower(new RenderChannels(scope));
         return scope;
     }
 

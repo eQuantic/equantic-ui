@@ -358,7 +358,7 @@ internal sealed partial class WebLoweringVisitor
         var face = FaceName.Usable(text.StyleOverride?.Family?.Name);
         // A family that ships files is declared in the head of the page the server renders (#1056), as
         // Photon registers it the first time text asks: the server leaves out what the theme declares.
-        if (face is not null && text.StyleOverride?.Family is { Files.Count: > 0 } shipped) FaceSink.Ambient?.Add(shipped);
+        if (face is not null && text.StyleOverride?.Family is { Files.Count: > 0 } shipped) _channels?.Faces.Add(shipped);
         // The OUTLINE, not the type scale: `h1`–`h6` when the author placed this text in the
         // document's structure, and a span when they did not. The heading's own UA margin and
         // size are cancelled in the token sheet (`.eq-type-*` owns the size), so choosing a level
@@ -436,7 +436,7 @@ internal sealed partial class WebLoweringVisitor
                     // warms on hover, as a Link's does. It took the destination as written, so on
                     // /pt-BR/login a run to /terms led to the English page (#505).
                     // One whose scheme an href never carries is no href, and the run stays a run (#1286).
-                    if (RenderContext.ResolveDestination(written) is { } destination)
+                    if (RenderChannels.Resolve(written, _channels?.LinkPolicy) is { } destination)
                     {
                         runElement.RawAttributes = new Dictionary<string, string> { ["href"] = destination };
                         if (WarmsOnHover(destination)) runElement.RawAttributes["data-prefetch"] = "";
