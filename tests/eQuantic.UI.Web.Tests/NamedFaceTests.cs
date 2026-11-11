@@ -437,8 +437,9 @@ public class NamedFaceTests
         string.Concat(value.Select(c => char.IsControl(c) ? $"\\u{(int)c:x4}" : c.ToString()));
 
     /// <summary>The theme under test, with ONE role recut — everything else is Photon's.</summary>
-    internal sealed class RoleTheme(IAppTheme inner, TypeRole role, TypeStyle style) : IAppTheme
+    internal sealed class RoleTheme(IAppTheme inner, TypeRole role, TypeStyle style, Func<CodeTokenKind, ColorToken>? code = null) : IAppTheme
     {
+        public ColorToken Code(CodeTokenKind kind) => code?.Invoke(kind) ?? inner.Code(kind);
         public ColorToken Background => inner.Background;
         public ColorToken Surface => inner.Surface;
         public ColorToken SurfaceSubtle => inner.SurfaceSubtle;

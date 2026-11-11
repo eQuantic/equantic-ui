@@ -8,6 +8,8 @@ import {
   recordTextGroup,
   tupleText,
   tupleTextGroup,
+  pairText,
+  pairTextGroup,
 } from './format';
 import { INVARIANT_FORMAT, installCulture, type CultureFormat } from './culture';
 
@@ -353,6 +355,34 @@ describe('recordText', () => {
 
 // A value tuple is an array here, whose own string is `1,2`: its text is .NET's `(1, 2)`, each element
 // written as its type writes it, from what the compiler hands where the value cannot say (#762).
+describe('pairText', () => {
+  const held = (key: unknown, value: unknown) => Object.assign([key, value], { key, value });
+
+  it('writes the key and the value as .NET writes them, a null one as nothing', () => {
+    expect(pairText(held(1, 'a'))).toBe('[1, a]');
+    expect(pairText(held(null, 0))).toBe('[, 0]');
+    expect(pairText(held(true, null))).toBe('[True, ]');
+  });
+
+  it('takes what the type says of each half', () => {
+    expect(pairText(held('k', Math.fround(0.1)), [null, 'single'])).toBe('[k, 0.1]');
+    expect(pairText(held(1, held(2, 3)), [null, (inner: unknown) => pairText(inner)])).toBe('[1, [2, 3]]');
+  });
+
+  it('writes nothing for an empty Nullable one', () => {
+    expect(pairText(null)).toBe('');
+  });
+
+  it('reads a pair held as object by its shape, and leaves any other array alone', () => {
+    expect(format(held(1, 'a'), null)).toBe('[1, a]');
+    expect(format([1, 2], null)).toBe('1,2');
+  });
+
+  it('is what a method group calls', () => {
+    expect(pairTextGroup(held(1, 'a'))()).toBe('[1, a]');
+  });
+});
+
 describe('tupleText', () => {
   afterEach(() => installCulture('', '', {}));
 

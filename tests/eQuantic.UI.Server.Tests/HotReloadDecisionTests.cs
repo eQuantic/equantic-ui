@@ -37,8 +37,9 @@ public class HotReloadDecisionTests
     [Theory]
     [InlineData(null, "Development", null, true)]
     [InlineData(null, "Production", null, false)]
-    // dotnet watch on an app with no launch profile, whose environment is Production (#627).
-    [InlineData(null, "Production", "1", true)]
+    // dotnet watch on an app with no launch profile, whose environment is Production: Production serves
+    // the relay only when the app says so (#1297), as the row of the app's own word below does.
+    [InlineData(null, "Production", "1", false)]
     [InlineData(null, "Staging", "1", true)]
     [InlineData(null, "Production", "0", false)]
     // The app's word wins either way.
