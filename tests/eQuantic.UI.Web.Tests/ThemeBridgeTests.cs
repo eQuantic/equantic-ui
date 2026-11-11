@@ -50,6 +50,22 @@ public class ThemeBridgeTests
         json.Should().Contain($"\"display\":[{style.Size.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},{style.LineHeight.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},");
     }
 
+    /// <summary>Every member of the theme reaches the browser: a theme that overrides <c>Code</c> coloured a
+    /// CodeBlock with its palette on the server and on Photon, and with the default one in the browser (#936).</summary>
+    [Fact]
+    public void ATheme_ThatOverridesCode_CarriesItsPalette()
+    {
+        var ink = new ColorToken(new Color(1, 2, 3, 255));
+        var theme = new NamedFaceTests.RoleTheme(PhotonTheme.Instance, TypeRole.Display, PhotonTheme.Instance.Type(TypeRole.Display),
+            kind => kind == CodeTokenKind.Keyword ? ink : ((IAppTheme)PhotonTheme.Instance).Code(kind));
+
+        var json = ThemeBridge.SerializeJson(theme);
+
+        json.Should().Contain("\"code\":{").And.Contain("\"keyword\":[[1,2,3,");
+        foreach (var kind in Enum.GetValues<CodeTokenKind>())
+            json.Should().Contain($"\"{char.ToLowerInvariant(kind.ToString()[0])}{kind.ToString()[1..]}\":[[");
+    }
+
     [Fact]
     public void PhotonSerialization_MatchesTheSharedFixture()
     {

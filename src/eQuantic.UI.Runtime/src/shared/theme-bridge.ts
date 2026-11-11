@@ -49,6 +49,8 @@ export interface ThemeData {
   onSelection?: TokenTuple;
   elevations: ReadonlyArray<readonly [number, number, number, TokenTuple]>;
   shape: Record<string, number>;
+  /** The colour of every kind of code token, by the enum's lowered name. */
+  code?: Record<string, TokenTuple>;
   /** The data palette: series and sequential as token lists, diverging as [negative, midpoint,
    * positive], status as [good, warning, serious, critical]. */
   data: {
@@ -60,8 +62,6 @@ export interface ThemeData {
   };
   /** The spreadsheet's slot, present only when the theme answers one, with the members it names. */
   sheet?: Partial<Record<keyof SheetTheme, TokenTuple>>;
-  /** Every code token kind's colour (#936), so `code(kind)` answers what the server's theme answers. */
-  code?: Record<string, TokenTuple>;
   /** The control ladder, present only when the theme answers one, with the members it names. */
   controls?: SlotData;
   /** The Button's slot, by the same rule. */
