@@ -544,6 +544,17 @@ the parity rows it closes flip.
    `ElementEngineTranspilesTests` passes the engine through eqc meanwhile, so nothing written into
    it can go unseen. Photon's frame, main against the change: allocation identical to the byte in
    every scene of the perf harness, the dense scene's realize p50 within noise.
+
+   E3a-3 starts with a slice of its own, because it changes how the browser builds every component
+   without state: **a component is a node in the browser too**
+   (`openspec/changes/archive/2026-11-10-a-component-is-a-node-in-the-browser`). The engine's position
+   for a component is a node, and in the browser only a stateful component carried
+   `nodeKind = 'component'`; a stateless one carried none on purpose and rendered itself through the
+   lowering's mixing seam. The runtime gains `UiComponent` between the web `Component` and the two
+   kinds, its kind at run time and the node's members held to `VisualNode` by a type test, and a
+   stateless component takes the `component` arm a stateful one takes. `HtmlElement` stays outside,
+   as in C#. No server-data ordinal moves, measured on a mixed page and on a client navigation with
+   the old routing put back, and the boundary contains what it contained.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.

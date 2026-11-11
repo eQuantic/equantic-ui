@@ -80,4 +80,70 @@ public class AssetEndpointTests
             body.Should().NotContain("OUTSIDE-THE-ASSETS", path);
         }
     }
+
+    private static async Task<(WebApplication App, Microsoft.AspNetCore.TestHost.TestServer Server)> StartIn(string environment,
+        string webRoot)
+    {
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            EnvironmentName = environment,
+            WebRootPath = webRoot,
+        });
+        builder.WebHost.UseTestServer();
+        builder.Services.AddUI(options => options.ScanAssembly(Assembly.GetExecutingAssembly()));
+        var app = builder.Build();
+        app.MapUI();
+        await app.StartAsync();
+        return (app, app.GetTestServer());
+    }
+
+    private static async Task<(int Status, string Body, string? Type)> Send(Microsoft.AspNetCore.TestHost.TestServer server, string path)
+    {
+        var context = await server.SendAsync(request =>
+        {
+            request.Request.Method = HttpMethods.Get;
+            request.Request.Path = path;
+        });
+        using var reader = new StreamReader(context.Response.Body);
+        return (context.Response.StatusCode, await reader.ReadToEndAsync(), context.Response.ContentType);
+    }
+
+    /// <summary>#1296: a module found in the local directory is served as one found under the web root,
+    /// with a 200 a browser runs.</summary>
+    [Fact]
+    public async Task AModuleFoundInTheLocalDirectory_IsServedOk()
+    {
+        var name = $"LocalProbe{Guid.NewGuid():N}";
+        var local = Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic")).FullName;
+        var file = Path.Combine(local, name + ".js");
+        File.WriteAllText(file, "export const probe = 'LOCAL';");
+        try
+        {
+            var (app, server) = await StartIn("Development", Directory.CreateTempSubdirectory("eq-assets-").FullName);
+            await using var _ = app;
+
+            var (status, body, type) = await Send(server, $"/_equantic/{name}.js");
+
+            status.Should().Be(StatusCodes.Status200OK);
+            body.Should().Contain("LOCAL");
+            type.Should().Be("application/javascript");
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    /// <summary>#1296: outside Development a missing module's answer says nothing about the request.</summary>
+    [Fact]
+    public async Task AMissingModule_InProduction_EchoesNothingItWasAsked()
+    {
+        var (app, server) = await StartIn("Production", Directory.CreateTempSubdirectory("eq-assets-").FullName);
+        await using var _ = app;
+
+        var (status, body, _) = await Send(server, "/_equantic/Echo-This-Name.js");
+
+        status.Should().Be(StatusCodes.Status404NotFound);
+        body.Should().NotContain("Echo-This-Name");
+    }
 }
