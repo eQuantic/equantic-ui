@@ -59,3 +59,25 @@ export function removeDelegate<T extends Function>(
   handlers.splice(at, 1);
   return compose(handlers) as T | null;
 }
+
+/**
+ * `target.Event += handler` where the emitter cannot tell how the event is implemented: an interface's,
+ * an abstract or a virtual one (#746). C# compiles `+=` into a call of the event's `add` accessor, which a
+ * field-like event's compiler writes and an event declared with accessors brings. So the add accessor the
+ * twin wrote is called where there is one (`$add$` and the event's name, a name no C# member can take),
+ * and the event's own invocation list is composed otherwise, as a field-like event's always was.
+ */
+export function addToEvent(target: object, name: string, handler: Function | null | undefined): void {
+  const members = target as Record<string, unknown>;
+  const accessor = members['$add$' + name];
+  if (typeof accessor === 'function') accessor.call(target, handler);
+  else members[name] = combineDelegate(members[name] as Function | null | undefined, handler);
+}
+
+/** `target.Event -= handler`, by the same rule as {@link addToEvent}: the remove accessor, or the list. */
+export function removeFromEvent(target: object, name: string, handler: Function | null | undefined): void {
+  const members = target as Record<string, unknown>;
+  const accessor = members['$remove$' + name];
+  if (typeof accessor === 'function') accessor.call(target, handler);
+  else members[name] = removeDelegate(members[name] as Function | null | undefined, handler);
+}

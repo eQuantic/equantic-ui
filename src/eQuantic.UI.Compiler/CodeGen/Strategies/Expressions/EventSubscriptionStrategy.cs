@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -16,9 +17,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// <para>
 /// The rewrite composes an invocation list through <c>$eq.delegates</c>, which keeps what C#
 /// promises: handlers run in the order they were added, and removing one drops the LAST occurrence.
-/// Gated on the left side being an EVENT — a numeric `+=` is still addition, and a plain
-/// <c>Action</c> FIELD keeps its own meaning too, because assigning over one is what apps expect
-/// there.
+/// Gated on the left side being an EVENT or a DELEGATE, a field, a local or a property of one: C#
+/// composes either alike, and a numeric `+=` is still addition. A delegate field's was emitted
+/// literally, so the backing field an event's own accessors compose into held the text of its
+/// handlers, and the event threw when raised (#746).
 /// </para>
 /// </summary>
 public class EventSubscriptionStrategy : IConversionStrategy
@@ -29,21 +31,34 @@ public class EventSubscriptionStrategy : IConversionStrategy
         if (!assignment.IsKind(SyntaxKind.AddAssignmentExpression)
             && !assignment.IsKind(SyntaxKind.SubtractAssignmentExpression)) return false;
 
-        // Only an event. Without the model this cannot be decided, and guessing from the shape
-        // would turn `total += price` into a delegate composition.
-        return context.SemanticHelper.GetSymbol(assignment.Left) is IEventSymbol;
+        // Only an event or a delegate. Without the model this cannot be decided, and guessing from the
+        // shape would turn `total += price` into a delegate composition.
+        return context.SemanticHelper.GetSymbol(assignment.Left) is IEventSymbol
+            || context.SemanticHelper.GetType(assignment.Left) is { TypeKind: TypeKind.Delegate };
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var assignment = (AssignmentExpressionSyntax)node;
+        var adds = assignment.IsKind(SyntaxKind.AddAssignmentExpression);
         var target = context.Converter.ConvertExpression(assignment.Left);
         var handler = context.Converter.ConvertExpression(assignment.Right);
-        var helper = assignment.IsKind(SyntaxKind.AddAssignmentExpression)
-            ? Eq.CombineDelegate
-            : Eq.RemoveDelegate;
-
         context.UsedHelpers.Add(Eq.Import);
+
+        // The event's accessors, as C# compiles the subscription into a call of them (#746): an event
+        // declared with accessors was written nowhere, and a subscription through an interface wrote a key
+        // its explicit implementation's accessors never read.
+        if (context.SemanticHelper.GetSymbol(assignment.Left) is IEventSymbol symbol
+            && EventAccessors.Of(symbol) is var kind and not EventAccessors.Kind.FieldLike
+            && symbol.MemberTwinName() is var name && target.EndsWith("." + name, StringComparison.Ordinal))
+        {
+            var receiver = target[..^(name.Length + 1)];
+            return kind == EventAccessors.Kind.Declared
+                ? $"{receiver}.{EventAccessors.Name(adds ? "add" : "remove", name)}({handler})"
+                : $"{(adds ? Eq.AddToEvent : Eq.RemoveFromEvent)}({receiver}, '{name}', {handler})";
+        }
+
+        var helper = adds ? Eq.CombineDelegate : Eq.RemoveDelegate;
         return $"{target} = {helper}({target}, {handler})";
     }
 
