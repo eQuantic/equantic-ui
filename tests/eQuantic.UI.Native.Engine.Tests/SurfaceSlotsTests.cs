@@ -39,7 +39,9 @@ public class SurfaceSlotsTests
         new Case("Progress", () => new ProgressBar(0.4f),
             Photon.With(progress: new ProgressTheme { BarHeight = 13 }), null, 13),
         new Case("Card", () => new Card(new Box(new BoxStyle { Width = 40, Height = 40 }), CardKind.Outlined),
-            Photon.With(card: new CardTheme { BorderWidth = 9 }), null, null),
+            // The 40-point box, the card's padding of 16 above and below and the slot's border of 9: the
+            // card fills the width.
+            Photon.With(card: new CardTheme { BorderWidth = 9 }), null, 90),
     };
 
     [Theory]
