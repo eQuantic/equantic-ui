@@ -15,5 +15,5 @@
 
 ## 3. Proved against the real thing
 
-- [ ] 3.1 The dashboard sample served, a page with server data loaded in a browser. Verify: the data is drawn by the server and hydration patches nothing
-- [ ] 3.2 Docs. Verify: `docs/ELEMENT-TREE-PLAN.md` records E4a, and a ledger entry cites #1403
+- [x] 3.1 The dashboard sample served, a page with server data loaded in a browser. Verify: `/server-data` (a page that loads, composing a stateless stamp that loads in the next round) carries the process, the runtime and the stamp in the server's markup and payload alike; after hydration, and after a client navigation from another screen in the same document, the page shows the same values, with no console message
+- [x] 3.2 Docs. Verify: `docs/ELEMENT-TREE-PLAN.md` records E4a, and a ledger entry cites #1403
