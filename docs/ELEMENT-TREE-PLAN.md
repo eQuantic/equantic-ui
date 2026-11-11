@@ -577,13 +577,16 @@ the parity rows it closes flip.
      (`ComponentBoundary.BuildAtDepth` is public for it), so a frame writes hydration's unmeasured
      mark on the elements a tree drawn once does, and the parity fixture compares the first frame
      whole.
+   - A client navigation's discovery runs the same rounds through the same kind of host, so E5b
+     can take the route off the async flow without leaving a navigation behind it.
    - An escape-hatch page makes its write-once bridges anew on every render, so they have no
      position to keep an owner at, and stay trees drawn once with what loaded put back by name.
+     E5b owes them a route of their own (noted on #1395).
    - The server cannot see the window, so its tree resolves an adaptive node for `Expanded`: the
      markup is the same for every class, and the class decides only which arm keeps its instances
      between rounds.
 
-   E4b moves the channels onto the owner, and a navigation's discovery with them.
+   E4b moves the channels onto the owner.
 5. **E5, inherited components.** `InheritedComponent`, `DependOn`, `Find`,
    `OnDependenciesChanged`, dependency-driven rebuild, `Theme`, the route and `InFlow` as inherited
    components, `Navigator.Of`. Proof: a change rebuilds its dependents and nothing else, on both

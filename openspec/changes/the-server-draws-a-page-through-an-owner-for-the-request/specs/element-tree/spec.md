@@ -50,7 +50,8 @@ unmeasured mark included.
 ### Requirement: The server draws a write-once page through an owner for the request
 
 The server SHALL draw a write-once page through a structural `MarkupHost` it keeps for the request,
-each prefetch round a frame of that one tree. After a frame, `ServerDataRounds` SHALL name the
+each prefetch round a frame of that one tree, and a client navigation's discovery of it SHALL run
+the same rounds through the same kind of host, keeping each component's wire form as it loads. After a frame, `ServerDataRounds` SHALL name the
 components to ask: each that loads data, that the frame reached and that was not asked, in the order
 the frame named them, save a stateless one below another asked in the same round, which SHALL wait for
 the next. A component that loaded SHALL have its positions marked, and only those subtrees SHALL build
@@ -67,6 +68,12 @@ bridges as trees drawn once, putting back by name what each loaded.
 - **WHEN** a page composes a stateless component that loads, and draws whether the instance drawing it
   is the one whose prefetch ran
 - **THEN** the markup says it is
+
+#### Scenario: What a round could not put back
+
+- **WHEN** a component's prefetch stores a delegate, and what it builds depends on that delegate and
+  loads data of its own
+- **THEN** a full load draws what it composed with its data, and a navigation's payload carries it
 
 #### Scenario: A chain deeper than the bound
 
