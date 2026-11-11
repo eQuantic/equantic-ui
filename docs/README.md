@@ -15,6 +15,7 @@ Read these first, in this order. Every claim in the first two is held by a test,
 | [FLUTTER-PARITY.md](FLUTTER-PARITY.md) | *How does Flutter solve this?* — one row per Flutter concept, with a verdict (SAME, DIFFERENT, PARTIAL, GAP) measured against the tree. Pinned by `FlutterParityPinTests`. |
 | [VOCABULARY-DISPATCH-PLAN.md](VOCABULARY-DISPATCH-PLAN.md) | The plan for the audit's step 2: one visitor per realizer, slice by slice. |
 | [HANDOFF-FIDELITY-AUDIT.md](HANDOFF-FIDELITY-AUDIT.md) | The design system's component blocks compared with the shipped components, claim by claim. A snapshot (2026-08-16) with a "closed since" ledger. |
+| [SERVED-RUNTIME-GROWTH.md](SERVED-RUNTIME-GROWTH.md) | *What did each pull request add to the runtime every page loads?* — the served runtime measured before and after each merge since its budget was recorded with #1219, the way `ServedRuntimeBudgetTests` measures it, and the one growth out of proportion. A snapshot (2026-11-10), its numbers each at a named commit. |
 | [DIAGNOSTICS.md](DIAGNOSTICS.md) | Every `EQxxxx` diagnostic the compiler and the build raise, held to the code by `DiagnosticsDocumentedTests`. |
 | [design/](design/README.md) | The Photon Design System handoff itself — the normative `tokens.json` and the design pages — corrected here and pinned to the implementation. |
 
