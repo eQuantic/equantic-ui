@@ -20,8 +20,9 @@
  * lowered, added and removed as that set changes, and all removed when the page leaves.
  *
  * A LEAF as far as values go: the component base imports this, and the engine reaches the runtime's
- * export barrel, which reaches every component class, which extends that base. The owners are made
- * by the lowering (`lowering.ts`), which can import the engine, and handed in here.
+ * export barrel, which reaches every component class, which extends that base. The lowering makes
+ * the owners, through the one factory beside the engine's seam (`element-engine.ts`), and hands them
+ * in here.
  */
 
 import type { BuildOwner } from './components/BuildOwner';

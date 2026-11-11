@@ -14,8 +14,8 @@
 
 ## 3. Proof
 
-- [ ] 3.1 The specs that asserted the store assert the same behaviour on elements, and the scenarios of this change have a spec each
-- [ ] 3.2 The runtime's suites, the element engine's twins and the hydration contract pass
+- [x] 3.1 The specs that asserted the store assert the same behaviour on elements, and the scenarios of this change have a spec each
+- [x] 3.2 The runtime's suites, the element engine's twins and the hydration contract pass
 - [ ] 3.3 The e2e suite in a real browser after the change
 - [ ] 3.4 The served runtime's budget, re-recorded in a commit of its own if it moved
 - [ ] 3.5 `docs/ELEMENT-TREE-PLAN.md`, the ledger and `FlutterParityPinTests` where a row closes
