@@ -14,7 +14,7 @@ namespace eQuantic.UI.Server.Tests.Rendering;
 /// </summary>
 public class RenderChannelsTests
 {
-    /// <summary>Where the two builds meet. Armed only by these tests, so a page that only scans the
+    /// <summary>Where the two renders meet. Armed only by these tests, so a page that only scans the
     /// assembly never waits.</summary>
     private static class Meeting
     {
@@ -22,12 +22,32 @@ public class RenderChannelsTests
         public static volatile bool Missed;
         public static readonly ManualResetEventSlim Compact = new();
         public static readonly ManualResetEventSlim Comfortable = new();
+        public static readonly CountdownEvent Bridges = new(2);
 
         public static void Reset()
         {
             Compact.Reset();
             Comfortable.Reset();
+            Bridges.Reset(2);
             Missed = false;
+        }
+
+        /// <summary>Says an escape-hatch page is drawing, its render's channels armed and not read yet,
+        /// and waits for the other request's to be there too: whichever armed last, each bridge then reads
+        /// its own.</summary>
+        public static void ArriveAtTheBridge()
+        {
+            if (!Armed) return;
+            try
+            {
+                Bridges.Signal();
+            }
+            catch (InvalidOperationException)
+            {
+                return; // a later render of a request that already met
+            }
+
+            if (!Bridges.Wait(TimeSpan.FromSeconds(10))) Missed = true;
         }
 
         /// <summary>Says this density is drawing, and waits for the other one to be drawing too.</summary>
@@ -53,13 +73,17 @@ public class RenderChannelsTests
     }
 
     /// <summary>The same page inside an escape-hatch page, whose bridge finds its render's channels in the
-    /// ambient the server arms around it.</summary>
+    /// ambient the server arms around it. The two requests meet before the bridge reads it, so both have
+    /// armed theirs by then.</summary>
     public sealed class MeetingBridgePage : eQuantic.UI.Web.HtmlElement
     {
         public MeetingBridgePage() => AddChild(new eQuantic.UI.Web.VisualNodeComponent(new MeetingPage()));
 
         public override eQuantic.UI.Web.HtmlNode Render()
-            => new() { Tag = "div", Children = Children.Select(child => child.Render()).ToList() };
+        {
+            Meeting.ArriveAtTheBridge();
+            return new() { Tag = "div", Children = Children.Select(child => child.Render()).ToList() };
+        }
     }
 
     [Theory]
@@ -96,12 +120,14 @@ public class RenderChannelsTests
             Meeting.Armed = false;
         }
 
-        Meeting.Missed.Should().BeFalse("the two renders were live together, or this proves nothing");
+        // What each page carries first: a render that read the other's channels is built at the other's
+        // density, and then it waits at the meeting for a density that never comes.
         pages[0].Should().Contain("width:20px").And.NotContain("width:22px",
             "the compact request's page carries its own rules and none of the other request's");
         pages[1].Should().Contain("width:22px").And.NotContain("width:20px",
             "the comfortable request's page carries its own rules and none of the other request's");
         ShellConfig.In(pages[0]).GetProperty("density").GetString().Should().Be("compact");
         ShellConfig.In(pages[1]).GetProperty("density").GetString().Should().Be("comfortable");
+        Meeting.Missed.Should().BeFalse("the two renders were live together, or this proves nothing");
     }
 }
