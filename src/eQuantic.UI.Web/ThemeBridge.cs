@@ -16,9 +16,18 @@ namespace eQuantic.UI.Web;
 public static class ThemeBridge
 {
     /// <summary>The theme as a single-line JSON object: surfaces, disabledOpacity, per-variant color
-    /// groups, the type scale, elevations 0–5, the shape scale and the data palette — colors as <c>[[r,g,b,a],[r,g,b,a]]</c>
+    /// groups, the type scale, elevations 0–5, the shape scale, the data palette and the code palette — colors as <c>[[r,g,b,a],[r,g,b,a]]</c>
     /// light/dark tuples, keys camelCased to match the enum-lowered names the client looks up.</summary>
-    public static string SerializeJson(IAppTheme theme)
+    public static string SerializeJson(IAppTheme theme) => Serialized.GetValue(theme, Write);
+
+    /// <summary>
+    /// The JSON once per theme instance: the shell writes it on every page request, and a theme is the
+    /// design system's data, which does not change under a running app (<see cref="ThemeVarMap"/> keeps
+    /// its own map per instance for the same reason).
+    /// </summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IAppTheme, string> Serialized = new();
+
+    private static string Write(IAppTheme theme)
     {
         var sb = new StringBuilder();
         sb.Append('{');
@@ -141,6 +150,18 @@ public static class ThemeBridge
         }
         sb.Append('}');
 
+        // The colour of every kind of code token: the browser's theme answers Code from these, or a theme
+        // that overrides it would colour a CodeBlock on the server and lose it once the page rendered (#936).
+        sb.Append(",\"code\":{");
+        first = true;
+        foreach (var kind in Enum.GetValues<CodeTokenKind>())
+        {
+            Comma(sb, ref first);
+            Key(sb, Camel(kind.ToString()));
+            Token(sb, theme.Code(kind));
+        }
+        sb.Append('}');
+
         sb.Append(",\"data\":{");
         var data = theme.Data;
         sb.Append("\"series\":");
@@ -153,19 +174,6 @@ public static class ThemeBridge
         Token(sb, data.Other);
         sb.Append(",\"status\":");
         Tokens(sb, [data.Status.Good, data.Status.Warning, data.Status.Serious, data.Status.Critical]);
-        sb.Append('}');
-
-        // The code palette, every kind's colour (#936): the browser's `code(kind)` answers from it, so
-        // a theme that overrides `Code` colours a code block alike on the server, on Photon and in the
-        // browser once it renders again. Always written, since every theme answers one.
-        sb.Append(",\"code\":{");
-        first = true;
-        foreach (var kind in Enum.GetValues<CodeTokenKind>())
-        {
-            Comma(sb, ref first);
-            Key(sb, Camel(kind.ToString()));
-            Token(sb, theme.Code(kind));
-        }
         sb.Append('}');
 
         // The component slots (docs/ELEMENT-TREE-PLAN.md §3.10), every one the theme answers, under the
@@ -192,11 +200,13 @@ public static class ThemeBridge
 
     /// <summary>The members of <see cref="IAppTheme"/> that are slots: a record of the vocabulary named
     /// for what it styles (<c>ButtonTheme</c>, <c>SheetTheme</c>…).</summary>
-    internal static IEnumerable<System.Reflection.PropertyInfo> SlotProperties() =>
-        typeof(IAppTheme).GetProperties().Where(property =>
-            property.PropertyType is { IsClass: true } type
+    internal static IEnumerable<System.Reflection.PropertyInfo> SlotProperties() => SlotMembers;
+
+    private static readonly System.Reflection.PropertyInfo[] SlotMembers = typeof(IAppTheme).GetProperties()
+        .Where(property => property.PropertyType is { IsClass: true } type
             && type.Assembly == typeof(IAppTheme).Assembly
-            && type.Name.EndsWith("Theme", StringComparison.Ordinal));
+            && type.Name.EndsWith("Theme", StringComparison.Ordinal))
+        .ToArray();
 
     /// <summary>
     /// A slot record as JSON: each member that answers, under its camel-cased name. A number (a float, an

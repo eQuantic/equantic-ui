@@ -14,8 +14,9 @@ export type * from './enums.generated';
 export { $eq } from '../eq';
 export type { ICanvasPainter } from './nodes';
 export { Component, HtmlElement } from '../core/types';
-// The C# `UiComponent` base as it surfaces in transpiled signatures (AdoptConfig, composition).
-export { Component as UiComponent } from '../core/types';
+// The C# `UiComponent` base as it surfaces in transpiled signatures (AdoptConfig, composition): the
+// component that IS a node, between the web `Component` and the two kinds, as in C#.
+export { UiComponent } from '../core/component';
 export type { RenderContext as BuildContext } from '../core/types';
 export { StatelessComponent, StatefulComponent } from '../core/component';
 export {
