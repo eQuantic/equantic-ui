@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -13,6 +14,7 @@ public sealed class ServerEventsBuilder
     private readonly List<ServerTopicTemplate> _templates = [];
     private readonly List<Type> _handlers = [];
     private readonly List<Action<ServerEventsOptions>> _configurations = [];
+    private readonly List<Action<IEndpointConventionBuilder>> _endpoints = [];
     private Type? _backplane;
 
     internal ServerEventsBuilder()
@@ -68,6 +70,22 @@ public sealed class ServerEventsBuilder
         _configurations.Add(configure);
         return this;
     }
+
+    /// <summary>
+    /// Configures the stream's endpoints as any of the app's own: <c>RequireRateLimiting</c>,
+    /// <c>RequireCors</c> or anything else ASP.NET Core attaches to an endpoint (#1292). A cap on the
+    /// streams one client holds is a concurrency limiter partitioned by client, which holds its lease for
+    /// as long as the stream is open.
+    /// </summary>
+    public ServerEventsBuilder ConfigureEndpoints(Action<IEndpointConventionBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        _endpoints.Add(configure);
+        return this;
+    }
+
+    /// <summary>What the app attaches to the endpoints, applied when they are mapped.</summary>
+    internal IReadOnlyList<Action<IEndpointConventionBuilder>> EndpointConventions => _endpoints;
 
     internal void Register(IServiceCollection services)
     {
