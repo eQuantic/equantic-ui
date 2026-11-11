@@ -1,7 +1,9 @@
 # app-services Specification
 
 ## Purpose
-TBD - created by archiving change an-apps-own-service-reaches-the-browser. Update Purpose after archive.
+An app's own services, registered once in `Program.cs` as .NET registers them, reach every target a
+component runs on: the server's container, Photon's, and the browser's, which the build fills from the
+same registrations.
 
 ## Requirements
 
