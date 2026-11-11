@@ -35,6 +35,38 @@ public class RunningCompilerTests
         return start;
     }
 
+    /// <summary>
+    /// The MSBuild asked how to start eqc cannot hold the save that asked by exiting with its output still
+    /// held: a worker node or a server it left running keeps the streams open, they do not end at its
+    /// exit, and the read after it had no deadline, so the save, and every save after it, waited on a
+    /// stream nothing would close (#997, where the rebuild MSBuild then ran per save did the same).
+    /// </summary>
+    [Fact]
+    public void AnMsBuildThatLeavesItsOutputHeld_DoesNotHoldTheSaveThatAsked()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        using var compiler = new RunningCompiler(_ => null);
+        var held = RunningCompiler.Started("/bin/sh", Path.GetTempPath(), ["-c", "sleep 8 & exit 1"]);
+
+        var watch = Stopwatch.StartNew();
+        compiler.Asked(held, Path.GetTempPath(), TimeSpan.FromSeconds(1)).Should().BeNull();
+
+        watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(5), "what it wrote is read within what is left of its time");
+    }
+
+    /// <summary>What the server starts leaves no MSBuild node, MSBuild server or compiler server behind
+    /// to hold its streams (#997).</summary>
+    [Fact]
+    public void WhatTheServerStarts_LeavesNoBuildServerBehind()
+    {
+        var start = RunningCompiler.Started("dotnet", Path.GetTempPath(), ["msbuild"]);
+
+        start.Environment["MSBUILDDISABLENODEREUSE"].Should().Be("1");
+        start.Environment["DOTNET_CLI_USE_MSBUILD_SERVER"].Should().Be("0");
+        start.Environment["UseSharedCompilation"].Should().Be("false");
+        start.Environment.ContainsKey("MSBUILDENSURESTDOUTFORTASKPROCESSES").Should().BeFalse();
+    }
+
     /// <summary>A stand-in eqc that never answers.</summary>
     private static ProcessStartInfo Silent()
     {

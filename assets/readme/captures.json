@@ -16,7 +16,7 @@
     "web-dashboard.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "dc202f9d4a05f8a695eaf838a503a5e7bf3e0b880ab9294037136f155ff31286",
+        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
         "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
         "samples/DefaultUIDashboard/Screens/ConsoleData.cs": "abcb0a957c3823167118ea3f6ea2f100dc9e0aab969910388f3e3d4c4c91403e",
         "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "945748db6e09ed08198d5e1c788bbd706171542a5b3ab7f79ad2af31f1631808"
@@ -25,7 +25,7 @@
     "web-charts.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "dc202f9d4a05f8a695eaf838a503a5e7bf3e0b880ab9294037136f155ff31286",
+        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
         "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
         "samples/DefaultUIDashboard/Screens/ChartsScreen.cs": "15014c0ce9765c3c665af6e924686e0416fdf04d5abab5062209a3174b8a9902"
       }
@@ -33,7 +33,7 @@
     "web-code-diff.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "dc202f9d4a05f8a695eaf838a503a5e7bf3e0b880ab9294037136f155ff31286",
+        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
         "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
         "samples/DefaultUIDashboard/Screens/DiffScreen.cs": "270ed999ea61baf467a6be6eed75d503bd964ade2cbb7796670eb82d4be5d8d6"
       }
@@ -41,7 +41,7 @@
     "web-forms.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "dc202f9d4a05f8a695eaf838a503a5e7bf3e0b880ab9294037136f155ff31286",
+        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
         "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
         "samples/DefaultUIDashboard/Screens/FormScreen.cs": "dedae4f32851e8b17cf9978c93535cdb3c68421159310e7a9c32cfec2d067f14"
       }

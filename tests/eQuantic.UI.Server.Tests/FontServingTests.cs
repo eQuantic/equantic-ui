@@ -1,6 +1,10 @@
 using System.Net;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
+using System.Runtime.Loader;
 using eQuantic.UI.Primitives;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
@@ -54,6 +58,20 @@ public class FontServingTests
             page.Add(new Text("The theme's", TypeRole.BodyM) { StyleOverride = context.Theme.Type(TypeRole.BodyM) with { Family = TestFace } });
             return page;
         }
+    }
+
+    /// <summary>The assembly a family names only as text, which nothing references and no list of the host's carries.</summary>
+    private const string TextOnly = "eQuantic.Fonts.NamedAsText";
+
+    /// <summary>A family over a face in <see cref="TextOnly"/>, named by its name alone (#1080).</summary>
+    private static readonly FontFamily NamedAsText = new("Named As Text",
+        new FontFile(TextOnly, "eQuantic.UI.Fonts/TestFace-Regular.ttf", 400, 400));
+
+    [Page("/named-as-text-page")]
+    public sealed class NamedAsTextPage : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Text("Handgloves", TypeRole.BodyM) { StyleOverride = context.Theme.Type(TypeRole.BodyM) with { Family = NamedAsText } };
     }
 
     /// <summary>A catalog, as the SDK writes one for an app: public static families.</summary>
@@ -187,14 +205,16 @@ public class FontServingTests
         faces.Should().Contain("font-family: \"Probe Sans\"").And.NotContain("eQuantic Test Face", "the theme's stylesheet declares it");
         System.Text.RegularExpressions.Regex.Matches(faces, "@font-face").Should().HaveCount(1, "one file, named twice");
         var url = System.Text.RegularExpressions.Regex.Match(faces, "url\\(\"(?<url>[^\"]+)\"\\)").Groups["url"].Value;
-        url.Should().MatchRegex("^/_equantic/fonts/[0-9a-f]{16}\\.ttf$");
+        url.Should().MatchRegex("^/_equantic/fonts/[0-9a-f]{16}\\.ttf$", "the theme's stylesheet serves the same file");
         (await client.GetByteArrayAsync(url)).Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"));
     }
 
     /// <summary>
     /// What a page declares is served by every instance of the app, not only the one that rendered it: a
     /// second instance, which never rendered the page, answers its URL and the identity a browser asks
-    /// for (Copilot's review of #1077). The set is the app's deployment, never the requests it served.
+    /// for (Copilot's review of #1077). The set is the app's deployment, never the requests it served: a
+    /// face outside the theme's stylesheet is named by its identity, with the hash of its bytes as its
+    /// version, and any instance reads it from the assembly the identity names (#1080).
     /// </summary>
     [Fact]
     public async Task APageOneInstanceRendered_IsServedByAnotherThatNeverRenderedIt()
@@ -203,12 +223,14 @@ public class FontServingTests
         await using var rendering = await Serve(PhotonTheme.Instance);
         var page = await rendering.GetTestClient().GetStringAsync("/named-face-page");
         var url = System.Text.RegularExpressions.Regex.Match(Element(page, "eq-faces"), "url\\(\"(?<url>[^\"]+)\"\\)").Groups["url"].Value;
-        url.Should().NotBeEmpty();
+        url.Should().MatchRegex("^/_equantic/fonts/eQuantic\\.UI\\.Server\\.Tests/eQuantic\\.UI\\.Fonts/TestFace-Regular\\.ttf\\?v=[0-9a-f]{16}$");
 
         await using var fresh = await Serve(PhotonTheme.Instance);
         var client = fresh.GetTestClient();
 
-        (await client.GetByteArrayAsync(url)).Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"));
+        using var font = await client.GetAsync(url);
+        (await font.Content.ReadAsByteArrayAsync()).Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"));
+        font.Headers.CacheControl!.ToString().Should().Be("public, max-age=31536000, immutable", "the URL names the hash of its bytes");
         var identity = await client.GetAsync($"/_equantic/fonts/{Assembly}/eQuantic.UI.Fonts/TestFace-Regular.ttf");
         identity.Headers.Location!.OriginalString.Should().Be(url);
     }
@@ -223,8 +245,39 @@ public class FontServingTests
     {
         var served = ServedFonts.Of(PhotonTheme.Instance, [], logger: null);
 
-        served.Locate(Assembly, "eQuantic.UI.Fonts/TestFace-Regular.ttf")!.Bytes
+        served.Locate(Assembly, "eQuantic.UI.Fonts/TestFace-Regular.ttf")!.Value.Font.Bytes
             .Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"));
+    }
+
+    /// <summary>
+    /// A single-file app's host lists none of the assemblies its bundle carries, and a family that names its
+    /// assembly only as text leaves no reference for a walk to follow, while the loader still resolves the
+    /// name (#1080). The face is declared on the page and served by every instance, as Photon reads it: by
+    /// loading the assembly the identity names. Here the loader resolves the name from bytes no list
+    /// carries, as a single-file app's resolves it from its bundle.
+    /// </summary>
+    [Fact]
+    public async Task AFamilyThatNamesItsAssemblyOnlyAsText_IsDeclared_AndServedByEveryInstance_ThoughNoListCarriesIt()
+    {
+        var image = AssemblyEmbedding(TextOnly, "eQuantic.UI.Fonts/TestFace-Regular.ttf", Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"));
+        Func<AssemblyLoadContext, AssemblyName, Assembly?> resolve = (context, name) =>
+            name.Name == TextOnly ? context.LoadFromStream(new MemoryStream(image)) : null;
+        AssemblyLoadContext.Default.Resolving += resolve;
+        try
+        {
+            await using var rendering = await Serve(PhotonTheme.Instance);
+            var faces = Element(await rendering.GetTestClient().GetStringAsync("/named-as-text-page"), "eq-faces");
+            faces.Should().Contain("font-family: \"Named As Text\"", "the page names the family, and its face loads by its assembly's name");
+            var url = System.Text.RegularExpressions.Regex.Match(faces, "url\\(\"(?<url>[^\"]+)\"\\)").Groups["url"].Value;
+
+            await using var fresh = await Serve(PhotonTheme.Instance);
+            (await fresh.GetTestClient().GetByteArrayAsync(url))
+                .Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Regular.ttf"), "an instance that never rendered the page serves what it declared");
+        }
+        finally
+        {
+            AssemblyLoadContext.Default.Resolving -= resolve;
+        }
     }
 
     /// <summary>A family built by hand over a font no eQuantic build embedded as a face, and the theme does
@@ -247,22 +300,25 @@ public class FontServingTests
 
     /// <summary>
     /// A page the browser builds asks for a face's file by its identity, since it does not know the hash
-    /// of its bytes, and is sent on to the content-addressed URL (#1056). Only a face an eQuantic build
-    /// embedded, in an assembly the app's deployment carries: anything else is a file the app never chose to
-    /// publish.
+    /// of its bytes, and is sent on to the URL a page the server rendered names it by, its identity with the
+    /// hash as its version (#1056, #1080), as is a page that names a version a new build replaced. Only a face
+    /// an eQuantic build embedded, in an assembly the app's deployment carries: anything else is a file the
+    /// app never chose to publish.
     /// </summary>
-    [Fact]
-    public async Task AFaceAskedForByItsIdentity_IsSentToItsContentAddressedUrl()
+    [Theory]
+    [InlineData("")]
+    [InlineData("?v=0123456789abcdef")]
+    public async Task AFaceAskedForByItsIdentity_IsSentToItsVersion(string version)
     {
         await using var app = await Serve(PhotonTheme.Instance);
         var client = app.GetTestClient();
 
-        var response = await client.GetAsync($"/_equantic/fonts/{Assembly}/eQuantic.UI.Fonts/TestFace-Italic.ttf");
+        var response = await client.GetAsync($"/_equantic/fonts/{Assembly}/eQuantic.UI.Fonts/TestFace-Italic.ttf{version}");
 
         response.StatusCode.Should().Be(HttpStatusCode.Redirect);
         response.Headers.CacheControl!.NoCache.Should().BeTrue("a new build's file is found under its new hash");
         var location = response.Headers.Location!.OriginalString;
-        location.Should().MatchRegex("^/_equantic/fonts/[0-9a-f]{16}\\.ttf$");
+        location.Should().MatchRegex("^/_equantic/fonts/eQuantic\\.UI\\.Server\\.Tests/eQuantic\\.UI\\.Fonts/TestFace-Italic\\.ttf\\?v=[0-9a-f]{16}$");
         (await client.GetByteArrayAsync(location)).Should().Equal(Resource("eQuantic.UI.Fonts/TestFace-Italic.ttf"));
     }
 
@@ -291,6 +347,10 @@ public class FontServingTests
     [InlineData(Assembly + "/eQuantic.UI.Fonts/Nowhere.ttf")]
     [InlineData(Assembly + "/eQuantic.UI.Fonts/TestFace-Regular.txt")]
     [InlineData("System.Private.CoreLib/FxResources.System.Private.CoreLib.SR.resources")]
+    // The identity names an assembly by its simple name, exactly: one file is one URL, read and kept once.
+    [InlineData("EQUANTIC.UI.SERVER.TESTS/eQuantic.UI.Fonts/TestFace-Regular.ttf")]
+    [InlineData(Assembly + "%2C%20Version%3D1.0.0.0/eQuantic.UI.Fonts/TestFace-Regular.ttf")]
+    [InlineData("..%5C" + Assembly + "/eQuantic.UI.Fonts/TestFace-Regular.ttf")]
     public async Task WhatNoEQuanticBuildEmbeddedAsAFace_IsNotFound(string identity)
     {
         await using var app = await Serve(PhotonTheme.Instance);
@@ -298,6 +358,27 @@ public class FontServingTests
         var response = await app.GetTestClient().GetAsync("/_equantic/fonts/" + identity);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    /// <summary>
+    /// The loader matches a name in any case, so a platform assembly spelled otherwise is refused before
+    /// it loads, not after: a browser's request never brings one of the platform's assemblies into the app
+    /// (the secondary review of #1393).
+    /// </summary>
+    [Theory]
+    [InlineData("microsoft.visualbasic.core")]
+    [InlineData("SYSTEM.NET.MAIL")]
+    public async Task APlatformAssemblySpelledInAnotherCase_IsNotLoaded(string name)
+    {
+        static bool Loaded(string name) => AppDomain.CurrentDomain.GetAssemblies()
+            .Any(assembly => string.Equals(assembly.GetName().Name, name, StringComparison.OrdinalIgnoreCase));
+        Loaded(name).Should().BeFalse("nothing else in the test host loads it");
+        await using var app = await Serve(PhotonTheme.Instance);
+
+        var response = await app.GetTestClient().GetAsync($"/_equantic/fonts/{name}/eQuantic.UI.Fonts/TestFace-Regular.ttf");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Loaded(name).Should().BeFalse("a name a browser sends never loads a platform assembly");
     }
 
     /// <summary>The prefix the identity route takes is the one both SDKs embed a face under: written in
@@ -333,6 +414,26 @@ public class FontServingTests
         app.MapUI();
         await app.StartAsync();
         return app;
+    }
+
+    /// <summary>
+    /// The image of an assembly named <paramref name="name"/> that holds nothing but <paramref name="bytes"/>,
+    /// embedded as <paramref name="resource"/>: an assembly no build of this repository writes, so no list the
+    /// host keeps names it.
+    /// </summary>
+    private static byte[] AssemblyEmbedding(string name, string resource, byte[] bytes)
+    {
+        var builder = new PersistedAssemblyBuilder(new AssemblyName(name), typeof(object).Assembly);
+        builder.DefineDynamicModule(name);
+        var metadata = builder.GenerateMetadata(out var il, out var fieldData);
+        var resources = new BlobBuilder();
+        resources.WriteInt32(bytes.Length);
+        resources.WriteBytes(bytes);
+        metadata.AddManifestResource(ManifestResourceAttributes.Public, metadata.GetOrAddString(resource), default, 0);
+        var image = new BlobBuilder();
+        new ManagedPEBuilder(PEHeaderBuilder.CreateLibraryHeader(), new MetadataRootBuilder(metadata), il, fieldData,
+            managedResources: resources).Serialize(image);
+        return image.ToArray();
     }
 
     private static byte[] Resource(string name)
