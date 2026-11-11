@@ -63,6 +63,35 @@ public class ComponentTesterTests
         tester.Find(nameof(MaterialTheme)).Role.Should().Be(SemanticRole.StaticText);
     }
 
+    /// <summary>What a component LOOKS like is in the stylesheet beside the markup: every atomic class the
+    /// markup names has its rule there.</summary>
+    [Fact]
+    public void TheStylesheet_HoldsTheRuleOfEveryClassTheMarkupNames()
+    {
+        using var tester = new ComponentTester();
+        tester.Pump(Button("Pay"));
+
+        // The atomic classes, a hash each; a class a theme's stylesheet defines (eq-type-label) is not one.
+        var classes = System.Text.RegularExpressions.Regex.Matches(tester.Html, "class=\"([^\"]*)\"")
+            .SelectMany(match => match.Groups[1].Value.Split(' '))
+            .Where(name => System.Text.RegularExpressions.Regex.IsMatch(name, "^eq-[0-9a-z]+$"))
+            .Distinct().ToList();
+        classes.Should().NotBeEmpty();
+        classes.Should().OnlyContain(name => tester.Css.Contains("." + name, StringComparison.Ordinal),
+            "a class the markup names without its rule is a look a test cannot read");
+        tester.Css.Should().Contain("min-width:64px", "the button's floor is written as a rule");
+    }
+
+    [Fact]
+    public void TheStylesheet_IsAsked_BeforeAnythingIsDrawn_SaysSo()
+    {
+        using var tester = new ComponentTester();
+
+        var asked = () => tester.Css;
+
+        asked.Should().Throw<InvalidOperationException>();
+    }
+
     [Fact]
     public void WithNoCultureNamed_ATestReadsTheSameOnEveryMachine()
     {
