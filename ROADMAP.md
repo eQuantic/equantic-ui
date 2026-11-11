@@ -41,6 +41,11 @@ What exists, held by suites that fail rather than warn:
 - **The web stack**: SSR with hydration, Server Actions with authorization, server events, a client
   router, forms and validation, localization through `.resx`, hot reload that keeps a page's state,
   and C# in the browser's debugger.
+- **Component tests an app can write**: `eQuantic.UI.Testing` draws a component with a theme, a
+  culture and a density, with no browser and no window, and says what the web lowers, what a screen
+  reader hears and what Photon measures. The SDK holds itself to it: every shipped control is pinned
+  at every variant, size and density it accepts (#1247), and announces the same on every target
+  (#339).
 - **The SDK**: `<Project Sdk="eQuantic.UI.Sdk">` and nothing else. Bun is embedded per OS and
   architecture, so no Node or npm, and every package ships at one version.
 - **The release contract**: every shipping assembly names its class (contract, tool or
@@ -49,8 +54,7 @@ What exists, held by suites that fail rather than warn:
   (#323).
 
 What is not there yet, each with its issue: shared state beyond a component (#289), routes as types
-for programmatic navigation (#292), a component test harness an app can use and the variant matrix
-it carries (#294), the security review and a CSP the SDK writes (#306), and edit-to-view under a
+for programmatic navigation (#292), the security review and a CSP the SDK writes (#306), and edit-to-view under a
 second on the web, where CI measures 23s on every pull request (#900). Three decisions could change a shape an app writes, and Edgar took them on
 2026-10-14, each 1.0 work: the Element is built before the release (#169), the spreadsheet's engine
 leaves Primitives as the code editor's did (#185, done: it is `eQuantic.UI.Sheet`), and
@@ -66,7 +70,7 @@ differently, and the new ones a week falling two weeks in a row.
 | Area | State |
 |------|-------|
 | Transpiler | A strategy per C# construct over an IR (`CodeGen/Ir`, one writer per level). The differential conformance suite runs every case under .NET and under Bun (the suite counts them); what eqc cannot translate faithfully is a build error, listed on the wiki's Diagnostics page, and the subset is on its Supported Features page. Open fidelity bugs: the board, under #164, #565, #845 and #849 |
-| Components | The write-once catalog (index: the wiki's Components page), realized on both targets. Owed: the variant matrix and an accessibility checklist per component, through a harness an app author can use too (#294) |
+| Components | The write-once catalog (index: the wiki's Components page), realized on both targets. Every shipped control is pinned at every variant, size and density it accepts, on the web and on Photon (#1247), through the harness an app author uses too (`eQuantic.UI.Testing`, #294) |
 | Client routing | **Shipped** — a link-driven client router (`src/router`), layout kept across navigations, route guards, prefetch on hover and focus, one module per route, scroll restoration; `Navigator.Go` navigates from code. Routes as types instead of strings: #292 |
 | Forms & validation | **Shipped** — `FormController`/`FormField`/`Rules` in Primitives (write-once, quiet-until-touched, cross-field, conditional via `Rules.When`/`relevantWhen`), `FormInput`/`FormSubmit` surface, async submit through Server Actions with `ApplyServerErrors`, and the `[FormModel]` DataAnnotations bridge (build-time, no second engine) |
 | State management | Component-local `SetState`, and a page's state survives a hot reload. Shared state (signals, context): #289 |
@@ -117,8 +121,10 @@ the web, richer/more predictable layout components, and layout/diagnostic toolin
 ### 4. shadcn-like components
 The catalog (the wiki's Components page is its index) is a respectable start, but shadcn's value is **polish + accessibility + variants**.
 The accessibility half is done on the web and on the three native shells with a bridge (Phase 5;
-UI Automation on Windows is owed). What remains is proof per component: the variant matrix and the
-checklist, through a harness an app can use too (#294). Quality > quantity here.
+UI Automation on Windows is owed). The proof per component is held by suites: the variant matrix
+pins every control at every variant, size and density (#1247), and the parity fixture holds what a
+screen reader hears alike on every target (#339), both through the harness an app uses too
+(#294). Quality > quantity here.
 
 ### 5. Styling — **one engine, resolved by decision, not by plugging**
 The first-party engine shipped (Track S): typed C# styles lowered to deduplicated atomic classes,
@@ -129,8 +135,6 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
 
 ### Cross-cutting maturity (framework → SDK)
 - **Compiler diagnostics**: actionable messages with C# `file:line` + suggestions.
-- **Component test harness**: the repository's suites render a component through fixtures an app
-  cannot reference, so app authors cannot unit-test theirs (#294).
 - **Docs & examples**: essential for a "0 JS" audience — the supported subset and recipes.
 - **SSR/hydration robustness**: the build derives the hydration contract (#515), and the classes SSR
   writes are cross-pinned with the ones hydration computes. `tests/e2e` proves adoption, live events
@@ -197,8 +201,7 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   Android's virtual `AccessibilityNodeInfo` hierarchy), each proved by asking the platform rather
   than the tree. 2026-08-15 closed the last named gap: a navigation now says WHERE YOU ARE
   (`PressableRole.Destination` / `Link.Current` → `aria-current="page"`, the Selected trait on both
-  mobiles), which no existing role could express. Remaining: variant coverage and a component test
-  harness (#294), and UI Automation on the Windows shell.
+  mobiles), which no existing role could express. Remaining: UI Automation on the Windows shell.
 - **Phase 6 — First-party embedded CSS engine** — **✅ shipped** (Track S: atomic classes deduplicated
   by a hash cross-pinned between C# and TypeScript, theme tokens as custom properties with
   fallbacks, one engine and no provider contract by decision — see pillar 5). **Normative
@@ -487,8 +490,8 @@ The bar 1.0 holds the web track to (#898, criterion 3); each line says whether i
 - **Flutter DX**: hot reload preserves state; <1s edit-to-view. The state is kept on the web and on
   the desktop (Phase 3), and on a simulator or an emulator hot reload waits for W7. The second is
   measured on every pull request: the desktop meets it (0.3s) and the web is at 23s (#900).
-- **Components**: every shipped component passes an a11y checklist + variant matrix tests. Not met
-  (#294).
+- **Components**: every shipped component passes an a11y checklist + variant matrix tests. Met for
+  the matrix (#1247) and for what a screen reader hears, alike on every target (#339).
 - **CSS**: at least one first-party engine ships. Met by Phase 6; a provider contract was the
   other half of this line, and pillar 5 declined it.
 - **Security**: a formal hardening review, and a CSP the SDK writes. Not met (#306).
