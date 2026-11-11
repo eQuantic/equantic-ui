@@ -66,6 +66,13 @@ export interface ThemeData {
   controls?: SlotData;
   /** The Button's slot, by the same rule. */
   button?: SlotData;
+  /** The navigation and collection families' slots and the document's (E6d), by the same rule. */
+  navigation?: SlotData;
+  list?: SlotData;
+  table?: SlotData;
+  badge?: SlotData;
+  calendar?: SlotData;
+  markdown?: SlotData;
 }
 
 const color = (t: RgbaTuple): ColorValue => ({ r: t[0], g: t[1], b: t[2], a: t[3] });

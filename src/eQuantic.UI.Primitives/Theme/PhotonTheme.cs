@@ -191,6 +191,228 @@ public sealed class PhotonTheme : IAppTheme
         QuietFill = SurfaceSubtle,
     };
 
+    // Navigation and collections (E6d): what each component drew, now the design system's. A colour is
+    // the role the component chose, cached on first read since a role is an instance member.
+
+    /// <summary>The navigation family (spec B3, B4, C16): a 48dp tab strip under a 3dp indicator inset 16,
+    /// a 56dp bar of 56 by 26 pills, an 80dp rail of 52 by 30 pills with a 1dp trailing edge, a 56dp app
+    /// bar, 30dp page cells and 6dp dots.</summary>
+    public NavigationTheme? Navigation => field ??= new NavigationTheme
+    {
+        InactiveColor = TextMuted,
+        QuietFill = SurfaceSubtle,
+        Background = Surface,
+        TabHeight = 48,
+        TabLabelSize = 14,
+        TabLabelLineHeight = 18,
+        TabLabelWeight = FontWeight.SemiBold,
+        TabSelectedLabelWeight = FontWeight.Bold,
+        TabLabelTracking = 0.1f,
+        IndicatorThickness = 3,
+        IndicatorInset = Space.S4,
+        IndicatorRadius = 2,
+        PillRadius = Radius.Full,
+        PillLabelGap = 2,
+        BarHeight = 56,
+        BarIconSize = IconSize.Md,
+        BarPillWidth = 56,
+        BarPillHeight = 26,
+        BarLabelSize = 11,
+        BarLabelLineHeight = 14,
+        BarLabelWeight = FontWeight.Bold,
+        BarLabelTracking = 0.1f,
+        RailWidth = 80,
+        RailPaddingY = Space.S3,
+        RailGap = Space.S2,
+        RailItemHeight = 56,
+        RailIconSize = IconSize.Dense,
+        RailPillWidth = 52,
+        RailPillHeight = 30,
+        RailSelectedLabelSize = 12,
+        RailSelectedLabelLineHeight = 16,
+        RailSelectedLabelWeight = FontWeight.Bold,
+        RailBorderWidth = 1,
+        RailBorderColor = Border,
+        AppBarHeight = 56,
+        AppBarPaddingX = 4,
+        TitleSize = 20,
+        TitleLineHeight = 26,
+        TitleWeight = FontWeight.SemiBold,
+        TitleColor = TextPrimary,
+        TitleInset = Space.S3,
+        TitleGap = Space.S2,
+        ScrolledElevation = 2,
+        CrumbGap = Space.S1,
+        CrumbColor = TextSecondary,
+        CurrentCrumbColor = TextPrimary,
+        SeparatorSize = IconSize.Sm,
+        SeparatorColor = BorderStrong,
+        PageCellSize = 30,
+        PageGap = 3,
+        PaginationGap = Space.S2,
+        PageRadius = Radius.Sm,
+        PageColor = TextSecondary,
+        EllipsisColor = TextMuted,
+        DotSize = 6,
+        CurrentDotWidth = 18,
+        DotGap = Space.S1,
+        DotRadius = Radius.Full,
+        DotColor = BorderStrong,
+    };
+
+    /// <summary>The list family (spec A7, B2): 52, 68 and 88dp rows padded 16 by 8 with 12 between their
+    /// slots, a 15/20 medium title, a 1dp Border hairline inset 16, an accordion padded 12, and a 96dp swipe
+    /// action.</summary>
+    public ListTheme? List => field ??= new ListTheme
+    {
+        QuietFill = SurfaceSubtle,
+        ItemHeight = 52,
+        TwoLineItemHeight = 68,
+        ThreeLineItemHeight = 88,
+        ItemPaddingX = Space.S4,
+        ItemPaddingY = Space.S2,
+        ItemGap = Space.S3,
+        TextGap = 2,
+        TitleSize = 15,
+        TitleLineHeight = 20,
+        TitleWeight = FontWeight.Medium,
+        TitleColor = TextPrimary,
+        SubtitleColor = TextSecondary,
+        DividerThickness = 1,
+        DividerColor = Border,
+        DividerInset = Space.S4,
+        HeaderHeight = Sizing.Height(SizeVariant.Large),
+        SectionPaddingX = Space.S3,
+        SectionPaddingBottom = Space.S3,
+        HeaderGap = Space.S2,
+        ChevronSize = IconSize.Sm,
+        ChevronColor = TextSecondary,
+        SwipeActionWidth = 96,
+        SwipeActionGap = 3,
+        SwipeIconSize = IconSize.Dense,
+        SwipeSurface = Surface,
+    };
+
+    /// <summary>The table family: cells padded 12 by 8, a Table's 44dp rows 12 apart, and a DataTable's
+    /// 52dp bordered rows under a filled header in capitals.</summary>
+    public TableTheme? Table => field ??= new TableTheme
+    {
+        CellPaddingX = Space.S3,
+        CellPaddingY = Space.S2,
+        HoverFill = SurfaceSubtle,
+        ColumnGap = Space.S3,
+        RowMinHeight = 44,
+        HeaderColor = TextSecondary,
+        DataRowHeight = 52,
+        SelectionColumnWidth = 44,
+        HeaderFill = SurfaceSubtle,
+        DataHeaderColor = TextMuted,
+        SortedHeaderColor = TextPrimary,
+        HeaderUppercase = true,
+        HeaderIconGap = Space.S1,
+        SortIconSize = IconSize.Sm,
+        BorderWidth = 1,
+        BorderColor = Border,
+    };
+
+    /// <summary>The badge family (spec B6, B7): an 8dp dot and a 16dp count ringed 2dp in Surface, the
+    /// avatar's own ladder, and an empty state's 64dp well over a 20/26 semi-bold title.</summary>
+    public BadgeTheme? Badge => field ??= new BadgeTheme
+    {
+        RingColor = Surface,
+        RingWidth = 2,
+        DotSize = 8,
+        CountHeight = 16,
+        CountPaddingX = Space.S1,
+        CountLabelSize = 10,
+        CountLabelLineHeight = 12,
+        CountLabelWeight = FontWeight.Bold,
+        NeutralFill = SurfaceSubtle,
+        NeutralColor = TextSecondary,
+        AvatarSize = BySize(Sizing.Avatar),
+        AvatarLabelSize = BySize(Sizing.AvatarInitials),
+        AvatarLabelWeight = FontWeight.SemiBold,
+        AvatarGlyphSize = new SizeLadder { Small = IconSize.Sm, Medium = IconSize.Dense, Large = IconSize.Md, XLarge = IconSize.Lg },
+        AvatarFill = SurfaceSubtle,
+        AvatarGlyphColor = TextMuted,
+        WellSize = 64,
+        WellFill = SurfaceSubtle,
+        WellIconSize = IconSize.Lg,
+        WellIconColor = TextMuted,
+        EmptyPaddingX = Space.S4,
+        EmptyPaddingY = Space.S12,
+        WellGap = Space.S4,
+        BodyGap = 6,
+        ActionsGap = Space.S5,
+        ActionSpacing = Space.S2,
+        EmptyTitleSize = 20,
+        EmptyTitleLineHeight = 26,
+        EmptyTitleWeight = FontWeight.SemiBold,
+        EmptyTitleColor = TextPrimary,
+        EmptyBodyColor = TextSecondary,
+    };
+
+    /// <summary>The calendar family (spec C15): 44dp day cells under a 28dp row of weekday names, a 1.5dp
+    /// ring for today, and the DatePicker's panel at the medium corner, elevation 2, padded 12.</summary>
+    public CalendarTheme? Calendar => field ??= new CalendarTheme
+    {
+        CellSize = 44,
+        WeekdayHeight = 28,
+        HeaderGap = Space.S1,
+        Gap = Space.S2,
+        TitleRole = TypeRole.TitleSmall,
+        TitleColor = TextPrimary,
+        WeekdayRole = TypeRole.Caption,
+        WeekdayColor = TextMuted,
+        DayRole = TypeRole.BodyM,
+        DayColor = TextPrimary,
+        DayHoverFill = SurfaceSubtle,
+        TodayRingWidth = 1.5f,
+        PanelFill = Surface,
+        PanelRadius = Radius.Md,
+        PanelBorderWidth = 1,
+        PanelBorderColor = Border,
+        PanelElevation = 2,
+        PanelPadding = Space.S3,
+        OpenerIconSize = IconSize.Dense,
+        OpenerColor = TextSecondary,
+    };
+
+    /// <summary>The rendered document: headings on the type scale's heading roles, prose in BodyM 14
+    /// apart, quotes behind a 3dp rule, lists 8 apart, and tables at a 12dp corner.</summary>
+    public MarkdownTheme? Markdown => field ??= new MarkdownTheme
+    {
+        Heading1 = TypeRole.Heading,
+        Heading2 = TypeRole.Title,
+        Heading3 = TypeRole.TitleSmall,
+        Heading4 = TypeRole.Label,
+        Body = TypeRole.BodyM,
+        BlockGap = 14,
+        CodeLineNumbers = false,
+        CodeInverse = false,
+        HeadingSpace = 10,
+        SubheadingSpace = 6,
+        HeadingColor = TextPrimary,
+        BodyColor = TextSecondary,
+        InlineCodeMaxSize = 13.5f,
+        InlineCodeColor = TextPrimary,
+        QuoteIndent = Space.S4,
+        QuotePaddingY = 2,
+        QuoteRuleWidth = 3,
+        QuoteRuleColor = BorderStrong,
+        ListGap = Space.S2,
+        MarkerGap = 10,
+        ListIndent = Space.S5,
+        MarkerColor = TextMuted,
+        TableRadius = 12,
+        TableBorderWidth = 1,
+        TableBorderColor = Border,
+        TableHeaderFill = SurfaceSubtle,
+        TableCellPaddingX = 14,
+        TableHeaderPaddingY = 10,
+        TableCellPaddingY = 11,
+    };
+
     private static SizeLadder BySize(Func<SizeVariant, float> rung) => new()
     {
         Small = rung(SizeVariant.Small),

@@ -69,9 +69,12 @@ public sealed class NavigationRail : StatelessComponent
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
+        // The theme's Navigation slot, then the component's own (§3.10).
+        var slot = theme.Navigation;
+        var gap = slot?.RailGap ?? Space.S2;
 
         // C16's own gap, not the bar's: a rail stacks its cells 8 apart.
-        var destinations = new Column(gap: Space.S2)
+        var destinations = new Column(gap: gap)
         {
             Width = SizeValue.Fill,
             Cross = CrossAlign.Center,
@@ -83,34 +86,34 @@ public sealed class NavigationRail : StatelessComponent
             var index = i;
 
             var glyph = isActive && item.SelectedIcon is { } filled ? filled : item.Icon;
-            var tint = isActive ? primary.OnSubtle : theme.TextMuted;
+            var tint = isActive ? primary.OnSubtle : slot?.InactiveColor ?? theme.TextMuted;
 
             // C16's figures, which are NOT the bar's: a rail's glyph is Dense 20 in a 52×30 pill
             // under a Caption 12 label, where the bar draws Md 24 in 56×26 under an 11/700 one.
             // Built from the bar, the rail was the bar stood on its side — the same class of
             // mistake as reading a sibling's spec for a component that has its own.
-            var icon = new Icon(glyph, IconSize.Dense, tint);
+            var icon = new Icon(glyph, slot?.RailIconSize ?? IconSize.Dense, tint);
             var iconNode = item.BadgeCount > 0 ? Badge.Over(icon, item.BadgeCount) : (VisualNode)icon;
 
             var pill = new Box(new BoxStyle
             {
-                Width = 52,
-                Height = 30,
+                Width = slot?.RailPillWidth ?? 52,
+                Height = slot?.RailPillHeight ?? 30,
                 Background = isActive ? primary.Subtle : null,
-                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
+                CornerRadius = new CornerRadii(slot?.PillRadius ?? theme.Shape(ShapeScale.Full)),
                 // The press shows on the pill, where the handoff puts it ("Press-down shows the pill"),
                 // never on the whole column. The selected destination's
                 // pill already shows, and a press never trades it for another fill: that read as the
                 // selection going away for as long as the finger stayed down.
-                Pressed = isActive ? null : new StyleDiff { Background = theme.SurfaceSubtle },
+                Pressed = isActive ? null : new StyleDiff { Background = slot?.QuietFill ?? theme.SurfaceSubtle },
             }, iconNode.Centered());
 
             // The cell is 80×56 and the HIT is the whole cell, so the pressable wraps the cell and
             // not just the pill and its label.
-            var column = new Column(gap: 2)
+            var column = new Column(gap: slot?.PillLabelGap ?? 2)
             {
                 Width = SizeValue.Fill,
-                Height = 56,
+                Height = slot?.RailItemHeight ?? 56,
                 Main = MainAlign.Center,
                 Cross = CrossAlign.Center,
             };
@@ -119,7 +122,10 @@ public sealed class NavigationRail : StatelessComponent
                 tint, maxLines: 1)
             {
                 // Selection is also a WEIGHT here (C16: label 700 when selected), not only a tint.
-                StyleOverride = isActive ? new TypeStyle(12, 16, FontWeight.Bold, 0, 1.3f) : null,
+                StyleOverride = isActive
+                    ? new TypeStyle(slot?.RailSelectedLabelSize ?? 12, slot?.RailSelectedLabelLineHeight ?? 16,
+                        slot?.RailSelectedLabelWeight ?? FontWeight.Bold, 0, 1.3f)
+                    : null,
             });
 
             destinations.Add(new Pressable(column, OnSelect is null ? null : () => OnSelect(index))
@@ -135,7 +141,7 @@ public sealed class NavigationRail : StatelessComponent
         // The ALIGNMENT belongs to the outer column: it is the one with the rail's full height, so it
         // is the only one with slack to distribute. Setting it on the destinations (which hug their
         // content) would centre nothing at all.
-        var rail = new Column(gap: Space.S2)
+        var rail = new Column(gap: gap)
         {
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
@@ -147,15 +153,15 @@ public sealed class NavigationRail : StatelessComponent
 
         return new Box(new BoxStyle
         {
-            Width = 80,
+            Width = slot?.RailWidth ?? 80,
             Height = SizeValue.Fill,
-            Padding = EdgeInsets.Symmetric(0, Space.S3),
-            Background = theme.Surface,
+            Padding = EdgeInsets.Symmetric(0, slot?.RailPaddingY ?? Space.S3),
+            Background = slot?.Background ?? theme.Surface,
             // C16: a 1dp Border on the TRAILING edge. It is what separates the rail from the content
             // beside it — without it, a rail on a Surface page has no edge at all, and every shell
             // that wanted one drew its own (the sample and both template shells did exactly that).
-            BorderWidth = 1,
-            BorderColor = theme.Border,
+            BorderWidth = slot?.RailBorderWidth ?? 1,
+            BorderColor = slot?.RailBorderColor ?? theme.Border,
             BorderSides = BorderSides.End,
         }, rail);
     }

@@ -123,6 +123,93 @@ public sealed class MaterialTheme : IAppTheme
         LinkPaddingX = 12,
     };
 
+    // Navigation and collections (E6d). Material 3 specifies tabs, the navigation bar and rail, the
+    // top app bar, lists, badges and the date picker, and those slots carry its numbers. It specifies no
+    // breadcrumb, pagination, page indicator, accordion, swipe action, data table, avatar, empty state
+    // or rendered document, so those members, and the Table and Markdown slots, stay the components'
+    // own. A colour is left to the roles the theme already maps.
+
+    /// <summary>
+    /// M3's navigation (Tabs, Navigation bar, Navigation rail and Top app bar, Specs): a 48dp tab strip
+    /// under a 3dp indicator with 3dp corners, its label in Title small (14 over 20, weight 500); an 80dp
+    /// bar of 64 by 32 indicators around 24dp icons, 4dp above a Label medium label (12 over 16, tracking
+    /// 0.5); an 80dp rail of 56 by 32 indicators around 24dp icons, with no edge; and a 64dp small top
+    /// app bar titled in Title large (22 over 28, weight 400).
+    /// </summary>
+    public NavigationTheme? Navigation { get; } = new()
+    {
+        TabHeight = 48,
+        TabLabelSize = 14,
+        TabLabelLineHeight = 20,
+        TabLabelWeight = FontWeight.Medium,
+        TabSelectedLabelWeight = FontWeight.Medium,
+        TabLabelTracking = 0.1f,
+        IndicatorThickness = 3,
+        IndicatorRadius = 3,
+        PillLabelGap = 4,
+        BarHeight = 80,
+        BarIconSize = IconSize.Md,
+        BarPillWidth = 64,
+        BarPillHeight = 32,
+        BarLabelSize = 12,
+        BarLabelLineHeight = 16,
+        BarLabelWeight = FontWeight.Medium,
+        BarLabelTracking = 0.5f,
+        RailWidth = 80,
+        RailIconSize = IconSize.Md,
+        RailPillWidth = 56,
+        RailPillHeight = 32,
+        RailSelectedLabelSize = 12,
+        RailSelectedLabelLineHeight = 16,
+        RailBorderWidth = 0,
+        AppBarHeight = 64,
+        TitleSize = 22,
+        TitleLineHeight = 28,
+        TitleWeight = FontWeight.Regular,
+    };
+
+    /// <summary>
+    /// M3's list (Lists, Specs): 56, 72 and 88dp items, 16dp between the leading element and the text,
+    /// and the headline in Body large (16 over 24, weight 400).
+    /// </summary>
+    public ListTheme? List { get; } = new()
+    {
+        ItemHeight = 56,
+        TwoLineItemHeight = 72,
+        ThreeLineItemHeight = 88,
+        ItemGap = 16,
+        TitleSize = 16,
+        TitleLineHeight = 24,
+        TitleWeight = FontWeight.Regular,
+    };
+
+    /// <summary>
+    /// M3's badge (Badges, Specs): a 6dp small badge, and a large badge 16dp tall, padded 4, its count in
+    /// Label small (11 over 16, weight 500).
+    /// </summary>
+    public BadgeTheme? Badge { get; } = new()
+    {
+        DotSize = 6,
+        CountHeight = 16,
+        CountPaddingX = 4,
+        CountLabelSize = 11,
+        CountLabelLineHeight = 16,
+        CountLabelWeight = FontWeight.Medium,
+    };
+
+    /// <summary>
+    /// M3's docked date picker (Date pickers, Specs): 40dp days, today outlined at 1dp, and the container
+    /// at the large corner (16) and elevation 3, with no outline.
+    /// </summary>
+    public CalendarTheme? Calendar { get; } = new()
+    {
+        CellSize = 40,
+        TodayRingWidth = 1,
+        PanelRadius = 16,
+        PanelBorderWidth = 0,
+        PanelElevation = 3,
+    };
+
     // ---- Elevation — the M3 levels (seed-independent) --------------------------------------------
     public ShadowSpec Elevation(int level) => level switch
     {

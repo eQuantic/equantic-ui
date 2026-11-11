@@ -13,7 +13,16 @@
 import { CodeLanguageRules } from './components/CodeLanguageRules';
 import { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
-import type { ButtonTheme, ControlsTheme } from './theme-slots';
+import type {
+  BadgeTheme,
+  ButtonTheme,
+  CalendarTheme,
+  ControlsTheme,
+  ListTheme,
+  MarkdownTheme,
+  NavigationTheme,
+  TableTheme,
+} from './theme-slots';
 import { codeTokenColor, type AppTheme, type ColorToken, type FontFamily } from './value-types';
 
 /** `IAppTheme`'s defaults. */
@@ -42,6 +51,18 @@ export const IAppTheme = {
   controls: (_theme: AppTheme): ControlsTheme | null => null,
   /** `ButtonTheme? Button => null;` — the button's own defaults. */
   button: (_theme: AppTheme): ButtonTheme | null => null,
+  /** `NavigationTheme? Navigation => null;` — each component's own defaults. */
+  navigation: (_theme: AppTheme): NavigationTheme | null => null,
+  /** `ListTheme? List => null;` — each component's own defaults. */
+  list: (_theme: AppTheme): ListTheme | null => null,
+  /** `TableTheme? Table => null;` — each component's own defaults. */
+  table: (_theme: AppTheme): TableTheme | null => null,
+  /** `BadgeTheme? Badge => null;` — each component's own defaults. */
+  badge: (_theme: AppTheme): BadgeTheme | null => null,
+  /** `CalendarTheme? Calendar => null;` — each component's own defaults. */
+  calendar: (_theme: AppTheme): CalendarTheme | null => null,
+  /** `MarkdownTheme? Markdown => null;` — each component's own defaults. */
+  markdown: (_theme: AppTheme): MarkdownTheme | null => null,
 };
 
 /** `ICodeLanguage`'s defaults. */

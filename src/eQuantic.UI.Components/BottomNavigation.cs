@@ -46,6 +46,8 @@ public sealed class BottomNavigation : StatelessComponent
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
+        // The theme's Navigation slot, then the component's own (§3.10).
+        var slot = theme.Navigation;
         var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         for (var i = 0; i < Items.Count; i++)
         {
@@ -54,26 +56,26 @@ public sealed class BottomNavigation : StatelessComponent
             var index = i;
 
             var glyph = isActive && item.SelectedIcon is { } filled ? filled : item.Icon;
-            var tint = isActive ? primary.OnSubtle : theme.TextMuted;
+            var tint = isActive ? primary.OnSubtle : slot?.InactiveColor ?? theme.TextMuted;
 
-            var icon = new Icon(glyph, IconSize.Md, tint);
+            var icon = new Icon(glyph, slot?.BarIconSize ?? IconSize.Md, tint);
             var iconNode = item.BadgeCount > 0 ? Badge.Over(icon, item.BadgeCount) : (VisualNode)icon;
 
             var pillContent = iconNode.Centered();
             var pill = new Box(new BoxStyle
             {
-                Width = 56,
-                Height = 26,
+                Width = slot?.BarPillWidth ?? 56,
+                Height = slot?.BarPillHeight ?? 26,
                 Background = isActive ? primary.Subtle : null,
-                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
+                CornerRadius = new CornerRadii(slot?.PillRadius ?? theme.Shape(ShapeScale.Full)),
                 // The press shows on the pill, where the handoff puts it ("Press-down shows the pill"),
                 // never on the whole column. The selected destination's
                 // pill already shows, and a press never trades it for another fill: that read as the
                 // selection going away for as long as the finger stayed down.
-                Pressed = isActive ? null : new StyleDiff { Background = theme.SurfaceSubtle },
+                Pressed = isActive ? null : new StyleDiff { Background = slot?.QuietFill ?? theme.SurfaceSubtle },
             }, pillContent);
 
-            var column = new Column(gap: 2)
+            var column = new Column(gap: slot?.PillLabelGap ?? 2)
             {
                 Height = SizeValue.Fill,
                 Main = MainAlign.Center,
@@ -82,7 +84,8 @@ public sealed class BottomNavigation : StatelessComponent
             column.Add(pill);
             column.Add(new Text(item.Label, TypeRole.Caption, tint, maxLines: 1)
             {
-                StyleOverride = new TypeStyle(11, 14, FontWeight.Bold, 0.1f, 1.3f),
+                StyleOverride = new TypeStyle(slot?.BarLabelSize ?? 11, slot?.BarLabelLineHeight ?? 14,
+                    slot?.BarLabelWeight ?? FontWeight.Bold, slot?.BarLabelTracking ?? 0.1f, 1.3f),
             });
 
             row.Add(new Flexible(new Pressable(column, OnSelect is null ? null : () => OnSelect(index))
@@ -99,8 +102,8 @@ public sealed class BottomNavigation : StatelessComponent
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Height = 56,
-            Background = theme.Surface,
+            Height = slot?.BarHeight ?? 56,
+            Background = slot?.Background ?? theme.Surface,
         }, row);
     }
 }

@@ -1,6 +1,7 @@
 /**
- * Mirrors of the C# theme slots of `docs/ELEMENT-TREE-PLAN.md` §3.10 that hold the control ladder:
- * `SizeLadder`, `DensityLadder`, `ControlsTheme` and `ButtonTheme`, every member optional. A member left
+ * Mirrors of the C# theme slots of `docs/ELEMENT-TREE-PLAN.md` §3.10: the control ladder (`SizeLadder`,
+ * `DensityLadder`, `ControlsTheme`), the Button's, and the families' (navigation, list, table, badge,
+ * calendar and the rendered document's), every member optional. A member left
  * null is the next step of the slot order. Built from a config object, as eqc writes a record whose
  * members are all `init` (`new ButtonTheme({ minWidth })`), and from the bridge's JSON
  * (`theme-bridge.ts`).
@@ -10,6 +11,7 @@ import { hashesByValue } from '../utils/hash';
 import { ColorToken, EdgeInsets, TypeStyle, type AppTheme } from './value-types';
 import type { ColorValue } from './nodes';
 import { SheetTheme } from './sheet-theme';
+import type { TypeRoleValue } from './enums.generated';
 
 /** A value per size, each optional (`small` · `medium` · `large` · `xLarge`). */
 export class SizeLadder {
@@ -63,11 +65,246 @@ export class ButtonTheme {
   }
 }
 
+/** The navigation family's slot: Tabs, BottomNavigation, NavigationRail, AppBar, Breadcrumb, Pagination and PageIndicator. */
+export class NavigationTheme {
+  inactiveColor: ColorToken | null = null;
+  quietFill: ColorToken | null = null;
+  background: ColorToken | null = null;
+  tabHeight: number | null = null;
+  tabLabelSize: number | null = null;
+  tabLabelLineHeight: number | null = null;
+  tabLabelWeight: string | null = null;
+  tabSelectedLabelWeight: string | null = null;
+  tabLabelTracking: number | null = null;
+  indicatorThickness: number | null = null;
+  indicatorInset: number | null = null;
+  indicatorRadius: number | null = null;
+  pillRadius: number | null = null;
+  pillLabelGap: number | null = null;
+  barHeight: number | null = null;
+  barIconSize: number | null = null;
+  barPillWidth: number | null = null;
+  barPillHeight: number | null = null;
+  barLabelSize: number | null = null;
+  barLabelLineHeight: number | null = null;
+  barLabelWeight: string | null = null;
+  barLabelTracking: number | null = null;
+  railWidth: number | null = null;
+  railPaddingY: number | null = null;
+  railGap: number | null = null;
+  railItemHeight: number | null = null;
+  railIconSize: number | null = null;
+  railPillWidth: number | null = null;
+  railPillHeight: number | null = null;
+  railSelectedLabelSize: number | null = null;
+  railSelectedLabelLineHeight: number | null = null;
+  railSelectedLabelWeight: string | null = null;
+  railBorderWidth: number | null = null;
+  railBorderColor: ColorToken | null = null;
+  appBarHeight: number | null = null;
+  appBarPaddingX: number | null = null;
+  titleSize: number | null = null;
+  titleLineHeight: number | null = null;
+  titleWeight: string | null = null;
+  titleColor: ColorToken | null = null;
+  titleInset: number | null = null;
+  titleGap: number | null = null;
+  scrolledElevation: number | null = null;
+  crumbGap: number | null = null;
+  crumbColor: ColorToken | null = null;
+  currentCrumbColor: ColorToken | null = null;
+  separatorSize: number | null = null;
+  separatorColor: ColorToken | null = null;
+  pageCellSize: number | null = null;
+  pageGap: number | null = null;
+  paginationGap: number | null = null;
+  pageRadius: number | null = null;
+  pageColor: ColorToken | null = null;
+  ellipsisColor: ColorToken | null = null;
+  dotSize: number | null = null;
+  currentDotWidth: number | null = null;
+  dotGap: number | null = null;
+  dotRadius: number | null = null;
+  dotColor: ColorToken | null = null;
+
+  constructor(config?: Partial<NavigationTheme>) {
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** The list family's slot: ListItem, List, Divider, Accordion and SwipeableRow. */
+export class ListTheme {
+  quietFill: ColorToken | null = null;
+  itemHeight: number | null = null;
+  twoLineItemHeight: number | null = null;
+  threeLineItemHeight: number | null = null;
+  itemPaddingX: number | null = null;
+  itemPaddingY: number | null = null;
+  itemGap: number | null = null;
+  textGap: number | null = null;
+  titleSize: number | null = null;
+  titleLineHeight: number | null = null;
+  titleWeight: string | null = null;
+  titleColor: ColorToken | null = null;
+  subtitleColor: ColorToken | null = null;
+  dividerThickness: number | null = null;
+  dividerColor: ColorToken | null = null;
+  dividerInset: number | null = null;
+  headerHeight: number | null = null;
+  sectionPaddingX: number | null = null;
+  sectionPaddingBottom: number | null = null;
+  headerGap: number | null = null;
+  chevronSize: number | null = null;
+  chevronColor: ColorToken | null = null;
+  swipeActionWidth: number | null = null;
+  swipeActionGap: number | null = null;
+  swipeIconSize: number | null = null;
+  swipeSurface: ColorToken | null = null;
+
+  constructor(config?: Partial<ListTheme>) {
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** The table family's slot: Table and DataTable. */
+export class TableTheme {
+  cellPaddingX: number | null = null;
+  cellPaddingY: number | null = null;
+  hoverFill: ColorToken | null = null;
+  columnGap: number | null = null;
+  rowMinHeight: number | null = null;
+  headerColor: ColorToken | null = null;
+  dataRowHeight: number | null = null;
+  selectionColumnWidth: number | null = null;
+  headerFill: ColorToken | null = null;
+  dataHeaderColor: ColorToken | null = null;
+  sortedHeaderColor: ColorToken | null = null;
+  headerUppercase: boolean | null = null;
+  headerIconGap: number | null = null;
+  sortIconSize: number | null = null;
+  borderWidth: number | null = null;
+  borderColor: ColorToken | null = null;
+
+  constructor(config?: Partial<TableTheme>) {
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** The badge family's slot: Badge, Avatar and EmptyState. */
+export class BadgeTheme {
+  ringColor: ColorToken | null = null;
+  ringWidth: number | null = null;
+  dotSize: number | null = null;
+  countHeight: number | null = null;
+  countPaddingX: number | null = null;
+  countLabelSize: number | null = null;
+  countLabelLineHeight: number | null = null;
+  countLabelWeight: string | null = null;
+  neutralFill: ColorToken | null = null;
+  neutralColor: ColorToken | null = null;
+  avatarSize: SizeLadder | null = null;
+  avatarLabelSize: SizeLadder | null = null;
+  avatarLabelWeight: string | null = null;
+  avatarGlyphSize: SizeLadder | null = null;
+  avatarFill: ColorToken | null = null;
+  avatarGlyphColor: ColorToken | null = null;
+  wellSize: number | null = null;
+  wellFill: ColorToken | null = null;
+  wellIconSize: number | null = null;
+  wellIconColor: ColorToken | null = null;
+  emptyPaddingX: number | null = null;
+  emptyPaddingY: number | null = null;
+  wellGap: number | null = null;
+  bodyGap: number | null = null;
+  actionsGap: number | null = null;
+  actionSpacing: number | null = null;
+  emptyTitleSize: number | null = null;
+  emptyTitleLineHeight: number | null = null;
+  emptyTitleWeight: string | null = null;
+  emptyTitleColor: ColorToken | null = null;
+  emptyBodyColor: ColorToken | null = null;
+
+  constructor(config?: Partial<BadgeTheme>) {
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** The calendar family's slot: Calendar and DatePicker. */
+export class CalendarTheme {
+  cellSize: number | null = null;
+  weekdayHeight: number | null = null;
+  headerGap: number | null = null;
+  gap: number | null = null;
+  titleRole: TypeRoleValue | null = null;
+  titleColor: ColorToken | null = null;
+  weekdayRole: TypeRoleValue | null = null;
+  weekdayColor: ColorToken | null = null;
+  dayRole: TypeRoleValue | null = null;
+  dayColor: ColorToken | null = null;
+  dayHoverFill: ColorToken | null = null;
+  todayRingWidth: number | null = null;
+  panelFill: ColorToken | null = null;
+  panelRadius: number | null = null;
+  panelBorderWidth: number | null = null;
+  panelBorderColor: ColorToken | null = null;
+  panelElevation: number | null = null;
+  panelPadding: number | null = null;
+  openerIconSize: number | null = null;
+  openerColor: ColorToken | null = null;
+
+  constructor(config?: Partial<CalendarTheme>) {
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** The rendered document's slot, which a Markdown's own `style` comes ahead of. */
+export class MarkdownTheme {
+  heading1: TypeRoleValue | null = null;
+  heading2: TypeRoleValue | null = null;
+  heading3: TypeRoleValue | null = null;
+  heading4: TypeRoleValue | null = null;
+  body: TypeRoleValue | null = null;
+  blockGap: number | null = null;
+  codeLineNumbers: boolean | null = null;
+  codeInverse: boolean | null = null;
+  headingSpace: number | null = null;
+  subheadingSpace: number | null = null;
+  headingColor: ColorToken | null = null;
+  bodyColor: ColorToken | null = null;
+  inlineCodeMaxSize: number | null = null;
+  inlineCodeColor: ColorToken | null = null;
+  quoteIndent: number | null = null;
+  quotePaddingY: number | null = null;
+  quoteRuleWidth: number | null = null;
+  quoteRuleColor: ColorToken | null = null;
+  listGap: number | null = null;
+  markerGap: number | null = null;
+  listIndent: number | null = null;
+  markerColor: ColorToken | null = null;
+  tableRadius: number | null = null;
+  tableBorderWidth: number | null = null;
+  tableBorderColor: ColorToken | null = null;
+  tableHeaderFill: ColorToken | null = null;
+  tableCellPaddingX: number | null = null;
+  tableHeaderPaddingY: number | null = null;
+  tableCellPaddingY: number | null = null;
+
+  constructor(config?: Partial<MarkdownTheme>) {
+    if (config) Object.assign(this, config);
+  }
+}
+
 // Records: each hashes by its members, as `equals` compares it (`ValueTwinHashTests` holds this to the C#).
 hashesByValue(SizeLadder);
 hashesByValue(DensityLadder);
 hashesByValue(ControlsTheme);
 hashesByValue(ButtonTheme);
+hashesByValue(NavigationTheme);
+hashesByValue(ListTheme);
+hashesByValue(TableTheme);
+hashesByValue(BadgeTheme);
+hashesByValue(CalendarTheme);
+hashesByValue(MarkdownTheme);
 
 // ---- from the bridge's JSON (C# `ThemeBridge.SlotJson`) ------------------------------------------
 // The bridge writes every slot by one rule: a member under its camel-cased name, a number as itself, an
@@ -148,6 +385,223 @@ export function sheetTheme(data: SlotData): SheetTheme {
   return sheet;
 }
 
+/** The Navigation slot the bridge wrote. */
+export function navigationTheme(data: SlotData): NavigationTheme {
+  return new NavigationTheme({
+    inactiveColor: slotToken(data.inactiveColor),
+    quietFill: slotToken(data.quietFill),
+    background: slotToken(data.background),
+    tabHeight: slotValue<number>(data.tabHeight),
+    tabLabelSize: slotValue<number>(data.tabLabelSize),
+    tabLabelLineHeight: slotValue<number>(data.tabLabelLineHeight),
+    tabLabelWeight: slotValue<string>(data.tabLabelWeight),
+    tabSelectedLabelWeight: slotValue<string>(data.tabSelectedLabelWeight),
+    tabLabelTracking: slotValue<number>(data.tabLabelTracking),
+    indicatorThickness: slotValue<number>(data.indicatorThickness),
+    indicatorInset: slotValue<number>(data.indicatorInset),
+    indicatorRadius: slotValue<number>(data.indicatorRadius),
+    pillRadius: slotValue<number>(data.pillRadius),
+    pillLabelGap: slotValue<number>(data.pillLabelGap),
+    barHeight: slotValue<number>(data.barHeight),
+    barIconSize: slotValue<number>(data.barIconSize),
+    barPillWidth: slotValue<number>(data.barPillWidth),
+    barPillHeight: slotValue<number>(data.barPillHeight),
+    barLabelSize: slotValue<number>(data.barLabelSize),
+    barLabelLineHeight: slotValue<number>(data.barLabelLineHeight),
+    barLabelWeight: slotValue<string>(data.barLabelWeight),
+    barLabelTracking: slotValue<number>(data.barLabelTracking),
+    railWidth: slotValue<number>(data.railWidth),
+    railPaddingY: slotValue<number>(data.railPaddingY),
+    railGap: slotValue<number>(data.railGap),
+    railItemHeight: slotValue<number>(data.railItemHeight),
+    railIconSize: slotValue<number>(data.railIconSize),
+    railPillWidth: slotValue<number>(data.railPillWidth),
+    railPillHeight: slotValue<number>(data.railPillHeight),
+    railSelectedLabelSize: slotValue<number>(data.railSelectedLabelSize),
+    railSelectedLabelLineHeight: slotValue<number>(data.railSelectedLabelLineHeight),
+    railSelectedLabelWeight: slotValue<string>(data.railSelectedLabelWeight),
+    railBorderWidth: slotValue<number>(data.railBorderWidth),
+    railBorderColor: slotToken(data.railBorderColor),
+    appBarHeight: slotValue<number>(data.appBarHeight),
+    appBarPaddingX: slotValue<number>(data.appBarPaddingX),
+    titleSize: slotValue<number>(data.titleSize),
+    titleLineHeight: slotValue<number>(data.titleLineHeight),
+    titleWeight: slotValue<string>(data.titleWeight),
+    titleColor: slotToken(data.titleColor),
+    titleInset: slotValue<number>(data.titleInset),
+    titleGap: slotValue<number>(data.titleGap),
+    scrolledElevation: slotValue<number>(data.scrolledElevation),
+    crumbGap: slotValue<number>(data.crumbGap),
+    crumbColor: slotToken(data.crumbColor),
+    currentCrumbColor: slotToken(data.currentCrumbColor),
+    separatorSize: slotValue<number>(data.separatorSize),
+    separatorColor: slotToken(data.separatorColor),
+    pageCellSize: slotValue<number>(data.pageCellSize),
+    pageGap: slotValue<number>(data.pageGap),
+    paginationGap: slotValue<number>(data.paginationGap),
+    pageRadius: slotValue<number>(data.pageRadius),
+    pageColor: slotToken(data.pageColor),
+    ellipsisColor: slotToken(data.ellipsisColor),
+    dotSize: slotValue<number>(data.dotSize),
+    currentDotWidth: slotValue<number>(data.currentDotWidth),
+    dotGap: slotValue<number>(data.dotGap),
+    dotRadius: slotValue<number>(data.dotRadius),
+    dotColor: slotToken(data.dotColor),
+  });
+}
+
+/** The List slot the bridge wrote. */
+export function listTheme(data: SlotData): ListTheme {
+  return new ListTheme({
+    quietFill: slotToken(data.quietFill),
+    itemHeight: slotValue<number>(data.itemHeight),
+    twoLineItemHeight: slotValue<number>(data.twoLineItemHeight),
+    threeLineItemHeight: slotValue<number>(data.threeLineItemHeight),
+    itemPaddingX: slotValue<number>(data.itemPaddingX),
+    itemPaddingY: slotValue<number>(data.itemPaddingY),
+    itemGap: slotValue<number>(data.itemGap),
+    textGap: slotValue<number>(data.textGap),
+    titleSize: slotValue<number>(data.titleSize),
+    titleLineHeight: slotValue<number>(data.titleLineHeight),
+    titleWeight: slotValue<string>(data.titleWeight),
+    titleColor: slotToken(data.titleColor),
+    subtitleColor: slotToken(data.subtitleColor),
+    dividerThickness: slotValue<number>(data.dividerThickness),
+    dividerColor: slotToken(data.dividerColor),
+    dividerInset: slotValue<number>(data.dividerInset),
+    headerHeight: slotValue<number>(data.headerHeight),
+    sectionPaddingX: slotValue<number>(data.sectionPaddingX),
+    sectionPaddingBottom: slotValue<number>(data.sectionPaddingBottom),
+    headerGap: slotValue<number>(data.headerGap),
+    chevronSize: slotValue<number>(data.chevronSize),
+    chevronColor: slotToken(data.chevronColor),
+    swipeActionWidth: slotValue<number>(data.swipeActionWidth),
+    swipeActionGap: slotValue<number>(data.swipeActionGap),
+    swipeIconSize: slotValue<number>(data.swipeIconSize),
+    swipeSurface: slotToken(data.swipeSurface),
+  });
+}
+
+/** The Table slot the bridge wrote. */
+export function tableTheme(data: SlotData): TableTheme {
+  return new TableTheme({
+    cellPaddingX: slotValue<number>(data.cellPaddingX),
+    cellPaddingY: slotValue<number>(data.cellPaddingY),
+    hoverFill: slotToken(data.hoverFill),
+    columnGap: slotValue<number>(data.columnGap),
+    rowMinHeight: slotValue<number>(data.rowMinHeight),
+    headerColor: slotToken(data.headerColor),
+    dataRowHeight: slotValue<number>(data.dataRowHeight),
+    selectionColumnWidth: slotValue<number>(data.selectionColumnWidth),
+    headerFill: slotToken(data.headerFill),
+    dataHeaderColor: slotToken(data.dataHeaderColor),
+    sortedHeaderColor: slotToken(data.sortedHeaderColor),
+    headerUppercase: slotValue<boolean>(data.headerUppercase),
+    headerIconGap: slotValue<number>(data.headerIconGap),
+    sortIconSize: slotValue<number>(data.sortIconSize),
+    borderWidth: slotValue<number>(data.borderWidth),
+    borderColor: slotToken(data.borderColor),
+  });
+}
+
+/** The Badge slot the bridge wrote. */
+export function badgeTheme(data: SlotData): BadgeTheme {
+  return new BadgeTheme({
+    ringColor: slotToken(data.ringColor),
+    ringWidth: slotValue<number>(data.ringWidth),
+    dotSize: slotValue<number>(data.dotSize),
+    countHeight: slotValue<number>(data.countHeight),
+    countPaddingX: slotValue<number>(data.countPaddingX),
+    countLabelSize: slotValue<number>(data.countLabelSize),
+    countLabelLineHeight: slotValue<number>(data.countLabelLineHeight),
+    countLabelWeight: slotValue<string>(data.countLabelWeight),
+    neutralFill: slotToken(data.neutralFill),
+    neutralColor: slotToken(data.neutralColor),
+    avatarSize: slotSizeLadder(data.avatarSize),
+    avatarLabelSize: slotSizeLadder(data.avatarLabelSize),
+    avatarLabelWeight: slotValue<string>(data.avatarLabelWeight),
+    avatarGlyphSize: slotSizeLadder(data.avatarGlyphSize),
+    avatarFill: slotToken(data.avatarFill),
+    avatarGlyphColor: slotToken(data.avatarGlyphColor),
+    wellSize: slotValue<number>(data.wellSize),
+    wellFill: slotToken(data.wellFill),
+    wellIconSize: slotValue<number>(data.wellIconSize),
+    wellIconColor: slotToken(data.wellIconColor),
+    emptyPaddingX: slotValue<number>(data.emptyPaddingX),
+    emptyPaddingY: slotValue<number>(data.emptyPaddingY),
+    wellGap: slotValue<number>(data.wellGap),
+    bodyGap: slotValue<number>(data.bodyGap),
+    actionsGap: slotValue<number>(data.actionsGap),
+    actionSpacing: slotValue<number>(data.actionSpacing),
+    emptyTitleSize: slotValue<number>(data.emptyTitleSize),
+    emptyTitleLineHeight: slotValue<number>(data.emptyTitleLineHeight),
+    emptyTitleWeight: slotValue<string>(data.emptyTitleWeight),
+    emptyTitleColor: slotToken(data.emptyTitleColor),
+    emptyBodyColor: slotToken(data.emptyBodyColor),
+  });
+}
+
+/** The Calendar slot the bridge wrote. */
+export function calendarTheme(data: SlotData): CalendarTheme {
+  return new CalendarTheme({
+    cellSize: slotValue<number>(data.cellSize),
+    weekdayHeight: slotValue<number>(data.weekdayHeight),
+    headerGap: slotValue<number>(data.headerGap),
+    gap: slotValue<number>(data.gap),
+    titleRole: slotValue<TypeRoleValue>(data.titleRole),
+    titleColor: slotToken(data.titleColor),
+    weekdayRole: slotValue<TypeRoleValue>(data.weekdayRole),
+    weekdayColor: slotToken(data.weekdayColor),
+    dayRole: slotValue<TypeRoleValue>(data.dayRole),
+    dayColor: slotToken(data.dayColor),
+    dayHoverFill: slotToken(data.dayHoverFill),
+    todayRingWidth: slotValue<number>(data.todayRingWidth),
+    panelFill: slotToken(data.panelFill),
+    panelRadius: slotValue<number>(data.panelRadius),
+    panelBorderWidth: slotValue<number>(data.panelBorderWidth),
+    panelBorderColor: slotToken(data.panelBorderColor),
+    panelElevation: slotValue<number>(data.panelElevation),
+    panelPadding: slotValue<number>(data.panelPadding),
+    openerIconSize: slotValue<number>(data.openerIconSize),
+    openerColor: slotToken(data.openerColor),
+  });
+}
+
+/** The Markdown slot the bridge wrote. */
+export function markdownTheme(data: SlotData): MarkdownTheme {
+  return new MarkdownTheme({
+    heading1: slotValue<TypeRoleValue>(data.heading1),
+    heading2: slotValue<TypeRoleValue>(data.heading2),
+    heading3: slotValue<TypeRoleValue>(data.heading3),
+    heading4: slotValue<TypeRoleValue>(data.heading4),
+    body: slotValue<TypeRoleValue>(data.body),
+    blockGap: slotValue<number>(data.blockGap),
+    codeLineNumbers: slotValue<boolean>(data.codeLineNumbers),
+    codeInverse: slotValue<boolean>(data.codeInverse),
+    headingSpace: slotValue<number>(data.headingSpace),
+    subheadingSpace: slotValue<number>(data.subheadingSpace),
+    headingColor: slotToken(data.headingColor),
+    bodyColor: slotToken(data.bodyColor),
+    inlineCodeMaxSize: slotValue<number>(data.inlineCodeMaxSize),
+    inlineCodeColor: slotToken(data.inlineCodeColor),
+    quoteIndent: slotValue<number>(data.quoteIndent),
+    quotePaddingY: slotValue<number>(data.quotePaddingY),
+    quoteRuleWidth: slotValue<number>(data.quoteRuleWidth),
+    quoteRuleColor: slotToken(data.quoteRuleColor),
+    listGap: slotValue<number>(data.listGap),
+    markerGap: slotValue<number>(data.markerGap),
+    listIndent: slotValue<number>(data.listIndent),
+    markerColor: slotToken(data.markerColor),
+    tableRadius: slotValue<number>(data.tableRadius),
+    tableBorderWidth: slotValue<number>(data.tableBorderWidth),
+    tableBorderColor: slotToken(data.tableBorderColor),
+    tableHeaderFill: slotToken(data.tableHeaderFill),
+    tableCellPaddingX: slotValue<number>(data.tableCellPaddingX),
+    tableHeaderPaddingY: slotValue<number>(data.tableHeaderPaddingY),
+    tableCellPaddingY: slotValue<number>(data.tableCellPaddingY),
+  });
+}
+
 /**
  * Every slot the browser's theme carries, by the name the bridge writes it under and the builder that
  * reads it. `materializeTheme` walks this, so a family adds its slot here and nowhere in the bridge.
@@ -156,6 +610,12 @@ export const slotBuilders: Record<string, (data: SlotData) => unknown> = {
   sheet: sheetTheme,
   controls: controlsTheme,
   button: buttonTheme,
+  navigation: navigationTheme,
+  list: listTheme,
+  table: tableTheme,
+  badge: badgeTheme,
+  calendar: calendarTheme,
+  markdown: markdownTheme,
 };
 
 /**
@@ -164,11 +624,31 @@ export const slotBuilders: Record<string, (data: SlotData) => unknown> = {
  * other member forwarded, its defaults included, as `OverriddenTheme` does.
  */
 export class AppThemeExtensions {
-  static with(theme: AppTheme, controls: ControlsTheme | null = null, button: ButtonTheme | null = null): AppTheme {
+  static with(
+    theme: AppTheme,
+    controls: ControlsTheme | null = null,
+    button: ButtonTheme | null = null,
+    navigation: NavigationTheme | null = null,
+    list: ListTheme | null = null,
+    table: TableTheme | null = null,
+    badge: BadgeTheme | null = null,
+    calendar: CalendarTheme | null = null,
+    markdown: MarkdownTheme | null = null,
+  ): AppTheme {
+    // A map, so a slot's name is never confused with a member every object inherits.
+    const slots = new Map<PropertyKey, unknown>([
+      ['controls', controls],
+      ['button', button],
+      ['navigation', navigation],
+      ['list', list],
+      ['table', table],
+      ['badge', badge],
+      ['calendar', calendar],
+      ['markdown', markdown],
+    ]);
     return new Proxy(theme, {
       get(target, key) {
-        if (key === 'controls') return controls ?? target.controls ?? null;
-        if (key === 'button') return button ?? target.button ?? null;
+        if (slots.has(key)) return slots.get(key) ?? Reflect.get(target, key, target) ?? null;
         const value = Reflect.get(target, key, target);
         return typeof value === 'function' ? value.bind(target) : value;
       },
