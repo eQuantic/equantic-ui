@@ -13,7 +13,7 @@
 import { CodeLanguageRules } from './components/CodeLanguageRules';
 import { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
-import type { ButtonTheme, ControlsTheme } from './theme-slots';
+import type { ButtonTheme, CardTheme, ControlsTheme, MenuTheme, ModalTheme, NoticeTheme, ProgressTheme } from './theme-slots';
 import { codeTokenColor, type AppTheme, type ColorToken, type FontFamily } from './value-types';
 
 /** `IAppTheme`'s defaults. */
@@ -42,6 +42,16 @@ export const IAppTheme = {
   controls: (_theme: AppTheme): ControlsTheme | null => null,
   /** `ButtonTheme? Button => null;` — the button's own defaults. */
   button: (_theme: AppTheme): ButtonTheme | null => null,
+  /** `ModalTheme? Modal => null;` — the Dialog's, the BottomSheet's and the Drawer's own defaults. */
+  modal: (_theme: AppTheme): ModalTheme | null => null,
+  /** `MenuTheme? Menu => null;` — the Popover's, the Menu's and the Tooltip's own defaults. */
+  menu: (_theme: AppTheme): MenuTheme | null => null,
+  /** `NoticeTheme? Notice => null;` — the Toast's, the Banner's and the consent card's own defaults. */
+  notice: (_theme: AppTheme): NoticeTheme | null => null,
+  /** `ProgressTheme? Progress => null;` — the ProgressBar's, PullToRefresh's and the Skeleton's own defaults. */
+  progress: (_theme: AppTheme): ProgressTheme | null => null,
+  /** `CardTheme? Card => null;` — the Card's own defaults. */
+  card: (_theme: AppTheme): CardTheme | null => null,
 };
 
 /** `ICodeLanguage`'s defaults. */
