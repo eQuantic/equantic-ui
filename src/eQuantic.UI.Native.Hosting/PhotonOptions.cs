@@ -3,22 +3,20 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Hosting;
 
 /// <summary>
-/// What the app is, as opposed to what it does: its theme, the name on the window, and the surface
-/// a desktop stands in with. Bound from configuration under <c>Photon</c>, so appsettings.json,
-/// environment variables and command-line arguments all reach it the way a .NET developer expects
-/// — with one exception the binder cannot take, <see cref="Theme"/>, which says so itself.
+/// What the app is, as opposed to what it does: the name on the window, and the surface a desktop
+/// stands in with. Bound from configuration under <c>Photon</c>, so appsettings.json, environment
+/// variables and command-line arguments all reach it the way a .NET developer expects.
+/// <para>
+/// The theme is not here. It is a C# object chosen with <c>UseTheme(...)</c>, not a name in a
+/// settings file, and a member of it here was walked by the configuration binder's generator anyway,
+/// through every record the theme's slots hold, until a <see cref="TypeStyle"/> in one wrote code
+/// that does not compile (#1398). <see cref="PhotonApplication.Theme"/> carries it.
+/// </para>
 /// </summary>
 public sealed class PhotonOptions
 {
     /// <summary>The configuration section these are bound from.</summary>
     public const string SectionName = "Photon";
-
-    /// <summary>
-    /// The design system the whole tree resolves against. The one member here that configuration
-    /// does NOT reach: a theme is a C# object chosen with <c>UseTheme(...)</c>, not a name in a
-    /// settings file, so the binder skips it and leaves this default in place.
-    /// </summary>
-    public IAppTheme Theme { get; set; } = PhotonTheme.Instance;
 
     /// <summary>
     /// Null FOLLOWS the system's light/dark setting, which is what an app should do. A value pins

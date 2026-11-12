@@ -1,0 +1,35 @@
+<Project>
+  <!--
+    WHAT A REFERENCED PROJECT COMPILED (#828), asked of the project itself.
+
+    eqc compiles each project an app references from its source (#624), and it read that source by
+    walking the project's directory with no preprocessor symbol defined: a file the project removes became
+    a module, a file it links from outside its directory was never read, and `#if NET8_0_OR_GREATER`
+    took the branch the build did not. The answer is the project's own, as MSBuild evaluates it, so the
+    app's build asks it: this file is imported into a referenced project only for that question, through
+    CustomAfterMicrosoftCommonTargets on the MSBuild call the web SDK makes, with the global properties
+    the ProjectReference protocol hands it, and nothing else of that project runs.
+
+    The answer is the lines of the project's section of eqc's sources list: its project file, its
+    DefineConstants (the implicit ones of its target framework among them), and the full path of each C#
+    file it compiles, its generated global usings included.
+  -->
+  <Target Name="EQuanticProjectSources" DependsOnTargets="AddImplicitDefineConstants;GenerateGlobalUsings"
+          Returns="@(_EqProjectSourcesLine)">
+    <ItemGroup>
+      <_EqProjectCompile Include="@(Compile)" Condition="'%(Compile.Extension)' == '.cs'" />
+      <!-- Its own source, and what it compiles that is not: generated under obj, or handed by a package. -->
+      <_EqProjectOwn Include="@(_EqProjectCompile)"
+          Condition="'%(_EqProjectCompile.NuGetPackageId)' == '' And !$([System.String]::Copy('%(_EqProjectCompile.FullPath)').StartsWith('$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)'))'))" />
+      <_EqProjectCompiledOnly Include="@(_EqProjectCompile)" Exclude="@(_EqProjectOwn)" />
+      <_EqProjectSourcesLine Include="project" Value="project: $(MSBuildProjectFullPath)" />
+      <_EqProjectSourcesLine Include="symbols" Value="symbols: $(DefineConstants)" />
+      <_EqProjectSourcesLine Include="@(_EqProjectOwn)">
+        <Value>%(_EqProjectOwn.FullPath)</Value>
+      </_EqProjectSourcesLine>
+      <_EqProjectSourcesLine Include="@(_EqProjectCompiledOnly)">
+        <Value>compiled: %(_EqProjectCompiledOnly.FullPath)</Value>
+      </_EqProjectSourcesLine>
+    </ItemGroup>
+  </Target>
+</Project>
