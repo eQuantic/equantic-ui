@@ -81,7 +81,7 @@ public sealed class TimePicker : StatefulComponent
 
         var box = new Box(new BoxStyle
         {
-            Height = Sizing.Height(SizeVariant.Medium, context.Density),
+            Height = ControlMetrics.Height(context, SizeVariant.Medium),
             Width = SizeValue.Fill,
             Padding = EdgeInsets.Symmetric(Space.S3, 0),
             Background = theme.Surface,
@@ -106,7 +106,7 @@ public sealed class TimePicker : StatefulComponent
 
             list.Add(new Pressable(new Box(new BoxStyle
             {
-                Height = Sizing.Height(SizeVariant.Medium, context.Density),
+                Height = ControlMetrics.Height(context, SizeVariant.Medium),
                 Padding = EdgeInsets.Symmetric(Space.S3, 0),
                 Width = SizeValue.Fill,
                 Background = picked ? theme.Colors(Variant.Primary).Subtle

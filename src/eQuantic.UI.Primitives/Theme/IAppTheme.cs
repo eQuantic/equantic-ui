@@ -136,6 +136,19 @@ public interface IAppTheme
     SheetTheme? Sheet => null;
 
     /// <summary>
+    /// The control ladder every sized control reads (<see cref="ControlsTheme"/>), NULL by default, which
+    /// a control reads as <see cref="Sizing"/>. A theme that changes how tall a medium control is answers
+    /// a slot naming that rung, and every medium control follows (<c>docs/ELEMENT-TREE-PLAN.md</c> §3.10).
+    /// </summary>
+    ControlsTheme? Controls => null;
+
+    /// <summary>
+    /// The Button's slot (<see cref="ButtonTheme"/>), NULL by default, which a button reads as its own
+    /// defaults: the ladder through <see cref="Controls"/>, and its constants.
+    /// </summary>
+    ButtonTheme? Button => null;
+
+    /// <summary>
     /// The colour of a code token. DEFAULTED from the palette the theme already has — a design
     /// system that ships one set of variants should not have to invent a second one to show code,
     /// and a theme that wants a real syntax palette overrides this and nothing else.

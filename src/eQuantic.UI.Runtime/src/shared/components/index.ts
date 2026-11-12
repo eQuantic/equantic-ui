@@ -113,6 +113,7 @@ export { CodeSymbols } from './CodeSymbols';
 export { CodeToken } from './CodeToken';
 export { CodeWordCompletionProvider } from './CodeWordCompletionProvider';
 export { ComponentElement } from './ComponentElement';
+export { ControlMetrics } from './ControlMetrics';
 export { CookieConsent } from './CookieConsent';
 export { Crumb } from './Crumb';
 export { CultureOption } from './CultureOption';
