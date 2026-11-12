@@ -145,3 +145,14 @@
  4853  13.3  49504 /System/Library/PrivateFrameworks/HelpData.framework/Versions/A/Resources/helpd
  7159  11.5  14896 /System/Library/PrivateFrameworks/MobileAccessoryUpdater.framework/XPCServices/EAUpdaterService.xpc/Contents/MacOS/EAUpdaterService
    95  10.3  24176 /System/Library/PrivateFrameworks/MobileAccessoryUpdater.framework/Support/accessoryupdaterd
+=== alive 13:46:51 app: 2259 watch: 
+=== alive 13:47:01 app: 2259 watch: 
+--- sample 13:47:04 load: { 11.97 30.91 21.05 } System-wide memory free percentage: 79%
+156 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2235 dotnet run --no-build --project samples/PhotonDesktop
+2259 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  344  20.5  29120 /System/Library/PrivateFrameworks/BiomeStreams.framework/Support/BiomeAgent
+ 1925   5.3 390352 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+  993   3.4  37424 /usr/libexec/GamePolicyAgent
+  135   2.6  32960 /usr/libexec/dasd
+ 2273   2.2  22768 /System/Library/PrivateFrameworks/IntelligencePlatformCompute.framework/Versions/A/XPCServices/IntelligencePlatformComputeService.xpc/Contents/MacOS/IntelligencePlatformComputeService
