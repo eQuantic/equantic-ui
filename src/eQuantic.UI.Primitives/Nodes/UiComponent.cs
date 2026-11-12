@@ -248,7 +248,7 @@ public abstract class StatefulComponent : UiComponent
 
     /// <summary>Takes a position in a live tree; true when it is the instance's first, which is when
     /// it mounts.</summary>
-    internal bool Place(ComponentElement at)
+    internal bool EnterPosition(ComponentElement at)
     {
         if (MountedAt is null)
         {
@@ -262,7 +262,7 @@ public abstract class StatefulComponent : UiComponent
 
     /// <summary>Leaves a position; true when it was the last the instance held, which is when it
     /// unmounts.</summary>
-    internal bool Leave(ComponentElement at)
+    internal bool LeavePosition(ComponentElement at)
     {
         if (!ReferenceEquals(MountedAt, at))
         {

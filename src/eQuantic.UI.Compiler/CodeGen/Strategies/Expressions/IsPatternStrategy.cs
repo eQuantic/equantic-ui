@@ -51,8 +51,9 @@ public class IsPatternStrategy : IConversionStrategy
             // how the input reaches it (Read).
             var subject = $"$v{isPattern.SpanStart}";
             // The test is ONE pattern-matching operation: a Deconstruct the app wrote is called once for the
-            // value, however many alternatives read its parts (`t is (1, _) or (_, 4)`), and held where the
-            // test's own arrow declares it (MatchParts, Holding).
+            // value, however many alternatives read its parts (`t is (1, _) or (_, 4)`), a member whose getter
+            // is the app's is read once (`c is { Value: 2 or 1 }`), and both are held where the test's own
+            // arrow declares them (MatchParts, Holding).
             var ((condition, bindings), held) = context.MatchParts.In(isPattern.SpanStart, () =>
             {
                 var built = PatternConverter.BuildCondition(pattern, subject, context);
@@ -206,11 +207,11 @@ public class IsPatternStrategy : IConversionStrategy
         @"^(?:[A-Za-z_$][\w$]*|-?\d[\w.]*|'(?:[^'\\]|\\.)*'|""(?:[^""\\]|\\.)*"")$", RegexOptions.Compiled);
 
     /// <summary>
-    /// A test whose operation holds the parts a <c>Deconstruct</c> the app wrote hands back
-    /// (<see cref="MatchParts"/>), in an arrow of its own that declares where it holds them, fresh each
-    /// time the test runs, so it needs no statement around it: an initializer called the
-    /// <c>Deconstruct</c> once per part where no statement could declare a temporary (Copilot's second
-    /// review of #696). The input it reads is read once outside it (<see cref="Read"/>), and an
+    /// A test whose operation holds the parts a <c>Deconstruct</c> the app wrote hands back, or a member
+    /// whose read runs the app's code (<see cref="MatchParts"/>), in an arrow of its own that declares where
+    /// it holds them, fresh each time the test runs, so it needs no statement around it: an initializer
+    /// called the <c>Deconstruct</c> once per part where no statement could declare a temporary (Copilot's
+    /// second review of #696). The input it reads is read once outside it (<see cref="Read"/>), and an
     /// <c>await</c> in the input stays in the function it is written in.
     /// </summary>
     private static string Holding(string tested, IReadOnlyList<string> held, ConversionContext context)

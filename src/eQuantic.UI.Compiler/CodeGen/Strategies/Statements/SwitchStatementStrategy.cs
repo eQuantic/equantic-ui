@@ -103,8 +103,8 @@ public class SwitchStatementStrategy : IStatementStrategy
         SwitchSectionSyntax? defaultSection = null;
 
         // The chain is ONE pattern-matching operation: a Deconstruct the app wrote is called once for the
-        // value, however many labels read its parts, and held where the chain's block declares it
-        // (MatchParts), fresh each time the switch runs.
+        // value, however many labels read its parts, a member whose getter is the app's is read once, and
+        // both are held where the chain's block declares them (MatchParts), fresh each time the switch runs.
         var (_, held) = context.MatchParts.In(switchStmt.SpanStart, () =>
         {
             foreach (var section in switchStmt.Sections)
