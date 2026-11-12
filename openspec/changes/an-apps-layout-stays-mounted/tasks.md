@@ -21,7 +21,7 @@
 
 ## 5. The dashboard
 
-- [ ] 5.1 `ConsoleLayout` holds the frame and the sidebar's state, and the screens return their content. Verify: in a browser, the sidebar opened on one screen stays open across a navigation; the README captures retaken
+- [x] 5.1 `ConsoleLayout` holds the frame and the sidebar's state, and the screens return their content. Verify: in a browser, the sidebar opened on one screen stays open across a navigation; the README captures retaken
 
 ## 6. The documentation
 
