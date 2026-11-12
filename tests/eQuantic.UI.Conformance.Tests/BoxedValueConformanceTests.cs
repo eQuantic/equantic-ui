@@ -22,6 +22,12 @@ public class BoxedValueConformanceTests
         public enum Other { Small }
         public enum Status { Pending, Done }
         [Flags] public enum Perm { None = 0, Read = 1, Write = 2 }
+        public record Bag(int A, int B) : IEnumerable<int>
+        {
+            public IEnumerator<int> GetEnumerator() { yield return A; yield return B; }
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+        public record Rank(int Level) : IComparable { public int CompareTo(object o) => o is Tone t ? (int)t + 10 : -1; }
         """;
 
     [SkippableTheory]
@@ -35,6 +41,10 @@ public class BoxedValueConformanceTests
     [InlineData("""return new System.Text.StringBuilder().Append((object)0.1f).Append('|').Append((object)Tone.Warm).ToString();""")]
     [InlineData("""var l = new List<object> { Tone.Cool, 1.5f, 0.1f, 2 }; return string.Join(",", l);""")]
     [InlineData("""object o = Perm.Read | Perm.Write; object n = Perm.None; return o.ToString() + "|" + n + "|" + (o is Perm) + "|" + ((Perm)o).HasFlag(Perm.Write);""")]
+    // A record of the app's behind IEnumerable<T> compares by value held as object; only a list and an array are by reference.
+    [InlineData("""IEnumerable<int> e = new Bag(1, 2); object o = e; var l = new List<object> { new Bag(1, 2) }; return l.Contains(o) + "|" + o.Equals(new Bag(1, 2)) + "|" + (o.GetHashCode() == new Bag(1, 2).GetHashCode());""")]
+    // An app's own CompareTo(object) is handed the box, as .NET hands it.
+    [InlineData("""return new Rank(0).CompareTo(Tone.Cool) + "|" + new Rank(0).CompareTo("cool");""")]
     // #954: a boxed enum compares and hashes as its type.
     [InlineData("""object other = "small"; Func<object, bool> same = Scale.Small.Equals; return Scale.Small.Equals(other) + "|" + same(other) + "|" + object.Equals(Scale.Small, other);""")]
     [InlineData("""var e = Scale.Small; object o = e; return (o.GetHashCode() == e.GetHashCode()) + "|" + (o.GetHashCode() == 0);""")]

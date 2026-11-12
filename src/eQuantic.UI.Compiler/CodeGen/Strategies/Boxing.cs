@@ -44,11 +44,13 @@ internal static class Boxing
     /// <summary>
     /// Whether a boxing is an argument a call's own lowering reads by the value's type, which the box would hide
     /// from it: <c>Convert</c>'s <c>object</c> overloads, which read an enum and a nullable as they are written, and
-    /// <c>CompareTo(object)</c>, which compares a member by its value. What they answer was already .NET's.
+    /// the BCL's <c>CompareTo(object)</c> (an enum's, a float's), which compares a member by its value. What they answer
+    /// was already .NET's. An app's own <c>CompareTo(object)</c> is handed the box, as .NET hands it.
     /// </summary>
     internal static bool ReadThrough(IConversionOperation conversion) =>
         conversion.Parent is IArgumentOperation { Parent: IInvocationOperation { TargetMethod: var method } }
-        && (method.ContainingType.ToDisplayString() == "System.Convert" || method.Name == "CompareTo");
+        && (method.ContainingType.ToDisplayString() == "System.Convert"
+            || method.Name == "CompareTo" && method.ContainingType.ContainingNamespace?.ToDisplayString() == "System");
 
     /// <summary>Whether a conversion is an argument of <c>object</c>'s statics (<c>Equals</c>, <c>ReferenceEquals</c>),
     /// which compare a list by the type it had before the conversion, or an operand of a reference equality

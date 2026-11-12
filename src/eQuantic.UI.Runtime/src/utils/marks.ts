@@ -14,9 +14,14 @@
 const references = new WeakSet<object>();
 const anonymous = new WeakSet<object>();
 
-/** A list or an array on its way into `object` or an interface: compared and hashed by its identity from now on. */
+/**
+ * A list or an array on its way into `object` or an interface: compared and hashed by its identity from now on.
+ * Only an array is marked: a `List<T>` and a `T[]` are arrays here, while what else an `IEnumerable<T>` holds (a
+ * record of the app's, a set, a dictionary) answers its equality by its own type, a record by value, and a mark on
+ * it compared a record by reference.
+ */
 export function asReference<T>(value: T): T {
-  if (typeof value === 'object' && value !== null) references.add(value);
+  if (Array.isArray(value)) references.add(value);
   return value;
 }
 
