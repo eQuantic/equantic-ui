@@ -25,4 +25,4 @@
 
 ## 6. The documentation
 
-- [ ] 6.1 The wiki's routing page in its five languages, and one ledger entry citing #1129. Verify: the docs guards pass against the wiki branch
+- [x] 6.1 The wiki's ServerIntegration page, where `UseLayout` is declared, in its five languages, and one ledger entry citing #1129. Verify: the docs guards pass against the wiki branch
