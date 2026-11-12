@@ -56,8 +56,10 @@ StatefulComponent	mount
 StatefulComponent	mountReconcile
 StatefulComponent	mountedAt
 StatefulComponent	nodeKind
+StatefulComponent	notifyDependenciesChanged
 StatefulComponent	notifyMounted
 StatefulComponent	notifyUnmounted
+StatefulComponent	onDependenciesChanged
 StatefulComponent	onMount
 StatefulComponent	onUnmount
 StatefulComponent	render
