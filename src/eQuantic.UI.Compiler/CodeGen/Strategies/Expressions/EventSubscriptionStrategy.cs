@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -16,9 +17,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// <para>
 /// The rewrite composes an invocation list through <c>$eq.delegates</c>, which keeps what C#
 /// promises: handlers run in the order they were added, and removing one drops the LAST occurrence.
-/// Gated on the left side being an EVENT — a numeric `+=` is still addition, and a plain
-/// <c>Action</c> FIELD keeps its own meaning too, because assigning over one is what apps expect
-/// there.
+/// Gated on the left side being an EVENT or a DELEGATE, an <c>Action</c> field or local included, whose
+/// <c>+=</c> is <c>Delegate.Combine</c> just the same: a numeric `+=` is still addition.
 /// </para>
 /// </summary>
 public class EventSubscriptionStrategy : IConversionStrategy
@@ -29,21 +29,31 @@ public class EventSubscriptionStrategy : IConversionStrategy
         if (!assignment.IsKind(SyntaxKind.AddAssignmentExpression)
             && !assignment.IsKind(SyntaxKind.SubtractAssignmentExpression)) return false;
 
-        // Only an event. Without the model this cannot be decided, and guessing from the shape
-        // would turn `total += price` into a delegate composition.
-        return context.SemanticHelper.GetSymbol(assignment.Left) is IEventSymbol;
+        // Only an event or a delegate. Without the model this cannot be decided, and guessing from the
+        // shape would turn `total += price` into a delegate composition.
+        return context.SemanticHelper.GetSymbol(assignment.Left) is IEventSymbol
+            || context.SemanticHelper.GetType(assignment.Left) is { TypeKind: TypeKind.Delegate };
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var assignment = (AssignmentExpressionSyntax)node;
-        var target = context.Converter.ConvertExpression(assignment.Left);
-        var handler = context.Converter.ConvertExpression(assignment.Right);
         var helper = assignment.IsKind(SyntaxKind.AddAssignmentExpression)
             ? Eq.CombineDelegate
             : Eq.RemoveDelegate;
 
         context.UsedHelpers.Add(Eq.Import);
+        // A target evaluates once, as C# does: `Get().Run += h` called Get twice.
+        if (context.SemanticHelper.GetSymbol(assignment.Left) is not IEventSymbol)
+        {
+            JsExpr Next(JsExpr current, IReadOnlyList<JsExpr> operands) => JsExpr.Call(JsExpr.Identifier(helper), current, operands[0]);
+            var value = context.Converter.ConvertIr(assignment.Right);
+            return JsExprWriter.Write(Place.Of(assignment.Left, context) is { } place
+                ? place.Modify([value], Next, answerOld: false)
+                : ReadModifyWrite.Assign(context.Converter.ConvertIr(assignment.Left), [value], Next, answerOld: false, context));
+        }
+        var target = context.Converter.ConvertExpression(assignment.Left);
+        var handler = context.Converter.ConvertExpression(assignment.Right);
         return $"{target} = {helper}({target}, {handler})";
     }
 

@@ -21,8 +21,8 @@ export class CodeHoverSession {
         this._editor = editor;
         editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, (_) => this.dismiss());
         editor.changed = $eq.delegates.combine(editor.changed, (_) => this.dismiss());
-        editor.completion.changed = $eq.delegates.combine(editor.completion.changed, this.completionChanged.bind(this));
-        editor.diagnostics.changed = $eq.delegates.combine(editor.diagnostics.changed, this.diagnosticsChanged.bind(this));
+        editor.completion.changed = $eq.delegates.combine(editor.completion.changed, $eq.delegates.bound(this, this.completionChanged));
+        editor.diagnostics.changed = $eq.delegates.combine(editor.diagnostics.changed, $eq.delegates.bound(this, this.diagnosticsChanged));
     }
 
     _editor!: CodeEditorController;

@@ -255,6 +255,45 @@ public class CodeLinesTests : IDisposable
         Holds("alpha\nbeta\ngamma", At(1, 0), At(1, 0), "ArrowUp", At(0, 0));
         Holds("alpha\n\ngamma", At(1, 0), At(1, 0), "ArrowUp", At(0, 0));
         Holds("alpha\n\ngamma\ndelta", At(1, 0), At(1, 0), "ArrowDown", At(2, 0));
+        // At the document's end no line follows the block, and the passed line is written after the block's
+        // last line, at the very place the problem holds (#1059).
+        Holds("alpha\nbeta", At(1, 0), At(1, 4), "ArrowUp", At(0, 4));
+        Holds("alpha\nbeta", At(0, 0), At(0, 5), "ArrowDown", At(1, 5));
+    }
+
+    /// <summary>
+    /// Enter typed where a semicolon is missing leaves the problem of no width at that line's end: the line
+    /// break begins the text written there, and a line written below the place is no text of the place's.
+    /// Carried past it, the problem went to the start of the new line, where nothing is missing (#1059).
+    /// </summary>
+    [Fact]
+    public void AProblemOfNoWidth_AtALinesEnd_StaysThereWhenEnterIsTypedAtIt()
+    {
+        var editor = Editor("foo()\nbar", At(0, 5));
+        editor.Diagnostics.Report([new CodeDiagnostic(new CodeRange(At(0, 5)), "; expected")]);
+
+        Press(editor, "Enter", KeyModifiers.None).Should().BeTrue();
+
+        editor.Document.Line(0).Should().Be("foo()");
+        editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(At(0, 5)));
+    }
+
+    /// <summary>
+    /// Only a problem keeps its place in front of a line written at it (#1059): a caret there follows what is
+    /// written, as a snippet's stop and a place to go back to do. An app's edit that writes a line at another
+    /// caret's place leaves that caret after it, and the problem of no width at the same place where it was.
+    /// </summary>
+    [Fact]
+    public void ALineWrittenAtACaret_TakesTheCaret_AndLeavesTheProblem()
+    {
+        var editor = Editor("foo()\nbar", At(1, 3));
+        editor.Selections = [new CodeRange(At(1, 3)), new CodeRange(At(0, 5))];
+        editor.Diagnostics.Report([new CodeDiagnostic(new CodeRange(At(0, 5)), "; expected")]);
+
+        editor.Apply(new CodeRange(At(0, 5)), "\n  baz");
+
+        editor.Selections.Should().Contain(new CodeRange(At(1, 5)), "the caret follows what was written at it");
+        editor.Diagnostics.Items.Single().Range.Should().Be(new CodeRange(At(0, 5)));
     }
 
     /// <summary>

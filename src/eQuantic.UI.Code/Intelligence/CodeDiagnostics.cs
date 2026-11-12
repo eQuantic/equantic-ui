@@ -154,7 +154,7 @@ public sealed class CodeDiagnostics
 
     /// <summary><paramref name="problems"/> where they stand once <paramref name="edit"/> is made.</summary>
     private static List<CodeDiagnostic> Carried(List<CodeDiagnostic> problems, CodeEdit edit) =>
-        problems.Select(problem => problem with { Range = edit.Carry(problem.Range) }).ToList();
+        problems.Select(problem => problem with { Range = edit.CarryProblem(problem.Range) }).ToList();
 
     // ---- asking -----------------------------------------------------------------------------------
 

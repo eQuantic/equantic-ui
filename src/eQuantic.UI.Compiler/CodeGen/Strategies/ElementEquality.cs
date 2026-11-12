@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -218,6 +219,83 @@ internal static class ElementEquality
         face.ContainingAssembly?.GetTypeByMetadataName("System.ValueTuple`2") is { } tuple
         && tuple.AllInterfaces.Any(implemented =>
             SymbolEqualityComparer.Default.Equals(implemented.OriginalDefinition, face.OriginalDefinition));
+
+    /// <summary>
+    /// Refuses, where the call is written, a comparison that reaches an equality no twin holds, as a call bound to the
+    /// member is refused (<see cref="HostOnlySymbolExtensions.ReportIfHostOnly"/>, EQ2010), and answers whether it did.
+    /// A <c>[ServerOnly]</c> <c>Equals</c> is left out of its type's twin, so the comparison fell back to identity, or
+    /// to the members a struct's twin compares, and answered what the server's method never would:
+    /// <c>EqualityComparer&lt;C&gt;.Default.Equals(c, c)</c> answered true over an override that answers false, where
+    /// <c>c.Equals(c)</c> was refused (Copilot's third review of #977). Each member the comparison may reach is asked in
+    /// turn, and the first refusal is the one told.
+    /// </summary>
+    internal static bool Refuses(ITypeSymbol? compared, bool equatable, SyntaxNode at, ConversionContext context) =>
+        Refuses(compared, equatable, at, context, new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default));
+
+    private static bool Refuses(ITypeSymbol? compared, bool equatable, SyntaxNode at, ConversionContext context,
+        HashSet<ITypeSymbol> visited)
+    {
+        var value = compared.UnwrapNullable() ?? compared;
+        if (value is null || !visited.Add(value)) return false;
+        // A value of several parts compares each with its own type's comparer.
+        var parts = value switch
+        {
+            INamedTypeSymbol { IsTupleType: true } tuple => tuple.TupleElements.Select(element => element.Type),
+            INamedTypeSymbol { IsAnonymousType: true } anonymous => MembersOf(anonymous).Select(member => member.Type),
+            INamedTypeSymbol { Name: "KeyValuePair", TypeArguments: [var key, var held] } pair
+                when pair.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic" => [key, held],
+            _ => null,
+        };
+        if (parts is not null) return parts.Select(part => Refuses(part, true, at, context, visited)).ToList().Contains(true);
+        if (EqualitiesReached(value, equatable, context).Any(member => member.ReportIfHostOnly(at, context, value))) return true;
+        // A record's synthesized Equals, and a struct's that none overrides, compare each member the same way.
+        return value is INamedTypeSymbol { IsValueType: true } or INamedTypeSymbol { IsRecord: true }
+            && value.Locations.Any(location => location.IsInSource)
+            && value.GetMembers().OfType<IFieldSymbol>().Where(field => !field.IsStatic)
+                .Select(field => Refuses(field.Type, true, at, context, visited)).ToList().Contains(true);
+    }
+
+    /// <summary>The runtime's <c>KeyEquality</c> for a comparison a call makes, as <see cref="Of(ITypeSymbol?)"/>
+    /// writes it, with what it reaches refused.</summary>
+    internal static string? Of(ITypeSymbol? type, SyntaxNode at, ConversionContext context)
+    {
+        Refuses(type, true, at, context);
+        return Of(type);
+    }
+
+    /// <summary>
+    /// The members a comparison of <paramref name="value"/>'s values reaches, each as a call bound to it would: the
+    /// typed <c>Equals</c> of the app's answering the type's <c>IEquatable&lt;T&gt;</c>, where the default comparer asks
+    /// it (<paramref name="equatable"/>) or a record's synthesized <c>Equals(object)</c> does, and otherwise the
+    /// <c>Equals(object)</c> a call on the type binds: the override it declares or inherits, or <c>object</c>'s, through
+    /// which the fence finds an override a value behind the type may carry. A type parameter's comparer asks the type
+    /// argument's <c>IEquatable&lt;T&gt;</c> too, as .NET settles it at run time. An array reaches none: it is
+    /// compared by reference, and nothing derives from it.
+    /// </summary>
+    private static IEnumerable<IMethodSymbol> EqualitiesReached(ITypeSymbol value, bool equatable, ConversionContext context)
+    {
+        if (value is IArrayTypeSymbol) yield break;
+        if (value is INamedTypeSymbol named && (equatable || named.IsRecord) && ElementEquality.SelfMethod(named) is { } typed)
+        {
+            yield return typed;
+            yield break;
+        }
+        var compilation = context.SemanticModel?.Compilation ?? context.ProjectCompilation;
+        IMethodSymbol? objectEquals = null;
+        for (var at = value as INamedTypeSymbol; at is not null && objectEquals is null; at = at.BaseType)
+            objectEquals = at.GetMembers("Equals").OfType<IMethodSymbol>().FirstOrDefault(method =>
+                IsObjectEquals(method) && (method.IsOverride || method.ContainingType.SpecialType == SpecialType.System_Object));
+        objectEquals ??= compilation?.GetSpecialType(SpecialType.System_Object).GetMembers("Equals").OfType<IMethodSymbol>()
+            .FirstOrDefault(IsObjectEquals);
+        if (objectEquals is not null) yield return objectEquals;
+        if (equatable && value is ITypeParameterSymbol
+            && compilation?.GetTypeByMetadataName("System.IEquatable`1")?.Construct(value).GetMembers("Equals")
+                .OfType<IMethodSymbol>().FirstOrDefault() is { } contract)
+            yield return contract;
+
+        static bool IsObjectEquals(IMethodSymbol method) =>
+            method is { IsStatic: false, Parameters: [{ Type.SpecialType: SpecialType.System_Object }] };
+    }
 
     /// <summary>The equality, and whether <c>$eq.equals</c> answers what it answers for a value of the
     /// type: what lets a tuple of such members be compared by <c>$eq.equals</c> whole. <paramref name="equatable"/>
