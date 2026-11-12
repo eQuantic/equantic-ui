@@ -437,16 +437,16 @@ public class CodeDiagnosticsTests : IDisposable
         editor.Diagnostics.Providers.Add(late);
         editor.Diagnostics.Check();
         editor.Diagnostics.IsChecking.Should().BeTrue();
-        // What the editor posted as it was made runs first (its folding's first answer). The wait below is for
-        // the answer's own post, and a queue already holding something ended it at once: when the answer's
-        // continuation came after Task.Run returned, the drain ran without it and the editor was still
-        // checking (#1298, measured: the queue held 1 item before the answer in 300 of 300 runs, and the
-        // answer posted after the await in 1 of 300).
+        // What the editor posted as it was made runs first (its folding's first answer), so the queue holds
+        // nothing of its own when the answer comes (#1298, measured: the queue held 1 item before the answer in
+        // 300 of 300 runs, and the answer posted after the await in 1 of 300).
         queue.Drain();
 
         await Task.Run(() => late.Answer(0, Warning(0, 0, 3)));
         // Time for the answer's continuation to post, so a count moved off the UI thread would show here. Only
-        // this test drains the queue, so what the answer did by now it did off the UI thread.
+        // this test drains the queue, so what the answer did by now it did off the UI thread. The post that ends
+        // this wait need not be the answer's: another test's can come first, so the drain after it waits for the
+        // answer's effect instead.
         var deadline = DateTime.UtcNow.AddSeconds(5);
         while (queue.Count == 0 && DateTime.UtcNow < deadline) await Task.Delay(5);
 
