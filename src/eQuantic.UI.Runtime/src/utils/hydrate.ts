@@ -167,13 +167,9 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
     if (of && incoming instanceof (of as unknown as new (...args: never[]) => object))
       return incoming;
     const source = incoming as Record<string, unknown>;
-    const result = of ? blank(of, source, (key) => (ownSpec(members, key) !== undefined ? hydrate(source[key], members[key]) : source[key])) : {};
-    for (const key of Object.keys(source))
-      adoptMember(
-        result,
-        key,
-        ownSpec(members, key) !== undefined ? hydrate(source[key], members[key]) : source[key],
-      );
+    const member = once((key) => (ownSpec(members, key) !== undefined ? hydrate(source[key], members[key]) : source[key]));
+    const result = of ? blank(of, source, member) : {};
+    for (const key of Object.keys(source)) adoptMember(result, key, member(key));
     // The specs of the type arguments the twin revives, which the wire never carries: the C# type
     // knows them and JSON does not. A topic that crossed without them revived no payload.
     if (of?.$typeArguments !== undefined && typeArguments !== undefined)
@@ -337,13 +333,26 @@ function instance(incoming: unknown, ctor: HydratableConstructor): unknown {
   if (incoming instanceof (ctor as unknown as new (...args: never[]) => object)) return incoming;
   if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
   const source = incoming as Record<string, unknown>;
-  const member = (key: string): unknown => {
+  const member = once((key) => {
     const spec = ownSpec(ctor.$hydration, key);
     return spec !== undefined ? hydrate(source[key], spec) : source[key];
-  };
+  });
   const rebuilt = blank(ctor, source, member);
   for (const key of Object.keys(source)) adoptMember(rebuilt, key, member(key));
   return rebuilt;
+}
+
+/**
+ * `read` asked once for each key: a member the primary constructor is handed is the member the value holds, the
+ * one object a field initialized from the parameter shares with the property, as in .NET. Hydrated again for the
+ * adoption, the field held one object and the property another.
+ */
+function once(read: (key: string) => unknown): (key: string) => unknown {
+  const read$ = new Map<string, unknown>();
+  return (key) => {
+    if (!read$.has(key)) read$.set(key, read(key));
+    return read$.get(key);
+  };
 }
 
 /**

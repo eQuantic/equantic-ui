@@ -285,6 +285,29 @@ describe('a record that holds what the wire does not carry', () => {
     expect(read).toBeInstanceOf(Base);
   });
 
+  it('hands its constructor the member it holds, which a field built from the parameter shares', () => {
+    class Item {
+      static $hydration = {};
+      constructor(readonly n = 0) {}
+    }
+    class Holder {
+      static $primary = ['item'];
+      static $hydration = { item: Item as unknown as HydrationSpec };
+      private readonly kept: Item;
+      constructor(readonly item: Item = new Item()) {
+        this.kept = item;
+      }
+      sharesIt(): boolean {
+        return this.kept === this.item;
+      }
+    }
+
+    const read = hydrate({ item: { n: 3 } }, Holder as unknown as HydrationSpec) as Holder;
+    expect(read.item).toBeInstanceOf(Item);
+    expect(read.item.n).toBe(3);
+    expect(read.sharesIt(), 'one object, as in .NET').toBe(true);
+  });
+
   it('reads the list of its own class, never one a base holds', () => {
     expect((hydrate({ id: 1, extra: 2 }, Own as unknown as HydrationSpec) as Own).label()).toBe('#3');
     const derived = hydrate({ id: 1, extra: 2 }, Derived as unknown as HydrationSpec) as Derived;
