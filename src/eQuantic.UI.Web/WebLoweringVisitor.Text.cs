@@ -18,7 +18,7 @@ internal sealed partial class WebLoweringVisitor
     /// outline and ::placeholder mechanics live in the generated stylesheet (.eq-entry). The
     /// composing component owns the container chrome. Handlers attach on the client (lowering.ts —
     /// SSR emits no events; hydration wires them). The entry lowers inside a STABLE
-    /// .eq-field shell that always carries the sr-only description twin (.eq-desc) — presence
+    /// .eq-field shell that always carries the hidden description twin (.eq-desc) — presence
     /// flipping with the description would REPLACE the input and drop focus mid-edit.
     /// </summary>
     private HtmlElement LowerTextEntry(TextEntry entry)
@@ -66,14 +66,17 @@ internal sealed partial class WebLoweringVisitor
         if (entry.Autofocus) element.RawAttributes["autofocus"] = "";
         if (entry.Invalid) element.RawAttributes["aria-invalid"] = "true";
 
-        // The description twin: sr-only, and a polite live region — present (empty) from the first
-        // paint so a later error swap ANNOUNCES instead of merely recoloring. The id is the
-        // content's FNV hash, the atomizer's identity rule — deterministic across SSR and client,
-        // no per-render counter (identical captions share one id; the referenced text is the same).
+        // The description twin: HIDDEN, and the field's description through aria-describedby, which
+        // reads an element it names however hidden. It is no live region and no line of the page:
+        // the component that draws the message draws it in a LiveRegion of its own, so the message
+        // is announced once and read once (#1332). Present (empty) from the first paint all the
+        // same, so the shape never flips and a description that appears changes attributes rather
+        // than replacing the input. The id is the content's FNV hash, the atomizer's identity rule —
+        // deterministic across SSR and client, no per-render counter.
         var description = new RealizedElement("span")
         {
             ClassName = "eq-desc",
-            RawAttributes = new Dictionary<string, string> { ["aria-live"] = "polite" },
+            RawAttributes = new Dictionary<string, string> { ["hidden"] = "" },
         };
         if (entry.Description is { Length: > 0 } caption)
         {

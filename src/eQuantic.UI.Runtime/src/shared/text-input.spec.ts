@@ -73,12 +73,14 @@ describe('text entry primitive (C# cross-pin)', () => {
     // changes attributes instead of replacing the <input> and dropping focus.
     expect(description.tag).toBe('span');
     expect(description.attributes['class']).toMatch(/^eq-desc(?: |$)/);
-    expect(description.attributes['aria-live']).toBe('polite');
+    // Hidden, and no live region: the component's own message line is that (#1332).
+    expect(description.attributes['hidden']).toBe('');
+    expect(description.attributes['aria-live']).toBeUndefined();
     expect(description.attributes['id']).toBeUndefined();
     expect(input.attributes['aria-describedby']).toBeUndefined();
   });
 
-  it('a description is associated by hashed id and announces politely (C# twin byte-for-byte)', () => {
+  it('a description is associated by hashed id, hidden from the page (C# twin byte-for-byte)', () => {
     const node = lower(new TextEntry('', null, { description: 'We never share it.' }));
     const { input, description } = entryParts(node as HtmlNode);
 

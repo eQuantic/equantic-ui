@@ -14,3 +14,4 @@ eQuantic.UI.Primitives.BoxStyle.Foreground.get -> eQuantic.UI.Primitives.ColorTo
 eQuantic.UI.Primitives.BoxStyle.Foreground.init -> void
 eQuantic.UI.Primitives.StyleDiff.Foreground.get -> eQuantic.UI.Primitives.ColorToken?
 eQuantic.UI.Primitives.StyleDiff.Foreground.init -> void
+static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!

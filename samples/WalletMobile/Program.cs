@@ -35,9 +35,10 @@ public partial class Program
         // needs under the hardened runtime, the SDK declares by itself.
         builder.Entitlements.RequireNetworkClient();
 
+        builder.UseTheme(PhotonTheme.Instance);
+
         builder.Configure(photon =>
         {
-            photon.Theme = PhotonTheme.Instance;
             photon.Title = "eQuantic Wallet";
             // The phone this was drawn for. A device reports its own size and ignores these.
             photon.Width = 390;
