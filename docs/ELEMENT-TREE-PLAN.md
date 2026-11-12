@@ -578,7 +578,7 @@ the parity rows it closes flip.
    attribution. It is split in two, E4a (#1403) and E4b (#1404).
 
    **E4a, the server draws a write-once page through an owner for the request**
-   (`openspec/changes/the-server-draws-a-page-through-an-owner-for-the-request`):
+   (`openspec/changes/archive/2026-11-11-the-server-draws-a-page-through-an-owner-for-the-request`):
    - The server keeps a structural `MarkupHost` for the request, and each prefetch round is a frame
      of one tree: a component that loaded has its position marked, only that subtree builds again,
      and the instance that loaded is the one drawn. The rounds are `ServerDataRounds`, which the
@@ -598,7 +598,7 @@ the parity rows it closes flip.
      between rounds.
 
    **E4b, a request's render channels live on its owner** (#1404,
-   `openspec/changes/a-requests-render-channels-live-on-its-owner`):
+   `openspec/changes/archive/2026-11-11-a-requests-render-channels-live-on-its-owner`):
    - The web's five channels and the reported density are one `RenderChannels` a render is handed:
      the server makes one for each prefetch round and each discovery, and `MarkupHost.Lower` hands it
      to the lowering visitor. The six `AsyncLocal`s go.
@@ -609,7 +609,7 @@ the parity rows it closes flip.
      may only shrink.
 
    **E4c, a tree's error boundary is its own** (#1452,
-   `openspec/changes/a-trees-error-boundary-lives-on-its-owner`):
+   `openspec/changes/archive/2026-11-12-a-trees-error-boundary-lives-on-its-owner`):
    - `ComponentBoundary` is an instance, one per tree, and the tree's owner is made from it: its
      diagnostics, report and tally are the tree's. The expansion walk keeps its thread-static depth,
      and the email's walk keeps `Enter`, which has no boundary.
