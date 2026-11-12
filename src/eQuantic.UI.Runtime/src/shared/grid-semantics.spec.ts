@@ -64,17 +64,28 @@ describe('grid semantics (C# GridSemanticsTests cross-pin)', () => {
 
   it('two grids on one page do not share cell ids', () => {
     // The ids are DOM-global: an unscoped eq-cell-1-1 would appear twice and an activedescendant
-    // could resolve into the other calendar.
-    const july = walk(render(month(undefined, 'July 2026')))
-      .map((n) => n.attributes?.id)
-      .filter((id): id is string => id !== undefined);
-    const august = walk(render(month(undefined, 'August 2026')))
-      .map((n) => n.attributes?.id)
-      .filter((id): id is string => id !== undefined);
+    // could resolve into the other calendar. Two grids on one page hold two places in its tree, which
+    // scope their ids whatever they are labelled: two months of one label too (#1115).
+    for (const labels of [
+      ['July 2026', 'August 2026'],
+      ['July 2026', 'July 2026'],
+    ]) {
+      const page = render({
+        nodeKind: 'column',
+        children: labels.map((label) => month(undefined, label)),
+      } as unknown as VisualNodeValue);
+      const ids = walk(page)
+        .map((n) => n.attributes?.id)
+        .filter((id): id is string => id !== undefined);
 
-    expect(july).toHaveLength(2);
-    expect(august).toHaveLength(2);
-    expect(july.some((id) => august.includes(id))).toBe(false);
+      expect(ids).toHaveLength(4);
+      expect(new Set(ids).size).toBe(ids.length);
+      // …and each grid's activedescendant lands in its OWN grid.
+      for (const grid of walk(page).filter((n) => n.attributes?.role === 'grid')) {
+        const active = grid.attributes?.['aria-activedescendant'];
+        expect(walk(grid).filter((n) => n.attributes?.id === active)).toHaveLength(1);
+      }
+    }
   });
 
   it('the header row names its columns', () => {

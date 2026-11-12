@@ -35,15 +35,16 @@ internal static class LinqKeys
     /// an anonymous object holding an array compares that member by reference, as .NET's does, where
     /// <c>$eq.equals</c> walked the array and two keys of different arrays were one group.
     /// </summary>
-    public static string Matches(ITypeSymbol? key, string groupKey, string sought, ConversionContext context)
+    public static string Matches(ITypeSymbol? key, string groupKey, string sought, SyntaxNode at, ConversionContext context)
     {
+        ElementEquality.Refuses(key, true, at, context);
         if (key is null || ByIdentity(key)) return $"{groupKey} === {sought}";
         context.UsedHelpers.Add(Eq.Import);
         return ElementEquality.Compare(key, groupKey, sought);
     }
 
     /// <summary>Whether <c>===</c> answers what the type's default comparer answers: a type compared by
-    /// identity (<see cref="ElementEquality.Of"/>) that is no floating-point number.</summary>
+    /// identity (<see cref="ElementEquality.Of(ITypeSymbol?)"/>) that is no floating-point number.</summary>
     private static bool ByIdentity(ITypeSymbol key) =>
         ElementEquality.Of(key) is null
         && (key.UnwrapNullable() ?? key).SpecialType is not (SpecialType.System_Single or SpecialType.System_Double);

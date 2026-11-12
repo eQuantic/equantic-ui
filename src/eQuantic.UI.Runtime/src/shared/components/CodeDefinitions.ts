@@ -12,7 +12,7 @@ export class CodeDefinitions {
         this.changed = null;
         this._editor = editor;
         editor.changed = $eq.delegates.combine(editor.changed, (_) => this.clearLink());
-        editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, this.selected.bind(this));
+        editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, $eq.delegates.bound(this, this.selected));
     }
 
     _editor!: CodeEditorController;
