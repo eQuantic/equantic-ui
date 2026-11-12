@@ -8,7 +8,7 @@ import { sameKey } from './key-equality';
 /** The shapes the compiler writes for `enum Tone { Warm, Cool }`, `enum Other { Small }` and a flags enum. */
 const tone = { names: ['Warm', 'Cool'], keys: ['warm', 'cool'], values: [0, 1], flags: false, digits: 8 };
 const other = { names: ['Small'], keys: ['small'], values: [0], flags: false, digits: 8 };
-const wide = { names: ['Low'], keys: ['low'], values: [-5], flags: false, digits: 16 };
+const wide = { names: ['Low'], keys: ['low'], values: [-5n], flags: false, digits: 16 }; // a 64-bit enum's values are BigInts (#1248)
 const perm = { names: ['None', 'Read', 'Write'], values: [0, 1, 2], flags: true, digits: 8 };
 
 describe('a value boxed into object (#552, #768, #954)', () => {
