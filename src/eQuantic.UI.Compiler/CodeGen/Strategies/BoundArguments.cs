@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Ir;
@@ -197,9 +198,11 @@ internal sealed class BoundArguments
     /// <param name="written">Each written argument converted, by its index in the list written.</param>
     /// <param name="slots">What the call passes, in parameter order: the index of the written argument a slot
     /// holds, or -1 with the slot's own value (a default).</param>
+    /// <param name="taken">The by-reference arguments whose place the call took before it, which each written
+    /// argument reads through (an element counted from the end, #1190).</param>
     /// <param name="context">Where the temporaries are declared.</param>
     public static List<JsExpr> PassedAsWritten(SeparatedSyntaxList<ArgumentSyntax> arguments, IReadOnlyList<JsExpr> written,
-        IReadOnlyList<(int Written, JsExpr? Own)> slots, ConversionContext context)
+        IReadOnlyList<(int Written, JsExpr? Own)> slots, IReadOnlySet<ArgumentSyntax> taken, ConversionContext context)
     {
         JsExpr Placed(int at, Func<int, JsExpr> read) => slots[at].Written is var index and >= 0 ? read(index) : slots[at].Own!;
         static JsExpr Value(JsExpr part) => part is JsSpread spread ? spread.Operand : part;
@@ -209,7 +212,14 @@ internal sealed class BoundArguments
         // argument written after it may change it: `Pair(b: i, a: ++i)` passed the incremented i twice.
         bool Fixed(int index) => arguments[index].Expression is AnonymousFunctionExpressionSyntax
             || context.SemanticHelper.TryGetConstantValue(arguments[index].Expression, out _);
-        bool Runs(int index) => !Fixed(index) && Value(written[index]) is not JsIdentifier;
+        // A reference (`ref`, `in`) is read by the callee, after every argument ran, so one whose place runs
+        // nothing (a variable, a field of this) is read where it is passed, never held: held where it is
+        // written, `Pair(b: ref i, a: ++i)` passed the i from before the increment. One whose place the call
+        // took before it is read through what took it, which runs nothing more.
+        bool AtTheCall(int index) => arguments[index].RefKindKeyword.Kind() is SyntaxKind.RefKeyword or SyntaxKind.InKeyword
+            && (taken.Contains(arguments[index])
+                || arguments[index].Expression is IdentifierNameSyntax or MemberAccessExpressionSyntax { Expression: ThisExpressionSyntax });
+        bool Runs(int index) => !Fixed(index) && !AtTheCall(index) && Value(written[index]) is not JsIdentifier;
         var order = slots.Where(slot => slot.Written >= 0 && !Fixed(slot.Written)).Select(slot => slot.Written).ToList();
         var lastRun = order.Where(Runs).DefaultIfEmpty(-1).Max();
         if (order.SequenceEqual(order.Order()) || lastRun < 0 || !context.Temporaries.CanBind)
@@ -218,7 +228,7 @@ internal sealed class BoundArguments
         // What is passed is read where it stands, after every temporary was assigned, so a temporary holds
         // what runs and a name written before what runs. An argument no slot passes (an `out` one, a
         // dependency the twin resolves itself) is not run here, as it never was.
-        var holds = order.Where(index => Runs(index) || index < lastRun).ToHashSet();
+        var holds = order.Where(index => !AtTheCall(index) && (Runs(index) || index < lastRun)).ToHashSet();
         var temporaries = new string?[written.Count];
         var assignments = new List<JsExpr>();
         for (var index = 0; index < written.Count; index++)

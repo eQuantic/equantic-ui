@@ -896,6 +896,8 @@ argument, a return and a branch alike.
 A call SHALL evaluate its arguments in the order they are written and pass each to the parameter it
 binds, wherever it stands (a statement, a concise body, a field's or a property's initializer) and
 whichever path places them: an app's method, a vocabulary type's constructor and a twin's. A name an argument written after it changes SHALL be read where it is written.
+A variable passed by reference (`ref`, `in`), or an element whose place the call took before it, SHALL be read
+when the call is made, after every argument, as the callee reads what it refers to.
 An `out` argument SHALL shift none of the arguments after it.
 
 #### Scenario: Named arguments out of order
@@ -912,6 +914,11 @@ An `out` argument SHALL shift none of the arguments after it.
 
 - **WHEN** `var i = 1; Pair(b: i, a: ++i)` runs
 - **THEN** the call answers `2,1`, as in .NET
+
+#### Scenario: A variable passed by reference, which an argument written after it changes
+
+- **WHEN** `var i = 1; RefPair(b: ref i, a: ++i)` runs, `RefPair` reading `a` and `b`
+- **THEN** it reads `2,2`, as in .NET, where it read `2,1`
 
 #### Scenario: In a field's initializer
 

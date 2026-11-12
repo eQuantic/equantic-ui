@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -710,7 +711,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             else slots.Add((-1, DefaultOf(ctor.Parameters[keep[k]], context)));
         }
         // Each argument is evaluated in the order it is written, as C# evaluates it (#1071).
-        return BoundArguments.PassedAsWritten(args, converted, slots, context);
+        return BoundArguments.PassedAsWritten(args, converted, slots, ImmutableHashSet<ArgumentSyntax>.Empty, context);
     }
 
     /// <summary>
@@ -941,7 +942,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         var last = Array.FindLastIndex(places, place => place != null);
         // Each argument is evaluated in the order it is written, as C# evaluates it (#1071).
         return BoundArguments.PassedAsWritten(list.Arguments, converted, places.Take(last + 1)
-            .SelectMany(place => place?.Select(index => (index, (JsExpr?)null)) ?? [(-1, Undefined)]).ToList(), context);
+            .SelectMany(place => place?.Select(index => (index, (JsExpr?)null)) ?? [(-1, Undefined)]).ToList(),
+            ImmutableHashSet<ArgumentSyntax>.Empty, context);
     }
 
     private JsExpr ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)

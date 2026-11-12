@@ -30,6 +30,8 @@ public class WrittenArgumentOrderConformanceTests
             public static string Three(int a, int b = 20, int c = 30) => a + "," + b + "," + c;
             public static bool Try(out int found, int a = 1, int b = 2) { found = a * 10 + b; return true; }
             public static string Listed(int head, params int[] rest) => head + ":" + string.Join(",", rest);
+            public static string RefPair(int a, ref int b) { var read = a + "," + b; b = 100; return read; }
+            public static string InPair(int a, in int b) => a + "," + b;
         }
 
         // Initializers, where no statement is open to declare a temporary (#1201).
@@ -79,6 +81,13 @@ public class WrittenArgumentOrderConformanceTests
             "var i = 1; return Calls.Pair(b: i, a: ++i);"),
         ("a name an argument written after it changes, past an out argument",
             "var i = 1; Calls.Try(out var found, b: i, a: ++i); return found;"),
+        // A reference is read by the callee, after every argument ran: never held where it is written.
+        ("a ref argument an argument written after it changes",
+            "var i = 1; var r = Calls.RefPair(b: ref i, a: ++i); return r + \"|\" + i;"),
+        ("an in argument an argument written after it changes",
+            "var i = 1; return Calls.InPair(b: in i, a: ++i);"),
+        ("a ref element taken before the call, which an argument written after it changes",
+            "var arr = new[] { 1, 2 }; var r = Calls.RefPair(b: ref arr[^1], a: arr[1] = 5); return r + \"|\" + string.Join(\",\", arr);"),
         ("a vocabulary record with a twin of its own, built with named arguments out of order",
             "Seq.Seen = \"\"; var style = new TypeStyle(LineHeight: Seq.F(24), Size: Seq.F(16), Weight: FontWeight.Bold, Tracking: 0, MaxScale: Seq.F(2)); "
             + "return style.Size + \",\" + style.LineHeight + \",\" + style.MaxScale + \"|\" + Seq.Seen;"),
