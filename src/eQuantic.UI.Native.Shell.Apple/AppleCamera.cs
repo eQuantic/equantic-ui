@@ -152,9 +152,10 @@ public sealed partial class AppleCameraSession : ICameraSession
         SendVoid(_session, Sel("addOutput:"), output);
         SendVoid(_session, Sel("commitConfiguration"));
 
-        // startRunning BLOCKS until the pipeline is up — off the caller's thread, always.
+        // startRunning BLOCKS until the pipeline is up — off the caller's thread, always. A pool thread
+        // has no autorelease pool of its own, so the call brings one (#1473).
         var session = _session;
-        Task.Run(() => SendVoid(session, Sel("startRunning")));
+        Task.Run(() => InAPool(() => SendVoid(session, Sel("startRunning"))));
         return true;
     }
 
@@ -178,7 +179,22 @@ public sealed partial class AppleCameraSession : ICameraSession
         if (_session == IntPtr.Zero) return;
         var session = _session;
         _session = IntPtr.Zero;
-        Task.Run(() => SendVoid(session, Sel("stopRunning")));   // blocks, like startRunning
+        Task.Run(() => InAPool(() => SendVoid(session, Sel("stopRunning"))));   // blocks, like startRunning
+    }
+
+    /// <summary>Runs <paramref name="call"/> inside an autorelease pool, which a thread of .NET's pool
+    /// does not have: what the call autoreleases is released when it returns.</summary>
+    private static void InAPool(Action call)
+    {
+        var pool = objc_autoreleasePoolPush();
+        try
+        {
+            call();
+        }
+        finally
+        {
+            objc_autoreleasePoolPop(pool);
+        }
     }
 
     // ---- the frame delegate --------------------------------------------------------------------
