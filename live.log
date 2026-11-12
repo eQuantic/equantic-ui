@@ -124,3 +124,14 @@
  2109   0.2 139216 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
   976   0.2  44528 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd3646539152
   236   0.1  35584 /System/Library/PrivateFrameworks/CloudKitDaemon.framework/Support/cloudd
+=== alive 13:57:21 app: 2109 watch: 
+=== alive 13:57:31 app: 2109 watch: 
+--- sample 13:57:31 load: { 3.25 8.91 5.25 } System-wide memory free percentage: 93%
+161 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2089 dotnet run --no-build --project samples/PhotonDesktop
+2109 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  328   1.2  13312 /usr/sbin/cfprefsd
+  979   0.9   7344 /usr/libexec/sysmond
+  117   0.9  11632 /usr/libexec/diskarbitrationd
+    1   0.6  29680 /sbin/launchd
+  155   0.4  12720 /usr/sbin/cfprefsd
