@@ -145,7 +145,8 @@ describe('TableViewport on the web', () => {
     expect((lowered as { attributes: Record<string, string> }).attributes['role']).toBe('group');
     expect(effectiveStyle(lowered)).toContain('touch-action: none');
     expect(effectiveStyle(lowered)).toContain('overflow: hidden');
-    expect(view.children).toHaveLength(10);
+    // The eight bands and two scrollbars, and last the box that owns the cells in reading order (#1331).
+    expect(view.children).toHaveLength(11);
     // The body's first cell sits at the band's corner; a pinned row cell keeps its own top.
     const body = lowered.children[0] as HtmlNode;
     const bodyCell = ((body.children[0] as HtmlNode).children[0] as HtmlNode);
@@ -703,11 +704,24 @@ describe('A table and a grid on the web (#1081)', () => {
     const group = lowered();
     expect(group.attributes['role']).toBe('group');
     expect(group.attributes['aria-rowcount']).toBeUndefined();
-    expect(group.children).toHaveLength(10);
+    expect(group.children).toHaveLength(11);
     const cell = cellAt(group, 3, 2);
     expect(cell.attributes['role']).toBeUndefined();
     expect(cell.attributes['aria-colindex']).toBeUndefined();
-    expect(cell.attributes['id']).toBeUndefined();
+  });
+
+  it('reads a group row by row, whichever band draws a cell, as Photon does (#1331)', () => {
+    const group = lowered();
+    const cell = cellAt(group, 3, 2);
+    const owner = group.children[group.children.length - 1] as HtmlNode;
+    expect(owner.attributes['role']).toBeUndefined();
+    const owned = owner.attributes['aria-owns']!.split(' ');
+    // The pinned row's cells first, column by column, then row 1's, never band by band.
+    expect(owned.indexOf(cell.attributes['id']!)).toBeGreaterThan(owned.indexOf(cellAt(group, 3, 0).attributes['id']!));
+    expect(owned.indexOf(cellAt(group, 1, 0).attributes['id']!)).toBeGreaterThan(owned.indexOf(cellAt(group, 0, 3).attributes['id']!));
+    const ids = owned.map((id) => id.split('-').slice(-2).map(Number));
+    const rowMajor = ids.slice().sort((a, b) => a[0]! - b[0]! || a[1]! - b[1]!);
+    expect(ids).toEqual(rowMajor);
   });
 });
 

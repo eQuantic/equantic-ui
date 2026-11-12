@@ -52,6 +52,21 @@ internal sealed class ServerEdits
         lock (_gate) Monitor.PulseAll(_gate);
     }
 
+    /// <summary>
+    /// Why a rebuild of the save written at <paramref name="writtenUtc"/> found no edit of it, said on the
+    /// line the server writes when the page mounts: a failure of the edit-to-view measurement used to say
+    /// only that the page drew over, and not whether the edit came late or never (#1373).
+    /// </summary>
+    internal string WhyNotSince(DateTime writtenUtc)
+    {
+        if (!ArriveOnSave) return "no save brings this server its edit, since dotnet watch does not run it";
+        DateTime last;
+        lock (_gate) last = _lastTakenUtc;
+        return last == DateTime.MinValue
+            ? $"the save was written at {writtenUtc:HH:mm:ss.fff}, and no edit has reached this server since it started"
+            : $"the save was written at {writtenUtc:HH:mm:ss.fff}, and the last edit reached this server at {last:HH:mm:ss.fff}, {(writtenUtc - last).TotalMilliseconds:F0}ms before it";
+    }
+
     /// <summary>One more edit was applied to this process, now.</summary>
     internal void Take()
     {

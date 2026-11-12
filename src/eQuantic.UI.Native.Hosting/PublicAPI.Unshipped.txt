@@ -1,1 +1,4 @@
 #nullable enable
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
+*REMOVED*[EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
+*REMOVED*[EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.Theme.set -> void
