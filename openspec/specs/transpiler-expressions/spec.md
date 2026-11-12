@@ -680,10 +680,11 @@ convert as it did, and a lifted conversion, to a nullable type, SHALL still answ
 ### Requirement: A params parameter takes what C# hands it
 
 eqc SHALL pass a params parameter what the bound tree says the call hands it: each element a call lists,
-as it is, after a named argument too, or a collection handed whole, spread into the rest parameter the
-parameter is on the other side, named or not. An array handed to a params parameter of another element
-type SHALL be one element where C# makes it one. A C# 13 params collection SHALL be read as an array is.
-This SHALL hold for a call, an app type's constructor and a vocabulary type's constructor alike.
+as it is, after a named argument too, or a collection handed whole, spread where the parameter is a rest
+parameter on the other side (one of the SDK's own) and passed as it is where it is the array it is, named or
+not. An array handed to a params parameter of another element type SHALL be one element where C# makes it
+one. A C# 13 params collection SHALL be read as an array is. This SHALL hold for a call, an app type's
+constructor and a vocabulary type's constructor alike.
 
 #### Scenario: A collection handed whole
 
@@ -1029,3 +1030,32 @@ An element of an array passed as a `ref` or `out` argument SHALL have its receiv
 
 - **WHEN** `Swap(ref Get()[^1], ref Get()[0])` runs over `{ 1, 2, 3 }`
 - **THEN** the array holds `3,2,1` and `Get` ran twice, in order, as in .NET
+
+### Requirement: A value held as object keeps the type its answers depend on
+
+An enum member and a float boxed into `object` or `ValueType` SHALL keep their .NET type in the browser: their
+`Equals`, `GetHashCode` and `ToString`, a type pattern, a constant pattern, a `switch` over `object`, an unboxing
+cast, `Convert` and the `Enum` statics that take an `object` SHALL answer as .NET's do, and JSON SHALL write the
+value as it was written before it was boxed. A `List<T>` and a `T[]` held as `object` SHALL compare and hash by
+reference, and a value tuple by its elements. An anonymous object SHALL never equal a value of another type that
+has the same members.
+
+#### Scenario: A boxed member is not a string of its name
+
+- **WHEN** browser-side code runs `Enum.IsDefined(typeof(Status), (object)"pending")` and `(Status)(object)"pending"`
+- **THEN** the first answers false and the second throws an InvalidCastException, as in .NET; they answered true and the member
+
+#### Scenario: A boxed float and a boxed member print as .NET prints them
+
+- **WHEN** browser-side code writes `object o = 0.1f;` and `object e = Tone.Warm;` into text
+- **THEN** they print `0.1` and `Warm`, as in .NET; they printed `0.10000000149011612` and `warm`
+
+#### Scenario: Two lists held as object
+
+- **WHEN** browser-side code compares `object a = new List<int> { 1 }, b = new List<int> { 1 };` with `a.Equals(b)`
+- **THEN** it answers false, as in .NET, and `new HashSet<object> { a, b }` holds two; it answered true and one
+
+#### Scenario: A value held as data and an anonymous object
+
+- **WHEN** browser-side code runs `Color.White.Equals((object)new { R = (byte)255, G = (byte)255, B = (byte)255, A = (byte)255 })`
+- **THEN** it answers false, as in .NET; it answered true

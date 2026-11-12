@@ -25,6 +25,13 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.Primi
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.Priority.get -> int
 *REMOVED*static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Scoped(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, string! converted, bool typeAnnotations) -> string!
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertInitializer(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression, System.Func<string!>! convert, bool typeAnnotations) -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.AddToEvent = "$eq.delegates.addToEvent" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.RemoveFromEvent = "$eq.delegates.removeFromEvent" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TypesImplements = "$eq.types.implements" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.DelegateBound = "$eq.delegates.bound" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.DelegateOver = "$eq.delegates.over" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Anonymous = "$eq.anonymous" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Box = "$eq.box" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.IsBox = "$eq.isBox" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Reference = "$eq.reference" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Unbox = "$eq.unbox" -> string!
