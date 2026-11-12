@@ -85,4 +85,50 @@ public class EventAccessorConformanceTests
     [InlineData(false)]
     public void AnEventWithAccessors_LowersToThem(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Source, typeAnnotations, Cases);
+
+    /// <summary>A record's, a struct's and a component's event declared with accessors (#1445): only the
+    /// plain class's twin wrote <c>$add$</c> and <c>$remove$</c>, so a subscription to one of these called a
+    /// method its twin did not have and threw where .NET counted.</summary>
+    private const string EveryTwin = """
+        using System;
+        using eQuantic.UI.Primitives;
+
+        public sealed record Signal(int Id)
+        {
+            private Action? _fired;
+            public event Action Fired { add => _fired += value; remove => _fired -= value; }
+            public void Fire() => _fired?.Invoke();
+        }
+
+        public struct Pulse
+        {
+            private Action<int>? _beat;
+            public event Action<int> Beat { add => _beat += value; remove => _beat -= value; }
+            public void Fire(int n) => _beat?.Invoke(n);
+        }
+
+        public sealed class Meter : StatefulComponent
+        {
+            private Action<int>? _moved;
+            public event Action<int> Moved { add => _moved += value; remove => _moved -= value; }
+            public void Move(int n) => _moved?.Invoke(n);
+            public override VisualNode Build(ComponentContext context) => new Text("meter", TypeRole.BodyM);
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] EveryTwinCases =
+    [
+        ("a record's event with accessors",
+            "var count = 0; var s = new Signal(1); Action add = () => count++; s.Fired += add; s.Fired += () => count += 10; s.Fire(); s.Fired -= add; s.Fire(); return count;"),
+        ("a struct's event with accessors",
+            "var sum = 0; var p = new Pulse(); Action<int> add = n => sum += n; p.Beat += add; p.Beat += n => sum += n * 10; p.Fire(2); p.Beat -= add; p.Fire(3); return sum;"),
+        ("a component's event with accessors",
+            "var sum = 0; var m = new Meter(); Action<int> add = n => sum += n; m.Moved += add; m.Moved += n => sum += n * 10; m.Move(2); m.Moved -= add; m.Move(3); return sum;"),
+    ];
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void EveryTwinsEventWithAccessors_LowersToThem(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(EveryTwin, typeAnnotations, EveryTwinCases);
 }
