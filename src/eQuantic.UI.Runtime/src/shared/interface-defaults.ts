@@ -13,7 +13,15 @@
 import { CodeLanguageRules } from './components/CodeLanguageRules';
 import { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
-import type { ButtonTheme, ControlsTheme } from './theme-slots';
+import type {
+  ButtonTheme,
+  ChipTheme,
+  ControlsTheme,
+  IconButtonTheme,
+  InputTheme,
+  SegmentedTheme,
+  SelectionControlsTheme,
+} from './theme-slots';
 import { codeTokenColor, type AppTheme, type ColorToken, type FontFamily } from './value-types';
 
 /** `IAppTheme`'s defaults. */
@@ -42,6 +50,16 @@ export const IAppTheme = {
   controls: (_theme: AppTheme): ControlsTheme | null => null,
   /** `ButtonTheme? Button => null;` — the button's own defaults. */
   button: (_theme: AppTheme): ButtonTheme | null => null,
+  /** `IconButtonTheme? IconButton => null;` — the icon button's own defaults. */
+  iconButton: (_theme: AppTheme): IconButtonTheme | null => null,
+  /** `InputTheme? Input => null;` — each field's own defaults. */
+  input: (_theme: AppTheme): InputTheme | null => null,
+  /** `SelectionControlsTheme? SelectionControls => null;` — each selection control's own defaults. */
+  selectionControls: (_theme: AppTheme): SelectionControlsTheme | null => null,
+  /** `SegmentedTheme? Segmented => null;` — each segmented control's own defaults. */
+  segmented: (_theme: AppTheme): SegmentedTheme | null => null,
+  /** `ChipTheme? Chip => null;` — the chip's own defaults. */
+  chip: (_theme: AppTheme): ChipTheme | null => null,
 };
 
 /** `ICodeLanguage`'s defaults. */

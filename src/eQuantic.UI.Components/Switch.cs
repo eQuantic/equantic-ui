@@ -34,30 +34,36 @@ public sealed class Switch : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var trackFill = On ? theme.Colors(Variant.Primary).Base : theme.BorderStrong;
+        // The theme's Selection slot, then the component's own (§3.10); the track and the knob vary by
+        // density alone, and the knob travels the track's slack.
+        var slot = theme.SelectionControls;
+        var trackFill = On ? theme.Colors(Variant.Primary).Base : slot?.SwitchOffTrack ?? theme.BorderStrong;
         if (Disabled) trackFill = trackFill.WithOpacity(theme.DisabledOpacity);
 
         // The ladder comes from the TOKEN LAYER, resolved for this target's density — a switch is
         // 52×32 under a thumb and 44×26 under a pointer, and neither number is written here.
         var density = context.Density;
-        var travel = Sizing.SwitchTravel(density);
-        var inset = Sizing.SwitchInset;
+        var width = ControlMetrics.AtDensity(slot?.SwitchWidth, density) ?? Sizing.SwitchWidth(density);
+        var height = ControlMetrics.AtDensity(slot?.SwitchHeight, density) ?? Sizing.SwitchHeight(density);
+        var knob = ControlMetrics.AtDensity(slot?.SwitchThumb, density) ?? Sizing.SwitchThumb(density);
+        var inset = slot?.SwitchInset ?? Sizing.SwitchInset;
+        var travel = width - knob - inset * 2;
 
         var track = new Box(new BoxStyle
         {
-            Width = Sizing.SwitchWidth(density),
-            Height = Sizing.SwitchHeight(density),
+            Width = width,
+            Height = height,
             Background = trackFill,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
         });
 
         var thumb = new Box(new BoxStyle
         {
-            Width = Sizing.SwitchThumb(density),
-            Height = Sizing.SwitchThumb(density),
-            Background = theme.Surface,
+            Width = knob,
+            Height = knob,
+            Background = slot?.ThumbFill ?? theme.Surface,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-            Elevation = 1,
+            Elevation = slot?.SwitchThumbElevation ?? 1,
         });
 
         // The thumb travels the track's slack: the width, less the thumb, less both insets.

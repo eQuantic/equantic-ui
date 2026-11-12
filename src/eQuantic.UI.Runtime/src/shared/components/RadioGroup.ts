@@ -1,4 +1,4 @@
-import { $eq, Adjustable, Box, BoxStyle, BuildContext, Column, CornerRadii, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Adjustable, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class RadioGroup extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.RadioGroup';
@@ -26,13 +26,16 @@ export class RadioGroup extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let primary = theme.colors('primary');
+        let slot = theme.selectionControls;
+        let side = ControlMetrics.atDensity((slot?.radioSize ?? null), context.density) ?? (ControlMetrics.atDensity((slot?.box ?? null), context.density) ?? Sizing.selectionBox(context.density));
+        let dot = ControlMetrics.atDensity((slot?.radioDot ?? null), context.density) ?? Sizing.radioDot(context.density);
         let options = new Column(4, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         for (let i = 0; i < $eq.collections.count(this.options); i++) {
             let isSelected = i === this.selected;
             let index = i;
-            let circleContent = isSelected ? VisualNodeExtensions.centered(new Box(new BoxStyle({ width: Sizing.radioDot(context.density), height: Sizing.radioDot(context.density), background: primary.base, cornerRadius: new CornerRadii(theme.shape('full')) }))) : null;
-            let circle = new Box(new BoxStyle({ width: Sizing.selectionBox(context.density), height: Sizing.selectionBox(context.density), cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: 2, borderColor: isSelected ? primary.base : theme.borderStrong }), circleContent);
-            let row = new Row(12, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: 44 });
+            let circleContent = isSelected ? VisualNodeExtensions.centered(new Box(new BoxStyle({ width: dot, height: dot, background: primary.base, cornerRadius: new CornerRadii(theme.shape('full')) }))) : null;
+            let circle = new Box(new BoxStyle({ width: side, height: side, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: slot?.borderWidth ?? 2, borderColor: isSelected ? primary.base : slot?.borderColor ?? theme.borderStrong }), circleContent);
+            let row = new Row(slot?.labelGap ?? 12, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: slot?.radioRowHeight ?? 44 });
             row.add(circle);
             row.add(new Text($eq.collections.item(this.options, i), 'bodyM', this.disabled ? theme.textMuted : theme.textPrimary, 1));
             options.add(new Pressable(row, this.disabled || this.onChanged == null || isSelected ? null : () => this.onChanged!(index), { disabled: this.disabled, label: $eq.collections.item(this.options, i), role: 'radio', selected: isSelected }));

@@ -13,6 +13,8 @@ public static class AppThemeExtensions
     /// and forwards them all (<c>docs/ELEMENT-TREE-PLAN.md</c> §3.10).
     /// <code>ui.UseTheme(MaterialTheme.Instance.With(button: new ButtonTheme { MinWidth = 88 }));</code>
     /// </summary>
-    public static IAppTheme With(this IAppTheme theme, ControlsTheme? controls = null, ButtonTheme? button = null) =>
-        new OverriddenTheme(theme, controls, button);
+    public static IAppTheme With(this IAppTheme theme, ControlsTheme? controls = null, ButtonTheme? button = null,
+        IconButtonTheme? iconButton = null, InputTheme? input = null, SelectionControlsTheme? selectionControls = null,
+        SegmentedTheme? segmented = null, ChipTheme? chip = null) =>
+        new OverriddenTheme(theme, controls, button, iconButton, input, selectionControls, segmented, chip);
 }
