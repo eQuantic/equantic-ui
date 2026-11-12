@@ -118,7 +118,8 @@ public static class RuntimeProvidedTypeScanner
     /// <summary>
     /// Whether <paramref name="name"/>, bound to <paramref name="symbol"/>, uses its type as a VALUE, which a module
     /// writes under the type's class rather than under an annotation's name, as the bound tree says: the type of a
-    /// construction (an <see cref="IObjectCreationOperation"/>), the name of a constructor or of a static method
+    /// construction (an <see cref="IObjectCreationOperation"/>, or an <see cref="IInvalidOperation"/> where the
+    /// constructor is out of the compilation's reach), the name of a constructor or of a static method
     /// called through <c>using static</c>, which binds to the method, and the receiver of a static member read or
     /// called through the type's name, whose member is static.
     /// </summary>
@@ -135,8 +136,12 @@ public static class RuntimeProvidedTypeScanner
         {
             return written.Parent switch
             {
+                // A construction binds an IObjectCreationOperation, or an IInvalidOperation where the constructor is
+                // one the compilation cannot reach: the element engine builds its context through ComponentContext's
+                // internal constructor, which a compilation outside the vocabulary's assembly sees as inaccessible.
+                // Either way the twin writes `new ComponentContext(…)`.
                 ObjectCreationExpressionSyntax creation when creation.Type == written =>
-                    model.GetOperation(creation) is IObjectCreationOperation,
+                    model.GetOperation(creation) is IObjectCreationOperation or IInvalidOperation,
                 // A member the access binds, or every candidate of an overload it could not settle alone.
                 MemberAccessExpressionSyntax access when access.Expression == written => StaticMember(model.GetSymbolInfo(access)),
                 _ => false,

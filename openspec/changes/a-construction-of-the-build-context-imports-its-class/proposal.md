@@ -8,7 +8,7 @@ The context a component builds with is `ComponentContext` in C#. The runtime exp
 
 ## What Changes
 
-- `RuntimeProvidedTypeScanner` asks the bound tree how each name of a runtime-provided type is used. A construction (the name is the type of an `IObjectCreationOperation`), a constructor or static method the name binds to, and a static member read or called through the type's name are VALUE uses, and import the type's class: `ComponentContext`. Every other use is an annotation, and imports `BuildContext` as before. A module with both imports both.
+- `RuntimeProvidedTypeScanner` asks the bound tree how each name of a runtime-provided type is used. A construction (the name is the type of an `IObjectCreationOperation`, or of an `IInvalidOperation` where the constructor is out of the compilation's reach, as the element engine's internal one is from outside the vocabulary's assembly), a constructor or static method the name binds to, and a static member read or called through the type's name are VALUE uses, and import the type's class: `ComponentContext`. Every other use is an annotation, and imports `BuildContext` as before. A module with both imports both.
 - The rule is by symbol and by use, never by name: an app's own class called `BuildContext` stays the app's (#653).
 - No public surface and no developer surface moves: the compiler's scanner is internal, and an app writes nothing new.
 

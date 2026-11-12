@@ -3,7 +3,8 @@
 ## 1. Import by use
 
 - [x] 1.1 The scanner imports the type's class for a value use and the annotation's name otherwise, decided by the bound tree. Verify: `AContextAModuleConstructs_ImportsItsClass_BesideTheInterfaceItsAnnotationsName`, which fails with main's scanner (the module imported `BuildContext` alone), and `TheBuildContext_IsTheRuntimesBuildContext_AndAHelperImportsIt` and `AnAppsOwnBuildContext_IsNotImportedFromTheRuntime` unchanged
-- [x] 1.2 The runtime's `tsc` reads a class that annotates and constructs a context. Verify: `EmittedContexts` in the emission fixtures passes `tsc`, and with main's import it fails with `TS2304: Cannot find name 'ComponentContext'`
+- [x] 1.2 A construction through a constructor the compilation cannot reach, which binds an `IInvalidOperation`, is a construction too: the element engine's, through `ComponentContext`'s internal constructor, seen from outside the vocabulary's assembly. Verify: `AContextBuiltThroughAConstructorOutOfReach_ImportsItsClass`, which fails when only an `IObjectCreationOperation` counts
+- [x] 1.3 The runtime's `tsc` reads a class that annotates and constructs a context. Verify: `EmittedContexts` in the emission fixtures passes `tsc`, and with main's import it fails with `TS2304: Cannot find name 'ComponentContext'`
 
 ## 2. Proved against the real thing
 
