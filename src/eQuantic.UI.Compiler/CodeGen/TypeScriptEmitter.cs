@@ -847,8 +847,10 @@ public class TypeScriptEmitter
     
     /// <summary>Every identifier the emitted body mentions — the authority on which imports are live.</summary>
     private static HashSet<string> ReferencedIdentifiers(string emittedBody) =>
+        // Outside string literals: the catalogue id in `$eq.str('Strings', 'Hero.Title')` is text, and was
+        // read as a reference to a type of that name, which the module then imported (#824).
         System.Text.RegularExpressions.Regex
-            .Matches(emittedBody, @"[A-Za-z_$][A-Za-z0-9_$]*")
+            .Matches(WithoutStrings(emittedBody), @"[A-Za-z_$][A-Za-z0-9_$]*")
             .Select(m => m.Value)
             .ToHashSet();
 
@@ -2455,7 +2457,7 @@ public class TypeScriptEmitter
             { } kind when TsStandIn.For(kind, _converter.UsedRuntimeTypes) is { } standIn => standIn,
             { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
             // A nested type is its twin, named by its owner (#584).
-            INamedTypeSymbol nested when nested.NestedTwinName() is { } twin => Annotated(nested, twin),
+            INamedTypeSymbol nested when nested.RenamedTwin() is { } twin => Annotated(nested, twin),
             // .NET's builder (utils/string-builder.ts), built through `$eq.text.stringBuilder` and named by a field
             // or a parameter that holds one: imported where a member names it (#1074). Asked of the symbol, so an
             // app's own `StringBuilder` stays the app's (Copilot on #1079).
@@ -2513,7 +2515,7 @@ public class TypeScriptEmitter
             var at = new System.Text.RegularExpressions.Regex(
                 $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(part.Name)}(?![\w$])").Match(mapped, from);
             if (!at.Success) continue;
-            var twin = part.NestedTwinName() is { } nested ? named?.Invoke(part, nested) ?? nested : part.Name;
+            var twin = part.RenamedTwin() is { } nested ? named?.Invoke(part, nested) ?? nested : part.Name;
             mapped = mapped[..at.Index] + twin + mapped[(at.Index + at.Length)..];
             from = at.Index + twin.Length;
         }
@@ -2925,8 +2927,7 @@ public class TypeScriptEmitter
         // A compat value type is not in an eQuantic namespace, so the scanner above never buckets
         // it — but a factory's `DateOnly? selected` annotates with the name all the same.
         foreach (var compat in RuntimeValueTypes) runtimeProvided.Add(compat);
-        runtimeProvided.RemoveWhere(referenced => !System.Text.RegularExpressions.Regex.IsMatch(
-            emitted, $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(referenced)}(?![\w$])"));
+        runtimeProvided.RemoveWhere(referenced => !NamedIn(emitted, referenced));
         core.UnionWith(runtimeProvided);
         if (core.Count > 0) imports.Add(new JsImport(core.ToList(), "@equantic/runtime"));
         // The base class is imported whether or not the syntax scanner noticed it: `extends` is the
