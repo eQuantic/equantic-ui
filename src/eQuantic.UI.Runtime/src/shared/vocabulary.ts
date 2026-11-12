@@ -12,6 +12,7 @@ import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from '.
 import type { NodeKind } from './node-kinds.generated';
 import type { TableCellRoleValue, TableRoleValue, WindowSizeClassValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
+import type { AppTheme } from './value-types';
 import { iconPaths } from './icons.generated';
 import type {
   BoxStyleValue,
@@ -29,7 +30,7 @@ import type { PickedFile } from './picked-file';
 export { CanvasPointer };
 import { floatText } from './css-values';
 import { lowerVisualNode } from './lowering';
-import { ambientLoweringContext } from './photon-context';
+import { ambientLoweringContext, registerThemeNode } from './photon-context';
 import {
   artworkAspect,
   CornerRadii,
@@ -954,6 +955,26 @@ export abstract class InheritedComponent extends VisualNode {
    */
   abstract updateShouldNotify(old: InheritedComponent): boolean;
 }
+
+/**
+ * A theme for a subtree (the C# `Theme`, after Flutter's `Theme`): the vocabulary's own inherited value.
+ * A component below it reads `context.theme` as this node's `value`, and builds again when a new one
+ * replaces it; a component with none above it reads its frame's (#1395).
+ */
+export class Theme extends InheritedComponent {
+  readonly value: AppTheme;
+
+  constructor(value: AppTheme, child: VisualChild, config?: EqConfig) {
+    super(child, config);
+    this.value = value;
+  }
+
+  updateShouldNotify(old: InheritedComponent): boolean {
+    return (old as Theme).value !== this.value;
+  }
+}
+// The context finds it by its class, which it cannot import: this module imports the context.
+registerThemeNode(Theme);
 
 export class InFlow extends VisualNode {
   readonly nodeKind = 'inFlow';

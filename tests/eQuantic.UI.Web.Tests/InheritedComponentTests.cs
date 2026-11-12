@@ -348,6 +348,62 @@ public class InheritedComponentTests
         new ComponentContext(PhotonTheme.Instance).Route.Should().BeSameAs(RouteValues.Empty);
     }
 
+    /// <summary>Says which theme it draws in.</summary>
+    private sealed class ThemeReader(Log log, string name, IAppTheme other) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            log.Entries.Add($"{name} {(ReferenceEquals(context.Theme, other) ? "other" : "frame")}");
+            return new Text(name, TypeRole.BodyM);
+        }
+    }
+
+    /// <summary>Holds a theme over a subtree its parent handed it.</summary>
+    private sealed class ThemeHolder(IAppTheme first, VisualNode child) : StatefulComponent
+    {
+        private IAppTheme _theme = first;
+
+        public void Set(IAppTheme theme) => SetState(() => _theme = theme);
+
+        public override VisualNode Build(ComponentContext context) => new Theme(_theme, child);
+    }
+
+    /// <summary>
+    /// A component under a <see cref="Theme"/> draws in its theme, and one beside it in the frame's
+    /// (#1395): the vocabulary's own inherited value, which a part of the screen drawn in another theme
+    /// wraps itself in (#1387).
+    /// </summary>
+    [Fact]
+    public void ASubtreeUnderItsOwnTheme_DrawsInIt_AndOneBesideItInTheFrames()
+    {
+        var log = new Log();
+        var other = new PhotonTheme();
+        var owner = ComponentBoundary.Owner();
+
+        Frame(owner, new Column { new Theme(other, new ThemeReader(log, "inside", other)), new ThemeReader(log, "beside", other) },
+            rebuildAll: true);
+
+        log.Entries.Should().Equal("inside other", "beside frame");
+    }
+
+    /// <summary>A new theme over a subtree builds the components that read it there, and nothing else.</summary>
+    [Fact]
+    public void ANewThemeOverASubtree_BuildsWhatReadsIt_AndNothingElse()
+    {
+        var log = new Log();
+        var other = new PhotonTheme();
+        var holder = new ThemeHolder(PhotonTheme.Instance, new Column { new ThemeReader(log, "reader", other), new Bystander(log) });
+        var owner = ComponentBoundary.Owner();
+        var root = Frame(owner, new Column { holder }, rebuildAll: true);
+        log.Entries.Should().Equal("reader frame", "bystander");
+
+        log.Entries.Clear();
+        ((ThemeHolder)((ComponentElement)root.ChildAt(0)!).Component).Set(other);
+        Frame(owner, new Column { holder });
+
+        log.Entries.Should().Equal(["reader other"], "the theme's dependents build, and a bystander does not");
+    }
+
     /// <summary>Keeps the context it was handed, as a handler does.</summary>
     private sealed class Keeper : StatelessComponent
     {

@@ -14,7 +14,7 @@
 ## 3. InFlow and the theme
 
 - [x] 3.1 `InFlow.Current` goes: the web visitor builds a component it expands without a position with its own flag
-- [ ] 3.2 `Theme`, the vocabulary's inherited theme, and `context.Theme` reads the nearest one above, or the frame's
+- [x] 3.2 `Theme`, the vocabulary's inherited theme, and `context.Theme` reads the nearest one above, or the frame's
 
 ## 4. Proof and documentation
 

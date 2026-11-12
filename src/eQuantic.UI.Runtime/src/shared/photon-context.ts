@@ -35,6 +35,13 @@ interface ContextPosition {
   visitChildren(visitor: unknown): void;
 }
 
+/** The vocabulary's `Theme` node, handed in by the vocabulary, which imports this module. */
+let themeNode: (abstract new (...args: never[]) => object) | null = null;
+
+export function registerThemeNode(type: abstract new (...args: never[]) => object): void {
+  themeNode = type;
+}
+
 /** Whether the constructor was handed a position rather than a theme: only an element visits children. */
 function isPosition(value: AppTheme | ContextPosition | null): value is ContextPosition {
   return typeof (value as Partial<ContextPosition> | null)?.visitChildren === 'function';
@@ -90,8 +97,17 @@ export class ComponentContext {
     return position.owner.context;
   }
 
+  /**
+   * The theme this component draws in (the C# `ComponentContext.Theme`): the nearest `Theme` above its
+   * position, or its frame's when none is, and reading it makes the component a dependent of whichever
+   * answered (#1395). A frame's context answers the theme it was handed.
+   */
   get theme(): AppTheme {
-    return this._position ? this.readFrame(this._position).theme : this._theme;
+    const position = this._position;
+    if (!position) return this._theme;
+    const node = themeNode;
+    const above = node ? (position.dependOn((value) => value instanceof node) as { value: AppTheme } | null) : null;
+    return above?.value ?? this.readFrame(position).theme;
   }
 
   get typeScale(): number {

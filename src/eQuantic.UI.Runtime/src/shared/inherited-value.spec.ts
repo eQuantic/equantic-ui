@@ -10,7 +10,7 @@ import { ComponentContext } from './photon-context';
 import { BuildOwner } from './components/BuildOwner';
 import { photonTheme } from './design-system.generated';
 import { RouteValues } from './route-values';
-import { Column, InheritedComponent, Text } from './vocabulary';
+import { Column, InheritedComponent, Text, Theme } from './vocabulary';
 import type { VisualNodeValue } from './nodes';
 import type { VisualNode } from './vocabulary';
 
@@ -156,5 +156,36 @@ describe('the route in the browser', () => {
     owner.endFrame();
 
     expect(builds, 'the route has readers of its own').toEqual({ route: 1 });
+  });
+});
+
+describe('a theme over a subtree in the browser', () => {
+  /** Says which theme it draws in. */
+  class ThemeReader extends StatefulComponent {
+    constructor(
+      private readonly name: string,
+      private readonly other: object,
+    ) {
+      super();
+    }
+
+    build(context: unknown): VisualNodeValue {
+      const theme = (context as ComponentContext).theme;
+      built(`${this.name} ${theme === this.other ? 'other' : 'frame'}`);
+      return new Text(this.name, 'label') as unknown as VisualNodeValue;
+    }
+  }
+
+  it('is read by the components under it, and the frame’s by the ones beside it (#1395)', () => {
+    const other = { ...photonTheme };
+    const owner = new BuildOwner((component, context) => component.build(context) as unknown as VisualNode);
+    const column = new Column(0);
+    column.add(new Theme(other, new ThemeReader('inside', other) as never) as never);
+    column.add(new ThemeReader('beside', other) as never);
+
+    owner.build(column as unknown as VisualNode, new ComponentContext(photonTheme) as never, 'compact', true);
+    owner.endFrame();
+
+    expect(builds).toEqual({ 'inside other': 1, 'beside frame': 1 });
   });
 });

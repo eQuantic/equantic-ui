@@ -61,7 +61,14 @@ public sealed class ComponentContext
         return position.Owner.Context;
     }
 
-    public IAppTheme Theme => _position is { } at ? ReadFrame(at).Theme : _theme;
+    /// <summary>
+    /// The theme this component draws in: the nearest <see cref="Primitives.Theme"/> above its position,
+    /// or its frame's when none is, and reading it makes the component a dependent of whichever answered
+    /// (#1395). A frame's context answers the theme it was handed.
+    /// </summary>
+    public IAppTheme Theme => _position is { } at
+        ? (at.DependOn(static inherited => inherited is Primitives.Theme) as Primitives.Theme)?.Value ?? ReadFrame(at).Theme
+        : _theme;
 
     public float TypeScale => _position is { } at ? ReadFrame(at).TypeScale : _typeScale;
 

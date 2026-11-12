@@ -68,3 +68,6 @@ eQuantic.UI.Primitives.ComponentContext.ComponentContext(eQuantic.UI.Primitives.
 *REMOVED*static eQuantic.UI.Primitives.RouteValues.ClearCurrent() -> void
 *REMOVED*static eQuantic.UI.Primitives.RouteValues.Current.get -> eQuantic.UI.Primitives.RouteValues!
 *REMOVED*static eQuantic.UI.Primitives.RouteValues.Current.set -> void
+eQuantic.UI.Primitives.Theme
+eQuantic.UI.Primitives.Theme.Theme(eQuantic.UI.Primitives.IAppTheme! value, eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Primitives.Theme.Value.get -> eQuantic.UI.Primitives.IAppTheme!
