@@ -83,3 +83,36 @@
  2335  32.4  58016 /Users/runner/Library/Application Support/dotnet/runfile/measure-edit-to-view-b21f241eb3d5bf36ea5eeab1566dd723ef7b35c5e8d28969dd11469ff35abbea/bin/debug/measure-edit-to-view
  1133  12.5   6336 /usr/libexec/sysmond
  2527   9.0 112704 /System/Cryptexes/App/usr/libexec/SafariBookmarksSyncAgent
+[watch 14:51:07.525] dotnet watch : Waiting for changes
+[watch 14:51:12.773] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:51:14.011] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:51:14.024] dotnet watch : C# and Razor changes applied in 1225ms.
+[watch 14:51:14.089] [eQuantic.HotReload] drew the edit 77ms after it was applied
+desktop run 1 (cold): total 1471ms, delta 1394ms, frame 77ms
+[watch 14:51:16.231] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:51:16.523] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:51:16.524] dotnet watch : C# and Razor changes applied in 292ms.
+[watch 14:51:16.582] [eQuantic.HotReload] drew the edit 50ms after it was applied
+desktop run 2: total 396ms, delta 346ms, frame 50ms
+[watch 14:51:18.746] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:51:18.844] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:51:18.845] dotnet watch : C# and Razor changes applied in 98ms.
+[watch 14:51:18.913] [eQuantic.HotReload] drew the edit 69ms after it was applied
+desktop run 3: total 282ms, delta 213ms, frame 69ms
+[watch 14:51:21.028] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:51:21.349] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:51:21.350] dotnet watch : C# and Razor changes applied in 320ms.
+[watch 14:51:21.391] [eQuantic.HotReload] drew the edit 41ms after it was applied
+desktop run 4: total 419ms, delta 378ms, frame 41ms
+--- sample 14:51:22 load: { 32.78 39.76 19.31 } System-wide memory free percentage: 80%
+157 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2336 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+2337 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+2564 /Users/runner/.dotnet/dotnet run --no-build -e DOTNET_WATCH=1 -e DOTNET_WATCH_ITERATION=1 -e DOTNET_MODIFIABLE_ASSE
+2578 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  app 2578: 68 MB 3760 KB 0 B 256 KB 160 IOAccelerator (graphics)
+ 2337  99.2 443856 /Users/runner/.dotnet/dotnet
+ 1828  24.1  68112 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
+  369   7.1  84512 /System/Library/PrivateFrameworks/VoiceShortcuts.framework/Versions/A/Support/siriactionsd
+ 1133   5.5   6496 /usr/libexec/sysmond
+ 2833   3.6   7232 /usr/libexec/taskgated
