@@ -31,41 +31,69 @@ public class InvocationStrategy : IExpressionIrStrategy
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
-        var call = ConvertCall(invocation, context);
-
         var byReference = ByReferenceArguments(invocation, context);
-        if (byReference.Count == 0) return call;
         // Only a method the compiler EMITS returns the object this unwraps. A framework method with
         // an `out` either has a strategy of its own (higher priority, never reaching here) or is
         // already reported as untranslatable.
-        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol method
-            || !method.Locations.Any(location => location.IsInSource))
-            return call;
+        var unwraps = byReference.Count > 0
+            && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method
+            && method.Locations.Any(location => location.IsInSource);
 
-        // A target counted from the end is held before the call, as C# evaluates it: what it reads is a
-        // template no value can be assigned to, and the receiver would run again after the call.
+        // A `ref` target counted from the end is read by the call and written back after it, through
+        // ONE receiver and ONE position, as C# evaluates them: held in a temporary the enclosing
+        // function declares, before the call, and read through it in the argument. Read again in its
+        // own place, `Twice(ref Get()[^1])` ran `Get` twice (#1190). A temporary, not a function
+        // around the call, so an `await` among the arguments stays the enclosing function's own.
+        var throughTemporary = new Dictionary<ArgumentSyntax, (string Name, JsExpr Held)>();
+        if (unwraps && context.Temporaries.CanBind)
+        {
+            foreach (var entry in byReference)
+            {
+                if (entry.IsOut || entry.Held is null) continue;
+                var name = context.Temporaries.Fresh();
+                context.Temporaries.Bind(name);
+                throughTemporary[entry.Argument] = (name, entry.Held);
+            }
+        }
+        var call = ConvertCall(invocation, context,
+            throughTemporary.ToDictionary(pair => pair.Key, pair => JsExpr.Opaque(Place.ThroughHeld(pair.Value.Name))));
+        if (!unwraps) return call;
+
+        // An `out` target counted from the end is held before the call, as C# evaluates it: what it reads
+        // is a template no value can be assigned to, and the receiver would run again after the call.
         var parts = new List<JsExpr>();
         var assignments = byReference
             .Where(entry => entry.Target.Length > 0)
             .Select(entry =>
             {
+                if (throughTemporary.TryGetValue(entry.Argument, out var held))
+                    return $"{Place.ThroughHeld(held.Name)} = $o.{entry.Field}, ";
                 if (entry.Held is null) return $"{entry.Target} = $o.{entry.Field}, ";
                 parts.Add(entry.Held);
                 return $"{Place.ThroughHeld("{" + (parts.Count - 1) + "}")} = $o.{entry.Field}, ";
             })
             .ToList();
         string Unwrapped(string result) => $"($o => ({string.Concat(assignments)}$o.$))({result})";
+        // Each temporary takes its receiver and position first, in the order the arguments are written.
+        var holds = throughTemporary.Values.Select(held =>
+        {
+            parts.Add(held.Held);
+            return $"{held.Name} = {{{parts.Count - 1}}}, ";
+        }).ToList();
         if (parts.Count == 0) return JsExpr.Callish(Unwrapped(JsExprWriter.Write(call)));
         parts.Add(call);
-        return JsExpr.Template(Unwrapped("{" + (parts.Count - 1) + "}"), parts);
+        var unwrapped = Unwrapped("{" + (parts.Count - 1) + "}");
+        return JsExpr.Template(holds.Count == 0 ? unwrapped : $"({string.Concat(holds)}{unwrapped})", parts);
     }
 
     /// <summary>Each `out`/`ref` argument: what it assigns to, and the field of the result object it
     /// takes that from (the callee's parameter name). `out _` discards, so it has no target.</summary>
-    private static List<(string Target, string Field, bool IsOut, JsExpr? Held)> ByReferenceArguments(
+    private static List<(ArgumentSyntax Argument, string Target, string Field, bool IsOut, JsExpr? Held)> ByReferenceArguments(
         InvocationExpressionSyntax invocation, ConversionContext context)
     {
-        var result = new List<(string, string, bool, JsExpr?)>();
+        var result = new List<(ArgumentSyntax, string, string, bool, JsExpr?)>();
+        // The arguments held before the call, which are taken there in the order they are written.
+        var heldBefore = new HashSet<int>();
         var symbol = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
         var arguments = invocation.ArgumentList.Arguments;
         for (var index = 0; index < arguments.Count; index++)
@@ -89,12 +117,17 @@ public class InvocationStrategy : IExpressionIrStrategy
                     ? symbol.Parameters[index].Name.ToJsIdentifier()
                     : $"$out{index}";
             var held = Place.HeldFor(argument.Expression, context);
-            if (held is not null && !HeldInItsPlace(invocation, index, context))
+            if (held is not null && !HeldInItsPlace(invocation, index, heldBefore, context))
             {
                 context.Unhandled(argument, "out or ref argument counted from the end, after an argument or a receiver that "
                     + "runs code: its element is taken before the call. Assign the element after the call");
             }
-            result.Add((target, field, isOut, held));
+            // An array's element counted from the start whose receiver or position runs code is held the same
+            // way where holding it keeps C#'s order: read again for the write-back, `ref Get()[0]` ran `Get`
+            // twice and `ref a[i++]` stepped twice and wrote the next element (#1190).
+            held ??= HeldInItsPlace(invocation, index, heldBefore, context) ? HeldElement(argument.Expression, context) : null;
+            if (held is not null) heldBefore.Add(index);
+            result.Add((argument, target, field, isOut, held));
         }
         return result;
     }
@@ -102,29 +135,60 @@ public class InvocationStrategy : IExpressionIrStrategy
     /// <summary>
     /// Whether holding the element of the argument at <paramref name="index"/> before the call takes it
     /// where C# takes it, after the call's receiver and the arguments written before it. It does when
-    /// those run no code, and when the element's own receiver and offset run none either or nothing they
-    /// run can reach them: a name read ahead of a call could be changed by it. A property runs code.
+    /// those run no code, or are held before the call themselves (<paramref name="heldBefore"/>), and when
+    /// the element's own receiver and offset run none either or nothing they run can reach them: a name
+    /// read ahead of a call could be changed by it. A property runs code.
     /// </summary>
-    private static bool HeldInItsPlace(InvocationExpressionSyntax invocation, int index, ConversionContext context)
+    private static bool HeldInItsPlace(InvocationExpressionSyntax invocation, int index, IReadOnlySet<int> heldBefore,
+        ConversionContext context)
     {
-        bool Reads(ExpressionSyntax expression) => expression switch
-        {
-            ThisExpressionSyntax or BaseExpressionSyntax or LiteralExpressionSyntax => true,
-            IdentifierNameSyntax name => context.SemanticHelper.GetSymbol(name) is not IPropertySymbol,
-            MemberAccessExpressionSyntax member => context.SemanticHelper.GetSymbol(member) is not IPropertySymbol && Reads(member.Expression),
-            PrefixUnaryExpressionSyntax hat when hat.IsKind(SyntaxKind.IndexExpression) => Reads(hat.Operand),
-            ElementAccessExpressionSyntax { ArgumentList.Arguments: [var key] } access => Reads(access.Expression) && Reads(key.Expression),
-            ParenthesizedExpressionSyntax parenthesized => Reads(parenthesized.Expression),
-            _ => false,
-        };
+        bool Reads(ExpressionSyntax expression) => InvocationStrategy.Reads(expression, context);
         static bool Fixed(ExpressionSyntax expression) => expression is ThisExpressionSyntax or BaseExpressionSyntax or LiteralExpressionSyntax;
 
-        var before = invocation.ArgumentList.Arguments.Take(index).Select(argument => argument.Expression).ToList();
+        // An argument held before the call is taken there, before this one, as C# takes it: it reorders nothing.
+        var before = invocation.ArgumentList.Arguments.Take(index)
+            .Where((_, position) => !heldBefore.Contains(position))
+            .Select(argument => argument.Expression).ToList();
         if (invocation.Expression is MemberAccessExpressionSyntax call) before.Insert(0, call.Expression);
         return before.All(Reads) && (Reads(invocation.ArgumentList.Arguments[index].Expression) || before.All(Fixed));
     }
 
-    private JsExpr ConvertCall(InvocationExpressionSyntax invocation, ConversionContext context)
+    /// <summary>Whether reading <paramref name="expression"/> runs no code: a local, a field, <c>this</c>, a
+    /// literal, and an element or a position made of those. A property runs code.</summary>
+    private static bool Reads(ExpressionSyntax expression, ConversionContext context) => expression switch
+    {
+        ThisExpressionSyntax or BaseExpressionSyntax or LiteralExpressionSyntax => true,
+        IdentifierNameSyntax name => context.SemanticHelper.GetSymbol(name) is not IPropertySymbol,
+        MemberAccessExpressionSyntax member => context.SemanticHelper.GetSymbol(member) is not IPropertySymbol && Reads(member.Expression, context),
+        PrefixUnaryExpressionSyntax hat when hat.IsKind(SyntaxKind.IndexExpression) => Reads(hat.Operand, context),
+        ElementAccessExpressionSyntax { ArgumentList.Arguments: [var key] } access => Reads(access.Expression, context) && Reads(key.Expression, context),
+        ParenthesizedExpressionSyntax parenthesized => Reads(parenthesized.Expression, context),
+        _ => false,
+    };
+
+    /// <summary>
+    /// The receiver and the position of an array's element counted from the start, as one value taken before
+    /// the call (<c>[receiver, position]</c>, which <see cref="Place.ThroughHeld"/> reads and writes through),
+    /// where either runs code; null where both are plain reads, which read again name the same element.
+    /// </summary>
+    private static JsExpr? HeldElement(ExpressionSyntax target, ConversionContext context)
+    {
+        while (target is ParenthesizedExpressionSyntax parenthesized) target = parenthesized.Expression;
+        if (target is not ElementAccessExpressionSyntax { ArgumentList.Arguments: [var key] } access
+            || key.Expression is PrefixUnaryExpressionSyntax hat && hat.IsKind(SyntaxKind.IndexExpression)
+            || context.SemanticHelper.GetType(access.Expression) is not IArrayTypeSymbol { Rank: 1 }
+            || context.SemanticHelper.GetType(key.Expression)?.SpecialType != SpecialType.System_Int32
+            || Reads(access.Expression, context) && Reads(key.Expression, context))
+            return null;
+        return JsExpr.Array([context.Converter.ConvertIr(access.Expression), context.Converter.ConvertIr(key.Expression)]);
+    }
+
+    /// <param name="invocation">The call.</param>
+    /// <param name="context">The conversion's context.</param>
+    /// <param name="replaced">An argument whose value is already held, by what reads it instead of its
+    /// own conversion: a `ref` place read through its temporary.</param>
+    private JsExpr ConvertCall(InvocationExpressionSyntax invocation, ConversionContext context,
+        IReadOnlyDictionary<ArgumentSyntax, JsExpr> replaced)
     {
         var methodExpression = invocation.Expression;
         var methodName = methodExpression.ToString();
@@ -156,7 +220,8 @@ public class InvocationStrategy : IExpressionIrStrategy
             // A `params` parameter is a REST parameter on the other side, so the two C# call forms
             // diverge: `Count("a", "b")` already lines up, and a collection handed whole,
             // `Count(names)`, would arrive as ONE element, so it spreads (BoundArguments.Convert).
-            argsList.Add(arg.Expression is DeclarationExpressionSyntax declaration
+            argsList.Add(replaced.TryGetValue(arg, out var held) ? held
+                : arg.Expression is DeclarationExpressionSyntax declaration
                 ? JsExpr.Identifier(declaration.Designation.ToString().ToJsIdentifier())
                 : BoundArguments.Convert(arg, context));
         }

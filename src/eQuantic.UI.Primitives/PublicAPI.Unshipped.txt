@@ -81,3 +81,4 @@ eQuantic.UI.Primitives.ButtonTheme.OutlineColor.get -> eQuantic.UI.Primitives.Co
 eQuantic.UI.Primitives.ButtonTheme.OutlineColor.init -> void
 eQuantic.UI.Primitives.ButtonTheme.QuietFill.get -> eQuantic.UI.Primitives.ColorToken?
 eQuantic.UI.Primitives.ButtonTheme.QuietFill.init -> void
+static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!
