@@ -784,6 +784,7 @@ hashesByValue(
   TableOffset,
   TableRange,
   TableScrollRequest,
+  TextReading,
   ScrollRequest,
   SizeValue,
   WebContent,
