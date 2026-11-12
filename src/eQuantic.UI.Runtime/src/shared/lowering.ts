@@ -44,6 +44,7 @@ import {
   atomizePseudo,
   atomizeScrolled,
   CONTROL_FOCUS,
+  CONTROL_HOVER,
   CONTROL_PRESSED,
   ensureAdaptiveGate,
   gateCompactUntil,
@@ -79,6 +80,7 @@ import type {
   CameraPreviewNode,
   WebFrameNode,
   CodeSurfaceModelLike,
+  TextReadingLike,
   CodeSurfaceNode,
   ImageNode,
   GridPatternValue,
@@ -96,6 +98,7 @@ import type {
   HoverableNode,
   DropTargetNode,
   InFlowNode,
+  InheritedNode,
   InViewNode,
   SimulatedNode,
   ScrollViewNode,
@@ -220,15 +223,26 @@ export function px(dp: number): string {
 function transformValue(t: TransformValue): string | undefined {
   const tx = t.translateX ?? 0;
   const ty = t.translateY ?? 0;
+  const fx = t.translateFractionX ?? 0;
+  const fy = t.translateFractionY ?? 0;
   const rot = t.rotationDegrees ?? 0;
   const sx = t.scaleX ?? 1;
   const sy = t.scaleY ?? 1;
   const parts: string[] = [];
-  if (tx !== 0 || ty !== 0) parts.push(`translate(${px(tx)}, ${px(ty)})`);
+  if (tx !== 0 || ty !== 0 || fx !== 0 || fy !== 0)
+    parts.push(`translate(${offsetValue(tx, fx)}, ${offsetValue(ty, fy)})`);
   if (rot !== 0) parts.push(`rotate(${num(rot)}deg)`);
   if (sx !== 1 || sy !== 1)
     parts.push(sx === sy ? `scale(${num(sx)})` : `scale(${num(sx)}, ${num(sy)})`);
   return parts.length > 0 ? parts.join(' ') : undefined;
+}
+
+/** One axis of a translation (C# `TokenCss.Offset`): units, a percentage of the element's own size,
+ * or their sum. */
+function offsetValue(units: number, fraction: number): string {
+  if (fraction === 0) return px(units);
+  const percent = `${num(Math.fround(fraction * 100))}%`;
+  return units === 0 ? percent : `calc(${percent} + ${px(units)})`;
 }
 
 function radiusValue(radii: CornerRadiiValue): string {
@@ -402,7 +416,7 @@ function lowerNodeKind(
     case 'column':
       return lowerFlex(node as FlexNodeValue, context, path);
     case 'text':
-      return lowerText(node as TextNode, context);
+      return lowerText(node as TextNode);
     case 'textEntry':
       return lowerTextEntry(node as TextEntryNode, context);
     case 'overlay':
@@ -495,6 +509,11 @@ function lowerNodeKind(
       return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
     case 'inFlow':
       return lowerInFlow(node as unknown as InFlowNode, context, horizontalAxis, path);
+    // An inherited component holds a value for its subtree and draws nothing of its own: every pass
+    // draws its child as if it were not there (the C# `WebLoweringVisitor`). Who depends on its value
+    // is the element engine's to track, which drives the browser from E3b.
+    case 'inherited':
+      return lowerNode((node as unknown as InheritedNode).child, context, horizontalAxis, path + '/0');
     case 'inView':
       return lowerInView(node as unknown as InViewNode, context, horizontalAxis, path);
     case 'positioned':
@@ -503,7 +522,8 @@ function lowerNodeKind(
     case 'component': {
       // W6 slice 2: resolve against the positional store BEFORE building — a retained instance
       // (same path + type + key) keeps its state and adopts the fresh config. Mirrors the C#
-      // LayoutEngine.MeasureComponent; the build output expands at the wrapper position (path/0).
+      // LayoutEngine.MeasureComponent; the build output expands one step down (path/~), a step the
+      // scope of a grid's ids reads past (pathScope), since a page mounted as a root takes none.
       const pass = getActivePass();
       const resolved = (
         pass ? pass.store.reconcile(path, node, pass.invalidator) : node
@@ -529,7 +549,7 @@ function lowerNodeKind(
         reportComponentFailure(name, error);
         built = describeComponentFailure(name, error, getPhotonTheme());
       }
-      return lowerNode(built as VisualNodeValue, context, horizontalAxis, path + '/0');
+      return lowerNode(built as VisualNodeValue, context, horizontalAxis, path + '/~');
     }
     // THE DOOR CLOSED. `nodeKind` is the generated NodeKind union, so this arm is unreachable for
     // every kind the vocabulary declares — and the day it declares one more, this line stops
@@ -641,8 +661,11 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   // revealCaret) resolves by this, never by a reference.
   surface.attributes['data-eq-code'] = path;
 
+  // Its text is the door's value (#1333, C# twin: LowerCodeSurface), so what it draws is out of the
+  // reading order: a reader heard an empty field and then the code as lines of their own.
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) {
+    child.attributes['aria-hidden'] = 'true';
     // The child keeps its layers (the mark layer under the lines among them) inside a stacking
     // context of its OWN. A code block that carries a decoration draws it on a Stack whose layers
     // take a z-index, and those climbed over the caret painted after the child: the caret vanished
@@ -692,6 +715,11 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   // carets before it and the notes after, a press that added carets while a note appeared matched it
   // with a new caret's mark, and the input made anew in its place left the keyboard on the page (#1012).
   input.key = `${path}/input`;
+  // The door holds what a reader hears the surface hold (#1333): the field and its text are one thing.
+  // Written as the textarea's content, as the server writes it; the live value and the selection are
+  // kept in step with the model after each render (readAfterRender).
+  const reading = model.reading;
+  if (reading.text.length > 0) input.children = [textLeaf(reading.text)];
   surface.children.push(input);
 
   // What the surface EXPLAINS (C# twin: LowerCodeSurface): each note over the code and the caret, at
@@ -777,6 +805,8 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     focusedVersions.set(model, model.focusVersion);
     focusSurface(path);
   }
+
+  readAfterRender('data-eq-code', path, model, reading);
 
   const changed = () => node.onChanged?.();
   // Copy and Cut run through the browser's copy event on whatever key the editor binds them to.
@@ -1024,7 +1054,8 @@ function openTextDoor(
         remember(ime, event.data);
       } else model.setComposition('');
     }
-    (event.target as HTMLTextAreaElement).value = '';
+    // What the input method left in the door is no part of the document: the render this asks for puts
+    // the door's reading back (readAfterRender), rather than emptying it for a frame a reader would hear.
     changed();
   }) as unknown as EventHandler;
 
@@ -1065,6 +1096,51 @@ function openTextDoor(
     model.focusChanged(false);
     changed();
   }) as unknown as EventHandler;
+}
+
+/**
+ * Keeps a text door holding what a reader hears its surface hold, and its selection where the surface's
+ * caret is (#1333, C# twins: the door's content in LowerCodeSurface and LowerSheetSurface). A textarea's content is only
+ * its value until something edits it, and an input method does, so the value is written here as well;
+ * the selection exists only on the live element. Moving it is what makes a reader say the line the caret
+ * moved to, the way a native field's caret does.
+ * <p>
+ * After the render, as revealCaret runs, and by path, never by a captured element. Never while an input
+ * method composes: moving the selection under it would cancel the composition.
+ * </p>
+ * <p>
+ * Not under a finger: a phone's keyboard reads the text around its caret and composes, corrects and
+ * replaces words in it, and the door hands the model what is typed, never which range a correction meant
+ * to replace, so a door holding the text would have the keyboard rewrite words it had already written
+ * (#1333). There the door holds nothing, as it always did.
+ * </p>
+ */
+function readAfterRender(attribute: string, path: string, model: object, reading: TextReadingLike): void {
+  if (typeof document === 'undefined') return;
+  const read = () => {
+    if (typeof document === 'undefined') return;
+    const door = document.querySelector<HTMLTextAreaElement>(`[${attribute}="${path}"] textarea.eq-code-input`);
+    if (!door || compositionOf(model).open) return;
+    if (underAFinger()) {
+      if (door.value !== '') door.value = '';
+      return;
+    }
+    if (door.value !== reading.text) door.value = reading.text;
+    const start = Math.min(reading.anchor, reading.focus);
+    const end = Math.max(reading.anchor, reading.focus);
+    const direction = reading.focus < reading.anchor ? 'backward' : 'forward';
+    if (door.selectionStart !== start || door.selectionEnd !== end || door.selectionDirection !== direction) {
+      door.setSelectionRange(start, end, direction);
+    }
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(read));
+  if (typeof setTimeout === 'function') setTimeout(read, 48);
+}
+
+/** Whether the page's primary pointer is a finger, whose keyboard composes in the text around its caret. */
+function underAFinger(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    && window.matchMedia('(pointer: coarse)').matches;
 }
 
 /** The reveal version each code surface was last rendered at, by path — see lowerCodeSurface. */
@@ -1277,7 +1353,7 @@ function warmsOnHover(destination: string): boolean {
 }
 
 function lowerLink(node: LinkNode, context: LoweringContext, path: string): HtmlNode {
-  // The active language rides the href (C# twin: RenderContext.ResolveDestination). An author
+  // The active language rides the href (C# twin: RenderChannels.ResolveDestination). An author
   // writes `/pricing` once and the link is right in every language — including after a
   // client-side switch, which re-renders this node with a different active culture.
   // A destination whose scheme an href never carries is no href (C# twin, #1286).
@@ -1729,7 +1805,12 @@ function lowerSheetSurface(
     children: [],
   };
   if (node.label) input.attributes['aria-label'] = node.label;
+  // The door's value is what the grid says now (#1333, C# twin: LowerSheetSurface), as Photon gives the
+  // field it: a reader arriving on the sheet hears where it is from the field itself.
+  const said = node.announcement ?? '';
+  if (said.length > 0) input.children = [textLeaf(said)];
   view.children.push(input);
+  readAfterRender('data-eq-sheet', path, model, { text: said, anchor: said.length, focus: said.length });
 
   // What the grid says now (C# twin: LowerSheetSurface, #1081): a visually hidden polite status, which a
   // reader speaks each time its words change, wherever its focus is.
@@ -1936,7 +2017,7 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
   const semantics: TableSemantics = {
     grid: role === 'grid',
     rows: role !== 'group',
-    scope: hashDeclaration(node.label ?? ''),
+    scope: pathScope(path),
   };
   const children: HtmlNode[] = [];
   for (let marks = 0; marks < 2; marks++) {
@@ -2046,11 +2127,28 @@ function lowerTableBand(
 
 /** What a table view adds for a reader (#1081): whether it is a grid, whether it reads as rows (a table
  * and a grid do, a group reads as its cells in the same order), and the scope its cells' ids are unique
- * in, the label hashed as a `Navigable` grid's are (`navigableScope`). */
+ * in, its place in the tree (`pathScope`), as a `Navigable` grid's are. */
 interface TableSemantics {
   readonly grid: boolean;
   readonly rows: boolean;
   readonly scope: string;
+}
+
+/**
+ * The scope a grid's or a table's cells' ids are unique in: its path below its root, past the steps into what a
+ * component builds (`~`), hashed with the atomizer's FNV, the same on both sides whichever root this pass gave it
+ * and whether a component was mounted as a root or met inside the tree (C# twin: LoweringPath.Scope). The label was the
+ * scope, so two grids of one label, two spreadsheets or two unlabelled tables shared their cells' ids (#1115).
+ */
+function pathScope(path: string): string {
+  const below = path.indexOf('/');
+  const steps = below < 0 ? [] : path.slice(below + 1).split('/');
+  return hashDeclaration(
+    steps
+      .filter((step) => step !== '~')
+      .map((step) => '/' + step)
+      .join(''),
+  );
 }
 
 /** The id a table's cell answers to, which its row's `aria-owns` names (C# twin: TableCellId). */
@@ -3178,6 +3276,8 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     padding:
       style.padding && !isZeroInsets(style.padding) ? paddingValue(style.padding) : undefined,
     'background-color': style.background ? tokenValue(style.background) : undefined,
+    // The foreground the text and icons inside inherit (C# twin, #614).
+    color: style.foreground ? tokenValue(style.foreground) : undefined,
     // Mirror of the C# realizer: the FIRST layer paints on top, so a gradient sits over the grid,
     // and background-size carries one entry per layer (`auto` stands in for the gradient).
     'background-image': backgroundLayers(style),
@@ -3254,8 +3354,9 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
 
   const result = element('div', entries);
 
+  // Inside an enabled control the hover is the control's (C# twin, #614).
   if (style.hover && !(simulatedState & SIMULATED_HOVERED))
-    appendDiff(result, ':hover', style.hover, style);
+    appendDiff(result, inEnabledControl ? CONTROL_HOVER : ':hover', style.hover, style);
   if (focus && !(simulatedState & SIMULATED_FOCUSED)) appendDiff(result, CONTROL_FOCUS, focus, style);
   if (pressed && !(simulatedState & SIMULATED_PRESSED))
     appendDiff(result, CONTROL_PRESSED, pressed, style);
@@ -3386,6 +3487,7 @@ const NO_COLOR: ColorTokenValue = {
 function diffEntries(diff: StyleDiffValue, style: BoxStyleValue): Record<string, string | undefined> {
   const entries: Record<string, string | undefined> = {};
   if (diff.background) entries['background-color'] = tokenValue(diff.background);
+  if (diff.foreground) entries['color'] = tokenValue(diff.foreground);
   // The border along the edges the BASE draws, in the base's own shape (C# twin, #506): the
   // shorthand for every edge, per-side widths for some, and a width alone in the base's colour.
   if (diff.borderWidth != null) {
@@ -3606,7 +3708,7 @@ function faceStack(family: string, mono: boolean): string {
   return `"${family}", ` + (mono ? MONO_STACK : SANS_STACK);
 }
 
-function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
+function lowerText(text: TextNode): HtmlNode {
   // A family the node names that ships files is declared in the document the first time text is set
   // in it (#1056), as the server declares it in the head of a page it renders.
   if (isWellFormedFace(text.styleOverride?.family?.name)) declareFamily(text.styleOverride!.family);
@@ -3615,7 +3717,8 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     // inline span inside a block parent it sat on the parent's line box and its body-font strut. The
     // multi-line clamp below replaces it with the box the clamp needs.
     display: 'block',
-    color: tokenValue(text.color ?? context.textPrimary),
+    // No colour of its own: it inherits the box's foreground or the document's (C# twin, #614).
+    color: text.color ? tokenValue(text.color) : undefined,
     // Line alignment inside the paragraph (C# twin) — wrapped lines of a centered headline
     // must center too.
     'text-align': text.align === 'center' ? 'center' : text.align === 'end' ? 'end' : undefined,
@@ -3771,6 +3874,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     // recorded above: the host takes the child's 100% and drops its maximum.
     case 'simulated':
     case 'inFlow':
+    case 'inherited':
     case 'inView':
       return capsAt(value.child);
     default:
@@ -3828,6 +3932,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as SimulatedNode).child);
     case 'inFlow':
       return fills((node as InFlowNode).child);
+    case 'inherited':
+      return fills((node as unknown as InheritedNode).child);
     case 'inView':
       return fills((node as InViewNode).child);
     case 'flexible':
@@ -3895,11 +4001,13 @@ function lowerPressable(
   const outerSimulated = simulatedState;
   const outerDisabled = inDisabledControl;
   const outerInControl = inControl;
+  const outerInEnabledControl = inEnabledControl;
   if (disabled) {
     simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
     inDisabledControl = true;
-  } else if (inControl) simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
+  } else if (inControl) simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED | SIMULATED_HOVERED);
   inControl = true;
+  inEnabledControl = !disabled;
   // What THIS control is pictured as: its ring below reads it (C# `pictured`).
   const pictured = simulatedState;
   let child: HtmlNode | null;
@@ -3909,6 +4017,7 @@ function lowerPressable(
     simulatedState = outerSimulated;
     inDisabledControl = outerDisabled;
     inControl = outerInControl;
+    inEnabledControl = outerInEnabledControl;
   }
 
   // HTML forbids a button inside a button (and an anchor inside an anchor): the parser closes the
@@ -3922,6 +4031,8 @@ function lowerPressable(
     background: 'none',
     border: 'none',
     'font-family': 'inherit',
+    // The user agent's buttontext would stand between the content and its foreground (C# twin, #614).
+    color: 'inherit',
     'text-align': 'start',
     cursor: disabled ? undefined : 'pointer',
     // A Fill child needs the 100% chain to pass through the button (scrim et al.).
@@ -4450,17 +4561,6 @@ function navigableCellId(scope: string, row: number, item: number): string {
 }
 
 /**
- * What makes one grid's cell ids distinct from another's on the same page: the grid's NAME, hashed
- * with the atomizer's FNV — the one hash both producers compute identically, which is what SSR
- * hydration needs. Two grids that also share a name (the same month rendered twice) would still
- * collide, which is the point where a caller should give them names that differ; a screen reader
- * needs that anyway.
- */
-function navigableScope(node: NavigableNode): string {
-  return hashDeclaration(node.label ?? '');
-}
-
-/**
  * A KEY, as the MOVE it means (C# twin: NavigableMove). The design system's C15 keyboard: arrows
  * walk a day, PgUp/PgDn a month, +Shift a year, Home/End the week's bounds. Returns null for a key
  * this composite does not claim — which must then reach the page untouched, or an inline grid
@@ -4503,7 +4603,7 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
   host.attributes['role'] = node.role ?? 'grid';
   host.attributes['tabindex'] = '0';
   if (node.label) host.attributes['aria-label'] = node.label;
-  const scope = navigableScope(node);
+  const scope = pathScope(path);
   if (node.activeCell)
     host.attributes['aria-activedescendant'] = navigableCellId(
       scope,
@@ -4579,6 +4679,8 @@ let simulatedState = 0;
 let inDisabledControl = false;
 /** True while an enabled control's subtree is lowered under a Simulated node (C# `_inControl`, #616). */
 let inControl = false;
+/** True while the nearest control is ENABLED, whose hover its boxes then take (C# `_inEnabledControl`, #614). */
+let inEnabledControl = false;
 
 /**
  * Draws the subtree in the given states (the C# `LowerSimulated`). `:hover` and `:focus-visible`

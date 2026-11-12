@@ -174,6 +174,59 @@ public class RunningCompilerTests
         found.Should().Be(1);
     }
 
+    /// <summary>
+    /// A save that finds eqc dead never waits on that process while it holds the compiler's gate. The
+    /// process's exit event runs inside the process's own lock and reads the compile in flight through
+    /// the gate, so a save that released the dead eqc under the gate, as releasing takes that same lock,
+    /// waited on the event while the event waited on it, and the hot reload hung for good (#1491, a
+    /// Server suite that stopped for its 15 minutes on CI). Here the test holds the process's lock, as
+    /// the event does, while the next save runs, and asks for the gate as the event's handler does.
+    /// </summary>
+    [Fact]
+    public async Task ASaveThatFindsEqcDead_NeverHoldsTheGateWhileItWaitsOnTheProcess()
+    {
+        using var compiler = new RunningCompiler(_ => Answering(Compiled));
+        compiler.Compile(TimeSpan.FromSeconds(30)).Compiled.Should().BeTrue();
+        var dead = compiler.Running!;
+        dead.Kill(entireProcessTree: true);
+        dead.WaitForExit(10_000).Should().BeTrue();
+
+        // The process's own lock, held on a thread of its own as the exit event holds it.
+        using var held = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var holder = new Thread(() =>
+        {
+            lock (dead)
+            {
+                held.Set();
+                release.Wait(TimeSpan.FromSeconds(60));
+            }
+        });
+        holder.Start();
+        held.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
+
+        var next = Task.Run(() => compiler.Compile(TimeSpan.FromSeconds(30)));
+        // Long enough for the save to reach the dead eqc and wait on its lock.
+        await Task.Delay(500);
+        var reached = true;
+        try
+        {
+            await Task.Run(() => compiler.ProcessId).WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        catch (TimeoutException)
+        {
+            reached = false;
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        reached.Should().BeTrue("the save waits on the dead process without the gate, which the process's exit event needs");
+        (await next.WaitAsync(TimeSpan.FromSeconds(30))).Compiled.Should().BeTrue();
+        holder.Join(TimeSpan.FromSeconds(10));
+    }
+
     /// <summary>A compile past its limit stops eqc rather than leaving it to write beside the next one.</summary>
     [Fact]
     public void ACompilePastItsLimit_StopsEqc_NotAbandoned()
@@ -241,6 +294,35 @@ public class RunningCompilerTests
 
         outcome.Compiled.Should().BeFalse();
         compiler.ProcessId.Should().BeNull("nothing starts once the app has stopped");
+    }
+
+    /// <summary>
+    /// A shutdown while MSBuild is still being asked stops it and throws nothing, however the asking's own
+    /// release of it falls against the wait. Disposing read the MSBuild under the gate and stopped it
+    /// outside, so the asking, woken by the kill, released it between the look and the wait, and Windows
+    /// refused the wait with an invalid handle, which the host's disposal threw (#1375, measured on CI's
+    /// Windows leg). Repeated, because the release races the wait.
+    /// </summary>
+    [Fact]
+    public async Task Disposing_WhileMsBuildIsAsked_StopsIt_AndThrowsNothing()
+    {
+        for (var round = 0; round < 25; round++)
+        {
+            var compiler = new RunningCompiler(c => c.Asked(Silent(), Path.GetTempPath(), TimeSpan.FromMinutes(2)));
+            var asking = Task.Run(compiler.Prepare);
+            SpinWait.SpinUntil(() => compiler.AskingId is not null, TimeSpan.FromSeconds(30)).Should().BeTrue();
+            var pid = compiler.AskingId!.Value;
+            try
+            {
+                compiler.Invoking(c => c.Dispose()).Should().NotThrow($"round {round}");
+                await asking.WaitAsync(TimeSpan.FromSeconds(30));
+                Running(pid).Should().BeFalse("the MSBuild being asked belongs to the app, and stops with it");
+            }
+            finally
+            {
+                EndIfRunning(pid);
+            }
+        }
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ using eQuantic.UI.Compiler.Services;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
 
 namespace eQuantic.UI.Compiler.Tests.ReferencedProjects;
@@ -44,6 +45,9 @@ internal sealed class Solution : IDisposable
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .Append(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location)
             .Append(typeof(eQuantic.UI.Components.UI).Assembly.Location)
+            // The container an app registers its services in, as ASP.NET Core's framework brings it.
+            .Append(typeof(Microsoft.Extensions.DependencyInjection.IServiceCollection).Assembly.Location)
+            .Append(typeof(Microsoft.Extensions.DependencyInjection.ServiceCollection).Assembly.Location)
             .Distinct(StringComparer.Ordinal)
             .ToArray());
 
@@ -276,12 +280,16 @@ internal sealed class Solution : IDisposable
         var options = ParseDefaults.Options.WithPreprocessorSymbols(
             project.Symbols.Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
         var trees = Compiled(project)
-            .Select(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file), options, path: file));
+            .Select(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file), options, path: file))
+            .ToList();
+        // An app written as one is, with its Program.cs in top-level statements, is an executable.
+        var kind = project.IsApp && trees.Any(tree => tree.GetRoot().ChildNodes().OfType<GlobalStatementSyntax>().Any())
+            ? OutputKind.ConsoleApplication
+            : OutputKind.DynamicallyLinkedLibrary;
         var references = Framework.Value.Select(path => TestReferences.Of(path))
             .Concat(Reached(project).Select(reference => reference.Compilation!.ToMetadataReference()));
         var compilation = CSharpCompilation.Create(project.AssemblyName, trees, references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                nullableContextOptions: NullableContextOptions.Enable));
+            new CSharpCompilationOptions(kind, nullableContextOptions: NullableContextOptions.Enable));
         compilation.GetDiagnostics().Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
             .Select(diagnostic => diagnostic.ToString())
             .Should().BeEmpty($"{project.Name} is C# that compiles");

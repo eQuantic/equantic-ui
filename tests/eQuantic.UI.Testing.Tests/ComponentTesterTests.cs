@@ -416,4 +416,34 @@ public class ComponentTesterTests
         tester.Semantics.Select(stop => (stop.Role, stop.Name)).Should()
             .ContainInOrder((SemanticRole.Group, ""), (SemanticRole.StaticText, "Saved"));
     }
+
+
+    // ---- a drawing's paint servers --------------------------------------------------------------
+
+    /// <summary>
+    /// A drawing filled by a gradient references a paint server the server declares once for the
+    /// document, beside the page, so the frame's markup carries none of its own. The tester's markup
+    /// carries them after the frame, as the document does, or a test reading it would find a fill that
+    /// points at nothing (#1404).
+    /// </summary>
+    [Fact]
+    public void AGradientADrawingIsFilledWith_IsInTheTestersMarkup()
+    {
+        var sky = SvgDocument.Parse("""
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
+              <rect width="10" height="10" fill="url(#sky)"/>
+              <defs>
+                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#4facfe"/>
+                  <stop offset="1" stop-color="#00f2fe"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            """);
+        using var tester = new ComponentTester();
+
+        tester.Pump(new Drawing(sky, 10, 10));
+
+        tester.Html.Should().Contain("<linearGradient", "the fill's paint server is declared beside the frame");
+    }
 }

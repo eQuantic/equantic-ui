@@ -57,7 +57,7 @@ destination was rewritten only when it was a rooted path, so a `javascript:` lin
 destination whose scheme an href never carries is written with no href at all.
 
 ```text
-src/eQuantic.UI.Web/Dom/RenderContext.cs:65  !LinkScheme.Allows(destination) ? null
+src/eQuantic.UI.Web/RenderChannels.cs:80  !LinkScheme.Allows(destination) ? null
 ```
 
 **#1288, medium, fixed in 0.2.0-preview.68 (#1321).** The shell carries the visitor's theme, density,
@@ -65,7 +65,7 @@ culture and page state, and was written with no `Cache-Control`, while the JSON 
 was sent `no-store`. Now both answers of a page's route are sent `no-store`, from one place.
 
 ```text
-src/eQuantic.UI.Server/UIExtensions.cs:911  context.Response.Headers.CacheControl = "no-store";
+src/eQuantic.UI.Server/UIExtensions.cs:916  context.Response.Headers.CacheControl = "no-store";
 ```
 
 **#1295, low, fixed in 0.2.0-preview.68 (#1338).** The atomic sheet wrote a style value as it came

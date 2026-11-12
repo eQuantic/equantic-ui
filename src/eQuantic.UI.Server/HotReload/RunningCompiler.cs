@@ -73,6 +73,25 @@ internal sealed class RunningCompiler : IModuleCompiler
         }
     }
 
+    /// <summary>The eqc this started last, whose own lock a test holds as its exit event does; null before
+    /// the first.</summary>
+    internal Process? Running
+    {
+        get
+        {
+            lock (_gate) return _eqc;
+        }
+    }
+
+    /// <summary>The id of the MSBuild being asked how to start eqc, which a test reads; null when none is.</summary>
+    internal int? AskingId
+    {
+        get
+        {
+            lock (_gate) return _discovery?.Id;
+        }
+    }
+
     public CompileOutcome Compile(TimeSpan limit)
     {
         var clock = Stopwatch.StartNew();
@@ -120,13 +139,18 @@ internal sealed class RunningCompiler : IModuleCompiler
 
     private Process? ReadyOnce()
     {
+        Process? dead;
         lock (_gate)
         {
             if (_disposed) return null;
             if (_eqc is { HasExited: false } running) return running;
-            _eqc?.Dispose();
+            dead = _eqc;
             _eqc = null;
         }
+        // Released outside the gate: releasing a process takes its own lock, which its exit event holds while
+        // it reads the compile in flight through the gate. Released under the gate, the save waited on the
+        // event and the event on the save, and the hot reload hung for good (#1491).
+        dead?.Dispose();
 
         // Found outside the gate, since asking MSBuild takes seconds and Dispose must be able to stop it.
         var start = _start ??= _discover(this);
@@ -242,6 +266,8 @@ internal sealed class RunningCompiler : IModuleCompiler
         }
         finally
         {
+            // Taken back under the gate before the using releases it: a Dispose stopping it holds the gate
+            // until it has stopped.
             lock (_gate) _discovery = null;
         }
     }
@@ -274,16 +300,19 @@ internal sealed class RunningCompiler : IModuleCompiler
     public void Dispose()
     {
         Process? eqc;
-        Process? discovery;
         lock (_gate)
         {
             _disposed = true;
             eqc = _eqc;
-            discovery = _discovery;
             _eqc = null;
+            // Stopped under the gate: the MSBuild belongs to the asking that started it, which releases it
+            // only after taking it back under this gate, so it cannot be released while this waits for it.
+            // Read here and stopped outside, it was released between the look and the wait, which Windows
+            // refuses with an invalid handle, and the host's disposal threw it (#1375). Nothing it waits
+            // on takes the gate: its output is read whole by the asking, and it raises no exit event.
+            if (_discovery is { } discovery) Stop(discovery);
         }
         if (eqc is not null) AnswerOf(eqc)?.TrySetResult(CompileOutcome.NotRun("the app stopped"));
-        if (discovery is not null) Stop(discovery);
         if (eqc is not null)
         {
             Stop(eqc);

@@ -100,6 +100,7 @@ export {
 export { ComponentContext } from './photon-context';
 export { DataPalette, DivergingScale, StatusScale } from './data-palette';
 export { SheetTheme } from './sheet-theme';
+export { SizeLadder, DensityLadder, ControlsTheme, ButtonTheme, AppThemeExtensions } from './theme-slots';
 // Primitives types route to @equantic/runtime implicitly, so a page reading its route needs this
 // name to resolve here or it dies at hydration on an unresolvable import.
 export { RouteValues } from './route-values';
@@ -114,11 +115,12 @@ export {
   TableOffset,
   TableRange,
   TableScrollRequest,
+  TextReading,
   Transform2D,
 } from './value-types';
 // A page placing a WebFrame names this to say WHICH form its content is; same implicit promise.
 export { WebContent } from './value-types';
-export { GridPattern, InFlow, InView, RadialGradient, Simulated } from './vocabulary';
+export { GridPattern, InFlow, InheritedComponent, InView, RadialGradient, Simulated } from './vocabulary';
 export { VisualNodeExtensions } from './visual-node-extensions';
 // The Primitives VALUE types a page can name — same implicit promise, see primitive-values.ts.
 export {

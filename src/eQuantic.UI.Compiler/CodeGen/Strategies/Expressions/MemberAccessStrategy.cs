@@ -167,7 +167,8 @@ public class MemberAccessStrategy : IExpressionIrStrategy
                 // The receiver is read ONCE, as C# reads it when the delegate is made: written twice,
                 // a receiver that is a call ran twice (`make().value.bind(make())`, #619). The
                 // template binds a part used twice and inlines a plain name (`this.value.bind(this)`).
-                return JsExpr.Template($"{{0}}.{name}.bind({{0}})", receiver);
+                context.UsedHelpers.Add(Eq.Import);
+                return JsExpr.Template($"{Eq.DelegateBound}({{0}}, {{0}}.{name})", receiver);
             }
         }
 

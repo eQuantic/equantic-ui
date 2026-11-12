@@ -916,3 +916,44 @@ nothing, and `{ }` for none, wherever C# writes the value into text, as a tuple'
 
 - **WHEN** `new { D = -1.5, M = 2.50m }.ToString()` runs on a pt-BR page
 - **THEN** it writes `{ D = -1,5, M = 2,50 }`, as in .NET
+
+### Requirement: A generic value keeps its closed type wherever it is made
+
+A generic record or struct SHALL carry its closed type where generic code builds it, a generic method's and a generic class's member included, where it is a struct's zero (a `default`, a field's and an array's element), and where it is rebuilt from the wire, so it is never equal to a value of another type argument.
+
+#### Scenario: Built in generic code
+
+- **WHEN** a program evaluates `Make.Boxed(1).Equals((object)new Box<double>(1))`, where `Boxed<T>(T value) => new Box<T>(value)`
+- **THEN** the answer is False, as in .NET
+
+#### Scenario: A struct's zero
+
+- **WHEN** a program evaluates `default(Pair<int>).Equals((object)new Pair<double>(0))` and `default(Pair<int>).Equals((object)new Pair<int>(0))`
+- **THEN** the answers are False and True, as in .NET
+
+### Requirement: A hydrated value holds what the wire does not carry
+
+A record that declares a field SHALL be rebuilt from the wire through its primary constructor, and a struct from its zero, before the payload's members are adopted, so a hydrated value equals the same value built in the browser and its private state answers. A private field the server changed SHALL NOT cross.
+
+#### Scenario: A record with private fields
+
+- **WHEN** a page's state holds `record Product(int Id, string Name) { private int _views; private string _tag = Name + "!"; }`
+- **THEN** after hydration it equals `new Product(1, "x")`, its hash is that value's, and its private fields hold what their initializers say
+
+### Requirement: A dictionary's key hydrates as a value
+
+A dictionary keyed by a record or a struct SHALL arrive with each key on its twin, so the browser finds it by a key built there.
+
+#### Scenario: A record key
+
+- **WHEN** a page prefetches `Dictionary<Point, int> { [new Point(1, 2)] = 5 }` and reads `d[new Point(1, 2)]`
+- **THEN** the first build in the browser reads 5, as the server drew
+
+### Requirement: A twin writes the JSON the server's serializer writes
+
+A twin that holds a field, private state or a parameter of a primary constructor SHALL write in JSON only what `System.Text.Json` writes under `EqJson.Options`: public instance properties with a public getter, what `[JsonInclude]` adds and `[JsonIgnore]` takes out, under the name `[JsonPropertyName]` gives, each read through its member.
+
+#### Scenario: A public field
+
+- **WHEN** a server action receives a class with `public int Total = 7;`
+- **THEN** its JSON is `{}`, as the server writes it

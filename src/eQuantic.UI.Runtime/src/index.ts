@@ -173,6 +173,7 @@ export {
   LinearGradient,
   RadialGradient,
   InFlow,
+  InheritedComponent,
   InView,
   Simulated,
   TextEntry,
@@ -203,6 +204,7 @@ export {
   TableOffset,
   TableRange,
   TableScrollRequest,
+  TextReading,
   Transform2D,
   TypeStyle,
   VariantColors,
@@ -225,6 +227,7 @@ export {
 } from './shared/photon-context';
 export { DataPalette, DivergingScale, StatusScale } from './shared/data-palette';
 export { SheetTheme } from './shared/sheet-theme';
+export { SizeLadder, DensityLadder, ControlsTheme, ButtonTheme, AppThemeExtensions } from './shared/theme-slots';
 // The vocabulary's interface defaults, which an app's twin delegates to where eqc has the
 // interface's signature and not its body (#414).
 export { IAppTheme, ICodeCompletionProvider, ICodeLanguage, ICodeSignatureProvider } from './shared/interface-defaults';
