@@ -180,7 +180,7 @@ public class ListMethodStrategy : IExpressionIrStrategy
                     list, invocation, method, context);
             case "IndexOf" or "LastIndexOf":
             {
-                var equality = ElementEquality.Of(element);
+                var equality = ElementEquality.Of(element, invocation, context);
                 var own = name == "IndexOf" ? "indexOf" : "lastIndexOf";
                 // The array's own search compares with ===, which is the element type's equality
                 // wherever that is identity and no NaN can be among the elements.
@@ -195,7 +195,7 @@ public class ListMethodStrategy : IExpressionIrStrategy
             case "Remove" when count == 1:
             {
                 context.UsedHelpers.Add(Eq.Import);
-                var equality = ElementEquality.Of(element);
+                var equality = ElementEquality.Of(element, invocation, context);
                 return ParameterTemplate.Call(equality is null ? $"{Eq.ListRemove}({{0}}, {{1}})" : $"{Eq.ListRemove}({{0}}, {{1}}, {equality})",
                     list, invocation, method, context);
             }

@@ -48,8 +48,8 @@ export class DateTimePicker extends StatefulComponent {
     build(_context: BuildContext) {
         let row = new Row(12, 'start', 'center', false, null, null, { cross: 'start', width: SizeValue.fill });
         let lower: any; let upper: any; 
-        row.add(new Flexible(new DatePicker(this._date, this.pickDate.bind(this), (lower = this.min) != null ? $eq.time.dateOnly.fromDateTime(lower) : null, (upper = this.max) != null ? $eq.time.dateOnly.fromDateTime(upper) : null, this.dateLabel, { disabled: this.disabled })));
-        row.add(new Flexible(new TimePicker(this._time, this.pickTime.bind(this), this.stepMinutes, null, null, this.timeLabel, { disabled: this.disabled })));
+        row.add(new Flexible(new DatePicker(this._date, $eq.delegates.bound(this, this.pickDate), (lower = this.min) != null ? $eq.time.dateOnly.fromDateTime(lower) : null, (upper = this.max) != null ? $eq.time.dateOnly.fromDateTime(upper) : null, this.dateLabel, { disabled: this.disabled })));
+        row.add(new Flexible(new TimePicker(this._time, $eq.delegates.bound(this, this.pickTime), this.stepMinutes, null, null, this.timeLabel, { disabled: this.disabled })));
         return row;
     }
 
