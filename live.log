@@ -103,3 +103,13 @@
  2083   0.3   1616 /bin/bash
   976   0.3  44144 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd3646539152
   542   0.3  39040 /System/Library/PrivateFrameworks/AppStoreDaemon.framework/Support/appstoreagent
+=== alive 13:56:50 app: 2109 watch: 
+--- sample 13:56:57 load: { 4.84 9.87 5.42 } System-wide memory free percentage: 93%
+161 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2089 dotnet run --no-build --project samples/PhotonDesktop
+2109 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  979   4.8   7296 /usr/libexec/sysmond
+ 2083   1.4   1632 /bin/bash
+  976   0.9  44464 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd3646539152
+ 2109   0.1 139184 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  713   0.1  58464 /System/Library/CoreServices/WiFiAgent.app/Contents/MacOS/WiFiAgent
