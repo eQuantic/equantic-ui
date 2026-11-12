@@ -1,3 +1,4 @@
+using eQuantic.UI.Code;
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Web;
@@ -59,6 +60,33 @@ public class UnmeasuredGeometryTests
         public override VisualNode Build(ComponentContext context) =>
             new Positioned(new Text($"advance {context.MonoAdvance(context.Theme.Type(TypeRole.BodyM))}",
                 TypeRole.BodyM), top: 0, start: 0);
+    }
+
+    /// <summary>
+    /// A problem's wave is as wide as its range, and on the server every column is 0 wide, so the
+    /// wave was a drawing of no width, which <see cref="Drawing"/> refuses: the dashboard's
+    /// <c>/code</c> lost its server markup on every request (#1367). A mark of no width draws nothing,
+    /// and the block, marked unmeasured, is drawn again by the browser with its waves.
+    /// </summary>
+    [Fact]
+    public void AProblemsWave_OnTheServer_DrawsNothingRatherThanFailTheBlock()
+    {
+        var block = new CodeBlock("var total = 1;", "csharp")
+        {
+            Decorations =
+            [
+                new CodeDecoration(new CodeRange(new CodePosition(0, 4), new CodePosition(0, 9)),
+                    CodeDecorationKind.Squiggle),
+                new CodeDecoration(new CodeRange(new CodePosition(0, 4), new CodePosition(0, 4)),
+                    CodeDecorationKind.Squiggle),
+            ],
+        };
+
+        var root = Lower(block);
+
+        root.Attributes.Should().ContainKey(Mark, "the browser draws the block again, waves and all");
+        TextOf(root).Should().Contain("total");
+        Walk(root).Should().NotContain(n => n.Tag == "svg", "a wave of no width has nothing to draw");
     }
 
     /// <summary>

@@ -246,14 +246,17 @@ internal sealed partial class WebLoweringVisitor(
     {
         // A FRAME OF A LIVE TREE built it already, through the same boundary, with the instance
         // its position keeps. What it built is lowered as it stands, and a discovery round names
-        // the KEPT instance, the one whose fields the next frame reads. The unmeasured mark below is
-        // hydration's, and a frame's tree has no server markup to adopt yet: the owner that renders
-        // a request (E4) is the one that will need it, and it builds through a measurer it owns.
+        // the KEPT instance, the one whose fields the next frame reads. Whether its build asked for a
+        // width is the host's measurer's to say, since the owner built every component of the frame
+        // before this lowering began.
         if (_frame is { } frame)
         {
             var (kept, built) = frame.At(component);
             ComponentExpansionScope.Ambient?.Enter(kept);
-            return built is not null ? Lower(built, horizontalAxis) : null;
+            if (built is null) return null;
+            var lowered = Lower(built, horizontalAxis);
+            if (lowered is not null && _measurer.BuiltUnmeasured(kept)) MarkUnmeasured(lowered);
+            return lowered;
         }
 
         // NAMED BEFORE IT BUILDS, and the order is the whole mechanism: ExpandContained runs

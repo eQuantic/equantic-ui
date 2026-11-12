@@ -64,7 +64,7 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
         // Null MEANS follow the system, which is what the option has always documented and what
         // iOS and Android have always done. This shell answered Light regardless, so a Mac in dark
         // mode opened every Photon app light.
-        window.Run(app.Root(), options.Theme, options.Mode ?? SystemMode(), options.MaxFrames,
+        window.Run(app.Root(), app.Theme, options.Mode ?? SystemMode(), options.MaxFrames,
             themeController, cultureController);
         ReportFrames($"frames presented: {window.FramesPresented}", app);
     }
@@ -116,7 +116,7 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
         // seeding is the whole of it.
         (app.Services.GetService(typeof(IThemeController)) as PhotonThemeController)?.Attach(mode, _ => { });
 
-        var host = new Components.PhotonHost(app.Root(), options.Theme,
+        var host = new Components.PhotonHost(app.Root(), app.Theme,
             mode, options.Width, options.Height, textService)
         {
             TextRasterizer = textService,

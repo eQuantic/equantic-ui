@@ -55,6 +55,17 @@
     <EmbeddedResource Include="wwwroot/runtime.js.map">
       <LogicalName>eQuantic.UI.Server.runtime.js.map</LogicalName>
     </EmbeddedResource>
+    <!-- The same runtime with the dev loop, the error overlay and the capture of a page's fields around a
+         hot reload, which the server serves in Development and under hot reload and runtime.js carries
+         none of (#1359). Its map is answered beside it, for the overlay. -->
+    <None Remove="wwwroot/runtime.dev.js" />
+    <EmbeddedResource Include="wwwroot/runtime.dev.js">
+      <LogicalName>eQuantic.UI.Server.runtime.dev.js</LogicalName>
+    </EmbeddedResource>
+    <None Remove="wwwroot/runtime.dev.js.map" />
+    <EmbeddedResource Include="wwwroot/runtime.dev.js.map">
+      <LogicalName>eQuantic.UI.Server.runtime.dev.js.map</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="Templates\app-shell.html">
       <LogicalName>eQuantic.UI.Server.Templates.app-shell.html</LogicalName>
     </EmbeddedResource>
@@ -90,6 +101,19 @@
       <_EqBundleArgument Include="whitespace" Value="--minify-whitespace" />
     </ItemGroup>
     <RunProgram Program="$(_BunPath)" Arguments="@(_EqBundleArgument)" />
+    <!-- The dev runtime: the same boot with the dev loop installed, bundled whole rather than as a chunk
+         of runtime.js, since the loop reads the runtime's own classes (instanceof) and a second copy of
+         them in a chunk would answer false. A page loads one runtime or the other, never both (#1359). -->
+    <ItemGroup>
+      <_EqDevBundleArgument Include="command" Value="build" />
+      <_EqDevBundleArgument Include="entry" Value="../eQuantic.UI.Sdk/Resources/boot.dev.ts" />
+      <_EqDevBundleArgument Include="output" Option="--outdir" Value="wwwroot" />
+      <_EqDevBundleArgument Include="naming" Option="--entry-naming" Value="runtime.dev.[ext]" />
+      <_EqDevBundleArgument Include="map" Value="--sourcemap=external" />
+      <_EqDevBundleArgument Include="syntax" Value="--minify-syntax" />
+      <_EqDevBundleArgument Include="whitespace" Value="--minify-whitespace" />
+    </ItemGroup>
+    <RunProgram Program="$(_BunPath)" Arguments="@(_EqDevBundleArgument)" />
   </Target>
 
   <!-- eqc leads each module it transpiled from the SDK's C# on to that C#, through the map committed beside
@@ -103,7 +127,21 @@
     </PropertyGroup>
     <Error Condition="!Exists('$(_EqcForRuntimeMap)')"
       Text="eQuantic.UI.Server: eqc was not built at '$(_EqcForRuntimeMap)', and the runtime's map cannot be composed. The ProjectReference to eQuantic.Build orders it; a build that skipped it is a broken graph." />
-    <Exec Command="dotnet &quot;$(_EqcForRuntimeMap)&quot; compose-map wwwroot/runtime.js.map --names-from &quot;$(MSBuildThisFileDirectory)..&quot;" />
+    <!-- Through RunProgram, a list of arguments and no shell, as every program the SDK starts (#841): a
+         shell read each path first, and a folder named like `Cash$Flow` arrived as `Cash`. One run per
+         runtime's map, the dev runtime's included (#1359). -->
+    <ItemGroup>
+      <_EqComposeRuntimeMap Include="tool" Value="$(_EqcForRuntimeMap)" />
+      <_EqComposeRuntimeMap Include="command" Value="compose-map" />
+      <_EqComposeRuntimeMap Include="map" Value="wwwroot/runtime.js.map" />
+      <_EqComposeRuntimeMap Include="names" Option="--names-from" Value="$(MSBuildThisFileDirectory).." />
+      <_EqComposeDevRuntimeMap Include="tool" Value="$(_EqcForRuntimeMap)" />
+      <_EqComposeDevRuntimeMap Include="command" Value="compose-map" />
+      <_EqComposeDevRuntimeMap Include="map" Value="wwwroot/runtime.dev.js.map" />
+      <_EqComposeDevRuntimeMap Include="names" Option="--names-from" Value="$(MSBuildThisFileDirectory).." />
+    </ItemGroup>
+    <RunProgram Program="dotnet" Arguments="@(_EqComposeRuntimeMap)" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <RunProgram Program="dotnet" Arguments="@(_EqComposeDevRuntimeMap)" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 
   <ItemGroup>
