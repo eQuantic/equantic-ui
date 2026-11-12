@@ -84,6 +84,19 @@ public class NodeKindTsGeneratorTests
     }
 
     /// <summary>
+    /// A concrete node the vocabulary writes INSIDE a family, <see cref="Theme"/>, lowers as the family:
+    /// its kind is the one the family seals, so it is not a kind of its own, and the refusal of a concrete
+    /// node claiming a family's word keeps holding for every node outside one.
+    /// </summary>
+    [Fact]
+    public void AConcreteMemberOfAFamily_IsTheFamilys()
+    {
+        new Theme(PhotonTheme.Instance, new Text("x")).NodeKind.Should().Be("inherited");
+        NodeKindTsGenerator.Vocabulary().Should().NotContain(typeof(Theme));
+        NodeKindTsGenerator.Kinds().Should().ContainSingle(kind => kind == "inherited");
+    }
+
+    /// <summary>
     /// The generator REFUSES rather than emitting a union that lies, and each refusal is PROVOKED
     /// here rather than described. These three were assertions in the source-reading coverage pin;
     /// they live in the generator now, in the code that cannot proceed without them, so that pin can

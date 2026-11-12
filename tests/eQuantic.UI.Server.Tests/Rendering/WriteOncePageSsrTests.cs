@@ -252,14 +252,16 @@ public class WriteOncePageSsrTests
             new Text($"{_loaded} page={context.Route.Query("page")}", TypeRole.Heading);
     }
 
-    private static DefaultHttpContext RequestFor(string slug, string page)
+    /// <summary>A request with the route's services an app registers through <c>AddUI</c>, and the slug and
+    /// the page given, or no route at all.</summary>
+    private static DefaultHttpContext RequestFor(string? slug = null, string? page = null)
     {
         var context = new DefaultHttpContext
         {
             RequestServices = new ServiceCollection().AddRequestRoute().BuildServiceProvider(),
         };
-        context.Request.RouteValues["slug"] = slug;
-        context.Request.QueryString = new QueryString($"?page={page}");
+        if (slug != null) context.Request.RouteValues["slug"] = slug;
+        if (page != null) context.Request.QueryString = new QueryString($"?page={page}");
         // What ASP.NET's hosting does for every request when the accessor is registered.
         context.RequestServices.GetRequiredService<IHttpContextAccessor>().HttpContext = context;
         return context;
@@ -315,12 +317,7 @@ public class WriteOncePageSsrTests
     [Fact]
     public async Task APageWithNoRouteValues_ReadsNull()
     {
-        var context = new DefaultHttpContext
-        {
-            RequestServices = new ServiceCollection().BuildServiceProvider(),
-        };
-
-        var result = await CreateService().RenderPageAsync(typeof(RoutedDocPage), context);
+        var result = await CreateService().RenderPageAsync(typeof(RoutedDocPage), RequestFor());
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("document: page=");
