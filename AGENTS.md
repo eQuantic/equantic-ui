@@ -25,18 +25,26 @@ and issues, even where the file around it is in Portuguese. Never a code comment
 ### Every change starts from an issue on the board
 
 The board is the [eQuantic UI project](https://github.com/orgs/eQuantic/projects/11). Before the
-branch, find the issue the change serves. If there is none, create it as a SUB-ISSUE of the epic or
-feature it belongs to, with the right type (Epic, Feature, User Story, Task or Bug), and add it to
-the board. Its status moves with the work, in the same step as git: In progress when the branch
-starts, In review when the pull request opens, Done when it merges. A sub-issue and a type are set
-through GraphQL (`addSubIssue`, `updateIssueIssueType`), and the board status through
-`updateProjectV2ItemFieldValue`.
+branch, find the issue the change serves. If there is none, create it with `scripts/new-issue.py`, as
+a SUB-ISSUE of the epic or feature it belongs to, with the right type (Epic, Feature, User Story, Task
+or Bug): the script creates an issue whole or not at all, puts it on the board and reads it back, and
+a session's hook refuses every other way of creating one (#1430). Its status moves with the work, in
+the same step as git: In progress when the branch starts, In review when the pull request opens, Done
+when it merges, through GraphQL (`updateProjectV2ItemFieldValue`).
 
 A new issue carries its points in the board's Estimate field: 1, 2, 3, 5, 8 or 13, given against
-what was delivered before it, and an issue bigger than 13 is a parent split into slices. Whenever the
+what was delivered before it, and an issue bigger than 13 is a parent split into slices. An epic
+carries its Priority instead (Urgent, High, Medium or Low), which is how the plan gives its lane the
+pace: a milestone's work first, then the highest priority (#1429). Whenever the
 work moves (an issue starts, a pull request merges), `python3 scripts/roadmap.py` reports the board's
 real dates and the forecast of the rest, each milestone's included, and `--apply` writes them to the
 board; `docs/ROADMAP-FORECAST.md` is the method.
+
+An issue is taken by assigning it. Every issue starts assigned to the owner's account, which every
+session works as, so one assigned to anyone else is that person's, and so is one labelled
+`good first issue`, which is kept for a person's first step: no session starts it, and no session
+pushes to a branch of its. A contributor takes an issue by assigning it to themselves and moving it
+to In progress, and an issue already In progress is someone's, whoever it is assigned to.
 
 ### Branches
 

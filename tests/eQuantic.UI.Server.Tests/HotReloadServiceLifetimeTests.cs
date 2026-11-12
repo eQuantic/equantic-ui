@@ -31,10 +31,13 @@ public class HotReloadServiceLifetimeTests
             return CompileOutcome.Done;
         }), TimeSpan.FromSeconds(30), NoEdits);
 
+        service.SourceChanged();
         var first = Task.Run(service.Rebuild);
         running.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue("the first rebuild starts");
         // Two saves while it runs: each returns at once, and the one running owes them a rebuild.
+        service.SourceChanged();
         service.Rebuild();
+        service.SourceChanged();
         service.Rebuild();
         await first.WaitAsync(TimeSpan.FromSeconds(30));
 
