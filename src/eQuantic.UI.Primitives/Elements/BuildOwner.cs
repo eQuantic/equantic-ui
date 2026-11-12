@@ -259,18 +259,17 @@ public sealed class BuildOwner
     internal void ExitBuild() => _building--;
 
     /// <summary>The realizer shows <paramref name="holder"/>'s layer: a build outside the frame's build
-    /// phase, whose dependents build in its <see cref="BuildDeferred"/>. Answers the layer shown before.</summary>
-    internal NodeElement? EnterLayer(NodeElement holder)
+    /// phase, whose dependents build in its <see cref="BuildDeferred"/>. One layer at a time: both
+    /// realizers show a layer and return before they walk it, so a layer inside it is shown after.</summary>
+    internal void EnterLayer(NodeElement holder)
     {
         EnterBuild();
-        var previous = _showing;
         _showing = holder;
-        return previous;
     }
 
-    internal void ExitLayer(NodeElement? previous)
+    internal void ExitLayer()
     {
-        _showing = previous;
+        _showing = null;
         ExitBuild();
     }
 

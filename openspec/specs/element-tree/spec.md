@@ -459,6 +459,13 @@ ask for a frame after it.
 - **THEN** the reader builds behind it in that frame, with the new value, and no position waits for the
   next frame
 
+#### Scenario: A value changes over a layer inside the layer
+
+- **WHEN** the value inside a layer changes over a second overlay whose layer holds the reader, and the
+  realizer shows the outer layer and then the inner one
+- **THEN** the outer layer does not build the reader, and the inner one builds it with the new value in
+  that frame
+
 ### Requirement: A stateful component hears a dependency change before it builds
 
 A `StatefulComponent` that depends on a value SHALL have `OnDependenciesChanged()` called before the

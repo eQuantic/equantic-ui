@@ -83,7 +83,7 @@ public sealed class NodeElement : Element
             throw new InvalidOperationException(
                 $"A '{Configuration.NodeKind}' node has no slot the realizer shows.");
 
-        var previous = Owner.EnterLayer(this);
+        Owner.EnterLayer(this);
         try
         {
             var shown = UpdateChild(ChildAt(_deferred), configuration, Owner.RebuildingAll)!;
@@ -97,7 +97,7 @@ public sealed class NodeElement : Element
         }
         finally
         {
-            Owner.ExitLayer(previous);
+            Owner.ExitLayer();
         }
     }
 
