@@ -80,6 +80,7 @@ export class NavigationTheme {
   indicatorInset: number | null = null;
   indicatorRadius: number | null = null;
   pillRadius: number | null = null;
+  pillPressOpacity: number | null = null;
   pillLabelGap: number | null = null;
   barHeight: number | null = null;
   barIconSize: number | null = null;

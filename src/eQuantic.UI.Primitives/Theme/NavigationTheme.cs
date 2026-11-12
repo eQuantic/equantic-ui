@@ -22,8 +22,7 @@ public sealed record NavigationTheme
     /// (<see cref="IAppTheme.TextMuted"/>).</summary>
     public ColorToken? InactiveColor { get; init; }
 
-    /// <summary>The fill a pressed tab, a pressed destination's pill and a hovered page number take
-    /// (<see cref="IAppTheme.SurfaceSubtle"/>).</summary>
+    /// <summary>The fill a pressed tab and a hovered page number take (<see cref="IAppTheme.SurfaceSubtle"/>).</summary>
     public ColorToken? QuietFill { get; init; }
 
     /// <summary>The surface of the bar, of the rail and of a scrolled app bar
@@ -63,6 +62,9 @@ public sealed record NavigationTheme
 
     /// <summary>The corner radius of a destination's pill (the theme's full shape).</summary>
     public float? PillRadius { get; init; }
+
+    /// <summary>The opacity of the pill a pressed destination previews, the selection's own (0.4, spec B4).</summary>
+    public float? PillPressOpacity { get; init; }
 
     /// <summary>The gap between a destination's pill and its label (2).</summary>
     public float? PillLabelGap { get; init; }

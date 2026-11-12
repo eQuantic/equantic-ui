@@ -21,6 +21,7 @@ export class BottomNavigation extends StatelessComponent {
         if (selected !== undefined) this.selected = selected;
         if (onSelect !== undefined) this.onSelect = onSelect;
         if (this.selected === undefined) this.selected = 0;
+        this.$items = null!;
         this.items = items;
         this.selected = selected;
         this.onSelect = onSelect;
@@ -42,7 +43,7 @@ export class BottomNavigation extends StatelessComponent {
             let icon = new Icon(IconGlyph.fromIcons(glyph), slot?.barIconSize ?? 24, tint);
             let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;
             let pillContent = VisualNodeExtensions.centered(iconNode);
-            let pill = new Box(new BoxStyle({ width: slot?.barPillWidth ?? 56, height: slot?.barPillHeight ?? 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(slot?.pillRadius ?? theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: slot?.quietFill ?? theme.surfaceSubtle }) }), pillContent);
+            let pill = new Box(new BoxStyle({ width: slot?.barPillWidth ?? 56, height: slot?.barPillHeight ?? 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(slot?.pillRadius ?? theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: primary.subtle.withOpacity(slot?.pillPressOpacity ?? Math.fround(0.4)) }) }), pillContent);
             let column = new Column(slot?.pillLabelGap ?? 2, 'start', 'stretch', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
             column.add(pill);
             column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(slot?.barLabelSize ?? 11, slot?.barLabelLineHeight ?? 14, slot?.barLabelWeight ?? 'bold', slot?.barLabelTracking ?? Math.fround(0.1), Math.fround(1.3)) }));

@@ -212,6 +212,7 @@ public sealed class PhotonTheme : IAppTheme
         IndicatorInset = Space.S4,
         IndicatorRadius = 2,
         PillRadius = Radius.Full,
+        PillPressOpacity = 0.4f,
         PillLabelGap = 2,
         BarHeight = 56,
         BarIconSize = IconSize.Md,

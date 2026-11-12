@@ -442,6 +442,8 @@ eQuantic.UI.Primitives.NavigationTheme.IndicatorRadius.get -> float?
 eQuantic.UI.Primitives.NavigationTheme.IndicatorRadius.init -> void
 eQuantic.UI.Primitives.NavigationTheme.PillRadius.get -> float?
 eQuantic.UI.Primitives.NavigationTheme.PillRadius.init -> void
+eQuantic.UI.Primitives.NavigationTheme.PillPressOpacity.get -> float?
+eQuantic.UI.Primitives.NavigationTheme.PillPressOpacity.init -> void
 eQuantic.UI.Primitives.NavigationTheme.PillLabelGap.get -> float?
 eQuantic.UI.Primitives.NavigationTheme.PillLabelGap.init -> void
 eQuantic.UI.Primitives.NavigationTheme.BarHeight.get -> float?
@@ -511,3 +513,4 @@ eQuantic.UI.Primitives.TableTheme.BorderWidth.get -> float?
 eQuantic.UI.Primitives.TableTheme.BorderWidth.init -> void
 eQuantic.UI.Primitives.TableTheme.BorderColor.get -> eQuantic.UI.Primitives.ColorToken?
 eQuantic.UI.Primitives.TableTheme.BorderColor.init -> void
+static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!

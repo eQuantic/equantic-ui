@@ -50,7 +50,7 @@ What exists, held by suites that fail rather than warn:
 
 What is not there yet, each with its issue: shared state beyond a component (#289), routes as types
 for programmatic navigation (#292), a component test harness an app can use and the variant matrix
-it carries (#294), the security review and a CSP the SDK writes (#306), and edit-to-view under a
+it carries (#294), the Content-Security-Policy's proof in a real browser (#306), and edit-to-view under a
 second on the web, where CI measures 23s on every pull request (#900). Three decisions could change a shape an app writes, and Edgar took them on
 2026-10-14, each 1.0 work: the Element is built before the release (#169), the spreadsheet's engine
 leaves Primitives as the code editor's did (#185, done: it is `eQuantic.UI.Sheet`), and
@@ -136,8 +136,11 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   writes are cross-pinned with the ones hydration computes. `tests/e2e` proves adoption, live events
   and client navigation on a real browser, but no CI job runs it: the headless-browser instrument is
   an open decision (#286).
-- **Security**: hardened (deserialization allow-list, payload cap); needs a formal hardening review
-  and a CSP the SDK writes (#306). **Consent before cookies (2026-09)**: `IConsent` as
+- **Security**: hardened (deserialization allow-list, payload cap). The formal hardening review is
+  written ([docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md), #1265), and its findings are #1286 to
+  #1297, #1319 and #1320, the two high ones fixed in 0.2.0-preview.68 and published as advisories.
+  The SDK writes a strict Content-Security-Policy since 0.2.0-preview.68 (`UseContentSecurityPolicy`,
+  #1266 to #1269), and a real browser runs the dashboard under it, failing on a violation (#1270, #306). **Consent before cookies (2026-09)**: `IConsent` as
   a capability, the `CookieConsent` card, and a `UseGtm` that waits for consent by default (#1294) —
   Consent Mode defaults to denied and the container is fetched only on a granted answer, on the first
   paint and live.
@@ -491,4 +494,5 @@ The bar 1.0 holds the web track to (#898, criterion 3); each line says whether i
   (#294).
 - **CSS**: at least one first-party engine ships. Met by Phase 6; a provider contract was the
   other half of this line, and pillar 5 declined it.
-- **Security**: a formal hardening review, and a CSP the SDK writes. Not met (#306).
+- **Security**: a formal hardening review, and a CSP the SDK writes. The review is written (#1265),
+  and the CSP ships in 0.2.0-preview.68 (#1266 to #1269), its browser proof in review (#1270, #306).

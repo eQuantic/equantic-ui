@@ -41,18 +41,32 @@ internal static class ServerEventsEndpoints
     /// it. An app's fallback authorization policy would otherwise refuse the stream itself, and with it
     /// every topic the app allowed anyone to hear.
     /// </summary>
-    public static IEndpointRouteBuilder MapServerEvents(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapServerEvents(this IEndpointRouteBuilder endpoints,
+        IReadOnlyList<Action<IEndpointConventionBuilder>> conventions)
     {
-        endpoints.MapGet(Path, StreamAsync).AllowAnonymous();
-        endpoints.MapPost(Path + "/{connection}/subscribe", SubscribeAsync).AllowAnonymous();
-        endpoints.MapPost(Path + "/{connection}/release", ReleaseAsync).AllowAnonymous();
+        // One group, so what the app attaches (ServerEventsBuilder.ConfigureEndpoints) reaches all three.
+        var group = endpoints.MapGroup(Path);
+        group.AllowAnonymous();
+        group.MapGet("", StreamAsync);
+        group.MapPost("/{connection}/subscribe", SubscribeAsync);
+        group.MapPost("/{connection}/release", ReleaseAsync);
+        foreach (var convention in conventions) convention(group);
         return endpoints;
     }
 
     private static async Task StreamAsync(HttpContext http)
     {
+        if (!AcceptsOrigin(http)) return;
         var options = http.RequestServices.GetRequiredService<IOptions<ServerEventsOptions>>().Value;
         var connections = http.RequestServices.GetRequiredService<ServerEventConnections>();
+        // Past the instance's cap the page is told to come back, before any handler of the app runs.
+        // Its client tries again after a growing wait, as after any stream that failed (#1292).
+        if (connections.Open(options.MaxQueuedEventsPerConnection, options.MaxConnections) is not { } connection)
+        {
+            http.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            http.Response.Headers.RetryAfter = "5";
+            return;
+        }
         // The stream ends with its request or with the app. A graceful shutdown waits for every
         // request in flight, and a stream left open held the instance until the host's timeout
         // instead of sending its page to connect again, to this instance once it is back or to
@@ -66,10 +80,14 @@ internal static class ServerEventsEndpoints
         http.Response.Headers["X-Accel-Buffering"] = "no";
         http.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
 
-        var connection = connections.Open(options.MaxQueuedEventsPerConnection);
         // ...and with its own queue's overflow, which a page that stopped reading causes while the
-        // stream is blocked writing to it.
-        using var ending = CancellationTokenSource.CreateLinkedTokenSource(http.RequestAborted, stopping, connection.Overflowed);
+        // stream is blocked writing to it, and with its lifetime: the page connects again and binds its
+        // topics again, each authorized as it stands then (#1292).
+        // Up to a tenth shorter, at random, so the streams a restart opened together do not all end, and
+        // bind their topics again, in the same second.
+        using var lifetime = new CancellationTokenSource(options.MaxConnectionLifetime * (1 - Random.Shared.NextDouble() / 10));
+        using var ending = CancellationTokenSource.CreateLinkedTokenSource(http.RequestAborted, stopping, connection.Overflowed,
+            lifetime.Token);
         var aborted = ending.Token;
         try
         {
@@ -123,7 +141,7 @@ internal static class ServerEventsEndpoints
 
     private static async Task SubscribeAsync(HttpContext http)
     {
-        if (!AcceptsBody(http)) return;
+        if (!AcceptsOrigin(http) || !AcceptsBody(http)) return;
         var connections = http.RequestServices.GetRequiredService<ServerEventConnections>();
         if (!connections.TryGet(http.Request.RouteValues["connection"] as string ?? "", out var connection))
         {
@@ -193,7 +211,7 @@ internal static class ServerEventsEndpoints
 
     private static async Task ReleaseAsync(HttpContext http)
     {
-        if (!AcceptsBody(http)) return;
+        if (!AcceptsOrigin(http) || !AcceptsBody(http)) return;
         var connections = http.RequestServices.GetRequiredService<ServerEventConnections>();
         if (!connections.TryGet(http.Request.RouteValues["connection"] as string ?? "", out var connection))
         {
@@ -219,6 +237,18 @@ internal static class ServerEventsEndpoints
             connection.Transitions.Release();
         }
         http.Response.StatusCode = StatusCodes.Status204NoContent;
+    }
+
+    /// <summary>
+    /// Whether the request comes from where the app's pages are, by the rule the Server Actions and the
+    /// uploads apply (<see cref="AllowedRequestOrigins"/>): an origin the app's CORS policy admits with
+    /// credentials could otherwise bind its visitor's topics to a stream it opened (#1292).
+    /// </summary>
+    private static bool AcceptsOrigin(HttpContext http)
+    {
+        if (http.RequestServices.GetRequiredService<AllowedRequestOrigins>().Allows(http.Request)) return true;
+        http.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return false;
     }
 
     /// <summary>
