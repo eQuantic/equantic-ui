@@ -244,3 +244,64 @@ desktop run 2: total 328ms, delta 282ms, frame 46ms
 [watch 19:28:39.406] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
 [watch 19:28:39.406] dotnet watch : C# and Razor changes applied in 133ms.
   disk:    12.02  569  6.68     0.00    0  0.00     0.00    0  0.00 
+[watch 19:28:39.468] [eQuantic.HotReload] drew the edit 62ms after it was applied
+desktop run 3: total 262ms, delta 200ms, frame 62ms
+[watch 19:28:41.538] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:28:41.681] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:28:41.681] dotnet watch : C# and Razor changes applied in 141ms.
+[watch 19:28:41.738] [eQuantic.HotReload] drew the edit 57ms after it was applied
+desktop run 4: total 213ms, delta 156ms, frame 57ms
+[watch 19:28:43.897] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:28:44.000] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:28:44.002] dotnet watch : C# and Razor changes applied in 102ms.
+[watch 19:28:44.059] [eQuantic.HotReload] drew the edit 60ms after it was applied
+desktop run 5: total 238ms, delta 178ms, frame 60ms
+[watch 19:28:46.236] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:28:46.329] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:28:46.340] dotnet watch : C# and Razor changes applied in 92ms.
+[watch 19:28:46.362] [eQuantic.HotReload] drew the edit 32ms after it was applied
+desktop run 6: total 167ms, delta 135ms, frame 32ms
+
+### Edit to view: desktop, warm median against a bar of 1000ms
+
+| part | min | median | max | cold |
+|---|---:|---:|---:|---:|
+| total | 167 | 238 | 328 | 925 |
+| delta | 135 | 178 | 282 | 900 |
+| frame | 32 | 57 | 62 | 25 |
+=== round 3 19:28:48
+[watch 19:28:50.662] dotnet watch : Hot reload enabled. For a list of supported edits, see https://aka.ms/dotnet/hot-reload.
+[watch 19:28:50.667] dotnet watch : Press Ctrl+R to restart.
+[watch 19:28:51.710]   Determining projects to restore...
+[watch 19:28:54.423]   All projects are up-to-date for restore.
+[watch 19:28:55.135]   eQuantic.UI.Sdk.Tasks -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sdk.Tasks/bin/Debug/netstandard2.0/eQuantic.UI.Sdk.Tasks.dll
+[watch 19:28:55.275]   eQuantic.UI.Codegen -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Codegen/bin/Debug/net10.0/eQuantic.UI.Codegen.dll
+[watch 19:28:55.275]   eQuantic.UI.Primitives -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Primitives/bin/Debug/net10.0/eQuantic.UI.Primitives.dll
+[watch 19:28:55.778]   eQuantic.UI.Code -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Code/bin/Debug/net10.0/eQuantic.UI.Code.dll
+[watch 19:28:55.796]   eQuantic.UI.Native.Engine -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine/bin/Debug/net10.0/eQuantic.UI.Native.Engine.dll
+[watch 19:28:55.900]   eQuantic.UI.Native.Engine.Vulkan -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Vulkan/bin/Debug/net10.0/eQuantic.UI.Native.Engine.Vulkan.dll
+[watch 19:28:55.915]   eQuantic.UI.Native.Framework -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Framework/bin/Debug/net10.0/eQuantic.UI.Native.Framework.dll
+[watch 19:28:56.028]   eQuantic.UI.Native.Engine.Reference -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Reference/bin/Debug/net10.0/eQuantic.UI.Native.Engine.Reference.dll
+[watch 19:28:56.049]   eQuantic.UI.Components -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Components/bin/Debug/net10.0/eQuantic.UI.Components.dll
+[watch 19:28:56.141]   eQuantic.UI.Native.Shell.Apple -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Apple/bin/Debug/net10.0/eQuantic.UI.Native.Shell.Apple.dll
+[watch 19:28:56.154]   eQuantic.UI.Native.Components -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Components/bin/Debug/net10.0/eQuantic.UI.Native.Components.dll
+[watch 19:28:56.229]   eQuantic.UI.Native.Hosting -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Hosting/bin/Debug/net10.0/eQuantic.UI.Native.Hosting.dll
+[watch 19:28:56.377]   eQuantic.UI.Native.Shell.Windows -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Windows/bin/Debug/net10.0/eQuantic.UI.Native.Shell.Windows.dll
+--- sample 19:28:56 load: { 19.56 34.57 18.77 } System-wide memory free percentage: 80%
+156 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+4072 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+4088 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+4089 /Users/runner/.dotnet/dotnet build /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/PhotonDesktop.c
+ 4089  78.8 235360 /Users/runner/.dotnet/dotnet
+ 4094  26.6 159776 /Users/runner/.dotnet/dotnet
+ 4063  24.9 159104 dotnet
+ 4072  23.1 117312 dotnet
+ 4093  20.6 151664 /Users/runner/.dotnet/dotnet
+[watch 19:28:56.563]   eQuantic.UI.Native.Build -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Build/bin/Debug/net10.0/eqicon.dll
+[watch 19:28:56.632]   eQuantic.UI.Native.Generators -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Generators/bin/Debug/netstandard2.0/eQuantic.UI.Native.Generators.dll
+[watch 19:28:56.786]   eQuantic.UI.Sheet -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sheet/bin/Debug/net10.0/eQuantic.UI.Sheet.dll
+[watch 19:28:56.807]   eQuantic.UI.Charts -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Charts/bin/Debug/net10.0/eQuantic.UI.Charts.dll
+[watch 19:28:56.926]   eQuantic.UI.Spreadsheets -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Spreadsheets/bin/Debug/net10.0/eQuantic.UI.Spreadsheets.dll
+[watch 19:28:56.993]   eQuantic.UI.Native.Engine.Metal -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Metal/bin/Debug/net10.0/eQuantic.UI.Native.Engine.Metal.dll
+[watch 19:28:57.054]   eQuantic.UI.Native.Shell.MacOS -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.MacOS/bin/Debug/net10.0/eQuantic.UI.Native.Shell.MacOS.dll
+  disk:     5.48  208  1.11     0.00    0  0.00     0.00    0  0.00 
