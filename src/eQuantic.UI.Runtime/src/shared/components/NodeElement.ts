@@ -106,9 +106,10 @@ export class NodeElement extends Element {
         let stamp = this.owner.nextStamp();
         let byKey = this.owner.keyScratch;
         byKey.clear();
+        let repeated = false;
         for (const old of this._children) {
             let key: any; 
-            if ((($0) => (($0 != null && $0.length > 0) && (key = $0, true)))((old?.configuration.key ?? null))) byKey.tryAdd(key, old);
+            if ((($0) => (($0 != null && $0.length > 0) && (key = $0, true)))((old?.configuration.key ?? null)) && !byKey.tryAdd(key, old)) repeated = true;
         }
         let next = this._spare ?? (this._spare = []);
         next.splice(0);
@@ -120,7 +121,7 @@ export class NodeElement extends Element {
             if ((($0) => (($0 != null && $0.length > 0) && (key = $0, true)))(node.key)) {
                 let keyed: any; 
                 if ((byKey.has(key) ? ((keyed = byKey.get(key)), true) : ((keyed = null), false))) {
-                    claimed = keyed.matchStamp !== stamp && Element.canUpdate(keyed.configuration, node) ? keyed : this.nextUnclaimed(node, stamp);
+                    claimed = keyed.matchStamp !== stamp && Element.canUpdate(keyed.configuration, node) ? keyed : repeated ? this.nextUnclaimed(node, stamp) : null;
                 }
             } else { let indexed: any; if (i < this._children.length && (indexed = this._children[i]) != null && (($0) => !(($0 != null && $0.length > 0)))(indexed.configuration.key) && indexed.matchStamp !== stamp && Element.canUpdate(indexed.configuration, node)) {
                 claimed = indexed;

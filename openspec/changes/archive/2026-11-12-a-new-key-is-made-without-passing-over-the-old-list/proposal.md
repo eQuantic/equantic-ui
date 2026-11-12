@@ -6,8 +6,9 @@ Closes #1505, a Bug under #1174.
 
 `NodeElement.UpdateKeyed` looks each keyed member up in a table of the old members' keys, and fell
 back to `NextUnclaimed`, a pass over every old member, whenever the table had no member for it. That
-included a key the table does not hold at all, where no old member can match: `CanUpdate` compares
-the keys, so the pass always came back empty. A list whose keys all change (a table window that moves
+included a key the table does not hold at all, and a key it holds for a member of another type when
+no other old member repeats that key. In both no old member can match (`CanUpdate` compares the
+keys), so the pass always came back empty. A list whose keys all change (a table window that moves
 a page) paid one pass over the old list per new member. At 10,000 members, replacing every key cost
 2,457 ms on .NET, where building the list cost 2.4 ms. On the transpiled engine it cost 2,726 ms
 against 1.3 ms. #1501, the first change that builds the browser's tree through the engine, measured
@@ -19,8 +20,8 @@ all replaced, are pinned here on both sides, and they passed before the fix as t
 
 ## What Changes
 
-- A key the table does not hold is made at once. The fallback runs only for a key the table holds,
-  when its member was taken by a sibling with the same key or is of another type.
+- A key the table does not hold is made at once, and so is a key whose member is of another type
+  unless a key repeats in the old list. The fallback runs only then, for siblings that share a key.
 
 ## Impact
 

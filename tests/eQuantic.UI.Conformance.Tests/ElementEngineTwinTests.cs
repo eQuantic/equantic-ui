@@ -135,7 +135,7 @@ public class ElementEngineTwinTests
 
     /// <summary>The twins of the components above, over the runtime's classes, and the frame helper.</summary>
     private static string Prelude(string runtime) => $$"""
-        import { BuildOwner, StatefulComponent, Column, Text, InFlow, ComponentContext } from '{{runtime}}';
+        import { BuildOwner, StatefulComponent, Column, Row, Text, InFlow, ComponentContext } from '{{runtime}}';
         const trace = [];
         // The browser's own context, as a component's build receives it: what it reports is what the
         // C# components read through theirs (InFlow, above all).
@@ -370,6 +370,38 @@ public class ElementEngineTwinTests
               trace.push(i + ':' + (member !== a && member !== b ? 'True' : 'False') + ',' + member.label + ',' + member.count);
             }
             """).Should().Equal(trace);
+    }
+
+    /// <summary>
+    /// The transpiled engine's half of <c>KeyedListPerfTests</c>, the one the browser runs: every member
+    /// of 10,000 keyed ones replaced costs what building them costs, whether every key changed or every
+    /// key stayed with a member of another type (#1505). Before the fix, about two thousand times.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EveryMemberReplaced_CostsWhatBuildingTheListCosts_OnTheTranspiledEngine(bool keysKept)
+    {
+        SkipUnlessBun();
+        var trace = OnTheWeb($$"""
+            const keysKept = {{(keysKept ? "true" : "false")}};
+            const keyed = (prefix, n, row) => { const c = new Column();
+              for (let i = 0; i < n; i++) { const m = row ? new Row() : new Text('cell', 'caption'); m.key = prefix + i; c.children.push(m); }
+              return c; };
+            const measure = (n) => {
+              const first = keyed('a', n, false), second = keyed(keysKept ? 'a' : 'b', n, keysKept);
+              const owner = new BuildOwner((component, context, depth) => component.build(context));
+              let t = performance.now(); owner.build(first, context, 'compact', true); owner.endFrame();
+              const build = performance.now() - t;
+              t = performance.now(); owner.build(second, context, 'compact', true); owner.endFrame();
+              return [build, performance.now() - t]; };
+            measure(200);
+            let best = [Infinity, Infinity];
+            for (let run = 0; run < 3; run++) { const [b, r] = measure(10000); best = [Math.min(best[0], b), Math.min(best[1], r)]; }
+            const ratio = best[1] / best[0];
+            trace.push('ratio:' + ratio.toFixed(1), 'under:' + (ratio < 20 ? 'True' : 'False'));
+            """);
+        trace[1].Should().Be("under:True", $"the replacement measured {trace[0]} of the build, ceiling 20x");
     }
 
     [SkippableFact]
