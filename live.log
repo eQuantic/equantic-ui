@@ -1,0 +1,9 @@
+=== plain-modifiable run 13:54:09
+--- sample 13:54:09 load: { 24.97 12.33 5.06 } System-wide memory free percentage: 92%
+161 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2089 dotnet run --no-build --project samples/PhotonDesktop
+ 1775  94.0 1299984 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+   90  57.4  15200 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+  329  44.9 131184 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  114  26.2  75840 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+  359  13.1  81104 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
