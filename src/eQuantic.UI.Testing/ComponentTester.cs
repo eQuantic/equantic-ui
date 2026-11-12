@@ -78,6 +78,11 @@ public sealed class ComponentTester : IDisposable
     /// <summary>The viewport's width in dp.</summary>
     public float Width { get; }
 
+    /// <summary>The error boundary the tester's tree builds through (#1452): what a component that threw was
+    /// contained as is named in its <see cref="ComponentBoundary.Contained"/>, which a test reads to say a
+    /// component drew whole.</summary>
+    public ComponentBoundary Boundary => _host.Boundary;
+
     /// <summary>The density the target asks for.</summary>
     public Density Density { get; }
 

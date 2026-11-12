@@ -120,8 +120,15 @@ public sealed class PhotonApplication
     public void ArmBoundary(eQuantic.UI.Primitives.ComponentBoundary boundary)
     {
         ArgumentNullException.ThrowIfNull(boundary);
-        boundary.Report ??= ReportContained;
+        boundary.Report ??= ContainedReport ?? ReportContained;
     }
+
+    /// <summary>
+    /// Where a contained failure of every window goes, when the app wants it somewhere other than its
+    /// logger: set before <see cref="Run()"/>, it is the report each window's boundary is armed with.
+    /// Null reports to the app's logger, or stderr when it has none.
+    /// </summary>
+    public Action<eQuantic.UI.Primitives.UiComponent, Exception>? ContainedReport { get; set; }
 
     private void ReportContained(eQuantic.UI.Primitives.UiComponent component, Exception error)
     {
