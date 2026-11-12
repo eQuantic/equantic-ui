@@ -2,7 +2,7 @@
 
 Closes #1493, a Task under the epic #160 (Instruments that fail, not warn). This is a PILOT: the
 skill runs only when a person invokes it, and it is adopted, or not, on what three real deliveries
-measure.
+measure. Those deliveries and the decision are #1504.
 
 ## Why
 

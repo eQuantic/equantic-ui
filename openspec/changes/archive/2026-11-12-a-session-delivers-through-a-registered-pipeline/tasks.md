@@ -16,10 +16,3 @@
 ## 3. The delivery
 
 - [x] 3.1 The ledger entry, and the pointer in `CLAUDE.md`
-
-## 4. The pilot
-
-- [ ] 4.1 A bug fix delivered through it, with its measures
-- [ ] 4.2 A feature delivered through it, with its measures
-- [ ] 4.3 A documentation change delivered through it, with its measures
-- [ ] 4.4 Check against the real thing: the three compared with deliveries of the same size made without it (wall time and cost per point, defects found after the pull request opened, compactions), and the decision to adopt or not

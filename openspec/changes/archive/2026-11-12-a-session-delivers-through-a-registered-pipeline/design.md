@@ -61,4 +61,7 @@ macOS runners) is what a pipeline can make worse. So:
 
 ## Not done
 
+The pilot's three deliveries and the decision they lead to: they are #1504, since the skill has to be
+on `main` for a delivery's branch, which starts there, to carry it. Removing it is one revert.
+
 A `release` pipeline (the owner's call). A security audit pipeline.

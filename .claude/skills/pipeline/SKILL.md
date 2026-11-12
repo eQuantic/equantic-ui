@@ -5,7 +5,7 @@ argument-hint: "[issue number or the request] [high-effort]"
 disable-model-invocation: true
 ---
 
-This is a PILOT (#1493): it runs only when a person invokes it, and it measures itself (section 2)
+This is a PILOT (#1493, measured in #1504): it runs only when a person invokes it, and it measures itself (section 2)
 so that adopting it is decided on numbers. Until then a delivery nobody asked to pipe runs as the
 Workflow says, without it.
 

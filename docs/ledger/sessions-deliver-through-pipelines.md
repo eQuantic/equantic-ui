@@ -5,5 +5,6 @@
   author, and ships as the Workflow says. Two adversarial agents reviewed the plan before it was written and changed
   it: an area is a duty and not a pipeline, one writer in the tree, the prover alone. The owner's review made it a
   pilot: it runs only when a person invokes it, one agent builds at a time, and each delivery records its time, its
-  tokens and the defects found after its pull request opened, so that adopting it is decided on three real issues.
+  tokens and the defects found after its pull request opened, so that adopting it is decided on three real issues
+  (#1504).
   Proposed through OpenSpec, as the capability `session-pipelines`.
