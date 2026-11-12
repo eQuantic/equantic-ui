@@ -8,5 +8,5 @@
 
 ## 2. Proved against the real thing
 
-- [ ] 2.1 The suites. Verify: Web, Server (the served runtime's budget), Compiler and Conformance pass, `tsc` is clean and the runtime's vitest passes
+- [x] 2.1 The suites. Verify: Web 1429 (one skipped), Server 627 (the served runtime's budget included), Native.Engine 3391, Conformance 7834 of 7835 with one skipped, Compiler 2925 after a package's interface was kept EQ2004's, `tsc` clean and vitest 2989 of 2990, the one a table perf spec timed under load
 - [x] 2.2 A ledger entry under `docs/ledger/`
