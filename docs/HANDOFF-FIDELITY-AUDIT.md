@@ -109,7 +109,7 @@ the pill's 40 down.
   MeasureVisitor.Containers.cs:18  var host = ctx.SafeAreaInsets;
   LayoutEngine.cs:128  public EdgeInsets SafeAreaInsets { get; init; }
   WebLoweringVisitor.Containers.cs:511  var env = $"env(safe-area-inset-{name}, 0px)";
-  lowering.ts:4804  const env = `env(safe-area-inset-${name}, 0px)`;
+  lowering.ts:4828  const env = `env(safe-area-inset-${name}, 0px)`;
   ```
 
 ### A5 SafeArea · behaviour · **unverified**
@@ -216,11 +216,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Button.cs`
 - **Handoff**: Hit rect: Small "≥48 (slop)", Medium "≥48 (slop)" — "Sizes — toggle "Hit areas" in the top bar: Small 32 · hit 48 / Medium 40 · hit 48".
-- **Code**: The Button never asks for the hit rect: Button.cs:62-66 reads the size ladder for height, padding, gap and the two type sizes and asks for no hit slot at all — `Touch.MinTarget` has zero references in Button.cs, and no min-size reaches the tree. (The row was filed against `ButtonStyles.Metrics`, a tuple whose seventh slot the Button discarded; the tuple is gone and the seven calls are read straight, which changes the mechanism and not the outcome.) Only the Photon realizer expands (EmitVisitor.Interaction.cs:177-185 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2860-2996) nor LowerPressable (WebLoweringVisitor.Interaction.cs:464-520 LowerPressable) nor the generated `.eq-pressable` rules (ThemeStylesheet.cs:91-106) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
+- **Code**: The Button never asks for the hit rect: Button.cs:62-66 reads the size ladder for height, padding, gap and the two type sizes and asks for no hit slot at all — `Touch.MinTarget` has zero references in Button.cs, and no min-size reaches the tree. (The row was filed against `ButtonStyles.Metrics`, a tuple whose seventh slot the Button discarded; the tuple is gone and the seven calls are read straight, which changes the mechanism and not the outcome.) Only the Photon realizer expands (EmitVisitor.Interaction.cs:200-208 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2860-2996) nor LowerPressable (WebLoweringVisitor.Interaction.cs:464-520 LowerPressable) nor the generated `.eq-pressable` rules (ThemeStylesheet.cs:91-106) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
 - **Evidence**:
 
   ```
-  Button.cs:63  var height = ControlMetrics.Height(context, Size, ladder);   //  vs EmitVisitor.Interaction.cs:181  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
+  Button.cs:63  var height = ControlMetrics.Height(context, Size, ladder);   //  vs EmitVisitor.Interaction.cs:204  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
   ```
 
 ### A12 Button · behaviour · **unverified**
@@ -231,7 +231,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:82  var inert = Disabled || Loading;  → Button.cs:143 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:520  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:4016  if (disabled && !wrapping) node.attributes['disabled'] = '';
+  Button.cs:82  var inert = Disabled || Loading;  → Button.cs:143 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:527  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:4038  if (disabled && !wrapping) node.attributes['disabled'] = '';
   ```
 
 ### A13 IconButton · semantics · **CONFIRMED**
@@ -253,7 +253,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:78  var side = ControlMetrics.Height(context, Size);  … IconButton.cs:126-128  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. EmitVisitor.Interaction.cs:181 which is the only place Touch.MinTarget is applied)
+  IconButton.cs:78  var side = ControlMetrics.Height(context, Size);  … IconButton.cs:126-128  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. EmitVisitor.Interaction.cs:204 which is the only place Touch.MinTarget is applied)
   ```
 
 ### B1 Card · missing-feature · **CONFIRMED**
@@ -325,7 +325,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/BottomNavigation.cs`
 - **Handoff**: item hit = full column ≥ 48 wide · Equal-width columns, whole column = hit target.
-- **Code**: The item Column asks for Height Fill but never Width Fill, so the Pressable's <button> gets no width:100% (WebLoweringVisitor.Interaction.cs:478 LowerPressable `Width = fills.Width ? "100%" : null`; the inline-block fence is stated at WebLoweringVisitor.Containers.cs:982 StretchesChildHeight). Verified render: `<div style="flex: 1 1 0%"><button style="height: 100%; padding: 0; ...">` — the flex CELL is equal-width, but the button inside hugs its 56dp pill and sits at the start of the column, so the hit rect is 56dp wide, not the column, and the pill/label are left-aligned instead of centred. Height is lost the same way: the row's default Cross=Center leaves the flex item content-tall, so `height: 100%` resolves against auto (~42dp, not 56). The native engine stretches through Flexible and has a test for it (tests/eQuantic.UI.Native.Engine.Tests/StretchLayoutTests.cs:71 StretchReachesTHROUGHaFlexible), so this is the web target only.
+- **Code**: The item Column asks for Height Fill but never Width Fill, so the Pressable's <button> gets no width:100% (WebLoweringVisitor.Interaction.cs:478 LowerPressable `Width = fills.Width ? "100%" : null`; the inline-block fence is stated at WebLoweringVisitor.Containers.cs:987 StretchesChildHeight). Verified render: `<div style="flex: 1 1 0%"><button style="height: 100%; padding: 0; ...">` — the flex CELL is equal-width, but the button inside hugs its 56dp pill and sits at the start of the column, so the hit rect is 56dp wide, not the column, and the pill/label are left-aligned instead of centred. Height is lost the same way: the row's default Cross=Center leaves the flex item content-tall, so `height: 100%` resolves against auto (~42dp, not 56). The native engine stretches through Flexible and has a test for it (tests/eQuantic.UI.Native.Engine.Tests/StretchLayoutTests.cs:71 StretchReachesTHROUGHaFlexible), so this is the web target only.
 - **Evidence**:
 
   ```
@@ -380,7 +380,7 @@ the pill's 40 down.
   Chip.cs:115    {
   Chip.cs:122        Label = Label,
   Chip.cs:115  Pressed = pressedFill is null ? null : new StyleDiff { Background = pressedFill },   // the pressed fill is the box's own Pressed diff since #616
-  WebLoweringVisitor.Interaction.cs:523  AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
+  WebLoweringVisitor.Interaction.cs:530  AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
   ```
 
 ### B8 Chip · behaviour · **CONFIRMED**
@@ -393,7 +393,7 @@ the pill's 40 down.
   ```
   Chip.cs:81  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
   Chip.cs:119  return Kind == ChipKind.Filter && OnPressed != null
-  WebLoweringVisitor.Interaction.cs:501  var element = new RealizedElement(wrapping ? "span" : "button")
+  WebLoweringVisitor.Interaction.cs:505  var element = new RealizedElement(wrapping ? "span" : "button")
   ```
 
 ### B8 Chip · behaviour · **CONFIRMED**
@@ -452,7 +452,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: "the whole row is the target (hit ≥ 48 tall)"
-- **Code**: The row is laid out with no height and no min-height, so it measures its tallest child — the 22dp box (the BodyM label's line box is 20) — giving a 22dp-tall target. The Photon realizer rescues this (EmitVisitor.Interaction.cs:181 `var minimum = density == Density.Compact ? 0 : Touch.MinTarget;` expands the hit rect to 48), but the web realizer emits no minimum at all: WebLoweringVisitor.Interaction.cs:467-503 LowerPressable sets only padding/border/background/font/cursor/text-align, and ThemeStylesheet.cs:91-106 (.eq-pressable rules) adds no sizing. Checkbox.cs:60. The component's own doc comment (Checkbox.cs:9) asserts "hit ≥ 48 via the Pressable contract", which holds on Photon and not on web.
+- **Code**: The row is laid out with no height and no min-height, so it measures its tallest child — the 22dp box (the BodyM label's line box is 20) — giving a 22dp-tall target. The Photon realizer rescues this (EmitVisitor.Interaction.cs:204 `var minimum = density == Density.Compact ? 0 : Touch.MinTarget;` expands the hit rect to 48), but the web realizer emits no minimum at all: WebLoweringVisitor.Interaction.cs:467-503 LowerPressable sets only padding/border/background/font/cursor/text-align, and ThemeStylesheet.cs:91-106 (.eq-pressable rules) adds no sizing. Checkbox.cs:60. The component's own doc comment (Checkbox.cs:9) asserts "hit ≥ 48 via the Pressable contract", which holds on Photon and not on web.
 - **Evidence**:
 
   ```
@@ -463,7 +463,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Switch.cs`
 - **Handoff**: "Hit rect 48, extends over the paired label row in ListItems."
-- **Code**: The pressable's subtree is the 52×32 track, so the web target's hit rect is 32dp tall: WebRealizer.LowerPressable emits no min sizing (WebLoweringVisitor.Interaction.cs:467-503 LowerPressable) and TokenCss's .eq-pressable rules add none (ThemeStylesheet.cs:91-106). Photon does honour it (EmitVisitor.Interaction.cs:181 expands to Touch.MinTarget = 48), so the contract holds on native and breaks on web. Switch.cs:46-52, :72-87.
+- **Code**: The pressable's subtree is the 52×32 track, so the web target's hit rect is 32dp tall: WebRealizer.LowerPressable emits no min sizing (WebLoweringVisitor.Interaction.cs:467-503 LowerPressable) and TokenCss's .eq-pressable rules add none (ThemeStylesheet.cs:91-106). Photon does honour it (EmitVisitor.Interaction.cs:204 expands to Touch.MinTarget = 48), so the contract holds on native and breaks on web. Switch.cs:46-52, :72-87.
 - **Evidence**:
 
   ```
@@ -625,7 +625,7 @@ the pill's 40 down.
 
   ```
   Drawer.cs:76  var overlay = new Overlay(layer);
-  lowering.ts:1426  if (node.label) layer.attributes['aria-label'] = node.label;
+  lowering.ts:1438  if (node.label) layer.attributes['aria-label'] = node.label;
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -716,7 +716,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:4424-4427  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
+  lowering.ts:4446-4449  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
   WebLoweringVisitor.Interaction.cs:130  var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
   WebLoweringVisitor.Interaction.cs:291-293  AdjustableRole.Tablist => "tablist", AdjustableRole.Radiogroup => "radiogroup", _ => value is null ? "group" : "slider",
   Slider.cs:163-172              : new Adjustable(box, direction =>
@@ -1307,7 +1307,7 @@ the pill's 40 down.
   src/eQuantic.UI.Web/WebLoweringVisitor.Graphics.cs:341-344 —
           svg.RawAttributes["role"] = "img";
           svg.RawAttributes["aria-label"] = label;
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2727  attributes['role'] = 'img';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2739  attributes['role'] = 'img';
   ```
 
 ### A11 Image · missing-feature · **REFUTED**
@@ -1426,7 +1426,7 @@ the pill's 40 down.
 
   ```
   ListItem.cs:138  Label = Title,
-  WebLoweringVisitor.Interaction.cs:521  AriaLabel = pressable.Label,
+  WebLoweringVisitor.Interaction.cs:528  AriaLabel = pressable.Label,
   ```
 
 ### B2 List · ListItem · semantics · **CONFIRMED**
@@ -1594,7 +1594,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:4434-4451  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:4456-4473  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   ```
 
 ### B5 Tabs · semantics · **unverified**
@@ -1605,7 +1605,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:3979-3981  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:4001-4003  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
   ```
 
 ### B5 Tabs · missing-feature · **unverified**
@@ -1701,7 +1701,7 @@ the pill's 40 down.
   ```
   BottomNavigation.cs:60  var iconNode = item.BadgeCount > 0 ? Badge.Over(icon, item.BadgeCount) : (VisualNode)icon;
   BottomNavigation.cs:90  Label = item.Label,
-  WebLoweringVisitor.Interaction.cs:521  AriaLabel = pressable.Label,
+  WebLoweringVisitor.Interaction.cs:528  AriaLabel = pressable.Label,
   ```
 
 ### B8 Chip · semantics · **CONFIRMED**
@@ -1720,13 +1720,13 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "Input (removable; close 20dp visual, 48dp hit)"
-- **Code**: The 20dp visual is right (IconSize.Dense = 20, src/eQuantic.UI.Primitives/Theme/Tokens.cs:48) but the 48dp hit does not exist on the WEB target. The chip relies on Pressable's §08 contract (Chip.cs:16-17 "48dp hit through Pressable"), and the native realizer honours it (EmitVisitor.ExpandHitRect, src/eQuantic.UI.Native.Components/EmitVisitor.Interaction.cs:177-185, grows the rect to Touch.MinTarget), but WebRealizer.LowerPressable emits a <button> with padding 0 and no min-width/min-height, and TokenCss adds no sizing rule for .eq-pressable — so the web ✕ is a ~20×20 target. Components that need the guarantee on web build it themselves (Slider.cs:155 Slider.Build, PageIndicator.cs:88 PageIndicator.HitPadded both set Height = Touch.MinTarget).
+- **Code**: The 20dp visual is right (IconSize.Dense = 20, src/eQuantic.UI.Primitives/Theme/Tokens.cs:48) but the 48dp hit does not exist on the WEB target. The chip relies on Pressable's §08 contract (Chip.cs:16-17 "48dp hit through Pressable"), and the native realizer honours it (EmitVisitor.ExpandHitRect, src/eQuantic.UI.Native.Components/EmitVisitor.Interaction.cs:199-208, grows the rect to Touch.MinTarget), but WebRealizer.LowerPressable emits a <button> with padding 0 and no min-width/min-height, and TokenCss adds no sizing rule for .eq-pressable — so the web ✕ is a ~20×20 target. Components that need the guarantee on web build it themselves (Slider.cs:155 Slider.Build, PageIndicator.cs:88 PageIndicator.HitPadded both set Height = Touch.MinTarget).
 - **Evidence**:
 
   ```
   Chip.cs:81  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
-  WebLoweringVisitor.Interaction.cs:506  Padding = "0",
-  EmitVisitor.Interaction.cs:181  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
+  WebLoweringVisitor.Interaction.cs:510  Padding = "0",
+  EmitVisitor.Interaction.cs:204  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
   ```
 
 ### B9 TextInput · metric · **CONFIRMED**
@@ -1766,7 +1766,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Pointer: I-beam over the field; hover swaps the border Border→BorderStrong (Motion.Press).
-- **Code**: There is no hover state at all: the border colour is a pure function of hasError and _focused, and the resting colour is already BorderStrong, so the hover swap the pointer contract describes can never happen. The component does not wrap the container in a Hoverable (the node exists — src/eQuantic.UI.Runtime/src/shared/lowering.ts:382 lowerHoverable) and sets no Transition, so Motion.Press is unused here too.
+- **Code**: There is no hover state at all: the border colour is a pure function of hasError and _focused, and the resting colour is already BorderStrong, so the hover swap the pointer contract describes can never happen. The component does not wrap the container in a Hoverable (the node exists — src/eQuantic.UI.Runtime/src/shared/lowering.ts:406 lowerHoverable) and sets no Transition, so Motion.Press is unused here too.
 - **Evidence**:
 
   ```
@@ -2023,7 +2023,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Banner.cs`
 - **Handoff**: Dismiss X ... (glyph 18, hit 48). Actions: ≤ 2 text buttons ... hit 48.
-- **Code**: The dismiss is a bare Pressable around a 20dp Icon, relying on Pressable's documented guarantee ("the hit rect is expanded symmetrically to at least 48×48dp", src/eQuantic.UI.Primitives/Nodes/Pressable.cs). Photon honours it (EmitVisitor.ExpandHitRect, EmitVisitor.Interaction.cs:177-185), but the WEB realizer never does: LowerPressable emits a <button> with padding 0 and no min-width/min-height, and no .eq-pressable rule in TokenCss sets one. On the web the X is a 20×20 target, not 48.
+- **Code**: The dismiss is a bare Pressable around a 20dp Icon, relying on Pressable's documented guarantee ("the hit rect is expanded symmetrically to at least 48×48dp", src/eQuantic.UI.Primitives/Nodes/Pressable.cs). Photon honours it (EmitVisitor.ExpandHitRect, EmitVisitor.Interaction.cs:199-208), but the WEB realizer never does: LowerPressable emits a <button> with padding 0 and no min-width/min-height, and no .eq-pressable rule in TokenCss sets one. On the web the X is a 20×20 target, not 48.
 - **Evidence**:
 
   ```
@@ -2310,7 +2310,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:4434-4451  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  lowering.ts:4456-4473  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   PhotonHost.cs:3411  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
@@ -2336,7 +2336,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:4434-4451  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  lowering.ts:4456-4473  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   PhotonHost.cs:3411  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
@@ -2700,14 +2700,14 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Pointer — Inert — arrow cursor, no hover, right-click falls through. A Box gains pointer states only by composing Pressable.
-- **Code**: A bare Box carries two pointer facilities of its own: a Hover style diff and a Cursor (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs). The web realizer lowers them to the box's own :hover rule and a cursor declaration (WebLoweringVisitor.Containers.cs:846 LowerBox; WebLoweringVisitor.Containers.cs:846 LowerBox) and Photon registers a HoverRegion and a CursorRegion for the box (EmitVisitor.Chrome.cs:106-108 EmitStyledChrome; EmitVisitor.Chrome.cs:25-26 EmitStyledChrome) — no Pressable involved. Its Focus and Pressed diffs are not facilities of its own: a box never takes focus, so they apply only while the Pressable around it is focused or pressed (BoxStyle.cs:156-163 BoxStyle.Focus), through the selector `.eq-pressable:focus-visible .<class>` on the web (StyleAtomizer.cs:265 StyleSink.StateSelector) and the control's state on Photon (EmitVisitor.Chrome.cs:409-414 EffectiveStyle).
+- **Code**: A bare Box carries two pointer facilities of its own: a Hover style diff and a Cursor (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs). The web realizer lowers them to the box's own :hover rule and a cursor declaration (WebLoweringVisitor.Containers.cs:846 LowerBox; WebLoweringVisitor.Containers.cs:846 LowerBox) and Photon registers a HoverRegion and a CursorRegion for the box (EmitVisitor.Chrome.cs:105-107 EmitStyledChrome; EmitVisitor.Chrome.cs:24-25 EmitStyledChrome) — no Pressable involved. Its Focus and Pressed diffs are not facilities of its own: a box never takes focus, so they apply only while the Pressable around it is focused or pressed (BoxStyle.cs:166-173 BoxStyle.Focus), through the selector `.eq-pressable:focus-visible .<class>` on the web (StyleAtomizer.cs:271 StyleSink.StateSelector) and the control's state on Photon (EmitVisitor.Chrome.cs:410-415 EffectiveStyle).
 - **Evidence**:
 
   ```
-  BoxStyle.cs:154  public StyleDiff? Hover { get; init; }
-  BoxStyle.cs:180  public PointerCursor Cursor { get; init; }
-  BoxStyle.cs:157  /// Spec S5: style DIFF applied while the CONTROL this box is inside has keyboard focus (the
-  StyleAtomizer.cs:273-274  ControlFocus => $".eq-pressable:focus-visible .{className}:not(:where(.eq-pressable:focus-visible .eq-pressable .{className}))",   // since #616 it stops at a control nested in the focused one
+  BoxStyle.cs:164  public StyleDiff? Hover { get; init; }
+  BoxStyle.cs:190  public PointerCursor Cursor { get; init; }
+  BoxStyle.cs:167  /// Spec S5: style DIFF applied while the CONTROL this box is inside has keyboard focus (the
+  StyleAtomizer.cs:286-287  ControlFocus => $".eq-pressable:focus-visible .{className}:not(:where(.eq-pressable:focus-visible .eq-pressable .{className}))",   // since #616 it stops at a control nested in the focused one
   ```
 
 ### A1 Box · missing-feature · **unverified**
@@ -2740,7 +2740,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: A Box is the engine's rrect surfaced as a widget: 1 fill draw + optional border draw + optional shadow draw. … Paint order: shadow → fill (solid or 2-stop linear gradient) → border (inside stroke) → child.
-- **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (EmitVisitor.Chrome.cs:121) and the web stacks them as background-image layers (WebLoweringVisitor.Containers.cs:1365-1372 BackgroundLayers). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
+- **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (EmitVisitor.Chrome.cs:121) and the web stacks them as background-image layers (WebLoweringVisitor.Containers.cs:1372-1379 BackgroundLayers). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
 - **Evidence**:
 
   ```
@@ -2764,7 +2764,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/FlexNode.cs`
 - **Handoff**: wrap — Row only: children flow to new lines (chip groups).
-- **Code**: Wrap lives on the shared FlexNode base (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs) and the Column constructor takes it as a parameter (1456-1457), so a wrapping Column is authorable; the native engine routes it through the same MeasureFlexWrapped (MeasureVisitor.Flex.cs:13 MeasureFlex) and the web emits flex-wrap on a column container (WebLoweringVisitor.Containers.cs:1134 LowerFlex). The doc attributes wrap to spec S3 rather than A2.
+- **Code**: Wrap lives on the shared FlexNode base (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs) and the Column constructor takes it as a parameter (1456-1457), so a wrapping Column is authorable; the native engine routes it through the same MeasureFlexWrapped (MeasureVisitor.Flex.cs:13 MeasureFlex) and the web emits flex-wrap on a column container (WebLoweringVisitor.Containers.cs:1141 LowerFlex). The doc attributes wrap to spec S3 rather than A2.
 - **Evidence**:
 
   ```
@@ -2776,7 +2776,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/FlexNode.cs`
 - **Handoff**: wrap — … Line spacing = gap.
-- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1349-1359 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:549 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
+- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1356-1366 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:549 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
 - **Evidence**:
 
   ```
@@ -2800,7 +2800,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Web/WebRealizer.cs`
 - **Handoff**: Pointer — Never hit-testable — clicks pass through to whatever sits beneath.
-- **Code**: The web Spacer is a plain div with no pointer-events:none (WebLoweringVisitor.Containers.cs:1434 LowerSpacer, and the TS twin lowerSpacer at src/eQuantic.UI.Runtime/src/shared/lowering.ts:3789-3816), so it is the hit target over its own area and a click on it never reaches a layer beneath it in a Stack. The realizer already uses PointerEvents = "none" elsewhere for exactly this (WebLoweringVisitor.Containers.cs:372 LowerAnchored, 387, 617). Native matches the handoff — a Spacer registers no region at all. "Announces nothing" is honoured on both (aria-hidden).
+- **Code**: The web Spacer is a plain div with no pointer-events:none (WebLoweringVisitor.Containers.cs:1441 LowerSpacer, and the TS twin lowerSpacer at src/eQuantic.UI.Runtime/src/shared/lowering.ts:3789-3816), so it is the hit target over its own area and a click on it never reaches a layer beneath it in a Stack. The realizer already uses PointerEvents = "none" elsewhere for exactly this (WebLoweringVisitor.Containers.cs:372 LowerAnchored, 387, 617). Native matches the handoff — a Spacer registers no region at all. "Announces nothing" is honoured on both (aria-hidden).
 - **Evidence**:
 
   ```
@@ -3271,8 +3271,8 @@ the pill's 40 down.
 
   ```
   Switch.cs:12 — `/// Fence: the slide/crossfade motion between the two ends joins the animation system.`
-  WebLoweringVisitor.Interaction.cs:826  var glide = $"translate {Motion.BaseMs}ms";
-  lowering.ts:1365  const glide = `translate ${Motion.baseMs}ms`;
+  WebLoweringVisitor.Interaction.cs:833  var glide = $"translate {Motion.BaseMs}ms";
+  lowering.ts:1377  const glide = `translate ${Motion.baseMs}ms`;
   draggable.ts:156  function handBack(surface: HTMLElement): void {
   ```
 
@@ -3325,7 +3325,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/ProgressBar.cs`
 - **Handoff**: Value changes animate Base 200ms standard, forward only — regressions snap (honesty over smoothness).
-- **Code**: Web honours it (WebLoweringVisitor.Containers.cs:1395-1399 LowerFlexible emits "flex-grow var(--eq-motion-base) var(--eq-curve-standard)", i.e. Motion.BaseMs=200 + Curve.Standard). On Photon the value change SNAPS — Flexible.AnimateChanges names the fence: "native joins with the transition animator (until then weights snap, the documented fence)". Stated reason: the native transition animator has not landed.
+- **Code**: Web honours it (WebLoweringVisitor.Containers.cs:1402-1406 LowerFlexible emits "flex-grow var(--eq-motion-base) var(--eq-curve-standard)", i.e. Motion.BaseMs=200 + Curve.Standard). On Photon the value change SNAPS — Flexible.AnimateChanges names the fence: "native joins with the transition animator (until then weights snap, the documented fence)". Stated reason: the native transition animator has not landed.
 - **Evidence**:
 
   ```
@@ -3348,7 +3348,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/EmptyState.cs`
 - **Handoff**: A11y: shapes hidden; the region announces "loading content" once, then "loaded".
-- **Code**: The returned Box carries no hidden marker — the only place the web realizer emits aria-hidden is the Spacer (WebLoweringVisitor.Containers.cs:1434 LowerSpacer), the icon/vector SVGs (745, 920) and the spinner (677). Boxes and flex containers never get it, so the shapes are present in the a11y tree (empty, but present), and no region announcement mechanism exists at all.
+- **Code**: The returned Box carries no hidden marker — the only place the web realizer emits aria-hidden is the Spacer (WebLoweringVisitor.Containers.cs:1441 LowerSpacer), the icon/vector SVGs (745, 920) and the spinner (677). Boxes and flex containers never get it, so the shapes are present in the a11y tree (empty, but present), and no region announcement mechanism exists at all.
 - **Evidence**:
 
   ```
@@ -3488,11 +3488,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Stepper.cs`
 - **Handoff**: Hit: 48dp per half, split at cell boundary.
-- **Code**: the 48dp hit expansion the Pressable contract promises (src/eQuantic.UI.Primitives/Nodes/Pressable.cs) is implemented only in the native realizer, EmitVisitor.ExpandHitRect (EmitVisitor.Interaction.cs:177-185). The web realizer emits the visual box as the button's box with no min-width/min-height (WebLoweringVisitor.Interaction.cs:464-490 LowerPressable), the TS twin does the same (lowering.ts:2912-2922), and the generated .eq-pressable rules add none (ThemeStylesheet.cs:91-106) — so on the web an arm's hit rect is its visual 40×40. The same gap defeats C6's "Whole control = one hit strip (≥ 48 with slop)".
+- **Code**: the 48dp hit expansion the Pressable contract promises (src/eQuantic.UI.Primitives/Nodes/Pressable.cs) is implemented only in the native realizer, EmitVisitor.ExpandHitRect (EmitVisitor.Interaction.cs:199-208). The web realizer emits the visual box as the button's box with no min-width/min-height (WebLoweringVisitor.Interaction.cs:464-490 LowerPressable), the TS twin does the same (lowering.ts:2912-2922), and the generated .eq-pressable rules add none (ThemeStylesheet.cs:91-106) — so on the web an arm's hit rect is its visual 40×40. The same gap defeats C6's "Whole control = one hit strip (≥ 48 with slop)".
 - **Evidence**:
 
   ```
-  EmitVisitor.Interaction.cs:176  private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)   // native only
+  EmitVisitor.Interaction.cs:199  private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)   // native only
   WebLoweringVisitor.Interaction.cs:506-514  Padding = "0", Border = "none", Background = "none", ... Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null,
   ThemeStylesheet.cs:200  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
   ```
