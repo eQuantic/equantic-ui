@@ -7,7 +7,14 @@ import {
   decTryParse,
 } from './utils/decimal';
 import { fixedSize, isReadOnly } from './utils/view';
-import { boundDelegate, combineDelegate, delegateOver, removeDelegate } from './utils/delegates';
+import {
+  addToEvent,
+  boundDelegate,
+  combineDelegate,
+  delegateOver,
+  removeDelegate,
+  removeFromEvent,
+} from './utils/delegates';
 import { hydrate } from './utils/hydrate';
 import { twinJson } from './utils/twin-json';
 import { long } from './utils/long';
@@ -624,7 +631,14 @@ export const $eq = {
    * C# multicast delegates: `+=` composes an invocation list and `-=` drops the last occurrence.
    * JavaScript has neither, and emitting `+=` literally made `null + function` a STRING.
    */
-  delegates: { combine: combineDelegate, remove: removeDelegate, bound: boundDelegate, over: delegateOver },
+  delegates: {
+    combine: combineDelegate,
+    remove: removeDelegate,
+    bound: boundDelegate,
+    over: delegateOver,
+    addToEvent,
+    removeFromEvent,
+  },
   /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */
   equals,
   /** The method group `value.Equals` of a value the browser holds as data: a delegate over it. */

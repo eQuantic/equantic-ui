@@ -123,6 +123,124 @@ public sealed class MaterialTheme : IAppTheme
         LinkPaddingX = 12,
     };
 
+    /// <summary>
+    /// M3's icon button: a fully rounded 40dp container holding a 24dp icon (Icon buttons, Specs), 20dp
+    /// at the extra-small 32dp container, and a 1dp outline.
+    /// </summary>
+    public IconButtonTheme? IconButton { get; } = new()
+    {
+        IconSize = new SizeLadder { Small = 20, Medium = 24, Large = 24, XLarge = 24 },
+        Radius = 999,
+        OutlineWidth = 1,
+    };
+
+    /// <summary>
+    /// M3's text field (Text fields, Specs): a 56dp container with an extra-small (4dp) corner, a 1dp
+    /// outline that grows to 2dp while focused, 16dp of padding and of gap to a 24dp icon, and the
+    /// supporting text 4dp below. The search field is M3's search bar, 56dp and fully rounded, and a
+    /// picker's field is the text field its menu anchors to, whose items are 48dp (Menus, Specs). M3
+    /// gives a field one height, so every rung of the ladder is 56, at either density.
+    /// </summary>
+    public InputTheme? Input { get; } = new()
+    {
+        Controls = new ControlsTheme
+        {
+            Height = OneSize(56),
+        },
+        PaddingX = 16,
+        PickerPaddingX = 16,
+        Gap = 16,
+        PickerGap = 16,
+        BorderWidth = 1,
+        FocusBorderWidth = 2,
+        Radius = 4,
+        SearchRadius = 999,
+        IconSize = 24,
+        CaptionGap = 4,
+        PanelRowHeight = 48,
+    };
+
+    /// <summary>
+    /// M3's selection controls (Checkbox, Radio button, Switch and Slider, Specs): an 18dp checkbox with
+    /// a 2dp border and a 2dp corner, a 20dp radio around a 10dp dot, each in a 48dp row; a 52 by 32
+    /// switch whose 24dp handle sits 4dp inside the track; and a slider's 4dp track under a 20dp handle
+    /// at elevation 1, with no ring. Material 3 does not shrink them for a dense layout, so the compact
+    /// side is the same.
+    /// </summary>
+    public SelectionControlsTheme? SelectionControls { get; } = new()
+    {
+        Box = new DensityPair { Comfortable = 18, Compact = 18 },
+        RadioSize = new DensityPair { Comfortable = 20, Compact = 20 },
+        BorderWidth = 2,
+        CheckboxRadius = 2,
+        RadioDot = new DensityPair { Comfortable = 10, Compact = 10 },
+        RadioRowHeight = 48,
+        SwitchWidth = new DensityPair { Comfortable = 52, Compact = 52 },
+        SwitchHeight = new DensityPair { Comfortable = 32, Compact = 32 },
+        SwitchThumb = new DensityPair { Comfortable = 24, Compact = 24 },
+        SwitchInset = 4,
+        SliderTrackHeight = 4,
+        SliderThumbSize = 20,
+        SliderThumbBorder = 0,
+        SliderThumbElevation = 1,
+    };
+
+    /// <summary>
+    /// M3's segmented button (Segmented buttons, Specs): 40dp tall, fully rounded, its label in Label
+    /// large (14), 12dp of padding, flat, with no lip around the selected segment and a 1dp outline
+    /// around the track; its 18dp icons take the §07 whitelist's next step, 20. M3 gives the control one
+    /// size, so every rung of the ladder is that size, at either density.
+    /// </summary>
+    public SegmentedTheme? Segmented { get; } = new()
+    {
+        Controls = new ControlsTheme
+        {
+            Height = OneSize(40),
+            PaddingX = OneSize(12),
+            LabelSize = OneSize(14),
+            Radius = new SizeLadder { Small = 999, Medium = 999, Large = 999, XLarge = 999 },
+        },
+        Inset = 0,
+        ThumbElevation = 0,
+        TrackBorderWidth = 1,
+        IconSize = IconSize.Dense,
+    };
+
+    /// <summary>
+    /// M3's chip (Chips, Specs): 32dp tall with a small (8dp) corner, 16dp of padding and 8dp between
+    /// its icons and its label in Label large; an unselected filter chip has a 1dp outline, and a
+    /// selected one is filled rather than outlined.
+    /// M3 draws the icons at 18dp, which is not on the §07 whitelist an icon is held to, so they take
+    /// its next step, 20. M3 gives a chip one height, at either density.
+    /// </summary>
+    public ChipTheme? Chip { get; } = new()
+    {
+        Controls = new ControlsTheme
+        {
+            Height = OneSize(32),
+        },
+        PaddingX = 16,
+        Gap = 8,
+        LabelSize = 14,
+        LabelLineHeight = 20,
+        LabelWeight = FontWeight.Medium,
+        LabelTracking = 0.1f,
+        Radius = 8,
+        SelectedBorderWidth = 0,
+        OutlineWidth = 1,
+        IconSize = IconSize.Dense,
+        RemoveIconSize = IconSize.Dense,
+    };
+
+    /// <summary>A ladder whose every rung, at either density, is <paramref name="value"/>: Material 3
+    /// specifies one size for a field, a segmented button and a chip, and does not shrink it for a
+    /// dense layout.</summary>
+    private static DensityLadder OneSize(float value)
+    {
+        var rungs = new SizeLadder { Small = value, Medium = value, Large = value, XLarge = value };
+        return new DensityLadder { Comfortable = rungs, Compact = rungs };
+    }
+
     // ---- Elevation — the M3 levels (seed-independent) --------------------------------------------
     public ShadowSpec Elevation(int level) => level switch
     {

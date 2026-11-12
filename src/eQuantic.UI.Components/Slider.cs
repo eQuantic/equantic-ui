@@ -98,22 +98,26 @@ public sealed class Slider : StatelessComponent
         var step = Step > 0 ? Step : span / 10f;
         var accent = theme.Colors(Variant).Base;
         var fill = Disabled ? theme.BorderStrong : accent;
+        // The theme's Selection slot, then the component's own (§3.10).
+        var slot = theme.SelectionControls;
+        var thumbSize = slot?.SliderThumbSize ?? ThumbSize;
+        var trackHeight = slot?.SliderTrackHeight ?? TrackHeight;
 
         var thumb = new Box(new BoxStyle
         {
-            Width = ThumbSize,
-            Height = ThumbSize,
-            Background = theme.Surface,
+            Width = thumbSize,
+            Height = thumbSize,
+            Background = slot?.ThumbFill ?? theme.Surface,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-            BorderWidth = ThumbBorder,
+            BorderWidth = slot?.SliderThumbBorder ?? ThumbBorder,
             // The BORDER token, not the accent. This hairline is the ELEVATION contract's — "dark
             // E1-E2 also require a 1dp border", IAppTheme.Elevation — and its job is to separate a
             // raised surface from the one behind it, which a Primary-blue ring does not do. The
             // variant already reads: it is the filled half of the track. A tinted ring made the
             // knob a second readout of the same fact and the Switch, whose knob is the same
             // surface at the same elevation, carries none.
-            BorderColor = theme.Border,
-            Elevation = 2,
+            BorderColor = slot?.SliderThumbBorderColor ?? theme.Border,
+            Elevation = slot?.SliderThumbElevation ?? 2,
             Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
         });
 
@@ -121,13 +125,14 @@ public sealed class Slider : StatelessComponent
         // A zero weight would collapse the side entirely, so each end keeps a hairline of presence.
         var row = new Row(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
 
-        row.Add(new Flexible(TrackHalf(fill, filled: true, enabled: !Disabled,
+        row.Add(new Flexible(TrackHalf(fill, trackHeight, filled: true, enabled: !Disabled,
             onPressed: () => OnChanged?.Invoke(Math.Max(Min, Value - step))), Weight(fraction)));
         row.Add(thumb);
         // Spec C7: the REST half is SurfaceSubtle — the unfilled rail is a groove, not a border.
         // BorderStrong is the token for a line that DIVIDES, and using it here painted the rail as
         // dark as the outline of a text field, so a slider at 10% read as mostly-full.
-        row.Add(new Flexible(TrackHalf(theme.SurfaceSubtle, filled: false, enabled: !Disabled,
+        row.Add(new Flexible(TrackHalf(slot?.SliderRestTrack ?? theme.SurfaceSubtle, trackHeight, filled: false,
+            enabled: !Disabled,
             onPressed: () => OnChanged?.Invoke(Math.Min(Max, Value + step))), Weight(1 - fraction)));
 
         // The gesture is NORMALIZED because the track is fluid: the component cannot know its pixel
@@ -151,7 +156,7 @@ public sealed class Slider : StatelessComponent
             // The control's own intrinsic width, exactly why <input type=range> is ~129px in the
             // UA stylesheet: in a shrink-to-fit container a fluid track has no width of its own,
             // and a slider that collapses to its thumb is not a slider.
-            MinWidth = 120,
+            MinWidth = slot?.SliderMinWidth ?? 120,
             Height = Touch.MinTarget,
             Opacity = Disabled ? theme.DisabledOpacity : 1f,
         }, surface);
@@ -187,17 +192,18 @@ public sealed class Slider : StatelessComponent
     /// One side of the track: a hairline bar inside a full-height press target, so the press area is
     /// <see cref="Touch.MinTarget"/> tall while the visible track stays 4dp.
     /// </summary>
-    private static VisualNode TrackHalf(ColorToken color, bool filled, bool enabled, Action onPressed)
+    private static VisualNode TrackHalf(ColorToken color, float trackHeight, bool filled, bool enabled,
+        Action onPressed)
     {
         var bar = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Height = TrackHeight,
+            Height = trackHeight,
             Background = color,
             // Only the outer end is rounded — the inner end butts against the thumb.
             CornerRadius = filled
-                ? new CornerRadii(TrackHeight / 2, 0, 0, TrackHeight / 2)
-                : new CornerRadii(0, TrackHeight / 2, TrackHeight / 2, 0),
+                ? new CornerRadii(trackHeight / 2, 0, 0, trackHeight / 2)
+                : new CornerRadii(0, trackHeight / 2, trackHeight / 2, 0),
             Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
         });
 
