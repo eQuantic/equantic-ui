@@ -116,14 +116,17 @@ public class GridSemanticsTests
             row.Attributes.ContainsKey("style") && row.Attributes["style"]!.Replace(" ", "").Contains("display:contents"));
     }
 
-    [Fact]
-    public void TwoGridsOnOnePage_DoNotShareCellIds()
+    [Theory]
+    [InlineData("July 2026", "August 2026")]
+    [InlineData("July 2026", "July 2026")]
+    public void TwoGridsOnOnePage_DoNotShareCellIds(string first, string second)
     {
         // The ids are DOM-global, so an unscoped eq-cell-1-1 would appear twice and an
-        // activedescendant could resolve into the other calendar. Two months, two id spaces.
+        // activedescendant could resolve into the other calendar. Two months, two id spaces: two
+        // places in the page's tree, whatever the grids are labelled, two months of one label too (#1115).
         var page = new Column();
-        page.Add(Month(label: "July 2026"));
-        page.Add(Month(label: "August 2026"));
+        page.Add(Month(label: first));
+        page.Add(Month(label: second));
 
         var ids = Walk(Render(page))
             .Select(node => node.Attributes.GetValueOrDefault("id"))

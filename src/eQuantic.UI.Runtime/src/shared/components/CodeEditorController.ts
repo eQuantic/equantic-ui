@@ -1293,7 +1293,7 @@ export class CodeEditorController {
     }
 
     insertNewLine() {
-        return this.atEveryCaret(this.newLineAtCaret.bind(this));
+        return this.atEveryCaret($eq.delegates.bound(this, this.newLineAtCaret));
     }
 
     newLineAtCaret() {
@@ -1368,7 +1368,7 @@ export class CodeEditorController {
         if (this.readOnly) return false;
         if (!this._selection.isEmpty) return this.shiftLines(true);
         for (const other of this._others) if (!other.selection.isEmpty) return this.shiftLines(true);
-        return this.atEveryCaret(this.indentAtCaret.bind(this));
+        return this.atEveryCaret($eq.delegates.bound(this, this.indentAtCaret));
     }
 
     indentAtCaret() {

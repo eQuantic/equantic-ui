@@ -125,7 +125,7 @@ public class HashSetStrategy : IExpressionIrStrategy
     {
         context.UsedHelpers.Add(Eq.Import);
         var type = context.SemanticHelper.GetType(creation) as INamedTypeSymbol;
-        var equality = ElementEquality.Of(type?.TypeArguments.FirstOrDefault());
+        var equality = ElementEquality.Of(type?.TypeArguments.FirstOrDefault(), creation, context);
         var arguments = new List<JsExpr>();
         JsExpr? source = null;
         if (context.SemanticHelper.GetOperation(creation) is IObjectCreationOperation operation)
