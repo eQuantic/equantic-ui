@@ -85,6 +85,7 @@ public class ParamsArrayConformanceTests
     [InlineData("return new Pack().Count + \"|\" + new Pack(1).Count + \"|\" + new Pack(1, 2, 3).Count;")]                        // 0|1|3
     [InlineData("var n = new Named(\"a\", \"b\", \"c\"); var e = new Named(\"z\"); return n.First + \"|\" + string.Join(\",\", n.Rest) + \"|\" + e.Rest.Length;")] // a|b,c|0
     [InlineData("var n = new Named(first: \"x\", rest: new[] { \"y\" }); return n.First + \"|\" + string.Join(\",\", n.Rest);")] // x|y
+    [InlineData("var n = new Named(first: \"x\"); var m = new Named(\"y\", rest: \"z\"); return n.Rest.Length + \"|\" + string.Join(\",\", m.Rest);")] // 0|z
     [InlineData("var m = new Many(); var m2 = new Many(7); var m3 = new Many(7, 1, 2); return m.Kind + \"|\" + m2.Kind + \"|\" + m2.Xs.Length + \"|\" + m3.Xs.Length;")] // 0|7|0|2
     [InlineData("var c = new Chained(\"s\", 7); return c.Xs.Length + \"|\" + c.Xs[2] + \"|\" + new Chained(5, 6).Xs.Length;")]                // 3|7|2
     [InlineData("var all = new[] { 1, 2, 3 }; var d = new DerivedP(all); return new DerivedP().Xs.Length + \"|\" + d.Xs.Length + \"|\" + object.ReferenceEquals(all, d.Xs);")] // 2|3|True

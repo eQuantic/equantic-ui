@@ -472,7 +472,9 @@ internal sealed class TwinConstructor
             ? _converter.ConvertExpression(given.Value, parameters[i].Type?.ValueText())
             : DefaultOf(parameters[i].Type!));
         string Name(int i) => ParameterName(parameters[i], root.Primary);
-        bool IsRest(int i) => parameters[i].Modifiers.Any(SyntaxKind.ParamsKeyword);
+        // A params parameter takes the array C# passes, the elements a chain lists gathered into one, whether the
+        // twin holds it as a rest parameter or as the array it is (IsRest decides only how a call arrives).
+        bool IsParams(int i) => parameters[i].Modifiers.Any(SyntaxKind.ParamsKeyword);
         JsExpr Temporary(int index) => JsExpr.Identifier($"$c{index}");
 
         if (BoundArguments.Of(_modelFor(chain)?.GetOperation(chain), argument => JsExpr.Opaque(_converter.ConvertExpression(argument)))
@@ -480,9 +482,9 @@ internal sealed class TwinConstructor
         {
             var landed = parameters.Select((_, i) => (Parameter: Name(i), Value: bound.ByParameter[i] switch
             {
-                null => IsRest(i) ? JsExpr.Array([]) : Default(i),
+                null => IsParams(i) ? JsExpr.Array([]) : Default(i),
                 [{ Spread: true } whole] => Temporary(whole.Written),
-                var slots when IsRest(i) => JsExpr.Array(slots.Select(slot => Temporary(slot.Written)).ToList()),
+                var slots when IsParams(i) => JsExpr.Array(slots.Select(slot => Temporary(slot.Written)).ToList()),
                 [var one, ..] => Temporary(one.Written),
                 _ => Default(i),
             })).ToList();
@@ -492,7 +494,7 @@ internal sealed class TwinConstructor
         // No model: the arguments in the order they are written, each in the parameter it names or the
         // one in its position.
         var values = new JsExpr?[parameters.Count];
-        var rest = parameters.Count > 0 && IsRest(parameters.Count - 1) ? parameters.Count - 1 : -1;
+        var rest = parameters.Count > 0 && IsParams(parameters.Count - 1) ? parameters.Count - 1 : -1;
         var arguments = chain.ArgumentList.Arguments;
         var gathered = new List<JsExpr>();
         for (var i = 0; i < arguments.Count; i++)
