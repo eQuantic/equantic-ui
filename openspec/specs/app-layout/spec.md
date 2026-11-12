@@ -1,7 +1,11 @@
 # app-layout Specification
 
 ## Purpose
-TBD - created by archiving change an-apps-layout-stays-mounted. Update Purpose after archive.
+An app's frame (its navigation, its toolbar, whatever surrounds every page) is declared once, in
+`Program.cs`, as a layout component the page is handed to. The server renders each page inside it and
+the browser builds it once per document, so a client navigation keeps the layout's instance and its
+state and replaces only the page under it, as Blazor's `DefaultLayout` and go_router's `ShellRoute`
+do. The layout knows which page it shows from `Navigator.Location`.
 
 ## Requirements
 
