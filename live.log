@@ -89,3 +89,52 @@
  2662  20.8  46640 /System/Library/PrivateFrameworks/SafariPlatformSupport.framework/Versions/A/XPCServices/com.apple.SafariPlatformSupport.Helper.xpc/Contents/MacOS/com.apple.SafariPlatformSupport.Helper
  2654  17.4 140912 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
   disk:    15.15  531  7.86     0.00    0  0.00     0.00    0  0.00 
+[watch 19:40:40.081] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:40:41.302] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:40:41.329] dotnet watch : C# and Razor changes applied in 1205ms.
+[watch 19:40:41.332] [eQuantic.HotReload] drew the edit 32ms after it was applied
+desktop run 1 (cold): total 1384ms, delta 1352ms, frame 32ms
+[watch 19:40:43.551] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:40:43.729] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:40:43.729] dotnet watch : C# and Razor changes applied in 176ms.
+[watch 19:40:43.854] [eQuantic.HotReload] drew the edit 125ms after it was applied
+desktop run 2: total 371ms, delta 246ms, frame 125ms
+[watch 19:40:46.105] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:40:46.197] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:40:46.197] dotnet watch : C# and Razor changes applied in 91ms.
+[watch 19:40:46.227] [eQuantic.HotReload] drew the edit 30ms after it was applied
+desktop run 3: total 253ms, delta 223ms, frame 30ms
+[watch 19:40:48.358] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:40:48.467] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:40:48.477] dotnet watch : C# and Razor changes applied in 111ms.
+[watch 19:40:48.517] [eQuantic.HotReload] drew the edit 49ms after it was applied
+desktop run 4: total 188ms, delta 139ms, frame 49ms
+[watch 19:40:50.648] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:40:50.701] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:40:50.702] dotnet watch : C# and Razor changes applied in 56ms.
+[watch 19:40:50.797] [eQuantic.HotReload] drew the edit 96ms after it was applied
+desktop run 5: total 164ms, delta 68ms, frame 96ms
+[watch 19:40:52.979] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:40:53.050] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:40:53.061] dotnet watch : C# and Razor changes applied in 77ms.
+[watch 19:40:53.111] [eQuantic.HotReload] drew the edit 54ms after it was applied
+desktop run 6: total 257ms, delta 203ms, frame 54ms
+
+### Edit to view: desktop, warm median against a bar of 1000ms
+
+| part | min | median | max | cold |
+|---|---:|---:|---:|---:|
+| total | 164 | 253 | 371 | 1384 |
+| delta | 68 | 203 | 246 | 1352 |
+| frame | 30 | 54 | 125 | 32 |
+=== round 2 19:40:55
+--- sample 19:40:56 load: { 31.94 41.73 20.75 } System-wide memory free percentage: 82%
+155 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+ 3058  74.9 150192 dotnet
+ 3064  23.1  52288 /Users/runner/Library/Application Support/dotnet/runfile/measure-edit-to-view-b21f241eb3d5bf36ea5eeab1566dd723ef7b35c5e8d28969dd11469ff35abbea/bin/debug/measure-edit-to-view
+  155   6.4  56576 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  459   4.1 136608 /System/Library/CoreServices/Spotlight.app/Contents/MacOS/Spotlight
+ 3060   3.4  30080 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+[watch 19:40:57.133] dotnet watch : Hot reload enabled. For a list of supported edits, see https://aka.ms/dotnet/hot-reload.
+[watch 19:40:57.140] dotnet watch : Press Ctrl+R to restart.
+  disk:     9.61  605  5.68     0.00    0  0.00     5.25   31  0.16 
