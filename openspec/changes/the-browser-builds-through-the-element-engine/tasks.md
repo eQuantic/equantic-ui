@@ -26,4 +26,4 @@
 - [x] 4.2 The runtime's suites, the element engine's twins and the hydration contract pass (with #1477 in: twins and hydration crossing 25 of 25, Server 625 of 625)
 - [x] 4.3 The e2e suite in a real browser after the change: 15 of 15, as before it (with #1477 in)
 - [ ] 4.4 The served runtime's budget, re-recorded in a commit of its own if it moved
-- [ ] 4.5 `docs/ELEMENT-TREE-PLAN.md`, the ledger and `FlutterParityPinTests` where a row closes
+- [x] 4.5 `docs/ELEMENT-TREE-PLAN.md`, the ledger and `FlutterParityPinTests` where a row closes (the `Element` row's instance-handling half; the row stays partial for E5b)
