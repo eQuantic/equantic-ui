@@ -300,6 +300,14 @@ public static class Eq
     /// token that was, refused as .NET refuses one that was not.</summary>
     public const string TaskFromCanceled = "$eq.task.fromCanceled";
 
+    /// <summary>The delegate of a method over a target (<c>utils/delegates.ts</c>): one function for a target
+    /// and a method, so two delegates made over the same ones are equal, as .NET compares them.</summary>
+    public const string DelegateBound = "$eq.delegates.bound";
+
+    /// <summary>A delegate built from another (<c>utils/delegates.ts</c>): one function for a source, a new
+    /// one beside it, which the source is not equal to.</summary>
+    public const string DelegateOver = "$eq.delegates.over";
+
     /// <summary><c>CancellationToken.None</c>, which is also <c>default(CancellationToken)</c>.</summary>
     public const string CancellationNone = "$eq.cancellation.none";
 
@@ -606,6 +614,10 @@ public static class Eq
 
     /// <summary>The container, for a constructor dependency — the browser's ActivatorUtilities.</summary>
     public const string ResolveService = "$eq.services.resolve";
+
+    /// <summary>Registers a service the app registered when nothing has yet, and answers its key: what
+    /// a resolution of an app's own service names in the browser (<see cref="BrowserServices"/>).</summary>
+    public const string ProvideService = "$eq.services.provide";
 
     /// <summary>How many a collection holds, whichever shape it turned out to be.</summary>
     public const string Count = "$eq.collections.count";

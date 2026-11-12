@@ -12,8 +12,8 @@ export class CodeJumpList {
         this._heard = editor.selection;
         this._places.push(this._heard);
         this._index = 0;
-        editor.changed = $eq.delegates.combine(editor.changed, this.carry.bind(this));
-        editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, this.heard.bind(this));
+        editor.changed = $eq.delegates.combine(editor.changed, $eq.delegates.bound(this, this.carry));
+        editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, $eq.delegates.bound(this, this.heard));
     }
 
     _editor!: CodeEditorController;

@@ -166,6 +166,15 @@ describe("an interface's typed Equals, by the contract it binds", () => {
       return s === 'x';
     }
   }
+  class MoneyOrText {
+    static $equatable = { 'System.IEquatable<T>|decimal': 'equals$1', 'System.IEquatable<T>|string': 'equals$2' };
+    equals$1(m: unknown): boolean {
+      return m instanceof Object && String(m) === '1.5';
+    }
+    equals$2(s: unknown): boolean {
+      return s === 'x';
+    }
+  }
   class Id {
     static $equatable = { 'System.IEquatable<T>|Id': 'equals$1', 'System.IEquatable<T>|@': 'equals$1' };
     constructor(readonly v: number) {}
@@ -195,10 +204,17 @@ describe("an interface's typed Equals, by the contract it binds", () => {
   it("takes the class's own contract, or its only one, for a contract over a type parameter", () => {
     expect(equatable('System.IEquatable<T>|*')(new Id(1), new Id(1))).toBe(true);
     expect(equatable('System.IEquatable<T>|*')(new IntMatcher(), 1)).toBe(true);
-    // Over two other types and not over itself, the erased type argument cannot say which: Equals(object).
+    // Over two other types and not over itself, the erased type argument is read off the value, and a value
+    // of neither has no contract: Equals(object).
     const both = new TwoWays();
-    expect(equatable('System.IEquatable<T>|*')(both, 1)).toBe(false);
+    expect(equatable('System.IEquatable<T>|*')(both, 1)).toBe(true);
+    expect(equatable('System.IEquatable<T>|*')(both, 2)).toBe(false);
+    expect(equatable('System.IEquatable<T>|*')(both, 'x')).toBe(true);
     expect(equatable('System.IEquatable<T>|*')(both, both)).toBe(true);
+    // A decimal is held as the runtime's Decimal, which a contract over `decimal` names by its keyword.
+    const money = new MoneyOrText();
+    expect(equatable('System.IEquatable<T>|*')(money, dec('1.5'))).toBe(true);
+    expect(equatable('System.IEquatable<T>|*')(money, 'x')).toBe(true);
   });
 
   it("is EqualityComparer<T>.Default's for a type that answers it, which answers a null itself", () => {
