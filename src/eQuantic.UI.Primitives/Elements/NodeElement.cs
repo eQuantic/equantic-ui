@@ -11,7 +11,6 @@ namespace eQuantic.UI.Primitives;
 /// when they have one, wherever it moved, and by index when they do not.
 /// </para>
 /// </summary>
-[ServerOnly]
 public sealed class NodeElement : Element
 {
     private List<Element?> _children = new();
