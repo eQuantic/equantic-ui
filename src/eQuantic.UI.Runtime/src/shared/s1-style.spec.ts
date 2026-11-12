@@ -41,6 +41,18 @@ describe('S1 style lowering (C# cross-pin)', () => {
     expect(style).not.toContain('scale(');
   });
 
+  // #614: a fraction of the box's own size is a percentage of the element (C# FractionalTranslationRealizerTests).
+  it('a fractional translation is a percentage, and a calc beside units', () => {
+    const band = lowerVisualNode(box({ transform: Transform2D.fractionalTranslate(-1.3) }), ctx);
+    expect(effectiveStyle(band)).toContain('transform: translate(-130%, 0)');
+
+    const both = lowerVisualNode(box({ transform: Transform2D.translate(2).withFractionalTranslate(-1) }), ctx);
+    expect(effectiveStyle(both)).toContain('transform: translate(calc(-100% + 2px), 0)');
+
+    const down = lowerVisualNode(box({ transform: Transform2D.fractionalTranslate(0, 0.5) }), ctx);
+    expect(effectiveStyle(down)).toContain('transform: translate(0, 50%)');
+  });
+
   it('aspect-ratio lowers to the CSS declaration', () => {
     expect(
       effectiveStyle(

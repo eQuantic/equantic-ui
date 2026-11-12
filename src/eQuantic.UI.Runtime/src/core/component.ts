@@ -98,6 +98,18 @@ export function nextTree(): string {
  */
 const alreadyAdopted = new WeakSet<object>();
 
+/**
+ * Whether the server may still hold data for `target`: the document carries some, and this instance
+ * has not taken its share. Asked before a key is formed, because naming a position walks it to the
+ * root, and most builds (every one on a page the server loaded nothing for, every later build of a
+ * kept instance) have nothing to adopt.
+ */
+export function awaitsServerState(target: object): boolean {
+  if (typeof window === 'undefined' || alreadyAdopted.has(target)) return false;
+  const payload = (window as unknown as { __INITIAL_STATE__?: Record<string, unknown> }).__INITIAL_STATE__;
+  return payload !== undefined && payload !== null && Object.keys(payload).length > 0;
+}
+
 export function adoptServerStateFor(target: object, key: string): boolean {
   if (typeof window === 'undefined') return false;
 

@@ -577,6 +577,24 @@ the parity rows it closes flip.
    from the tree. The twelfth case holds it: a frame with another density builds what read it and nothing
    else. A construction of the context met #1475 in eqc's imports, fixed by the bug sweep. The served
    runtime grows by the engine's modules, recorded in its budget.
+
+   **E3b, the browser builds through the engine (#1128), split in three.** Its first slice, **the browser
+   builds through the element engine** (#1453,
+   `openspec/changes/archive/2026-11-12-the-browser-builds-through-the-element-engine`), replaces the browser's
+   `ComponentInstanceStore` with the engine's owners, one per root a render lowers, kept by the page:
+   the lowering lowers what each position built, a nested `SetState` marks its own element and the owner
+   builds that element alone, mounting and unmounting come from each owner's `EndFrame`, and hydration
+   builds the element tree before it walks the server's DOM. It met what the plan had not foreseen
+   about server data, and took it in the same pull request (#1477): once the browser builds through the
+   engine it has to hand a component its data before it builds, so it could only count `Type#ordinal`
+   in build order while the server counted as its lowering met a component, and the two orders part at
+   an adaptive node's arms and at a deferred layer. So every arm of an adaptive node is a position on
+   the web, which draws them all behind its gates (`BuildOwner(…, holdsEveryArm)`, and no window size
+   class or width decides an arm there), and a composed component's data is keyed by where it stands,
+   `r{tree}/{type}@{slots}`, read off the element on both sides (`Element.Slot`, `SlotsBelow`,
+   `BuildOwner.Building`); 3.8 says why. eqc met one more emission defect on the way (#1483, a `for`
+   head's declared type), fixed by the bug sweep. E3b-2 (#1454) moves the path attributes and the
+   per-commit maps onto elements, and E3b-3 (#1455) relowers a dirty element's subtree alone.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.

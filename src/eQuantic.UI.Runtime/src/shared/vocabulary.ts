@@ -97,6 +97,8 @@ export type VisualChild = VisualNode;
  * an interaction state is active — only the set members override. */
 export class StyleDiff {
   background?: ColorTokenValue | null;
+  /** The foreground while active (C# `StyleDiff.Foreground`, #614). */
+  foreground?: ColorTokenValue | null;
   borderColor?: ColorTokenValue | null;
   borderWidth?: number | null;
   elevation?: number | null;
@@ -110,6 +112,7 @@ export class StyleDiff {
 
   constructor(config?: {
     background?: ColorTokenValue | null;
+    foreground?: ColorTokenValue | null;
     borderColor?: ColorTokenValue | null;
     borderWidth?: number | null;
     elevation?: number | null;
@@ -211,6 +214,8 @@ export class BoxStyle {
   maxHeight: SizeValue | number = 0;
   padding: EdgeInsetsValue = new EdgeInsets();
   background?: ColorTokenValue | null;
+  /** What the text and icons inside that name no colour inherit (C# `BoxStyle.Foreground`, #614). */
+  foreground?: ColorTokenValue | null;
   cornerRadius: CornerRadii = new CornerRadii();
   borderWidth = 0;
   borderColor?: ColorTokenValue;
