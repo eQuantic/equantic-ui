@@ -87,3 +87,49 @@
  2305   8.8  54608 /System/Library/PrivateFrameworks/SafariPlatformSupport.framework/Versions/A/XPCServices/com.apple.SafariPlatformSupport.Helper.xpc/Contents/MacOS/com.apple.SafariPlatformSupport.Helper
  2309   7.8  28368 /System/Library/PrivateFrameworks/IntelligenceFlowContextRuntime.framework/Versions/A/intelligencecontextd
   988   6.7   6384 /usr/libexec/sysmond
+[watch 14:47:58.903] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:47:59.702] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:47:59.709] dotnet watch : C# and Razor changes applied in 780ms.
+[watch 14:47:59.749] [eQuantic.HotReload] drew the edit 47ms after it was applied
+desktop run 1 (cold): total 917ms, delta 870ms, frame 47ms
+[watch 14:48:01.954] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:48:02.066] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:48:02.067] dotnet watch : C# and Razor changes applied in 112ms.
+[watch 14:48:02.141] [eQuantic.HotReload] drew the edit 75ms after it was applied
+desktop run 2: total 311ms, delta 236ms, frame 75ms
+[watch 14:48:04.240] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:48:04.295] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:48:04.295] dotnet watch : C# and Razor changes applied in 53ms.
+[watch 14:48:04.353] [eQuantic.HotReload] drew the edit 58ms after it was applied
+desktop run 3: total 144ms, delta 86ms, frame 58ms
+[watch 14:48:06.490] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:48:06.565] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:48:06.565] dotnet watch : C# and Razor changes applied in 73ms.
+[watch 14:48:06.674] [eQuantic.HotReload] drew the edit 109ms after it was applied
+desktop run 4: total 256ms, delta 147ms, frame 109ms
+[watch 14:48:08.762] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:48:08.820] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:48:08.820] dotnet watch : C# and Razor changes applied in 58ms.
+[watch 14:48:08.877] [eQuantic.HotReload] drew the edit 56ms after it was applied
+desktop run 5: total 131ms, delta 75ms, frame 56ms
+[watch 14:48:11.080] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:48:11.124] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:48:11.125] dotnet watch : C# and Razor changes applied in 44ms.
+[watch 14:48:11.180] [eQuantic.HotReload] drew the edit 55ms after it was applied
+desktop run 6: total 162ms, delta 107ms, frame 55ms
+
+### Edit to view: desktop, warm median against a bar of 1000ms
+
+| part | min | median | max | cold |
+|---|---:|---:|---:|---:|
+| total | 131 | 162 | 311 | 917 |
+| delta | 75 | 107 | 236 | 870 |
+| frame | 55 | 58 | 109 | 47 |
+=== round 2 14:48:13
+--- sample 14:48:13 load: { 29.12 31.87 14.99 } System-wide memory free percentage: 81%
+156 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+  680  43.4  69664 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
+ 2491  34.6  76192 dotnet
+  349  17.1  86176 /System/Library/PrivateFrameworks/VoiceShortcuts.framework/Versions/A/Support/siriactionsd
+  156  12.6  48864 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  988   6.3   6480 /usr/libexec/sysmond
