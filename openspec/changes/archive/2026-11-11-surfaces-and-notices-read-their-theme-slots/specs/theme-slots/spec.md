@@ -14,6 +14,12 @@ slot order, on the web and on Photon. A member a slot leaves null SHALL be the c
 - **THEN** the web's lowering writes it and Photon's layout places it, and under `PhotonTheme` neither
   does
 
+#### Scenario: A colour a role gives
+
+- **WHEN** a theme recolours `TextPrimary` over `PhotonTheme`
+- **THEN** a Tooltip's fill and a Toast's fill take the new colour, because `PhotonTheme` and
+  `MaterialTheme` leave null every slot colour that one of the theme's roles already gives
+
 #### Scenario: Material 3
 
 - **WHEN** a Card is drawn under `MaterialTheme`

@@ -1,8 +1,11 @@
 IAppTheme.button
 IAppTheme.card
+IAppTheme.chip
 IAppTheme.code
 IAppTheme.controls
 IAppTheme.data
+IAppTheme.iconButton
+IAppTheme.input
 IAppTheme.menu
 IAppTheme.modal
 IAppTheme.monoFamily
@@ -12,7 +15,9 @@ IAppTheme.placeholder
 IAppTheme.progress
 IAppTheme.scrollbarThumb
 IAppTheme.scrollbarTrack
+IAppTheme.segmented
 IAppTheme.selection
+IAppTheme.selectionControls
 IAppTheme.sheet
 IAppTheme.textFamily
 ICodeCompletionProvider.resolveAsync

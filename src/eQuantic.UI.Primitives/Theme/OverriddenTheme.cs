@@ -6,7 +6,9 @@ namespace eQuantic.UI.Primitives;
 /// wrapped theme answers each one as it would alone; <c>OverriddenThemeTests</c> fails on a member of
 /// <see cref="IAppTheme"/> this class leaves to the interface.
 /// </summary>
-internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, ButtonTheme? button, ModalTheme? modal, MenuTheme? menu, NoticeTheme? notice, ProgressTheme? progress, CardTheme? card) : IAppTheme
+internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, ButtonTheme? button,
+    IconButtonTheme? iconButton, InputTheme? input, SelectionControlsTheme? selectionControls, SegmentedTheme? segmented,
+    ChipTheme? chip, ModalTheme? modal, MenuTheme? menu, NoticeTheme? notice, ProgressTheme? progress, CardTheme? card) : IAppTheme
 {
     public ColorToken Background => inner.Background;
     public ColorToken Surface => inner.Surface;
@@ -44,4 +46,9 @@ internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, 
     public ProgressTheme? Progress => field ??= ProgressTheme.Merge(inner.Progress, progress);
     public CardTheme? Card => field ??= CardTheme.Merge(inner.Card, card);
     public ColorToken Code(CodeTokenKind kind) => inner.Code(kind);
+    public IconButtonTheme? IconButton => field ??= IconButtonTheme.Merge(inner.IconButton, iconButton);
+    public InputTheme? Input => field ??= InputTheme.Merge(inner.Input, input);
+    public SelectionControlsTheme? SelectionControls => field ??= SelectionControlsTheme.Merge(inner.SelectionControls, selectionControls);
+    public SegmentedTheme? Segmented => field ??= SegmentedTheme.Merge(inner.Segmented, segmented);
+    public ChipTheme? Chip => field ??= ChipTheme.Merge(inner.Chip, chip);
 }
