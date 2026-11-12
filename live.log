@@ -1,0 +1,9 @@
+=== round 1 19:17:04
+--- sample 19:17:04 load: { 29.52 28.41 13.26 } System-wide memory free percentage: 82%
+157 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+ 2099  70.9 914016 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+   90  26.5  12368 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+ 1922  13.9  34528 /usr/sbin/spindump
+ 2548  12.0  43952 dotnet
+  114  10.0  44352 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+  disk:    38.37 1755 65.77     0.00    0  0.00     0.00    0  0.00 
