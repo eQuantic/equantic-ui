@@ -1,4 +1,4 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, Pressable, Row, Shortcut, SizeValue, Sizing, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, Pressable, Row, Shortcut, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class Select extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Select';
@@ -39,7 +39,7 @@ export class Select extends StatefulComponent {
         fieldRow.add(new Text(hasValue ? $eq.collections.item(this.options, this.selectedIndex) : this.placeholder ?? 'Select…', 'bodyM', hasValue ? theme.textPrimary : theme.textMuted, 1));
         fieldRow.add(new Flexible(new Spacer()));
         fieldRow.add(new Icon(IconGlyph.fromIcons('chevronDown'), 16, theme.textSecondary));
-        let field = new Box(new BoxStyle({ height: Sizing.height('medium', context.density), width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), fieldRow);
+        let field = new Box(new BoxStyle({ height: ControlMetrics.height(context, 'medium'), width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), fieldRow);
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         for (let i = 0; i < $eq.collections.count(this.options); i++) {
             let index = i;
@@ -51,7 +51,7 @@ export class Select extends StatefulComponent {
                 row.add(new Icon(IconGlyph.fromIcons('check'), 16, theme.colors('primary').onSubtle));
             }
             let highlighted = this._open && i === this._highlight;
-            list.add(new Pressable(new Box(new BoxStyle({ height: Sizing.height('medium', context.density), padding: EdgeInsets.symmetric(12, 0), width: SizeValue.fill, background: selected ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.choose(index), { role: 'option', selected: selected }));
+            list.add(new Pressable(new Box(new BoxStyle({ height: ControlMetrics.height(context, 'medium'), padding: EdgeInsets.symmetric(12, 0), width: SizeValue.fill, background: selected ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.choose(index), { role: 'option', selected: selected }));
         }
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
         let trigger = new Pressable(field, this.disabled ? null : $eq.delegates.bound(this, this.toggle), { disabled: this.disabled, expanded: this._open && !this.disabled });

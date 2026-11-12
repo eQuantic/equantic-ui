@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, Icon, Pressable, SizeVariantValue, Sizing, StatelessComponent, StyleDiff, VisualNodeExtensions } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, Pressable, SizeVariantValue, StatelessComponent, StyleDiff, VisualNodeExtensions } from "../runtime-exports";
 
 export class IconButton extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.IconButton';
@@ -33,7 +33,7 @@ export class IconButton extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let primary = theme.colors('primary');
-        let side = Sizing.height(this.size, context.density);
+        let side = ControlMetrics.height(context, this.size);
         let iconSize = (() => { const $s = this.size; if ($s === 'small') return 16; if ($s === 'medium') return 20; return 24; })();
         let fill = (() => { const $s = this.kind; if ($s === 'tonal') return primary.subtle; if ($s === 'filled') return primary.base; return null; })();
         let tint = (() => { const $s = this.kind; if ($s === 'filled') return primary.onBase; if ($s === 'tonal') return primary.onSubtle; return this.selected ? primary.base : theme.textSecondary; })();
