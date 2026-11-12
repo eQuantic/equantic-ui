@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        side: [settle, nosettle]
+        side: [warm, cold]
         attempt: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
@@ -20,12 +20,17 @@ jobs:
           dotnet-version: 10.0.x
       - name: Build the desktop sample
         run: dotnet build samples/PhotonDesktop
+      - name: The app opens once, alone, before anything is timed
+        if: matrix.side == 'warm'
+        shell: bash
+        run: |
+          app=$(find samples/PhotonDesktop/bin/Debug -maxdepth 2 -type f -name PhotonDesktop -perm -u+x | head -1)
+          perl -e 'alarm 180; exec @ARGV' "$app" --Photon:MaxFrames 300 | tail -3
       - name: Edit to view on the desktop, shipped live
         shell: bash
         timeout-minutes: 15
         env:
           EQ_EDIT_TO_VIEW_ECHO: "1"
-          EQ_SETTLE: ${{ matrix.side == 'settle' && '1' || '0' }}
           LOG_BRANCH: test/desktop-edit-log-${{ github.run_id }}-${{ matrix.side }}-${{ matrix.attempt }}
         run: |
           set -uo pipefail
