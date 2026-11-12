@@ -7,7 +7,7 @@
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodyl eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="" placeholder="MM/DD/YYYY" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
@@ -22,8 +22,10 @@
 </div>
 </div>
 </div>
+<div class="eq-1jixn86" role="status" aria-live="polite" aria-atomic="true">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">
 </span>
+</div>
 </div>
 ### css
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
@@ -39,6 +41,7 @@
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
 .eq-1imlfss{cursor:pointer}
+.eq-1jixn86{width:fit-content}
 .eq-1jjc6f6{height:100%}
 .eq-1o1uad7{border-radius:10px}
 .eq-1pyii92{gap:5px}
@@ -66,8 +69,8 @@
 .eq-v9un6z{gap:6px}
 ### semantics
 TextField "MM/DD/YYYY" (value "")
-Group ""
 Button "Choose a date" (collapsed)
+Group ""
 ### photon
 DatePicker 0 0 480x69
   TextInput 0 0 480x69
@@ -81,7 +84,8 @@ DatePicker 0 0 480x69
               Anchored 445 14 20x20
                 Pressable 445 14 20x20
                   Icon 445 14 20x20
-      Text 0 53 480x16 1 line(s)
+      LiveRegion 0 53 480x16
+        Text 0 53 480x16 1 line(s)
 
 ## Compact
 ### web
@@ -92,7 +96,7 @@ DatePicker 0 0 480x69
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodyl eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="" placeholder="MM/DD/YYYY" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
@@ -107,8 +111,10 @@ DatePicker 0 0 480x69
 </div>
 </div>
 </div>
+<div class="eq-1jixn86" role="status" aria-live="polite" aria-atomic="true">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">
 </span>
+</div>
 </div>
 ### css
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
@@ -123,6 +129,7 @@ DatePicker 0 0 480x69
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
 .eq-1imlfss{cursor:pointer}
+.eq-1jixn86{width:fit-content}
 .eq-1jjc6f6{height:100%}
 .eq-1o1uad7{border-radius:10px}
 .eq-1pyii92{gap:5px}
@@ -151,8 +158,8 @@ DatePicker 0 0 480x69
 .eq-v9un6z{gap:6px}
 ### semantics
 TextField "MM/DD/YYYY" (value "")
-Group ""
 Button "Choose a date" (collapsed)
+Group ""
 ### photon
 DatePicker 0 0 480x61
   TextInput 0 0 480x61
@@ -166,5 +173,6 @@ DatePicker 0 0 480x61
               Anchored 445 10 20x20
                 Pressable 445 10 20x20
                   Icon 445 10 20x20
-      Text 0 45 480x16 1 line(s)
+      LiveRegion 0 45 480x16
+        Text 0 45 480x16 1 line(s)
 

@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, Row, SizeValue, SizeVariantValue, Sizing, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, LiveRegion, Row, SizeValue, SizeVariantValue, Sizing, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
 
 export class TextInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TextInput';
@@ -105,7 +105,7 @@ export class TextInput extends StatefulComponent {
         let captionColor = hasError ? theme.colors('destructive').base : theme.textMuted;
         let column = new Column(5, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         column.add(top);
-        column.add(new Text(caption, 'caption', captionColor, 1));
+        column.add(new LiveRegion(new Text(caption, 'caption', captionColor, 1)));
         return column;
     }
 

@@ -9,7 +9,7 @@
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodym eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="x" placeholder="Search…" aria-label="Search…" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
@@ -62,7 +62,6 @@
 .eq-ra6ajf{width:48px}
 ### semantics
 TextField "Search…" (value "x")
-Group ""
 Button "Clear search"
 ### photon
 SearchField 0 0 480x40
@@ -87,7 +86,7 @@ SearchField 0 0 480x40
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodym eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="x" placeholder="Search…" aria-label="Search…" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
@@ -140,7 +139,6 @@ SearchField 0 0 480x40
 .eq-ra6ajf{width:48px}
 ### semantics
 TextField "Search…" (value "x")
-Group ""
 Button "Clear search"
 ### photon
 SearchField 0 0 480x32

@@ -9,7 +9,7 @@
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodyl eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="" placeholder="MM/DD/YYYY" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
@@ -24,8 +24,10 @@
 </div>
 </div>
 </div>
+<div class="eq-1jixn86" role="status" aria-live="polite" aria-atomic="true">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">
 </span>
+</div>
 </div>
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
@@ -71,6 +73,7 @@
 .eq-1gudvpj{min-height:0}
 .eq-1imlfss{cursor:pointer}
 .eq-1iu691c{gap:12px}
+.eq-1jixn86{width:fit-content}
 .eq-1jjc6f6{height:100%}
 .eq-1o1uad7{border-radius:10px}
 .eq-1or4gpz{height:16px}
@@ -102,8 +105,8 @@
 .eq-v9un6z{gap:6px}
 ### semantics
 TextField "MM/DD/YYYY" (value "")
-Group ""
 Button "Choose a date" (collapsed)
+Group ""
 ComboBox "Choose a time" (value "Choose a time", collapsed)
 ### photon
 DateTimePicker 0 0 480x69
@@ -121,7 +124,8 @@ DateTimePicker 0 0 480x69
                     Anchored 199 14 20x20
                       Pressable 199 14 20x20
                         Icon 199 14 20x20
-            Text 0 53 234x16 1 line(s)
+            LiveRegion 0 53 234x16
+              Text 0 53 234x16 1 line(s)
     Flexible 246 0 234x40
       TimePicker 246 0 234x40
         Shortcut 246 0 234x40
@@ -149,7 +153,7 @@ DateTimePicker 0 0 480x69
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodyl eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="" placeholder="MM/DD/YYYY" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
@@ -164,8 +168,10 @@ DateTimePicker 0 0 480x69
 </div>
 </div>
 </div>
+<div class="eq-1jixn86" role="status" aria-live="polite" aria-atomic="true">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">
 </span>
+</div>
 </div>
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
@@ -210,6 +216,7 @@ DateTimePicker 0 0 480x69
 .eq-1gudvpj{min-height:0}
 .eq-1imlfss{cursor:pointer}
 .eq-1iu691c{gap:12px}
+.eq-1jixn86{width:fit-content}
 .eq-1jjc6f6{height:100%}
 .eq-1o1uad7{border-radius:10px}
 .eq-1or4gpz{height:16px}
@@ -242,8 +249,8 @@ DateTimePicker 0 0 480x69
 .eq-v9un6z{gap:6px}
 ### semantics
 TextField "MM/DD/YYYY" (value "")
-Group ""
 Button "Choose a date" (collapsed)
+Group ""
 ComboBox "Choose a time" (value "Choose a time", collapsed)
 ### photon
 DateTimePicker 0 0 480x61
@@ -261,7 +268,8 @@ DateTimePicker 0 0 480x61
                     Anchored 199 10 20x20
                       Pressable 199 10 20x20
                         Icon 199 10 20x20
-            Text 0 45 234x16 1 line(s)
+            LiveRegion 0 45 234x16
+              Text 0 45 234x16 1 line(s)
     Flexible 246 0 234x32
       TimePicker 246 0 234x32
         Shortcut 246 0 234x32

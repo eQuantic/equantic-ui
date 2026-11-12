@@ -7,15 +7,17 @@
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodyl eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="x" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
 </div>
 </div>
 </div>
+<div class="eq-1jixn86" role="status" aria-live="polite" aria-atomic="true">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">
 </span>
+</div>
 </div>
 ### css
 .eq-11yg588{align-items:stretch}
@@ -27,6 +29,7 @@
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+.eq-1jixn86{width:fit-content}
 .eq-1jjc6f6{height:100%}
 .eq-1o1uad7{border-radius:10px}
 .eq-1pyii92{gap:5px}
@@ -61,7 +64,8 @@ TextInput 0 0 480x61
         Row 15 1 450x38
           Flexible 15 8 450x24
             TextEntry 15 8 450x24 1 line(s)
-    Text 0 45 480x16 1 line(s)
+    LiveRegion 0 45 480x16
+      Text 0 45 480x16 1 line(s)
 
 ## Medium · Compact
 ### web
@@ -72,15 +76,17 @@ TextInput 0 0 480x61
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodyl eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="x" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
 </div>
 </div>
 </div>
+<div class="eq-1jixn86" role="status" aria-live="polite" aria-atomic="true">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">
 </span>
+</div>
 </div>
 ### css
 .eq-11yg588{align-items:stretch}
@@ -92,6 +98,7 @@ TextInput 0 0 480x61
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+.eq-1jixn86{width:fit-content}
 .eq-1jjc6f6{height:100%}
 .eq-1o1uad7{border-radius:10px}
 .eq-1pyii92{gap:5px}
@@ -126,7 +133,8 @@ TextInput 0 0 480x53
         Row 15 1 450x30
           Flexible 15 4 450x24
             TextEntry 15 4 450x24 1 line(s)
-    Text 0 37 480x16 1 line(s)
+    LiveRegion 0 37 480x16
+      Text 0 37 480x16 1 line(s)
 
 ## Large · Comfortable
 ### web
@@ -137,15 +145,17 @@ TextInput 0 0 480x53
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodyl eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="x" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
 </div>
 </div>
 </div>
+<div class="eq-1jixn86" role="status" aria-live="polite" aria-atomic="true">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">
 </span>
+</div>
 </div>
 ### css
 .eq-11yg588{align-items:stretch}
@@ -158,6 +168,7 @@ TextInput 0 0 480x53
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+.eq-1jixn86{width:fit-content}
 .eq-1jjc6f6{height:100%}
 .eq-1o1uad7{border-radius:10px}
 .eq-1pyii92{gap:5px}
@@ -191,7 +202,8 @@ TextInput 0 0 480x69
         Row 15 1 450x46
           Flexible 15 12 450x24
             TextEntry 15 12 450x24 1 line(s)
-    Text 0 53 480x16 1 line(s)
+    LiveRegion 0 53 480x16
+      Text 0 53 480x16 1 line(s)
 
 ## Large · Compact
 ### web
@@ -202,15 +214,17 @@ TextInput 0 0 480x69
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodyl eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="x" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
 </div>
 </div>
 </div>
+<div class="eq-1jixn86" role="status" aria-live="polite" aria-atomic="true">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">
 </span>
+</div>
 </div>
 ### css
 .eq-11yg588{align-items:stretch}
@@ -222,6 +236,7 @@ TextInput 0 0 480x69
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+.eq-1jixn86{width:fit-content}
 .eq-1jjc6f6{height:100%}
 .eq-1o1uad7{border-radius:10px}
 .eq-1pyii92{gap:5px}
@@ -256,7 +271,8 @@ TextInput 0 0 480x61
         Row 15 1 450x38
           Flexible 15 8 450x24
             TextEntry 15 8 450x24 1 line(s)
-    Text 0 45 480x16 1 line(s)
+    LiveRegion 0 45 480x16
+      Text 0 45 480x16 1 line(s)
 
 ## XLarge · Comfortable
 ### web
@@ -267,15 +283,17 @@ TextInput 0 0 480x61
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodyl eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="x" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
 </div>
 </div>
 </div>
+<div class="eq-1jixn86" role="status" aria-live="polite" aria-atomic="true">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">
 </span>
+</div>
 </div>
 ### css
 .eq-11yg588{align-items:stretch}
@@ -288,6 +306,7 @@ TextInput 0 0 480x61
 .eq-1etnzxl{border:none}
 .eq-1fdhaeb{height:56px}
 .eq-1gudvpj{min-height:0}
+.eq-1jixn86{width:fit-content}
 .eq-1jjc6f6{height:100%}
 .eq-1o1uad7{border-radius:10px}
 .eq-1pyii92{gap:5px}
@@ -321,7 +340,8 @@ TextInput 0 0 480x77
         Row 15 1 450x54
           Flexible 15 16 450x24
             TextEntry 15 16 450x24 1 line(s)
-    Text 0 61 480x16 1 line(s)
+    LiveRegion 0 61 480x16
+      Text 0 61 480x16 1 line(s)
 
 ## XLarge · Compact
 ### web
@@ -332,15 +352,17 @@ TextInput 0 0 480x77
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-field">
 <input class="eq-entry eq-type-bodyl eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="x" />
-<span class="eq-desc" aria-live="polite">
+<span class="eq-desc" hidden="">
 </span>
 </div>
 </div>
 </div>
 </div>
 </div>
+<div class="eq-1jixn86" role="status" aria-live="polite" aria-atomic="true">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">
 </span>
+</div>
 </div>
 ### css
 .eq-11yg588{align-items:stretch}
@@ -353,6 +375,7 @@ TextInput 0 0 480x77
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+.eq-1jixn86{width:fit-content}
 .eq-1jjc6f6{height:100%}
 .eq-1o1uad7{border-radius:10px}
 .eq-1pyii92{gap:5px}
@@ -386,5 +409,6 @@ TextInput 0 0 480x69
         Row 15 1 450x46
           Flexible 15 12 450x24
             TextEntry 15 12 450x24 1 line(s)
-    Text 0 53 480x16 1 line(s)
+    LiveRegion 0 53 480x16
+      Text 0 53 480x16 1 line(s)
 

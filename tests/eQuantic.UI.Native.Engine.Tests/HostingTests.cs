@@ -1,4 +1,5 @@
 using System.Reflection;
+using eQuantic.UI.Material;
 using eQuantic.UI.Native.Hosting;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
@@ -58,6 +59,46 @@ public class HostingTests
 
         app.Options.MaxFrames.Should().Be(120, "nothing in the program overrode it");
         app.Options.Title.Should().Be("From code");
+    }
+
+    [Fact]
+    public void TheThemeReachesTheAppThroughUseThemeAlone()
+    {
+        PhotonApplication.CreateBuilder().Build().Theme.Should().BeSameAs(PhotonTheme.Instance,
+            "an app that chooses no theme draws with Photon's own");
+
+        var material = MaterialTheme.FromSeed(Color.FromRgb(0x67, 0x50, 0xA4));
+        var builder = PhotonApplication.CreateBuilder(["--Photon:Theme", "Material"]);
+        builder.UseTheme(material);
+
+        builder.Build().Theme.Should().BeSameAs(material, "a theme is a C# object, and configuration names none");
+    }
+
+    /// <summary>
+    /// The options the configuration binder is handed reach no theme (#1398). Its generator walks every
+    /// type the bound options reach, the theme's slots included, and a record member a slot holds with a
+    /// non-positional <c>init</c> (a <see cref="TypeStyle"/>) made it write <c>Fluid = Fluid;</c>, which
+    /// does not compile: so a slot could carry no type style. Walked here as the generator walks it, so a
+    /// theme put back on the options fails by name.
+    /// </summary>
+    [Fact]
+    public void TheBoundOptions_ReachNoTheme()
+    {
+        var reached = new HashSet<Type>();
+        var pending = new Queue<Type>([typeof(PhotonOptions)]);
+        while (pending.TryDequeue(out var type))
+        {
+            if (!reached.Add(type)) continue;
+            var next = type.IsGenericType ? type.GetGenericArguments()
+                : type.IsArray ? [type.GetElementType()!]
+                : type.Namespace?.StartsWith("eQuantic", StringComparison.Ordinal) == true
+                    ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(property => property.PropertyType).ToArray()
+                    : [];
+            foreach (var reachedType in next) pending.Enqueue(Nullable.GetUnderlyingType(reachedType) ?? reachedType);
+        }
+
+        reached.Where(type => typeof(IAppTheme).IsAssignableFrom(type) || type == typeof(TypeStyle))
+            .Should().BeEmpty("the theme is chosen with UseTheme, and the binder walks nothing it holds");
     }
 
     /// <summary>

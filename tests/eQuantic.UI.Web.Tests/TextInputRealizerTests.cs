@@ -67,13 +67,14 @@ public class TextInputRealizerTests
         var description = node.Children[1];
         description.Tag.Should().Be("span");
         description.Attributes["class"].Should().Be("eq-desc");
-        description.Attributes["aria-live"].Should().Be("polite");
+        description.Attributes["hidden"].Should().Be("", "the twin is the field's description, no line of the page (#1332)");
+        description.Attributes.Should().NotContainKey("aria-live", "the component's message line is the live region");
         description.Attributes.Should().NotContainKey("id", "no description was authored");
         input.Attributes.Should().NotContainKey("aria-describedby");
     }
 
     [Fact]
-    public void TextEntry_Description_IsAssociated_AndAnnouncesSwaps()
+    public void TextEntry_Description_IsAssociated_AndHiddenFromThePage()
     {
         var node = Render(new TextEntry("") { Description = "We never share it." });
 
@@ -82,7 +83,7 @@ public class TextInputRealizerTests
         var id = description.Attributes["id"];
         id.Should().StartWith("eq-desc-");
         input.Attributes["aria-describedby"].Should().Be(id);
-        description.Attributes["aria-live"].Should().Be("polite");
+        description.Attributes["hidden"].Should().Be("", "aria-describedby reads an element it names however hidden");
         SpanText(description).Should().Be("We never share it.");
         input.Attributes.Should().NotContainKey("aria-invalid", "a described field is not thereby invalid");
     }
@@ -135,9 +136,11 @@ public class TextInputRealizerTests
             "the container shows focus — the input itself is chrome-less");
         css.Should().Contain("::placeholder { color: var(--eq-color-placeholder); opacity: 1; }",
             "an entry's placeholder is the document's, in the theme's Placeholder (#1038)");
-        css.Should().Contain(".eq-desc, .eq-announcement { position: absolute;",
-            "the description twin and a surface's announcement are clipped, not display:none — hidden " +
-            "targets read for describedby but only a rendered one announces as a live region (#1081)");
+        css.Should().Contain(".eq-announcement { position: absolute;",
+            "a surface's announcement is clipped, not display:none: only a rendered region announces " +
+            "as a live region (#1081)");
+        css.Should().NotContain(".eq-desc",
+            "the description twin is hidden, no line of the page and no live region (#1332)");
     }
 
     [Fact]
@@ -196,9 +199,14 @@ public class TextInputRealizerTests
             n.Tag == "span" && n.Attributes.GetValueOrDefault("id") == descriptionId)!;
         description.Should().NotBeNull();
         description.Attributes["class"].Should().Be("eq-desc");
-        description.Attributes["aria-live"].Should().Be("polite");
+        description.Attributes["hidden"].Should().Be("");
         SpanText(description).Should().Be("Enter a valid email address.",
             "what the screen reader hears is exactly what the sighted user reads");
+
+        // The visible line is the live region, and the one copy a reader walking the page meets (#1332).
+        var line = Find(node, n => n.Attributes.GetValueOrDefault("role") == "status")!;
+        line.Attributes["aria-live"].Should().Be("polite");
+        SpanText(Find(line, n => n.Tag == "span")!).Should().Be("Enter a valid email address.");
     }
 
     [Fact]

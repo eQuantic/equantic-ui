@@ -18,7 +18,7 @@
 </button>
 <button aria-label="Search" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1fdhaeb eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-bo3n4y eq-cjx69j eq-ewlixa eq-kngwsg eq-m92pvu">
-<div class="eq-17a2pwz eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-e3wn64 eq-g7fowl eq-a51p1u">
+<div class="eq-17a2pwz eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-e3wn64 eq-g7fowl eq-1ja8g65">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-lgp7n6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
@@ -31,7 +31,7 @@
 </button>
 <button aria-label="Saved" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1fdhaeb eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-bo3n4y eq-cjx69j eq-ewlixa eq-kngwsg eq-m92pvu">
-<div class="eq-17a2pwz eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-e3wn64 eq-g7fowl eq-a51p1u">
+<div class="eq-17a2pwz eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-e3wn64 eq-g7fowl eq-1ja8g65">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-lgp7n6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 <path d="m12 21.35-1.45-1.32C5.4 15.36 2 12.28 2 8.5A5.45 5.45 0 0 1 7.5 3 5.9 5.9 0 0 1 12 5.09 5.9 5.9 0 0 1 16.5 3 5.45 5.45 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.54zM12 18.65C16.86 14.24 20 11.39 20 8.5A3.45 3.45 0 0 0 16.5 5c-1.54 0-3.04.99-3.56 2.36h-1.87C10.54 5.99 9.04 5 7.5 5A3.45 3.45 0 0 0 4 8.5c0 2.89 3.14 5.74 8 10.15z">
@@ -61,6 +61,7 @@
 .eq-1gudvpj{min-height:0}
 .eq-1h2zrd3{color:var(--eq-color-primary-on-subtle, light-dark(#003e7e, #a8cdf2))}
 .eq-1imlfss{cursor:pointer}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-1ja8g65:not(:where(.eq-pressable:not(:active) .eq-1ja8g65)){background-color:light-dark(#e8f1fa66, #0f274066)}
 .eq-1jjc6f6{height:100%}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -72,7 +73,6 @@
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
 .eq-96qelu{height:20px}
-.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
 .eq-bo3n4y{flex-shrink:0}
@@ -140,7 +140,7 @@ NavigationRail 0 0 80x800
 </button>
 <button aria-label="Search" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1fdhaeb eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-bo3n4y eq-cjx69j eq-ewlixa eq-kngwsg eq-m92pvu">
-<div class="eq-17a2pwz eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-e3wn64 eq-g7fowl eq-a51p1u">
+<div class="eq-17a2pwz eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-e3wn64 eq-g7fowl eq-1ja8g65">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-lgp7n6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
@@ -153,7 +153,7 @@ NavigationRail 0 0 80x800
 </button>
 <button aria-label="Saved" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1fdhaeb eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-bo3n4y eq-cjx69j eq-ewlixa eq-kngwsg eq-m92pvu">
-<div class="eq-17a2pwz eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-e3wn64 eq-g7fowl eq-a51p1u">
+<div class="eq-17a2pwz eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-e3wn64 eq-g7fowl eq-1ja8g65">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-lgp7n6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 <path d="m12 21.35-1.45-1.32C5.4 15.36 2 12.28 2 8.5A5.45 5.45 0 0 1 7.5 3 5.9 5.9 0 0 1 12 5.09 5.9 5.9 0 0 1 16.5 3 5.45 5.45 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.54zM12 18.65C16.86 14.24 20 11.39 20 8.5A3.45 3.45 0 0 0 16.5 5c-1.54 0-3.04.99-3.56 2.36h-1.87C10.54 5.99 9.04 5 7.5 5A3.45 3.45 0 0 0 4 8.5c0 2.89 3.14 5.74 8 10.15z">
@@ -183,6 +183,7 @@ NavigationRail 0 0 80x800
 .eq-1gudvpj{min-height:0}
 .eq-1h2zrd3{color:var(--eq-color-primary-on-subtle, light-dark(#003e7e, #a8cdf2))}
 .eq-1imlfss{cursor:pointer}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-1ja8g65:not(:where(.eq-pressable:not(:active) .eq-1ja8g65)){background-color:light-dark(#e8f1fa66, #0f274066)}
 .eq-1jjc6f6{height:100%}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -194,7 +195,6 @@ NavigationRail 0 0 80x800
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
 .eq-96qelu{height:20px}
-.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
 .eq-bo3n4y{flex-shrink:0}
