@@ -307,6 +307,47 @@ public class InheritedComponentTests
             "a density switch rebuilt every component until the components that read it were known");
     }
 
+    /// <summary>Reads the route, which a frame hands every build.</summary>
+    private sealed class RouteReader(Log log) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            log.Entries.Add($"slug {context.Route.Param("slug")}");
+            return new Text("route", TypeRole.BodyM);
+        }
+    }
+
+    private static ComponentContext Routed(string slug) => new(PhotonTheme.Instance,
+        route: new RouteValues(new Dictionary<string, string> { ["slug"] = slug }, null));
+
+    /// <summary>
+    /// A navigation within one page type builds what read the route and nothing else (#1395): the route
+    /// is the frame's, as the theme is, and its readers are kept apart from the theme's, so neither a
+    /// reader of the density nor a component that read nothing builds again.
+    /// </summary>
+    [Fact]
+    public void ARouteChange_BuildsWhatReadsIt_AndNothingElse()
+    {
+        var log = new Log();
+        var root = new Column { new RouteReader(log), new DensityReader(log), new Bystander(log) };
+        var owner = ComponentBoundary.Owner();
+        Frame(owner, root, rebuildAll: true, context: Routed("first"));
+        log.Entries.Should().Equal("slug first", "density Comfortable", "bystander");
+
+        log.Entries.Clear();
+        Frame(owner, root, context: Routed("second"));
+
+        log.Entries.Should().Equal(["slug second"], "the route has readers of its own");
+    }
+
+    /// <summary>A frame's context answers the route it was handed, and an empty one when none was.</summary>
+    [Fact]
+    public void AFramesContext_AnswersTheRouteItWasHanded()
+    {
+        Routed("doc").Route.Param("slug").Should().Be("doc");
+        new ComponentContext(PhotonTheme.Instance).Route.Should().BeSameAs(RouteValues.Empty);
+    }
+
     /// <summary>Keeps the context it was handed, as a handler does.</summary>
     private sealed class Keeper : StatelessComponent
     {

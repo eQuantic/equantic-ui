@@ -6,9 +6,13 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { StatefulComponent } from '../core/component';
-import type { ComponentContext } from './photon-context';
+import { ComponentContext } from './photon-context';
+import { BuildOwner } from './components/BuildOwner';
+import { photonTheme } from './design-system.generated';
+import { RouteValues } from './route-values';
 import { Column, InheritedComponent, Text } from './vocabulary';
 import type { VisualNodeValue } from './nodes';
+import type { VisualNode } from './vocabulary';
 
 const nextFrame = () =>
   new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
@@ -114,5 +118,43 @@ describe('an inherited value in the browser', () => {
 
     expect(container.textContent).toContain('score 1');
     expect(builds, 'the holder and the one that depends on its value').toEqual({ holder: 1, reader: 1 });
+  });
+});
+
+describe('the route in the browser', () => {
+  /** Reads the route, which the frame hands every build. */
+  class RouteReader extends StatefulComponent {
+    build(context: unknown): VisualNodeValue {
+      built('route');
+      return new Text(`slug ${(context as ComponentContext).route.param('slug')}`, 'label') as unknown as VisualNodeValue;
+    }
+  }
+
+  /** Reads the density. */
+  class DensityReader extends StatefulComponent {
+    build(context: unknown): VisualNodeValue {
+      built('density');
+      return new Text(`density ${(context as ComponentContext).density}`, 'label') as unknown as VisualNodeValue;
+    }
+  }
+
+  const frame = (slug: string) =>
+    new ComponentContext(photonTheme, 1, 'comfortable', undefined, new RouteValues({ slug }, null));
+
+  it('builds what read the route when the frame hands another, and nothing else (#1395)', () => {
+    const owner = new BuildOwner((component, context) => component.build(context) as unknown as VisualNode);
+    const column = new Column(0);
+    column.add(new RouteReader() as never);
+    column.add(new DensityReader() as never);
+    column.add(new Bystander() as never);
+    owner.build(column as unknown as VisualNode, frame('first') as never, 'compact', true);
+    owner.endFrame();
+    expect(builds).toEqual({ route: 1, density: 1, bystander: 1 });
+
+    builds = {};
+    owner.build(column as unknown as VisualNode, frame('second') as never, 'compact', false);
+    owner.endFrame();
+
+    expect(builds, 'the route has readers of its own').toEqual({ route: 1 });
   });
 });

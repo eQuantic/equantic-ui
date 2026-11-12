@@ -5,15 +5,15 @@
 
 ## 2. The route is the frame's
 
-- [ ] 2.1 `ComponentContext` takes the frame's route; a position reads it through its owner, which keeps the route's readers apart from the frame's
-- [ ] 2.2 The server hands its request's route to the owner it draws with and registers `RouteValues` per request; `RouteValues.Current` goes
-- [ ] 2.3 The browser hands the router's route to its page context, and a position reads its owner's; the runtime's ambient goes
-- [ ] 2.4 An escape-hatch page's bridges are drawn with its route
-- [ ] 2.5 A navigation within one page type rebuilds what read the route and nothing else, on both sides
+- [x] 2.1 `ComponentContext` takes the frame's route; a position reads it through its owner, which keeps the route's readers apart from the frame's
+- [x] 2.2 The server hands its request's route to the owner it draws with and registers `RouteValues` per request; `RouteValues.Current` goes
+- [x] 2.3 The browser hands the router's route to its page context, and a position reads its owner's; the runtime's ambient goes
+- [x] 2.4 An escape-hatch page's bridges are drawn with its route
+- [x] 2.5 A navigation within one page type rebuilds what read the route and nothing else, on both sides
 
 ## 3. InFlow and the theme
 
-- [ ] 3.1 `InFlow.Current` goes: the web visitor builds a component it expands without a position with its own flag
+- [x] 3.1 `InFlow.Current` goes: the web visitor builds a component it expands without a position with its own flag
 - [ ] 3.2 `Theme`, the vocabulary's inherited theme, and `context.Theme` reads the nearest one above, or the frame's
 
 ## 4. Proof and documentation
