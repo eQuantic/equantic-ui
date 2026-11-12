@@ -125,17 +125,20 @@ public static class RuntimeProvidedTypeScanner
     private static bool IsValueUse(SimpleNameSyntax name, ISymbol? symbol, SemanticModel model)
     {
         if (symbol is IMethodSymbol) return true;
-        // The name as written, qualified or not: `ComponentContext`, `Primitives.ComponentContext`.
+        // The name as written, qualified or not: `ComponentContext`, `Primitives.ComponentContext`, which is a
+        // qualified name in a type's place and a member access in an expression's.
         SyntaxNode written = name;
-        while (written.Parent is QualifiedNameSyntax qualified && qualified.Right == written) written = qualified;
+        while (written.Parent is QualifiedNameSyntax qualified && qualified.Right == written
+               || written.Parent is MemberAccessExpressionSyntax qualifying && qualifying.Name == written)
+            written = written.Parent;
         try
         {
             return written.Parent switch
             {
                 ObjectCreationExpressionSyntax creation when creation.Type == written =>
                     model.GetOperation(creation) is IObjectCreationOperation,
-                MemberAccessExpressionSyntax access when access.Expression == written =>
-                    model.GetSymbolInfo(access).Symbol is { IsStatic: true },
+                // A member the access binds, or every candidate of an overload it could not settle alone.
+                MemberAccessExpressionSyntax access when access.Expression == written => StaticMember(model.GetSymbolInfo(access)),
                 _ => false,
             };
         }
@@ -143,6 +146,9 @@ public static class RuntimeProvidedTypeScanner
         {
             return false;
         }
+
+        static bool StaticMember(SymbolInfo bound) =>
+            bound.Symbol is { } member ? member.IsStatic : bound.CandidateSymbols is [_, ..] candidates && candidates.All(candidate => candidate.IsStatic);
     }
 
     /// <summary>Walks every identifier under <paramref name="root"/>, resolving symbols through
