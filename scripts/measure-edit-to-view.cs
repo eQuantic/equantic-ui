@@ -116,6 +116,20 @@ try
         await Until(() => Task.FromResult(lines.Any(l => l.Text.Contains("dotnet watch", StringComparison.Ordinal)
             && l.Text.Contains("Waiting for changes", StringComparison.Ordinal))), TimeSpan.FromMinutes(10), "the app did not start");
         await Task.Delay(TimeSpan.FromSeconds(5));
+        if (Environment.GetEnvironmentVariable("EQ_SETTLE") == "1")
+        {
+            // Throwaway (#1473 round 11): the first edit waits for the machine to come down from the build.
+            var settleFrom = Now();
+            double Load()
+            {
+                using var sysctl = Process.Start(new ProcessStartInfo("sysctl", "-n vm.loadavg") { RedirectStandardOutput = true })!;
+                var text = sysctl.StandardOutput.ReadToEnd();
+                sysctl.WaitForExit();
+                return double.Parse(text.Trim('{', '}', ' ', '\n').Split(' ', StringSplitOptions.RemoveEmptyEntries)[0], CultureInfo.InvariantCulture);
+            }
+            while (Load() >= 15 && Now() - settleFrom < 240_000) await Task.Delay(TimeSpan.FromSeconds(5));
+            Console.WriteLine($"settled for {(Now() - settleFrom) / 1000:F0}s, load {Load()}");
+        }
     }
 
     for (var run = 1; run <= runs; run++)

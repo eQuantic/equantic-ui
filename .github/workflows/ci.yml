@@ -6,30 +6,26 @@ permissions:
 jobs:
   desktop:
     runs-on: macos-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
-        side: [indexing, noindexing]
+        side: [settle, nosettle]
         attempt: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-      - name: Spotlight stops indexing the runner before anything is built
-        if: matrix.side == 'noindexing'
-        shell: bash
-        run: |
-          sudo mdutil -a -i off
-          sudo mdutil -a -s | tee /dev/stderr | grep -q 'Indexing disabled'
       - name: Build the desktop sample
         run: dotnet build samples/PhotonDesktop
       - name: Edit to view on the desktop, shipped live
         shell: bash
-        timeout-minutes: 10
+        timeout-minutes: 15
         env:
           EQ_EDIT_TO_VIEW_ECHO: "1"
+          EQ_SETTLE: ${{ matrix.side == 'settle' && '1' || '0' }}
           LOG_BRANCH: test/desktop-edit-log-${{ github.run_id }}-${{ matrix.side }}-${{ matrix.attempt }}
         run: |
           set -uo pipefail
