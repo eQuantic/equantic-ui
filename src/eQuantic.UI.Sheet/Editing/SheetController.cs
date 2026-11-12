@@ -119,6 +119,7 @@ public sealed class SheetController : ISheetSurfaceModel
     private void Restore(SheetSelection selection)
     {
         _others.Clear();
+        _tabRun = null;
         for (var i = 0; i < selection.Ranges.Count - 1; i++) _others.Add(selection.Ranges[i]);
         _selection = selection.Range;
         _active = selection.Active;
@@ -778,13 +779,14 @@ public sealed class SheetController : ISheetSurfaceModel
         cell = Document.Clamp(cell);
         var old = Document.GetCell(cell);
         if (old == value) return false;
+        var selected = Selected();
         var edit = new SheetEdit
         {
             Kind = SheetEditKind.SetCells,
             Before = new List<SheetCellSnapshot> { new(cell, old) },
             After = new List<SheetCellSnapshot> { new(cell, value) },
-            SelectionBefore = Selected(),
-            SelectionAfter = Selected(),
+            SelectionBefore = selected,
+            SelectionAfter = selected,
         };
         Document.SetCell(cell, value);
         Commit(edit);
@@ -801,11 +803,12 @@ public sealed class SheetController : ISheetSurfaceModel
 
     private bool FillRanges(string value)
     {
+        var selected = Selected();
         var edit = new SheetEdit
         {
             Kind = SheetEditKind.SetCells,
-            SelectionBefore = Selected(),
-            SelectionAfter = Selected(),
+            SelectionBefore = selected,
+            SelectionAfter = selected,
         };
         foreach (var range in Ranges)
         {
@@ -871,14 +874,15 @@ public sealed class SheetController : ISheetSurfaceModel
         if (Math.Abs(old - size) < 0.01f) return;
         if (axis == SheetAxis.Rows) Document.SetRowHeight(index, size);
         else Document.SetColWidth(index, size);
+        var selected = Selected();
         Commit(new SheetEdit
         {
             Kind = axis == SheetAxis.Rows ? SheetEditKind.ResizeRow : SheetEditKind.ResizeCol,
             At = index,
             OldSize = old,
             NewSize = axis == SheetAxis.Rows ? Document.RowHeight(index) : Document.ColWidth(index),
-            SelectionBefore = Selected(),
-            SelectionAfter = Selected(),
+            SelectionBefore = selected,
+            SelectionAfter = selected,
         });
     }
 

@@ -263,6 +263,7 @@ export class SheetController {
 
     restore(selection: SheetSelection) {
         this._others.splice(0);
+        this._tabRun = null;
         for (let i = 0; i < $eq.collections.count(selection.ranges) - 1; i++) this._others.push($eq.collections.item(selection.ranges, i));
         this._selection = selection.range;
         this._active = selection.active;
@@ -636,8 +637,9 @@ export class SheetController {
         cell = this.document.clamp(cell);
         let old = this.document.getCell(cell);
         if (old === value) return false;
+        let selected = this.selected();
         let $n1: SheetEdit; 
-        let edit = ($n1 = new SheetEdit(), $n1.kind = 'setCells', $n1.before = [new SheetCellSnapshot(cell, old)], $n1.after = [new SheetCellSnapshot(cell, value)], $n1.selectionBefore = this.selected(), $n1.selectionAfter = this.selected(), $n1);
+        let edit = ($n1 = new SheetEdit(), $n1.kind = 'setCells', $n1.before = [new SheetCellSnapshot(cell, old)], $n1.after = [new SheetCellSnapshot(cell, value)], $n1.selectionBefore = selected, $n1.selectionAfter = selected, $n1);
         this.document.setCell(cell, value);
         this.commit(edit);
         return true;
@@ -652,8 +654,9 @@ export class SheetController {
     }
 
     fillRanges(value: string) {
+        let selected = this.selected();
         let $n2: SheetEdit; 
-        let edit = ($n2 = new SheetEdit(), $n2.kind = 'setCells', $n2.selectionBefore = this.selected(), $n2.selectionAfter = this.selected(), $n2);
+        let edit = ($n2 = new SheetEdit(), $n2.kind = 'setCells', $n2.selectionBefore = selected, $n2.selectionAfter = selected, $n2);
         for (const range of this.ranges) {
             for (let row = range.topRow; row <= range.bottomRow; row++) {
                 for (let col = range.leftCol; col <= range.rightCol; col++) {
@@ -693,8 +696,9 @@ export class SheetController {
         let old = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index);
         if (Math.abs(Math.fround(old - size)) < Math.fround(0.01)) return;
         if (axis === 'rows') this.document.setRowHeight(index, size); else this.document.setColWidth(index, size);
+        let selected = this.selected();
         let $n5: SheetEdit; 
-        this.commit(($n5 = new SheetEdit(), $n5.kind = axis === 'rows' ? 'resizeRow' : 'resizeCol', $n5.at = index, $n5.oldSize = old, $n5.newSize = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index), $n5.selectionBefore = this.selected(), $n5.selectionAfter = this.selected(), $n5));
+        this.commit(($n5 = new SheetEdit(), $n5.kind = axis === 'rows' ? 'resizeRow' : 'resizeCol', $n5.at = index, $n5.oldSize = old, $n5.newSize = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index), $n5.selectionBefore = selected, $n5.selectionAfter = selected, $n5));
     }
 
     copyText() {
