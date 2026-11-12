@@ -46,9 +46,14 @@ public class NamespaceRemovalStrategy : IConversionStrategy
         // while `Fold.Text(n)` under a using imported it. A namespace reached through another is only
         // stripped, and a type with no JavaScript value (an interface, an enum) or one the runtime ships no
         // twin for (host-only) is left to the strategies that handle it however it is spelled.
+        // Written by the name it is imported by, its twin's: `App.Util.Math.Family()` wrote `Math.family()`
+        // under an import of `Math$` (#890).
         if (context.SemanticHelper.GetSymbol(memberAccess) is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } type
             && !type.IsHostOnly() && type.HasTwin())
+        {
             type.RegisterIntroduced(context);
+            return type.TwinReference();
+        }
         // ValueText, as every other name: a verbatim `@Shelf` is `Shelf`.
         return memberAccess.Name.Identifier.ValueText;
     }
