@@ -72,22 +72,3 @@ uses it or not. #1341's file saver is the plainest case: in proportion with what
 by pages that never offer a file. That is the design, not a defect of any one pull request, and the
 budget is what makes each such cost a decision: past 1% of the record a change fails the test and has
 to record the budget again, saying what the bytes bought.
-
-## Since the record of #1405
-
-#1405 recorded 328,530 bytes, measured on a `main` that did not have #1482 yet; its own merge
-(28a4f7fb0), over a `main` that did, measures 329,095. #1482 grew the bundle by 577 bytes (322,053 to
-322,630), which accounts for the gap. From that merge, the bundle was measured as above at every
-first-parent commit of `main` that touched a source of it, and #1458 over `main` at 1973005e6, the
-state that crossed the ceiling, floor(328,530 × 1.01) = 331,815. #1499 touched no source of it.
-
-| Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
-|---|---|---:|---:|---:|---:|---|---|
-| #1497 | f297815d4 | 329,095 | 329,524 | +429 | +963 | a gesture on the web reads the space its surface's offset moves in | yes |
-| #1408 | 1973005e6 | 329,524 | 331,014 | +1,490 | +5,842 | a theme slot reaches a component in order, crosses to the browser, and the Button and the control ladder read theirs | yes |
-| #1458 | | 331,014 | 331,839 | +825 | +2,595 | a table takes what is left of its scroller, measured on both targets | yes |
-| **all** | | **329,095** | **331,839** | **+2,744** | **+9,400** | | |
-
-#1458 took the bundle 24 bytes over the ceiling, and recorded the budget again at 331,839. Each growth
-is in line with what its pull request delivered: #1408 is a feature every page with a themed control
-uses, and the other two are the code of the behaviour they fix.
