@@ -21,3 +21,5 @@ override eQuantic.UI.Sheet.SheetSelection.GetHashCode() -> int
 override eQuantic.UI.Sheet.SheetSelection.ToString() -> string!
 static eQuantic.UI.Sheet.SheetSelection.operator !=(eQuantic.UI.Sheet.SheetSelection? left, eQuantic.UI.Sheet.SheetSelection? right) -> bool
 static eQuantic.UI.Sheet.SheetSelection.operator ==(eQuantic.UI.Sheet.SheetSelection? left, eQuantic.UI.Sheet.SheetSelection? right) -> bool
+eQuantic.UI.Sheet.SheetFormulaBar.Reading.get -> eQuantic.UI.Primitives.TextReading
+eQuantic.UI.Sheet.SheetNameBox.Reading.get -> eQuantic.UI.Primitives.TextReading

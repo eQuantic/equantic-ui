@@ -915,6 +915,14 @@ export interface SurfaceRectLike {
   readonly height: number;
 }
 
+/** The C# `TextReading`: the text a reader hears as a field's value, and the selection in it, in UTF-16
+ * code units of that text. */
+export interface TextReadingLike {
+  readonly text: string;
+  readonly anchor: number;
+  readonly focus: number;
+}
+
 /**
  * The C# `ICodeSurfaceModel`, member for member: what a realizer may TELL the engine and ASK it.
  * The transpiled controller satisfies it structurally. Nothing here turns a column into pixels or
@@ -927,6 +935,8 @@ export interface CodeSurfaceModelLike {
   readonly revealVersion: number;
   /** Changes whenever the surface should take the keyboard; remembered per model, from 0. */
   readonly focusVersion: number;
+  /** What a screen reader hears the surface hold, and where its caret stands in it (#1333). */
+  readonly reading: TextReadingLike;
   handleKey(
     key: string,
     modifiers: number,

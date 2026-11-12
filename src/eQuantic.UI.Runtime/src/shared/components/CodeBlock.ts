@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeFold, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, CodeTokenKindValue, ColorToken, Column, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeFold, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, CodeTokenKindValue, ColorToken, Column, ControlMetrics, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -235,7 +235,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static metricsFor(context: BuildContext, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
-        let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
+        let style = $eq.withPatch(TypeStyle.ofSize(ControlMetrics.labelSize(context, size), 'regular'), { mono: true });
         let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText($eq.text.format(lastLineNumber, null, undefined, undefined, 'int32') + '0', style)) + 12) : 0;
         return new CodeBlock$CodeMetrics(style, $eq.math.roundSingle(Math.fround(style.lineHeight * Math.fround(1.15))), context.monoAdvance(style), gutter);
     }
