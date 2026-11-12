@@ -82,14 +82,14 @@ def created_branches(command: str, cwd: str = ".") -> list[tuple[str, str]]:
         while words and (words[0] in WRAPPERS or ASSIGNMENT.match(words[0])):
             words = words[1:]
         if len(words) == 2 and words[0] in ("cd", "pushd"):
-            cwd = os.path.join(cwd, words[1])
+            cwd = os.path.join(cwd, os.path.expanduser(words[1]))
             continue
         if not words or words[0] != "git":
             continue
         words, at = words[1:], cwd
         while words and words[0].startswith("-"):
             if words[0] == "-C" and len(words) > 1:
-                at, words = os.path.join(at, words[1]), words[2:]
+                at, words = os.path.join(at, os.path.expanduser(words[1])), words[2:]
             elif words[0] == "-c":
                 words = words[2:]
             elif words[0].startswith(("--git-dir", "--work-tree")):
@@ -196,6 +196,9 @@ def refusals_in_a_repository() -> list[str]:
             ("git switch -c claude/x", ours, 2),
             (f"cd {ours} && git switch -c claude/x", other, 2),
             (f"git -C {ours} checkout -b wip", other, 2),
+            ("cd ~/ours && git switch -c claude/x", other, 2),  # the home is the temporary folder here
+            ("git -C ~/ours switch -c claude/x", other, 2),
+            ("git -C ~/other switch -c claude/x", ours, 0),
             ("git switch -c fix/a-good-name", ours, 0),
             ("git checkout -B main", ours, 0),  # it exists: reset, not named
             ("git switch -c claude/x", other, 0),
@@ -205,7 +208,7 @@ def refusals_in_a_repository() -> list[str]:
         for command, cwd, expected in runs:
             call = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": cwd})
             ran = subprocess.run([sys.executable, os.path.abspath(__file__)], input=call, text=True,
-                                 capture_output=True, env={**os.environ, "CLAUDE_PROJECT_DIR": ours})
+                                 capture_output=True, env={**os.environ, "CLAUDE_PROJECT_DIR": ours, "HOME": temp})
             if ran.returncode != expected or (expected == 2 and "<type>/<slug>" not in ran.stderr):
                 failures.append(f"{command!r} in {os.path.basename(cwd)}: exit {ran.returncode}, expected {expected}")
         ran = subprocess.run([sys.executable, os.path.abspath(__file__)], input="not json", text=True,
