@@ -128,3 +128,16 @@
  1983   0.5   1600 /bin/bash
  2192   0.4   7344 /usr/libexec/taskgated
   disk:     4.41 1501  6.47     0.00    0  0.00     0.00    0  0.00 
+--- sample 19:03:58 load: { 16.90 28.16 14.69 } System-wide memory free percentage: 78%
+165 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2065 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+2066 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+2151 /Users/runner/.dotnet/dotnet run --no-build -e DOTNET_WATCH=1 -e DOTNET_WATCH_ITERATION=1 -e DOTNET_MODIFIABLE_ASSE
+2155 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  app 2155: 62 MB 3440 KB 0 B 0 B 156 IOAccelerator (graphics)
+ 3937   8.6  26896 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 3962   8.4  19136 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 1130   8.3   6528 /usr/libexec/sysmond
+ 3963   7.7  19040 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 3947   7.7  27200 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+  disk:     8.62  429  3.61     0.00    0  0.00     0.00    0  0.00 
