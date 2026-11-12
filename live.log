@@ -7,3 +7,13 @@
   489  15.7 276944 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
  1760  15.6  33216 /usr/sbin/spindump
  1001  14.6  68032 /System/Library/PrivateFrameworks/SiriInference.framework/Versions/A/siriinferenced
+=== alive 10:23:09 app running: 2341
+--- sample 10:23:15 load: { 46.21 43.12 19.76 } System-wide memory free percentage: 83%
+156 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2319 dotnet run --no-build --project samples/PhotonDesktop
+2341 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 1666  65.4  68576 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
+  284  17.5  97200 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  368  14.8  89600 /System/Library/PrivateFrameworks/VoiceShortcuts.framework/Versions/A/Support/siriactionsd
+  415  14.2  31744 /System/Library/PrivateFrameworks/AXAssetLoader.framework/Support/axassetsd
+  113   8.4  10640 /usr/libexec/warmd
