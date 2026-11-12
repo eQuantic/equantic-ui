@@ -10,6 +10,7 @@ import { round as dotnetRound } from '../utils/dotnet-math';
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 import type { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
+import type { ButtonTheme, ControlsTheme } from './theme-slots';
 import { hashesByValue } from '../utils/hash';
 import { FontWeightNumbers, type FontWeightValue } from './enums.generated';
 
@@ -600,6 +601,10 @@ export interface AppTheme {
   data: DataPalette;
   /** The spreadsheet's slot (C# `IAppTheme.Sheet`), absent or null for its own colours. */
   sheet?: SheetTheme | null;
+  /** The control ladder (C# `IAppTheme.Controls`), absent or null for `Sizing`'s. */
+  controls?: ControlsTheme | null;
+  /** The Button's slot (C# `IAppTheme.Button`), absent or null for its own defaults. */
+  button?: ButtonTheme | null;
   disabledOpacity: number;
   /**
    * The face this theme sets CODE in (C# `IAppTheme.MonoFamily`), or undefined for the platform's

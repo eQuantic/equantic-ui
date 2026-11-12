@@ -220,7 +220,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:62  var height = Sizing.Height(Size, context.Density);   //  vs EmitVisitor.Interaction.cs:204  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
+  Button.cs:63  var height = ControlMetrics.Height(context, Size, ladder);   //  vs EmitVisitor.Interaction.cs:204  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
   ```
 
 ### A12 Button · behaviour · **unverified**
@@ -231,7 +231,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:527  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:4100  if (disabled && !wrapping) node.attributes['disabled'] = '';
+  Button.cs:82  var inert = Disabled || Loading;  → Button.cs:143 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:527  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:4100  if (disabled && !wrapping) node.attributes['disabled'] = '';
   ```
 
 ### A13 IconButton · semantics · **CONFIRMED**
@@ -253,7 +253,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:76  var side = Sizing.Height(Size, context.Density);  … IconButton.cs:124-126  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. EmitVisitor.Interaction.cs:204 which is the only place Touch.MinTarget is applied)
+  IconButton.cs:76  var side = ControlMetrics.Height(context, Size);  … IconButton.cs:124-126  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. EmitVisitor.Interaction.cs:204 which is the only place Touch.MinTarget is applied)
   ```
 
 ### B1 Card · missing-feature · **CONFIRMED**
@@ -406,7 +406,7 @@ the pill's 40 down.
   ```
   Chip.cs:100  var box = new Box(new BoxStyle
   Chip.cs:104      Background = fill,
-  Button.cs:133  Hover = inert || hoverFill is null ? null : new StyleDiff { Background = hoverFill },
+  Button.cs:137  Hover = inert || hoverFill is null ? null : new StyleDiff { Background = hoverFill },
   ```
 
 ### B9 TextInput · missing-feature · **CONFIRMED**
@@ -652,7 +652,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  SegmentedControl.cs:39  var height = Sizing.Height(Size, context.Density);
+  SegmentedControl.cs:39  var height = ControlMetrics.Height(context, Size);
   Tokens.cs:84  SizeVariant.Medium => density == Density.Compact ? 32 : 40,
   Tokens.cs:85  SizeVariant.Large => density == Density.Compact ? 40 : 48,
   ```
@@ -766,7 +766,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:47  var height = Sizing.Height(Size, context.Density);
+  Stepper.cs:47  var height = ControlMetrics.Height(context, Size);
   Stepper.cs:100  var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);
   Stepper.cs:70  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
   ```
@@ -1345,7 +1345,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:78  var inert = Disabled || Loading;   (Button.cs:49-51 doc: "The button reads disabled to assistive tech for the duration, which is the truth: it cannot be actioned.")
+  Button.cs:82  var inert = Disabled || Loading;   (Button.cs:49-51 doc: "The button reads disabled to assistive tech for the duration, which is the truth: it cannot be actioned.")
   ```
 
 ### A12 Button · behaviour · **CONFIRMED**
@@ -1947,7 +1947,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:100  if (Loading) content.Add(new Spinner(iconSize, textColor));
+  Button.cs:104  if (Loading) content.Add(new Spinner(iconSize, textColor));
   ```
 
 ### B16 Skeleton · behaviour · **CONFIRMED**
@@ -2159,12 +2159,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Dialog.cs`
 - **Handoff**: Destructive announced "…, destructive"
-- **Code**: No action label is ever suffixed. Dialog.cs:60 builds a plain Button with action.Label verbatim, and Button.cs:132 passes that same string as the Pressable's accessible name — Button.cs contains no occurrence of "destructive" at all. The only destructive signal is the layer's role escalation to alertdialog; the button itself sounds identical to a safe one.
+- **Code**: No action label is ever suffixed. Dialog.cs:60 builds a plain Button with action.Label verbatim, and Button.cs:144 passes that same string as the Pressable's accessible name — Button.cs contains no occurrence of "destructive" at all. The only destructive signal is the layer's role escalation to alertdialog; the button itself sounds identical to a safe one.
 - **Evidence**:
 
   ```
   Dialog.cs:60            actions.Add(new Button(action.Label, action.Variant, SizeVariant.Medium, action.OnPressed)
-  Button.cs:140            Label = Label,
+  Button.cs:144            Label = Label,
   ```
 
 ### C4 Toast · metric · **unverified**
@@ -2995,7 +2995,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:106-111  ColorToken? pressedFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:98 "(Link's pressed TEXT swap joins with rich text.)")
+  Button.cs:110-115  ColorToken? pressedFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:110 "(Link's pressed TEXT swap joins with rich text.)")
   ```
 
 ### A12 Button · documented-deviation · **CONFIRMED**
@@ -3006,7 +3006,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:116-121  ColorToken? hoverFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:107-108 "Link's hover is an underline, which joins when the style diff grows a text channel.")
+  Button.cs:120-125  ColorToken? hoverFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:119-120 "Link's hover is an underline, which joins when the style diff grows a text channel.")
   ```
 
 ### A12 Button · behaviour · **unverified**
@@ -3017,7 +3017,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:123-125  var container = new Box(new BoxStyle\n        {\n            Height = height,
+  Button.cs:127-129  var container = new Box(new BoxStyle\n        {\n            Height = height,
   ```
 
 ### A13 IconButton · documented-deviation · **CONFIRMED**
@@ -3170,7 +3170,7 @@ the pill's 40 down.
 
   ```
   Chip.cs:14  /// The design system's Chip / Tag (spec B8): height 32, Radius.Full, 12dp X padding, 13/600 label —
-  Chip.cs:102  Height = Sizing.Height(SizeVariant.Small, context.Density),
+  Chip.cs:102  Height = ControlMetrics.Height(context, SizeVariant.Small),
   Tokens.cs:83  SizeVariant.Small => density == Density.Compact ? 26 : 32,
   ```
 
@@ -3629,7 +3629,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:67-70  Height = Sizing.Height(SizeVariant.Medium, context.Density),
+  Select.cs:68-71  Height = ControlMetrics.Height(context, SizeVariant.Medium),
               Width = SizeValue.Fill,
               Padding = EdgeInsets.Symmetric(Space.S3, 0),
   TextInput.cs:22  Icons? leading = null, SizeVariant size = SizeVariant.Large)
