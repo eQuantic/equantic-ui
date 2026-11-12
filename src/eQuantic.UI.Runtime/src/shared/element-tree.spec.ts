@@ -9,7 +9,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StatefulComponent, StatelessComponent, resetComponentKeys } from '../core/component';
-import { AdaptiveNode, Column, Pressable, Text } from './vocabulary';
+import { AdaptiveNode, Column, Overlay, Pressable, Text } from './vocabulary';
 import type { VisualNodeValue } from './nodes';
 
 const nextFrame = () =>
@@ -181,7 +181,7 @@ describe('the browser builds through the element engine', () => {
       expect(server.textContent).toContain('second from the server');
     });
 
-    it('names a component by where it stands, so one type in two arms and after them keeps its own data', () => {
+    it('names a component by where it stands, so one type in two arms, after them and in a layer keeps its own data', () => {
       // The order the browser builds in is not the server's: the server names as its lowering meets a
       // component, and the browser has to hand the data over before one builds. A position is the same
       // on both sides, and every arm of an adaptive node is one on the web, whichever the window shows.
@@ -201,18 +201,20 @@ describe('the browser builds through the element engine', () => {
 
         build(): VisualNodeValue {
           const arms = new AdaptiveNode(new Probe() as never, null, new Probe() as never);
-          return column(arms, new Probe());
+          return column(arms, new Probe(), new Overlay(new Probe() as never));
         }
       }
+      // The keys the server writes for the same tree (ServerDataByPositionTests pins them there).
       win.__INITIAL_STATE__ = {
         'r0/App.Probe@0.0': { label: 'compact arm' },
         'r0/App.Probe@0.2': { label: 'expanded arm' },
         'r0/App.Probe@1': { label: 'after the arms' },
+        'r0/App.Probe@2.0': { label: 'in the layer' },
       };
 
       mount(new Page());
 
-      expect([...seen].sort()).toEqual(['after the arms', 'compact arm', 'expanded arm']);
+      expect([...seen].sort()).toEqual(['after the arms', 'compact arm', 'expanded arm', 'in the layer']);
     });
 
     it('hands a stateless component its data again when its parent builds a fresh one at the same position', async () => {

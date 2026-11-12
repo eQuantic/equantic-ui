@@ -1,4 +1,4 @@
-import { CodeDocument, CodeEditorController, CodeGrid, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect, SheetController, SheetEntryLanguage } from "../runtime-exports";
+import { CodeDocument, CodeEditorController, CodeGrid, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect, SheetController, SheetEntryLanguage, TextReading } from "../runtime-exports";
 
 export class SheetNameBox {
     constructor(sheet: SheetController) {
@@ -52,6 +52,10 @@ export class SheetNameBox {
 
     get focusVersion(): number {
         return this._focusVersion;
+    }
+
+    get reading(): TextReading {
+        return this.typing ? this._box.reading : new TextReading(this._sheet.activeCell.toA1(), 0, 0);
     }
 
     placed() {
