@@ -37,6 +37,19 @@ export function resetDraggableController(): void {
   document.removeEventListener('pointerdown', onPointerDown);
 }
 
+/**
+ * The surface's untransformed extent along the axis: its layout box, or, for an SVG element, which
+ * has no layout box of its own, the extent of what it draws in its own units. Neither holds a
+ * transform, the surface's own or an ancestor's.
+ */
+function ownExtent(surface: Element, horizontal: boolean): number {
+  if (surface instanceof HTMLElement) return horizontal ? surface.offsetWidth : surface.offsetHeight;
+  const graphics = surface as Partial<SVGGraphicsElement>;
+  if (typeof graphics.getBBox !== 'function') return 0;
+  const box = graphics.getBBox();
+  return horizontal ? box.width : box.height;
+}
+
 function onPointerDown(down: Event): void {
   const target = down.target as Element | null;
   const surface = target?.closest?.('[data-eq-drag]') as HTMLElement | null;
@@ -58,7 +71,7 @@ function onPointerDown(down: Event): void {
   // rect at its own `scale(.5)`, a 200px surface read its rest of 0.25 as 25px, not the 50px it sits
   // at, and jumped on the first move (#702), and under a quarter turn the rect's width is the
   // track's thickness (#1204).
-  const extent = horizontal ? surface.offsetWidth : surface.offsetHeight;
+  const extent = ownExtent(surface, horizontal);
 
   const space = gestureSpace(surface);
   const pointer = down as PointerEvent;

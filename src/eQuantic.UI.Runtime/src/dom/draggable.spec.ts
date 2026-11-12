@@ -264,6 +264,27 @@ describe('draggable controller', () => {
     expect(released).toEqual([40]);
   });
 
+  it('divides a normalized drag by what an SVG surface draws, which has no layout box', () => {
+    // An <svg> has no offsetWidth: read as one, the extent was undefined, the drag reported pixels
+    // as a fraction and wrote `translate: NaNpx`.
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('data-eq-drag', 'x');
+    svg.setAttribute('data-eq-drag-normalized', '1');
+    svg.setAttribute('data-eq-drag-min', '0');
+    svg.setAttribute('data-eq-drag-max', '1');
+    svg.setAttribute('data-eq-drag-rest', '0');
+    (svg as unknown as { getBBox: () => DOMRect }).getBBox = () => ({ width: 200, height: 40 }) as DOMRect;
+    const heard: number[] = [];
+    svg.addEventListener('eq-drag-released', (e) => heard.push((e as CustomEvent<number>).detail));
+    document.body.appendChild(svg);
+
+    at(svg, 'pointerdown', 100, 100);
+    move(140, 100);
+    expect((svg as unknown as ElementCSSInlineStyle).style.getPropertyValue('translate')).toBe('40px');
+    up(140, 100);
+    expect(heard).toEqual([0.2]);
+  });
+
   it('reports a fraction of its own extent when the gesture is normalized', () => {
     // A slider's track is fluid: the component cannot know its pixel width, and the DOM can.
     Object.defineProperty(surface, 'offsetWidth', { value: 200 });
