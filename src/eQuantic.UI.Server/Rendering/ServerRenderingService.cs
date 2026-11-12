@@ -820,9 +820,9 @@ public class ServerRenderingService : IServerRenderingService
         }
 
         // The path as the app writes it (Navigator.Location): the route a page declares and an in-app
-        // link names, so a layout compares it with the href it wrote. Neither the app's base nor the
-        // language segment is the app's to write, since a link gains the segment as it is drawn
-        // (UseCultureRoutes), and the browser's location answers the same path for the same page.
+        // link names, so a layout compares it with the href it wrote. The language segment is not the
+        // app's to write, since a link gains it as it is drawn (UseCultureRoutes), and the browser's
+        // location answers the same path for the same page.
         var path = context.Request.Path.Value;
         path = string.IsNullOrEmpty(path) ? "/" : path;
         if (cultureRoutes is not null) path = cultureRoutes.Split(path).Path;

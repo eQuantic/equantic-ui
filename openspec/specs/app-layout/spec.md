@@ -62,7 +62,7 @@ components SHALL unmount before the new page's mount.
 ### Requirement: A layout reads the location it shows
 
 `Navigator.Of(context).Location` SHALL answer the path of the page being shown as the app writes it,
-with no query, no base and no language segment: the request's path on the server, and the address
+with no query and no language segment: the request's path on the server, and the address
 bar's in the browser, updated before the layout builds for a navigation.
 
 #### Scenario: A page under a language segment

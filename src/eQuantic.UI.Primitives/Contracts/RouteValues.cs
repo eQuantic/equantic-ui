@@ -40,7 +40,7 @@ public sealed class RouteValues
 
     /// <summary>
     /// The path the route was matched on, as the app writes it: <c>/docs/getting-started</c>, with no
-    /// query, no fragment, no base and no language segment (a page served at <c>/pt-BR/docs</c> is at
+    /// query, no fragment and no language segment (a page served at <c>/pt-BR/docs</c> is at
     /// <c>/docs</c>, the path its in-app links name). What <see cref="Navigator.Location"/> answers, so
     /// a layout can mark the destination of the page it shows.
     /// </summary>

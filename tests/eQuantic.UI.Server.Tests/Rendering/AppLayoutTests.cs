@@ -143,13 +143,12 @@ public class AppLayoutTests
     {
         var options = Options(layout: true).UseCultureRoutes("en", "pt-BR");
         var context = Request("/pt-BR/layout/stats");
-        context.Request.PathBase = "/app";
 
         var result = await Service(options).RenderPageAsync(typeof(StatsPage), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("layout at /layout/stats",
-            "the language segment and the app's base are not the app's to write in an href");
+            "the language segment is not the app's to write in an href");
         result.Html.Should().NotContain("layout at /pt-BR");
     }
 
