@@ -520,7 +520,7 @@ public class RecordTypeEmitter
 
         // An INSTANCE INDEXER, as the methods every element access bound to it calls (#427). It was
         // written into no twin, and `new Grid()[3]` read a property named "3" that nothing had.
-        foreach (var indexer in type.Members.OfType<IndexerDeclarationSyntax>())
+        foreach (var indexer in type.TwinMembers().OfType<IndexerDeclarationSyntax>())
         {
             _converter.SetCurrentClass(name);
             foreach (var member in _lowering.Indexer(indexer, TsTypeOf)) sb.Append(Written(member));
@@ -583,28 +583,28 @@ public class RecordTypeEmitter
         // read NaN. A constant is its value wherever it stands, and never initializes.
         var ordered = TypeInitializer.Orders(type, ModelFor);
         _converter.SetCurrentClass(name);
-        foreach (var member in type.Members)
+        foreach (var member in type.TwinMembers())
         {
             if (member is FieldDeclarationSyntax constant && constant.Modifiers.Any(SyntaxKind.ConstKeyword))
                 foreach (var variable in constant.Declaration.Variables)
-                    sb.Append($"static {variable.Identifier.ValueText.ToCamelCase()} = "
+                    sb.Append($"static {variable.SlotOf(ModelFor(variable))} = "
                         + $"{(variable.Initializer is { } init ? StaticValue(init, constant.Declaration.Type) : DefaultOf(constant.Declaration.Type))}; ");
             else if (!ordered)
-                foreach (var store in TypeInitializer.StoresOf(member))
+                foreach (var store in TypeInitializer.StoresOf(member, ModelFor))
                 {
                     var value = store.Initializer is { } init ? StaticValue(init, store.Type) : DefaultOf(store.Type);
                     sb.Append($"static {store.Name}{NullStartAnnotation(value, store.Type)} = {value}; ");
                 }
         }
         if (ordered)
-            foreach (var member in TypeInitializer.Members(type, name, TypeInitializer.Collect(type, TsTypeOf, typeSyntax => DefaultOf(typeSyntax), StaticValue),
+            foreach (var member in TypeInitializer.Members(type, name, TypeInitializer.Collect(type, ModelFor, TsTypeOf, typeSyntax => DefaultOf(typeSyntax), StaticValue),
                          _converter, _lowering, _annotations, JsLayout.Compact))
                 sb.Append(Written(member));
 
         // PROPERTIES with a body — computed, on the instance (`Start => Anchor <= Focus ? … : …`)
         // or static (`static Foo Empty => …`, the factory idiom). A record is a value with
         // BEHAVIOUR; emitting only its positional members threw the behaviour away.
-        foreach (var property in type.Members.OfType<PropertyDeclarationSyntax>())
+        foreach (var property in type.TwinMembers().OfType<PropertyDeclarationSyntax>())
         {
             // An enumerator's explicit IEnumerator.Current beside its generic one holds its name (#612), and
             // so does a member an explicit property hands off to (#1139).
@@ -717,7 +717,7 @@ public class RecordTypeEmitter
         }
         foreach (var member in type.ValueMembers(null))
             if (type is RecordDeclarationSyntax && member.Declaration is ParameterSyntax) yield return (member.Display, null);
-        foreach (var member in type.Members)
+        foreach (var member in type.TwinMembers())
         {
             switch (member)
             {

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 
@@ -137,8 +138,31 @@ internal static class ChildProcess
                 if (value is null) info.Environment.Remove(name);
                 else info.Environment[name] = value;
             }
-        return Process.Start(info)!;
+        // A program a test has just written may be held open for writing by a process another test forked
+        // in that moment, until that process execs, and Linux refuses to start it meanwhile (ETXTBSY,
+        // "Text file busy"). It goes away by itself, so the start is tried again, on that error alone and
+        // for a bounded time (#1206).
+        var busySince = Stopwatch.GetTimestamp();
+        while (true)
+        {
+            try
+            {
+                return Process.Start(info)!;
+            }
+            catch (Win32Exception busy) when (busy.NativeErrorCode == TextFileBusy
+                && Stopwatch.GetElapsedTime(busySince) < BusyDeadline)
+            {
+                Thread.Sleep(10);
+            }
+        }
     }
+
+    /// <summary>The <c>errno</c> a start answers while the program is open for writing somewhere.</summary>
+    private const int TextFileBusy = 26;
+
+    /// <summary>How long a start waits for a program to be let go of: a forked process lets go when it
+    /// execs, which takes milliseconds, so ten seconds is a program something keeps writing.</summary>
+    private static readonly TimeSpan BusyDeadline = TimeSpan.FromSeconds(10);
 
     private static string Command(ProcessStartInfo info) => string.Join(' ', [info.FileName, .. info.ArgumentList]);
 }

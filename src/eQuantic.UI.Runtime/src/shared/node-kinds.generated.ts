@@ -1,6 +1,6 @@
 /**
  * GENERATED — do not edit. Every wire kind the C# vocabulary declares
- * (eQuantic.UI.Primitives, VisualNode.NodeKind), plus the expansion seam.
+ * (eQuantic.UI.Primitives, VisualNode.NodeKind), plus the abstract families' kinds.
  * Regenerate: EQ_UPDATE_NODE_KINDS_TS=1 dotnet test eQuantic.UI.Web.Tests
  * (NodeKindTsGeneratorTests pins this file byte-for-byte against the generator).
  *
@@ -15,4 +15,4 @@ export type NodeKind =
   | 'navigable' | 'overlay' | 'pinned' | 'positioned' | 'presence' | 'pressable' | 'progress'
   | 'row' | 'safeArea' | 'scrollView' | 'sheetSurface' | 'shortcut' | 'simulated' | 'spacer'
   | 'spinner' | 'stack' | 'tableViewCell' | 'tableViewport' | 'text' | 'textEntry' | 'vector'
-  | 'webFrame' | 'component';
+  | 'webFrame' | 'component' | 'inherited';

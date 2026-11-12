@@ -39,7 +39,7 @@ public class IdentifierStrategy : IExpressionIrStrategy
 
         // A nested type of the app's is its twin, named by its owner (#584): `Ops` inside Calc is
         // `Calc$Ops`, which a top-level `Ops` can never be.
-        if (symbol is INamedTypeSymbol nested && nested.NestedTwinName() is not null)
+        if (symbol is INamedTypeSymbol nested && nested.RenamedTwin() is not null)
             return JsExpr.Identifier(nested.IntroduceTwin(context));
 
         // A type named through a using alias is written by its own name and imported by it, as through its
@@ -49,7 +49,7 @@ public class IdentifierStrategy : IExpressionIrStrategy
             && !aliased.IsHostOnly() && aliased.HasTwin())
         {
             aliased.RegisterIntroduced(context);
-            return JsExpr.Identifier(aliased.Name);
+            return JsExpr.Identifier(aliased.TwinReference());
         }
 
         // If it's a type symbol, return as is (to allow EnumStrategy to work)
@@ -215,9 +215,15 @@ public class IdentifierStrategy : IExpressionIrStrategy
     }
 
     /// <summary>The name a member holds on its twin: a method's own, which one that hides a member has of
-    /// its own (#563), and any other member's camelCased.</summary>
-    private static string Named(ISymbol symbol, string name) =>
-        symbol is IMethodSymbol method ? TwinMethodName.Of(method, name) : name.ToCamelCase();
+    /// its own (#563), a field's slot (<see cref="FieldSlotExtensions"/>), and any other member's
+    /// camelCased.</summary>
+    private static string Named(ISymbol symbol, string name) => symbol switch
+    {
+        IMethodSymbol method => TwinMethodName.Of(method, name),
+        // A static field in its slot, which moves a case apart from a static member of its name (#1175).
+        IFieldSymbol field => field.TwinSlot(),
+        _ => name.ToCamelCase(),
+    };
 
     public int Priority => 10;
 

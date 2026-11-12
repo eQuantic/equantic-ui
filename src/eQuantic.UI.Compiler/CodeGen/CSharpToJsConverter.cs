@@ -71,6 +71,17 @@ public class CSharpToJsConverter
         set => _context.ResourceIds = value;
     }
 
+    /// <summary>See <see cref="ConversionContext.AppServices"/>.</summary>
+    internal Services.ServiceRegistrations AppServices
+    {
+        get => _context.AppServices;
+        set => _context.AppServices = value;
+    }
+
+    /// <summary>The key a resolution in the browser names — see <see cref="BrowserServices.Key"/>.</summary>
+    internal string ServiceKey(string key, ITypeSymbol? service, string? requiredBy, SyntaxNode at) =>
+        BrowserServices.Key(key, service, requiredBy, at, _context);
+
     public void SetSemanticModel(SemanticModel? semanticModel)
     {
         _semanticModel = semanticModel;

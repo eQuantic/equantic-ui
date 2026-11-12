@@ -93,9 +93,16 @@ internal static class PlainClassModule
     /// <c>public partial class Hollow { }</c> is constructed in C#, where the browser got no module for
     /// <c>new Hollow()</c> (found by Copilot's review of #608). The type's symbol counts its
     /// declarations; a host with no compilation counts the scan's, by name.
+    /// <para>
+    /// A resx Designer class is no module: every read of it is rewritten to <c>$eq.str</c>, and the
+    /// parser writes none, while the scan took it for a plain class, so the module that read a string
+    /// imported <c>./Strings</c>, which nothing wrote (#824). Only a compilation tells one, as only a
+    /// compilation rewrites a read of one.
+    /// </para>
     /// </remarks>
     internal static bool Is(Declared declared, INamedTypeSymbol? symbol, Scan scan) =>
         declared.OnItsOwn
+        && !(symbol is not null && ResourceClasses.IsResourceClass(symbol))
         && !(declared.Empty && (symbol is not null ? symbol.DeclaringSyntaxReferences.Length > 1 : scan.DeclaredMoreThanOnce(declared.Name)))
         && !(symbol is not null ? KeptOut(symbol, scan) : scan.KeepsOut(declared));
 

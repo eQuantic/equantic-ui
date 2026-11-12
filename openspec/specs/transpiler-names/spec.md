@@ -245,17 +245,54 @@ each member is, a field, a constant, a property, an event, a method, an operator
 extension block's property, indexer or method, and a primary constructor's parameter the twin holds,
 which on a component is every one, read or not. A member's key SHALL be the name the emitter writes it
 under: a field's slot, a hiding method's own name, an operator's and a conversion's static. What the twin
-holds as one member SHALL NOT be refused: the two accessors of a property, a plain class's field that
-moved to a slot of its own, a positional parameter its record redeclares, a component's parameter that is
+holds as one member SHALL NOT be refused: the two accessors of a property, the two halves of a partial
+property, indexer or event, a plain class's field that moved to a slot of its own, a static field of any
+type that moved to one, a positional parameter its record redeclares, a component's parameter that is
 read nowhere but as the whole initializer of the auto-property or the field of its name, in either case
 and with nothing to convert between the two, and a static beside an instance
 member of its name. A static class nested in a type SHALL be checked once, as the module it is, and a
-`[ServerOnly]` one, which is no module, SHALL NOT be checked.
+`[ServerOnly]` one, which is no module, SHALL NOT be checked. Along a class chain, eqc SHALL refuse with
+EQ1007, naming both members and the base's file and line, a member on the key a member of a base the
+source declares holds, statics included, where one of the two is not a method, and an instance property
+or event that hides a base's member of its own C# name: an override SHALL stand, and so SHALL a method
+that hides a member and holds a name of its own, a static that hides a base's static of its own C# name,
+each reached through its own class, and a field that moved to a slot of its own.
 
 #### Scenario: A static field beside a static method of its name
 
 - **WHEN** an app declares `static class Seq { static int next; public static int Next() => ++next; }`
-- **THEN** the build fails with EQ1007 at `Next`, naming `Seq.Next()` and `Seq.next`
+- **THEN** the build succeeds, the field written in a slot of its own, and two calls of `Next()` answer 1
+  and 2, as in .NET
+
+#### Scenario: A static auto-property beside a static method of its name
+
+- **WHEN** an app declares `class Cfg { public static int Count { get; set; } public static int count() => 1; }`
+- **THEN** the build fails with EQ1007 at `count`, naming `Cfg.count()` and `Cfg.Count`
+
+#### Scenario: A derived method on its base's property
+
+- **WHEN** an app declares `class Base { public int Size => 3; }` and `class Derived : Base { public int size() => 4; }`
+- **THEN** the build fails with EQ1007 at `size`, naming `Derived.size()` and `Base.Size` with its file and line
+
+#### Scenario: A derived component's property on its base's field
+
+- **WHEN** a component `Shell` declares `protected string title = "x";`, and a component derived from it
+  declares `public string Title => "y";`
+- **THEN** the build fails with EQ1007 at `Title`, naming `Page.Title` and `Shell.title`, since a
+  component's field does not move
+
+#### Scenario: An override and a hiding method along the chain
+
+- **WHEN** a derived class overrides its base's `virtual int Size`, or declares `new int Size()` beneath
+  its base's `int Size => 3`
+- **THEN** the build succeeds: the override is the member it overrides, and the hiding method holds
+  `size$1`
+
+#### Scenario: A partial property is one member
+
+- **WHEN** a class declares `public partial int Level { get; set; }` and
+  `public partial int Level { get => field; set => field = value * 2; }`
+- **THEN** the build succeeds, and no EQ1007 names the two halves
 
 #### Scenario: A component's field beside its property
 
@@ -369,6 +406,30 @@ static helper's and a record's alike. A module's text SHALL be the text it has w
   another, through one converter
 - **THEN** the second module's first temporary is `$n0`, and its text is the text it has through a converter
   of its own
+
+### Requirement: A type named by a reserved word or a global takes a `$`
+
+A class, record or struct whose twin the build writes, named by a word JavaScript reserves or by a
+global the emitted code reads, SHALL be written, imported and referenced under its name and a `$`,
+which no C# identifier can hold, and so SHALL its module. A nested type is named by its owner already,
+and a type of .NET's or of the vocabulary keeps its name.
+
+#### Scenario: A class named function
+
+- **WHEN** a class `function` is built, extended by `@class`, tested with `is` and `as`, held in a
+  member and an array, and printed
+- **THEN** every answer is .NET's, its module is `function$` and `@class`'s is `class$`
+
+#### Scenario: A class named Math beside .NET's
+
+- **WHEN** `Math.Twice(2) + System.Math.Max(1, 2)` runs, `Math` being a class of the app
+- **THEN** it answers 6, as in .NET
+
+#### Scenario: A struct named Symbol in a sequence's module
+
+- **WHEN** a class that implements `IEnumerable<int>` holds a field of a struct named `Symbol`, and a
+  `foreach` walks it
+- **THEN** it walks every element, as in .NET
 
 ### Requirement: A member named Component is that member
 

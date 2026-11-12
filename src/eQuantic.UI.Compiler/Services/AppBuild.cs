@@ -293,6 +293,15 @@ public sealed class AppBuild
 
                 Compilation = projectCompilation;
                 _compiler.SetProjectCompilation(projectCompilation);
+                // What the app registered in its container, written in its own files or a referenced
+                // project's: a component that takes one of those services through its constructor has
+                // the browser build the same class (#1335).
+                var appDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(_primarySourceDir)) + Path.DirectorySeparatorChar;
+                var referenced = _referenced;
+                _compiler.SetServiceRegistrations(ServiceRegistrations.Read(
+                    built is null ? [projectCompilation] : [projectCompilation, .. built.Values],
+                    file => referenced?.CanBeNamedFrom(file)
+                        ?? Path.GetFullPath(file).StartsWith(appDirectory, StringComparison.Ordinal)));
                 _output.WriteLine($"📚 Loaded project compilation: {assemblyName} ({allSourceFiles.Count} files, {assemblyPaths.Count} refs)");
 
                 // Log success
