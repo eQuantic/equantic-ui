@@ -34,7 +34,7 @@ export function allowsScheme(destination: string): boolean {
 }
 
 /**
- * The destination an href carries (C# twin: `RenderContext.ResolveDestination`): the active language on an
+ * The destination an href carries (C# twin: `RenderChannels.ResolveDestination`): the active language on an
  * app-internal path, or null when its scheme is one an href never carries, and the link is written with no
  * href at all.
  */

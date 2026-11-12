@@ -15,9 +15,10 @@ public abstract class VisualNode
     /// here is an open door that no test can shut afterwards, because the subtype would live in
     /// somebody else's tree.
     /// <para>
-    /// The ONE seam apps use is <see cref="UiComponent"/>, whose constructor stays <c>protected</c>
-    /// on purpose: an app's components are unbounded, which is exactly why the visitor answers
-    /// "a component" once and asks it to build.
+    /// The TWO seams apps use are <see cref="UiComponent"/> and <see cref="InheritedComponent"/>, whose
+    /// constructors stay <c>protected</c> on purpose: an app's components and the values it hands a
+    /// subtree are unbounded, which is exactly why the visitor answers each of them once, asking a
+    /// component to build and an inherited value for its child.
     /// </para>
     /// </summary>
     private protected VisualNode() { }

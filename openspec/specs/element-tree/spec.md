@@ -419,6 +419,70 @@ with the instance it keeps.
   marked, and the owner builds
 - **THEN** only that position builds, with the instance that loaded, and draws what it loaded
 
+### Requirement: A component rebuilds when a value it depends on changes, and nothing else does
+
+A component that reads an inherited value through `DependOn<T>()` SHALL build again in the same frame
+when a parent's build hands that value's position a new node whose `UpdateShouldNotify` answers true,
+and a component that read nothing of it, or read it once through `Find<T>()`, SHALL NOT. A lookup SHALL
+answer the nearest value of its type above the component, and a component whose position left the tree
+SHALL NOT build when the value changes.
+
+#### Scenario: A value changes under a subtree built once
+
+- **WHEN** a stateful holder places a new value over the same child, which holds a reader, a component
+  that reads nothing and one that read the value once
+- **THEN** only the reader builds again, in that frame, with the new value
+
+#### Scenario: The value says nothing changed
+
+- **WHEN** the new node's `UpdateShouldNotify` answers false
+- **THEN** no dependent builds
+
+#### Scenario: Two values of one type
+
+- **WHEN** a reader stands under two values of its type, with a value of another type between them
+- **THEN** it reads the nearest of its type
+
+### Requirement: A stateful component hears a dependency change before it builds
+
+A `StatefulComponent` that depends on a value SHALL have `OnDependenciesChanged()` called before the
+build that the value's change caused.
+
+#### Scenario: The value changes
+
+- **WHEN** a stateful dependent's value changes
+- **THEN** `OnDependenciesChanged` runs, and then its build reads the new value
+
+### Requirement: A position's context reads the frame and the tree
+
+A component built through an element SHALL build with a context of its position. It SHALL read the
+frame's theme, density and type scale from its owner, and a frame that hands a different one SHALL
+build again the components that read it and no other. It SHALL answer `InFlow` from whether an `InFlow`
+is above its position. A context made with no position SHALL answer `DependOn` and `Find` with null.
+
+#### Scenario: The density changes
+
+- **WHEN** a frame hands a different density
+- **THEN** the component that read the density builds again, and a component that read nothing of the
+  frame does not
+
+#### Scenario: InFlow
+
+- **WHEN** one component stands under an `InFlow` and another beside it
+- **THEN** the first answers true, the second false, and no ambient channel is armed
+
+### Requirement: A component navigates the host of its tree
+
+`Navigator.Of(context).Go(destination)` SHALL hand a non-empty destination to the navigation handler
+of the owner of the component's tree, and SHALL do nothing for an empty destination or a context with
+no position.
+
+#### Scenario: A component navigates
+
+- **WHEN** a component of a tree whose owner has a handler navigates to `/orders`, then to an empty
+  destination, and a context with no position navigates
+- **THEN** the handler receives `/orders` once
+
 ### Requirement: A component is a node in the browser too
 
 A component, with or without state, SHALL be a node of the vocabulary in the browser as it is in C#:
@@ -474,3 +538,30 @@ bridges as trees drawn once, putting back by name what each loaded.
 - **WHEN** each component of a chain exists only once the one above it has loaded, twelve deep
 - **THEN** the page is drawn after five rounds, and every link the payload says loaded reads loaded in
   the markup
+
+### Requirement: A render's channels are handed to it
+
+The web SHALL hand each render its channels as one `RenderChannels`: the atomic style sink, the
+gradient sink, the face sink, the expansion scope, the density and the link policy. The server SHALL
+make one for each prefetch round and one for each discovery, and SHALL hand it to `MarkupHost.Lower`
+for a write-once page. An escape-hatch page SHALL be rendered with its round's channels armed by
+`RenderChannels.BridgeWith`, and a write-once bridge inside it SHALL read them there, the one web
+channel read from the async flow. Every `AsyncLocal` the SDK's source declares SHALL be named in a
+list with the reason it is one, and the list SHALL fail on a channel it does not name and on a name
+the source no longer declares.
+
+#### Scenario: Two requests drawn at once
+
+- **WHEN** two requests at different densities are drawn at the same time, each held in its page's
+  build until the other is drawing too, for a write-once page and for an escape-hatch page
+- **THEN** each page carries its own density and its own atomic rules, and none of the other's
+
+#### Scenario: A page in a language
+
+- **WHEN** a page lowered through channels whose link policy is a language's links to `/about`
+- **THEN** its href is the language's, and the same page lowered outside a render links to `/about`
+
+#### Scenario: A channel nobody named
+
+- **WHEN** the source declares an `AsyncLocal` the list does not name
+- **THEN** the list's test fails, naming it
