@@ -445,14 +445,66 @@ public class CodeDiagnosticsTests : IDisposable
         queue.Drain();
 
         await Task.Run(() => late.Answer(0, Warning(0, 0, 3)));
+        // Time for the answer's continuation to post, so a count moved off the UI thread would show here. Only
+        // this test drains the queue, so what the answer did by now it did off the UI thread.
         var deadline = DateTime.UtcNow.AddSeconds(5);
         while (queue.Count == 0 && DateTime.UtcNow < deadline) await Task.Delay(5);
 
         editor.Diagnostics.IsChecking.Should().BeTrue("the count moves when the UI thread applies the answer");
         editor.Diagnostics.Items.Should().BeEmpty();
-        queue.Drain();
+        await DrainUntilChecked(queue, editor);
         editor.Diagnostics.IsChecking.Should().BeFalse();
         editor.Diagnostics.Items.Should().ContainSingle();
+    }
+
+    /// <summary>
+    /// A post that reaches the UI thread before an answer's own, as one does that a timer or a provider of a
+    /// previous test leaves behind through the process's dispatcher, runs, and the answer is still applied when
+    /// its own post runs (#1298). The answer comes late on purpose, so the stray post waits alone in the queue
+    /// first: a wait that ended on "the queue holds something" drained without the answer here, every time.
+    /// </summary>
+    [Fact]
+    public async Task AnAnswerPostedBehindAStrayPost_IsAppliedWhenItsOwnPostRuns()
+    {
+        var queue = new QueueDispatcher();
+        UiDispatcher.Current = queue;
+        var editor = Editor("abc");
+        var late = new LateProvider();
+        editor.Diagnostics.Providers.Add(late);
+        editor.Diagnostics.Check();
+        queue.Drain();
+
+        var strayRan = false;
+        queue.Post(() => strayRan = true);
+        var answering = Task.Run(async () =>
+        {
+            await Task.Delay(50);
+            late.Answer(0, Warning(0, 0, 3));
+        });
+
+        await DrainUntilChecked(queue, editor);
+        await answering;
+
+        strayRan.Should().BeTrue();
+        editor.Diagnostics.IsChecking.Should().BeFalse();
+        editor.Diagnostics.Items.Should().ContainSingle();
+    }
+
+    /// <summary>
+    /// Runs the UI thread's queue until the editor is no longer checking, or five seconds pass. The wait is for
+    /// the answer's EFFECT: the queue is shared with whatever reaches the process's dispatcher, and an answer's
+    /// continuation can post after the answer was given, so a queue that holds something says nothing about
+    /// whether the answer is in it (#1298).
+    /// </summary>
+    private static async Task DrainUntilChecked(QueueDispatcher queue, CodeEditorController editor)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (true)
+        {
+            queue.Drain();
+            if (!editor.Diagnostics.IsChecking || DateTime.UtcNow >= deadline) return;
+            await Task.Delay(5);
+        }
     }
 
     /// <summary>The wait for typing to pause ends on a timer's thread, and the providers are asked from the
