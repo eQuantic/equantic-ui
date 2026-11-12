@@ -368,7 +368,7 @@ show them over itself without reloading.
 The server SHALL ask the project's MSBuild how to start eqc once for a run, as the app starts, and
 SHALL keep that eqc running, asking it to compile on each save. No MSBuild SHALL run for a save. The
 server SHALL own the process: eqc SHALL end when its standard input does, a stop or a compile past
-its limit SHALL kill it, and the next save SHALL start it again.
+its limit SHALL kill it, and the next save SHALL start it again, never waiting on the eqc that died.
 
 #### Scenario: A save
 
@@ -379,6 +379,11 @@ its limit SHALL kill it, and the next save SHALL start it again.
 
 - **WHEN** the running eqc exits between two saves
 - **THEN** the next save starts it again, with what MSBuild said at the start of the run, and compiles
+
+#### Scenario: eqc dies as a save finds it
+
+- **WHEN** the running eqc exits, and its exit is raised as the next save finds it gone
+- **THEN** the save starts eqc again and compiles, where the save and the exit each waited for the other and the hot reload hung for good
 
 #### Scenario: A compile past its limit, or a stop
 
@@ -413,6 +418,17 @@ an input the SDK handed changed, or when a file of a project the app references 
 
 - **WHEN** a file of a project the app references changed
 - **THEN** the build loads cold
+
+### Requirement: Hot reload ends with its host, stopped or not
+
+The server SHALL end hot reload, its watchers, its timers and the compiler it started, when the app stops
+and when the host's services are disposed, whichever comes first, and ending it a second time SHALL do
+nothing more.
+
+#### Scenario: A host disposed without being stopped
+
+- **WHEN** an app with hot reload on is started and its host disposed without being stopped, and a source under its content root is then written
+- **THEN** no rebuild starts, where the watcher still running started one
 
 ### Requirement: A production page loads no byte of the dev loop
 

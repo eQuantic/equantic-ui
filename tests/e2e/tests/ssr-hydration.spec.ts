@@ -150,6 +150,30 @@ test.describe('Write-once SSR + hydration', () => {
     await expect(count).toHaveText('Count: -1');
   });
 
+  test("a table's cells keep the ids the server gave them, one element each", async ({ page }) => {
+    // A cell's id is what names it to a reader (`aria-labelledby`, `aria-owns`), scoped by the table's
+    // place in the tree, which both producers follow the same way (#1115): the scopes the server's first
+    // pass wrote are the scopes after hydration, and no id names two elements.
+    const scopes = (ids: string[]) => [...new Set(ids.map((id) => id.split('-')[2]))].sort();
+    const response = await page.request.get('/sheet');
+    expect(response.status()).toBe(200);
+    const ssrHtml = await response.text();
+    const ssrIds = [...ssrHtml.matchAll(/ id="(eq-tcell-[^"]+)"/g)].map((m) => m[1]);
+    expect(ssrIds.length).toBeGreaterThan(0);
+    expect(new Set(ssrIds).size).toBe(ssrIds.length);
+
+    await page.goto('/sheet');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('grid', { name: 'Spreadsheet' })).toBeVisible();
+    const ids = await page.evaluate(() =>
+      [...document.querySelectorAll('[id^="eq-tcell-"]')].map((element) => element.id),
+    );
+
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(scopes(ids)).toEqual(scopes(ssrIds));
+  });
+
   test('Link navigation is SPA (no full reload)', async ({ page }) => {
     // The console shell's sidebar renders real <a href> Links; the showroom '/' is the one screen
     // that carries it. Every destination it advertises is a screen this sample declares — a link

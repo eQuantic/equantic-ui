@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, Sizing, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "../runtime-exports";
 
 export class Chip extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Chip';
@@ -44,7 +44,7 @@ export class Chip extends StatelessComponent {
         }
         let hoverFill = this.kind === 'filter' && this.onPressed != null ? this.selected ? primary.subtle.midpointWith(primary.base) : theme.surfaceSubtle : null;
         let pressedFill = this.kind === 'filter' && this.onPressed != null ? this.selected ? primary.pressed.withOpacity(Math.fround(0.24)) : theme.surfaceSubtle : null;
-        let box = new Box(new BoxStyle({ height: Sizing.height('small', context.density), padding: EdgeInsets.symmetric(12, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'filter' ? 1 : 0, borderColor: this.selected ? primary.base : theme.borderStrong, hover: hoverFill == null ? null : new StyleDiff({ background: hoverFill }), pressed: pressedFill == null ? null : new StyleDiff({ background: pressedFill }) }), content);
+        let box = new Box(new BoxStyle({ height: ControlMetrics.height(context, 'small'), padding: EdgeInsets.symmetric(12, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'filter' ? 1 : 0, borderColor: this.selected ? primary.base : theme.borderStrong, hover: hoverFill == null ? null : new StyleDiff({ background: hoverFill }), pressed: pressedFill == null ? null : new StyleDiff({ background: pressedFill }) }), content);
         return this.kind === 'filter' && this.onPressed != null ? new Pressable(box, this.onPressed, { label: this.label, selected: this.selected }) : box;
     }
 }

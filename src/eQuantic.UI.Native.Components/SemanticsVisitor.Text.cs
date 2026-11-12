@@ -39,11 +39,15 @@ internal sealed partial class SemanticsVisitor
         Announce(new(SemanticRole.TextField, IdOf(laidOut), laidOut.Bounds,
             node.Label ?? node.Placeholder ?? "", FieldText.Of(laidOut.Element, node), node.Disabled));
 
-    /// <summary>A multiline editable code surface — a text area to a screen reader.</summary>
+    /// <summary>
+    /// A multiline editable code surface — a text area to a screen reader, whose VALUE is what the model
+    /// says a reader hears it hold (<see cref="ICodeSurfaceModel.Reading"/>, #1333): the code it draws is
+    /// consumed with it, so the field and its text are one thing, as on the web.
+    /// </summary>
     public bool Visit(CodeSurface node, LayoutNode laidOut)
     {
         Announce(new(SemanticRole.CodeField, IdOf(laidOut), laidOut.Bounds,
-            node.Label ?? "", null, false));
+            node.Label ?? "", node.Model.Reading.Text, false));
         // What the surface OFFERS at its caret is no part of the code's text: after the field it
         // belongs to, its rows announce as options, the one the keyboard is on selected.
         for (var i = 1; i < laidOut.Children.Count; i++) SemanticsTree.Walk(laidOut.Children[i], this);

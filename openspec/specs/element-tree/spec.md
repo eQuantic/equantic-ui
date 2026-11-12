@@ -425,7 +425,9 @@ A component that reads an inherited value through `DependOn<T>()` SHALL build ag
 when a parent's build hands that value's position a new node whose `UpdateShouldNotify` answers true,
 and a component that read nothing of it, or read it once through `Find<T>()`, SHALL NOT. A lookup SHALL
 answer the nearest value of its type above the component, and a component whose position left the tree
-SHALL NOT build when the value changes.
+SHALL NOT build when the value changes. A value inside a layer that changes in the frame the realizer
+shows the layer SHALL build its dependents in that frame, before the layer is laid out, and SHALL NOT
+ask for a frame after it.
 
 #### Scenario: A value changes under a subtree built once
 
@@ -442,6 +444,27 @@ SHALL NOT build when the value changes.
 
 - **WHEN** a reader stands under two values of its type, with a value of another type between them
 - **THEN** it reads the nearest of its type
+
+#### Scenario: A value inside a layer changes in the frame the layer is shown
+
+- **WHEN** a stateful holder builds an overlay whose layer places a new value over the same child, which
+  holds a reader and a component that reads nothing, and the realizer shows the layer
+- **THEN** the reader builds with the new value before the layer is laid out, the other does not, and no
+  position waits for the next frame
+
+#### Scenario: A value changes while a layer's marked positions build
+
+- **WHEN** a stateful holder inside a layer, out of reach of the walk that shows the layer, places a new
+  value over the same child, which holds a reader, and builds when the layer is shown
+- **THEN** the reader builds behind it in that frame, with the new value, and no position waits for the
+  next frame
+
+#### Scenario: A value changes over a layer inside the layer
+
+- **WHEN** the value inside a layer changes over a second overlay whose layer holds the reader, and the
+  realizer shows the outer layer and then the inner one
+- **THEN** the outer layer does not build the reader, and the inner one builds it with the new value in
+  that frame
 
 ### Requirement: A stateful component hears a dependency change before it builds
 
@@ -504,6 +527,30 @@ declares, a type check failing when the node gains one the component lacks. The 
 
 - **WHEN** the vocabulary's node declares a member the component does not
 - **THEN** the runtime's type check fails
+
+### Requirement: The engine runs in the browser as it runs on .NET
+
+The element engine SHALL be transpiled into the runtime, its modules committed and pinned byte for byte,
+exported from the served runtime and accepted by the runtime's type check, and no hand-written
+TypeScript twin of any of it SHALL exist. Driven by the same components through the same steps, the
+transpiled engine SHALL answer every case it is held to as the C# engine does: what a position keeps,
+what a frame builds and in which order, and what mounts and unmounts.
+
+#### Scenario: A position keeps its stateful instance in the browser too
+
+- **WHEN** an owner of the transpiled engine mounts a stateful component, its state changes, and the
+  next build hands the same position a component of the same type and key with new configuration
+- **THEN** the same instance holds the new configuration and the old state, as on .NET
+
+#### Scenario: One instance at two positions
+
+- **WHEN** one stateful instance is placed at two positions and they leave one after the other
+- **THEN** it unmounts once, when the last leaves, on both engines
+
+#### Scenario: An app member takes a name the engine calls
+
+- **WHEN** an app's stateful component declares a method named `EnterPosition` or `LeavePosition`
+- **THEN** the build refuses it with EQ2011
 
 ### Requirement: The server draws a write-once page through an owner for the request
 

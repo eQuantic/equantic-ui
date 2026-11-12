@@ -1,4 +1,6 @@
+IAppTheme.button
 IAppTheme.code
+IAppTheme.controls
 IAppTheme.data
 IAppTheme.monoFamily
 IAppTheme.onSelection

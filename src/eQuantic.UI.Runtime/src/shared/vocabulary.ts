@@ -8,9 +8,9 @@
  * `render()` like on any other component; the reconciler never learns about abstract nodes).
  */
 
-import type { AnchorPlacementValue, ComponentChild, ICanvasPainter, NavigableMoveValue } from './nodes';
+import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
-import type { TableCellRoleValue, TableRoleValue } from './enums.generated';
+import type { TableCellRoleValue, TableRoleValue, WindowSizeClassValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import { iconPaths } from './icons.generated';
 import type {
@@ -29,7 +29,7 @@ import type { PickedFile } from './picked-file';
 export { CanvasPointer };
 import { floatText } from './css-values';
 import { lowerVisualNode } from './lowering';
-import { ambientLoweringContext } from './photon-context';
+import { ambientLoweringContext, getInFlow, setInFlow } from './photon-context';
 import {
   artworkAspect,
   CornerRadii,
@@ -86,16 +86,19 @@ export abstract class VisualNode {
 }
 
 /**
- * Anything a child slot accepts: a vocabulary node, or a shared COMPONENT instance (in C#,
- * `UiComponent : VisualNode` — on the runtime components live in their own class hierarchy, so the
- * union states the same truth structurally; the lowering expands components via `build`).
+ * Anything a child slot accepts: a vocabulary node, a component included, as in C#, where a slot is a
+ * `VisualNode` and `UiComponent : VisualNode`. It was a union with a structural `ComponentChild` while
+ * a component without state carried no node kind; every component is a node now, so the slot is the
+ * node and the element engine hands it to a position as it is.
  */
-export type VisualChild = VisualNode | ComponentChild;
+export type VisualChild = VisualNode;
 
 /** Mirror of the C# `StyleDiff` record (spec S5): a partial style applied over the base while
  * an interaction state is active — only the set members override. */
 export class StyleDiff {
   background?: ColorTokenValue | null;
+  /** The foreground while active (C# `StyleDiff.Foreground`, #614). */
+  foreground?: ColorTokenValue | null;
   borderColor?: ColorTokenValue | null;
   borderWidth?: number | null;
   elevation?: number | null;
@@ -109,6 +112,7 @@ export class StyleDiff {
 
   constructor(config?: {
     background?: ColorTokenValue | null;
+    foreground?: ColorTokenValue | null;
     borderColor?: ColorTokenValue | null;
     borderWidth?: number | null;
     elevation?: number | null;
@@ -210,6 +214,8 @@ export class BoxStyle {
   maxHeight: SizeValue | number = 0;
   padding: EdgeInsetsValue = new EdgeInsets();
   background?: ColorTokenValue | null;
+  /** What the text and icons inside that name no colour inherit (C# `BoxStyle.Foreground`, #614). */
+  foreground?: ColorTokenValue | null;
   cornerRadius: CornerRadii = new CornerRadii();
   borderWidth = 0;
   borderColor?: ColorTokenValue;
@@ -471,6 +477,16 @@ export class AdaptiveNode extends VisualNode {
   ) {
     super();
     if (config) Object.assign(this, config);
+  }
+
+  /**
+   * The arm a window of this size class shows (the C# `Resolve`): the widest declared arm at or below
+   * it, the compact one at the least. The element engine builds this arm alone, as Photon lays it out.
+   */
+  resolve(sizeClass: WindowSizeClassValue): VisualNode {
+    if (sizeClass === 'expanded') return this.expanded ?? this.medium ?? this.compact;
+    if (sizeClass === 'medium') return this.medium ?? this.compact;
+    return this.compact;
   }
 }
 
@@ -932,8 +948,12 @@ export abstract class InheritedComponent extends VisualNode {
     if (config) Object.assign(this, config);
   }
 
-  /** Whether the components that depend on this value rebuild when a new one replaces `old`. */
-  protected abstract updateShouldNotify(old: InheritedComponent): boolean;
+  /**
+   * Whether the components that depend on this value rebuild when a new one replaces `old`. Public,
+   * as eqc writes C#'s `protected internal`: an app's override arrives without a modifier, and the
+   * element engine's `InheritedElement` asks it.
+   */
+  abstract updateShouldNotify(old: InheritedComponent): boolean;
 }
 
 export class InFlow extends VisualNode {
@@ -944,6 +964,20 @@ export class InFlow extends VisualNode {
     super();
     this.child = child;
     if (config) Object.assign(this, config);
+  }
+
+  /**
+   * Whether the subtree being built right now was asked to draw in the flow (the C# static
+   * `InFlow.Current`). The element engine arms it around a component's build, the lowering around
+   * an `InFlow`'s child, and both read and write the ONE ambient the build context reports. A static
+   * here is what C#'s AsyncLocal is there: the browser builds on one thread.
+   */
+  static get current(): boolean {
+    return getInFlow();
+  }
+
+  static set current(value: boolean) {
+    setInFlow(value);
   }
 }
 

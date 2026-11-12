@@ -29,7 +29,7 @@ internal sealed partial class WebLoweringVisitor
         _inControl = false;
         try
         {
-            return Lower(simulated.Child, horizontalAxis);
+            return Lower(simulated.Child, horizontalAxis, LoweringPath.Child);
         }
         finally
         {
@@ -49,7 +49,7 @@ internal sealed partial class WebLoweringVisitor
         Primitives.InFlow.Current = true;
         try
         {
-            return Lower(inFlow.Child, horizontalAxis);
+            return Lower(inFlow.Child, horizontalAxis, LoweringPath.Child);
         }
         finally
         {
@@ -64,7 +64,7 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private HtmlElement? LowerInView(InView inView, bool? horizontalAxis)
     {
-        var child = Lower(inView.Child, horizontalAxis);
+        var child = Lower(inView.Child, horizontalAxis, LoweringPath.Child);
         if (child is null) return null;
 
         var wrapper = new RealizedElement("div")
@@ -88,7 +88,7 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private HtmlElement? LowerShortcut(Shortcut shortcut, bool? horizontalAxis)
     {
-        if (Lower(shortcut.Child, horizontalAxis) is not { } child) return null;
+        if (Lower(shortcut.Child, horizontalAxis, LoweringPath.Child) is not { } child) return null;
         // A chord that is not enabled binds nothing: no marker, as the TS twin writes none.
         if (!shortcut.Enabled) return child;
         if (child is RealizedElement realized)
@@ -167,7 +167,7 @@ internal sealed partial class WebLoweringVisitor
             if (adjustable.ValueText is { Length: > 0 } spoken)
                 element.RawAttributes["aria-valuetext"] = spoken;
         }
-        if (Lower(adjustable.Child, null) is { } child) element.Children.Add(child);
+        if (Lower(adjustable.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
     }
 
@@ -217,7 +217,7 @@ internal sealed partial class WebLoweringVisitor
         // it was the only thing the bar could say (#243).
         if (progress.ValueText is { Length: > 0 } spoken)
             element.RawAttributes["aria-valuetext"] = spoken;
-        if (Lower(progress.Child, null) is { } child) element.Children.Add(child);
+        if (Lower(progress.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
     }
 
@@ -262,7 +262,7 @@ internal sealed partial class WebLoweringVisitor
             },
         };
         if (live.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
-        if (Lower(live.Child, null) is { } child) element.Children.Add(child);
+        if (Lower(live.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
     }
 
@@ -324,9 +324,9 @@ internal sealed partial class WebLoweringVisitor
             };
         // Ids are scoped to THIS grid: two calendars on one page would otherwise both call their
         // cells eq-cell-1-1, which is a duplicate id and an activedescendant that may resolve into
-        // the wrong grid. The scope is the grid's own name, hashed with the atomizer's FNV — the
-        // one hash both producers compute identically, which is what SSR hydration needs.
-        var scope = NavigableScope(navigable);
+        // the wrong grid. The scope is the grid's place in the tree, which both producers follow the
+        // same way, so the server's first pass and hydration write the same ids (#1115).
+        var scope = LoweringPath.Scope(_path);
         if (navigable.ActiveCell is { } active)
             element.RawAttributes["aria-activedescendant"] = NavigableCellId(scope, active.Row, active.Item);
 
@@ -338,7 +338,7 @@ internal sealed partial class WebLoweringVisitor
                 Style = new HtmlStyle { Display = Display.Contents },
                 RawAttributes = new Dictionary<string, string> { ["role"] = "row" },
             };
-            if (Lower(navigable.Rows[index], null) is { } lowered)
+            if (Lower(navigable.Rows[index], null, LoweringPath.Item(index)) is { } lowered)
             {
                 row.Children.Add(lowered);
                 if (navigable.HasHeaderRow && index == 0) MarkColumnHeaders(lowered);
@@ -380,13 +380,6 @@ internal sealed partial class WebLoweringVisitor
     /// same string, or the attribute points at nothing.</summary>
     internal string NavigableCellId(string scope, int row, int item) =>
         $"eq-cell-{scope}-{row}-{item}";
-
-    /// <summary>What makes one grid's cell ids distinct from another's on the same page: the
-    /// grid's NAME, hashed. Two grids that also share a name (the same month rendered twice) would
-    /// still collide — a documented limit, and the point where a caller should give them names
-    /// that differ, which a screen reader needs anyway.</summary>
-    internal string NavigableScope(Navigable navigable) =>
-        StyleAtomizer.Hash(navigable.Label);
     /// <summary>
     /// Spec §06 loop motion: a layout-transparent div carrying the GENERATED keyframe animation —
     /// the effect maps to a keyframe name, endpoints ride custom properties at the style tail
@@ -410,7 +403,7 @@ internal sealed partial class WebLoweringVisitor
                 },
             },
         };
-        if (Lower(motion.Child, horizontalAxis: null) is { } child)
+        if (Lower(motion.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
     }
@@ -478,27 +471,31 @@ internal sealed partial class WebLoweringVisitor
         var outerSimulated = _simulated;
         var outerDisabled = _inDisabledControl;
         var outerInControl = _inControl;
+        var outerInEnabledControl = _inEnabledControl;
         if (pressable.Disabled)
         {
             _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
             _inDisabledControl = true;
         }
         else if (_inControl)
-            _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
+            // The hover too, since #614 made it the control's: a picture of the row is the row's.
+            _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused | SimulatedState.Hovered);
         _inControl = true;
+        _inEnabledControl = !pressable.Disabled;
         // What THIS control is pictured as: its ring below reads it, so a nested control under a
         // picture of the one around it draws no ring either.
         var pictured = _simulated;
         HtmlElement? child;
         try
         {
-            child = Lower(pressable.Child, horizontalAxis: null);
+            child = Lower(pressable.Child, horizontalAxis: null, LoweringPath.Child);
         }
         finally
         {
             _simulated = outerSimulated;
             _inDisabledControl = outerDisabled;
             _inControl = outerInControl;
+            _inEnabledControl = outerInEnabledControl;
         }
 
         // A Pressable AROUND a control — a Menu making its trigger open the panel — is ordinary
@@ -514,6 +511,9 @@ internal sealed partial class WebLoweringVisitor
                 Border = "none",
                 Background = "none",
                 FontFamily = "inherit",
+                // The user agent's buttontext would stand between the text and icons inside and the
+                // foreground they inherit (#614).
+                Color = "inherit",
                 Cursor = pressable.Disabled ? null : "pointer",
                 TextAlign = TextAlign.Start,
                 // A Fill child needs the 100% chain to pass through the button (scrim et al.).
@@ -673,7 +673,7 @@ internal sealed partial class WebLoweringVisitor
             OnMouseEnter = _ => hoverable.OnChanged(true),
             OnMouseLeave = _ => hoverable.OnChanged(false),
         };
-        if (Lower(hoverable.Child, horizontalAxis: null) is { } child)
+        if (Lower(hoverable.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
     }
@@ -730,7 +730,7 @@ internal sealed partial class WebLoweringVisitor
         // The page you are ON. Only the current link carries it — aria-current="false" on the other
         // nine is legal, useless, and read out loud.
         if (link.Current) element.AriaCurrent = "page";
-        if (Lower(link.Child, horizontalAxis: null) is { } child)
+        if (Lower(link.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
     }
@@ -743,7 +743,7 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private HtmlElement? LowerPresence(Presence presence, bool? horizontalAxis)
     {
-        if (Lower(presence.Child, horizontalAxis) is not { } child) return null;
+        if (Lower(presence.Child, horizontalAxis, LoweringPath.Child) is not { } child) return null;
         var slide = presence.Enter == PresenceMotion.SlideUp;
         var cls = slide ? "eq-presence-slideup" : "eq-presence-fade";
         child.ClassName = string.IsNullOrEmpty(child.ClassName) ? cls : $"{cls} {child.ClassName}";
@@ -789,7 +789,7 @@ internal sealed partial class WebLoweringVisitor
     private HtmlElement? LowerDraggable(Draggable draggable,
         bool? horizontalAxis)
     {
-        if (Lower(draggable.Child, horizontalAxis) is not RealizedElement child) return null;
+        if (Lower(draggable.Child, horizontalAxis, LoweringPath.Child) is not RealizedElement child) return null;
 
         // A drag surface takes the pointer, so the node that carries the gesture declares itself:
         // `none` inherits from any transparent row above it, and a surface that is not a target
@@ -856,7 +856,7 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private HtmlElement? LowerDragDismiss(DragDismiss drag, bool? horizontalAxis)
     {
-        if (Lower(drag.Child, horizontalAxis) is not { } child) return null;
+        if (Lower(drag.Child, horizontalAxis, LoweringPath.Child) is not { } child) return null;
         if (child is RealizedElement target)
         {
             // Same rule as Draggable: the surface the gesture starts on declares itself a target,
@@ -901,7 +901,7 @@ internal sealed partial class WebLoweringVisitor
         };
         foreach (var drag in (ReadOnlySpan<string>)["dragenter", "dragover", "dragleave", "drop"])
             element.CustomEvents[drag] = ClientDispatches;
-        if (Lower(target.Child, horizontalAxis: null) is { } child)
+        if (Lower(target.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
     }

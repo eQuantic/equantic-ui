@@ -88,7 +88,7 @@ public class CollectionExpressionStrategy : IExpressionIrStrategy
         {
             context.UsedHelpers.Add(Eq.Import);
             var element = target is INamedTypeSymbol { TypeArguments: [var item] } ? item : null;
-            return ElementEquality.Of(element) is { } equality
+            return ElementEquality.Of(element, node, context) is { } equality
                 ? JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), array, JsExpr.Literal(equality))
                 : JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), array);
         }

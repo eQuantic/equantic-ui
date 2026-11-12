@@ -36,9 +36,9 @@ public sealed class SegmentedControl : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var height = Sizing.Height(Size, context.Density);
+        var height = ControlMetrics.Height(context, Size);
         var inset = 3f;                                   // the track's lip around the thumb
-        var trackRadius = Sizing.Radius(Size);
+        var trackRadius = ControlMetrics.Radius(context, Size);
 
         // A Hug track cannot distribute flex, so the inner row and the segments hug with it —
         // Fill inside Hug collapses to nothing, taking the whole control with it.
@@ -65,7 +65,7 @@ public sealed class SegmentedControl : StatelessComponent
             label.Add(new Text(Segments[index], TypeRole.Label,
                 selected ? theme.TextPrimary : theme.TextSecondary, maxLines: 1)
             {
-                StyleOverride = theme.Type(TypeRole.Label).WithSize(Sizing.LabelSize(Size, context.Density)),
+                StyleOverride = theme.Type(TypeRole.Label).WithSize(ControlMetrics.LabelSize(context, Size)),
                 Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
             });
 
@@ -73,7 +73,7 @@ public sealed class SegmentedControl : StatelessComponent
             {
                 Width = Stretch ? SizeValue.Fill : SizeValue.Hug,
                 Height = SizeValue.Fill,
-                Padding = Stretch ? default : EdgeInsets.Symmetric(Sizing.PaddingX(Size, context.Density), 0),
+                Padding = Stretch ? default : EdgeInsets.Symmetric(ControlMetrics.PaddingX(context, Size), 0),
                 Background = selected ? theme.Surface : null,
                 CornerRadius = new CornerRadii(trackRadius - inset),
                 Elevation = selected ? 1 : 0,

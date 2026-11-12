@@ -266,6 +266,16 @@ public sealed class AppBuild
         _built = built;
         Compilation = compilation;
         _compiler.SetProjectCompilation(compilation);
+        // What the app registered in its container, written in its own files or a referenced
+        // project's: a component that takes one of those services through its constructor has
+        // the browser build the same class (#1335). Read from every compilation a build adopts, the
+        // warm one included, so a save to the file that registers a service reaches the next compile.
+        var appDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(_primarySourceDir)) + Path.DirectorySeparatorChar;
+        var referenced = _referenced;
+        _compiler.SetServiceRegistrations(ServiceRegistrations.Read(
+            built is null ? [compilation] : [compilation, .. built.Values],
+            file => referenced?.CanBeNamedFrom(file)
+                ?? Path.GetFullPath(file).StartsWith(appDirectory, StringComparison.Ordinal)));
     }
 
     private void ResolveDependencies(Compilation? projectCompilation)
