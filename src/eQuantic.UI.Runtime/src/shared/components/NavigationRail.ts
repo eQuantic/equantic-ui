@@ -24,6 +24,7 @@ export class NavigationRail extends StatelessComponent {
         if (onSelect !== undefined) this.onSelect = onSelect;
         if (this.selected === undefined) this.selected = 0;
         if (this.alignment === undefined) this.alignment = 'start';
+        this.$items = null!;
         this.items = items;
         this.selected = selected;
         this.onSelect = onSelect;
@@ -43,7 +44,7 @@ export class NavigationRail extends StatelessComponent {
             let tint = isActive ? primary.onSubtle : theme.textMuted;
             let icon = new Icon(IconGlyph.fromIcons(glyph), 20, tint);
             let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;
-            let pill = new Box(new BoxStyle({ width: 52, height: 30, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), VisualNodeExtensions.centered(iconNode));
+            let pill = new Box(new BoxStyle({ width: 52, height: 30, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: primary.subtle.withOpacity(Math.fround(0.4)) }) }), VisualNodeExtensions.centered(iconNode));
             let column = new Column(2, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: 56, main: 'center', cross: 'center' });
             column.add(pill);
             column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, 0, { styleOverride: isActive ? new TypeStyle(12, 16, 'bold', 0, Math.fround(1.3)) : null }));

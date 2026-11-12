@@ -175,7 +175,11 @@ public sealed class TextInput : StatefulComponent
 
         var column = new Column(gap: 5) { Width = SizeValue.Fill };
         column.Add(top);
-        column.Add(new Text(caption, TypeRole.Caption, captionColor, maxLines: 1));
+        // The line is the field's LIVE REGION on every target (#1332): it is always there, so a
+        // message that appears in it is announced once, and it is read once where it stands. The
+        // entry's description says the same words to a reader on the field, and on the web that copy
+        // is hidden from the page's reading order.
+        column.Add(new LiveRegion(new Text(caption, TypeRole.Caption, captionColor, maxLines: 1)));
         return column;
     }
 }
