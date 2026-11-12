@@ -183,6 +183,21 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
     }
 
     [Fact]
+    public async Task AnUnnamedValueOfAnEnum_CrossesAsTheBrowserHoldsIt()
+    {
+        // A value no member names, of an enum that is not a flags one, as a field, a dictionary's key and a
+        // list's element, and one over a long past 2^53: each crossed as its digits in a string, where the
+        // browser holds a number or a BigInt, so comparing it answered false (#1238).
+        var (html, drawn) = await CrossAsync("/crossing-unnamed-enum", nameof(CrossingUnnamedEnumPage));
+
+        var expected = ("rank True 8 True | tier True 4611686018427387905 | keys True 4 6 2"
+            + " | list True 8 True").Split(" | ");
+        foreach (var line in expected) html.Should().Contain(line);
+        drawn[0].Split(" | ").Should().Equal(expected);
+        drawn[1].Should().Be(drawn[0]);
+    }
+
+    [Fact]
     public async Task ADictionaryKeyedByIntegers_CrossesInTheOrderTheServerDrewIt()
     {
         // Integer keys out of order, a slot a removal freed taken again, and text that looks like
