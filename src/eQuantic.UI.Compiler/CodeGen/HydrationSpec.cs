@@ -127,7 +127,11 @@ public static class HydrationSpec
             {
                 try
                 {
-                    return $"{{ of: {named.TwinTypeName()}, members: {MemberMap(MemberEntries(named, referenced, visiting))} }}";
+                    // What it was built as travels in the spec: the wire says nothing of it (#687).
+                    var closed = Strategies.Expressions.ObjectCreationStrategy.ClosureOf(named) is { } typeArguments
+                        ? $", closed: '{typeArguments}'"
+                        : "";
+                    return $"{{ of: {named.TwinTypeName()}, members: {MemberMap(MemberEntries(named, referenced, visiting))}{closed} }}";
                 }
                 finally
                 {
