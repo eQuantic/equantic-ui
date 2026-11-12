@@ -253,7 +253,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:76  var side = ControlMetrics.Height(context, Size);  … IconButton.cs:124-126  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. EmitVisitor.Interaction.cs:204 which is the only place Touch.MinTarget is applied)
+  IconButton.cs:78  var side = ControlMetrics.Height(context, Size);  … IconButton.cs:126-128  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. EmitVisitor.Interaction.cs:204 which is the only place Touch.MinTarget is applied)
   ```
 
 ### B1 Card · missing-feature · **CONFIRMED**
@@ -376,10 +376,10 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:114  ? new Pressable(box, OnPressed)
+  Chip.cs:120  ? new Pressable(box, OnPressed)
   Chip.cs:115    {
-  Chip.cs:116        Label = Label,
-  Chip.cs:109  Pressed = pressedFill is null ? null : new StyleDiff { Background = pressedFill },   // the pressed fill is the box's own Pressed diff since #616
+  Chip.cs:122        Label = Label,
+  Chip.cs:115  Pressed = pressedFill is null ? null : new StyleDiff { Background = pressedFill },   // the pressed fill is the box's own Pressed diff since #616
   WebLoweringVisitor.Interaction.cs:530  AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
   ```
 
@@ -391,8 +391,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:77  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
-  Chip.cs:113  return Kind == ChipKind.Filter && OnPressed != null
+  Chip.cs:81  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
+  Chip.cs:119  return Kind == ChipKind.Filter && OnPressed != null
   WebLoweringVisitor.Interaction.cs:505  var element = new RealizedElement(wrapping ? "span" : "button")
   ```
 
@@ -404,8 +404,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:100  var box = new Box(new BoxStyle
-  Chip.cs:104      Background = fill,
+  Chip.cs:104  var box = new Box(new BoxStyle
+  Chip.cs:108      Background = fill,
   Button.cs:137  Hover = inert || hoverFill is null ? null : new StyleDiff { Background = hoverFill },
   ```
 
@@ -652,7 +652,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  SegmentedControl.cs:39  var height = ControlMetrics.Height(context, Size);
+  SegmentedControl.cs:42  var height = ControlMetrics.Height(context, Size);
   Tokens.cs:84  SizeVariant.Medium => density == Density.Compact ? 32 : 40,
   Tokens.cs:85  SizeVariant.Large => density == Density.Compact ? 40 : 48,
   ```
@@ -665,7 +665,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  SegmentedControl.cs:68  StyleOverride = theme.Type(TypeRole.Label).WithSize(Sizing.LabelSize(Size, context.Density)),
+  SegmentedControl.cs:71  StyleOverride = theme.Type(TypeRole.Label).WithSize(Sizing.LabelSize(Size, context.Density)),
   Tokens.cs:172  SizeVariant.Medium => density == Density.Compact ? 13 : 15,
   ```
 
@@ -677,9 +677,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  SegmentedControl.cs:77  Background = selected ? theme.Surface : null,
-  SegmentedControl.cs:79  Elevation = selected ? 1 : 0,
-  SegmentedControl.cs:80  Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Shadow, Motion.Press),
+  SegmentedControl.cs:80  Background = selected ? slot?.ThumbFill ?? theme.Surface : null,
+  SegmentedControl.cs:82  Elevation = selected ? slot?.ThumbElevation ?? 1 : 0,
+  SegmentedControl.cs:83  Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Shadow, Motion.Press),
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -692,7 +692,7 @@ the pill's 40 down.
   ```
   Slider.cs:43  private const float ThumbSize = 24;
   Slider.cs:47  private const float ThumbBorder = 1;
-  Slider.cs:108              BorderWidth = ThumbBorder,
+  Slider.cs:112              BorderWidth = slot?.SliderThumbBorder ?? ThumbBorder,
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -703,7 +703,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:130          row.Add(new Flexible(TrackHalf(theme.SurfaceSubtle, filled: false, enabled: !Disabled,
+  Slider.cs:134          row.Add(new Flexible(TrackHalf(slot?.SliderRestTrack ?? theme.SurfaceSubtle, trackHeight, filled: false,
   Slider.cs:100          var fill = Disabled ? theme.BorderStrong : accent;
   ```
 
@@ -732,19 +732,19 @@ the pill's 40 down.
   ```
   src/eQuantic.UI.Runtime/src/dom/draggable.ts:24  const SLOP = 12; // Touch.PressCancelSlop — cross-pinned with the C# host
   draggable.ts:95  if (!active && Math.abs(travelled(ev)) > slop) {
-  Slider.cs:137          VisualNode surface = Disabled ? row : new Draggable(row)
+  Slider.cs:142          VisualNode surface = Disabled ? row : new Draggable(row)
   ```
 
 ### C7 Slider · missing-feature · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: Steps: 4dp dots — OnPrimary over active track, BorderStrong over rest
-- **Code**: Reproduced: `TrackHalf` (Slider.cs:190-212 TrackHalf) builds exactly one Box — the bar — inside one centring Column inside one press target, with no per-detent children; `Step` is read only as an arithmetic quantum. FENCED, and the reason is geometric rather than a matter of effort: the track is SPLIT at the thumb into two flex halves, so a dot at 3/10 of the whole track is at no fixed fraction of either half, and the component has no pixel width to compute one from — that is the same measurement the bubble below needs.
+- **Code**: Reproduced: `TrackHalf` (Slider.cs:195-217 TrackHalf) builds exactly one Box — the bar — inside one centring Column inside one press target, with no per-detent children; `Step` is read only as an arithmetic quantum. FENCED, and the reason is geometric rather than a matter of effort: the track is SPLIT at the thumb into two flex halves, so a dot at 3/10 of the whole track is at no fixed fraction of either half, and the component has no pixel width to compute one from — that is the same measurement the bubble below needs.
 - **Evidence**:
 
   ```
-  Slider.cs:182-193          var bar = new Box(new BoxStyle
-  Slider.cs:203-204          var centered = new Column(gap: 0) { Height = SizeValue.Fill, Main = MainAlign.Center };
+  Slider.cs:187-198          var bar = new Box(new BoxStyle
+  Slider.cs:209-210          var centered = new Column(gap: 0) { Height = SizeValue.Fill, Main = MainAlign.Center };
   ```
 
 ### C7 Slider · missing-feature · **CONFIRMED**
@@ -755,7 +755,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:142-151          var box = new Box(new BoxStyle
+  Slider.cs:144-153          var box = new Box(new BoxStyle
   ```
 
 ### C8 Stepper · metric · **unverified**
@@ -766,9 +766,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:47  var height = ControlMetrics.Height(context, Size);
-  Stepper.cs:100  var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);
-  Stepper.cs:70  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
+  Stepper.cs:50  var height = ControlMetrics.Height(context, Size);
+  Stepper.cs:104  var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);
+  Stepper.cs:74  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
   ```
 
 ### C8 Stepper · missing-feature · **unverified**
@@ -779,10 +779,10 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:51  var row = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
-  Stepper.cs:52  row.Add(Arm(theme, Icons.Minus, height, canDecrement, ...));
-  Stepper.cs:70  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
-  Stepper.cs:72  row.Add(Arm(theme, Icons.Plus, height, canIncrement, ...));
+  Stepper.cs:55  var row = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
+  Stepper.cs:56  row.Add(Arm(theme, Icons.Minus, height, canDecrement, ...));
+  Stepper.cs:74  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
+  Stepper.cs:76  row.Add(Arm(theme, Icons.Plus, height, iconSize, canIncrement,
   ```
 
 ### C8 Stepper · missing-feature · **unverified**
@@ -793,8 +793,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:102  return new Pressable(box, enabled ? onPressed : null) { Disabled = !enabled, Label = label };
-  Stepper.cs:52-53  row.Add(Arm(theme, Icons.Minus, height, canDecrement, () => OnChanged?.Invoke(Value - Step), $"Decrease {Label}"));
+  Stepper.cs:106  return new Pressable(box, enabled ? onPressed : null) { Disabled = !enabled, Label = label };
+  Stepper.cs:55-56  row.Add(Arm(theme, Icons.Minus, height, canDecrement, () => OnChanged?.Invoke(Value - Step), $"Decrease {Label}"));
   ```
 
 ### C8 Stepper · semantics · **unverified**
@@ -806,7 +806,7 @@ the pill's 40 down.
 
   ```
   Stepper.cs:75-84  return new Box(new BoxStyle { Width = SizeValue.Hug, Height = height, Background = ..., CornerRadius = ..., BorderWidth = 1, BorderColor = theme.BorderStrong, Opacity = ... }, row);
-  Stepper.cs:53  () => OnChanged?.Invoke(Value - Step), Action("Decrease")));
+  Stepper.cs:57  () => OnChanged?.Invoke(Value - Step), Action("Decrease")));
   ```
 
 ### C8 Stepper · behaviour · **unverified**
@@ -817,8 +817,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:70  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));   // not focusable
-  Stepper.cs:75  return new Box(new BoxStyle   // no Adjustable wrapper
+  Stepper.cs:74  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));   // not focusable
+  Stepper.cs:79  return new Box(new BoxStyle   // no Adjustable wrapper
   ```
 
 ### C9 PullToRefresh · metric · **unverified**
@@ -1063,7 +1063,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:125-135  VisualNode select = new Anchored(trigger, panel)
+  Select.cs:129-139  VisualNode select = new Anchored(trigger, panel)
           {
               Open = _open && !Disabled,
               OnDismiss = () => SetState(() => _open = false),
@@ -1081,7 +1081,7 @@ the pill's 40 down.
   ```
   Select.cs:27-28  public Select(IReadOnlyList<string> options, int selectedIndex = -1,
           Action<int>? onChanged = null, string? placeholder = null)
-  Select.cs:127  var trigger = new Pressable(field, Disabled ? null : Toggle) { Disabled = Disabled, Expanded = _open && !Disabled };
+  Select.cs:137  var trigger = new Pressable(field, Disabled ? null : Toggle) { Disabled = Disabled, Expanded = _open && !Disabled };
   ```
 
 ### C14 Select · missing-feature · **unverified**
@@ -1092,7 +1092,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:79-80  var list = new Column(gap: 0) { Width = SizeValue.Fill };
+  Select.cs:88-89  var list = new Column(gap: 0) { Width = SizeValue.Fill };
           for (var i = 0; i < Options.Count; i++)
   ```
 
@@ -1104,7 +1104,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:141-145  var live = _open && !Disabled && Options.Count > 0;
+  Select.cs:151-155  var live = _open && !Disabled && Options.Count > 0;
           select = new Shortcut(select, KeyChord.ArrowDown,
               () => SetState(() => _highlight = Math.Min(Options.Count - 1, _highlight + 1))) { Enabled = live };
           select = new Shortcut(select, KeyChord.ArrowUp,
@@ -1389,7 +1389,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:134  return new Pressable(box, Disabled ? null : OnPressed)   (no Tooltip/Anchored anywhere in IconButton.cs)
+  IconButton.cs:138  return new Pressable(box, Disabled ? null : OnPressed)   (no Tooltip/Anchored anywhere in IconButton.cs)
   ```
 
 ### B1 Card · missing-feature · **REFUTED**
@@ -1712,7 +1712,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:79  Label = SdkStrings.Remove,
+  Chip.cs:83  Label = SdkStrings.Remove,
   SdkResources.resx:16  <value>Remove</value>
   ```
 
@@ -1724,7 +1724,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:77  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
+  Chip.cs:81  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
   WebLoweringVisitor.Interaction.cs:510  Padding = "0",
   EmitVisitor.Interaction.cs:204  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
   ```
@@ -2159,7 +2159,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Dialog.cs`
 - **Handoff**: Destructive announced "…, destructive"
-- **Code**: No action label is ever suffixed. Dialog.cs:60 builds a plain Button with action.Label verbatim, and Button.cs:144 passes that same string as the Pressable's accessible name — Button.cs contains no occurrence of "destructive" at all. The only destructive signal is the layer's role escalation to alertdialog; the button itself sounds identical to a safe one.
+- **Code**: No action label is ever suffixed. Dialog.cs:60 builds a plain Button with action.Label verbatim, and Button.cs:132 passes that same string as the Pressable's accessible name — Button.cs contains no occurrence of "destructive" at all. The only destructive signal is the layer's role escalation to alertdialog; the button itself sounds identical to a safe one.
 - **Evidence**:
 
   ```
@@ -2247,8 +2247,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  SegmentedControl.cs:40  var inset = 3f;                                   // the track's lip around the thumb
-  SegmentedControl.cs:78  CornerRadius = new CornerRadii(trackRadius - inset),   // 10 - 3 = 7
+  SegmentedControl.cs:43  var inset = slot?.Inset ?? 3f;                    // the track's lip around the thumb
+  SegmentedControl.cs:81  CornerRadius = new CornerRadii(trackRadius - inset),   // 10 - 3 = 7
   ```
 
 ### C6 SegmentedControl · behaviour · **unverified**
@@ -2271,7 +2271,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  SegmentedControl.cs:83  var press = new Pressable(segment, Disabled || selected ? null : () => OnChanged?.Invoke(index))
+  SegmentedControl.cs:86  var press = new Pressable(segment, Disabled || selected ? null : () => OnChanged?.Invoke(index))
   SegmentedControl.cs:84-89  { Disabled = Disabled, Label = Segments[index], Role = PressableRole.Radio, Selected = selected, }   // no pressed fill
   Tabs.cs:69  Pressed = new StyleDiff { Background = theme.SurfaceSubtle },
   ```
@@ -2284,9 +2284,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  SegmentedControl.cs:109  return new Adjustable(track,
-  SegmentedControl.cs:110      direction => OnChanged.Invoke((SelectedIndex + direction + count) % count))
-  SegmentedControl.cs:112      Role = AdjustableRole.Radiogroup,
+  SegmentedControl.cs:114  return new Adjustable(track,
+  SegmentedControl.cs:115      direction => OnChanged.Invoke((SelectedIndex + direction + count) % count))
+  SegmentedControl.cs:117      Role = AdjustableRole.Radiogroup,
   ```
 
 ### C6 SegmentedControl · missing-feature · **unverified**
@@ -2299,7 +2299,7 @@ the pill's 40 down.
   ```
   SegmentedControl.cs:18  public SegmentedControl(IReadOnlyList<string> segments, int selectedIndex, Action<int>? onChanged = null)
   SegmentedControl.cs:26  public IReadOnlyList<string> Segments { get; init; }
-  SegmentedControl.cs:65  label.Add(new Text(Segments[index], TypeRole.Label, ...
+  SegmentedControl.cs:68  label.Add(new Text(Segments[index], TypeRole.Label, ...
   ```
 
 ### C6 SegmentedControl · behaviour · **unverified**
@@ -2322,10 +2322,10 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:106              Background = theme.Surface,
-  Slider.cs:108              BorderWidth = ThumbBorder,
-  Slider.cs:115              BorderColor = theme.Border,
-  Slider.cs:116              Elevation = 2,
+  Slider.cs:110              Background = slot?.ThumbFill ?? theme.Surface,
+  Slider.cs:112              BorderWidth = slot?.SliderThumbBorder ?? ThumbBorder,
+  Slider.cs:119              BorderColor = slot?.SliderThumbBorderColor ?? theme.Border,
+  Slider.cs:120              Elevation = slot?.SliderThumbElevation ?? 2,
   ```
 
 ### C7 Slider · behaviour · **unverified**
@@ -2348,8 +2348,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:104-105  Width = ThumbSize,  Height = ThumbSize,
-  Slider.cs:117  Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
+  Slider.cs:108-109  Width = thumbSize,  Height = thumbSize,
+  Slider.cs:121  Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2372,7 +2372,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:98  centered.Add(new Icon(glyph, IconSize.Dense, enabled ? theme.TextPrimary : theme.TextMuted));
+  Stepper.cs:102  centered.Add(new Icon(glyph, iconSize, enabled ? theme.TextPrimary : theme.TextMuted));
   Tokens.cs:48  public const float Dense = 20;
   ```
 
@@ -2384,7 +2384,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:102  return new Pressable(box, enabled ? onPressed : null) { Disabled = !enabled, Label = label };
+  Stepper.cs:106  return new Pressable(box, enabled ? onPressed : null) { Disabled = !enabled, Label = label };
   Stepper.cs:63-69  reading.Add(new Text($"{Value}{Suffix}", TypeRole.Label, ...) { Align = ..., Tabular = true, StyleOverride = ... });   // no Transition
   ```
 
@@ -2396,9 +2396,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:98  centered.Add(new Icon(glyph, IconSize.Dense, enabled ? theme.TextPrimary : theme.TextMuted));
-  Stepper.cs:100  var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);   // no Opacity
-  Stepper.cs:83  Opacity = Disabled ? theme.DisabledOpacity : 1f,
+  Stepper.cs:102  centered.Add(new Icon(glyph, iconSize, enabled ? theme.TextPrimary : theme.TextMuted));
+  Stepper.cs:104  var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);   // no Opacity
+  Stepper.cs:87  Opacity = Disabled ? theme.DisabledOpacity : 1f,
   ```
 
 ### C9 PullToRefresh · metric · **unverified**
@@ -2609,7 +2609,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:74-76  BorderColor = theme.BorderStrong,
+  Select.cs:84  BorderColor = slot?.BorderColor ?? theme.BorderStrong,
               Opacity = Disabled ? theme.DisabledOpacity : null,
               Hover = Disabled ? null : new StyleDiff { BorderColor = theme.Colors(Variant.Primary).Base },
   ```
@@ -2995,7 +2995,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:110-115  ColorToken? pressedFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:110 "(Link's pressed TEXT swap joins with rich text.)")
+  Button.cs:106-111  ColorToken? pressedFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:98 "(Link's pressed TEXT swap joins with rich text.)")
   ```
 
 ### A12 Button · documented-deviation · **CONFIRMED**
@@ -3006,7 +3006,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:120-125  ColorToken? hoverFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:119-120 "Link's hover is an underline, which joins when the style diff grows a text channel.")
+  Button.cs:116-121  ColorToken? hoverFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:107-108 "Link's hover is an underline, which joins when the style diff grows a text channel.")
   ```
 
 ### A12 Button · behaviour · **unverified**
@@ -3017,7 +3017,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:127-129  var container = new Box(new BoxStyle\n        {\n            Height = height,
+  Button.cs:125-127  var container = new Box(new BoxStyle\n        {\n            Height = height,
   ```
 
 ### A13 IconButton · documented-deviation · **CONFIRMED**
@@ -3028,7 +3028,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:103  var glyph = (Selected && SelectedGlyph is { } filledGlyph ? filledGlyph : Glyph).Glyph;   (IconButton.cs:22-23 doc: "the glyph swaps to SelectedGlyph (outline → filled pairs are DISTINCT glyphs, spec A10)")
+  IconButton.cs:107  var glyph = (Selected && SelectedGlyph is { } filledGlyph ? filledGlyph : Glyph).Glyph;   (IconButton.cs:22-23 doc: "the glyph swaps to SelectedGlyph (outline → filled pairs are DISTINCT glyphs, spec A10)")
   ```
 
 ### B1 Card · documented-deviation · **CONFIRMED**
@@ -3146,8 +3146,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:69  if (Kind == ChipKind.Filter && Selected)
-  Chip.cs:71      content.Add(new Icon(Icons.Check, IconSize.Sm, textColor));
+  Chip.cs:73  if (Kind == ChipKind.Filter && Selected)
+  Chip.cs:75      content.Add(new Icon(Icons.Check, slot?.IconSize ?? IconSize.Sm, textColor));
   ```
 
 ### B8 Chip · missing-feature · **CONFIRMED**
@@ -3158,7 +3158,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:77  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
+  Chip.cs:81  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
   ```
 
 ### B8 Chip · metric · **REFUTED**
@@ -3170,7 +3170,7 @@ the pill's 40 down.
 
   ```
   Chip.cs:14  /// The design system's Chip / Tag (spec B8): height 32, Radius.Full, 12dp X padding, 13/600 label —
-  Chip.cs:102  Height = ControlMetrics.Height(context, SizeVariant.Small),
+  Chip.cs:106  Height = ControlMetrics.Height(context, SizeVariant.Small),
   Tokens.cs:83  SizeVariant.Small => density == Density.Compact ? 26 : 32,
   ```
 
@@ -3459,7 +3459,7 @@ the pill's 40 down.
 
   ```
   SegmentedControl.cs:6-9  /// A single choice out of two to five, all of them VISIBLE (spec B9) ... past five segments the labels stop fitting and the control becomes a Select.
-  SegmentedControl.cs:65  label.Add(new Text(Segments[index], TypeRole.Label, selected ? theme.TextPrimary : theme.TextSecondary, maxLines: 1)
+  SegmentedControl.cs:68  label.Add(new Text(Segments[index], TypeRole.Label, selected ? theme.TextPrimary : theme.TextSecondary, maxLines: 1)
   ```
 
 ### C7 Slider · documented-deviation · **unverified**
@@ -3470,7 +3470,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:123-124  row.Add(new Flexible(TrackHalf(fill, filled: true, enabled: !Disabled, onPressed: () => OnChanged?.Invoke(Math.Max(Min, Value - step))), Weight(fraction)));
+  Slider.cs:128  row.Add(new Flexible(TrackHalf(fill, trackHeight, filled: true, enabled: !Disabled,
   ```
 
 ### C7 Slider · documented-deviation · **unverified**
@@ -3481,7 +3481,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:145  OnMoved = f => OnChanged?.Invoke(Quantize(Min + f * span, step)),
+  Slider.cs:150  OnMoved = f => OnChanged?.Invoke(Quantize(Min + f * span, step)),
   ```
 
 ### C8 Stepper · behaviour · **unverified**
@@ -3629,11 +3629,11 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:68-71  Height = ControlMetrics.Height(context, SizeVariant.Medium),
+  Select.cs:62  var height = ControlMetrics.Height(context, SizeVariant.Medium, slot?.Controls);
               Width = SizeValue.Fill,
               Padding = EdgeInsets.Symmetric(Space.S3, 0),
   TextInput.cs:22  Icons? leading = null, SizeVariant size = SizeVariant.Large)
-  TextInput.cs:113  var paddingX = _focused ? 13f : 14f;
+  TextInput.cs:119  var paddingX = _focused ? restPadding - (focusBorder - restBorder) : restPadding;
   ```
 
 ### C14 Select · documented-deviation · **unverified**

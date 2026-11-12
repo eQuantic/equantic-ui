@@ -92,3 +92,6 @@ promotion/wallet-video/tools/trim
 promotion/wallet-video/tools/sheet
 promotion/wallet-video/tools/windows
 promotion/wallet-video/tools/winrec
+
+# The state of a delivery in progress, one folder per issue (the pipeline skill, #1493)
+.claude/pipelines/

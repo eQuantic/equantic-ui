@@ -353,6 +353,15 @@ packages are pinned by the lockfile's integrity hashes. When a tool it is respon
 set up, the person in the session sees a warning naming it, and the session still starts. CI's `session-start` job runs the hook the
 way a fresh container would and asserts every promise (`scripts/check-session-start.sh`).
 
+## Pipelines (a pilot, #1493)
+
+A delivery in Claude Code can run through the `pipeline` skill (`.claude/skills/pipeline/SKILL.md`),
+only when a person invokes it (`/pipeline`): it is being measured against the way we work today,
+and no session takes it up by itself. It selects the pipeline of the change's kind, runs each stage
+with the agent, model and effort the registry gives it (`.claude/agents/`), holds the gate and ships
+as the Workflow above says. It restates none of these rules, and where it differs from this file,
+this file wins.
+
 ## Project Overview
 
 **eQuantic.UI** is a Flutter-inspired component-based UI framework for .NET that compiles C# components directly to optimized JavaScript at build time (not WASM). It provides type-safe, HTML-native components with a small runtime (its gzip size is measured by the site's
