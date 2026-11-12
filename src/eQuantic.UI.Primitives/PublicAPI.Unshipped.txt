@@ -1,3 +1,4 @@
 #nullable enable
 *REMOVED*eQuantic.UI.Primitives.ITextClipboard.Read() -> string?
 eQuantic.UI.Primitives.ITextClipboard.ReadAsync() -> System.Threading.Tasks.Task<string?>!
+static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!

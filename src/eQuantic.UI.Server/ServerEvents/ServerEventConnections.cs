@@ -16,11 +16,17 @@ internal sealed class ServerEventConnections
     private readonly Dictionary<string, Dictionary<string, ServerEventConnection>> _byTopic = new(StringComparer.Ordinal);
     private readonly Lock _index = new();
 
-    public ServerEventConnection Open(int capacity)
+    /// <summary>Opens a connection, or answers null when this instance already holds
+    /// <paramref name="limit"/> of them (#1292).</summary>
+    public ServerEventConnection? Open(int capacity, int limit)
     {
-        var connection = new ServerEventConnection(Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(16)), capacity);
-        _connections[connection.Id] = connection;
-        return connection;
+        lock (_index)
+        {
+            if (_connections.Count >= limit) return null;
+            var connection = new ServerEventConnection(Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(16)), capacity);
+            _connections[connection.Id] = connection;
+            return connection;
+        }
     }
 
     public bool TryGet(string id, out ServerEventConnection? connection) => _connections.TryGetValue(id, out connection);
@@ -80,9 +86,12 @@ internal sealed class ServerEventConnections
         return released;
     }
 
-    /// <summary>Writes an envelope to every connection here that holds its topic.</summary>
+    /// <summary>Writes an envelope to every connection here that holds its topic. One a frame cannot carry
+    /// is written to none: the backplane is a channel others may write to, so what arrives on it is checked
+    /// again as the publisher checks what it sends (#1292).</summary>
     public ValueTask DeliverAsync(ServerEventEnvelope envelope)
     {
+        if (!ServerEventFrames.CanCarry(envelope)) return ValueTask.CompletedTask;
         ServerEventConnection[] holders;
         lock (_index)
         {
