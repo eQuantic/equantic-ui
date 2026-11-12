@@ -183,6 +183,37 @@ internal sealed class MethodLowering
             JsStatement.Block(setter)) with { Origin = new JsOrigin(set) };
     }
 
+    /// <summary>
+    /// An event's <c>add</c> and <c>remove</c> accessors as the two methods of its twin every subscription
+    /// calls (<see cref="CodeGen.EventAccessors"/>, #746), each taking the handler as C#'s <c>value</c>, static for a
+    /// static event. One path for a class, a static class, a component, a record and a struct (#1445): only
+    /// the class's emitter wrote them, and <c>s.$add$fired(h)</c> on a record threw where .NET counts.
+    /// </summary>
+    /// <param name="e">The event, declared with accessors or field-like (which yields nothing).</param>
+    /// <param name="declaredType">The emitter's annotation for a declared type.</param>
+    /// <param name="asStatic">Emit them as statics whatever the event's modifiers say: a static class's
+    /// members are its twin's statics.</param>
+    public IEnumerable<JsClassMember> EventAccessors(EventDeclarationSyntax e, Func<TypeSyntax?, string> declaredType, bool asStatic)
+    {
+        if (e.AccessorList is null) yield break;
+        var twin = _modelFor(e)?.GetDeclaredSymbol(e) is IEventSymbol symbol
+            ? symbol.MemberTwinName()
+            : e.Identifier.ValueText.ToCamelCase();
+        var modifiers = asStatic || e.Modifiers.Any(SyntaxKind.StaticKeyword) ? "static " : "";
+        var parameter = Param("value", declaredType(e.Type));
+        foreach (var accessor in e.AccessorList.Accessors)
+        {
+            var verb = accessor.Keyword.ValueText;
+            if (verb is not ("add" or "remove")) continue;
+            JsStatement? body = accessor.Body is { } block ? AccessorBody(block)
+                : accessor.ExpressionBody is { } arrow ? ExpressionBody(arrow.Expression, returns: false)
+                : null;
+            if (body is not null)
+                yield return JsClassMember.Method(modifiers, CodeGen.EventAccessors.Name(verb, twin), "", parameter, "", body)
+                    with { Origin = new JsOrigin(accessor) };
+        }
+    }
+
     /// <summary>The value an indexer's setter was handed, kept where its body reassigns <c>value</c>:
     /// <c>$</c> cannot begin a C# identifier, so the body names nothing by it.</summary>
     private const string HandedValue = "$value";
