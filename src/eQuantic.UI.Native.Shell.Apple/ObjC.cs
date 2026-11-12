@@ -76,6 +76,17 @@ public static partial class ObjC
     [LibraryImport(ObjCLib, StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr sel_registerName(string name);
 
+    // ---- Autorelease pools -----------------------------------------------------------------------
+    // What an Objective-C call hands back autoreleased is released when the pool around it drains.
+    // AppKit's own loop drains one per event, and so does UIKit's run loop; a loop a shell runs itself
+    // has none, so every event, drawable and command buffer it was handed stayed alive for good.
+
+    [LibraryImport(ObjCLib)]
+    public static partial IntPtr objc_autoreleasePoolPush();
+
+    [LibraryImport(ObjCLib)]
+    public static partial void objc_autoreleasePoolPop(IntPtr pool);
+
     // ---- Defining a class at runtime -----------------------------------------------------------
     // Some things AppKit only tells a SUBCLASS. A window shell with no classes of its own can poll
     // for most of them, but not for the ones that happen inside a loop it never gets back from —
