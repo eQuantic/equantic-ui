@@ -51,9 +51,12 @@ internal static class Boxing
         && (method.ContainingType.ToDisplayString() == "System.Convert" || method.Name == "CompareTo");
 
     /// <summary>Whether a conversion is an argument of <c>object</c>'s statics (<c>Equals</c>, <c>ReferenceEquals</c>),
-    /// which compare a list by the type it had before the conversion: a mark would change nothing there.</summary>
+    /// which compare a list by the type it had before the conversion, or an operand of a reference equality
+    /// (<c>children != null</c>, which C# binds as <c>object</c>'s <c>==</c>), which JavaScript answers by identity:
+    /// a mark would change nothing there, and it was written into every null test of a list.</summary>
     internal static bool PassesThrough(IConversionOperation conversion) =>
-        conversion.Parent is IArgumentOperation { Parent: IInvocationOperation { TargetMethod: { IsStatic: true, ContainingType.SpecialType: SpecialType.System_Object } } };
+        conversion.Parent is IArgumentOperation { Parent: IInvocationOperation { TargetMethod: { IsStatic: true, ContainingType.SpecialType: SpecialType.System_Object } } }
+        || conversion.Parent is IBinaryOperation { OperatorKind: BinaryOperatorKind.Equals or BinaryOperatorKind.NotEquals, OperatorMethod: null };
 
     /// <summary><c>$eq.box(value, type[, shape])</c>: the boxing of an enum member or a float.</summary>
     internal static JsExpr Box(ITypeSymbol type, JsExpr value, ConversionContext context)
