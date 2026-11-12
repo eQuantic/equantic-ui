@@ -71,3 +71,13 @@
  1000   0.3 132912 /Users/runner/actions-runner/cached/bin/Runner.Worker
  2109   0.1 137536 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
  2089   0.1 150432 dotnet
+=== alive 13:56:00 app: 2109 watch: 
+--- sample 13:56:07 load: { 9.41 11.40 5.67 } System-wide memory free percentage: 93%
+161 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2089 dotnet run --no-build --project samples/PhotonDesktop
+2109 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  979   3.6   7232 /usr/libexec/sysmond
+ 2083   0.6   1616 /bin/bash
+ 1775   0.3 829744 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+  165   0.2  23552 /usr/libexec/runningboardd
+ 4223   0.1  62608 /System/Library/PrivateFrameworks/UIFoundation.framework/Versions/A/XPCServices/nsattributedstringagent.xpc/Contents/MacOS/nsattributedstringagent
