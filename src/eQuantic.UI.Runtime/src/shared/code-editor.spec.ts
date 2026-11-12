@@ -10,7 +10,7 @@
  * moment it had to, the two targets would have started to drift.
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
@@ -2434,5 +2434,79 @@ describe('the keys an app binds', () => {
     expect(press('d')).toBe(true);
     const selection = component.editor.selection;
     expect([selection.start.line, selection.start.column, selection.end.line, selection.end.column]).toEqual([0, 0, 1, 5]);
+  });
+});
+
+/**
+ * A reader hears the field and its text as one thing (#1333, C# twin:
+ * SurfaceSsrTests.ItsInputHoldsTheReading_AndItsDrawingIsHidden). The door held nothing and the code was
+ * read as lines of their own beside an empty field. It now holds the model's reading, its selection is the
+ * model's, and what the surface draws is out of the reading order; an input method's text left in it is put
+ * back after the render.
+ */
+describe('a reader hears the field and its text as one thing', () => {
+  // Rendered as a page renders it, one pass after another: the surface keeps its position, its id and
+  // the door its id keys (#1454), which a render after a render of a tree drawn once would not.
+  let render = rendersOfOnePage();
+  beforeEach(() => {
+    render = rendersOfOnePage();
+  });
+  const lower = (editor: CodeEditorController) =>
+    render(() =>
+      lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor) as never, {
+        textPrimary: photonTheme.textPrimary,
+        componentContext: { theme: photonTheme, typeScale: 1 },
+      }),
+    );
+
+  it('holds the reading, selects where the caret is, and hides what it draws', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'requestAnimationFrame'] });
+    const parent = document.createElement('div');
+    try {
+      const editor = new CodeEditorController('one\ntwo\nthree', CodeLanguages.for('csharp'));
+      editor.selection = new CodeRange(new CodePosition(1, 1), new CodePosition(2, 3));
+      document.body.append(parent);
+      const reconciler = new Reconciler();
+      const first = lower(editor);
+      reconciler.reconcile(parent, null, first);
+      vi.advanceTimersByTime(100);
+
+      const door = parent.querySelector('textarea')!;
+      expect(door.value).toBe('one\ntwo\nthree');
+      expect([door.selectionStart, door.selectionEnd, door.selectionDirection]).toEqual([5, 11, 'forward']);
+      expect(parent.querySelector('.eq-code-surface')!.firstElementChild!.getAttribute('aria-hidden')).toBe('true');
+
+      // What an input method left in the door is no part of the document: the next render puts the reading back.
+      door.value = 'one\ntかwo\nthree';
+      editor.selection = new CodeRange(new CodePosition(0, 3));
+      reconciler.reconcile(parent, first, lower(editor), 0);
+      vi.advanceTimersByTime(100);
+      expect(door.value).toBe('one\ntwo\nthree');
+      expect([door.selectionStart, door.selectionEnd]).toEqual([3, 3]);
+    } finally {
+      vi.useRealTimers();
+      parent.remove();
+    }
+  });
+
+  // A phone's keyboard composes and corrects in the text around its caret, and the door never tells the
+  // model which range a correction replaces: under a finger the door holds nothing, as it always did.
+  it('holds nothing under a finger', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'requestAnimationFrame'] });
+    const parent = document.createElement('div');
+    const matchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ matches: query === '(pointer: coarse)' })) as never;
+    try {
+      const editor = new CodeEditorController('one\ntwo', CodeLanguages.for('csharp'));
+      document.body.append(parent);
+      new Reconciler().reconcile(parent, null, lower(editor));
+      vi.advanceTimersByTime(100);
+
+      expect(parent.querySelector('textarea')!.value).toBe('');
+    } finally {
+      window.matchMedia = matchMedia;
+      vi.useRealTimers();
+      parent.remove();
+    }
   });
 });

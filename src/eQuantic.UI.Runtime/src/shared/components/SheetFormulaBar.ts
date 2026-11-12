@@ -1,4 +1,4 @@
-import { CodeGrid, KeyboardConventionValue, Point, PointerPhaseValue, Rect, SheetController, SheetKeymap } from "../runtime-exports";
+import { CodeGrid, KeyboardConventionValue, Point, PointerPhaseValue, Rect, SheetController, SheetKeymap, TextReading } from "../runtime-exports";
 
 export class SheetFormulaBar {
     constructor(sheet: SheetController) {
@@ -30,6 +30,10 @@ export class SheetFormulaBar {
 
     get focusVersion(): number {
         return this._focusVersion;
+    }
+
+    get reading(): TextReading {
+        return this._sheet.editing ? this._sheet.entry.reading : new TextReading(this._sheet.document.getCell(this._sheet.activeCell), 0, 0);
     }
 
     requestFocus() {

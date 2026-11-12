@@ -11,7 +11,7 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
-import { adoptServerStateFor, componentIdentity, nextTree, runLoweringWalk } from '../core/component';
+import { adoptServerStateFor, awaitsServerState, componentIdentity, nextTree, runLoweringWalk } from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { Dictionary, plainBag } from '../utils/dictionary';
@@ -90,6 +90,7 @@ import type {
   CameraPreviewNode,
   WebFrameNode,
   CodeSurfaceModelLike,
+  TextReadingLike,
   CodeSurfaceNode,
   ImageNode,
   GridPatternValue,
@@ -249,8 +250,10 @@ function buildComponent(
   depth: number,
   owner: BuildOwner,
 ): VisualNodeValue {
-  const key = serverDataKey(component, owner);
-  if (key !== null) adoptServerStateFor(component, key);
+  if (awaitsServerState(component)) {
+    const key = serverDataKey(component, owner);
+    if (key !== null) adoptServerStateFor(component, key);
+  }
   const name = component.constructor?.name ?? 'Component';
   try {
     if (depth >= MAX_COMPONENT_DEPTH) {
@@ -911,8 +914,11 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   state.id = id;
   surface.attributes['data-eq-code'] = id;
 
+  // Its text is the door's value (#1333, C# twin: LowerCodeSurface), so what it draws is out of the
+  // reading order: a reader heard an empty field and then the code as lines of their own.
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) {
+    child.attributes['aria-hidden'] = 'true';
     // The child keeps its layers (the mark layer under the lines among them) inside a stacking
     // context of its OWN. A code block that carries a decoration draws it on a Stack whose layers
     // take a z-index, and those climbed over the caret painted after the child: the caret vanished
@@ -962,6 +968,11 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   // carets before it and the notes after, a press that added carets while a note appeared matched it
   // with a new caret's mark, and the input made anew in its place left the keyboard on the page (#1012).
   input.key = `${id}/input`;
+  // The door holds what a reader hears the surface hold (#1333): the field and its text are one thing.
+  // Written as the textarea's content, as the server writes it; the live value and the selection are
+  // kept in step with the model after each render (readAfterRender).
+  const reading = model.reading;
+  if (reading.text.length > 0) input.children = [textLeaf(reading.text)];
   surface.children.push(input);
 
   // What the surface EXPLAINS (C# twin: LowerCodeSurface): each note over the code and the caret, at
@@ -1048,6 +1059,8 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     focusedVersions.set(model, model.focusVersion);
     focusSurface(id);
   }
+
+  readAfterRender('data-eq-code', id, model, reading);
 
   const changed = () => node.onChanged?.();
   // Copy and Cut run through the browser's copy event on whatever key the editor binds them to.
@@ -1295,7 +1308,8 @@ function openTextDoor(
         remember(ime, event.data);
       } else model.setComposition('');
     }
-    (event.target as HTMLTextAreaElement).value = '';
+    // What the input method left in the door is no part of the document: the render this asks for puts
+    // the door's reading back (readAfterRender), rather than emptying it for a frame a reader would hear.
     changed();
   }) as unknown as EventHandler;
 
@@ -1352,6 +1366,51 @@ class CodeSurfaceState implements NodeState {
   dispose(): void {
     if (resting?.id === this.id) resting = null;
   }
+}
+
+/**
+ * Keeps a text door holding what a reader hears its surface hold, and its selection where the surface's
+ * caret is (#1333, C# twins: the door's content in LowerCodeSurface and LowerSheetSurface). A textarea's content is only
+ * its value until something edits it, and an input method does, so the value is written here as well;
+ * the selection exists only on the live element. Moving it is what makes a reader say the line the caret
+ * moved to, the way a native field's caret does.
+ * <p>
+ * After the render, as revealCaret runs, and by the surface's id, never by a captured element. Never while an input
+ * method composes: moving the selection under it would cancel the composition.
+ * </p>
+ * <p>
+ * Not under a finger: a phone's keyboard reads the text around its caret and composes, corrects and
+ * replaces words in it, and the door hands the model what is typed, never which range a correction meant
+ * to replace, so a door holding the text would have the keyboard rewrite words it had already written
+ * (#1333). There the door holds nothing, as it always did.
+ * </p>
+ */
+function readAfterRender(attribute: string, id: string, model: object, reading: TextReadingLike): void {
+  if (typeof document === 'undefined') return;
+  const read = () => {
+    if (typeof document === 'undefined') return;
+    const door = document.querySelector<HTMLTextAreaElement>(`[${attribute}="${id}"] textarea.eq-code-input`);
+    if (!door || compositionOf(model).open) return;
+    if (underAFinger()) {
+      if (door.value !== '') door.value = '';
+      return;
+    }
+    if (door.value !== reading.text) door.value = reading.text;
+    const start = Math.min(reading.anchor, reading.focus);
+    const end = Math.max(reading.anchor, reading.focus);
+    const direction = reading.focus < reading.anchor ? 'backward' : 'forward';
+    if (door.selectionStart !== start || door.selectionEnd !== end || door.selectionDirection !== direction) {
+      door.setSelectionRange(start, end, direction);
+    }
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(read));
+  if (typeof setTimeout === 'function') setTimeout(read, 48);
+}
+
+/** Whether the page's primary pointer is a finger, whose keyboard composes in the text around its caret. */
+function underAFinger(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    && window.matchMedia('(pointer: coarse)').matches;
 }
 
 /** The focus request each code surface's MODEL was last given the keyboard for (see lowerCodeSurface). */
@@ -2017,7 +2076,12 @@ function lowerSheetSurface(
     children: [],
   };
   if (node.label) input.attributes['aria-label'] = node.label;
+  // The door's value is what the grid says now (#1333, C# twin: LowerSheetSurface), as Photon gives the
+  // field it: a reader arriving on the sheet hears where it is from the field itself.
+  const said = node.announcement ?? '';
+  if (said.length > 0) input.children = [textLeaf(said)];
   view.children.push(input);
+  readAfterRender('data-eq-sheet', id, model, { text: said, anchor: said.length, focus: said.length });
 
   // What the grid says now (C# twin: LowerSheetSurface, #1081): a visually hidden polite status, which a
   // reader speaks each time its words change, wherever its focus is.
