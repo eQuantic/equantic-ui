@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        attempt: [1, 2, 3, 4, 5, 6]
+        attempt: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -24,13 +24,15 @@ jobs:
           (
             set +e +o pipefail
             while true; do
-              echo "--- sample $(date -u +%H:%M:%S) load: $(sysctl -n vm.loadavg) swap: $(sysctl -n vm.swapusage) free pages: $(vm_stat | awk '/Pages free/ {print $3}')"
-              ps -axo pid=,rss=,%cpu=,comm= > "$RUNNER_TEMP/ps.txt"
-              sort -k2 -nr "$RUNNER_TEMP/ps.txt" > "$RUNNER_TEMP/ps-sorted.txt"
-              head -6 "$RUNNER_TEMP/ps-sorted.txt" | awk '{printf "  pid %s rss %d MB cpu %s %s\n", $1, $2/1024, $3, $4}'
-              awk '$2 > 3145728 {print $1, int($2/1024), $4}' "$RUNNER_TEMP/ps.txt" > "$RUNNER_TEMP/big.txt"
-              while read -r pid mb name; do echo "WATCHDOG: $name (pid $pid) holds ${mb} MB, killed"; kill -9 "$pid"; done < "$RUNNER_TEMP/big.txt"
-              sleep 10
+              echo "--- sample $(date -u +%H:%M:%S) load: $(sysctl -n vm.loadavg) $(memory_pressure -Q 2>/dev/null | tail -1)"
+              for pid in $(pgrep -x PhotonDesktop); do
+                fp=$(footprint -p "$pid" 2>/dev/null | awk '/phys_footprint:/ {print $2, $3; exit}')
+                gfx=$(footprint -p "$pid" 2>/dev/null | /usr/bin/grep -i -E 'IOAccelerator|IOSurface' | head -2 | tr -s ' ' | tr '\n' ';')
+                echo "  PhotonDesktop pid $pid footprint $fp graphics: $gfx"
+                mb=$(footprint -p "$pid" -f bytes 2>/dev/null | awk '/phys_footprint:/ {print int($2/1048576); exit}')
+                if [ -n "$mb" ] && [ "$mb" -gt 2500 ]; then echo "WATCHDOG: PhotonDesktop (pid $pid) footprint ${mb} MB, killed"; kill -9 "$pid"; fi
+              done
+              sleep 5
             done
           ) &
           sampler=$!
