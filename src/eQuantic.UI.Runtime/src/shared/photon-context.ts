@@ -5,6 +5,7 @@
  */
 
 import type { LoweringContext } from './lowering';
+import type { RenderContext } from '../core/types';
 import { resolveService } from '../utils/services';
 import { RouteValues } from './route-values';
 import { cssFontWeight, isWellFormedFace, type AppTheme } from './value-types';
@@ -16,23 +17,84 @@ import { passInvalidator } from './pass-invalidator';
 import { declareFamily, dependOnFamily } from './face-declarations';
 import { textElementStarts } from '../utils/text-elements';
 
-/** Mirror of the C# `ComponentContext` — what a shared component's `build()` may read (mode-free). */
+/**
+ * What a context made for a component's position reads of it: the element engine's
+ * `ComponentElement`, by the members the C# context reads. Declared here rather than imported, so
+ * this module takes no dependency on the engine's, which reaches it through `runtime-exports`.
+ */
+interface ContextPosition {
+  readonly isActive: boolean;
+  readonly underInFlow: boolean;
+  readonly owner: { readonly context: RenderContext; readFrame(reader: ContextPosition): void };
+  visitChildren(visitor: unknown): void;
+}
+
+/** Whether the constructor was handed a position rather than a theme: only an element visits children. */
+function isPosition(value: AppTheme | ContextPosition | null): value is ContextPosition {
+  return typeof (value as Partial<ContextPosition> | null)?.visitChildren === 'function';
+}
+
+/**
+ * Mirror of the C# `ComponentContext` — what a shared component's `build()` may read (mode-free).
+ *
+ * Made two ways, as C# makes it. A FRAME'S context holds the theme, type scale and density it was
+ * given. A POSITION'S (the C# internal constructor, which the element engine calls once per
+ * component position) holds none of its own: it reads them from its owner's frame and registers the
+ * position as their reader, so the position builds again when they change, and it answers `inFlow`
+ * from the tree above it.
+ */
 export class ComponentContext {
+  private readonly _position: ContextPosition | null;
+  private readonly _theme: AppTheme;
+  private readonly _typeScale: number;
+  private readonly _density: DensityValue;
+
   constructor(
-    readonly theme: AppTheme,
-    readonly typeScale = 1,
+    theme: AppTheme | ContextPosition,
+    typeScale = 1,
     /** How tight this target's controls are — the C# `Density`, in its own words rather than in
         a `string` a component would then have to be trusted with. */
-    readonly density: DensityValue = 'comfortable',
-  ) {}
+    density: DensityValue = 'comfortable',
+  ) {
+    if (isPosition(theme)) {
+      this._position = theme;
+      this._theme = null!;
+    } else {
+      this._position = null;
+      this._theme = theme;
+    }
+    this._typeScale = typeScale;
+    this._density = density;
+  }
+
+  /** The frame `position` builds in, with the position registered as one that read it. */
+  private readFrame(position: ContextPosition): RenderContext {
+    // A position that left the tree (a handler that kept its context) reads, and registers nothing.
+    if (position.isActive) position.owner.readFrame(position);
+    return position.owner.context;
+  }
+
+  get theme(): AppTheme {
+    return this._position ? this.readFrame(this._position).theme : this._theme;
+  }
+
+  get typeScale(): number {
+    return this._position ? this.readFrame(this._position).typeScale : this._typeScale;
+  }
+
+  get density(): DensityValue {
+    return this._position ? this.readFrame(this._position).density : this._density;
+  }
 
   /**
    * How WIDE this text would be in this style, in dp — the C# `ComponentContext.MeasureText`.
    * The browser's own measurer, through a canvas: the same numbers it will lay the text out with,
-   * which is what a code editor mapping a click to a column depends on.
+   * which is what a code editor mapping a click to a column depends on. A position measures with its
+   * owner's frame, as every build of it does.
    */
   measureText(text: string, style: TypeStyleValue): number {
-    return measurePhotonText(text, style, this.typeScale);
+    if (this._position) return this._position.owner.context.measureText(text, style);
+    return measurePhotonText(text, style, this._typeScale);
   }
 
   /**
@@ -46,10 +108,11 @@ export class ComponentContext {
 
   /**
    * Whether this component was asked to draw WHERE IT STANDS rather than over everything (the C#
-   * `ComponentContext.InFlow`). Only the overlays answer it.
+   * `ComponentContext.InFlow`). Only the overlays answer it. A position answers from the tree above
+   * it, a frame's context from the ambient intent.
    */
   get inFlow(): boolean {
-    return inFlowState;
+    return this._position ? this._position.underInFlow : inFlowState;
   }
 
   /**
@@ -65,8 +128,10 @@ export class ComponentContext {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   /**
    * The nearest inherited component above, registering this component as its dependent (the C#
-   * `DependOn<T>()`). A context with no position has none to look up, which is every browser context
-   * until it builds on the element engine (E5b), so it answers null, as C# does on such a context.
+   * `DependOn<T>()`). A context with no position has none to look up, which is every context the
+   * browser's lowering builds with until it builds on the element engine (E3b), so it answers null, as
+   * C# does on such a context. A position's context answers null too, until the lookup is handed the
+   * type it asks for (E5b): the call arrives here with C#'s type argument erased.
    */
   dependOn(): null {
     return null;
@@ -81,9 +146,11 @@ export class ComponentContext {
     return resolveService(interfaceName);
   }
 
-  /** The advance of ONE character in a monospaced style (C# `MonoAdvance`). */
+  /** The advance of ONE character in a monospaced style (C# `MonoAdvance`), with the owner's frame
+      for a position, as `measureText`. */
   monoAdvance(style: TypeStyleValue): number {
-    return photonMonoAdvance(style, this.typeScale);
+    if (this._position) return this._position.owner.context.monoAdvance(style);
+    return photonMonoAdvance(style, this._typeScale);
   }
 }
 
