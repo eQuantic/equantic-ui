@@ -338,10 +338,12 @@ public sealed class PhotonWindow
         while (true)
         {
             // Each turn of the loop in a pool of its own. AppKit's own loop drains one per event, and this
-            // loop is the shell's: without one, every event, every frame's drawable and its command buffer
-            // were autoreleased into nothing and lived for good, so the GPU memory grew with every frame,
-            // and a run of hot-reload edits on CI's macOS machines stopped drawing or froze the machine
-            // (#1473). Popped on every way out of the turn, a break included.
+            // loop is the shell's: without one, whatever a turn autoreleased lived for as long as the
+            // process did. Measured with OBJC_DEBUG_MISSING_POOLS on the desktop sample, every frame left
+            // its drawable, its command buffer, its render pass descriptor and the GPU's render context
+            // behind, one of each per frame, 482 of each after 480 frames, and the events read here with
+            // them. With the pool none is left, and scripts/check-frame-pools.sh fails the samples job the
+            // day one is again (#1473). Popped on every way out of the turn, a break included.
             var pool = objc_autoreleasePoolPush();
             try
             {

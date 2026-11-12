@@ -775,6 +775,15 @@ jobs:
           fi
           exit $status
 
+      # The macOS window runs its own event loop, and a loop a shell runs itself has no autorelease pool
+      # unless it brings one: each frame then left its drawable, its command buffer and its render pass
+      # descriptor behind for as long as the window ran, and the window drew and every test passed
+      # (#1506). So the desktop sample runs for a number of frames with the Objective-C runtime
+      # reporting what is autoreleased with no pool, and a frame's drawable among it fails the step.
+      - name: Each frame of the desktop window gives back what it was handed
+        shell: bash
+        run: ./scripts/check-frame-pools.sh
+
       # A page that uses a class library the app references (#624). The builds above cannot say it:
       # before the fix this sample built green with a page that named the library's types and
       # imported none of them, which only a browser reported. So what the build WROTE is read: the
