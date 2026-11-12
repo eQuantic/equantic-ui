@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        attempt: [1, 2, 3, 4]
+        attempt: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -18,15 +18,18 @@ jobs:
         run: dotnet build samples/PhotonDesktop
       - name: Edit to view on the desktop, three times, watched
         shell: bash
-        timeout-minutes: 15
+        timeout-minutes: 12
         run: |
           set -uo pipefail
           (
+            set +e +o pipefail
             while true; do
-              echo "--- sample $(date -u +%H:%M:%S) load: $(sysctl -n vm.loadavg)"
-              ps -axo pid=,rss=,%cpu=,comm= | sort -k2 -nr | head -6 | awk '{printf "  pid %s rss %d MB cpu %s %s\n", $1, $2/1024, $3, $4}'
-              ps -axo pid=,rss=,comm= | awk '$2 > 4194304 {print $1, $2/1024, $3}' | while read pid mb name; do
-                echo "WATCHDOG: $name (pid $pid) holds ${mb} MB, killed"; kill -9 "$pid"; done
+              echo "--- sample $(date -u +%H:%M:%S) load: $(sysctl -n vm.loadavg) swap: $(sysctl -n vm.swapusage) free pages: $(vm_stat | awk '/Pages free/ {print $3}')"
+              ps -axo pid=,rss=,%cpu=,comm= > "$RUNNER_TEMP/ps.txt"
+              sort -k2 -nr "$RUNNER_TEMP/ps.txt" > "$RUNNER_TEMP/ps-sorted.txt"
+              head -6 "$RUNNER_TEMP/ps-sorted.txt" | awk '{printf "  pid %s rss %d MB cpu %s %s\n", $1, $2/1024, $3, $4}'
+              awk '$2 > 3145728 {print $1, int($2/1024), $4}' "$RUNNER_TEMP/ps.txt" > "$RUNNER_TEMP/big.txt"
+              while read -r pid mb name; do echo "WATCHDOG: $name (pid $pid) holds ${mb} MB, killed"; kill -9 "$pid"; done < "$RUNNER_TEMP/big.txt"
               sleep 10
             done
           ) &
@@ -37,7 +40,7 @@ jobs:
             dotnet run scripts/measure-edit-to-view.cs -- desktop --runs 6 --report "$RUNNER_TEMP/round-$round.json" || status=1
             echo "::endgroup::"
           done
-          kill $sampler
+          kill $sampler || true
           exit $status
       - name: Keep the reports
         if: always()
