@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Column, Draggable, Icon, IconGlyph, IconsValue, Positioned, Pressable, SizeValue, Stack, StatelessComponent, Text, VariantValue, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Column, Draggable, Icon, IconGlyph, IconsValue, Positioned, Pressable, SizeValue, Stack, StatelessComponent, Text, VariantValue, VisualNode } from "../runtime-exports";
 
 export class SwipeableRow extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.SwipeableRow';
@@ -37,7 +37,7 @@ export class SwipeableRow extends StatelessComponent {
         let surface = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surface }), this.child);
         let revealed = new Stack();
         revealed.add(new Positioned(action, 0, 0, 0));
-        revealed.add(new Draggable(surface, this.onReleased.bind(this), { axis: 'horizontal', min: -SwipeableRow.actionWidth, max: 0, restOffset: this.open ? -SwipeableRow.actionWidth : 0 }));
+        revealed.add(new Draggable(surface, $eq.delegates.bound(this, this.onReleased), { axis: 'horizontal', min: -SwipeableRow.actionWidth, max: 0, restOffset: this.open ? -SwipeableRow.actionWidth : 0 }));
         return new Box(new BoxStyle({ width: SizeValue.fill, clip: true }), revealed);
     }
 
