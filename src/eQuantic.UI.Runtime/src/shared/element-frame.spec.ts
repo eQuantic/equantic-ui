@@ -33,8 +33,9 @@ class Counter extends StatefulComponent {
 }
 
 const context = photonComponentContext() as unknown as RenderContext;
+// The web's owner: it holds every arm of an adaptive node, as the browser's owners do.
 const owner = () =>
-  new BuildOwner((component, built) => component.build(built) as unknown as VisualNode);
+  new BuildOwner((component, built) => component.build(built) as unknown as VisualNode, true);
 const column = (...children: VisualNode[]): Column => {
   const node = new Column();
   node.children.push(...children);
@@ -73,14 +74,15 @@ describe('the frame of a built tree', () => {
     expect(() => frame.at(new Counter('stray'))).toThrow(/did not build/);
   });
 
-  it('holds the one arm the size class resolved', () => {
+  it('holds every arm of an adaptive node, each at the slot of its size class, whatever the window', () => {
     const compact = new Text('compact', 'bodyM');
     const expanded = new Text('expanded', 'bodyM');
     const adaptive = new AdaptiveNode(compact, null, expanded);
-    const frame = new ElementFrame(owner().build(adaptive, context, 'expanded', true));
+    const frame = new ElementFrame(owner().build(adaptive, context, 'compact', true));
 
-    expect(frame.holdsArm(adaptive, expanded)).toBe(true);
-    expect(frame.holdsArm(adaptive, compact)).toBe(false);
+    // The web draws every arm behind its own gate, so each one the node declares is a position.
+    expect(frame.elementAt(compact)?.slot).toBe(0);
+    expect(frame.elementAt(expanded)?.slot).toBe(2);
   });
 
   it('builds a layer when it is shown, and knows the positions inside it from then on', () => {

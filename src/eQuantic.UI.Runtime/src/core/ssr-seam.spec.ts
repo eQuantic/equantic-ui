@@ -111,9 +111,8 @@ describe('the SSR-to-client seam', () => {
 
   it('names the next page\'s components from ITS payload when a navigation lands, a stateless one nested among them', () => {
     // A component without state is a `component` node too, so a page's nested stateless component
-    // is named in the lowering's `component` arm now, where it named itself in its own render().
-    // Hydration defects show on NAVIGATION rather than on the first load: the second page has to
-    // read the payload the router handed it, from the top of a count of its own.
+    // has a position and is named by it (#1477). Hydration defects show on NAVIGATION rather than on
+    // the first load: the second page has to read the payload the router handed it, as a walk of its own.
     class Section extends StatelessComponent {
       static $typeId = 'App.Components.Section';
       static $hydration = { heading: 'declared' } as const;
@@ -144,8 +143,8 @@ describe('the SSR-to-client seam', () => {
       }
     }
     win.__INITIAL_STATE__ = {
-      'App.Components.Section#0': { heading: 'first heading' },
-      'App.Components.Probe#0': { label: 'first page' },
+      'r0/App.Components.Section@0': { heading: 'first heading' },
+      'r0/App.Components.Probe@0.0.1': { label: 'first page' },
     };
     const root = host();
     const first = new FirstPage();
@@ -155,9 +154,9 @@ describe('the SSR-to-client seam', () => {
 
     // The router replaces the hydration state with the next page's, then mounts it over the first.
     win.__INITIAL_STATE__ = {
-      'App.Components.Section#0': { heading: 'second heading' },
-      'App.Components.Probe#0': { label: 'in the section' },
-      'App.Components.Probe#1': { label: 'beside it' },
+      'r0/App.Components.Section@0': { heading: 'second heading' },
+      'r0/App.Components.Probe@0.0.1': { label: 'in the section' },
+      'r0/App.Components.Probe@1': { label: 'beside it' },
     };
     const second = new SecondPage();
     second.mountReconcile(root, first.getCurrentTree());
@@ -169,19 +168,19 @@ describe('the SSR-to-client seam', () => {
     expect(root.textContent).not.toContain('first');
   });
 
-  it('is ONE walk: the page takes its reserved key, and sibling bridges continue a single count', () => {
-    // What the server ships for this page: the root under the key it reserved for it, then every
-    // component in depth-first order across the WHOLE page render, both bridges included.
+  it('is ONE walk: the page takes its own key, and each bridge is the next tree of that walk', () => {
+    // What the server ships for this page: the root under its own key, then each component by where it
+    // stands, in the tree its bridge draws, the bridges counted across the WHOLE page render.
     win.__INITIAL_STATE__ = {
       'App.Pages.Host#0': { title_: 'loaded' },
-      'App.Components.Probe#0': { label: 'first' },
-      'App.Components.Probe#1': { label: 'second' },
+      'r0/App.Components.Probe@': { label: 'first' },
+      'r1/App.Components.Probe@': { label: 'second' },
     };
     const root = host();
     new EscapeHatchPage(new Host()).mount(root);
 
     expect(root.querySelector('#go')?.textContent).toBe('loaded');
-    // If each bridge restarted the count, both would be Probe#0 and read 'first'.
+    // If each bridge restarted the count, both would be the first tree and read 'first'.
     expect(root.textContent).toContain('first');
     expect(root.textContent).toContain('second');
   });
@@ -204,7 +203,7 @@ describe('the SSR-to-client seam', () => {
 
     // The server expanded A.Row; a drifted client builds B.Row in that position. B.Row must keep its
     // defaults rather than take the other type's state, and A.Row still gets its own.
-    win.__INITIAL_STATE__ = { 'A.Row#0': { label: 'A-state' } };
+    win.__INITIAL_STATE__ = { 'r0/A.Row@0': { label: 'A-state' } };
     const page = (Row: new () => StatefulComponent) =>
       new (class extends StatelessComponent {
         build(): VisualNodeValue {

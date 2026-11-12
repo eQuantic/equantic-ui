@@ -8,7 +8,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { StatefulComponent, resetComponentKeys } from '../core/component';
+import { StatefulComponent, StatelessComponent, resetComponentKeys } from '../core/component';
 import { AdaptiveNode, Column, Pressable, Text } from './vocabulary';
 import type { VisualNodeValue } from './nodes';
 
@@ -115,6 +115,26 @@ describe('the browser builds through the element engine', () => {
     expect(container.textContent).toContain('g1: 1');
   });
 
+  it('holds every arm of an adaptive node, so the arm a window shows answers a press without a build', async () => {
+    // The web draws every arm behind its own media gate, and a resize opens another gate without a
+    // render. Every arm is a position, so whichever one is on screen keeps its instance and its state.
+    class Page extends StatefulComponent {
+      build(): VisualNodeValue {
+        built('page');
+        return column(new AdaptiveNode(new Counter('narrow') as never, null, new Counter('wide') as never));
+      }
+    }
+    const container = mount(new Page());
+    expect(builds).toEqual({ page: 1, narrow: 1, wide: 1 });
+
+    await press(container, 'bump wide');
+    await press(container, 'bump narrow');
+
+    expect(builds).toEqual({ page: 1, narrow: 2, wide: 2 });
+    expect(container.textContent).toContain('wide: 1');
+    expect(container.textContent).toContain('narrow: 1');
+  });
+
   describe('hydration', () => {
     const win = window as unknown as { __INITIAL_STATE__?: Record<string, Record<string, unknown>> };
 
@@ -124,7 +144,7 @@ describe('the browser builds through the element engine', () => {
       resetComponentKeys();
     });
 
-    it("adopts the server's state before the first build, under the Type#ordinal the server wrote", () => {
+    it("adopts the server's state before the first build, under the position the server named", () => {
       const seen: string[] = [];
       class Probe extends StatefulComponent {
         static $typeId = 'App.Probe';
@@ -143,9 +163,10 @@ describe('the browser builds through the element engine', () => {
           return column(new Probe(), new Probe());
         }
       }
+      // The tree the page builds is the first of its render; each probe is named by its slot below it.
       win.__INITIAL_STATE__ = {
-        'App.Probe#0': { label: 'first from the server' },
-        'App.Probe#1': { label: 'second from the server' },
+        'r0/App.Probe@0': { label: 'first from the server' },
+        'r0/App.Probe@1': { label: 'second from the server' },
       };
       // The DOM the server wrote for the page, which hydration adopts.
       const server = document.createElement('div');
@@ -159,50 +180,80 @@ describe('the browser builds through the element engine', () => {
       expect(seen).toEqual(['first from the server', 'second from the server']);
       expect(server.textContent).toContain('second from the server');
     });
-  });
 
-  describe('a window that crosses a threshold', () => {
-    const happyDOM = (
-      window as unknown as { happyDOM: { setViewport(viewport: { width: number; height: number }): void } }
-    ).happyDOM;
-    const at = (width: number) => happyDOM.setViewport({ width, height: 900 });
+    it('names a component by where it stands, so one type in two arms and after them keeps its own data', () => {
+      // The order the browser builds in is not the server's: the server names as its lowering meets a
+      // component, and the browser has to hand the data over before one builds. A position is the same
+      // on both sides, and every arm of an adaptive node is one on the web, whichever the window shows.
+      const seen: string[] = [];
+      class Probe extends StatefulComponent {
+        static $typeId = 'App.Probe';
+        static $hydration = { label: 'declared' } as const;
+        label = 'default';
 
-    afterEach(() => at(1024));
-
-    // The web draws every arm behind a media gate, and a resize opens another one without a render.
-    // The arm a position holds is the one the page's last build resolved, and only that one keeps its
-    // instances: a crossing nothing built for would show an arm whose component answers no press.
-    // It crosses UPWARD: happy-dom's media list starts from "not matching" whatever the width, so it
-    // reports a list that starts to match and stays quiet about one that stops.
-    it('builds the page again, so a component in the arm it shows keeps its state', async () => {
-      at(500);
-      class Page extends StatefulComponent {
         build(): VisualNodeValue {
-          built('page');
-          return new AdaptiveNode(
-            new Counter('compact') as never,
-            null,
-            new Counter('expanded') as never,
-          ) as unknown as VisualNodeValue;
+          seen.push(this.label);
+          return new Text(this.label) as unknown as VisualNodeValue;
         }
       }
-      const page = new Page();
-      const container = mount(page);
+      class Page extends StatefulComponent {
+        static $typeId = 'App.Page';
 
-      at(1024);
-      await nextFrame();
-      expect(builds.page).toBe(2);
+        build(): VisualNodeValue {
+          const arms = new AdaptiveNode(new Probe() as never, null, new Probe() as never);
+          return column(arms, new Probe());
+        }
+      }
+      win.__INITIAL_STATE__ = {
+        'r0/App.Probe@0.0': { label: 'compact arm' },
+        'r0/App.Probe@0.2': { label: 'expanded arm' },
+        'r0/App.Probe@1': { label: 'after the arms' },
+      };
 
-      await press(container, 'bump expanded');
-      await press(container, 'bump expanded');
+      mount(new Page());
 
-      expect(container.textContent).toContain('expanded: 2');
-      // A page that leaves stops listening: no crossing builds it again.
-      page.disposeQuietly();
-      at(500);
-      at(1024);
-      await nextFrame();
-      expect(builds.page).toBe(2);
+      expect([...seen].sort()).toEqual(['after the arms', 'compact arm', 'expanded arm']);
+    });
+
+    it('hands a stateless component its data again when its parent builds a fresh one at the same position', async () => {
+      const seen: string[] = [];
+      class Stamp extends StatelessComponent {
+        static $typeId = 'App.Stamp';
+        static $hydration = { label: 'declared' } as const;
+        label = 'default';
+
+        build(): VisualNodeValue {
+          seen.push(this.label);
+          return new Text(this.label) as unknown as VisualNodeValue;
+        }
+      }
+      class Holder extends StatefulComponent {
+        static $typeId = 'App.Holder';
+        count = 0;
+
+        build(): VisualNodeValue {
+          return column(
+            new Pressable(new Text(`pressed ${this.count}`, 'label'), () => this.setState(() => this.count++), {
+              label: 'press the holder',
+            }),
+            new Stamp(),
+          );
+        }
+      }
+      class Page extends StatefulComponent {
+        static $typeId = 'App.Page';
+
+        build(): VisualNodeValue {
+          return column(new Holder());
+        }
+      }
+      win.__INITIAL_STATE__ = { 'r0/App.Stamp@0.0.1': { label: 'stamped by the server' } };
+
+      const container = mount(new Page());
+      await press(container, 'press the holder');
+
+      // Built twice, each time a fresh instance, and each time with what the server loaded for it.
+      expect(seen).toEqual(['stamped by the server', 'stamped by the server']);
     });
   });
 

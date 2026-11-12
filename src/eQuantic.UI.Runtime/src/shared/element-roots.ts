@@ -13,12 +13,6 @@
  * Each owner of a page answers its `BuildRequested` to the page, which renders again lowering the
  * tree it built last (`takeReuse`), so the owners build only what was marked.
  *
- * And the page builds AGAIN, every position, when the window crosses a threshold an adaptive node on
- * it declares: the web draws every arm behind a media gate that a resize opens without a render, and
- * the arm a position holds is the one the build resolved, so a crossing that nothing rendered for
- * would show an arm the tree does not keep. One listener per distinct threshold the last render
- * lowered, added and removed as that set changes, and all removed when the page leaves.
- *
  * A LEAF as far as values go: the component base imports this, and the engine reaches the runtime's
  * export barrel, which reaches every component class, which extends that base. The lowering makes
  * the owners, through the one factory beside the engine's seam (`element-engine.ts`), and hands them
@@ -51,10 +45,6 @@ export class ElementRoots {
   private reuse = false;
   /** What the page's own build returned last, which a render its owners asked for lowers again. */
   private lastBuilt: { readonly tree: unknown } | null = null;
-  /** The thresholds the pass in flight lowered, as the media conditions their gates write. */
-  private readonly thresholds = new Set<string>();
-  /** The listener on each threshold the last render lowered, by its media condition. */
-  private readonly watching = new Map<string, { list: MediaQueryList; changed: () => void }>();
 
   /**
    * @param onBuildRequested How the page hears that one of its owners has a marked position: the
@@ -66,12 +56,6 @@ export class ElementRoots {
   /** Starts a pass: the slots restart, so the bridge N of a render maps to the same owner every render. */
   beginPass(): void {
     this.slotCount = 0;
-    this.thresholds.clear();
-  }
-
-  /** A threshold of an adaptive node this render lowers, as the media condition its gates write. */
-  noteThreshold(media: string): void {
-    this.thresholds.add(media);
   }
 
   /** The next root of this pass: its path prefix, and the owner that builds it (made on first use). */
@@ -92,7 +76,6 @@ export class ElementRoots {
     for (let slot = this.slots.length - 1; slot >= this.slotCount; slot--) this.slots[slot]?.unmountAll();
     this.slots.length = Math.min(this.slots.length, this.slotCount);
     for (const owner of this.slots) owner?.endFrame();
-    this.watchThresholds();
   }
 
   /** Takes every tree down: each component still in one hears, once, that it left. A page leaving. */
@@ -101,8 +84,6 @@ export class ElementRoots {
     this.slots.length = 0;
     this.lastBuilt = null;
     this.wanted = 'nothing';
-    this.thresholds.clear();
-    this.watchThresholds();
   }
 
   /** An owner marked a position: the page renders again, lowering what it built last. */
@@ -141,33 +122,6 @@ export class ElementRoots {
   /** What the page's build returned, kept for the next render its owners ask for (null: nothing to keep). */
   remember(tree: unknown): void {
     this.lastBuilt = tree === undefined ? null : { tree };
-  }
-
-  /**
-   * Listens on exactly the thresholds the last render lowered. A crossing builds the page and
-   * rebuilds every position, the render kind a theme or a culture asks for, since the arm a position
-   * holds is decided where the tree builds. Nothing listens for an island outside a page, which
-   * nothing renders again but its own parent.
-   */
-  private watchThresholds(): void {
-    for (const [media, watched] of this.watching) {
-      if (this.thresholds.has(media)) continue;
-      watched.list.removeEventListener('change', watched.changed);
-      this.watching.delete(media);
-    }
-    if (this.onBuildRequested === null || typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return;
-    }
-    for (const media of this.thresholds) {
-      if (this.watching.has(media)) continue;
-      const list = window.matchMedia(media);
-      const changed = (): void => {
-        this.wanted = 'build';
-        this.onBuildRequested?.();
-      };
-      list.addEventListener('change', changed);
-      this.watching.set(media, { list, changed });
-    }
   }
 
   private made(create: () => BuildOwner): BuildOwner {

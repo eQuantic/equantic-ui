@@ -11,7 +11,7 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
-import { adoptServerStateFor, componentIdentity, nextComponentKey, runLoweringWalk } from '../core/component';
+import { adoptServerStateFor, componentIdentity, nextTree, runLoweringWalk } from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { Dictionary, plainBag } from '../utils/dictionary';
@@ -39,8 +39,6 @@ import { ElementFrame } from './element-frame';
 // `element-frame.ts` gives; its classes through the seam the barrel registers them in.
 import type { BuildOwner, Element as Position } from './runtime-exports';
 import { liveOwner as makeLiveOwner, structuralOwner as makeStructuralOwner } from './element-engine';
-import { WindowSizeClasses } from './primitive-values';
-import type { WindowSizeClassValue } from './enums.generated';
 import type { VisualNode } from './vocabulary';
 import {
   ambientLoweringContext,
@@ -52,7 +50,6 @@ import { declareInView } from './in-view';
 import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
 import {
   adaptiveGateOpen,
-  adaptiveThresholdMedia,
   atomicDeclaration,
   atomizeEntries,
   atomizePseudo,
@@ -205,19 +202,6 @@ function showLayer(holder: VisualNodeValue, layer: VisualNodeValue, context: Low
 }
 
 /**
- * The window size class a build resolves an adaptive node's arm against: the window's, read when the
- * tree builds, so the arm a position holds is the one the page's media gates show at that width (for
- * a node on the spec's thresholds). The web draws every declared arm; the others lower as the C#
- * realizer lowers them, built where they stand (`holdArm`). A resize the browser does not render for
- * leaves the held arm where it was until the page builds again, when the position takes the other.
- */
-function browserSizeClass(): WindowSizeClassValue {
-  return typeof window === 'undefined'
-    ? 'compact'
-    : (WindowSizeClasses.fromWidth(window.innerWidth) as WindowSizeClassValue);
-}
-
-/**
  * How many components may stand inside one another before the walk is taken for one that never
  * ends: the C# boundary's bound (`ComponentBoundary.MaxDepth`), read from the element tree's depth as
  * it is there. A cycle is infinite, so it exceeds any bound, and sixty-four is several times the
@@ -226,23 +210,44 @@ function browserSizeClass(): WindowSizeClassValue {
 const MAX_COMPONENT_DEPTH = 64;
 
 /**
+ * The tree each owner builds, as the walk in flight counted it (`r0`, `r1`, …, `nextTree`): the order
+ * the render lowers its trees in, which is the order the server draws them in too.
+ */
+const treeOfOwner = new WeakMap<BuildOwner, string>();
+
+/**
+ * The key the server names a component's data by (the C# `ElementFrame.KeyOf`): the tree it stands
+ * in, its type, and the slots from that tree's root down to its position (`Element.slotsBelow`). Null
+ * for an owner no lowering counted, which builds nothing the server drew.
+ */
+function serverDataKey(component: object, owner: BuildOwner): string | null {
+  const tree = treeOfOwner.get(owner);
+  const position = owner.building;
+  if (tree === undefined || position === null) return null;
+  return `${tree}/${componentIdentity(component)}@${position.slotsBelow(0)}`;
+}
+
+/**
  * How a component builds in the browser: the callback every owner the lowering makes is handed (the
  * C# `ComponentBoundary.BuildAtDepth` twin, with the browser's server data in front of it).
  *
- * THE SERVER'S DATA FIRST, while the page builds itself: what the server loaded for the component
- * arrives keyed by the `Type#ordinal` both sides count, and has to land before `build` reads the field
- * defaults. The engine builds a frame depth first, in the order the lowering walks it, so the count
- * here is the one the server's realizer made; a render the page's owners asked for builds only what
- * they marked, names nothing and adopts nothing.
+ * THE SERVER'S DATA FIRST: what the server loaded for the component arrives keyed by where it stands
+ * (`serverDataKey`), and has to land before `build` reads the field defaults. Both sides read that key
+ * off the position, so the order either side built in does not enter it, nor which arm of an adaptive
+ * node a window resolves. Every build of a fresh instance asks, a stateless one handed anew at a kept
+ * position included; a kept instance took what it was owed when it mounted (`adoptServerStateFor`).
  *
  * THEN THE BOUNDARY: a component's throw costs its own subtree, which draws the failure, and nothing
  * else. A chain of components that never reaches an ordinary node is contained the same way.
  */
-function buildComponent(component: UiComponentLike, context: unknown, depth: number): VisualNodeValue {
-  const pass = getActivePass();
-  if (pass === null || pass.rebuildAll) {
-    adoptServerStateFor(component, nextComponentKey(componentIdentity(component)));
-  }
+function buildComponent(
+  component: UiComponentLike,
+  context: unknown,
+  depth: number,
+  owner: BuildOwner,
+): VisualNodeValue {
+  const key = serverDataKey(component, owner);
+  if (key !== null) adoptServerStateFor(component, key);
   const name = component.constructor?.name ?? 'Component';
   try {
     if (depth >= MAX_COMPONENT_DEPTH) {
@@ -284,7 +289,9 @@ function buildTree(owner: BuildOwner, node: VisualNodeValue, context: LoweringCo
   return owner.build(
     node as unknown as VisualNode,
     componentContextOf(context) as RenderContext,
-    browserSizeClass(),
+    // Never read: the browser's owners hold every arm of an adaptive node (`liveOwner`), as the web
+    // draws them all behind their gates, so no arm is resolved for a window size class.
+    'expanded',
     getActivePass()?.rebuildAll ?? true,
   );
 }
@@ -310,15 +317,15 @@ export function lowerVisualNode(node: VisualNodeValue, context: LoweringContext)
   return runLoweringWalk(() => {
     // A web component handed in as the root renders itself (the mixing seam): there is no tree of
     // the vocabulary to build, and the engine holds none of it, as in C#.
-    const framed: LoweringContext =
-      (node as { nodeKind?: string }).nodeKind === undefined
-        ? context
-        : {
-            ...context,
-            frame: new ElementFrame(
-              buildTree(root?.owner ?? structuralOwner(), node, context),
-            ),
-          };
+    // Which tree of the walk this is, counted as the server counts its trees: after the walk's
+    // restart, so a page's own tree and an escape-hatch page's first bridge are both `r0`.
+    const tree = nextTree();
+    let framed: LoweringContext = context;
+    if ((node as { nodeKind?: string }).nodeKind !== undefined) {
+      const owner = root?.owner ?? structuralOwner();
+      treeOfOwner.set(owner, tree);
+      framed = { ...context, frame: new ElementFrame(buildTree(owner, node, context)) };
+    }
     return (
       lowerNode(node, framed, null, rootPath) ?? {
         tag: 'span',
@@ -531,7 +538,7 @@ function lowerNodeKind(
   if (rule) {
     if (foreign.nodeKind === 'adaptive') {
       placing = null;
-      return lowerAdaptive(node as unknown as AdaptiveNodeValue, context, path, (arm, armPath) =>
+      return lowerAdaptive(node as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
         placeChild(arm, armPath, context, rule),
       );
     }
@@ -617,7 +624,7 @@ function lowerNodeKind(
     case 'adaptive':
       // Reached from a parent with no rule of its own for a direct child — the arms lower as the
       // node was asked to, on the same axis. A flex, a grid and a stack place them themselves.
-      return lowerAdaptive(node as unknown as AdaptiveNodeValue, context, path, (arm, armPath) =>
+      return lowerAdaptive(node as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
         lowerNode(arm, context, horizontalAxis, armPath),
       );
     case 'shortcut':
@@ -3630,7 +3637,7 @@ function placeChild(
   if ((child as { nodeKind?: string }).nodeKind === 'adaptive') {
     return decorate(
       child,
-      lowerAdaptive(child as unknown as AdaptiveNodeValue, context, path, (arm, armPath) =>
+      lowerAdaptive(child as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
         placeChild(arm, armPath, context, rule),
       ),
     );
@@ -5029,12 +5036,10 @@ function liveInEnclosingArms(): (() => boolean) | undefined {
  */
 function lowerAdaptive(
   node: AdaptiveNodeValue,
-  context: LoweringContext,
   path: string,
   place: (arm: VisualNodeValue, path: string) => HtmlNode | null,
 ): HtmlNode {
   if (!node.medium && !node.expanded) {
-    holdArm(node, node.compact, context);
     return place(node.compact, path + '/0') ?? element('div', { display: 'contents' });
   }
   const wrapper = element('div', { display: 'contents' });
@@ -5045,7 +5050,6 @@ function lowerAdaptive(
     enclosingGates = [...outer, gate];
     let lowered: HtmlNode | null;
     try {
-      holdArm(node, variant, context);
       lowered = place(variant, `${path}/${index}`);
     } finally {
       enclosingGates = outer;
@@ -5063,36 +5067,11 @@ function lowerAdaptive(
   // switches at 1024 gets 1024 gates, not the spec's 600/840.
   const mediumFrom = node.mediumFrom ?? 600;
   const expandedFrom = node.expandedFrom ?? 840;
-  // The page builds again when the window crosses one of them, so the arm a gate shows is the arm
-  // the position holds (element-roots.ts).
-  const roots = getActivePass()?.roots;
-  if (node.medium) roots?.noteThreshold(adaptiveThresholdMedia(mediumFrom));
-  if (node.expanded) roots?.noteThreshold(adaptiveThresholdMedia(expandedFrom));
   addVariant(node.compact, gateCompactUntil(node.medium ? mediumFrom : expandedFrom), 0);
   if (node.medium)
     addVariant(node.medium, gateMediumFrom(mediumFrom, node.expanded ? expandedFrom : 0), 1);
   if (node.expanded) addVariant(node.expanded, gateExpandedFrom(expandedFrom), 2);
   return wrapper;
-}
-
-/**
- * Makes sure the frame holds a position for every component of `arm`, an arm of `adaptive` the web
- * is about to lower (the C# `Arm`, which asks `HoldsArm` where this does).
- *
- * The position holds the arm its size class resolves, as Photon lays out one, and that arm lowers
- * from it. The web draws every other declared arm too, behind its media gate, and the C# realizer
- * lowers one of those with no frame, built where it stands: here that is a structural owner, as for a
- * lowering with no page around it, discarded after this render, whose positions join the frame so
- * every component of the arm has one for this render. It keeps no instance and calls no hook.
- */
-function holdArm(
-  adaptive: AdaptiveNodeValue,
-  arm: VisualNodeValue,
-  context: LoweringContext,
-): void {
-  const frame = frameOf(context);
-  if (frame.holdsArm(adaptive, arm)) return;
-  frame.include(buildTree(structuralOwner(), arm, context));
 }
 
 /** Spec S4 mirror: CSS Grid — identical track/gap/span strings to the C# LowerGrid. */

@@ -380,15 +380,6 @@ function gatePx(units: number): string {
 }
 
 /**
- * The media condition a window crosses at an adaptive node's threshold of `dp`: the very condition
- * the gates of that threshold write (`gateCondition`), spelled the same, so a listener on it fires
- * exactly when a gate's arm is shown or hidden.
- */
-export function adaptiveThresholdMedia(dp: number): string {
-  return `(min-width: ${gatePx(gateUnits(dp))})`;
-}
-
-/**
  * WHERE a gate shows its arm, derived from its NAME: the media condition its CSS writes, and whether
  * the arm is on screen inside that condition or outside it. The compact arm is the one that shows
  * by default and hides from its threshold up, so its condition is the one it is hidden under.

@@ -45,7 +45,12 @@ export function elementEngine(): ElementEngine {
 }
 
 /** How a component builds, as an owner is handed it: its build, for a context, at a depth of components. */
-export type BuildComponent = (component: UiComponent, context: BuildContext, depth: number) => VisualNode;
+export type BuildComponent = (
+  component: UiComponent,
+  context: BuildContext,
+  depth: number,
+  owner: BuildOwner,
+) => VisualNode;
 
 /**
  * THE ONE PLACE the browser makes a live owner: a tree kept across renders, which mounts and unmounts
@@ -53,11 +58,22 @@ export type BuildComponent = (component: UiComponent, context: BuildContext, dep
  * from here or from `structuralOwner`, so what each one is handed is decided once.
  */
 export function liveOwner(build: BuildComponent): BuildOwner {
-  return new (elementEngine().BuildOwner)(build);
+  // The web draws every arm of an adaptive node behind its own media gate, so each is a position.
+  // The owner is handed to every build it runs, so the build can ask which position it is for
+  // (`owner.building`): the server's data reaches a component by where it stands.
+  const owner: BuildOwner = new (elementEngine().BuildOwner)(
+    (component: UiComponent, context: BuildContext, depth: number) => build(component, context, depth, owner),
+    true,
+  );
+  return owner;
 }
 
 /** THE ONE PLACE the browser makes a structural owner: a tree laid out once and discarded, which calls
  *  no lifecycle hook. */
 export function structuralOwner(build: BuildComponent): BuildOwner {
-  return elementEngine().BuildOwner.structural(build);
+  const owner: BuildOwner = elementEngine().BuildOwner.structural(
+    (component: UiComponent, context: BuildContext, depth: number) => build(component, context, depth, owner),
+    true,
+  );
+  return owner;
 }

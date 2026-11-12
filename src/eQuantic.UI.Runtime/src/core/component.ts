@@ -31,7 +31,8 @@ import { scheduleRenderFlush } from './render-scheduler';
 /**
  * SERVER DATA (the C# `IServerPrefetch` twin): the fields the server's prefetch filled arrive as
  * `window.__INITIAL_STATE__` — one field map PER COMPONENT, under the name the server's realizer
- * gave it (`Type#ordinal`), each landing BEFORE that component builds, so the client's first tree is
+ * gave it (a page's own component `Type#0`, every other one where it stands, `r{tree}/{type}@{slots}`,
+ * read off its position in `lowering.ts`), each landing BEFORE that component builds, so the client's first tree is
  * the one the server already wrote as HTML and hydration matches instead of flashing the field
  * defaults. Inside a component's entry the keys are the field names it declares.
  *
@@ -45,7 +46,9 @@ import { scheduleRenderFlush } from './render-scheduler';
 const componentOrdinals = new Map<string, number>();
 
 /**
- * The name the server gave this component: `Type#ordinal` in depth-first expansion order.
+ * The name the server gave a component a walk names by count: `Type#ordinal` in depth-first expansion
+ * order, which leaves a page's own component `Type#0`. Every component a page composes is named by its
+ * position instead (#1477), since the order the browser builds in is not the server's.
  *
  * BOTH SIDES COUNT, and that is the whole identity mechanism. The client does not receive
  * components — it re-runs `build()` and constructs fresh ones — so the payload has to say which
@@ -69,6 +72,19 @@ export { componentIdentity };
 /** Starts a fresh count — one render is one walk, and the numbering restarts with it. */
 export function resetComponentKeys(): void {
   componentOrdinals.clear();
+  treesLowered = 0;
+}
+
+/**
+ * How many trees of the vocabulary the walk in flight has lowered: a page's own tree, or each bridge
+ * of an escape-hatch page in the order the page renders them. The server counts its trees per render
+ * the same way, and a component's server data key starts with its tree (`r0`, `r1`, …, #1477).
+ */
+let treesLowered = 0;
+
+/** The next tree of the walk in flight, as its server data keys name it. */
+export function nextTree(): string {
+  return `r${treesLowered++}`;
 }
 
 /**

@@ -65,16 +65,6 @@ export class ElementFrame {
   }
 
   /**
-   * Whether `arm` is the arm `adaptive`'s OWN position holds: the one its size class resolved. Asked
-   * of that position and not of the frame at large, because one node instance can stand elsewhere in
-   * the tree too.
-   */
-  holdsArm(adaptive: object, arm: object): boolean {
-    const element = this.positions.get(adaptive);
-    return element !== undefined && element.childAt(0)?.configuration === arm;
-  }
-
-  /**
    * Shows `layer` in the deferred slot of `holder`'s position (an overlay's child, an anchored
    * panel), so the owner builds it now, with the instances it keeps there, and indexes what it built.
    * The web decides that a layer shows whenever it lowers it: one kept mounted while closed, for its
