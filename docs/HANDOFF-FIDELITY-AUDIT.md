@@ -730,8 +730,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/dom/draggable.ts:18  const SLOP = 12; // Touch.PressCancelSlop — cross-pinned with the C# host
-  draggable.ts:85  if (!active && Math.abs(raw) > SLOP) {
+  src/eQuantic.UI.Runtime/src/dom/draggable.ts:24  const SLOP = 12; // Touch.PressCancelSlop — cross-pinned with the C# host
+  draggable.ts:95  if (!active && Math.abs(travelled(ev)) > slop) {
   Slider.cs:137          VisualNode surface = Disabled ? row : new Draggable(row)
   ```
 
@@ -865,7 +865,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/PullToRefresh.cs`
 - **Handoff**: Desktop surfaces an explicit refresh control (toolbar IconButton or menu item) + ⌘R/F5. The refresh action must be reachable as a real control — the gesture is never the only path (§10).
-- **Code**: The component exposes only the drag gesture; nothing in Build emits a control, and there is no shortcut registration (PullToRefresh.cs:32-65). On a pointer target there is no way to refresh at all — the web Draggable controller arms on pointermove past a 12dp slop and never on wheel (src/eQuantic.UI.Runtime/src/dom/draggable.ts:85).
+- **Code**: The component exposes only the drag gesture; nothing in Build emits a control, and there is no shortcut registration (PullToRefresh.cs:32-65). On a pointer target there is no way to refresh at all — the web Draggable controller arms on pointermove past a 12dp slop and never on wheel (src/eQuantic.UI.Runtime/src/dom/draggable.ts:95).
 - **Evidence**:
 
   ```
@@ -899,7 +899,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SwipeableRow.cs`
 - **Handoff**: Full swipe > 60% width commits the outer action — pane stretches to full width first (Fast).
-- **Code**: Travel is hard-clamped at one action width, so a swipe past 60% of the row is impossible: the Draggable's Min is -96 (SwipeableRow.cs:81) and the web controller clamps to it (src/eQuantic.UI.Runtime/src/dom/draggable.ts:80). Release can only ever mean open-or-closed (line 91) — there is no commit branch and no pane stretch.
+- **Code**: Travel is hard-clamped at one action width, so a swipe past 60% of the row is impossible: the Draggable's Min is -96 (SwipeableRow.cs:81) and the web controller clamps to it (src/eQuantic.UI.Runtime/src/dom/draggable.ts:91). Release can only ever mean open-or-closed (line 91) — there is no commit branch and no pane stretch.
 - **Evidence**:
 
   ```
@@ -2416,7 +2416,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/PullToRefresh.cs`
 - **Handoff**: Pull maps with 0.5 asymptotic resistance
-- **Code**: The Draggable follows the finger 1:1 and is simply clamped between 0 and Threshold (PullToRefresh.cs:56-58); the web controller confirms the mapping is linear — `const at = rest + raw; return Math.min(max, Math.max(min, at));` (src/eQuantic.UI.Runtime/src/dom/draggable.ts:79-80). There is no resistance term and no property to express one.
+- **Code**: The Draggable follows the finger 1:1 and is simply clamped between 0 and Threshold (PullToRefresh.cs:56-58); the web controller confirms the mapping is linear — `const at = rest + raw; return Math.min(max, Math.max(min, at));` (src/eQuantic.UI.Runtime/src/dom/draggable.ts:90-91). There is no resistance term and no property to express one.
 - **Evidence**:
 
   ```
@@ -2495,7 +2495,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SwipeableRow.cs`
 - **Handoff**: Mouse drags don’t swipe — on pointer the row’s actions surface via right-click context menu (the C3 presentation) plus the row’s own visible affordances.
-- **Code**: Build emits only Box > Stack > (Positioned action + Draggable surface) (SwipeableRow.cs:76-86) — no Anchored/menu node and no context-menu hook. On pointer the web Draggable controller arms on plain pointermove past the slop (src/eQuantic.UI.Runtime/src/dom/draggable.ts:85), so a mouse drag DOES swipe the row, which the handoff forbids.
+- **Code**: Build emits only Box > Stack > (Positioned action + Draggable surface) (SwipeableRow.cs:76-86) — no Anchored/menu node and no context-menu hook. On pointer the web Draggable controller arms on plain pointermove past the slop (src/eQuantic.UI.Runtime/src/dom/draggable.ts:95), so a mouse drag DOES swipe the row, which the handoff forbids.
 - **Evidence**:
 
   ```
@@ -3273,7 +3273,7 @@ the pill's 40 down.
   Switch.cs:12 — `/// Fence: the slide/crossfade motion between the two ends joins the animation system.`
   WebLoweringVisitor.Interaction.cs:833  var glide = $"translate {Motion.BaseMs}ms";
   lowering.ts:1434  const glide = `translate ${Motion.baseMs}ms`;
-  draggable.ts:156  function handBack(surface: HTMLElement): void {
+  draggable.ts:166  function handBack(surface: HTMLElement): void {
   ```
 
 ### B13 RadioGroup · documented-deviation · **unverified**
@@ -3539,7 +3539,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SwipeableRow.cs`
 - **Handoff**: Release snaps to n×72 or closed (… by position + velocity).
-- **Code**: The snap decision is position-only — Draggable.OnReleased hands over a single offset float (src/eQuantic.UI.Primitives/Nodes/Draggable.cs) and the web controller reports only `travelOf(ev)` with no velocity (src/eQuantic.UI.Runtime/src/dom/draggable.ts:131). A slow drag to 40% and a fast flick to 40% behave identically. (The handoff brackets the velocity SPRING as REQUEST; the velocity term of the snap decision is separate.)
+- **Code**: The snap decision is position-only — Draggable.OnReleased hands over a single offset float (src/eQuantic.UI.Primitives/Nodes/Draggable.cs) and the web controller reports only `travelOf(ev)` with no velocity (src/eQuantic.UI.Runtime/src/dom/draggable.ts:141). A slow drag to 40% and a fast flick to 40% behave identically. (The handoff brackets the velocity SPRING as REQUEST; the velocity term of the snap decision is separate.)
 - **Evidence**:
 
   ```
