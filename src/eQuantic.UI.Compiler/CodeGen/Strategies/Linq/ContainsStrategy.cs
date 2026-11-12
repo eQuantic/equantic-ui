@@ -99,7 +99,7 @@ public class ContainsStrategy : IConversionStrategy
         if (receiverType?.SpecialType == SpecialType.System_String)
             return $"{context.Converter.ConvertExpression(receiverExpression)}.includes({value})";
 
-        var equality = ElementEquality.Of(receiverType.GetEnumerableElementType());
+        var equality = ElementEquality.Of(receiverType.GetEnumerableElementType(), node, context);
         // LINQ's Contains reads its source as every operator does (LinqSource): a dictionary as its
         // pairs, which the runtime's class enumerates and has no `includes` for. An array is itself.
         var linq = context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol bound && IsLinqContains(bound, context);

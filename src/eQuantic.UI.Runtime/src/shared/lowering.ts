@@ -509,7 +509,8 @@ function lowerNodeKind(
     case 'component': {
       // W6 slice 2: resolve against the positional store BEFORE building — a retained instance
       // (same path + type + key) keeps its state and adopts the fresh config. Mirrors the C#
-      // LayoutEngine.MeasureComponent; the build output expands at the wrapper position (path/0).
+      // LayoutEngine.MeasureComponent; the build output expands one step down (path/~), a step the
+      // scope of a grid's ids reads past (pathScope), since a page mounted as a root takes none.
       const pass = getActivePass();
       const resolved = (
         pass ? pass.store.reconcile(path, node, pass.invalidator) : node
@@ -535,7 +536,7 @@ function lowerNodeKind(
         reportComponentFailure(name, error);
         built = describeComponentFailure(name, error, getPhotonTheme());
       }
-      return lowerNode(built as VisualNodeValue, context, horizontalAxis, path + '/0');
+      return lowerNode(built as VisualNodeValue, context, horizontalAxis, path + '/~');
     }
     // THE DOOR CLOSED. `nodeKind` is the generated NodeKind union, so this arm is unreachable for
     // every kind the vocabulary declares — and the day it declares one more, this line stops
@@ -1955,7 +1956,7 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
   const semantics: TableSemantics = {
     grid: role === 'grid',
     rows: role !== 'group',
-    scope: hashDeclaration(node.label ?? ''),
+    scope: pathScope(path),
   };
   const children: HtmlNode[] = [];
   for (let marks = 0; marks < 2; marks++) {
@@ -2065,11 +2066,28 @@ function lowerTableBand(
 
 /** What a table view adds for a reader (#1081): whether it is a grid, whether it reads as rows (a table
  * and a grid do, a group reads as its cells in the same order), and the scope its cells' ids are unique
- * in, the label hashed as a `Navigable` grid's are (`navigableScope`). */
+ * in, its place in the tree (`pathScope`), as a `Navigable` grid's are. */
 interface TableSemantics {
   readonly grid: boolean;
   readonly rows: boolean;
   readonly scope: string;
+}
+
+/**
+ * The scope a grid's or a table's cells' ids are unique in: its path below its root, past the steps into what a
+ * component builds (`~`), hashed with the atomizer's FNV, the same on both sides whichever root this pass gave it
+ * and whether a component was mounted as a root or met inside the tree (C# twin: LoweringPath.Scope). The label was the
+ * scope, so two grids of one label, two spreadsheets or two unlabelled tables shared their cells' ids (#1115).
+ */
+function pathScope(path: string): string {
+  const below = path.indexOf('/');
+  const steps = below < 0 ? [] : path.slice(below + 1).split('/');
+  return hashDeclaration(
+    steps
+      .filter((step) => step !== '~')
+      .map((step) => '/' + step)
+      .join(''),
+  );
 }
 
 /** The id a table's cell answers to, which its row's `aria-owns` names (C# twin: TableCellId). */
@@ -4472,17 +4490,6 @@ function navigableCellId(scope: string, row: number, item: number): string {
 }
 
 /**
- * What makes one grid's cell ids distinct from another's on the same page: the grid's NAME, hashed
- * with the atomizer's FNV — the one hash both producers compute identically, which is what SSR
- * hydration needs. Two grids that also share a name (the same month rendered twice) would still
- * collide, which is the point where a caller should give them names that differ; a screen reader
- * needs that anyway.
- */
-function navigableScope(node: NavigableNode): string {
-  return hashDeclaration(node.label ?? '');
-}
-
-/**
  * A KEY, as the MOVE it means (C# twin: NavigableMove). The design system's C15 keyboard: arrows
  * walk a day, PgUp/PgDn a month, +Shift a year, Home/End the week's bounds. Returns null for a key
  * this composite does not claim — which must then reach the page untouched, or an inline grid
@@ -4525,7 +4532,7 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
   host.attributes['role'] = node.role ?? 'grid';
   host.attributes['tabindex'] = '0';
   if (node.label) host.attributes['aria-label'] = node.label;
-  const scope = navigableScope(node);
+  const scope = pathScope(path);
   if (node.activeCell)
     host.attributes['aria-activedescendant'] = navigableCellId(
       scope,

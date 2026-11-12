@@ -15,8 +15,8 @@ export class CodeFolding {
         this.changed = null;
         this.failed = null;
         this._editor = editor;
-        editor.changed = $eq.delegates.combine(editor.changed, this.edited.bind(this));
-        editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, this.selected.bind(this));
+        editor.changed = $eq.delegates.combine(editor.changed, $eq.delegates.bound(this, this.edited));
+        editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, $eq.delegates.bound(this, this.selected));
     }
 
     _editor!: CodeEditorController;
