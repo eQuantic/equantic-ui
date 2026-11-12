@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Sheet.SheetFormulaBar.Reading.get -> eQuantic.UI.Primitives.TextReading
+eQuantic.UI.Sheet.SheetNameBox.Reading.get -> eQuantic.UI.Primitives.TextReading

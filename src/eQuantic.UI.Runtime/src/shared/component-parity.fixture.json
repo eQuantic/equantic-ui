@@ -15062,7 +15062,15 @@
                 "compositionend",
                 "compositionupdate"
               ],
-              "children": []
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "B2, 42",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
             },
             {
               "tag": "div",
@@ -31053,7 +31061,15 @@
                     "compositionend",
                     "compositionupdate"
                   ],
-                  "children": []
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": "B2, 42",
+                      "attrs": {},
+                      "events": [],
+                      "children": []
+                    }
+                  ]
                 },
                 {
                   "tag": "div",
@@ -39074,7 +39090,15 @@
                     "compositionend",
                     "compositionupdate"
                   ],
-                  "children": []
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": "B2, 42",
+                      "attrs": {},
+                      "events": [],
+                      "children": []
+                    }
+                  ]
                 },
                 {
                   "tag": "div",
@@ -45082,6 +45106,7 @@
                 {
                   "tag": "div",
                   "attrs": {
+                    "aria-hidden": "true",
                     "class": "eq-1ayg6m8 eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-g7fowl eq-r2od8e"
                   },
                   "events": [],
@@ -45165,7 +45190,15 @@
                     "compositionend",
                     "compositionupdate"
                   ],
-                  "children": []
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": "Budget",
+                      "attrs": {},
+                      "events": [],
+                      "children": []
+                    }
+                  ]
                 }
               ]
             }
@@ -45205,6 +45238,7 @@
                 {
                   "tag": "div",
                   "attrs": {
+                    "aria-hidden": "true",
                     "class": "eq-1ayg6m8 eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-g7fowl eq-r2od8e"
                   },
                   "events": [],
@@ -45253,7 +45287,15 @@
                     "compositionend",
                     "compositionupdate"
                   ],
-                  "children": []
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": "B2",
+                      "attrs": {},
+                      "events": [],
+                      "children": []
+                    }
+                  ]
                 }
               ]
             }
