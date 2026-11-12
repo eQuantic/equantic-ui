@@ -491,6 +491,12 @@ export interface InFlowNode extends VisualNodeValue {
   child: VisualNodeValue;
 }
 
+/** Wire shape of the C# `InheritedComponent`: a value for its subtree, drawn as its child alone. */
+export interface InheritedNode extends VisualNodeValue {
+  nodeKind: 'inherited';
+  child: VisualNodeValue;
+}
+
 /** Wire shape of the C# `InView` — reports when its child comes on screen, and when it leaves. */
 export interface InViewNode extends VisualNodeValue {
   nodeKind: 'inView';

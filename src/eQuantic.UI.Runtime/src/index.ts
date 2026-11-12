@@ -173,6 +173,7 @@ export {
   LinearGradient,
   RadialGradient,
   InFlow,
+  InheritedComponent,
   InView,
   Simulated,
   TextEntry,
