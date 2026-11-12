@@ -216,3 +216,54 @@ desktop run 6: total 216ms, delta 158ms, frame 58ms
  2775   6.2  32160 /System/Library/PrivateFrameworks/DataAccess.framework/Support/dataaccessd
   949   2.9  41616 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd1135134701
   486   2.9  24336 /System/Library/Frameworks/Contacts.framework/Support/contactsd
+[watch 10:28:38.756] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 10:28:39.545] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 10:28:39.556] dotnet watch : C# and Razor changes applied in 774ms.
+[watch 10:28:39.604] [eQuantic.HotReload] drew the edit 57ms after it was applied
+desktop run 1 (cold): total 944ms, delta 887ms, frame 57ms
+[watch 10:28:41.785] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 10:28:41.915] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 10:28:41.915] dotnet watch : C# and Razor changes applied in 128ms.
+[watch 10:28:41.990] [eQuantic.HotReload] drew the edit 75ms after it was applied
+desktop run 2: total 268ms, delta 193ms, frame 75ms
+[watch 10:28:44.108] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 10:28:44.164] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 10:28:44.164] dotnet watch : C# and Razor changes applied in 55ms.
+[watch 10:28:44.228] [eQuantic.HotReload] drew the edit 64ms after it was applied
+desktop run 3: total 172ms, delta 108ms, frame 64ms
+[watch 10:28:46.361] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 10:28:46.418] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 10:28:46.418] dotnet watch : C# and Razor changes applied in 57ms.
+[watch 10:28:46.509] [eQuantic.HotReload] drew the edit 91ms after it was applied
+desktop run 4: total 209ms, delta 118ms, frame 91ms
+[watch 10:28:48.739] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 10:28:48.781] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 10:28:48.781] dotnet watch : C# and Razor changes applied in 41ms.
+[watch 10:28:48.815] [eQuantic.HotReload] drew the edit 34ms after it was applied
+desktop run 5: total 153ms, delta 119ms, frame 34ms
+[watch 10:28:50.916] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 10:28:50.943] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 10:28:50.943] dotnet watch : C# and Razor changes applied in 26ms.
+[watch 10:28:50.972] [eQuantic.HotReload] drew the edit 29ms after it was applied
+desktop run 6: total 82ms, delta 53ms, frame 29ms
+
+### Edit to view: desktop, warm median against a bar of 1000ms
+
+| part | min | median | max | cold |
+|---|---:|---:|---:|---:|
+| total | 82 | 172 | 268 | 944 |
+| delta | 53 | 118 | 193 | 887 |
+| frame | 29 | 64 | 91 | 57 |
+=== round 3 10:28:53
+[watch 10:28:54.298] dotnet watch : Hot reload enabled. For a list of supported edits, see https://aka.ms/dotnet/hot-reload.
+[watch 10:28:54.302] dotnet watch : Press Ctrl+R to restart.
+--- sample 10:28:54 load: { 23.52 30.01 14.74 } System-wide memory free percentage: 82%
+160 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+3116 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+3117 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+3118 /Users/runner/.dotnet/dotnet build /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/PhotonDesktop.c
+ 3117  59.3  88896 /Users/runner/.dotnet/dotnet
+ 3116  48.0 111024 dotnet
+  326  18.3  94208 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 3111  16.8 152624 dotnet
+  114  11.2  43584 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
