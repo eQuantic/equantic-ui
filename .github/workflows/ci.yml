@@ -10,13 +10,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [watch-noedit, plain-modifiable]
+        side: [pool, nopool]
         attempt: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+      - name: The loop without the pool
+        if: matrix.side == 'nopool'
+        shell: bash
+        run: |
+          cp .github/ab/PhotonWindow.nopool.cs src/eQuantic.UI.Native.Shell.MacOS/PhotonWindow.cs
+          ! grep -q objc_autoreleasePoolPush src/eQuantic.UI.Native.Shell.MacOS/PhotonWindow.cs
       - name: Build the desktop sample
         run: dotnet build samples/PhotonDesktop
       - name: Edit to view on the desktop, shipped live
@@ -24,7 +30,7 @@ jobs:
         timeout-minutes: 10
         env:
           EQ_EDIT_TO_VIEW_ECHO: "1"
-          LOG_BRANCH: test/desktop-edit-log-${{ github.run_id }}-${{ matrix.mode }}-${{ matrix.attempt }}
+          LOG_BRANCH: test/desktop-edit-log-${{ github.run_id }}-${{ matrix.side }}-${{ matrix.attempt }}
         run: |
           set -uo pipefail
           live="$RUNNER_TEMP/live.log"
@@ -39,6 +45,7 @@ jobs:
               {
                 echo "--- sample $(date -u +%H:%M:%S) load: $(sysctl -n vm.loadavg) $(memory_pressure -Q 2>/dev/null | tail -1)"
                 pgrep -lf 'PhotonDesktop|WindowServer' | cut -c1-120
+                for pid in $(pgrep -x PhotonDesktop); do echo "  app $pid: $(footprint -p $pid 2>/dev/null | awk '/phys_footprint:/ {print $2, $3; exit}') $(footprint -p $pid 2>/dev/null | grep 'IOAccelerator (graphics)' | head -1 | tr -s ' ')"; done
                 ps -axo pid=,%cpu=,rss=,comm= | sort -k2 -nr | head -5
               } >> "$live"
               cp "$live" "$ship/live.log"
@@ -48,15 +55,9 @@ jobs:
           ) &
           shipper=$!
           status=0
-          if [ "${{ matrix.mode }}" = "plain-modifiable" ]; then
-            echo "=== plain-modifiable run $(date -u +%H:%M:%S)" | tee -a "$live"
-            DOTNET_MODIFIABLE_ASSEMBLIES=debug dotnet run --no-build --project samples/PhotonDesktop >> "$live" 2>&1 &
-          else
-            echo "=== watch-noedit run $(date -u +%H:%M:%S)" | tee -a "$live"
-            DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=1 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile >> "$live" 2>&1 &
-          fi
-          app=$!
-          for t in $(seq 1 24); do sleep 10; echo "=== alive $(date -u +%H:%M:%S) app: $(pgrep -x PhotonDesktop | head -1) watch: $(pgrep -f 'dotnet watch' | head -1)" | tee -a "$live"; done
-          kill $app || true; pkill -x PhotonDesktop || true; pkill -f 'dotnet watch' || true
+          for round in 1 2 3; do
+            echo "=== round $round $(date -u +%H:%M:%S)" | tee -a "$live"
+            dotnet run scripts/measure-edit-to-view.cs -- desktop --runs 6 2>&1 | tee -a "$live" || status=1
+          done
           kill $shipper || true
           exit $status
