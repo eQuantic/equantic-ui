@@ -6,6 +6,7 @@ import {
   decParse,
   decTryParse,
 } from './utils/decimal';
+import { fixedSize, isReadOnly } from './utils/view';
 import {
   addToEvent,
   boundDelegate,
@@ -538,6 +539,8 @@ export const $eq = {
   /** What a transpiled constructor resolves its dependencies through — see utils/services. */
   services: { resolve: resolveService, provide: provideService },
   collections: {
+    fixedSize,
+    isReadOnly,
     queue,
     stack,
     dictionary,

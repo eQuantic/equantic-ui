@@ -107,6 +107,7 @@ public class PressedStateRealizerTests
     [Theory]
     [InlineData(".eq-x", 0, 1, 0)]
     [InlineData(".eq-x:hover", 0, 2, 0)]
+    [InlineData(":where(.eq-pressable:hover) .eq-x.eq-x:not(:where(.eq-pressable:not(:hover) .eq-x))", 0, 2, 0)]
     [InlineData(".eq-pressable:focus-visible .eq-x:not(:where(.eq-pressable:focus-visible .eq-pressable .eq-x))", 0, 3, 0)]
     [InlineData(".eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-x:not(:where(.eq-pressable:not(:active) .eq-x))", 0, 4, 0)]
     [InlineData(".a:not(.b, #c) li", 1, 1, 1)]
@@ -166,6 +167,38 @@ public class PressedStateRealizerTests
         Compare(pressed, own).Should().BePositive($"`{pressedSelector}` beats the box's own fill");
         Compare(pressed, hover).Should().BePositive($"`{pressedSelector}` beats the hover's fill");
         Compare(pressed, focus).Should().BePositive($"`{pressedSelector}` beats the focus's fill");
+    }
+
+    /// <summary>
+    /// The same order for a box INSIDE a control, whose hover is the control's since #614: the
+    /// control's hover family stands where the box's own :hover stood, over the box's fill and under
+    /// the control's focus and press, by its selector alone.
+    /// </summary>
+    [Fact]
+    public void InsideAControl_TheStatesKeepTheirOrder_BySpecificityAlone()
+    {
+        static ColorToken Solid(byte r) => new(Color.FromRgb(r, 0x30, 0x40));
+        var (control, css) = Lower(new Pressable(new Box(new BoxStyle
+        {
+            Width = 10, Height = 10,
+            Background = Solid(0x01),
+            Hover = new StyleDiff { Background = Solid(0x02) },
+            Focus = new StyleDiff { Background = Solid(0x03) },
+            Pressed = new StyleDiff { Background = Solid(0x04) },
+        }), () => { }));
+        var element = (HtmlElement)control.Children[0];
+
+        (string, (int, int, int)) Fill(byte r) =>
+            RuleWriting(css, element, $"background-color:{Regex.Escape(TokenCss.Value(Solid(r)))}");
+        var (_, own) = Fill(0x01);
+        var (hoverSelector, hover) = Fill(0x02);
+        var (_, focus) = Fill(0x03);
+        var (_, pressed) = Fill(0x04);
+
+        hoverSelector.Should().StartWith(":where(.eq-pressable:hover) .", "the hover is the control's");
+        Compare(hover, own).Should().BePositive($"`{hoverSelector}` beats the box's own fill");
+        Compare(focus, hover).Should().BePositive($"the focus beats `{hoverSelector}`");
+        Compare(pressed, hover).Should().BePositive($"the press beats `{hoverSelector}`");
     }
 
     [Fact]

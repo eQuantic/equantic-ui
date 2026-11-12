@@ -243,6 +243,8 @@ export interface BoxStyleValue {
   maxHeight?: SizeValueValue | number;
   padding?: EdgeInsetsValue;
   background?: ColorTokenValue | null;
+  /** C# `BoxStyle.Foreground` (#614). */
+  foreground?: ColorTokenValue | null;
   cornerRadius?: CornerRadiiValue;
   borderWidth?: number;
   borderColor?: ColorTokenValue;
@@ -287,6 +289,8 @@ export interface BoxStyleValue {
 /** Wire shape of the C# `StyleDiff` — only set members override the base. */
 export interface StyleDiffValue {
   background?: ColorTokenValue | null;
+  /** C# `StyleDiff.Foreground` (#614). */
+  foreground?: ColorTokenValue | null;
   borderColor?: ColorTokenValue | null;
   borderWidth?: number | null;
   elevation?: number | null;
@@ -316,6 +320,9 @@ export interface TransformValue {
   rotationDegrees?: number;
   scaleX?: number;
   scaleY?: number;
+  /** Fractions of the box's own width and height (C# `TranslateFractionX`, #614). */
+  translateFractionX?: number;
+  translateFractionY?: number;
 }
 
 /** Wire shape of the C# `LinearGradient`: two token stops on a straight axis, plus the optional

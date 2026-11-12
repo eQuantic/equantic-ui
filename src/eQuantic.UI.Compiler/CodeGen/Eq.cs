@@ -532,6 +532,13 @@ public static class Eq
     public const string ListInsertRange = "$eq.collections.insertRange";
     /// <summary><c>List&lt;T&gt;.Insert</c> and <c>IList&lt;T&gt;.Insert</c>: the index checked as .NET checks it (#1160).</summary>
     public const string ListInsert = "$eq.collections.listInsert";
+
+    /// <summary>A <c>T[]</c> on its way behind <c>ICollection&lt;T&gt;</c> or <c>IList&lt;T&gt;</c> (<c>utils/view.ts</c>),
+    /// which refuses a change of its size from then on, as .NET's array does.</summary>
+    public const string FixedSize = "$eq.collections.fixedSize";
+
+    /// <summary><c>ICollection&lt;T&gt;.IsReadOnly</c>, of what the interface holds when the code runs.</summary>
+    public const string CollectionIsReadOnly = "$eq.collections.isReadOnly";
     /// <summary><c>List&lt;T&gt;.RemoveAt</c> and <c>IList&lt;T&gt;.RemoveAt</c>: the index checked as .NET checks it (#1160).</summary>
     public const string ListRemoveAt = "$eq.collections.listRemoveAt";
     /// <summary><c>List&lt;T&gt;.RemoveRange</c>: the range checked as .NET checks it (#1160).</summary>
