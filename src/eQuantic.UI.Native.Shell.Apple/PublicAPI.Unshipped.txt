@@ -1,1 +1,3 @@
 #nullable enable
+[EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.objc_autoreleasePoolPop(nint pool) -> void
+[EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.objc_autoreleasePoolPush() -> nint

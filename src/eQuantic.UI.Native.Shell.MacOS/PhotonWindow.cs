@@ -337,55 +337,68 @@ public sealed class PhotonWindow
 
         while (true)
         {
-            // Drain pending OS events; while idle (no motion, nothing dirty) block briefly on the
-            // next event instead of spinning.
-            // Self-test presents EVERY cycle (a static tree renders on demand only and would
-            // otherwise idle forever short of maxFrames).
-            var forced = maxFrames > 0;
-            var idle = !host.NeedsRender && !forced;
-            var until = idle ? Send(nsDate, Sel("dateWithTimeIntervalSinceNow:"), 0.05) : distantPast;
-            while (true)
+            // Each turn of the loop in a pool of its own. AppKit's own loop drains one per event, and this
+            // loop is the shell's: without one, every event, every frame's drawable and its command buffer
+            // were autoreleased into nothing and lived for good, so the GPU memory grew with every frame,
+            // and a run of hot-reload edits on CI's macOS machines stopped drawing or froze the machine
+            // (#1473). Popped on every way out of the turn, a break included.
+            var pool = objc_autoreleasePoolPush();
+            try
             {
-                var e = Send(app, Sel("nextEventMatchingMask:untilDate:inMode:dequeue:"),
-                    ulong.MaxValue, until, runLoopMode, true);
-                if (e == IntPtr.Zero) break;
-                Route(e, host);
-                SendVoid(app, Sel("sendEvent:"), e);
-                until = distantPast; // only the first wait blocks
+                // Drain pending OS events; while idle (no motion, nothing dirty) block briefly on the
+                // next event instead of spinning.
+                // Self-test presents EVERY cycle (a static tree renders on demand only and would
+                // otherwise idle forever short of maxFrames).
+                var forced = maxFrames > 0;
+                var idle = !host.NeedsRender && !forced;
+                var until = idle ? Send(nsDate, Sel("dateWithTimeIntervalSinceNow:"), 0.05) : distantPast;
+                while (true)
+                {
+                    var e = Send(app, Sel("nextEventMatchingMask:untilDate:inMode:dequeue:"),
+                        ulong.MaxValue, until, runLoopMode, true);
+                    if (e == IntPtr.Zero) break;
+                    Route(e, host);
+                    SendVoid(app, Sel("sendEvent:"), e);
+                    until = distantPast; // only the first wait blocks
+                }
+
+                if (!SendBool(window, Sel("isVisible"))) break;
+
+                // W5 resize: poll the content size each cycle (no ObjC delegate class needed) — on a
+                // change, resize the drawable and the HOST (state survives; layout adopts next frame).
+                var content = SendRect(contentView, Sel("bounds"));
+                var newW = (float)content.Width;
+                var newH = (float)content.Height;
+                if (newW > 0 && newH > 0 && (newW != _currentWidth || newH != _currentHeight))
+                {
+                    _currentWidth = newW;
+                    _currentHeight = newH;
+                    SendVoid(layer, Sel("setDrawableSize:"), new CGSize(newW * scale, newH * scale));
+                    host.Resize(newW, newH);
+                }
+
+                if (host.NeedsRender || forced
+                    || host.IsFrameDue((float)clock.Elapsed.TotalMilliseconds)) Present();
+
+                if (maxFrames > 0 && FramesPresented >= maxFrames)
+                {
+                    // The AX probe, through the REAL dispatch: what VoiceOver would receive if it asked
+                    // this window right now. Self-test evidence, printed beside FramesPresented.
+                    var axChildren = Send(contentView, Sel("accessibilityChildren"));
+                    var axCount = axChildren != IntPtr.Zero ? SendULong(axChildren, Sel("count")) : 0;
+                    var axFirst = axCount > 0 ? Send(axChildren, Sel("firstObject")) : IntPtr.Zero;
+                    var axSample = axFirst != IntPtr.Zero
+                        ? $" — first: {FromNSString(Send(axFirst, Sel("accessibilityRole")))} \"{FromNSString(Send(axFirst, Sel("accessibilityLabel")))}\""
+                        : "";
+                    Console.WriteLine($"[photon] accessibility elements: {axCount}{axSample}");
+                    ProbeIme(contentView, host, (float)clock.Elapsed.TotalMilliseconds);
+                    SendVoid(window, Sel("close"));
+                    break;
+                }
             }
-
-            if (!SendBool(window, Sel("isVisible"))) break;
-
-            // W5 resize: poll the content size each cycle (no ObjC delegate class needed) — on a
-            // change, resize the drawable and the HOST (state survives; layout adopts next frame).
-            var content = SendRect(contentView, Sel("bounds"));
-            var newW = (float)content.Width;
-            var newH = (float)content.Height;
-            if (newW > 0 && newH > 0 && (newW != _currentWidth || newH != _currentHeight))
+            finally
             {
-                _currentWidth = newW;
-                _currentHeight = newH;
-                SendVoid(layer, Sel("setDrawableSize:"), new CGSize(newW * scale, newH * scale));
-                host.Resize(newW, newH);
-            }
-
-            if (host.NeedsRender || forced
-                || host.IsFrameDue((float)clock.Elapsed.TotalMilliseconds)) Present();
-
-            if (maxFrames > 0 && FramesPresented >= maxFrames)
-            {
-                // The AX probe, through the REAL dispatch: what VoiceOver would receive if it asked
-                // this window right now. Self-test evidence, printed beside FramesPresented.
-                var axChildren = Send(contentView, Sel("accessibilityChildren"));
-                var axCount = axChildren != IntPtr.Zero ? SendULong(axChildren, Sel("count")) : 0;
-                var axFirst = axCount > 0 ? Send(axChildren, Sel("firstObject")) : IntPtr.Zero;
-                var axSample = axFirst != IntPtr.Zero
-                    ? $" — first: {FromNSString(Send(axFirst, Sel("accessibilityRole")))} \"{FromNSString(Send(axFirst, Sel("accessibilityLabel")))}\""
-                    : "";
-                Console.WriteLine($"[photon] accessibility elements: {axCount}{axSample}");
-                ProbeIme(contentView, host, (float)clock.Elapsed.TotalMilliseconds);
-                SendVoid(window, Sel("close"));
-                break;
+                objc_autoreleasePoolPop(pool);
             }
         }
     }
