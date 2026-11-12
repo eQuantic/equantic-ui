@@ -7,3 +7,84 @@
  1665  15.5  36720 /usr/sbin/spindump
  2117  15.4  46336 dotnet
   420  11.7  32128 /System/Library/PrivateFrameworks/AXAssetLoader.framework/Support/axassetsd
+dotnet watch 🔥 Hot reload enabled. For a list of supported edits, see https://aka.ms/dotnet/hot-reload.
+dotnet watch 💡 Press Ctrl+R to restart.
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  eQuantic.UI.Sdk.Tasks -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sdk.Tasks/bin/Debug/netstandard2.0/eQuantic.UI.Sdk.Tasks.dll
+  eQuantic.UI.Primitives -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Primitives/bin/Debug/net10.0/eQuantic.UI.Primitives.dll
+  eQuantic.UI.Codegen -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Codegen/bin/Debug/net10.0/eQuantic.UI.Codegen.dll
+  eQuantic.UI.Native.Engine -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine/bin/Debug/net10.0/eQuantic.UI.Native.Engine.dll
+  eQuantic.UI.Code -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Code/bin/Debug/net10.0/eQuantic.UI.Code.dll
+  eQuantic.UI.Native.Engine.Reference -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Reference/bin/Debug/net10.0/eQuantic.UI.Native.Engine.Reference.dll
+  eQuantic.UI.Native.Engine.Vulkan -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Vulkan/bin/Debug/net10.0/eQuantic.UI.Native.Engine.Vulkan.dll
+  eQuantic.UI.Native.Framework -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Framework/bin/Debug/net10.0/eQuantic.UI.Native.Framework.dll
+  eQuantic.UI.Components -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Components/bin/Debug/net10.0/eQuantic.UI.Components.dll
+  eQuantic.UI.Native.Shell.Apple -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Apple/bin/Debug/net10.0/eQuantic.UI.Native.Shell.Apple.dll
+  eQuantic.UI.Native.Components -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Components/bin/Debug/net10.0/eQuantic.UI.Native.Components.dll
+  eQuantic.UI.Native.Hosting -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Hosting/bin/Debug/net10.0/eQuantic.UI.Native.Hosting.dll
+  eQuantic.UI.Native.Shell.Windows -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Windows/bin/Debug/net10.0/eQuantic.UI.Native.Shell.Windows.dll
+  eQuantic.UI.Native.Build -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Build/bin/Debug/net10.0/eqicon.dll
+  eQuantic.UI.Native.Generators -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Generators/bin/Debug/netstandard2.0/eQuantic.UI.Native.Generators.dll
+  eQuantic.UI.Sheet -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sheet/bin/Debug/net10.0/eQuantic.UI.Sheet.dll
+  eQuantic.UI.Charts -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Charts/bin/Debug/net10.0/eQuantic.UI.Charts.dll
+  eQuantic.UI.Native.Engine.Metal -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Metal/bin/Debug/net10.0/eQuantic.UI.Native.Engine.Metal.dll
+  eQuantic.UI.Native.Shell.MacOS -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.MacOS/bin/Debug/net10.0/eQuantic.UI.Native.Shell.MacOS.dll
+  eQuantic.UI.Spreadsheets -> /Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Spreadsheets/bin/Debug/net10.0/eQuantic.UI.Spreadsheets.dll
+  PhotonDesktop -> /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop.dll
+  /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/eQuantic Studio.app: replacing existing signature
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:05.81
+dotnet watch ⌚ Loading projects ...
+=== alive 13:44:34 app:  watch: 2117
+dotnet watch ⌚ Loaded 21 project(s) in 1.8s.
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Codegen/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Codegen/eQuantic.UI.Codegen.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Codegen/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Codegen/eQuantic.UI.Codegen.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Primitives/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Primitives/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Components/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Components/eQuantic.UI.Components.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Components/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Components/eQuantic.UI.Components.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Code/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Code/eQuantic.UI.Code.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Code/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Code/eQuantic.UI.Code.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Components/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Components/eQuantic.UI.Native.Components.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Components/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Components/eQuantic.UI.Native.Components.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine/eQuantic.UI.Native.Engine.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine/eQuantic.UI.Native.Engine.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Framework/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Framework/eQuantic.UI.Native.Framework.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Framework/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Framework/eQuantic.UI.Native.Framework.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Reference/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Reference/eQuantic.UI.Native.Engine.Reference.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Reference/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Reference/eQuantic.UI.Native.Engine.Reference.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Apple/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Apple/eQuantic.UI.Native.Shell.Apple.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Apple/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Apple/eQuantic.UI.Native.Shell.Apple.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Windows/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Windows/eQuantic.UI.Native.Shell.Windows.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Windows/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Windows/eQuantic.UI.Native.Shell.Windows.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Hosting/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Hosting/eQuantic.UI.Native.Hosting.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Hosting/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Hosting/eQuantic.UI.Native.Hosting.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Vulkan/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Vulkan/eQuantic.UI.Native.Engine.Vulkan.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Vulkan/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Vulkan/eQuantic.UI.Native.Engine.Vulkan.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sheet/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sheet/eQuantic.UI.Sheet.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sheet/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sheet/eQuantic.UI.Sheet.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Charts/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Charts/eQuantic.UI.Charts.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Charts/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Charts/eQuantic.UI.Charts.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Spreadsheets/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Spreadsheets/eQuantic.UI.Spreadsheets.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Spreadsheets/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Spreadsheets/eQuantic.UI.Spreadsheets.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.MacOS/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.MacOS/eQuantic.UI.Native.Shell.MacOS.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.MacOS/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.MacOS/eQuantic.UI.Native.Shell.MacOS.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Metal/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Metal/eQuantic.UI.Native.Engine.Metal.csproj'
+dotnet watch ⚠ msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Metal/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Metal/eQuantic.UI.Native.Engine.Metal.csproj'
+dotnet watch ⌚ Waiting for changes
+--- sample 13:44:40 load: { 39.39 37.78 17.43 } System-wide memory free percentage: 83%
+159 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2117 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+2135 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+2223 /Users/runner/.dotnet/dotnet run --no-build -e DOTNET_WATCH=1 -e DOTNET_WATCH_ITERATION=1 -e DOTNET_MODIFIABLE_ASSE
+2224 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 2135  71.6 418016 /Users/runner/.dotnet/dotnet
+ 2117  25.4 123408 dotnet
+ 2239  15.2  14720 /System/Library/PrivateFrameworks/IntelligencePlatformCompute.framework/Versions/A/XPCServices/IntelligencePlatformComputeService.xpc/Contents/MacOS/IntelligencePlatformComputeService
+ 2228  10.7  18512 /System/Library/PrivateFrameworks/OnDeviceStorage.framework/Support/amsondevicestoraged
+ 1168  10.7  59312 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
