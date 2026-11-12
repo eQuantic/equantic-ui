@@ -135,3 +135,13 @@
  1963   6.9 422544 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
  2280   1.9   1600 /bin/bash
   359   0.3  29216 /System/Library/PrivateFrameworks/BiomeStreams.framework/Support/BiomeAgent
+=== alive 13:58:21 app: 2354 watch: 
+--- sample 13:58:30 load: { 9.85 21.37 14.27 } System-wide memory free percentage: 80%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2288 dotnet run --no-build --project samples/PhotonDesktop
+2354 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  703  34.7  91760 /System/Library/PrivateFrameworks/StreamingZip.framework/Versions/A/XPCServices/com.apple.StreamingUnzipService.privileged.xpc/Contents/MacOS/com.apple.StreamingUnzipService.privileged
+  259  14.9  46624 /usr/libexec/nsurlsessiond
+  386  13.3  39936 /System/Library/PrivateFrameworks/CloudKitDaemon.framework/Support/cloudd
+  305  12.3 494640 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  991  10.8  42848 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd4166047580
