@@ -56,6 +56,10 @@ public interface IVisualNodeVisitor<in TState, out TResult>
     /// reason it stays closed everywhere else.</summary>
     TResult Visit(UiComponent node, TState state);
 
+    /// <summary>A value for a subtree, an app's own as much as the SDK's: ONE method, as for a
+    /// component, and every pass draws its child as if it were not there.</summary>
+    TResult Visit(InheritedComponent node, TState state);
+
     TResult Visit(AdaptiveNode node, TState state);
 
     TResult Visit(Adjustable node, TState state);
