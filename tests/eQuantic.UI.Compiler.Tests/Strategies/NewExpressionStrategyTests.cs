@@ -54,7 +54,7 @@ public class NewExpressionStrategyTests
     public void Initializer_Object_ConvertsToJSObject()
     {
         var js = Convert("new { A = 1, B = 2 }");
-        Assert.Equal("{ a: 1, b: 2 }", js);
+        Assert.Equal("$eq.anonymous({ a: 1, b: 2 })", js);
     }
 
     [Fact]
