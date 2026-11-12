@@ -214,3 +214,45 @@ desktop run 6: total 162ms, delta 107ms, frame 55ms
   988  10.2   6496 /usr/libexec/sysmond
  2907   3.1 140704 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
   546   2.9  89360 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+[watch 14:48:34.997] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:48:35.873] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:48:35.881] dotnet watch : C# and Razor changes applied in 850ms.
+[watch 14:48:35.910] [eQuantic.HotReload] drew the edit 38ms after it was applied
+desktop run 1 (cold): total 1014ms, delta 976ms, frame 38ms
+[watch 14:48:38.025] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:48:38.137] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:48:38.137] dotnet watch : C# and Razor changes applied in 110ms.
+[watch 14:48:38.157] [eQuantic.HotReload] drew the edit 20ms after it was applied
+desktop run 2: total 166ms, delta 146ms, frame 20ms
+[watch 14:48:40.449] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:48:40.499] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:48:40.499] dotnet watch : C# and Razor changes applied in 50ms.
+[watch 14:48:40.538] [eQuantic.HotReload] drew the edit 39ms after it was applied
+desktop run 3: total 217ms, delta 178ms, frame 39ms
+[watch 14:48:42.670] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:48:42.748] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:48:42.748] dotnet watch : C# and Razor changes applied in 76ms.
+[watch 14:48:42.781] [eQuantic.HotReload] drew the edit 33ms after it was applied
+desktop run 4: total 157ms, delta 124ms, frame 33ms
+[watch 14:48:44.968] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:48:45.048] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:48:45.058] dotnet watch : C# and Razor changes applied in 80ms.
+[watch 14:48:45.123] [eQuantic.HotReload] drew the edit 84ms after it was applied
+desktop run 5: total 275ms, delta 191ms, frame 84ms
+[watch 14:48:47.280] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:48:47.310] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:48:47.311] dotnet watch : C# and Razor changes applied in 29ms.
+[watch 14:48:47.363] [eQuantic.HotReload] drew the edit 52ms after it was applied
+desktop run 6: total 123ms, delta 71ms, frame 52ms
+--- sample 14:48:48 load: { 21.55 29.82 14.94 } System-wide memory free percentage: 80%
+156 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2514 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+2515 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+2903 /Users/runner/.dotnet/dotnet run --no-build -e DOTNET_WATCH=1 -e DOTNET_WATCH_ITERATION=1 -e DOTNET_MODIFIABLE_ASSE
+2907 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  app 2907: 68 MB 3664 KB 0 B 384 KB 162 IOAccelerator (graphics)
+ 3318  10.8  19440 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 3311  10.7  19440 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 3314  10.1  19440 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 3312  10.1  19424 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 3310   9.8  19424 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
