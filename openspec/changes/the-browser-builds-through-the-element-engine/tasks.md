@@ -12,10 +12,18 @@
 - [x] 2.5 A render the owner asked for lowers the page's last tree; any other builds the page and rebuilds all
 - [x] 2.6 `EndFrame` at the pass's end, `UnmountAll` when a page leaves, and the store and the invalidation hook removed
 
-## 3. Proof
+## 3. Server data by position, and every arm a position (#1477)
 
-- [x] 3.1 The specs that asserted the store assert the same behaviour on elements, and the scenarios of this change have a spec each
-- [x] 3.2 The runtime's suites, the element engine's twins and the hydration contract pass
-- [ ] 3.3 The e2e suite in a real browser after the change
-- [ ] 3.4 The served runtime's budget, re-recorded in a commit of its own if it moved
-- [ ] 3.5 `docs/ELEMENT-TREE-PLAN.md`, the ledger and `FlutterParityPinTests` where a row closes
+- [x] 3.1 The engine records `Element.Slot`, reads `SlotsBelow`, and says which position is `Building`
+- [x] 3.2 The web's owners hold every arm (`holdsEveryArm`); the frameless arm and the threshold listener go
+- [x] 3.3 The browser adopts by `r{tree}/{type}@{slots}` on every build of a fresh instance
+- [x] 3.4 The server names by the frame's key, draws a bridge through `MarkupHost.DrawOnce`, puts back before a build, and measures a page's keys below it (`ForPage`)
+- [ ] 3.5 The engine regenerated, a twin case for slots, and the payload's tests read keys by type
+
+## 4. Proof
+
+- [x] 4.1 The specs that asserted the store assert the same behaviour on elements, and the scenarios of this change have a spec each
+- [ ] 4.2 The runtime's suites, the element engine's twins and the hydration contract pass
+- [ ] 4.3 The e2e suite in a real browser after the change
+- [ ] 4.4 The served runtime's budget, re-recorded in a commit of its own if it moved
+- [ ] 4.5 `docs/ELEMENT-TREE-PLAN.md`, the ledger and `FlutterParityPinTests` where a row closes

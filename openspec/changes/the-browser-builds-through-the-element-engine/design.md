@@ -74,21 +74,50 @@ A frame indexes a built root by node identity (`Map<object, Element>`), as `Elem
 travels in the `LoweringContext`, as the C# frame is a field of the lowering visitor. The component arm
 asks it for the kept instance and what that instance built, and lowers the built node at `path + '/0'`.
 A component the frame does not hold is an error, as in C#: lowering a fresh instance instead would draw
-its defaults in silence. The adaptive node's arms and the deferred layers (an overlay's child, an
-anchored panel) ask the frame exactly where the C# visitor does (`HoldsArm`, `Show`). The frame is
+its defaults in silence. The deferred layers (an overlay's child, an anchored panel) ask the frame
+exactly where the C# visitor does (`Show`). The frame is
 hand-written beside the lowering, like the lowering itself: the engine is written once and transpiled,
 and the index over it is the realizer's.
 
 A lowering with no pass (a test, a direct embedding) builds through a structural owner and discards it,
 which is what the server does for a page.
 
-### The owner's build callback holds the boundary and the server's state
+### Every arm of an adaptive node is a position on the web (#1477)
 
-The callback the runtime hands the owner builds a component inside today's boundary and, before an
-instance's first build, adopts what the server loaded for it under the next `Type#ordinal`. The engine
-builds a frame depth first, pre-order, which is the order the lowering walked, so the two sides count
-the same components in the same order. The ordinals restart at every walk that builds the page, as they
-do now; a render the owner asked for adopts nothing, since no instance in it is new.
+The web draws every arm an adaptive node declares, each behind a media gate, and a resize opens another
+gate without a render. An owner that held only the arm a window size class resolved left the arm on
+screen, at some widths, as one no element held: its stateful components started again on every build,
+and a resize needed a build to put the shown arm under an element. So the web's owners hold every arm
+(`BuildOwner(…, holdsEveryArm: true)`), compact at slot 0, medium at 1 and expanded at 2, and nothing on
+the web resolves an arm: `MarkupHost.Build` takes no size class, the browser's owners are handed a
+constant nobody reads, and the lowering of an arm with no frame, in C# and in TypeScript, goes with the
+listener that rebuilt the page when the window crossed a threshold. Photon draws one arm and keeps
+resolving it.
+
+### Server data is keyed by a component's position (#1477)
+
+The server named a component's data `Type#ordinal` as its lowering met the component, which was the
+browser's order while the browser's lowering built. Once the browser builds through the engine, the data
+has to reach an instance before it builds, so the browser could only count in build order, and the two
+orders part at the arms a position does not hold (the server held `Expanded`, the browser the window's,
+and both built the others during the lowering) and at a deferred layer, built when the lowering shows
+it. Two components of one type, one in such an arm or layer and one after it, swapped their data. And a
+render the owner asked for named nothing, so a stateless component handed anew at a kept position got
+none.
+
+Lowering order exists only after the build, and adopting in rounds, as the server loads, would lower the
+whole page once per data component on hydration. A key read off the position needs neither: the tree of
+the render, the type, and the slots from the tree's root down (`Element.SlotsBelow`, with `Element.Slot`
+recorded where a parent places a child, Flutter's slot). Both sides read it off the same engine. The
+browser's build callback asks the owner which position is building (`BuildOwner.Building`) and adopts
+under that key on every build of a fresh instance; a kept stateful instance took its data when it
+mounted. The server names the kept instance by the frame's key as it lowers; an escape-hatch page's
+bridge is drawn once through a structural host of its own (`MarkupHost.DrawOnce`), which puts back what
+an earlier round loaded before a fresh instance builds (`ComponentExpansionScope.PutBack`). A page's
+own component keeps `Type#0`, and the server measures a page's keys below the page
+(`MarkupHost.ForPage`), since the browser builds a page's component by itself.
+
+The callback also keeps today's boundary: a throw costs the component's own subtree.
 
 ### The invalidation hook goes
 

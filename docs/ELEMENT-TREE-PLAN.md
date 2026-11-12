@@ -39,7 +39,7 @@ A component, or the state of a node, is found by a string, and each target spell
 | Where | The string | Formed by |
 |---|---|---|
 | Photon | a path, `r/0/2/[key]`, and a component's identity `"{path}#{type}#{key}"` | `LayoutEngine.ChildPath`, `LaidOutChildren.PathOf`, `ComponentInstanceStore.Reconcile` |
-| Server (SSR) | `Type#ordinal`, the ordinal counted per type in depth-first order | `ComponentExpansionScope.Enter`, `ComponentIdentity.Key` |
+| Server (SSR) | `Type#ordinal`, the ordinal counted per type in depth-first order (until #1477, which names a composed component by its position) | `ComponentExpansionScope.Enter`, `ComponentIdentity.Key` |
 | Browser | `path#type#key` again, with a new root (`r0`, `r1`…) at every stateless boundary | `ComponentInstanceStore` in `instance-store.ts`, `lowerVisualNode` |
 | DOM | `(tag, key, child index)` among siblings | the reconciler |
 
@@ -293,9 +293,14 @@ because a test draws one frame after another and drives input the way a browser 
 Some identities cross a boundary, and a boundary needs a string. They stay, computed from the
 element when crossing and never used as an address inside a tree:
 
-- the hydration payload's key, `Type#ordinal`, which the server and the browser already agree on;
+- the hydration payload's key, which was `Type#ordinal` while both sides counted in the order their
+  lowering met a component. Once the browser builds through the engine it has to hand the data over
+  before a component builds, and the build order and the lowering order part at an adaptive node's arms
+  and at a deferred layer, so a component the page composes is named by its position (#1477):
+  `r{tree}/{type}@{slots}`, the slots read off the element (`Element.SlotsBelow`), the same chain the
+  capture below keys by. A page's own component keeps `Type#0`;
 - hot reload's capture, which can now carry every stateful element's fields instead of the page
-  root's alone. Not under `Type#ordinal`: the hydration key holds because the server and the browser
+  root's alone. Not under the hydration key: its bare slots hold because the server and the browser
   render the same tree, and an edit is exactly what changes the tree between a capture and its
   replay, so an inserted component or two keyed siblings that swapped would hand one component
   another's fields. The capture keys each element by its position as a chain from the root, every
