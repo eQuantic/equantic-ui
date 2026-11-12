@@ -160,7 +160,9 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
                     JsExpr.Binary(other, "==", JsExpr.Literal("null")));
             if (another)
                 return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Literal("null"));
-            return JsExpr.Call(JsExpr.Identifier(Eq.Equals), receiver, other);
+            // The member's Equals(object) is its box's, as C# boxes the receiver for the call: a string of its key, a
+            // member of another enum and a float are not it, and the argument, boxed for the call, is (#954).
+            return JsExpr.Call(JsExpr.Identifier(Eq.Equals), Boxing.Box(type!, receiver, context), other);
         }
 
         // A nullable struct's is its value's, which both comparisons answer for an empty one: equal only to
