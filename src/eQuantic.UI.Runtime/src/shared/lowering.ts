@@ -1278,7 +1278,7 @@ function warmsOnHover(destination: string): boolean {
 }
 
 function lowerLink(node: LinkNode, context: LoweringContext, path: string): HtmlNode {
-  // The active language rides the href (C# twin: RenderContext.ResolveDestination). An author
+  // The active language rides the href (C# twin: RenderChannels.ResolveDestination). An author
   // writes `/pricing` once and the link is right in every language — including after a
   // client-side switch, which re-renders this node with a different active culture.
   // A destination whose scheme an href never carries is no href (C# twin, #1286).

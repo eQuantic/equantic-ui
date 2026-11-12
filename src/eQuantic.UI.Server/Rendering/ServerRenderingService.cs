@@ -136,18 +136,19 @@ public class ServerRenderingService : IServerRenderingService
             // Where a component in the MIDDLE of the tree finds a capability — the REQUEST's
             // container, so a scoped one resolves and a page's own registrations win.
             Primitives.CapabilityScope.Current = context.RequestServices.GetService;
-            // And the density the browser reported (#623), for the whole request: every write-once
+            // And the density the browser reported (#623), for every render of the request: each write-once
             // bridge is built at it, the drawing's and the navigation's discovery walk alike, or a page
             // that composes by its density answers a navigation from a tree the browser never builds.
             var density = DensityCookie.Resolve(context);
-            Web.VisualNodeComponent.AmbientDensity = density;
             // Every in-app href picks up THIS request's language prefix. The culture is the one
             // UseRequestLocalization negotiated — from the path segment first — so a page served
-            // at /pt-BR/pricing links to /pt-BR/about without any page saying so.
+            // at /pt-BR/pricing links to /pt-BR/about without any page saying so. Both travel with
+            // each render's channels (#1404), never through the request's flow.
+            Func<string, string>? linkPolicy = null;
             if (_options.CultureRoutes is { } cultureRoutes)
             {
                 var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
-                RenderContext.SetLinkPolicy(path => cultureRoutes.PathFor(culture, path));
+                linkPolicy = path => cultureRoutes.PathFor(culture, path);
             }
 
             try
@@ -215,27 +216,14 @@ public class ServerRenderingService : IServerRenderingService
                     var page = component as Web.VisualNodeComponent;
                     var host = page is null ? null : Web.MarkupHost.Structural(Theme, 1f, density);
 
-                    // ONE ROUND, the same for both paths: the page drawn with the style, gradient and face
-                    // sinks armed and the expansion scope naming what it reaches. It answers that scope.
+                    // ONE ROUND, the same for both paths: the page drawn with channels of its own, whose
+                    // expansion scope names what it reaches. It answers that scope.
                     Web.ComponentExpansionScope DrawRound()
                     {
                         assets = new AssetCollection();
                         vectorDefs = null;
                         CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
 
-                        // Render with an AMBIENT style sink armed (STYLE-SEMANTICS-PLAN §2): every
-                        // write-once bridge in the tree — top-level page or composed inside a Core
-                        // component — collects its atomic rules into this one per-page set.
-                        var styles = new Web.StyleSink();
-                        Web.StyleSink.Ambient = styles;
-                        // The same shape, for the same reason, one layer over: every gradient the page
-                        // paints with, declared ONCE for the document instead of once per drawing.
-                        var gradients = new Web.GradientSink();
-                        Web.GradientSink.Ambient = gradients;
-                        // And the families with files the page's text names (#1056), declared in its
-                        // head beside what the theme's stylesheet declares, as Photon registers them.
-                        var faces = new Web.FaceSink();
-                        Web.FaceSink.Ambient = faces;
                         // Armed the same way and for the same reason: a component that throws is
                         // contained to its own subtree instead of turning this request into a 500.
                         // Development quotes the exception in the panel; production says only that a
@@ -251,26 +239,32 @@ public class ServerRenderingService : IServerRenderingService
                             Restore = prefetched,
                             Reserved = coreRootKey,
                         };
-                        Web.ComponentExpansionScope.Ambient = renderScope;
+                        // THE RENDER'S CHANNELS (#1404): every write-once bridge in the tree, top-level
+                        // page or composed inside a Core component, collects its atomic rules, the
+                        // gradients the page paints with and the families its text names into this one
+                        // set, and names each component it expands into the scope.
+                        var channels = new Web.RenderChannels(renderScope, density, linkPolicy);
+                        var styles = channels.Styles;
+                        var gradients = channels.Gradients;
+                        var faces = channels.Faces;
                         try
                         {
                             if (host is not null)
                             {
                                 host.Build(page!.Node, ServerSizeClass);
-                                html = HtmlRenderer.RenderToString(host.Lower(styles));
+                                html = HtmlRenderer.RenderToString(host.Lower(channels));
                                 host.EndFrame();
                             }
                             else
                             {
-                                html = RenderComponent(component);
+                                // An escape-hatch page reaches its bridges through Render(), which takes no
+                                // parameter: the one place the channels are found in an ambient.
+                                using (Web.RenderChannels.BridgeWith(channels))
+                                    html = RenderComponent(component);
                             }
                         }
                         finally
                         {
-                            Web.ComponentExpansionScope.Ambient = null;
-                            Web.StyleSink.Ambient = null;
-                            Web.GradientSink.Ambient = null;
-                            Web.FaceSink.Ambient = null;
                             Primitives.ComponentBoundary.Report = null;
                         }
 
@@ -392,7 +386,7 @@ public class ServerRenderingService : IServerRenderingService
                     // directly, above — and says nothing about what it composes.
                     navigationPayload = component is Web.VisualNodeComponent navigated
                         ? await PrefetchPageAsync(navigated, context, density)
-                        : await PrefetchTreeAsync(component, prefetched, asked, context, coreRootKey);
+                        : await PrefetchTreeAsync(component, prefetched, asked, context, coreRootKey, density);
                 }
 
                 // THEN metadata, and the order is the whole point. ConfigureMetadata used to run first,
@@ -469,10 +463,8 @@ public class ServerRenderingService : IServerRenderingService
             }
             finally
             {
-                RenderContext.SetLinkPolicy(null);
                 Primitives.RouteValues.ClearCurrent();
                 Primitives.CapabilityScope.Current = null;
-                Web.VisualNodeComponent.AmbientDensity = null;
             }
         }
         catch (Exception ex)
@@ -536,7 +528,8 @@ public class ServerRenderingService : IServerRenderingService
         Dictionary<string, Web.LoadedComponentState> loaded,
         HashSet<string> asked,
         HttpContext context,
-        string? reserved)
+        string? reserved,
+        Density density)
     {
         var wire = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
 
@@ -547,7 +540,7 @@ public class ServerRenderingService : IServerRenderingService
         {
             var scope = new Web.ComponentExpansionScope { Restore = loaded, Reserved = reserved };
             settled = scope;
-            Expand(component, scope);
+            Expand(component, scope, density);
 
             var pending = scope.Expanded
                 .Where(pair => pair.Value is Primitives.IServerPrefetch
@@ -626,7 +619,7 @@ public class ServerRenderingService : IServerRenderingService
         Web.ComponentExpansionScope Round()
         {
             settled = new Web.ComponentExpansionScope();
-            Discover(host, page.Node, settled);
+            Discover(host, page.Node, settled, density);
             return settled;
         }
 
@@ -664,55 +657,23 @@ public class ServerRenderingService : IServerRenderingService
 
     /// <summary>A frame of <paramref name="host"/>'s tree built and lowered with <paramref name="scope"/>
     /// naming its components, the markup thrown away: <see cref="Expand"/>, for a tree the request owns.</summary>
-    private static void Discover(Web.MarkupHost host, VisualNode page, Web.ComponentExpansionScope scope)
+    private static void Discover(Web.MarkupHost host, VisualNode page, Web.ComponentExpansionScope scope, Density density)
     {
-        var styles = Web.StyleSink.Ambient;
-        var gradients = Web.GradientSink.Ambient;
-        var faces = Web.FaceSink.Ambient;
-        var discarded = new Web.StyleSink();
-        Web.StyleSink.Ambient = discarded;
-        Web.GradientSink.Ambient = new Web.GradientSink();
-        Web.FaceSink.Ambient = new Web.FaceSink();
-        Web.ComponentExpansionScope.Ambient = scope;
-        try
-        {
-            host.Build(page, ServerSizeClass);
-            host.Lower(discarded);
-            host.EndFrame();
-        }
-        finally
-        {
-            Web.ComponentExpansionScope.Ambient = null;
-            Web.StyleSink.Ambient = styles;
-            Web.GradientSink.Ambient = gradients;
-            Web.FaceSink.Ambient = faces;
-        }
+        // Channels of its own, so nothing the discovery collects reaches the page the request serves:
+        // only the scope it names components into is read.
+        host.Build(page, ServerSizeClass);
+        host.Lower(new Web.RenderChannels(scope, density));
+        host.EndFrame();
     }
 
     /// <summary>
-    /// One discovery expansion: builds the tree and throws the result away, with its own style, gradient
-    /// and face sinks so nothing it collects reaches the page the request actually serves.
+    /// One discovery expansion of an escape-hatch page: builds the tree and throws the result away, with
+    /// channels of its own so nothing it collects reaches the page the request actually serves.
     /// </summary>
-    private static void Expand(IComponent component, Web.ComponentExpansionScope scope)
+    private static void Expand(IComponent component, Web.ComponentExpansionScope scope, Density density)
     {
-        var styles = Web.StyleSink.Ambient;
-        var gradients = Web.GradientSink.Ambient;
-        var faces = Web.FaceSink.Ambient;
-        Web.StyleSink.Ambient = new Web.StyleSink();
-        Web.GradientSink.Ambient = new Web.GradientSink();
-        Web.FaceSink.Ambient = new Web.FaceSink();
-        Web.ComponentExpansionScope.Ambient = scope;
-        try
-        {
+        using (Web.RenderChannels.BridgeWith(new Web.RenderChannels(scope, density)))
             component.Render();
-        }
-        finally
-        {
-            Web.ComponentExpansionScope.Ambient = null;
-            Web.StyleSink.Ambient = styles;
-            Web.GradientSink.Ambient = gradients;
-            Web.FaceSink.Ambient = faces;
-        }
     }
 
     public string RenderComponent(IComponent component)

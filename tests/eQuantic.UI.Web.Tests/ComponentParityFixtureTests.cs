@@ -535,15 +535,14 @@ public class ComponentParityFixtureTests
         {
             foreach (var (name, node, presses) in Cases())
             {
-                RenderContext.SetLinkPolicy(LinkLanguages.TryGetValue(name, out var language)
+                Func<string, string>? linkPolicy = LinkLanguages.TryGetValue(name, out var language)
                     ? path => path == "/" ? $"/{language}" : $"/{language}{path}"
-                    : null);
-                json[name] = JsonValue.List(Frames(node, presses).Select(Canonical));
+                    : null;
+                json[name] = JsonValue.List(Frames(node, presses, linkPolicy).Select(Canonical));
             }
         }
         finally
         {
-            RenderContext.SetLinkPolicy(null);
             CultureInfo.CurrentCulture = previousCulture;
             CultureInfo.CurrentUICulture = previousUiCulture;
         }
@@ -565,7 +564,7 @@ public class ComponentParityFixtureTests
     /// A FRAME OF A LIVE TREE lowers the tree the server draws. <see cref="MarkupHost"/> lowers each
     /// component from what its position built rather than building it again, which is what a host that
     /// draws more than once needs: a component test, and the server's owner of a request, whose prefetch
-    /// rounds are frames. Its first frame must be the markup <see cref="WebRealizer.Lower"/> writes,
+    /// rounds are frames. Its first frame must be the markup <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density)"/> writes,
     /// byte for byte, at every size class: an arm the element does not hold lowers as it always did.
     /// The markup is compared whole, not canonically, so attribute order counts.
     /// <para>
@@ -592,11 +591,12 @@ public class ComponentParityFixtureTests
             // and the frame must start from instances nobody built.
             foreach (var ((name, drawnOnce, _), (_, framed, _)) in Cases().Zip(Cases()))
             {
-                var once = HtmlRenderer.RenderNode(WebRealizer.Lower(drawnOnce, Theme, 1f, new StyleSink()).Render());
+                // Both inside a render of their own, as the server lowers either.
+                var once = HtmlRenderer.RenderNode(WebRealizer.Lower(drawnOnce, Theme, 1f, new RenderChannels()).Render());
 
                 var host = new MarkupHost(Theme);
                 host.Build(framed, sizeClass);
-                var frame = HtmlRenderer.RenderNode(host.Lower(new StyleSink()).Render());
+                var frame = HtmlRenderer.RenderNode(host.Lower(new RenderChannels()).Render());
                 host.EndFrame();
                 host.Owner.UnmountAll();
 
@@ -617,10 +617,22 @@ public class ComponentParityFixtureTests
     /// goes through a STYLE SINK, which is the path SSR takes — declarations become atomic classes
     /// instead of inline style, and the client always atomizes, so lowering without one would
     /// compare two representations of the same styling and call it a divergence, while hiding the
-    /// thing that matters, which is the class HASH agreeing.</summary>
-    private static IEnumerable<HtmlNode> Frames(VisualNode node, int[] presses)
+    /// thing that matters, which is the class HASH agreeing. A case lowered in a language is lowered
+    /// inside a render whose channels carry the language's link policy, as the server lowers it.</summary>
+    private static IEnumerable<HtmlNode> Frames(VisualNode node, int[] presses, Func<string, string>? linkPolicy)
     {
-        var frame = WebRealizer.Lower(node, Theme, 1f, new StyleSink()).Render();
+        HtmlElement Lower()
+        {
+            if (linkPolicy is null) return WebRealizer.Lower(node, Theme, 1f, new StyleSink());
+            var channels = new RenderChannels(linkPolicy: linkPolicy);
+            var lowered = WebRealizer.Lower(node, Theme, 1f, channels);
+            // A render declares its paint servers beside the page, where the twin writes them inline:
+            // a case in a language compares its links, so it paints with none.
+            channels.Gradients.IsEmpty.Should().BeTrue("a case lowered in a language paints with no gradient");
+            return lowered;
+        }
+
+        var frame = Lower().Render();
         ReferencesResolve(frame);
         yield return frame;
         foreach (var index in presses)
@@ -633,7 +645,7 @@ public class ComponentParityFixtureTests
             // failing is worth more than reflection quietly accepting anything.
             if (handlers[index] is Action press) press();
             else handlers[index].DynamicInvoke();
-            frame = WebRealizer.Lower(node, Theme, 1f, new StyleSink()).Render();
+            frame = Lower().Render();
             ReferencesResolve(frame);
             yield return frame;
         }

@@ -673,7 +673,7 @@ internal sealed partial class WebLoweringVisitor
 
     /// <summary>
     /// Whether the router warms a destination on hover: an app-internal path, rooted and not
-    /// protocol-relative, which is the line <see cref="RenderContext.ResolveDestination"/> draws too.
+    /// protocol-relative, which is the line <see cref="RenderChannels.ResolveDestination"/> draws too.
     /// <c>//cdn.example.com</c> starts with a slash and is somebody else's server, and it was warmed.
     /// One rule for a <see cref="Link"/> and a run that links, and its TypeScript twin
     /// (<c>warmsOnHover</c> in <c>lowering.ts</c>) answers the same.
@@ -692,7 +692,7 @@ internal sealed partial class WebLoweringVisitor
         var cap = CapsAt(link.Child);
         // The render's link policy — the language prefix, when the app asked for one. Applied HERE
         // so an author writes `/pricing` once and the href is right in every language.
-        var destination = RenderContext.ResolveDestination(link.Destination);
+        var destination = RenderChannels.Resolve(link.Destination, _channels?.LinkPolicy);
         var element = new RealizedElement("a")
         {
             ClassName = "eq-link",

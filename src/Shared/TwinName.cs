@@ -40,9 +40,16 @@ internal static class TwinName
     /// so a nested type's twin never meets a top-level one's. eqc names a module by it, from a symbol or a
     /// declaration, and the server names the page it serves by it (<see cref="OfType"/>): a nested page
     /// asked for a module named by its simple name, which nobody writes.
+    /// <para>
+    /// A top-level type named by a word JavaScript reserves, or by a global the emitted code reads, takes
+    /// a trailing <c>$</c> as a local does (<see cref="JsNames.Untaken"/>): <c>class function</c> went out
+    /// as <c>export class function</c>, which no module parses (#934), and a class of the app's named
+    /// <c>Math</c> was imported under that name, so <c>System.Math.Max</c> beside it called the class
+    /// (#890). A nested type's name follows its owner's and a <c>$</c>, so it is never one of them.
+    /// </para>
     /// </summary>
     public static string OfNested(string? ownerTwin, string name) =>
-        ownerTwin is null ? name : ownerTwin + "$" + name;
+        ownerTwin is null ? JsNames.Untaken(name) : ownerTwin + "$" + name;
 
     /// <summary>
     /// Whether a type's owners let it cross (#584): one declared inside a type marked <c>[ServerOnly]</c>

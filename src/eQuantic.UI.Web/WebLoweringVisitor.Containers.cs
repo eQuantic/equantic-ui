@@ -31,11 +31,11 @@ internal sealed partial class WebLoweringVisitor
         if (_frame is { } frame)
         {
             var (kept, built) = frame.At(component);
-            ComponentExpansionScope.Ambient?.Enter(kept);
+            _channels?.Expansion?.Enter(kept);
             return built is not null ? ResolveForPositioning(built) : child;
         }
 
-        ComponentExpansionScope.Ambient?.Enter(component);
+        _channels?.Expansion?.Enter(component);
 
         // Through the boundary's bound rather than a hop count of this method's own: the loop
         // it replaces stopped ITSELF spinning after eight hops and then handed a still
