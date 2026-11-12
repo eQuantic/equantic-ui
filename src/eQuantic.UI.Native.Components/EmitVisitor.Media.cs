@@ -33,11 +33,11 @@ internal sealed partial class EmitVisitor
             && (s.Motion.IconCache ?? IconRasterCache.Shared)
                 .Get(icons, icon.Glyph, icon.Size, icon.Size, s.Motion.RenderScale) is { } raster)
         {
-            var tint = (icon.Color ?? s.Theme.TextPrimary).Resolve(s.Mode, s.Contrast);
+            var tint = s.Ink(icon.Color).Resolve(s.Mode, s.Contrast);
             s.Builder.Texture(s.Node.Bounds, tint, raster);
             return;
         }
-        var placeholder = (icon.Color ?? s.Theme.TextPrimary).Resolve(s.Mode, s.Contrast).WithOpacity(0.30f);
+        var placeholder = s.Ink(icon.Color).Resolve(s.Mode, s.Contrast).WithOpacity(0.30f);
         s.Builder.FillRRect(
             new RRect(s.Node.Bounds, new CornerRadii(s.Node.Bounds.Width / 2)),
             Paint.Solid(placeholder));
@@ -53,11 +53,11 @@ internal sealed partial class EmitVisitor
                 .Get(vectorIcons, vector.Glyph, vector.Size, vector.Height, s.Motion.RenderScale)
                 is { } vectorRaster)
         {
-            var vectorTint = (vector.Color ?? s.Theme.TextPrimary).Resolve(s.Mode, s.Contrast);
+            var vectorTint = s.Ink(vector.Color).Resolve(s.Mode, s.Contrast);
             s.Builder.Texture(s.Node.Bounds, vectorTint, vectorRaster);
             return;
         }
-        var vectorPlaceholder = (vector.Color ?? s.Theme.TextPrimary).Resolve(s.Mode, s.Contrast).WithOpacity(0.30f);
+        var vectorPlaceholder = s.Ink(vector.Color).Resolve(s.Mode, s.Contrast).WithOpacity(0.30f);
         s.Builder.FillRRect(
             new RRect(s.Node.Bounds, new CornerRadii(s.Node.Bounds.Width / 2)),
             Paint.Solid(vectorPlaceholder));
@@ -236,7 +236,7 @@ internal sealed partial class EmitVisitor
 
     private void EmitSpinnerNode(Spinner spinner, EmitState s)
     {
-        EmitSpinner(s.Node, spinner, s.Theme, s.Mode, s.Contrast, s.Builder, s.Motion);
+        EmitSpinner(s.Node, spinner, s.Ink(spinner.Color), s.Mode, s.Contrast, s.Builder, s.Motion);
     }
 
     /// <summary>
@@ -357,12 +357,12 @@ internal sealed partial class EmitVisitor
     /// spinner therefore always reports active motion (it is a functional indicator, not
     /// decoration).
     /// </summary>
-    private static void EmitSpinner(LayoutNode node, Spinner spinner, IAppTheme theme, ThemeMode mode, ContrastLevel contrast,
+    private static void EmitSpinner(LayoutNode node, Spinner spinner, ColorToken ink, ThemeMode mode, ContrastLevel contrast,
         DisplayListBuilder builder, MotionScope motion)
     {
         motion.Active = true;
         var phase = motion.TimeMs % Spinner.RevolutionMs / Spinner.RevolutionMs;
-        var tint = (spinner.Color ?? theme.TextPrimary).Resolve(mode, contrast);
+        var tint = ink.Resolve(mode, contrast);
 
         var scale = node.Bounds.Width / 16f;
         var centerX = node.Bounds.X + node.Bounds.Width / 2;

@@ -12,7 +12,6 @@ internal sealed partial class EmitVisitor
 {
     // Everything a box paints is its EFFECTIVE style: its own, with the diff of every state it is in
     // laid over it — every member, not the colours alone (#504, #508).
-    private void EmitBoxChrome(Box box, EmitState s) => EmitStyledChrome(EffectiveStyle(box, s), box, s);
 
     /// <summary>
     /// The chrome a style draws, at the node's bounds: a box's, and a pinned header's while its
@@ -103,8 +102,10 @@ internal sealed partial class EmitVisitor
         var fill = style.Background;
         var borderColor = style.BorderColor;
         var borderWidth = style.BorderWidth;
-        // Spec S5: hover-reactive boxes register for the host's pointer tracking.
-        if (box?.Style.Hover is { IsEmpty: false })
+        // Spec S5: hover-reactive boxes register for the host's pointer tracking. Inside an enabled
+        // control the hover is the control's, which registers its own region, so a box there adds
+        // none: it would be tracked and never read (#614).
+        if (box?.Style.Hover is { IsEmpty: false } && s.Press.ControlHovered is null)
             s.Input.Add(new HoverRegion(s.Node.Bounds, box, PositionOf(s.Node)));
 
         // Colours glide as resolved sRGB (what CSS does), wrapped back into a token that
@@ -405,8 +406,10 @@ internal sealed partial class EmitVisitor
     {
         var press = s.Press;
         var style = box.Style;
+        // Inside an enabled control the hover is the control's; elsewhere it is the box's own (#614).
         if (box.Style.Hover is { IsEmpty: false } hover
-            && (press.IsHovered(s.Node, box) || (press.Simulated & SimulatedState.Hovered) != 0))
+            && ((press.ControlHovered ?? press.IsHovered(s.Node, box))
+                || (press.Simulated & SimulatedState.Hovered) != 0))
             style = Over(style, hover);
         // Inside a disabled control, its boxes show neither of the control's states (#508).
         if (box.Style.Focus is { IsEmpty: false } focus && !press.InDisabledControl
@@ -426,6 +429,7 @@ internal sealed partial class EmitVisitor
     internal static BoxStyle Over(in BoxStyle style, StyleDiff diff) => style with
     {
         Background = diff.Background ?? style.Background,
+        Foreground = diff.Foreground ?? style.Foreground,
         BorderColor = diff.BorderColor ?? style.BorderColor,
         BorderWidth = diff.BorderWidth ?? style.BorderWidth,
         Elevation = diff.Elevation ?? style.Elevation,
@@ -463,7 +467,9 @@ internal sealed partial class EmitVisitor
     {
         if (node.Source is not Box box) return null;
         var style = EffectiveStyle(box, s with { Node = node });
-        var transform = style.Transform ?? IdentityTransform;
+        // A fraction is of the box as laid out, so it becomes units here, before the glide: the
+        // transition then animates one offset, whatever mix of the two the states declare (#614).
+        var transform = (style.Transform ?? IdentityTransform).Resolved(node.Bounds.Width, node.Bounds.Height);
         if (style.Transition is { } glide && s.Motion.Transitions is { } store
             && (glide.Channels & StyleChannels.Transform) != 0)
             transform = GlideTransform(store, node.Element, transform, s.Motion.TimeMs, glide, s.Motion.Reduced);

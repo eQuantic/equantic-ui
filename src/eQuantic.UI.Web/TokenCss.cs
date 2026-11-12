@@ -198,8 +198,10 @@ public static class TokenCss
     {
         if (transform.IsIdentity) return null;
         var parts = new List<string>(3);
-        if (transform.TranslateX != 0 || transform.TranslateY != 0)
-            parts.Add($"translate({Px(transform.TranslateX)}, {Px(transform.TranslateY)})");
+        if (transform.TranslateX != 0 || transform.TranslateY != 0
+            || transform.TranslateFractionX != 0 || transform.TranslateFractionY != 0)
+            parts.Add($"translate({Offset(transform.TranslateX, transform.TranslateFractionX)}, "
+                + $"{Offset(transform.TranslateY, transform.TranslateFractionY)})");
         if (transform.RotationDegrees != 0)
             parts.Add($"rotate({Number(transform.RotationDegrees)}deg)");
         if (transform.ScaleX != 1 || transform.ScaleY != 1)
@@ -208,6 +210,14 @@ public static class TokenCss
                 : $"scale({Number(transform.ScaleX)}, {Number(transform.ScaleY)})");
         return string.Join(" ", parts);
     }
+
+    /// <summary>One axis of a translation: units, a percentage of the element's own size (CSS reads a
+    /// translate percentage against the element itself, which is what a fraction means), or their sum.
+    /// The TypeScript twin is <c>offsetValue</c>.</summary>
+    private static string Offset(float units, float fraction) =>
+        fraction == 0 ? Px(units)
+        : units == 0 ? $"{Number(fraction * 100)}%"
+        : $"calc({Number(fraction * 100)}% + {Px(units)})";
 
     /// <summary>A <see cref="Curve"/> as the CSS <c>cubic-bezier()</c> function.</summary>
     public static string Bezier(Curve curve) =>

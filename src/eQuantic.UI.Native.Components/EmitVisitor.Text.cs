@@ -12,7 +12,7 @@ internal sealed partial class EmitVisitor
 {
     private void EmitTextNode(Text text, EmitState s)
     {
-        EmitText(s.Node, text, s.Theme, s.Mode, s.Contrast, s.Builder, s.Motion);
+        EmitText(s.Node, text, s.Ink(text.Color), s.Theme, s.Mode, s.Contrast, s.Builder, s.Motion);
         // A LINKED RUN is a navigation surface of its own: the layout knows which pixels the words
         // cover, and nothing else does on a target that draws its own glyphs. The POINTER registers
         // one region per piece, so a link that wraps is pressable on both its lines; the KEYBOARD
@@ -72,7 +72,7 @@ internal sealed partial class EmitVisitor
     /// assembly.
     /// </para>
     /// </summary>
-    private static void EmitText(LayoutNode node, Text text, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder, MotionScope motion)
+    private static void EmitText(LayoutNode node, Text text, ColorToken ink, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder, MotionScope motion)
     {
         // A RICH paragraph is drawn PIECE BY PIECE — one raster per run per line, each in its own
         // style. Drawn as one raster of the joined text, a sentence lost its bold, its inline code
@@ -80,7 +80,7 @@ internal sealed partial class EmitVisitor
         if (motion.TextRasterizer is { } runRasterizer && node.TextRuns is { Count: > 0 } fragments)
         {
             var cache = motion.TextCache ?? TextRasterCache.Shared;
-            var baseColor = (text.Color ?? theme.TextPrimary).Resolve(mode, contrast);
+            var baseColor = ink.Resolve(mode, contrast);
             // Alignment cannot ride the raster here — each fragment is its own one-word raster and
             // the LINE is what gets aligned, so the offset goes on the piece's x. The layout knows
             // which line a piece landed on and the measurement knows that line's width.
@@ -97,8 +97,8 @@ internal sealed partial class EmitVisitor
                     node.Bounds.Y + fragment.Y - raster.PadTop / motion.RenderScale,
                     raster.Texture.Width / motion.RenderScale,
                     raster.Texture.Height / motion.RenderScale);
-                var ink = fragment.Color is { } runColor ? runColor.Resolve(mode, contrast) : baseColor;
-                builder.Texture(rect, ink, raster.Texture);
+                var runInk = fragment.Color is { } runColor ? runColor.Resolve(mode, contrast) : baseColor;
+                builder.Texture(rect, runInk, raster.Texture);
             }
             return;
         }
@@ -139,18 +139,18 @@ internal sealed partial class EmitVisitor
                     return;
                 }
 
-                var color = (text.Color ?? theme.TextPrimary).Resolve(mode, contrast);
+                var color = ink.Resolve(mode, contrast);
                 builder.Texture(rect, color, raster.Texture);
                 return;
             }
         }
-        EmitTextPlaceholder(node, text, theme, mode, contrast, builder);
+        EmitTextPlaceholder(node, text, ink, mode, contrast, builder);
     }
 
-    private static void EmitTextPlaceholder(LayoutNode node, Text text, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder)
+    private static void EmitTextPlaceholder(LayoutNode node, Text text, ColorToken ink, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder)
     {
         if (node.Text is not { } measurement) return;
-        var color = (text.Color ?? theme.TextPrimary).Resolve(mode, contrast).WithOpacity(0.30f);
+        var color = ink.Resolve(mode, contrast).WithOpacity(0.30f);
         var barHeight = measurement.LineHeight * 0.55f;
 
         for (var i = 0; i < measurement.Lines.Count; i++)

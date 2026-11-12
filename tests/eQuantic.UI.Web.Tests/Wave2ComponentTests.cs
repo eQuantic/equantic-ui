@@ -66,12 +66,14 @@ public class Wave2ComponentTests
         WebRealizer.Lower(new Button("Continue"), Theme, 1f, sink).Render();
         // Through its variable, like every theme colour, so it steps up with the fill at More (#340).
         var midpoint = TokenCss.Value(Theme.Colors(Variant.Primary).Hover);
-        sink.Css.Should().Contain($":hover{{background-color:var(--eq-color-primary-hover, {midpoint})}}");
-        sink.Css.Should().Contain("@media (hover: hover){.", "hover never fires on touch");
+        // The surface sits inside the button, so its hover is the control's (#614), and the whole
+        // family stays behind the pointer gate: hover never fires on touch.
+        sink.Css.Should().MatchRegex(
+            $@"@media \(hover: hover\)\{{:where\(\.eq-pressable:hover\) \.(eq-[0-9a-z]+)\.\1[^{{}}]*\{{background-color:[^{{}}]*{System.Text.RegularExpressions.Regex.Escape(midpoint)}[^{{}}]*\}}\}}");
 
         var outline = new StyleSink();
         WebRealizer.Lower(new Button("Continue", Variant.Outline), Theme, 1f, outline).Render();
-        outline.Css.Should().Contain(":hover{background-color:var(--eq-color-surface-subtle");
+        outline.Css.Should().MatchRegex(@":where\(\.eq-pressable:hover\) [^{}]*\{background-color:var\(--eq-color-surface-subtle");
 
         var link = new StyleSink();
         WebRealizer.Lower(new Button("Learn more", Variant.Link), Theme, 1f, link).Render();
