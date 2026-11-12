@@ -25,7 +25,7 @@ public class LinkSchemeTests
     [InlineData("a/b:c")]
     [InlineData("javascript&colon;alert(1)")]
     public void ADestinationWithNoSchemeOrAnAllowedOne_IsWrittenAsItIs(string destination) =>
-        RenderContext.ResolveDestination(destination).Should().Be(destination);
+        new RenderChannels().ResolveDestination(destination).Should().Be(destination);
 
     [Theory]
     [InlineData("javascript:alert(1)")]
@@ -40,5 +40,5 @@ public class LinkSchemeTests
     [InlineData("file:///etc/passwd")]
     [InlineData("ftp://example.com")]
     public void ADestinationWithAnyOtherScheme_IsNoHref(string destination) =>
-        RenderContext.ResolveDestination(destination).Should().BeNull();
+        new RenderChannels().ResolveDestination(destination).Should().BeNull();
 }

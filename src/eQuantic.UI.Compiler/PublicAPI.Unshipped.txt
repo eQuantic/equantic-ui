@@ -1,5 +1,7 @@
 #nullable enable
 eQuantic.UI.Compiler.Services.AppBuild.LoadFrom(eQuantic.UI.Compiler.Services.AppBuild! previous) -> bool
+eQuantic.UI.Compiler.Models.StateField.Slot.get -> string!
+eQuantic.UI.Compiler.Models.StateField.Slot.set -> void
 *REMOVED*static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnits(System.Collections.Generic.IReadOnlyList<string!>! sourceDirectories, string? generatedDirectory) -> System.Collections.Generic.IEnumerable<(string! Directory, string! File, bool IsGenerated)>!
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourcesFile.get -> string?
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourcesFile.init -> void

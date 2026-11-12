@@ -373,4 +373,5 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     /// </para>
     /// </summary>
     public Nothing Visit(UiComponent node, EmitState s) { Descend(s); return Nothing.Value; }
+    public Nothing Visit(InheritedComponent node, EmitState s) { Descend(s); return Nothing.Value; }
 }
