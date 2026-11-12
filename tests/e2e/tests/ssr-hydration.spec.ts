@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 /**
  * Write-once smoke suite against samples/DefaultUIDashboard — the THREE product guarantees
@@ -23,6 +23,22 @@ function classFingerprint(html: string): string[] {
   );
 }
 
+/**
+ * Lets the page settle the density it runs at before identity is asserted. A first visit is served at the
+ * comfortable density, hydrates at it, and then switches the whole page at once to the one its pointer asks
+ * for (a desktop mouse asks for the compact one), keeping it in the `eq-density` cookie the server renders at
+ * from the next request on (#623, #688). That switch is a deliberate re-render after hydration, so a page
+ * compared before the cookie exists differs from its own server markup in every control's size. Once the
+ * cookie is there, the server and the browser build at one density and nothing switches.
+ */
+async function settleDensity(page: Page): Promise<void> {
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await expect
+    .poll(async () => (await page.context().cookies()).some((cookie) => cookie.name === 'eq-density'))
+    .toBe(true);
+}
+
 test.describe('Write-once SSR + hydration', () => {
   test('hydration keeps the SSR class identity on the showroom', async ({ page }) => {
     // The whole tree — static AND the stateful/animated family — now adopts by identity. The three
@@ -31,7 +47,9 @@ test.describe('Write-once SSR + hydration', () => {
     // (WebRealizerTests), and eqc leaving an unset enum property `undefined` instead of its zero
     // member, which grew presence dots the SSR never emitted (vocabulary.spec.ts).
 
-    // The RAW server response, before any script runs — no race with the runtime boot.
+    await settleDensity(page);
+    // The RAW server response, before any script runs — no race with the runtime boot. The page's own
+    // request context sends the density cookie, as the browser's navigation below does.
     const response = await page.request.get('/');
     expect(response.status()).toBe(200);
     const ssrHtml = await response.text();
@@ -95,6 +113,7 @@ test.describe('Write-once SSR + hydration', () => {
     // `UI.column(12, [...])` twin. A divergence in either (the children landing as config instead
     // of add() calls, a default filled as null instead of the twin's own) shows up here as a class
     // mismatch or a dead button — nowhere earlier.
+    await settleDensity(page);
     const response = await page.request.get('/declarative');
     expect(response.status()).toBe(200);
     const ssrHtml = await response.text();
@@ -171,10 +190,11 @@ test.describe('Write-once SSR + hydration', () => {
     await page.getByRole('link', { name: 'Spreadsheet' }).first().click();
     await page.waitForURL('**/sheet');
 
-    // Assert on copy that ONLY the destination has. "Spreadsheet" is also the label of the nav item
-    // just clicked, so matching it passes on the outgoing sidebar while the swap is still in flight
-    // — green whether or not the page ever arrives.
-    await expect(page.getByText('Click a cell, type, Enter').first()).toBeVisible();
+    // Assert on what ONLY the destination has. "Spreadsheet" is also the label of the nav item just
+    // clicked, so matching the text passes on the outgoing sidebar while the swap is still in flight
+    // — green whether or not the page ever arrives. The sheet's grid is named the same and is no link.
+    // Its hint copy changed with #1072 and failed this case for it, so the role is what is asked (#1369).
+    await expect(page.getByRole('grid', { name: 'Spreadsheet' })).toBeVisible();
 
     const probe = await page.evaluate(
       () => (window as unknown as { __eqNavProbe?: number }).__eqNavProbe,
