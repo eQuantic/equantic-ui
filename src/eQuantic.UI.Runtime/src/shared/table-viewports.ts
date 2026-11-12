@@ -20,7 +20,7 @@ import { logger } from '../utils/logger';
 import { modifiersOf } from './css-values';
 import type { TableScrollModelLike, TableViewCellNode, TableViewportNode } from './nodes';
 import type { Element as Position } from './runtime-exports';
-import { nodeStateFor, type NodeState } from './node-states';
+import { DISPOSABLE, nodeStateFor, type NodeState } from './node-states';
 
 /** What the latest pass said about one viewport. */
 export interface TableViewportDeclaration {
@@ -39,6 +39,9 @@ const WHEEL_LINE = 16;
  * drives, and what it last told the owner. Driving another element tells the owner afresh.
  */
 export class TableViewportState implements NodeState {
+  /** Disposed when its position leaves the tree (`node-states.ts`). */
+  static readonly $interfaces = DISPOSABLE;
+
   declaration: TableViewportDeclaration | null = null;
   view: TableElement | null = null;
   reported: { across: number; down: number; width: number; height: number } | undefined = undefined;

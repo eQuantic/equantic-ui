@@ -28,6 +28,8 @@ export class BuildOwner {
         this._building = 0;
         this._inFrameBuild = false;
         this._dirtyCursor = -1;
+        this._showing = null;
+        this._deferredCursor = -1;
         this._stamp = 0;
         this._ids = null!;
         this._buildComponent = null!;
@@ -61,6 +63,8 @@ export class BuildOwner {
     _building!: number;
     _inFrameBuild!: boolean;
     _dirtyCursor!: number;
+    _showing!: NodeElement | null;
+    _deferredCursor!: number;
     _stamp!: number;
     _ids!: ElementIds;
     _buildComponent!: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode;
@@ -220,6 +224,16 @@ export class BuildOwner {
         return this._building--;
     }
 
+    enterLayer(holder: NodeElement) {
+        this.enterBuild();
+        this._showing = holder;
+    }
+
+    exitLayer() {
+        this._showing = null;
+        this.exitBuild();
+    }
+
     nextStamp() {
         return ++this._stamp;
     }
@@ -245,6 +259,10 @@ export class BuildOwner {
     }
 
     scheduleDependent(element: ComponentElement) {
+        if (!(this._showing == null)) {
+            if (this._deferredCursor >= 0 && (BuildOwner.deferredHolderOf(element) === this._showing)) BuildOwner.insertBehind(this._deferredScratch, this._deferredCursor, element); else this._dirtyDeferred.push(element);
+            return;
+        }
         if (!this._inFrameBuild) {
             this.schedule(element);
             return;
@@ -253,9 +271,13 @@ export class BuildOwner {
             this._dirty.push(element);
             return;
         }
-        let at = this._dirty.length;
-        while (at > this._dirtyCursor + 1 && this._dirty[at - 1].depth > element.depth) at--;
-        $eq.collections.listInsert(this._dirty, at, element);
+        BuildOwner.insertBehind(this._dirty, this._dirtyCursor, element);
+    }
+
+    static insertBehind(list: ComponentElement[], cursor: number, element: ComponentElement) {
+        let at = list.length;
+        while (at > cursor + 1 && list[at - 1].depth > element.depth) at--;
+        $eq.collections.listInsert(list, at, element);
     }
 
     schedule(element: ComponentElement) {
@@ -295,8 +317,13 @@ export class BuildOwner {
             if (element.isActive) mine.push(element);
         }
         $eq.collections.listSortBy(mine, BuildOwner.byDepth, 'System.Comparison`1[eQuantic.UI.Primitives.ComponentElement]');
-        for (const element of mine) {
-            if (this.waitsToBuild(element)) element.rebuild(false);
+        try {
+            for (let i = 0; i < mine.length; i++) {
+                this._deferredCursor = i;
+                if (this.waitsToBuild(mine[i])) mine[i].rebuild(false);
+            }
+        } finally {
+            this._deferredCursor = -1;
         }
         mine.splice(0);
     }

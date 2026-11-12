@@ -69,5 +69,7 @@ keeps `Element.Id`'s promise that an id is never given to another.
 - A lowering of a node no tree built now throws. E3b-1 builds every tree the browser lowers through an
   owner, a lowering with no page around it included, and its web owners hold every arm of an adaptive
   node, so a throw here means the engine and the lowering disagree. That should fail loudly, as `ElementFrame.at` does.
-- #1464: eqc translates `state as IDisposable` as a null check, so `OnDeactivated` calls `dispose()` on
-  any state in the browser. Every browser node state has a `dispose`.
+- `OnDeactivated` disposes a state only when it IS an `IDisposable`, which the runtime answers from the
+  interfaces a class declares (`static $interfaces`, #1464). The browser's node states are written by
+  hand, so each declares it (`DISPOSABLE`); one that forgot would keep its observer after its position
+  left, which `lets go of its observer when its position leaves the tree` catches.

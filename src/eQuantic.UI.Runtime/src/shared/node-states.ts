@@ -14,7 +14,9 @@
  * engine gone wrong, and is refused naming both.
  *
  * A state that holds something to let go of (an observer) has a `dispose`, which the engine calls when
- * the position leaves the tree, after the states below it, as Flutter disposes a `State` on unmount.
+ * the position leaves the tree, after the states below it, as Flutter disposes a `State` on unmount. The
+ * engine asks it as .NET does, whether the state IS an `IDisposable` (#1464), so each state's class says
+ * so (`static $interfaces = DISPOSABLE`), as the twins the compiler writes do.
  */
 
 // TYPES only: the lowering imports this module, and a value read through the barrel the engine's
@@ -22,6 +24,9 @@
 // still being evaluated, so a component class would extend a base not yet defined.
 import type { Element, NodeElement } from './runtime-exports';
 import type { ElementFrame } from './element-frame';
+
+/** The interfaces a node state's class declares, as a compiled twin declares them: it is disposable. */
+export const DISPOSABLE: readonly string[] = ['System.IDisposable'];
 
 /** What every node state is: it lets go of what it holds when its position leaves the tree. */
 export interface NodeState {

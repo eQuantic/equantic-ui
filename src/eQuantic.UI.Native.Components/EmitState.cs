@@ -37,4 +37,13 @@ internal readonly record struct EmitState(
     ThemeMode Mode,
     DisplayListBuilder Builder,
     MotionScope Motion,
-    List<QueuedLayer> Overlays);
+    List<QueuedLayer> Overlays)
+{
+    /// <summary>The foreground of the nearest box above that states one, resolved for its state: what
+    /// a text, an icon or a vector with no colour of its own is drawn in (#614), Flutter's
+    /// <c>DefaultTextStyle</c> and <c>IconTheme</c>. Null = none stated, the theme's TextPrimary.</summary>
+    public ColorToken? Foreground { get; init; }
+
+    /// <summary>What a node that names <paramref name="own"/> (or no colour) is drawn in.</summary>
+    public ColorToken Ink(ColorToken? own) => own ?? Foreground ?? Theme.TextPrimary;
+}

@@ -42,7 +42,7 @@ export class NodeElement extends Element {
 
     showDeferred(configuration: VisualNode) {
         if (this._deferred < 0) throw $eq.exceptions.create(['System.InvalidOperationException', 'System.SystemException', 'System.Exception'], `A '${this.configuration.nodeKind}' node has no slot the realizer shows.`);
-        this.owner.enterBuild();
+        this.owner.enterLayer(this);
         try {
             let shown = this.updateChild(this.childAt(this._deferred), configuration, this._deferred, this.owner.rebuildingAll)!;
             this._children[this._deferred] = shown;
@@ -50,7 +50,7 @@ export class NodeElement extends Element {
             this.owner.buildDeferred(this);
             return shown;
         } finally {
-            this.owner.exitBuild();
+            this.owner.exitLayer();
         }
     }
 
@@ -152,7 +152,7 @@ export class NodeElement extends Element {
     onDeactivated() {
         let state = this.state;
         this.state = null;
-        ((($as: any) => $as != null ? $as : null)(state))?.dispose();
+        ((($as: any) => $eq.types.implements($as, 'System.IDisposable') ? $as : null)(state))?.dispose();
     }
 
     deactivateChildren() {

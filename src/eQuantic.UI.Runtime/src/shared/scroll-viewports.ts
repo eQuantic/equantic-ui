@@ -28,7 +28,7 @@
  */
 
 import type { Element as Position } from './runtime-exports';
-import { nodeStateFor, type NodeState } from './node-states';
+import { DISPOSABLE, nodeStateFor, type NodeState } from './node-states';
 
 export interface ScrollViewportDeclaration {
   horizontal: boolean;
@@ -51,6 +51,9 @@ interface AdoptedScrollElement extends HTMLElement {
  * position the element is handed to.
  */
 export class ScrollViewportState implements NodeState {
+  /** Disposed when its position leaves the tree (`node-states.ts`). */
+  static readonly $interfaces = DISPOSABLE;
+
   /** What the latest pass declared: a rebuilt tree hands over a new closure over new state every
    * pass, and the observer reads whichever is current when the size changes. */
   declaration: ScrollViewportDeclaration | null = null;
