@@ -215,9 +215,15 @@ public class IdentifierStrategy : IExpressionIrStrategy
     }
 
     /// <summary>The name a member holds on its twin: a method's own, which one that hides a member has of
-    /// its own (#563), and any other member's camelCased.</summary>
-    private static string Named(ISymbol symbol, string name) =>
-        symbol is IMethodSymbol method ? TwinMethodName.Of(method, name) : name.ToCamelCase();
+    /// its own (#563), a field's slot (<see cref="FieldSlotExtensions"/>), and any other member's
+    /// camelCased.</summary>
+    private static string Named(ISymbol symbol, string name) => symbol switch
+    {
+        IMethodSymbol method => TwinMethodName.Of(method, name),
+        // A static field in its slot, which moves a case apart from a static member of its name (#1175).
+        IFieldSymbol field => field.TwinSlot(),
+        _ => name.ToCamelCase(),
+    };
 
     public int Priority => 10;
 

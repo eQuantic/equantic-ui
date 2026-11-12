@@ -68,7 +68,7 @@ public static class TypeDeclarationExtensions
             }
         }
 
-        foreach (var member in type.Members)
+        foreach (var member in type.TwinMembers())
         {
             switch (member)
             {
