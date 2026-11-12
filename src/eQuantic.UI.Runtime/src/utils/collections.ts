@@ -16,6 +16,7 @@ import {
 } from './dictionary';
 import { equals } from './equals';
 import { exception } from './exceptions';
+import { throwIfNegativeCount } from './guards';
 import { HashSet } from './hash-set';
 import { sameBy, sameItem, type KeyEquality } from './key-equality';
 import { collectionCount } from './slots';
@@ -29,13 +30,6 @@ function argumentNull(parameter: string): Error {
   return exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
 }
 
-/** `ArgumentOutOfRangeException.ThrowIfNegative`'s words. */
-function negative(parameter: string, value: number): Error {
-  return exception(
-    'System.ArgumentOutOfRangeException',
-    `${parameter} ('${value}') must be a non-negative value. (Parameter '${parameter}')\nActual value was ${value}.`,
-  );
-}
 
 const INDEX_LESS_OR_EQUAL =
   'Index was out of range. Must be non-negative and less than or equal to the size of the collection.';
@@ -77,7 +71,7 @@ function constructorArgument<T>(
   if (argument.length === 0) return { items: [], capacity: 0 };
   const [source] = argument;
   if (typeof source === 'number' && takesACapacity) {
-    if (source < 0) throw negative('capacity', source);
+    throwIfNegativeCount(source, 'capacity');
     return { items: [], capacity: source };
   }
   if (source == null) throw argumentNull('collection');
@@ -174,7 +168,7 @@ export class Queue<T> {
 
   /** `EnsureCapacity`: grown, by the rule an `Enqueue` grows by, to hold `capacity` at least. */
   ensureCapacity(capacity: number): number {
-    if (capacity < 0) throw negative('capacity', capacity);
+    throwIfNegativeCount(capacity, 'capacity');
     if (this._capacity < capacity) this.grow(capacity);
     return this._capacity;
   }
@@ -187,7 +181,7 @@ export class Queue<T> {
       return;
     }
     const [asked] = capacity;
-    if (asked < 0) throw negative('capacity', asked);
+    throwIfNegativeCount(asked, 'capacity');
     if (asked < this.items.length) throw lessThanCount(asked, this.items.length);
     if (asked !== this._capacity) this.setCapacity(asked);
   }
@@ -296,7 +290,7 @@ export class Stack<T> {
 
   /** `EnsureCapacity`: grown, by the rule a `Push` grows by, to hold `capacity` at least. */
   ensureCapacity(capacity: number): number {
-    if (capacity < 0) throw negative('capacity', capacity);
+    throwIfNegativeCount(capacity, 'capacity');
     if (this._capacity < capacity) this.grow(capacity);
     return this._capacity;
   }
@@ -308,7 +302,7 @@ export class Stack<T> {
       return;
     }
     const [asked] = capacity;
-    if (asked < 0) throw negative('capacity', asked);
+    throwIfNegativeCount(asked, 'capacity');
     if (asked < this.items.length) throw lessThanCount(asked, this.items.length);
     this._capacity = asked;
   }
@@ -550,7 +544,7 @@ export class LinkedList<T> implements Iterable<T> {
   /** `CopyTo(array, index)`: front to back, after .NET's checks in .NET's order. */
   copyTo(array: T[] | null, index: number): void {
     if (array == null) throw argumentNull('array');
-    if (index < 0) throw negative('index', index);
+    throwIfNegativeCount(index, 'index');
     if (index > array.length) {
       throw exception(
         'System.ArgumentOutOfRangeException',
