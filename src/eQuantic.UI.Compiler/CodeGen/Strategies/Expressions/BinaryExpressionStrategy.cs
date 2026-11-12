@@ -33,6 +33,13 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         var right = JsExprWriter.Write(rightIr);
         var op = binary.OperatorToken.Text;
 
+        // Delegates add and subtract as `Delegate.Combine` and `Remove` do: JavaScript's `+` wrote their text.
+        if (op is "+" or "-" && context.SemanticHelper.GetType(binary) is { TypeKind: TypeKind.Delegate })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(op == "+" ? Eq.CombineDelegate : Eq.RemoveDelegate), leftIr, rightIr);
+        }
+
         // A USER-DEFINED operator: JavaScript cannot overload `+`, so the emitted class carries the
         // operator as a static method and the call site has to reach it. Left alone, `a + b` on two
         // objects concatenated their toString()s — wrong output, nothing to see, no error.
