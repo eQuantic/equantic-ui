@@ -13,6 +13,7 @@ import {
   TimeSpan,
 } from './datetime';
 import { adoptMember } from './adopt-member';
+import { closing } from './closures';
 import { Dictionary } from './dictionary';
 import { SortedMap, SortedSet } from './sorted';
 import { comparerOf, type Ordering } from './ordering';
@@ -46,6 +47,8 @@ import type { KeyEquality } from './key-equality';
  *  - a class reference — a record/struct twin: the plain JSON object is rebuilt on the class's
  *    prototype (so `instanceof`, `equals`, `with` survive the wire) and each member hydrates by
  *    the class's own static `$hydration` map;
+ *  - `{ members, of, closed }` — a constructed generic record or struct, rebuilt on its twin with the members
+ *    its type arguments say, and marked with `closed`, the type it was built as, which its comparison reads;
  *  - `{ members, of, typeArguments }` — a type from a referenced assembly, coerced member by member
  *    onto a copy, built on its twin `of` when the runtime ships one; `typeArguments` are the specs
  *    of the type arguments that twin revives (`ServerTopic<T>`), kept in the members its
@@ -112,6 +115,7 @@ export type HydrationSpec =
       readonly members: Readonly<Record<string, HydrationSpec>>;
       readonly of?: HydratableConstructor;
       readonly typeArguments?: readonly (HydrationSpec | null)[];
+      readonly closed?: string;
     }
   | HydratableConstructor;
 
@@ -137,10 +141,11 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
   // prototype; without it a Rect in a payload arrived as a plain object, and its getters and
   // methods were gone.
   if ('members' in (spec as { members?: Readonly<Record<string, HydrationSpec>> })) {
-    const { members, of, typeArguments } = spec as {
+    const { members, of, typeArguments, closed } = spec as {
       members: Readonly<Record<string, HydrationSpec>>;
       of?: HydratableConstructor;
       typeArguments?: readonly (HydrationSpec | null)[];
+      closed?: string;
     };
     if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
     if (of && incoming instanceof (of as unknown as new (...args: never[]) => object))
@@ -159,7 +164,7 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
       of.$typeArguments.forEach((member, i) =>
         adoptMember(result, member, typeArguments[i] ?? null),
       );
-    return result;
+    return closed === undefined ? result : closing(result, closed);
   }
   if ('dict' in (spec as DictionarySpec)) return dictionary(incoming, spec as DictionarySpec);
   if ('collection' in (spec as CollectionSpec)) return collection(incoming, spec as CollectionSpec);
