@@ -8,6 +8,7 @@ import type { LoweringContext } from './lowering';
 import type { RenderContext } from '../core/types';
 import { resolveService } from '../utils/services';
 import { RouteValues } from './route-values';
+import { getCurrentRoute } from '../router/current-route';
 import { cssFontWeight, isWellFormedFace, type AppTheme } from './value-types';
 import type { TypeStyleValue } from './nodes';
 import type { DensityValue } from './enums.generated';
@@ -428,9 +429,13 @@ export function getPhotonTypeScale(): number {
   return activeTypeScale;
 }
 
-/** The context handed to shared components' `build(context)` (directly or via lowering expansion). */
+/**
+ * The context handed to shared components' `build(context)` (directly or via lowering expansion): the
+ * frame every owner a lowering builds through is handed, with the router's route, which is the one the
+ * server drew the page with (#1395).
+ */
 export function photonComponentContext(): ComponentContext {
-  return new ComponentContext(activeTheme, activeTypeScale, activeDensity);
+  return new ComponentContext(activeTheme, activeTypeScale, activeDensity, undefined, getCurrentRoute());
 }
 
 /** The lowering context for the active theme — default Text color + component expansion context. */
@@ -450,6 +455,6 @@ export function ambientLoweringContext(): LoweringContext {
 export function themedLoweringContext(theme: AppTheme, typeScale = 1): LoweringContext {
   return {
     textPrimary: theme.textPrimary,
-    componentContext: new ComponentContext(theme, typeScale, activeDensity),
+    componentContext: new ComponentContext(theme, typeScale, activeDensity, undefined, getCurrentRoute()),
   };
 }

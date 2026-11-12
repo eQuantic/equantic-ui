@@ -10,6 +10,9 @@ import { ComponentContext } from './photon-context';
 import { BuildOwner } from './components/BuildOwner';
 import { photonTheme } from './design-system.generated';
 import { RouteValues } from './route-values';
+import { ambientLoweringContext, themedLoweringContext } from './photon-context';
+import { lowerVisualNode } from './lowering';
+import { setCurrentRoute } from '../router/current-route';
 import { Column, InheritedComponent, Text, Theme } from './vocabulary';
 import type { VisualNodeValue } from './nodes';
 import type { VisualNode } from './vocabulary';
@@ -156,6 +159,24 @@ describe('the route in the browser', () => {
     owner.endFrame();
 
     expect(builds, 'the route has readers of its own').toEqual({ route: 1 });
+  });
+
+  it("lowers a page's components with the router's route, as the server draws them with the request's", () => {
+    setCurrentRoute(new RouteValues({ slug: 'intro' }, null));
+    try {
+      const page = () => {
+        const column = new Column(0);
+        column.add(new RouteReader() as never);
+        return column as unknown as VisualNodeValue;
+      };
+      expect(JSON.stringify(lowerVisualNode(page(), ambientLoweringContext()))).toContain('slug intro');
+      expect(
+        JSON.stringify(lowerVisualNode(page(), themedLoweringContext(photonTheme))),
+        "a bridge with a theme of its own reads the page's route too",
+      ).toContain('slug intro');
+    } finally {
+      setCurrentRoute(RouteValues.empty);
+    }
   });
 });
 
