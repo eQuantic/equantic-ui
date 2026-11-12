@@ -60,3 +60,14 @@
   978   0.4 106144 /Users/runner/actions-runner/cached/bin/Runner.Worker
   966   0.3  42192 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd2786239899
  3885   0.2  29760 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+=== alive 10:24:42 app running: 2286
+=== alive 10:24:52 app running: 2286
+--- sample 10:24:53 load: { 17.04 38.70 21.22 } System-wide memory free percentage: 83%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2262 dotnet run --no-build --project samples/PhotonDesktop
+2286 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  336  12.8 319376 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  413  10.3  71360 /System/Library/Frameworks/Accounts.framework/Versions/A/Support/accountsd
+ 4326   6.2  33216 /System/Library/PrivateFrameworks/DataAccess.framework/Support/dataaccessd
+ 1126   3.6   6608 /usr/libexec/sysmond
+  380   1.4  37776 /System/Library/PrivateFrameworks/CalendarDaemon.framework/Support/calaccessd
