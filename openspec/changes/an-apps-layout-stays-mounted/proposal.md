@@ -28,15 +28,21 @@ constructor when it is called, naming the type. The word is .NET's (Blazor's lay
 because "shell" already names the HTML document this SDK serves (`ConfigureHtmlShell`).
 
 **The layout stays mounted across client navigations.** The browser keeps one owner for the
-document, above the page, built from `new TLayout(page)`. A navigation hands the layout a new page:
-the layout's element updates in place and keeps its instance (the same type), and the page's element
-is replaced under it (another type). The old page unmounts before the new one mounts, the order the
-owner already keeps (`BuildOwner.EndFrame`). Without a layout nothing changes: a navigation patches
-the DOM position by position, as today.
+document, above the page. It builds the layout once, around a slot the page stands in
+(`new TLayout(new PageSlot(page))`), and a navigation hands the slot the new page: the layout's element
+updates in place and keeps its instance, and the page's element is replaced under it (another type,
+or the same type keyed apart, since a navigation is always a new page). A slot rather than the page,
+because handing the layout a new page would hand it a new configuration, which a stateful layout
+learns only through `AdoptConfig`: go_router hands a `ShellRoute` a nested navigator for the same
+reason. The old page unmounts before the new one mounts, the order the owner already keeps
+(`BuildOwner.EndFrame`). Without a layout nothing changes: a navigation patches the DOM position by
+position, as today.
 
-**The server renders the same tree.** A page under a layout is rendered as `new TLayout(page)` on the
-server too, so hydration adopts the markup in the same order, and every position key (#1477) carries
-the layout's steps on both sides.
+**The server renders the same tree.** A page under a layout is rendered as
+`new TLayout(new PageSlot(page))` on the server too, measured from the layout at the root, so
+hydration adopts the markup in the same order, and every position key (#1477) carries the layout's
+steps on both sides: the layout is `r0/Layout@`, and the page's own data travels under its position's
+key, never `Type#0`.
 
 **A layout knows where it is.** `Navigator.Of(context).Location` answers the path of the page being
 shown: the request's on the server, the address bar's in the browser. A layout marks its active
@@ -50,7 +56,8 @@ is #1129's proof.
 
 - **The server:** `UIOptions.UseLayout<T>`, the page render wrapped in the layout, the layout's module
   named in the client configuration.
-- **The compiler:** the layout's type is an entry module, as a page's is.
+- **The compiler:** the layout's type is an entry module, as a page's is, read from the app's
+  `UseLayout<T>()` call as the build already reads its service registrations (#1335).
 - **The browser:** the document's owner and the page swap under the layout (`boot.ts`,
   `core/component.ts`).
 - **The vocabulary:** `Navigator.Location`.
