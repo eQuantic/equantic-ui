@@ -102,3 +102,14 @@
  5330   4.5  32160 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
  5169   4.3  33072 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
   114   4.3  69616 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+=== alive 13:45:39 app: 2259 watch: 
+=== alive 13:45:50 app: 2259 watch: 
+--- sample 13:45:56 load: { 16.29 35.46 21.72 } System-wide memory free percentage: 81%
+156 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2235 dotnet run --no-build --project samples/PhotonDesktop
+2259 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  378  56.0  69728 /System/Library/CoreServices/iconservicesagent
+  368  20.5  32720 /usr/libexec/secinitd
+ 5772   7.7  16752 /System/Library/ExtensionKit/Extensions/UnilogTelemetryWorker.appex/Contents/MacOS/UnilogTelemetryWorker
+  398   6.5 271424 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  114   6.2  66080 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
