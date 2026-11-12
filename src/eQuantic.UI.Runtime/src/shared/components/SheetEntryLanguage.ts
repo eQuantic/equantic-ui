@@ -1,6 +1,8 @@
 import { $eq, CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export class SheetEntryLanguage {
+    static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
+
     constructor() {}
 
     get name(): string {

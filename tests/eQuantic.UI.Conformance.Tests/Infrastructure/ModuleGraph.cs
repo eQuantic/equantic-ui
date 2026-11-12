@@ -44,12 +44,21 @@ public static class ModuleGraph
     /// written (the playground's mode).
     /// </summary>
     public static void AssertSameAsDotNet(string source, bool typeAnnotations,
-        params (string Name, string Statements)[] cases)
+        params (string Name, string Statements)[] cases) => AssertSameAs(null, source, typeAnnotations, cases);
+
+    /// <summary>As <see cref="AssertSameAsDotNet"/>, each answer compared as it crosses the wire: a value's JSON in
+    /// the emitted JavaScript against what <c>EqJson.Options</c> writes for it in .NET.</summary>
+    public static void AssertJsonSameAsDotNet(string source, bool typeAnnotations,
+        params (string Name, string Statements)[] cases) =>
+        AssertSameAs(eQuantic.UI.Server.Json.EqJson.Options, source, typeAnnotations, cases);
+
+    private static void AssertSameAs(JsonSerializerOptions? wire, string source, bool typeAnnotations,
+        (string Name, string Statements)[] cases)
     {
         var bun = JsExecutor.RequireBun();
         var withCases = source + "\n" + CasesClass(cases);
 
-        var expected = JsonSerializer.Deserialize<JsonElement[]>(DotNetAnswers(withCases, cases.Length))!;
+        var expected = JsonSerializer.Deserialize<JsonElement[]>(DotNetAnswers(withCases, cases.Length, wire))!;
 
         var (actualJson, modules) = Run(bun, withCases, cases.Length, typeAnnotations);
         var actual = JsonSerializer.Deserialize<JsonElement[]>(actualJson)!;
@@ -75,7 +84,7 @@ public static class ModuleGraph
     /// has, loaded in a context of its own, which is unloaded after, and each case called on it, in the
     /// invariant culture the JavaScript side formats in.
     /// </summary>
-    private static string DotNetAnswers(string source, int count)
+    private static string DotNetAnswers(string source, int count, JsonSerializerOptions? wire)
     {
         var tree = CSharpSyntaxTree.ParseText(source, ParseDefaults.Options);
         var compilation = CSharpCompilation.Create("ModuleGraphDotNet", [tree], References.Value,
@@ -96,7 +105,7 @@ public static class ModuleGraph
                 try { return type.GetMethod($"Case{i}")!.Invoke(null, null); }
                 catch (System.Reflection.TargetInvocationException) { return "threw"; }
             }).ToArray();
-            return DotNetEvaluator.ToJson(answers);
+            return wire is null ? DotNetEvaluator.ToJson(answers) : JsonSerializer.Serialize(answers, wire);
         }
         finally
         {

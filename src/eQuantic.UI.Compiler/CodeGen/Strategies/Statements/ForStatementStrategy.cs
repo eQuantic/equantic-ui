@@ -51,9 +51,7 @@ public class ForStatementStrategy : IStatementStrategy
                 .SelectMany(ExpressionVariableScanner.Names)
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
-            var variables = declaration.Variables.Select(v =>
-                $"{v.Identifier.ValueText.ToJsIdentifier()} = "
-                + (v.Initializer != null ? context.Converter.ConvertExpression(v.Initializer.Value) : "undefined"));
+            var variables = declaration.Variables.Select(v => Declarator(declaration, v, context));
             var hoisted = once.Count == 0
                 ? variables
                 : variables.Prepend(ExpressionVariableScanner.List(once, context.TypeAnnotations));
@@ -126,6 +124,21 @@ public class ForStatementStrategy : IStatementStrategy
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
+    /// <summary>
+    /// A declarator of the head as a local declaration writes one: the name every reference reads
+    /// (<c>ToJsIdentifier</c>, <c>@class</c> renamed), the type C# declared where TypeScript would infer
+    /// another, and the initializer. <c>for (Element? at = this; …; at = at.Parent)</c> was written
+    /// <c>let at = this</c>, which TypeScript types as the class's polymorphic <c>this</c> and then
+    /// refuses <c>at = at.parent</c>, where a local declared the same way keeps <c>Element | null</c>
+    /// (#1483). A declarator with no initializer is written <c>undefined</c> and annotated with nothing.
+    /// </summary>
+    private static string Declarator(VariableDeclarationSyntax declaration, VariableDeclaratorSyntax v,
+        ConversionContext context) =>
+        v.Initializer is null
+            ? $"{v.Identifier.ValueText.ToJsIdentifier()} = undefined"
+            : $"{v.Identifier.ValueText.ToJsIdentifier()}{LocalDeclarationStrategy.Annotation(declaration, v, context)} = "
+              + context.Converter.ConvertExpression(v.Initializer.Value);
+
     private static string ConvertDeclaration(ForStatementSyntax forStmt, IReadOnlyList<string> declared,
         ConversionContext context)
     {
@@ -136,16 +149,7 @@ public class ForStatementStrategy : IStatementStrategy
         // for (int i = 0; ...)
         if (forStmt.Declaration != null)
         {
-            var variables = forStmt.Declaration.Variables
-                .Select(v =>
-                {
-                    // The name every reference reads (ToJsIdentifier), `@class` renamed.
-                    var name = v.Identifier.ValueText.ToJsIdentifier();
-                    var initializer = v.Initializer != null
-                        ? context.Converter.ConvertExpression(v.Initializer.Value)
-                        : "undefined";
-                    return $"{name} = {initializer}";
-                });
+            var variables = forStmt.Declaration.Variables.Select(v => Declarator(forStmt.Declaration, v, context));
             return $"let {string.Join(", ", declared.Count == 0 ? variables : variables.Prepend(names))}";
         }
 

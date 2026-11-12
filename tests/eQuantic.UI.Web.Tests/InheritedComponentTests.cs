@@ -180,6 +180,100 @@ public class InheritedComponentTests
         log.Entries.Should().BeEmpty("the reader's position left the tree with its dependency");
     }
 
+    /// <summary>Holds a score INSIDE an overlay's layer, over a subtree it builds once: the score
+    /// changes in the frame the realizer shows the layer, after the frame's build phase ended.</summary>
+    private sealed class LayerHolder(VisualNode child) : StatefulComponent
+    {
+        private int _value = 1;
+
+        public void Set(int value) => SetState(() => _value = value);
+
+        public override VisualNode Build(ComponentContext context) => new Overlay(new Score(_value, child));
+    }
+
+    /// <summary>A frame as a realizer draws it: the build phase, then the layer shown, which is where
+    /// the log is read, before the frame ends.</summary>
+    private static List<string> FrameShowingTheLayer(BuildOwner owner, VisualNode root, Log log, bool rebuildAll = false)
+    {
+        var element = owner.Build(root, Comfortable, WindowSizeClass.Compact, rebuildAll);
+        // The overlay is the root's first child in both trees here.
+        var overlay = (NodeElement)element.ChildAt(0)!;
+        overlay.ShowDeferred(((Overlay)overlay.Configuration).Child);
+        var built = log.Entries.ToList();
+        owner.EndFrame();
+        return built;
+    }
+
+    /// <summary>#1413: a value inside an overlay's layer that changes in the frame the layer shows
+    /// builds its dependent in that frame, so the layer never paints the old value.</summary>
+    [Fact]
+    public void ADependentInsideALayer_BuildsInTheFrameItsValueChanges()
+    {
+        var log = new Log();
+        var holder = new LayerHolder(new Column { new Reader(log), new Bystander(log) });
+        var owner = ComponentBoundary.Owner();
+        FrameShowingTheLayer(owner, holder, log, rebuildAll: true).Should().Equal("reader 1", "bystander");
+
+        log.Entries.Clear();
+        holder.Set(2);
+
+        FrameShowingTheLayer(owner, holder, log).Should().Equal(["reader 2"],
+            "the layer shows the new score in this frame, so its reader builds before the layer is laid out, and the bystander does not");
+        owner.HasDirty.Should().BeFalse("nothing is left for a frame after it");
+    }
+
+    /// <summary>The value changes while the layer's own marked positions build: a stateful holder
+    /// inside the layer, set before the frame, hands its score a new value in BuildDeferred itself.</summary>
+    [Fact]
+    public void ADependentMarkedWhileALayerBuilds_BuildsInTheSameFrame()
+    {
+        var log = new Log();
+        var holder = new Holder(new Column { new Reader(log) });
+        // The column keeps the walk that shows the layer from reaching the holder, so it builds in
+        // BuildDeferred's own list, and the reader is marked while that list is being built.
+        var root = new Column { new Overlay(new Column { holder }) };
+        var owner = ComponentBoundary.Owner();
+        FrameShowingTheLayer(owner, root, log, rebuildAll: true).Should().Equal("reader 1");
+
+        log.Entries.Clear();
+        holder.Set(2);
+
+        FrameShowingTheLayer(owner, root, log).Should().Equal(["reader 2"],
+            "the holder builds when the layer shows, and the reader its new score marks builds behind it");
+        owner.HasDirty.Should().BeFalse("nothing is left for a frame after it");
+    }
+
+    /// <summary>A reader under a layer inside the layer waits for its own: the outer layer's
+    /// BuildDeferred passes it over, and the inner one, shown after it, builds it in the same frame.</summary>
+    [Fact]
+    public void ADependentInALayerInsideTheLayer_BuildsWhenItsOwnLayerShows()
+    {
+        var log = new Log();
+        var holder = new LayerHolder(new Column { new Overlay(new Column { new Reader(log) }) });
+        var owner = ComponentBoundary.Owner();
+
+        List<string> Draw(bool rebuildAll, out List<string> afterOuter)
+        {
+            var outer = (NodeElement)owner.Build(holder, Comfortable, WindowSizeClass.Compact, rebuildAll).ChildAt(0)!;
+            // The outer layer's score, then its column, then the inner overlay.
+            var inner = (NodeElement)outer.ShowDeferred(((Overlay)outer.Configuration).Child).ChildAt(0)!.ChildAt(0)!;
+            afterOuter = log.Entries.ToList();
+            inner.ShowDeferred(((Overlay)inner.Configuration).Child);
+            var built = log.Entries.ToList();
+            owner.EndFrame();
+            return built;
+        }
+
+        Draw(rebuildAll: true, out _).Should().Equal("reader 1");
+
+        log.Entries.Clear();
+        holder.Set(2);
+
+        Draw(rebuildAll: false, out var afterOuter).Should().Equal(["reader 2"], "its own layer shows in this frame");
+        afterOuter.Should().BeEmpty("the outer layer does not build it with the inner layer's old configuration");
+        owner.HasDirty.Should().BeFalse("nothing is left for a frame after it");
+    }
+
     [Fact]
     public void AContextWithNoPosition_FindsNoInheritedValue()
     {

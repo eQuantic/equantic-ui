@@ -1,6 +1,8 @@
 import { $eq, CancellationToken, CodeDocument, CodeFold, CodeLineCells } from "../runtime-exports";
 
 export class IndentationFoldProvider {
+    static $interfaces = ['eQuantic.UI.Code.ICodeFoldProvider'];
+
     constructor(tabSize: number = 4) {
         this._tabSize = 0;
         this._tabSize = tabSize;
