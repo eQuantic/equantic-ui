@@ -358,6 +358,13 @@ public static class Eq
     public const string CombineDelegate = "$eq.delegates.combine";
     public const string RemoveDelegate = "$eq.delegates.remove";
 
+    /// <summary><c>target.Event += handler</c> where how the event is implemented is not known here: its
+    /// add accessor where the twin wrote one, and its invocation list otherwise (#746).</summary>
+    public const string AddToEvent = "$eq.delegates.addToEvent";
+
+    /// <summary><c>target.Event -= handler</c>, by the same rule as <see cref="AddToEvent"/>.</summary>
+    public const string RemoveFromEvent = "$eq.delegates.removeFromEvent";
+
     /// <summary>Lifted Nullable&lt;T&gt; arithmetic — <c>null</c> if either operand is null.</summary>
     public const string LiftArith = "$eq.nullable.arith";
     /// <summary>Lifted Nullable&lt;T&gt; relational — <c>false</c> if either operand is null.</summary>
