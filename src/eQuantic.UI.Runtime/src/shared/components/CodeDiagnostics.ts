@@ -15,7 +15,7 @@ export class CodeDiagnostics {
         this.failed = null;
         this._moved = false;
         this._editor = editor;
-        editor.changed = $eq.delegates.combine(editor.changed, this.edited.bind(this));
+        editor.changed = $eq.delegates.combine(editor.changed, $eq.delegates.bound(this, this.edited));
     }
 
     _editor!: CodeEditorController;

@@ -24,13 +24,13 @@ public class MethodGroupTests
     [Fact]
     public void AReceiverThatIsACall_IsReadOnce() =>
         Convert("public class Sample { public object Run() { var c = new Counter(); Func<int> read = c.Make().Value; return read(); } }")
-            .Js.Should().Contain("let read = (($0) => $0.value.bind($0))(c.make());");
+            .Js.Should().Contain("let read = (($0) => $eq.delegates.bound($0, $0.value))(c.make());");
 
     [Fact]
     public void AReceiverThatIsANameOrThis_IsWrittenWhereItIs() =>
         Convert("public class Sample { public object Run() { var c = new Counter(); Func<int> read = c.Value; "
                 + "Func<string> text = this.ToString; return read() + text(); } }")
-            .Js.Should().Contain("let read = c.value.bind(c);").And.Contain("let text = () => String(this);");
+            .Js.Should().Contain("let read = $eq.delegates.bound(c, c.value);").And.Contain("let text = () => String(this);");
 
     [Fact]
     public void ABaseGroup_BindsTheBaseMethodToThis()

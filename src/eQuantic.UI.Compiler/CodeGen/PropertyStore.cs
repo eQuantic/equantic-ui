@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -100,6 +101,8 @@ internal static class PropertyStore
         return Along(overridden, candidate => candidate.DeclaringSyntaxReferences
             .Select(reference => reference.GetSyntax())
             .OfType<PropertyDeclarationSyntax>()
+            // A partial property is its implementing half (#1172).
+            .Where(declaration => !declaration.DefinesAPartialBesideItsImplementation())
             .Any(KeepsAStore));
     }
 

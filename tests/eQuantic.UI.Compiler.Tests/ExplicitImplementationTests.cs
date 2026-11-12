@@ -433,6 +433,24 @@ public class ExplicitImplementationTests
         Declared(result.TypeScript, "run").Should().Be(1, why);
     }
 
+    /// <summary>A static field beside an explicit static of its name moves to a slot of its own, as it
+    /// does beside any static member of its name (#1175), where it was refused.</summary>
+    [Fact]
+    public void AStaticFieldBesideAnExplicitStatic_MovesToASlotOfItsOwn()
+    {
+        var result = Compile("""
+            public interface IMake3 { static abstract string Make(); }
+            public class Made : IMake3
+            {
+                public static string Make = "field";
+                static string IMake3.Make() => "interface";
+            }
+            """, "Made");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("static make$").And.Contain("static make()");
+    }
+
     public static TheoryData<string, string, string, string> RefusedAcrossTheChain => new()
     {
         {
@@ -456,16 +474,6 @@ public class ExplicitImplementationTests
             "an explicit property on the name the runtime reads for object's ToString", """
             public class Texted : IText { string IText.ToString => "text"; }
             """, "Texted", "the name the runtime reads for `ToString()`"
-        },
-        {
-            "an explicit static beside a static field of its name, which stays in its slot", """
-            public interface IMake3 { static abstract string Make(); }
-            public class Made : IMake3
-            {
-                public static string Make = "field";
-                static string IMake3.Make() => "interface";
-            }
-            """, "Made", "'Made.Make' lowers to `static make()`"
         },
         {
             "two explicit ones that hand off to each other", """

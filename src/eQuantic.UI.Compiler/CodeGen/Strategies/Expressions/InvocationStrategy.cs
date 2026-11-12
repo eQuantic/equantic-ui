@@ -57,6 +57,17 @@ public class InvocationStrategy : IExpressionIrStrategy
         }
         var call = ConvertCall(invocation, context,
             throughTemporary.ToDictionary(pair => pair.Key, pair => JsExpr.Opaque(Place.ThroughHeld(pair.Value.Name))));
+
+        // A generic method builds its record where the type arguments are only known at run time, and the value
+        // comes back unmarked to the code that knows them: the call's own type closes it (#687).
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { OriginalDefinition.ReturnType: var open } bound
+            && ObjectCreationStrategy.ContainsTypeParameter(open)
+            && ObjectCreationStrategy.ClosureOf(bound.ReturnType) is { } typeArguments)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            call = JsExpr.Call(JsExpr.Identifier(Eq.Closing), call, JsExpr.Literal($"'{typeArguments}'"));
+        }
+
         if (!unwraps) return call;
 
         // An `out` target counted from the end is held before the call, as C# evaluates it: what it reads
@@ -451,7 +462,7 @@ public class InvocationStrategy : IExpressionIrStrategy
         var args = string.Join(", ", arguments.Select(a => JsExprWriter.WriteIn(a, JsPrecedence.Assignment)));
         var homeArgs = !extension.TakesReceiver ? args
             : string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
-        return JsExpr.Callish($"{extension.Home.Name}.{methodName.ToCamelCase()}({homeArgs})");
+        return JsExpr.Callish($"{extension.Home.TwinReference()}.{methodName.ToCamelCase()}({homeArgs})");
     }
 
     /// <summary>

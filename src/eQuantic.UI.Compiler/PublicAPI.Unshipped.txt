@@ -1,4 +1,6 @@
 #nullable enable
+eQuantic.UI.Compiler.Models.StateField.Slot.get -> string!
+eQuantic.UI.Compiler.Models.StateField.Slot.set -> void
 *REMOVED*static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnits(System.Collections.Generic.IReadOnlyList<string!>! sourceDirectories, string? generatedDirectory) -> System.Collections.Generic.IEnumerable<(string! Directory, string! File, bool IsGenerated)>!
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourcesFile.get -> string?
 eQuantic.UI.Compiler.Services.AppBuildOptions.SourcesFile.init -> void
@@ -6,6 +8,7 @@ static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnit
 eQuantic.UI.Compiler.Services.SemanticModelProvider.OptionsFor(string? path) -> Microsoft.CodeAnalysis.CSharp.CSharpParseOptions!
 const eQuantic.UI.Compiler.CodeGen.Eq.PairText = "$eq.text.pair" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.PairTextGroup = "$eq.text.pairGroup" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ProvideService = "$eq.services.provide" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TaskFromCanceled = "$eq.task.fromCanceled" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TaskFromException = "$eq.task.fromException" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy
@@ -13,3 +16,5 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.CanCo
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.PrimitiveEqualsStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.Priority.get -> int
+const eQuantic.UI.Compiler.CodeGen.Eq.DelegateBound = "$eq.delegates.bound" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.DelegateOver = "$eq.delegates.over" -> string!
