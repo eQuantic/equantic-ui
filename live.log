@@ -71,3 +71,13 @@
  4326   6.2  33216 /System/Library/PrivateFrameworks/DataAccess.framework/Support/dataaccessd
  1126   3.6   6608 /usr/libexec/sysmond
   380   1.4  37776 /System/Library/PrivateFrameworks/CalendarDaemon.framework/Support/calaccessd
+=== alive 10:25:02 app running: 2286
+--- sample 10:25:10 load: { 13.56 36.87 20.87 } System-wide memory free percentage: 83%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2262 dotnet run --no-build --project samples/PhotonDesktop
+2286 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  966  25.4  42272 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd2786239899
+ 4745  19.7  24336 /usr/libexec/tipsd
+  336  12.3 299536 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 1126  10.0   6576 /usr/libexec/sysmond
+  114   9.7  63232 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
