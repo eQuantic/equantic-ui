@@ -98,8 +98,9 @@ def main():
     context = board.gql("""query($o: String!, $r: String!, $login: String!, $me: Boolean!) {
         viewer @include(if: $me) { id login }
         user(login: $login) @skip(if: $me) { id login }
-        repository(owner: $o, name: $r) { id milestones(first: 50, states: OPEN) { nodes { id title } } }
-        organization(login: $o) { issueTypes(first: 20) { nodes { id name } }
+        repository(owner: $o, name: $r) { id milestones(first: 50, states: OPEN) { nodes { id title } }
+          issueTypes(first: 20) { nodes { id name } } }
+        organization(login: $o) {
           issueFields(first: 20) { nodes { ... on IssueFieldSingleSelect { id name options { id name } } } } } }""",
                         o=board.OWNER, r=board.REPO, login=args.assignee or "", me=not args.assignee)
     assignee = context.get("viewer") or context.get("user")
@@ -125,7 +126,9 @@ def main():
     if reasons:
         refuse(reasons)
 
-    type_id = next((t["id"] for t in context["organization"]["issueTypes"]["nodes"] if t["name"] == args.type), None)
+    # The repository answers its types to anyone who can open an issue there; the organization
+    # answers null for each to an account that is not a member of it (#1493).
+    type_id = next((t["id"] for t in context["repository"]["issueTypes"]["nodes"] if t["name"] == args.type), None)
     if type_id is None:
         refuse([f"an issue type the organization has ({args.type} is not one of them)"])
     fields = []
