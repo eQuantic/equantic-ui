@@ -1,6 +1,23 @@
 #nullable enable
 *REMOVED*eQuantic.UI.Primitives.ITextClipboard.Read() -> string?
 eQuantic.UI.Primitives.ITextClipboard.ReadAsync() -> System.Threading.Tasks.Task<string?>!
+eQuantic.UI.Primitives.ICodeSurfaceModel.Reading.get -> eQuantic.UI.Primitives.TextReading
+eQuantic.UI.Primitives.TextReading
+eQuantic.UI.Primitives.TextReading.Deconstruct(out string! Text, out int Anchor, out int Focus) -> void
+eQuantic.UI.Primitives.TextReading.Equals(eQuantic.UI.Primitives.TextReading other) -> bool
+eQuantic.UI.Primitives.TextReading.TextReading() -> void
+eQuantic.UI.Primitives.TextReading.TextReading(string! Text, int Anchor, int Focus) -> void
+override eQuantic.UI.Primitives.TextReading.GetHashCode() -> int
+static eQuantic.UI.Primitives.TextReading.operator !=(eQuantic.UI.Primitives.TextReading left, eQuantic.UI.Primitives.TextReading right) -> bool
+static eQuantic.UI.Primitives.TextReading.operator ==(eQuantic.UI.Primitives.TextReading left, eQuantic.UI.Primitives.TextReading right) -> bool
+~override eQuantic.UI.Primitives.TextReading.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.TextReading.ToString() -> string
+eQuantic.UI.Primitives.TextReading.Text.get -> string!
+eQuantic.UI.Primitives.TextReading.Text.init -> void
+eQuantic.UI.Primitives.TextReading.Anchor.get -> int
+eQuantic.UI.Primitives.TextReading.Anchor.init -> void
+eQuantic.UI.Primitives.TextReading.Focus.get -> int
+eQuantic.UI.Primitives.TextReading.Focus.init -> void
 eQuantic.UI.Primitives.Transform2D.Deconstruct(out float TranslateX, out float TranslateY, out float RotationDegrees, out float ScaleX, out float ScaleY, out float TranslateFractionX, out float TranslateFractionY) -> void
 eQuantic.UI.Primitives.Transform2D.Resolved(float width, float height) -> eQuantic.UI.Primitives.Transform2D
 eQuantic.UI.Primitives.Transform2D.Transform2D(float TranslateX = 0, float TranslateY = 0, float RotationDegrees = 0, float ScaleX = 1, float ScaleY = 1, float TranslateFractionX = 0, float TranslateFractionY = 0) -> void
