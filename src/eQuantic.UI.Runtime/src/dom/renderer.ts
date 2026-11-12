@@ -74,6 +74,39 @@ export class RenderManager {
   }
 
   /**
+   * Patches ONE subtree of what the page drew: `drawn`, a node of the current tree, becomes `next`,
+   * and only the DOM `drawn` produced is reconciled (#1455, a render answered by what the page's owners
+   * built). The DOM is found the way the reconciler finds it, the n-th node of its parent for the n-th
+   * child. The current tree takes `next` in `drawn`'s place, so the next whole render diffs against
+   * what the DOM now holds. False when `drawn` is not in the current tree: the caller renders whole.
+   */
+  patch(drawn: HtmlNode, next: HtmlNode | null): boolean {
+    const tree = this.previousVirtualDom;
+    if (!this.container || !tree) return false;
+    const path = pathTo(tree, drawn);
+    if (!path) return false;
+    const reconciler = getReconciler();
+    if (path.length === 0) {
+      if (!next) return false;
+      reconciler.reconcile(this.container, drawn, next, 0);
+      this.previousVirtualDom = next;
+      return true;
+    }
+    let parent = tree;
+    let parentDom: Node | null = this.container.childNodes[0] ?? null;
+    for (const index of path.slice(0, -1)) {
+      parent = parent.children[index];
+      parentDom = parentDom?.childNodes[index] ?? null;
+    }
+    if (!(parentDom instanceof Element)) return false;
+    const index = path[path.length - 1];
+    reconciler.reconcile(parentDom, drawn, next, index);
+    if (next) parent.children[index] = next;
+    else parent.children.splice(index, 1);
+    return true;
+  }
+
+  /**
    * Unmount - cleanup
    */
   unmount(): void {
@@ -137,4 +170,15 @@ export class RenderManager {
   canHydrate(container: HTMLElement): boolean {
     return container.dataset.ssr === 'true' && container.firstElementChild !== null;
   }
+}
+
+/** The child indices from `tree` down to `target`, by identity, or null when it is not in the tree. */
+function pathTo(tree: HtmlNode, target: HtmlNode): number[] | null {
+  if (tree === target) return [];
+  const children = tree.children ?? [];
+  for (let index = 0; index < children.length; index++) {
+    const below = pathTo(children[index], target);
+    if (below) return [index, ...below];
+  }
+  return null;
 }

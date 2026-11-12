@@ -12,7 +12,7 @@ import { hydrateValue } from '../utils/hydrate-value';
 import { hydrate, type HydrationSpec } from '../utils/hydrate';
 import { adoptMember } from '../utils/adopt-member';
 import { getCurrentRoute } from '../router/current-route';
-import { ElementRoots, enterPass, exitPass, lowerRoot } from '../shared/element-roots';
+import { ElementRoots, enterPass, exitPass, lowerRoot, relowerRoot, type Relowered } from '../shared/element-roots';
 import {
   getPhotonDensity,
   getInFlow,
@@ -335,6 +335,42 @@ function renderPage(
   });
 }
 
+/**
+ * A render the page's OWNERS asked for, answered by what they built (E3b-3, #1455): the owner builds
+ * the marked positions, each component that built is lowered alone, and only the DOM it drew is
+ * patched. The page's own build does not run, its other components are not lowered, and the
+ * reconciler reads none of the rest of the page.
+ *
+ * False when the render cannot be answered so, and `render()` then lowers the page whole as before:
+ * a render that is not only the owners' (the page's own state, a theme, a navigation), a page that
+ * lowered more than one root (a Core page's bridges, found only by walking it), a page whose build is
+ * a Core tree, or a component the lowering cannot lower alone (`relowerBuilt`). The owner's build is
+ * not repeated by that render: what it built is no longer marked.
+ */
+function patchPage(root: object, roots: ElementRoots, invalidate: () => void, manager: RenderManager): boolean {
+  const last = roots.last as { nodeKind?: string } | undefined;
+  if (!roots.willReuse || roots.rootCount !== 1 || !last || last.nodeKind === undefined) return false;
+  let answer: Relowered | null = null;
+  runComponentWalk(root, false, () => {
+    enterPass(roots, invalidate, false);
+    try {
+      answer = relowerRoot(last as VisualNodeValue);
+    } finally {
+      // The bindings the components lowered again declared give way to the ones they declared now;
+      // a render that falls back replaces them all in the whole render that follows.
+      const relowered = answer as Relowered | null;
+      exitPass(relowered ? relowered.declaredBy : () => false);
+    }
+  });
+  const relowered = answer as Relowered | null;
+  if (!relowered) return false;
+  for (const patch of relowered.patches) {
+    if (!manager.patch(patch.drawn, patch.next)) return false;
+  }
+  roots.takeReuse();
+  return true;
+}
+
 export abstract class StatelessComponent extends UiComponent {
   private _renderManager: RenderManager = new RenderManager();
   /** The element trees this page builds through, which keep the stateful components it composes. */
@@ -380,6 +416,7 @@ export abstract class StatelessComponent extends UiComponent {
       this._renderScheduled = false;
       if (!this._mounted) return;
       this._instances.beginScheduledRender();
+      if (patchPage(walkRoots.get(this) ?? this, this._instances, this._invalidate, this._renderManager)) return;
       this._renderManager.update(this.render());
     });
   }
@@ -671,6 +708,7 @@ export abstract class StatefulComponent extends UiComponent {
       this._renderScheduled = false;
       if (!this._mounted) return;
       this._instances.beginScheduledRender();
+      if (patchPage(walkRoots.get(this) ?? this, this._instances, this._invalidate, this._renderManager)) return;
       this._renderManager.update(this.render());
     });
   }

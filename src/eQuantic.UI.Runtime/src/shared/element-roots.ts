@@ -22,7 +22,7 @@
 import type { BuildOwner } from './components/BuildOwner';
 import type { HtmlNode } from '../core/types';
 import type { VisualNodeValue } from './nodes';
-import { commitShortcuts } from '../dom/shortcuts';
+import { commitShortcuts, type ShortcutBinding } from '../dom/shortcuts';
 import { commitFocusTraps } from '../dom/focus-trap';
 import { installHoverRevealSuppression } from '../dom/hover-reveal';
 import { attachCameraStreams } from './devices/camera';
@@ -107,6 +107,17 @@ export class ElementRoots {
     this.wanted = 'nothing';
   }
 
+  /** Whether the render about to run lowers the page's last tree again, without taking the answer. */
+  get willReuse(): boolean {
+    return this.reuse;
+  }
+
+  /** How many roots the page's last render lowered: a render lowered by what its owners built answers
+   *  a page of one root alone, since a bridge's root is found only by walking the page (#1455). */
+  get rootCount(): number {
+    return this.slots.length;
+  }
+
   /** Whether this render lowers the page's last tree again. Any render not scheduled builds the page. */
   takeReuse(): boolean {
     const reuse = this.reuse;
@@ -163,14 +174,15 @@ export function enterPass(
   setPassInvalidator(invalidator);
 }
 
-export function exitPass(): void {
+export function exitPass(replacingShortcuts?: (binding: ShortcutBinding) => boolean): void {
   if (!activePass) return;
   activePass.depth--;
   if (activePass.depth > 0) return;
   activePass.roots.endPass();
   // Spec S8: the pass's Shortcut declarations become the live set — bindings whose subtree was not
-  // re-lowered drop out, which is how unmounting unsubscribes.
-  commitShortcuts();
+  // re-lowered drop out, which is how unmounting unsubscribes. A pass that lowered some components
+  // alone replaces only the bindings they declared (#1455).
+  commitShortcuts(replacingShortcuts);
   // §10: the same moment reconciles the modal focus traps against the DOM the pass just produced —
   // a layer that appeared takes focus (recording its invoker), one that vanished gives it back.
   commitFocusTraps();
@@ -222,4 +234,32 @@ export function setRootLowering(lowering: RootLowering): void {
 export function lowerRoot(node: VisualNodeValue): HtmlNode {
   if (!rootLowering) throw new Error('A page lowered a vocabulary node before the lowering loaded.');
   return rootLowering(node);
+}
+
+/** One component lowered again: the root the page drew, and the one that takes its place. */
+export interface SubtreePatch {
+  readonly drawn: HtmlNode;
+  readonly next: HtmlNode | null;
+}
+
+/** A render answered by what the page's owners built (#1455): what to patch, and which of the live
+ *  shortcuts the components lowered again had declared. */
+export interface Relowered {
+  readonly patches: readonly SubtreePatch[];
+  readonly declaredBy: (binding: ShortcutBinding) => boolean;
+}
+
+/**
+ * How a page answers a render its owners asked for by what they built (`relowerBuilt`), registered by
+ * the lowering for the reason `setRootLowering` is. Null: the page lowers whole.
+ */
+type RootRelowering = (node: VisualNodeValue) => Relowered | null;
+let rootRelowering: RootRelowering | null = null;
+
+export function setRootRelowering(relowering: RootRelowering): void {
+  rootRelowering = relowering;
+}
+
+export function relowerRoot(node: VisualNodeValue): Relowered | null {
+  return rootRelowering ? rootRelowering(node) : null;
 }
