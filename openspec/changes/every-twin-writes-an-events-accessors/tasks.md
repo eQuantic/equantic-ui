@@ -12,4 +12,4 @@
 ## 3. Proved against the real thing
 
 - [x] 3.1 What else subscribes, composes or writes a twin. Verify: the Conformance tests of events, delegates, records, structs and components pass, the Compiler tests of events and explicit implementations pass, and the transpiled libraries' pins pass with only the expected `$add$`/`$remove$` lines added for a type that declares an event with accessors
-- [ ] 3.2 Docs. Verify: the wiki's SupportedFeatures page, in all five languages, no longer says an event's `add` and `remove` accessors "are not written yet" (the partial-members row) and its Events row names records, structs and components; a ledger entry under `docs/ledger/` cites #1445
+- [x] 3.2 Docs. Verify: the wiki's SupportedFeatures page, in all five languages, no longer says an event's `add` and `remove` accessors "are not written yet" (the partial-members row) and its Events row names records, structs and components; a ledger entry under `docs/ledger/` cites #1445
