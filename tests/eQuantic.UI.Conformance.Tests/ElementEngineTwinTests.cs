@@ -297,6 +297,38 @@ public class ElementEngineTwinTests
     }
 
     [SkippableFact]
+    public void KeyedRowsMove_EachPositionTakesItsNewSlot_AndItsPathReadsTheSlotsDown()
+    {
+        SkipUnlessBun();
+        var trace = new List<string>();
+        var owner = ComponentBoundary.Owner();
+        var page = new Page(["a", "b", "c"]) { Keyed = true };
+        var root = Frame(owner, page);
+        page.Show("c", "a", "b");
+        Frame(owner, page, rebuildAll: false);
+        var column = root.ChildAt(0)!;
+        for (var slot = 0; slot < 3; slot++)
+        {
+            var at = column.ChildAt(slot)!;
+            trace.Add($"{ComponentAt<Counter>(at).Label}:{at.Slot}:{at.SlotsBelow(0)}");
+        }
+
+        // Spelled out as well as compared: a kept position takes the slot its move put it at (#1477).
+        trace.Should().Equal("c:0:0.0", "a:1:0.1", "b:2:0.2");
+        OnTheWeb("""
+            const page = new Page(['a', 'b', 'c'], null, true);
+            const root = frame(page);
+            page.show('c', 'a', 'b');
+            frame(page, false);
+            const column = root.childAt(0);
+            for (let slot = 0; slot < 3; slot++) {
+              const at = column.childAt(slot);
+              trace.push(componentAt(at).label + ':' + at.slot + ':' + at.slotsBelow(0));
+            }
+            """).Should().Equal(trace);
+    }
+
+    [SkippableFact]
     public void UnkeyedRowsSwap_TheStateStaysAtItsIndex()
     {
         SkipUnlessBun();

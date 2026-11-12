@@ -149,12 +149,12 @@ public sealed class ComponentElement : Element
         }
 
         var built = BuildContained();
-        _child = UpdateChild(_child, built, force);
+        _child = UpdateChild(_child, built, 0, force);
     }
 
     // With this position's own context, which answers whether an InFlow is above it from the tree
     // (Element.UnderInFlow) rather than from an ambient channel armed around the build.
-    private VisualNode BuildContained() => Owner.BuildComponent(Component, Context, ComponentDepth);
+    private VisualNode BuildContained() => Owner.BuildComponent(this);
 
     /// <summary>Asks for this position to build again: a <c>SetState</c>, through the instance. The
     /// owner counts the request even when the position is already waiting to build

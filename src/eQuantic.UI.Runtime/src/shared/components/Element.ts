@@ -7,6 +7,7 @@ export abstract class Element {
         this.depth = 0;
         this.isActive = false;
         this.id = 0;
+        this.slot = 0;
         this.owner = null!;
         this.componentDepth = 0;
         this.underInFlow = false;
@@ -20,11 +21,20 @@ export abstract class Element {
     depth!: number;
     isActive!: boolean;
     id!: number;
+    slot!: number;
     owner!: BuildOwner;
     componentDepth!: number;
     underInFlow!: boolean;
     nearestInherited!: InheritedElement | null;
     matchStamp!: number;
+
+    slotsBelow(depth: number) {
+        let slots: number[] = [];
+        for (let at = this; !(at == null) && at.depth > depth; at = at.parent) slots.push(at.slot);
+        $eq.collections.listReverse(slots);
+        return $eq.text.join('.', slots, ($value) => $eq.text.format($value, null, undefined, undefined, 'int32'));
+    }
+
     abstract childAt(slot: number): Element | null;
     abstract visitChildren(visitor: (element: Element) => void): void;
 
@@ -36,9 +46,10 @@ export abstract class Element {
         return $eq.types.same($eq.types.of(current), $eq.types.of(next)) && $eq.text.equals(current.key, next.key, 'ordinal');
     }
 
-    mount(owner: BuildOwner, parent: Element | null) {
+    mount(owner: BuildOwner, parent: Element | null, slot: number) {
         this.owner = owner;
         this.parent = parent;
+        this.slot = slot;
         this.id = owner.nextId();
         this.depth = parent == null ? 0 : parent.depth + 1;
         this.componentDepth = parent == null ? 0 : parent.componentDepth + (parent instanceof ComponentElement ? 1 : 0);
@@ -51,24 +62,25 @@ export abstract class Element {
     abstract firstBuild(): void;
     abstract update(configuration: VisualNode, force: boolean): void;
 
-    updateChild(child: Element | null, configuration: VisualNode | null, force: boolean) {
+    updateChild(child: Element | null, configuration: VisualNode | null, slot: number, force: boolean) {
         if (configuration == null) {
             if (!(child == null)) this.owner.deactivate(child);
             return null;
         }
         if (!(child == null)) {
             if (Element.canUpdate(child.configuration, configuration)) {
+                child.slot = slot;
                 child.update(configuration, force);
                 return child;
             }
             this.owner.deactivate(child);
         }
-        return this.inflate(configuration);
+        return this.inflate(configuration, slot);
     }
 
-    inflate(configuration: VisualNode) {
+    inflate(configuration: VisualNode, slot: number) {
         let created = Element.create(configuration);
-        created.mount(this.owner, this);
+        created.mount(this.owner, this, slot);
         return created;
     }
 

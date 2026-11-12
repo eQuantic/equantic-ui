@@ -24,11 +24,13 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 internal static class ChildSlots
 {
-    internal static NodeSlots Of(VisualNode node, WindowSizeClass sizeClass) => node.NodeKind switch
+    internal static NodeSlots Of(VisualNode node, WindowSizeClass sizeClass, bool everyArm) => node.NodeKind switch
     {
         // A component builds its one child; its element never asks this.
         "component" => NodeSlots.None,
-        "adaptive" => NodeSlots.One(((AdaptiveNode)node).Resolve(sizeClass)),
+        // Every arm at a slot of its own where the realizer draws them all (BuildOwner.HoldsEveryArm),
+        // the one the size class resolves where it draws one.
+        "adaptive" => everyArm ? EveryArm((AdaptiveNode)node) : NodeSlots.One(((AdaptiveNode)node).Resolve(sizeClass)),
         "adjustable" => NodeSlots.One(((Adjustable)node).Child),
         // The panel is not a child of the anchor: the realizer shows it in a layer of its own, made when
         // the anchored node is painted and only while it is open, so that slot is built when it is shown.
@@ -81,6 +83,10 @@ internal static class ChildSlots
         _ => throw new InvalidOperationException(
             $"The element engine knows no child slots for a '{node.NodeKind}' node: ChildSlots needs an arm for its kind."),
     };
+
+    // Each arm at its own slot whether or not the node declares the ones before it, so an arm keeps its
+    // slot, and its position, when a build declares another.
+    private static NodeSlots EveryArm(AdaptiveNode node) => NodeSlots.Three(node.Compact, node.Medium, node.Expanded);
 
     // The code, what it offers at its caret when it offers anything, then each note it explains with:
     // the order the layout measures them in.

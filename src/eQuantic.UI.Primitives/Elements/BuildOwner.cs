@@ -48,25 +48,49 @@ public sealed class BuildOwner
     /// <summary>A live owner: the one a host keeps for the surface it draws.</summary>
     /// <param name="buildComponent">How a component builds: its <c>Build</c> for a context, at a depth
     /// of components, inside whatever boundary contains what it throws.</param>
-    public BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent)
-        : this(buildComponent, live: true)
+    /// <param name="holdsEveryArm">Whether an adaptive node's position holds every arm the node declares
+    /// (<see cref="HoldsEveryArm"/>).</param>
+    public BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool holdsEveryArm = false)
+        : this(buildComponent, live: true, holdsEveryArm)
     {
     }
 
-    private BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool live)
+    private BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool live, bool holdsEveryArm)
     {
         ArgumentNullException.ThrowIfNull(buildComponent);
         _buildComponent = buildComponent;
         Live = live;
+        HoldsEveryArm = holdsEveryArm;
     }
 
     /// <summary>An owner for a tree laid out once: it builds, and calls no lifecycle hook.</summary>
     /// <param name="buildComponent">How a component builds, as the live owner takes it.</param>
-    public static BuildOwner Structural(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent) => new(buildComponent, live: false);
+    /// <param name="holdsEveryArm">As the live owner takes it.</param>
+    public static BuildOwner Structural(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool holdsEveryArm = false) =>
+        new(buildComponent, live: false, holdsEveryArm);
 
-    /// <summary>Builds a component the way this owner was handed.</summary>
-    internal VisualNode BuildComponent(UiComponent component, ComponentContext context, int depth) =>
-        _buildComponent(component, context, depth);
+    /// <summary>
+    /// The position whose component is building now, through the build this owner was handed, and null
+    /// between builds. What a host reads in that build to know which position it is for: the server's
+    /// data for a component is handed to it by where it stands (<see cref="Element.SlotsBelow"/>), before
+    /// its build reads its fields.
+    /// </summary>
+    public ComponentElement? Building { get; private set; }
+
+    /// <summary>Builds <paramref name="position"/>'s component the way this owner was handed.</summary>
+    internal VisualNode BuildComponent(ComponentElement position)
+    {
+        var outer = Building;
+        Building = position;
+        try
+        {
+            return _buildComponent(position.Component, position.Context, position.ComponentDepth);
+        }
+        finally
+        {
+            Building = outer;
+        }
+    }
 
     /// <summary>Asked when a position becomes dirty outside a build: the host's cue to draw a frame.
     /// Raised on the thread the <c>SetState</c> ran on, which the dispatcher makes the UI thread.</summary>
@@ -100,6 +124,15 @@ public sealed class BuildOwner
     /// structural one (<see cref="Structural"/>) is laid out once and calls none, nor anything else
     /// that would set state or start work for a tree nobody draws again.</summary>
     public bool Live { get; }
+
+    /// <summary>
+    /// Whether an adaptive node's position holds EVERY arm the node declares, compact at slot 0, medium
+    /// at 1 and expanded at 2, rather than the one arm the frame's size class resolves. A realizer that
+    /// draws every arm behind a gate of its own, as the web does with its media rules, needs each arm
+    /// it draws to be a position, or the arm on screen at some width would be one no element holds and
+    /// its stateful components would start again on every build. Photon draws one arm, and resolves it.
+    /// </summary>
+    public bool HoldsEveryArm { get; }
 
     /// <summary>The window size class this frame resolves an adaptive node's arm against.</summary>
     internal WindowSizeClass SizeClass { get; private set; }
@@ -145,7 +178,7 @@ public sealed class BuildOwner
             {
                 if (Root is not null) Deactivate(Root);
                 Root = Element.Create(root);
-                Root.Mount(this, null);
+                Root.Mount(this, null, 0);
             }
             else if (rebuildAll || !ReferenceEquals(Root.Configuration, root))
             {
