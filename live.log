@@ -124,3 +124,14 @@
  6487  17.8  36016 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
   991  16.2  42288 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd4166047580
   114  13.3  72112 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+=== alive 13:58:00 app: 2354 watch: 
+=== alive 13:58:11 app: 2354 watch: 
+--- sample 13:58:13 load: { 11.89 22.33 14.47 } System-wide memory free percentage: 81%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2288 dotnet run --no-build --project samples/PhotonDesktop
+2354 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  305 236.6 312896 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 1020  10.0   6544 /usr/libexec/sysmond
+ 1963   6.9 422544 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+ 2280   1.9   1600 /bin/bash
+  359   0.3  29216 /System/Library/PrivateFrameworks/BiomeStreams.framework/Support/BiomeAgent
