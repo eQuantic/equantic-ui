@@ -47,6 +47,8 @@ public class PressedFillPlacementTests
             IconButtonKind.Filled, onPressed: () => { }), Primary.Pressed, Place.Control),
         new Case("selected filter chip", () => new Chip("Income", ChipKind.Filter, selected: true,
             onPressed: () => { }), Primary.Pressed.WithOpacity(0.24f), Place.Control),
+        new Case("unselected filter chip", () => new Chip("Expenses", ChipKind.Filter,
+            onPressed: () => { }), Theme.SurfaceSubtle, Place.Control),
         new Case("list item", () => new ListItem("Wallet", onPressed: () => { }), Theme.SurfaceSubtle, Place.Control),
         new Case("search field's clear button", () => new SearchField("query", _ => { }), Theme.Border, Place.Control),
         new Case("tab", () => new Tabs(["Overview", "Activity", "Settings"], 1, _ => { }), Theme.SurfaceSubtle, Place.Control),
@@ -155,6 +157,66 @@ public class PressedFillPlacementTests
 
         Painted(pressed, Primary.Subtle).Should().NotBeEmpty("the selected row keeps its fill pressed");
         Painted(pressed, Theme.SurfaceSubtle).Should().BeEmpty("and is not washed to the press's");
+    }
+
+    private static List<DrawCommand> Commands(DisplayList list, DrawCommandKind kind, ColorToken token)
+    {
+        var color = token.Resolve(ThemeMode.Light);
+        var found = new List<DrawCommand>();
+        foreach (var command in list.Commands)
+            if (command.Kind == kind && command.Paint.Color == color) found.Add(command);
+        return found;
+    }
+
+    /// <summary>The ink of every text and glyph Photon laid out, in order. Read from the layout tree:
+    /// a glyph's raster needs the platform's rasterizer, which only the Mac's suite has.</summary>
+    private static List<ColorToken?> Inks(LayoutNode node, List<ColorToken?>? found = null)
+    {
+        found ??= [];
+        switch (node.Source)
+        {
+            case Text text: found.Add(text.Color); break;
+            case Icon icon: found.Add(icon.Color); break;
+            case Vector vector: found.Add(vector.Color); break;
+        }
+        foreach (var child in node.Children) Inks(child, found);
+        return found;
+    }
+
+    /// <summary>B8's frame: an unselected filter chip rests OUTLINED (a 1dp BorderStrong edge, no
+    /// fill, TextPrimary text), so its SurfaceSubtle press is a change the eye can see.</summary>
+    [Fact]
+    public void AnUnselectedFilterChip_RestsOutlined()
+    {
+        var (rest, root) = Draw(new Chip("Expenses", ChipKind.Filter, onPressed: () => { }));
+
+        Painted(rest, Theme.SurfaceSubtle).Should().BeEmpty("an outlined chip has no fill at rest");
+        Commands(rest, DrawCommandKind.StrokeRRect, Theme.BorderStrong).Should().ContainSingle()
+            .Which.StrokeWidth.Should().Be(1f, "its edge is a 1dp BorderStrong line");
+        Inks(root).Should().Equal([Theme.TextPrimary], "its label is TextPrimary");
+    }
+
+    /// <summary>B8: "outlined/quiet chips = SurfaceSubtle". Hovered, the outlined chip fills its whole
+    /// surface with it, as an outline Button does.</summary>
+    [Fact]
+    public void AnUnselectedFilterChip_HoversOnSurfaceSubtle()
+    {
+        var (hovered, root) = Draw(new Simulated(SimulatedState.Hovered,
+            new Chip("Expenses", ChipKind.Filter, onPressed: () => { })));
+
+        Painted(hovered, Theme.SurfaceSubtle).Should().ContainSingle()
+            .Which.Should().Match<Rect>(r => Same(r, Controls(root).Single()), "the hover fills the chip whole");
+    }
+
+    /// <summary>B8's frame ("rio-trip.pdf"): the Input chip rests on SurfaceSubtle with a TextPrimary
+    /// label, and its ✕ a tier below, TextMuted.</summary>
+    [Fact]
+    public void AnInputChip_LabelIsPrimary_AndItsCloseIsMuted()
+    {
+        var (rest, root) = Draw(new Chip("rio-trip.pdf", ChipKind.Input, onRemove: () => { }));
+
+        Painted(rest, Theme.SurfaceSubtle).Should().ContainSingle("the Input chip rests on SurfaceSubtle");
+        Inks(root).Should().Equal([Theme.TextPrimary, Theme.TextMuted], "its label is TextPrimary, its ✕ TextMuted");
     }
 
     private static DisplayList Frame(PhotonHost host)
