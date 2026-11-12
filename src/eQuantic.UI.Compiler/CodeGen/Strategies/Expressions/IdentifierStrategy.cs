@@ -39,7 +39,7 @@ public class IdentifierStrategy : IExpressionIrStrategy
 
         // A nested type of the app's is its twin, named by its owner (#584): `Ops` inside Calc is
         // `Calc$Ops`, which a top-level `Ops` can never be.
-        if (symbol is INamedTypeSymbol nested && nested.NestedTwinName() is not null)
+        if (symbol is INamedTypeSymbol nested && nested.RenamedTwin() is not null)
             return JsExpr.Identifier(nested.IntroduceTwin(context));
 
         // A type named through a using alias is written by its own name and imported by it, as through its
@@ -49,7 +49,7 @@ public class IdentifierStrategy : IExpressionIrStrategy
             && !aliased.IsHostOnly() && aliased.HasTwin())
         {
             aliased.RegisterIntroduced(context);
-            return JsExpr.Identifier(aliased.Name);
+            return JsExpr.Identifier(aliased.TwinReference());
         }
 
         // If it's a type symbol, return as is (to allow EnumStrategy to work)

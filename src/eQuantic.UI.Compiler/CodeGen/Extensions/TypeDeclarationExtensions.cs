@@ -184,7 +184,7 @@ public static class TypeDeclarationExtensions
             if (TsStandIn.For(core) is { } standIn)
                 return type is NullableTypeSyntax && standIn != "any" ? TypeScriptEmitter.OrNull(standIn) : standIn;
             // A nested type is its twin, named by its owner (#584).
-            if (core is INamedTypeSymbol nested && nested.NestedTwinName() is { } twin)
+            if (core is INamedTypeSymbol nested && nested.RenamedTwin() is { } twin)
                 return type is NullableTypeSyntax ? TypeScriptEmitter.OrNull(twin) : twin;
         }
 
