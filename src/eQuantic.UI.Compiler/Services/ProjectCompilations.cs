@@ -34,15 +34,19 @@ internal static class ProjectCompilations
     /// <param name="projects">The referenced projects, in any order.</param>
     /// <param name="graph">Which project references which, as restore wrote it.</param>
     /// <param name="read">How an assembly is read; null reads each file anew.</param>
+    /// <param name="appOptions">What the app's files are parsed with; each project's are its own
+    /// (<see cref="ReferencedProject.ParseOptions"/>).</param>
     /// <param name="built">Each project a compilation was built for, with that compilation. A project
     /// with no C# source (another language's) keeps its assembly and is not here.</param>
     public static Compilation Create(string assemblyName, IEnumerable<string> sourceFiles,
         IEnumerable<string> assemblyPaths, bool addStandardReferences,
         IReadOnlyList<ReferencedProject> projects, ProjectGraph graph, Func<string, MetadataReference>? read,
-        out IReadOnlyDictionary<ReferencedProject, Compilation> built)
+        CSharpParseOptions appOptions, out IReadOnlyDictionary<ReferencedProject, Compilation> built)
     {
         var sources = projects.ToDictionary(project => project, project => project.SourceFiles());
-        var compiled = projects.Where(project => sources[project].Any(IsItsOwnSource)).ToList();
+        var compiled = projects.Where(project => project.Sources is { } listed
+            ? listed.OwnFiles.Count > 0
+            : sources[project].Any(IsItsOwnSource)).ToList();
 
         // The assemblies of the projects compiled here are not loaded: a type read from both its
         // compilation and its assembly is two types of one name, and every use of it ambiguous.
@@ -94,7 +98,7 @@ internal static class ProjectCompilations
             foreach (var file in Reaches(project.ProjectFile, new HashSet<string>(graph.Paths)))
                 if (byProjectFile.TryGetValue(file, out var dependency) && dependency != project)
                     references.Add(Build(dependency).ToMetadataReference());
-            var trees = Parse(sources[project]);
+            var trees = Parse(sources[project], project.ParseOptions);
             if (Friends(project) is { } friends) trees.Add(friends);
             return compilations[project] = CSharpCompilation.Create(
                 project.AssemblyName, trees, references, ProjectCompilationHelper.Options);
@@ -104,7 +108,7 @@ internal static class ProjectCompilations
         foreach (var project in compiled) appReferences.Add(Build(project).ToMetadataReference());
 
         built = compilations;
-        return CSharpCompilation.Create(assemblyName, Parse(sourceFiles), appReferences, ProjectCompilationHelper.Options);
+        return CSharpCompilation.Create(assemblyName, Parse(sourceFiles, appOptions), appReferences, ProjectCompilationHelper.Options);
     }
 
     /// <summary>A file the project's own directory holds, as against the global usings its build
@@ -114,10 +118,10 @@ internal static class ProjectCompilations
 
     /// <summary>The files that exist, parsed side by side and kept in the order given: a referenced
     /// project can hold hundreds of files the browser never reaches, and each is parsed all the same.</summary>
-    private static List<SyntaxTree> Parse(IEnumerable<string> files) =>
+    private static List<SyntaxTree> Parse(IEnumerable<string> files, CSharpParseOptions options) =>
         files.Where(File.Exists)
             .AsParallel().AsOrdered()
-            .Select(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file), ParseDefaults.Options, path: file))
+            .Select(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file), options, path: file))
             .ToList();
 
     /// <summary>The project's friend declarations as source, since the assembly that carried them is
@@ -127,7 +131,7 @@ internal static class ProjectCompilations
         if (project.FriendAssemblies.Count == 0) return null;
         var text = string.Concat(project.FriendAssemblies.Select(friend =>
             $"[assembly: System.Runtime.CompilerServices.InternalsVisibleTo({SymbolDisplay.FormatLiteral(friend, quote: true)})]\n"));
-        return CSharpSyntaxTree.ParseText(text, ParseDefaults.Options,
+        return CSharpSyntaxTree.ParseText(text, project.ParseOptions,
             path: Path.Combine(project.Directory, "obj", "eQuantic", project.AssemblyName + ".Friends.g.cs"));
     }
 }
