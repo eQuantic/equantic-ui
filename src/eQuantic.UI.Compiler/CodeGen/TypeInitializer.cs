@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -105,20 +106,26 @@ internal static class TypeInitializer
     /// a struct, a class, a static class and a component alike: each emitter collected its own, a
     /// class and a component in two passes, every field and then every property, so
     /// <c>static int Base { get; } = Compute();</c> above <c>static readonly int Doubled = Base * 2;</c>
-    /// read Base's zero where .NET reads 21.
+    /// read Base's zero where .NET reads 21. A field's store is its slot, which the model says
+    /// (<see cref="FieldSlotExtensions.SlotOf"/>, #1175).
     /// </summary>
-    public static IEnumerable<Store> Stores(TypeDeclarationSyntax type) => type.Members.SelectMany(StoresOf);
+    public static IEnumerable<Store> Stores(TypeDeclarationSyntax type, Func<SyntaxNode, SemanticModel?> modelFor) =>
+        type.TwinMembers().SelectMany(member => StoresOf(member, modelFor));
 
     /// <summary>The stores one member of a type declares (<see cref="Stores"/>): none for a member that
     /// is no static store, one per variable of a field or an event.</summary>
-    public static IEnumerable<Store> StoresOf(MemberDeclarationSyntax member)
+    public static IEnumerable<Store> StoresOf(MemberDeclarationSyntax member, Func<SyntaxNode, SemanticModel?> modelFor)
     {
         if (!member.Modifiers.Any(SyntaxKind.StaticKeyword)) yield break;
         switch (member)
         {
-            case BaseFieldDeclarationSyntax field when !field.Modifiers.Any(SyntaxKind.ConstKeyword):
+            case FieldDeclarationSyntax field when !field.Modifiers.Any(SyntaxKind.ConstKeyword):
                 foreach (var variable in field.Declaration.Variables)
-                    yield return new(variable.Identifier.ValueText.ToCamelCase(), field.Declaration.Type, variable.Initializer, variable);
+                    yield return new(variable.SlotOf(modelFor(variable)), field.Declaration.Type, variable.Initializer, variable);
+                break;
+            case EventFieldDeclarationSyntax handler:
+                foreach (var variable in handler.Declaration.Variables)
+                    yield return new(variable.Identifier.ValueText.ToCamelCase(), handler.Declaration.Type, variable.Initializer, variable);
                 break;
             case PropertyDeclarationSyntax property when Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(property):
                 yield return new(Strategies.Expressions.FieldExpressionStrategy.BackingSlot(property), property.Type,
@@ -137,9 +144,9 @@ internal static class TypeInitializer
     /// emitter: its <paramref name="annotation"/>, its <paramref name="zero"/>, and its initializer's
     /// <paramref name="value"/>.
     /// </summary>
-    public static IReadOnlyList<Ordered> Collect(TypeDeclarationSyntax type, Func<TypeSyntax, string> annotation,
-        Func<TypeSyntax, string> zero, Func<EqualsValueClauseSyntax, TypeSyntax, string> value) =>
-        Stores(type).Select(store => new Ordered(store.Name, annotation(store.Type), zero(store.Type),
+    public static IReadOnlyList<Ordered> Collect(TypeDeclarationSyntax type, Func<SyntaxNode, SemanticModel?> modelFor,
+        Func<TypeSyntax, string> annotation, Func<TypeSyntax, string> zero, Func<EqualsValueClauseSyntax, TypeSyntax, string> value) =>
+        Stores(type, modelFor).Select(store => new Ordered(store.Name, annotation(store.Type), zero(store.Type),
             store.Initializer is { } initializer ? value(initializer, store.Type) : null, store.Declaration,
             store.Initializer?.Value is AnonymousFunctionExpressionSyntax)).ToList();
 
@@ -163,7 +170,7 @@ internal static class TypeInitializer
     /// </summary>
     public static bool Orders(TypeDeclarationSyntax type, Func<SyntaxNode, SemanticModel?> modelFor) =>
         HasStaticConstructor(type)
-        || Stores(type).Any(store => store.Initializer is { } initializer
+        || Stores(type, modelFor).Any(store => store.Initializer is { } initializer
             ? !IsConstant(initializer, modelFor(initializer))
             : Strategies.DefaultValue.Constructs(modelFor(store.Type)?.GetTypeInfo(store.Type).Type));
 

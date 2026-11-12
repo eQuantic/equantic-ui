@@ -512,6 +512,84 @@ else
   echo "ok: a ci.yml that names the stored key in a comment only passes"
 fi
 
+# --- the extension ------------------------------------------------------------------------------------
+
+# The extension reaches the Marketplace through its trusted publishing in the same way (#1271): the
+# job's OIDC token is exchanged for a credential that lives fifteen minutes, with `vsce publish
+# --oidc`, which never falls back to a stored one. A secret read by that job is a credential that
+# expires or leaks, and the Marketplace retires its personal access tokens on 2026-12-01.
+
+# extension_job <workflow>: the publish-extension job's block, empty when the workflow has none.
+extension_job() {
+  awk '
+    /^  publish-extension:[[:space:]]*$/ { on = 1; print; next }
+    on && (/^  [A-Za-z0-9_-]+:[[:space:]]*$/ || /^[^ #]/) { exit }
+    on
+  ' "$1"
+}
+
+# check_extension <workflow>: prints one line per broken promise, nothing when they hold.
+check_extension() {
+  local job
+  job=$(extension_job "$1")
+  if [ -z "$job" ]; then
+    echo "ci.yml: there is no publish-extension job"
+    return
+  fi
+  if printf '%s\n' "$job" | grep -v '^[[:space:]]*#' | grep -q 'secrets\.'; then
+    echo "ci.yml: publish-extension reads a stored credential"
+  fi
+  if ! printf '%s\n' "$job" | grep -v '^[[:space:]]*#' | grep -q 'vsce publish .*--oidc'; then
+    echo "ci.yml: publish-extension does not publish with --oidc"
+  fi
+  # The job can mint the token the Marketplace takes, so it runs no package's install script.
+  if ! printf '%s\n' "$job" | grep -v '^[[:space:]]*#' | grep -q 'npm ci .*--ignore-scripts'; then
+    echo "ci.yml: publish-extension runs install scripts beside its token"
+  fi
+  # A comment may name the permission, as the job's own does. Only the grant counts.
+  if ! printf '%s\n' "$job" | grep -q '^      id-token: write$'; then
+    echo "ci.yml: publish-extension is not granted id-token: write"
+  fi
+}
+
+problems=$(check_extension "$workflows/ci.yml")
+if [ -n "$problems" ]; then
+  echo "$problems" | sed 's/^/FAIL: /' >&2
+  failures=$((failures + $(echo "$problems" | wc -l)))
+else
+  echo "ok: the extension publishes through trusted publishing and reads no stored credential"
+fi
+
+# extension_control <what it breaks> <the line that must fail> <sed expression>
+extension_control() {
+  local broken="$work/ci-extension.yml" found
+  sed -e "$3" "$workflows/ci.yml" > "$broken"
+  if cmp -s "$workflows/ci.yml" "$broken"; then
+    echo "FAIL: the control '$1' changed nothing: its edit no longer matches ci.yml" >&2
+    failures=$((failures + 1))
+    return
+  fi
+  found=$(check_extension "$broken")
+  case $'\n'"$found" in
+    *$'\n'"ci.yml: $2"*) echo "ok: an extension job that $1 fails" ;;
+    *)
+      echo "FAIL: an extension job that $1 passes" >&2
+      failures=$((failures + 1))
+      ;;
+  esac
+}
+
+extension_control "publishes with a stored token" "publish-extension reads a stored credential" \
+  's/^        run: extensions\/vscode\/node_modules\/\.bin\/vsce publish --packagePath equantic-ui\.vsix --oidc$/        env:\
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}\
+        run: extensions\/vscode\/node_modules\/.bin\/vsce publish --packagePath equantic-ui.vsix/'
+extension_control "publishes without --oidc" "publish-extension does not publish with --oidc" \
+  's/--packagePath equantic-ui\.vsix --oidc$/--packagePath equantic-ui.vsix --azure-credential/'
+extension_control "runs install scripts" "publish-extension runs install scripts beside its token" \
+  's/^        run: npm ci --no-audit --no-fund --ignore-scripts$/        run: npm ci --no-audit --no-fund/'
+extension_control "is granted no OIDC token" "publish-extension is not granted id-token: write" \
+  '/^  publish-extension:/,/^  publish-nuget:/s/^      id-token: write$/      id-token: none/'
+
 if [ "$failures" -gt 0 ]; then
   echo "check-publish-packages.sh: $failures failure(s)" >&2
   exit 1

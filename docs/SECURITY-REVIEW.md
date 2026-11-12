@@ -65,7 +65,7 @@ culture and page state, and was written with no `Cache-Control`, while the JSON 
 was sent `no-store`. Now both answers of a page's route are sent `no-store`, from one place.
 
 ```text
-src/eQuantic.UI.Server/UIExtensions.cs:879  context.Response.Headers.CacheControl = "no-store";
+src/eQuantic.UI.Server/UIExtensions.cs:911  context.Response.Headers.CacheControl = "no-store";
 ```
 
 **#1295, low, fixed in 0.2.0-preview.68 (#1338).** The atomic sheet wrote a style value as it came
