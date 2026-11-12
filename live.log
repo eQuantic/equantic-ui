@@ -49,3 +49,14 @@
   114   0.9  74880 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
    90   0.2  15296 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
  2109   0.1 137168 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+=== alive 13:55:19 app: 2109 watch: 
+=== alive 13:55:30 app: 2109 watch: 
+--- sample 13:55:33 load: { 14.63 12.47 5.82 } System-wide memory free percentage: 93%
+161 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2089 dotnet run --no-build --project samples/PhotonDesktop
+2109 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 2109   0.4 137488 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 1000   0.4 132896 /Users/runner/actions-runner/cached/bin/Runner.Worker
+ 2083   0.3   1632 /bin/bash
+  998   0.3 111088 /Users/runner/actions-runner/cached/bin/Runner.Listener
+  976   0.2  44192 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd3646539152
