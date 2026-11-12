@@ -85,6 +85,8 @@ public static class PhotonHotReload
         // Said as the edit arrives, as the host says the frame that draws it: an edit that never reached
         // the window is told apart from one that reached it and was never drawn, which the edit-to-view
         // measurement could not tell when a window did not draw an edit on CI (#1473).
-        Console.WriteLine($"[eQuantic.HotReload] an edit was applied to {updatedTypes?.Length ?? 0} types, and {woken} windows were woken to draw it");
+        Console.WriteLine($"[eQuantic.HotReload] an edit changed {Count(updatedTypes?.Length ?? 0, "type")} and woke {Count(woken, "window")} to draw it");
     }
+
+    private static string Count(int count, string noun) => count == 1 ? $"1 {noun}" : $"{count} {noun}s";
 }
