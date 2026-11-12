@@ -53,7 +53,7 @@ public static class SheetKeymap
                     sheet.Cut();
                     return true;
                 case 'v':
-                    if (clipboard.Read() is { Length: > 0 } pasted) sheet.Paste(pasted);
+                    _ = sheet.PasteFromAsync(clipboard);
                     return true;
             }
         }

@@ -154,6 +154,12 @@ clipboard.
   clipboard's text `x\ty` is pasted
 - **THEN** the entry is `ax\tyb`, no other cell changed, and one undo while editing gives back `ab`
 
+#### Scenario: A clipboard that answers later
+
+- **WHEN** ⌘V is pressed over B2 with a clipboard whose read has not answered yet, and it then answers `x\ty`
+- **THEN** the key is claimed, B2 is empty until the clipboard answers, B2 and C2 hold `x` and `y` after, and
+  the sheet's views are told to build again once, after the paste
+
 ### Requirement: The spreadsheet's engine is an assembly the SDK adds
 
 An app built with either SDK SHALL reach the spreadsheet's engine through the `eQuantic.UI.Sheet`

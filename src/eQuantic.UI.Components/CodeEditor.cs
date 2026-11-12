@@ -219,6 +219,9 @@ public sealed class CodeEditor : StatefulComponent
         editor.Definitions.Changed += () => SetState(() => { });
         // And the regions, which arrive after the text rests and fold and unfold by key (#1119).
         editor.Folding.Changed += () => SetState(() => { });
+        // And a paste, whose text the web's clipboard hands over after the key that asked: drawn, and heard by the
+        // app as any edit is (#1028).
+        editor.Pasted += () => SetState(() => Notify(editor));
         // A method, not a lambda: the twin's controller is untyped where an object initializer built it (#1106).
         editor.OpenRequested += Opened;
         return editor;

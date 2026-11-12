@@ -2384,22 +2384,79 @@ describe('the keys an app binds', () => {
     }
   });
 
-  /**
-   * A paste is the browser's paste event: ⌘V goes on to it, which brings the text, and a Paste bound to a
-   * key the browser does not paste on finds nothing to read (#1028).
-   */
-  it("leaves ⌘V to the browser's paste event", async () => {
-    const { component, input, press } = await surface((KeyChord, Binding) => [new Binding(KeyChord.command('j'), 'paste')]);
-    component.editor.selectAll();
-
-    expect(press('v'), "⌘V is the paste event's").toBe(false);
+  /** The browser's paste event, as it fires after a key it pastes on, bringing `text`. */
+  function pasteEvent(input: { events: Record<string, unknown> }, text: string) {
     (input.events['paste'] as unknown as (event: unknown) => void)({
-      clipboardData: { getData: () => 'pasted' },
+      clipboardData: { getData: () => text },
       preventDefault: () => {},
     });
-    expect(component.editor.document.text).toBe('pasted');
-    expect(press('j'), 'a Paste on ⌘J is claimed').toBe(true);
-    expect(component.editor.document.text, 'and finds nothing to read').toBe('pasted');
+  }
+
+  /** `navigator.clipboard.readText` answering `read`, and how often it was asked. */
+  function clipboardApi(read: () => Promise<string>) {
+    const saved = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    const asked = { count: 0 };
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        readText: () => {
+          asked.count++;
+          return read();
+        },
+      },
+    });
+    const restore = () => {
+      if (saved) Object.defineProperty(navigator, 'clipboard', saved);
+      else delete (navigator as unknown as Record<string, unknown>).clipboard;
+    };
+    return { asked, restore };
+  }
+
+  /** Every read the clipboard answered, and the paste each one let land. */
+  const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  /**
+   * A paste reads the clipboard later, as C#'s `ReadAsync` does (#1028). On ⌘V the key goes on to the browser
+   * and the paste waits for its paste event, which brings the text with no prompt; a Paste bound to a key the
+   * browser does not paste on reads through the Clipboard API, as VS Code's web build does. Either way the paste
+   * lands after the key, and the app hears it as it hears an edit.
+   */
+  it("pastes on ⌘V through the paste event, and on an app's own key through the Clipboard API", async () => {
+    const { component, input, press } = await surface((KeyChord, Binding) => [new Binding(KeyChord.command('j'), 'paste')]);
+    const heard: string[] = [];
+    (component as unknown as Record<string, unknown>).onChanged = (text: string) => heard.push(text);
+    const { asked, restore } = clipboardApi(() => Promise.resolve(' and read'));
+    try {
+      component.editor.selectAll();
+
+      expect(press('v'), "⌘V is the paste event's").toBe(false);
+      pasteEvent(input as never, 'pasted');
+      await settled();
+      expect(component.editor.document.text).toBe('pasted');
+      expect(asked.count, 'the paste event brought the text, so nothing was asked of the Clipboard API').toBe(0);
+
+      expect(press('j'), 'a Paste on ⌘J is claimed').toBe(true);
+      await settled();
+      expect(component.editor.document.text, 'and pastes what the Clipboard API read').toBe('pasted and read');
+      expect(asked.count).toBe(1);
+      expect(heard, 'the app heard each paste').toEqual(['pasted', 'pasted and read']);
+    } finally {
+      restore();
+    }
+  });
+
+  /** A Clipboard API the person refused pastes nothing, and leaves the document as it was. */
+  it('pastes nothing on its own key where the Clipboard API is refused', async () => {
+    const { component, press } = await surface((KeyChord, Binding) => [new Binding(KeyChord.command('j'), 'paste')]);
+    const { asked, restore } = clipboardApi(() => Promise.reject(new Error('NotAllowedError')));
+    try {
+      expect(press('j'), 'the key is claimed all the same').toBe(true);
+      await settled();
+      expect(asked.count).toBe(1);
+      expect(component.editor.document.text).toBe('alpha beta\ngamma');
+    } finally {
+      restore();
+    }
   });
 
   /**

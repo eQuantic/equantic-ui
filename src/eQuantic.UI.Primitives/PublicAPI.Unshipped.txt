@@ -1,4 +1,6 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Primitives.ITextClipboard.Read() -> string?
+eQuantic.UI.Primitives.ITextClipboard.ReadAsync() -> System.Threading.Tasks.Task<string?>!
 eQuantic.UI.Primitives.ButtonTheme
 eQuantic.UI.Primitives.ButtonTheme.<Clone>$() -> eQuantic.UI.Primitives.ButtonTheme!
 eQuantic.UI.Primitives.ButtonTheme.ButtonTheme() -> void

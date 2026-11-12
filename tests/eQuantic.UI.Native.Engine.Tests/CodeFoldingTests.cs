@@ -102,7 +102,7 @@ public class CodeFoldingTests : IDisposable
 
         public void Write(string text) => Text = text;
 
-        public string Read() => Text;
+        public Task<string?> ReadAsync() => Task.FromResult<string?>(Text);
     }
 
     // ---- the regions ------------------------------------------------------------------------------------

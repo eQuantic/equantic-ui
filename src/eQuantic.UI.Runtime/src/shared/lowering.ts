@@ -970,18 +970,23 @@ function openTextDoor(
     if (event.isComposing || event.keyCode === 229) return;
     if (leftToBrowser(event)) return;
     // Copy and Cut write through the browser's own copy event, on whatever key they are bound to; a
-    // write it refused leaves the key to the browser. A paste is the paste event's, which the browser
-    // fires on its own paste keys only (`CodeSurfaceClipboard`, #1028). With no clipboard the copy keys
-    // are not the model's at all, and the browser's events carry them.
-    if (clipboard) clipboard.pasteAsked = false;
+    // write it refused leaves the key to the browser. A paste on a key the browser pastes on waits for its
+    // paste event, and on any other key reads through the Clipboard API (`CodeSurfaceClipboard`, #1028).
+    // With no clipboard the copy keys are not the model's at all, and the browser's events carry them.
+    if (clipboard) {
+      clipboard.pasteAsked = false;
+      clipboard.browserPastes = browserPastesOn(event, convention);
+    }
     let claimed: boolean;
     try {
       claimed = model.handleKey(event.key, modifiers(event, convention), convention, clipboard);
     } catch (error) {
       if (!(error instanceof ClipboardRefused)) throw error;
       claimed = false;
+    } finally {
+      if (clipboard) clipboard.browserPastes = false;
     }
-    if (claimed && clipboard?.pasteAsked && browserPastesOn(event, convention)) return;
+    if (claimed && clipboard?.pasteAsked) return;
     if (claimed) {
       event.preventDefault();
       changed();
@@ -1062,6 +1067,8 @@ function openTextDoor(
   input.events['paste'] = ((event: ClipboardEvent) => {
     event.preventDefault();
     const text = event.clipboardData?.getData('text/plain');
+    // A Paste the key's command asked for waits for this event: it pastes what arrives, and tells the views.
+    if (clipboard?.answer(text || null)) return;
     if (text && model.paste(text)) changed();
   }) as unknown as EventHandler;
   input.events['copy'] = ((event: ClipboardEvent) => {

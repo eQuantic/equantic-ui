@@ -41,7 +41,7 @@ public class CodeKeymapBehaviourTests : IDisposable
     {
         public string? Text { get; private set; } = text;
 
-        public string? Read() => Text;
+        public Task<string?> ReadAsync() => Task.FromResult(Text);
 
         public void Write(string text) => Text = text;
     }
