@@ -29,7 +29,8 @@ public class OneAmbientAtTheWebSeamTests
     {
         var armed = new RouteValues(
             new Dictionary<string, string> { ["slug"] = "getting-started" },
-            new Dictionary<string, string> { ["page"] = "2" });
+            new Dictionary<string, string> { ["page"] = "2" },
+            "/docs/getting-started");
         RouteValues.Current = armed;
         try
         {

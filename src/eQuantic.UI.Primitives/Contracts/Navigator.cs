@@ -18,14 +18,26 @@ public sealed class Navigator
 {
     private readonly Action<string>? _go;
 
-    private Navigator(Action<string>? go) => _go = go;
+    private Navigator(Action<string>? go, string location)
+    {
+        _go = go;
+        Location = location;
+    }
 
     /// <summary>The navigator of the tree <paramref name="context"/>'s component is in.</summary>
     public static Navigator Of(ComponentContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return new Navigator(context.Navigation);
+        return new Navigator(context.Navigation, context.Route.Path);
     }
+
+    /// <summary>
+    /// The path of the page being shown: <c>/charts</c>, with no query and no fragment. An app's layout
+    /// builds around every page, and marks the destination it shows with this (the entry of a sidebar
+    /// whose destination equals it). The server answers the path of the request it renders, the
+    /// browser the path in the address, which a navigation updates before anything builds for it.
+    /// </summary>
+    public string Location { get; }
 
     /// <summary>
     /// Navigates to <paramref name="destination"/>.
