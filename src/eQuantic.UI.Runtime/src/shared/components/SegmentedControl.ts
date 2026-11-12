@@ -1,4 +1,4 @@
-import { $eq, Adjustable, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Flexible, Motion, Pressable, Row, SizeValue, SizeVariantValue, Sizing, StatelessComponent, Text, TransitionSpec } from "../runtime-exports";
+import { $eq, Adjustable, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Motion, Pressable, Row, SizeValue, SizeVariantValue, StatelessComponent, Text, TransitionSpec } from "../runtime-exports";
 
 export class SegmentedControl extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.SegmentedControl';
@@ -26,16 +26,16 @@ export class SegmentedControl extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let height = Sizing.height(this.size, context.density);
+        let height = ControlMetrics.height(context, this.size);
         let inset = 3;
-        let trackRadius = Sizing.radius(this.size);
+        let trackRadius = ControlMetrics.radius(context, this.size);
         let row = new Row(0, 'start', 'center', false, null, null, { width: this.stretch ? SizeValue.fill : SizeValue.hug, height: SizeValue.fill, cross: 'stretch' });
         for (let i = 0; i < $eq.collections.count(this.segments); i++) {
             let index = i;
             let selected = index === this.selectedIndex;
             let label = new Row(0, 'start', 'center', false, null, null, { width: this.stretch ? SizeValue.fill : SizeValue.hug, height: SizeValue.fill, main: 'center', cross: 'center' });
-            label.add(new Text($eq.collections.item(this.segments, index), 'label', selected ? theme.textPrimary : theme.textSecondary, 1, 'start', false, false, null, 0, { styleOverride: theme.type('label').withSize(Sizing.labelSize(this.size, context.density)), transition: TransitionSpec.of(1, Motion.press) }));
-            let segment = new Box(new BoxStyle({ width: this.stretch ? SizeValue.fill : SizeValue.hug, height: SizeValue.fill, padding: this.stretch ? new EdgeInsets() : EdgeInsets.symmetric(Sizing.paddingX(this.size, context.density), 0), background: selected ? theme.surface : null, cornerRadius: new CornerRadii(Math.fround(trackRadius - inset)), elevation: selected ? 1 : 0, transition: TransitionSpec.of(1 | 8, Motion.press) }), label);
+            label.add(new Text($eq.collections.item(this.segments, index), 'label', selected ? theme.textPrimary : theme.textSecondary, 1, 'start', false, false, null, 0, { styleOverride: theme.type('label').withSize(ControlMetrics.labelSize(context, this.size)), transition: TransitionSpec.of(1, Motion.press) }));
+            let segment = new Box(new BoxStyle({ width: this.stretch ? SizeValue.fill : SizeValue.hug, height: SizeValue.fill, padding: this.stretch ? new EdgeInsets() : EdgeInsets.symmetric(ControlMetrics.paddingX(context, this.size), 0), background: selected ? theme.surface : null, cornerRadius: new CornerRadii(Math.fround(trackRadius - inset)), elevation: selected ? 1 : 0, transition: TransitionSpec.of(1 | 8, Motion.press) }), label);
             let press = new Pressable(segment, this.disabled || selected ? null : () => this.onChanged?.(index), { disabled: this.disabled, label: $eq.collections.item(this.segments, index), role: 'radio', selected: selected });
             row.add(this.stretch ? new Flexible(press, 1) : press);
         }
