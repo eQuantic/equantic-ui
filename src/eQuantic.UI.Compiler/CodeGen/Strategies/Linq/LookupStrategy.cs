@@ -34,22 +34,22 @@ public class LookupStrategy : IExpressionIrStrategy
         if (node is ElementAccessExpressionSyntax access)
         {
             var lookupType = context.SemanticHelper.GetType(access.Expression);
-            return JsExpr.Template($"({Search("find", lookupType, context)} ?? [])",
+            return JsExpr.Template($"({Search("find", lookupType, node, context)} ?? [])",
                 [context.Converter.ConvertIr(access.Expression), context.Converter.ConvertIr(access.ArgumentList.Arguments[0].Expression)]);
         }
 
         var invocation = (InvocationExpressionSyntax)node;
         invocation.TryGetInstanceCall(out var receiver, out _);
-        return JsExpr.Template(Search("some", ContainsOf(invocation, context)!.ContainingType, context),
+        return JsExpr.Template(Search("some", ContainsOf(invocation, context)!.ContainingType, invocation, context),
             [context.Converter.ConvertIr(receiver), context.Converter.ConvertIr(invocation.ArgumentList.Arguments[0].Expression)]);
     }
 
     /// <summary>The groups of the lookup <c>{0}</c> searched by <paramref name="method"/> for the one whose
     /// key is the key <c>{1}</c>, which the writer binds outside the search.</summary>
-    private static string Search(string method, ITypeSymbol? lookupType, ConversionContext context)
+    private static string Search(string method, ITypeSymbol? lookupType, SyntaxNode at, ConversionContext context)
     {
         var keyType = lookupType is INamedTypeSymbol { TypeArguments: [var first, ..] } ? first : null;
-        return $"{{0}}.{method}(($g) => {LinqKeys.Matches(keyType, "$g.key", "{1}", context)})";
+        return $"{{0}}.{method}(($g) => {LinqKeys.Matches(keyType, "$g.key", "{1}", at, context)})";
     }
 
     /// <summary>The lookup's own <c>Contains(key)</c> a call binds to, or null for any other: a LINQ

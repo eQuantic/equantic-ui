@@ -26,7 +26,7 @@
  * `Contains` and `Remove` (`utils/list.ts`), and LINQ's `Contains`. A list compared with `===` where
  * the set beside it compared by value answered two ways about one value.
  */
-import { equals } from './equals';
+import { checksItsReference, equals, SELF } from './equals';
 import { valueTwinOf } from './hash';
 
 /** A comparison two values are found equal by. */
@@ -36,16 +36,16 @@ export type Equality = (a: unknown, b: unknown) => boolean;
 export type KeyEquality = boolean | 'own' | 'item' | 'gen' | Equality;
 
 /**
- * `EqualityComparer<T>.Default` for a type compared by reference or by its own `Equals`: identity, a
- * double's where NaN equals NaN, and a twin's own `equals` (a record, a struct, a decimal, a date, a
- * class that overrides it). A class that does not override `Equals` compares by identity.
+ * `EqualityComparer<T>.Default` for a type compared by reference or by its own `Equals`: a twin's own
+ * `equals` (a record, a struct, a decimal, a date, a class that overrides it), asked every time as .NET
+ * asks it, a value compared with itself included ({@link equalsOwn}, #979), then identity, a double's where
+ * NaN equals NaN. A class that does not override `Equals` compares by identity.
  */
 export function sameItem(item: unknown, value: unknown): boolean {
+  if (hasEquals(item)) return equalsOwn(item, value);
   if (item === value) return true;
   if (typeof item === 'number' && typeof value === 'number') return item !== item && value !== value;
-  if (item == null || value == null) return item == null && value == null;
-  const own = (item as { equals?: unknown }).equals;
-  return typeof own === 'function' && (own as (other: unknown) => boolean).call(item, value);
+  return item == null && value == null;
 }
 
 /**
@@ -88,9 +88,6 @@ export function sameKey(a: unknown, b: unknown): boolean {
   return true;
 }
 
-/** The contract `IEquatable<T>` over the value's own type, which `EqualityComparer<T>.Default` asks. */
-const SELF = 'System.IEquatable<T>|@';
-
 /** What a value's twin maps in `static $equatable`: each contract it answers to the method answering it. */
 function contractsOf(value: unknown): Record<string, string> | undefined {
   if (value === null || typeof value !== 'object') return undefined;
@@ -98,16 +95,55 @@ function contractsOf(value: unknown): Record<string, string> | undefined {
   return map !== null && typeof map === 'object' ? (map as Record<string, string>) : undefined;
 }
 
+/** What the browser holds a value of each primitive type as. */
+const HELD_AS: Readonly<Record<string, string>> = {
+  string: 'string',
+  char: 'string',
+  bool: 'boolean',
+  long: 'bigint',
+  ulong: 'bigint',
+  nint: 'bigint',
+  nuint: 'bigint',
+  sbyte: 'number',
+  byte: 'number',
+  short: 'number',
+  ushort: 'number',
+  int: 'number',
+  uint: 'number',
+  float: 'number',
+  double: 'number',
+};
+
+/** The runtime's class for a type C# names by a keyword and the browser holds as an object. */
+const HELD_IN: Readonly<Record<string, string>> = { decimal: 'Decimal', object: 'Object' };
+
+/**
+ * Whether a value may be of the type a contract's key names after its `|`, as far as what the browser holds
+ * says: a primitive by its kind, so the first of two number types answers, and anything else by the name of
+ * its class or of one it derives from, a `decimal` by the runtime's `Decimal`.
+ */
+function isOfContract(contract: string, value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  const type = contract.slice(contract.indexOf('|') + 1);
+  if (typeof value !== 'object') return HELD_AS[type] === typeof value;
+  const name = HELD_IN[type] ?? type.slice(type.lastIndexOf('.') + 1);
+  for (let at = Object.getPrototypeOf(value); at !== null; at = Object.getPrototypeOf(at)) {
+    if ((at as { constructor?: { name?: string } }).constructor?.name === name) return true;
+  }
+  return false;
+}
+
 /**
  * The method a value's twin answers an interface's typed `Equals` with, found by the CONTRACT a call binds
  * (`System.IEquatable<T>|int`, `App.IProbe|App.IProbe`): its class's `static $equatable` maps each
  * such contract to the method, which holds a name of its own on the twin, since the twin's `equals` is
  * `Equals(object)`'s. A contract over a type parameter (`|*`, generic code, whose type argument is erased)
- * takes the class's own `IEquatable<T>` (`|@`), or the one contract of that interface it answers; a class
- * that answers it over several other types and not over itself is answered by `Equals(object)`. Undefined
- * for a value that answers none: a number, a string, a record's synthesized one, any value of .NET's own types.
+ * takes the class's own `IEquatable<T>` (`|@`), the one contract of that interface it answers, or, among several
+ * over other types, the one whose type `other` is ({@link isOfContract}, #962). A class with no such contract is
+ * answered by `Equals(object)`, as a null `other` is, which says nothing of its type. Undefined for a value
+ * that answers none: a number, a string, a record's synthesized one, any value of .NET's own types.
  */
-function contractMethod(value: unknown, key: string): ((other: unknown) => unknown) | undefined {
+function contractMethod(value: unknown, key: string, other?: unknown): ((other: unknown) => unknown) | undefined {
   const named = contractsOf(value);
   if (named === undefined) return undefined;
   let name = named[key];
@@ -116,7 +152,8 @@ function contractMethod(value: unknown, key: string): ((other: unknown) => unkno
     name = named[`${face}@`];
     if (name === undefined) {
       const answered = Object.keys(named).filter((contract) => contract.startsWith(face));
-      if (answered.length === 1) name = named[answered[0]];
+      const chosen = answered.length === 1 ? answered[0] : answered.find((contract) => isOfContract(contract, other));
+      if (chosen !== undefined) name = named[chosen];
     }
   }
   const method = name === undefined ? undefined : (value as Record<string, unknown>)[name];
@@ -130,7 +167,7 @@ export function answersEquatable(value: unknown): boolean {
 
 /** The interface's typed `Equals` of `key` on `a` with `b`, and what `a` turns out to be where it answers none. */
 function dispatch(key: string, a: unknown, b: unknown): boolean {
-  const method = contractMethod(a, key);
+  const method = contractMethod(a, key, b);
   return method !== undefined ? Boolean(method.call(a, b)) : sameKey(a, b);
 }
 
@@ -165,32 +202,12 @@ export function sameGeneric(a: unknown, b: unknown): boolean {
   return dispatch(SELF, a, b);
 }
 
-/** The statics a twin the build writes carries, which say what kind of value it is (`RecordTypeEmitter`). */
-type TwinStatics = { $record?: unknown; $zero?: unknown; $equatable?: unknown };
-
-/**
- * Whether a value's own `Equals` checks the reference before it reads anything, as C# synthesizes a record
- * CLASS's: `(object)this == other || …`, so a record compared with itself is equal and no member is compared.
- * Its twin says it is a record (`$record`) and carries no zero (`$zero`, which every struct's twin carries), and
- * its class answers no `IEquatable<T>` over itself with a method of the app's own (`|@` in an `$equatable` of its
- * own, not one a base's twin holds), which replaces the synthesized one and checks nothing it did not write. A
- * struct's `Equals`, a class's override and the app's typed `Equals` check no reference.
- */
-function checksItsReference(value: unknown): boolean {
-  if (value === null || typeof value !== 'object') return false;
-  const type = (value as { constructor?: TwinStatics }).constructor;
-  if (type === undefined || type.$record !== true || typeof type.$zero === 'function') return false;
-  const own = Object.prototype.hasOwnProperty.call(type, '$equatable') ? type.$equatable : undefined;
-  return own === null || typeof own !== 'object' || (own as Record<string, unknown>)[SELF] === undefined;
-}
-
 /**
  * `Equals` as .NET asks a value whose equality the app may have written, through `Nullable<T>.Equals(object)` and
  * the default comparers, `ObjectEqualityComparer` and `NullableEqualityComparer`, which call it with no identity
  * check: a null is equal only to a null and is never asked, and otherwise the value's own `equals` is asked every
- * time, a value compared with itself included, its side effects and a refusal of itself with it. `sameItem` and
- * `equals` answer the same value at their identity check, so an override was never asked there (Copilot's first
- * and second reviews of #977). A record's synthesized `Equals` checks the reference itself, so a record compared
+ * time, a value compared with itself included, its side effects and a refusal of itself with it. A record's
+ * synthesized `Equals` checks the reference itself, so a record compared
  * with itself is equal unread ({@link checksItsReference}): asked, its twin compared a member by a typed `Equals`
  * of the app's that C# never reaches. A value whose twin carries no `equals` is compared as `otherwise` compares
  * it: by what it turns out to be (`sameKey`), or by reference (`sameItem`) where its type says so.
@@ -206,8 +223,7 @@ export function equalsOwn(value: unknown, other: unknown, otherwise: Equality = 
  * `EqualityComparer<T>.Default.Equals` in generic code, which .NET settles at run time: the value's own
  * `IEquatable<T>` over its type where its twin answers it, and its `Equals(object)` otherwise, each asked every
  * time, a value compared with itself included ({@link equalsOwn}), past the reference check a record's
- * synthesized `Equals` makes ({@link checksItsReference}). {@link sameGeneric}, which a collection's search
- * takes, answers the same value at its identity check.
+ * synthesized `Equals` makes ({@link checksItsReference}).
  */
 export function equalsOwnGeneric(a: unknown, b: unknown): boolean {
   if (a == null || b == null) return a == null && b == null;

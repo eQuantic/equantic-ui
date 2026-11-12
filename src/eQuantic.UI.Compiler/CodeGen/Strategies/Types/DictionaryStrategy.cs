@@ -220,6 +220,8 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
             }
         }
 
+        if (factory == Eq.Dictionary && type is INamedTypeSymbol { TypeArguments: [var found, _] })
+            ElementEquality.Refuses(found, true, creation, context);
         return Initialized(Factory(factory, type, source, ordering, copied), creation.Initializer, context);
     }
 

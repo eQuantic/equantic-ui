@@ -321,7 +321,12 @@ public sealed class HotReloadService : IDisposable
     /// shutdown until the host gives up on it.</summary>
     public void Dispose()
     {
-        lock (_gate) _disposed = true;
+        // Once: the app's stopping and its host's services both end it, whichever comes first (#1375).
+        lock (_gate)
+        {
+            if (_disposed) return;
+            _disposed = true;
+        }
         _stopping.Cancel();
         _watcher?.Dispose();
         _assets?.Dispose();

@@ -86,6 +86,30 @@ public class CodeCompletionTests : IDisposable
                 labels.Select(label => new CodeCompletionItem(label)).ToList(), true));
     }
 
+    /// <summary>A language server's shape: a COMPLETE answer of its own words that begin with the word asked,
+    /// and what it was asked for, with which trigger.</summary>
+    private sealed class PrefixProvider(params string[] words) : ICodeCompletionProvider
+    {
+        public List<(string Word, CodeCompletionTrigger Trigger)> Asked { get; } = [];
+
+        /// <summary>The length from which its answer is complete: a shorter word gets an incomplete one, as a
+        /// server that answers only the first page of a short prefix does.</summary>
+        public int CompleteFrom { get; init; }
+
+        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
+            CodeCompletionContext context, CancellationToken cancellation)
+        {
+            var line = document.Line(position.Line);
+            var start = position.Column;
+            while (start > 0 && CodeDocument.IsWordChar(line[start - 1])) start--;
+            var word = line[start..position.Column];
+            Asked.Add((word, context.Trigger));
+            return Task.FromResult(new CodeCompletionList(words
+                .Where(candidate => candidate.StartsWith(word, StringComparison.Ordinal))
+                .Select(candidate => new CodeCompletionItem(candidate)).ToList(), word.Length < CompleteFrom));
+        }
+    }
+
     /// <summary>A UI thread that is never the caller's: everything is posted, and runs when drained.</summary>
     private sealed class QueueDispatcher : IUiDispatcher
     {
@@ -544,6 +568,52 @@ public class CodeCompletionTests : IDisposable
         server.Asked[1].Position.Should().Be(new CodePosition(0, 2));
         local.Asked.Should().ContainSingle();
         Labels(editor).Should().Equal("Colossus", "Column");
+    }
+
+    /// <summary>
+    /// A complete answer covers the words that extend the word it was asked for, and no other (#1016): ⌃Space at
+    /// the end of <c>Col</c>, then Backspace, and the provider is asked again for <c>Co</c>, as the list opened,
+    /// so the entry it offers for the shorter word shows. A letter typed after that extends the word it was
+    /// asked for last, and asks nothing.
+    /// </summary>
+    [Fact]
+    public void ACompleteAnswer_IsAskedForAgain_OnceTheCaretGoesBackPastItsWord()
+    {
+        var server = new PrefixProvider("Column", "Colossus", "Count");
+        var editor = Editor("Col", server);
+
+        editor.Completion.Invoke().Should().BeTrue();
+        Labels(editor).Should().BeEquivalentTo("Column", "Colossus");
+
+        Key(editor, "Backspace");
+
+        server.Asked.Should().Equal(("Col", CodeCompletionTrigger.Invoked), ("Co", CodeCompletionTrigger.Invoked));
+        Labels(editor).Should().Contain("Count", "the entry the provider offers for the word as it stands");
+
+        Type(editor, "u");
+        server.Asked.Should().HaveCount(2, "Cou extends Co, the word its answer was asked for");
+        Labels(editor)[0].Should().Be("Count", "the best match for Cou, the others matching it loosely");
+    }
+
+    /// <summary>A list a word typed opened is asked again as a typing list, and a provider whose complete
+    /// answer the word still extends is not asked at all (#1016): the server, incomplete until three letters,
+    /// was last asked for <c>Col</c>, and the local words for <c>C</c>.</summary>
+    [Fact]
+    public void GoingBack_AsksOnlyTheProvidersWhoseWordWasLeft_AsTheListOpened()
+    {
+        var server = new PrefixProvider("Column", "Count") { CompleteFrom = 3 };
+        var local = Offering("Colossus", "Count");
+        var editor = Editor("", server, local);
+
+        Type(editor, "Col");
+        server.Asked[^1].Should().Be(("Col", CodeCompletionTrigger.Incomplete));
+        var asked = server.Asked.Count;
+        Key(editor, "Backspace");
+
+        server.Asked.Should().HaveCount(asked + 1);
+        server.Asked[^1].Should().Be(("Co", CodeCompletionTrigger.Typing));
+        local.Asked.Should().ContainSingle("its answer was asked for C, which Co still extends");
+        Labels(editor).Should().Contain("Count");
     }
 
     [Fact]
