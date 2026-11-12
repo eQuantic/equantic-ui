@@ -130,7 +130,7 @@ def main():
     # answers null for each to an account that is not a member of it (#1493).
     type_id = next((t["id"] for t in context["repository"]["issueTypes"]["nodes"] if t["name"] == args.type), None)
     if type_id is None:
-        refuse([f"an issue type the organization has ({args.type} is not one of them)"])
+        refuse([f"an issue type the repository has ({args.type} is not one of them)"])
     fields = []
     if args.priority:
         priority = next((f for f in context["organization"]["issueFields"]["nodes"] if f and f.get("name") == "Priority"), None)

@@ -6,4 +6,4 @@
   it: an area is a duty and not a pipeline, one writer in the tree, the prover alone. A hook refuses a branch created
   outside the convention, and its self-test fails on a path the skill cites that is not there. On the way,
   `scripts/new-issue.py` stopped at a TypeError for an account outside the organization, and reads the types from
-  the repository now. Proposed through OpenSpec (`openspec/specs/session-pipelines`), not archived until it is accepted.
+  the repository now. Proposed through OpenSpec, as the capability `session-pipelines`.

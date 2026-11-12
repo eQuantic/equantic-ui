@@ -135,7 +135,8 @@ after the second stops the delivery, with the reports, for the person.
 
 The steps are the Workflow's "Pull requests"; this is their order here.
 
-1. Push; open the pull request from `.github/pull_request_template.md`, closing the issue; read the
+1. Push the branch, and the wiki's branch of the same name when the delivery wrote one (CI reads
+   it for the docs guards); open the pull request from `.github/pull_request_template.md`, closing the issue; read the
    body back; the issue moves to In review.
 2. When the diff touches the native track, the SDKs, packaging, `Directory.Build.props` or a
    sample: ask for the macOS jobs on the branch now, since packing and the samples run only there.
