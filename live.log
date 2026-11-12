@@ -113,3 +113,14 @@
   976   0.9  44464 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd3646539152
  2109   0.1 139184 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
   713   0.1  58464 /System/Library/CoreServices/WiFiAgent.app/Contents/MacOS/WiFiAgent
+=== alive 13:57:00 app: 2109 watch: 
+=== alive 13:57:11 app: 2109 watch: 
+--- sample 13:57:14 load: { 3.61 9.26 5.31 } System-wide memory free percentage: 93%
+161 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2089 dotnet run --no-build --project samples/PhotonDesktop
+2109 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 1000   0.7 132672 /Users/runner/actions-runner/cached/bin/Runner.Worker
+ 4423   0.4  25488 /System/Library/PrivateFrameworks/PrivateCloudCompute.framework/privatecloudcomputed.app/Contents/MacOS/privatecloudcomputed
+ 2109   0.2 139216 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  976   0.2  44528 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd3646539152
+  236   0.1  35584 /System/Library/PrivateFrameworks/CloudKitDaemon.framework/Support/cloudd
