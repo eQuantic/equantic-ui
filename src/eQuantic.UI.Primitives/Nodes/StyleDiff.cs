@@ -19,6 +19,12 @@ namespace eQuantic.UI.Primitives;
 public sealed record StyleDiff
 {
     public ColorToken? Background { get; init; }
+
+    /// <summary>The <see cref="BoxStyle.Foreground"/> while active: what the text and icons inside
+    /// that name no colour are drawn in, a label brightening under the pointer. <c>null</c> = keep
+    /// the base (#614).</summary>
+    public ColorToken? Foreground { get; init; }
+
     public ColorToken? BorderColor { get; init; }
     /// <summary><c>null</c> = keep the base border width.</summary>
     public float? BorderWidth { get; init; }
@@ -50,7 +56,7 @@ public sealed record StyleDiff
     public IReadOnlyList<ShadowSpec>? Shadows { get; init; }
 
     public bool IsEmpty =>
-        Background is null && BorderColor is null && BorderWidth is null
+        Background is null && Foreground is null && BorderColor is null && BorderWidth is null
         && Elevation is null && Opacity is null && Gradient is null && BackdropBlur is null
         && Transform is null && Shadows is null;
 }

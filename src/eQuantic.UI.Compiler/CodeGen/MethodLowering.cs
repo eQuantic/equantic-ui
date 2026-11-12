@@ -107,7 +107,7 @@ internal sealed class MethodLowering
                     parameter.Default is null
                         ? null
                         : _converter.ConvertExpression(parameter.Default.Value, parameter.Type?.ValueText()),
-                    parameter.Modifiers.Any(SyntaxKind.ParamsKeyword));
+                    Strategies.BoundArguments.IsRest(parameter, _converter.Compilation));
             }));
 
         if (withReceiver is not null) parameters = withReceiver(parameters);

@@ -1,4 +1,19 @@
 #nullable enable
+eQuantic.UI.Primitives.Transform2D.Deconstruct(out float TranslateX, out float TranslateY, out float RotationDegrees, out float ScaleX, out float ScaleY, out float TranslateFractionX, out float TranslateFractionY) -> void
+eQuantic.UI.Primitives.Transform2D.Resolved(float width, float height) -> eQuantic.UI.Primitives.Transform2D
+eQuantic.UI.Primitives.Transform2D.Transform2D(float TranslateX = 0, float TranslateY = 0, float RotationDegrees = 0, float ScaleX = 1, float ScaleY = 1, float TranslateFractionX = 0, float TranslateFractionY = 0) -> void
+eQuantic.UI.Primitives.Transform2D.TranslateFractionX.get -> float
+eQuantic.UI.Primitives.Transform2D.TranslateFractionX.init -> void
+eQuantic.UI.Primitives.Transform2D.TranslateFractionY.get -> float
+eQuantic.UI.Primitives.Transform2D.TranslateFractionY.init -> void
+eQuantic.UI.Primitives.Transform2D.WithFractionalTranslate(float x, float y = 0) -> eQuantic.UI.Primitives.Transform2D
+static eQuantic.UI.Primitives.Transform2D.FractionalTranslate(float x, float y = 0) -> eQuantic.UI.Primitives.Transform2D
+*REMOVED*eQuantic.UI.Primitives.Transform2D.Deconstruct(out float TranslateX, out float TranslateY, out float RotationDegrees, out float ScaleX, out float ScaleY) -> void
+*REMOVED*eQuantic.UI.Primitives.Transform2D.Transform2D(float TranslateX = 0, float TranslateY = 0, float RotationDegrees = 0, float ScaleX = 1, float ScaleY = 1) -> void
+eQuantic.UI.Primitives.BoxStyle.Foreground.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.BoxStyle.Foreground.init -> void
+eQuantic.UI.Primitives.StyleDiff.Foreground.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.StyleDiff.Foreground.init -> void
 *REMOVED*static eQuantic.UI.Primitives.Navigator.Go(string! destination) -> void
 *REMOVED*static eQuantic.UI.Primitives.Navigator.Handler.get -> System.Action<string!>?
 *REMOVED*static eQuantic.UI.Primitives.Navigator.Handler.set -> void
