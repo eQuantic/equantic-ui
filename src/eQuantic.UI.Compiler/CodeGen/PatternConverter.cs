@@ -363,8 +363,11 @@ public static class PatternConverter
         // missed `Int32` and `System.Int64`, and asked a long, which is a BigInt here, whether it was
         // a number, so `o is long` was false for every long.
         // An enum or a float tested over a value held as object is asked of its box (Boxing): its key was a string
-        // and its number a double, so `o is Tone` was any value and `o is string` a member (#552, #954).
-        if (Strategies.Boxing.TestsABox(typeSyntax, context)) return Strategies.Boxing.IsBox(typeSyntax, access, context);
+        // and its number a double, so `o is Tone` was any value and `o is string` a member (#552, #954). A package's
+        // enum is not: the package's fence below refuses its test (EQ2004), as it refuses every other type of a
+        // package, since a value of it the server hands over arrives with no box to ask.
+        if (context.SemanticHelper.GetSymbol(typeSyntax) is not ITypeSymbol { } tested || !tested.IsPackages())
+            if (Strategies.Boxing.TestsABox(typeSyntax, context)) return Strategies.Boxing.IsBox(typeSyntax, access, context);
         if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol known && ScalarCheck(known, access, context) is { } scalar)
             return scalar;
         switch (typeSyntax.ValueText())
