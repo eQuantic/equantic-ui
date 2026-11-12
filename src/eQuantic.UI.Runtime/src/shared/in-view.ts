@@ -17,7 +17,7 @@
  */
 
 import type { Element as Position } from './runtime-exports';
-import { nodeStateFor, type NodeState } from './node-states';
+import { DISPOSABLE, nodeStateFor, type NodeState } from './node-states';
 
 interface InViewDeclaration {
   threshold: number;
@@ -34,6 +34,9 @@ interface ObservedElement extends HTMLElement {
  * the observer, and the visibility last reported. Watching another element starts all of it again.
  */
 export class InViewState implements NodeState {
+  /** Disposed when its position leaves the tree (`node-states.ts`). */
+  static readonly $interfaces = DISPOSABLE;
+
   /** What the latest pass declared: the callback is a new closure over new state every pass. */
   declaration: InViewDeclaration | null = null;
   view: ObservedElement | null = null;

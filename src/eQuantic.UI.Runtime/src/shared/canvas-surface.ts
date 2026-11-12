@@ -25,7 +25,7 @@ import { paintCanvas } from './canvas-painter';
 import { num } from './css-values';
 import type { ICanvasPainter } from './nodes';
 import type { Element as Position } from './runtime-exports';
-import { nodeStateFor, type NodeState } from './node-states';
+import { DISPOSABLE, nodeStateFor, type NodeState } from './node-states';
 
 interface CanvasDeclaration {
   draw: (painter: ICanvasPainter) => void;
@@ -41,6 +41,9 @@ interface MeasuredCanvas extends SVGElement {
  * its observer, and the size it last drew at. Measuring another element starts all of it again.
  */
 export class CanvasState implements NodeState {
+  /** Disposed when its position leaves the tree (`node-states.ts`). */
+  static readonly $interfaces = DISPOSABLE;
+
   /** The drawing of the latest pass: a new closure over new state every pass. */
   draw: ((painter: ICanvasPainter) => void) | null = null;
   view: MeasuredCanvas | null = null;

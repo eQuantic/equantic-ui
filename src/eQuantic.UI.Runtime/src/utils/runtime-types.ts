@@ -61,3 +61,15 @@ export function same(type: RuntimeType, other: RuntimeType): boolean {
   const [mine, theirs] = [type instanceof Closed ? type : null, other instanceof Closed ? other : null];
   return (mine?.prototype ?? type) === (theirs?.prototype ?? other) && sameMark(mine?.closure, theirs?.closure);
 }
+
+/**
+ * Whether `value` implements the interface .NET names `name`, as a type test against an interface asks it
+ * (#1464). JavaScript has no interfaces, so the twin of a class the compiler writes declares the ones a test
+ * can ask for in `static $interfaces`, those of its bases included, as .NET reads them off the type: a value
+ * whose class declares none implements none, whatever members it has.
+ */
+export function implementsInterface(value: unknown, name: string): boolean {
+  if (value === null || value === undefined) return false;
+  const declared = (value as { constructor?: { $interfaces?: readonly string[] } }).constructor?.$interfaces;
+  return declared !== undefined && declared.includes(name);
+}

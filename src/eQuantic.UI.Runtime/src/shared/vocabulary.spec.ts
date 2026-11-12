@@ -2,7 +2,6 @@ import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import type { HtmlNode } from '../core/types';
 import { photonTheme } from './design-system.generated';
-import { tokenValue } from './lowering';
 import { Box, BoxStyle, Column, Pressable, Row, Spacer, Text, WebFrame } from './vocabulary';
 import { ColorToken, CornerRadii, EdgeInsets, SizeValue, WebContent } from './value-types';
 import { Avatar } from './components/Avatar';
@@ -78,9 +77,10 @@ describe('vocabulary self-lowering (render)', () => {
     );
   });
 
-  it('Text without a color inherits the generated theme textPrimary', () => {
+  // #614: a Text with no colour writes none, and inherits the foreground above it or the document's.
+  it('Text without a color writes none, and inherits it', () => {
     const node = new Text('hello').render();
-    expect(effectiveStyle(node)).toContain(`color: ${tokenValue(photonTheme.textPrimary)}`);
+    expect(effectiveStyle(node)).not.toMatch(/(^|[^-\w])color:/);
   });
 
   // A web component is no node of the vocabulary (C# `HtmlElement` is an `IComponent` and no

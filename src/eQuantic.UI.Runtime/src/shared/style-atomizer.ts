@@ -472,6 +472,9 @@ function addOnce(classes: string[], className: string): void {
   if (!classes.includes(className)) classes.push(className);
 }
 
+/** The family of a CONTROL's hover (C# `StyleSink.ControlHover`, #614). */
+export const CONTROL_HOVER = 'hover';
+
 /** The family of a CONTROL's focus (C# `StyleSink.ControlFocus`). */
 export const CONTROL_FOCUS = 'focus';
 
@@ -485,6 +488,12 @@ export const CONTROL_PRESSED = 'pressed';
  * 0,4,0), never their order in the sheet; the nesting rule rides in a `:where()`, which weighs nothing.
  */
 export function stateSelector(family: string, className: string): string {
+  // (0,2,0), the weight of the box's own :hover it stands for (C# twin, #614).
+  if (family === CONTROL_HOVER)
+    return (
+      `:where(.eq-pressable:hover) .${className}.${className}` +
+      `:not(:where(.eq-pressable:not(:hover) .${className}))`
+    );
   if (family === CONTROL_FOCUS)
     return `.eq-pressable:focus-visible .${className}:not(:where(.eq-pressable:focus-visible .eq-pressable .${className}))`;
   if (family === CONTROL_PRESSED)
@@ -519,7 +528,7 @@ export function atomizePseudo(pseudo: string, entries: Record<string, string | u
         // can hover. The gate wraps the rule, never the hash: the class string stays identical.
         const selector = stateSelector(pseudo, className);
         const rule =
-          pseudo === ':hover'
+          pseudo === ':hover' || pseudo === CONTROL_HOVER
             ? `@media (hover: hover){${selector}{${declaration}}}`
             : `${selector}{${declaration}}`;
         target?.insertRule(rule, target.cssRules.length);

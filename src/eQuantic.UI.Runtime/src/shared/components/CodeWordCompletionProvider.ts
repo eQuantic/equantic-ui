@@ -1,6 +1,8 @@
 import { $eq, CancellationToken, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeDocument, CodePosition } from "../runtime-exports";
 
 export class CodeWordCompletionProvider {
+    static $interfaces = ['eQuantic.UI.Code.ICodeCompletionProvider'];
+
     constructor() {}
 
     static budget: number = 50000;

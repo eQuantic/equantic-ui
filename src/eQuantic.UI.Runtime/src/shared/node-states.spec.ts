@@ -148,8 +148,10 @@ describe('a scroll view keeps its state on its position', () => {
     commitScrollViewports();
     expect(disconnected).toEqual([]);
 
-    // The next build no longer holds the scroll view: its position leaves, and its state with it.
+    // The next frame no longer holds the scroll view: its position leaves when the frame ends, and
+    // its state with it.
     frameOf(column(new Text('alone', 'bodyM')), owner);
+    owner.endFrame();
 
     expect(disconnected).toEqual([view]);
   });
