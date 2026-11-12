@@ -113,3 +113,14 @@
  5772   7.7  16752 /System/Library/ExtensionKit/Extensions/UnilogTelemetryWorker.appex/Contents/MacOS/UnilogTelemetryWorker
   398   6.5 271424 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
   114   6.2  66080 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+=== alive 13:46:00 app: 2259 watch: 
+=== alive 13:46:10 app: 2259 watch: 
+--- sample 13:46:13 load: { 19.07 35.15 21.85 } System-wide memory free percentage: 80%
+156 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2235 dotnet run --no-build --project samples/PhotonDesktop
+2259 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  398 205.4 281904 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  448  26.4  65216 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/corespotlightd
+  484  16.7  36304 /usr/libexec/spotlightknowledged.updater
+  372  14.8  43344 /System/Library/PrivateFrameworks/CoreSuggestions.framework/Versions/A/Support/suggestd
+  238   6.3  22464 /System/Library/PrivateFrameworks/BiomeStreams.framework/Support/biomed
