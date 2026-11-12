@@ -71,3 +71,14 @@
   114   7.5  63824 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
  1176   2.7   6384 /usr/libexec/sysmond
   124   1.1  20384 /System/Library/PrivateFrameworks/CoreDuetContext.framework/Resources/contextstored
+=== alive 10:25:08 app running: 2505
+=== alive 10:25:18 app running: 2505
+--- sample 10:25:19 load: { 10.37 33.57 20.02 } System-wide memory free percentage: 82%
+158 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2449 dotnet run --no-build --project samples/PhotonDesktop
+2505 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  300  40.5 136080 /System/Library/CoreServices/Software Update.app/Contents/Resources/softwareupdated
+  979  17.8  42208 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd1774699542
+  114  13.4  62688 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 5338  12.2  32912 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 5337  11.8  32752 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
