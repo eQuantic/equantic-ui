@@ -29,7 +29,8 @@ import {
   setCultureInvalidator,
   type CultureFormat,
 } from '../../eQuantic.UI.Runtime/src/utils/culture';
-import { EscapeHatchPage, componentIdentity } from '../../eQuantic.UI.Runtime/src/core/component';
+import { EscapeHatchPage, UiComponent, componentIdentity } from '../../eQuantic.UI.Runtime/src/core/component';
+import { LayoutHost, type LayoutClass } from '../../eQuantic.UI.Runtime/src/core/layout-host';
 import {
   applyPageState,
   fetchPageState,
@@ -71,6 +72,28 @@ function asPage(instance: object): MountableComponent {
     return page;
   }
   return instance instanceof Component ? (new EscapeHatchPage(instance) as unknown as MountableComponent) : page;
+}
+
+/**
+ * The document a page is shown in: inside the app's layout when it declared one and the page is a
+ * write-once component (`LayoutHost`, #1129), or the page itself (`asPage`), as in an app without one.
+ * A page written as DOM is no node a layout can place, and the server renders it alone too.
+ */
+function documentFor(instance: object, Layout: LayoutClass | null): MountableComponent {
+  return Layout && instance instanceof UiComponent ? new LayoutHost(Layout, instance) : asPage(instance);
+}
+
+/** The page a document shows: the one in the layout's slot, the one behind the escape hatch, or itself. */
+function pageOf(document: MountableComponent | null): object | null {
+  if (document instanceof LayoutHost) return document.page;
+  if (document instanceof EscapeHatchPage) return document.page;
+  return document;
+}
+
+/** The app's layout, when the configuration names one: its module is loaded as a page's is. */
+async function loadLayoutModule(config: EqConfig): Promise<LayoutClass | null> {
+  if (!config.layout) return null;
+  return (await loadPageModule(config.layout, config)) as unknown as LayoutClass | null;
 }
 
 function isDev(): boolean {
@@ -402,8 +425,13 @@ async function loadAndMountPage(
     root.innerHTML = '<div class="eq-loading">Loading...</div>';
   }
 
-  const ComponentClass = await loadPageModule(pageName, config);
-  if (!ComponentClass) {
+  // The page's module and the layout's at once: neither waits for the other.
+  const [ComponentClass, Layout] = await Promise.all([
+    loadPageModule(pageName, config),
+    loadLayoutModule(config),
+  ]);
+  if (!ComponentClass || (config.layout && !Layout)) {
+    const missing = ComponentClass ? config.layout! : pageName;
     // DEGRADE, never destroy. The server rendered this page correctly and it is on screen: a
     // bundle that did not arrive costs interactivity, not content. Replacing it with a 404 tells
     // the reader the page does not exist while they are looking at it — and a chunk lost to a CDN
@@ -414,16 +442,16 @@ async function loadAndMountPage(
     // and the boot logs already use.
     if (hasSSRContent && !isDev()) {
       console.error(
-        `eQuantic.UI: '${pageName}' did not load. Serving the server-rendered page without ` +
+        `eQuantic.UI: '${missing}' did not load. Serving the server-rendered page without ` +
           `interactivity — nothing on it will respond.`,
       );
       return;
     }
-    render404(root, pageName);
+    render404(root, missing);
     return;
   }
 
-  const component = asPage(new ComponentClass());
+  const component = documentFor(new ComponentClass(), Layout);
   const hydrates =
     hasSSRContent && config.ssr !== false && !!component.getVirtualNode && servedMarkupAgrees;
   // In Development the boot says why it draws over what the server sent, as it says that it hydrates:
@@ -443,12 +471,14 @@ async function loadAndMountPage(
   // of it, so its counter went back to its initializer (#664).
   let replay: (() => void) | null = null;
   if (hmrReplay && hmrState) {
-    const page: object = component instanceof EscapeHatchPage ? component.page : component;
+    const page: object = pageOf(component)!;
     const key = `${componentIdentity(page)}#0`;
     const saved = hmrState[key];
     // Once: the fields are the ones the page held before this reload, and nothing later may be handed them.
     hmrState = null;
-    if (saved && hydrates) {
+    // Under a layout the page is a position of the document's owner, and nothing hands it data by its
+    // root's key: its fields are restored on the instance once the document is drawn, either way.
+    if (saved && (hydrates || component instanceof LayoutHost)) {
       // AFTER the page hydrates: the server rendered it with its own state, so the fields the reload
       // carried are a change made since, which the next render draws. Restored before it, they built
       // a tree the server's markup did not hold (#1275).
@@ -488,6 +518,7 @@ async function loadAndMountPage(
 
   mountComponent(root, component, pageName);
   currentComponent = component;
+  replay?.();
 }
 
 /**
@@ -515,6 +546,8 @@ async function navigateToPage(
     // page refuses (#673). The bundle's failure, if it comes, is reported where it is awaited.
     const bundle = loadPageModule(pageName, config);
     bundle.catch(() => {});
+    const layout = loadLayoutModule(config);
+    layout.catch(() => {});
     const payload = await fetchPageState(url);
     // A newer navigation started while this was loading — don't clobber it.
     if (isCurrent && !isCurrent()) return;
@@ -522,6 +555,7 @@ async function navigateToPage(
     // have, and it is loaded in full instead of rendered (leaveForRefusal says how), fragment and all.
     if (leaveForRefusal(payload, url === undefined ? undefined : url + (fragment ?? ''))) return;
     const ComponentClass = await bundle;
+    const Layout = await layout;
     if (isCurrent && !isCurrent()) return;
     if (!ComponentClass) {
       render404(root, pageName);
@@ -535,20 +569,28 @@ async function navigateToPage(
     applyPageState(payload);
 
     const previous = currentComponent;
-    const next = asPage(new ComponentClass());
+    const instance = new ComponentClass();
 
-    if (typeof next.mountReconcile === 'function') {
-      // Diff the new page against the outgoing tree (captured now, so it reflects any state the outgoing
-      // page rendered while the bundle loaded). A shared shell is preserved; only changed content patches.
-      const previousTree = previous?.getCurrentTree?.() ?? null;
-      next.mountReconcile(root, previousTree);
-      previous?.disposeQuietly?.();
+    if (previous instanceof LayoutHost && instance instanceof UiComponent) {
+      // THE LAYOUT STAYS (#1129): the document shows the next page in the layout's slot. The layout keeps
+      // its instance and its state, the old page unmounts before the new one mounts, and the DOM is
+      // patched under the one owner of the document.
+      previous.show(instance);
     } else {
-      // Fallback for component shapes without reconcile support: clean remount.
-      mountComponent(root, next, pageName);
+      const next = documentFor(instance, Layout);
+      if (typeof next.mountReconcile === 'function') {
+        // Diff the new page against the outgoing tree (captured now, so it reflects any state the outgoing
+        // page rendered while the bundle loaded). A shared shell is preserved; only changed content patches.
+        const previousTree = previous?.getCurrentTree?.() ?? null;
+        next.mountReconcile(root, previousTree);
+        previous?.disposeQuietly?.();
+      } else {
+        // Fallback for component shapes without reconcile support: clean remount.
+        mountComponent(root, next, pageName);
+      }
+      currentComponent = next;
     }
 
-    currentComponent = next;
     if (isDev()) {
       console.log(`Navigated: ${pageName}`);
     }
@@ -735,8 +777,7 @@ function reloadForEdit(hydrate: boolean): void {
   // holds — and the key it is named by — are the hosted page's own. Its fields are what crosses,
   // the ones its C# declares: a `_state` bag, which this read before, is something no write-once
   // page has (#664).
-  const pageRoot: object | null =
-    currentComponent instanceof EscapeHatchPage ? currentComponent.page : currentComponent;
+  const pageRoot: object | null = pageOf(currentComponent);
   try {
     if (pageRoot && devLoop) data = devLoop.capturePageState(pageRoot);
   } catch {
