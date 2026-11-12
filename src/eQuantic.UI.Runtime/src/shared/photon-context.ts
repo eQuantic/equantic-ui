@@ -25,6 +25,8 @@ import { textElementStarts } from '../utils/text-elements';
 interface ContextPosition {
   readonly isActive: boolean;
   readonly underInFlow: boolean;
+  dependOn(matches: (value: object) => boolean): object | null;
+  find(matches: (value: object) => boolean): object | null;
   readonly owner: { readonly context: RenderContext; readFrame(reader: ContextPosition): void };
   visitChildren(visitor: unknown): void;
 }
@@ -116,6 +118,20 @@ export class ComponentContext {
   }
 
   /**
+   * The nearest inherited component of `type` above, registering this component as its dependent (the
+   * C# `DependOn<T>()`, which eqc lowers with `T`'s twin, #1395): the component builds again when that
+   * value says it changed. Null when none is above, and on a context with no position.
+   */
+  dependOn<T extends object>(type: abstract new (...args: never[]) => T): T | null {
+    return (this._position?.dependOn((value) => value instanceof type) as T | null | undefined) ?? null;
+  }
+
+  /** The nearest inherited component of `type` above, read once (the C# `Find<T>()`): null as above. */
+  find<T extends object>(type: abstract new (...args: never[]) => T): T | null {
+    return (this._position?.find((value) => value instanceof type) as T | null | undefined) ?? null;
+  }
+
+  /**
    * A capability, for a component in the MIDDLE of a tree — the C# `context.GetService<T>()`, which
    * eqc emits as `getService('IThing')`. Null when this target does not have it.
    *
@@ -126,22 +142,6 @@ export class ComponentContext {
    * through.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  /**
-   * The nearest inherited component above, registering this component as its dependent (the C#
-   * `DependOn<T>()`). A context with no position has none to look up, which is every context the
-   * browser's lowering builds with until it builds on the element engine (E3b), so it answers null, as
-   * C# does on such a context. A position's context answers null too, until the lookup is handed the
-   * type it asks for (E5b): the call arrives here with C#'s type argument erased.
-   */
-  dependOn(): null {
-    return null;
-  }
-
-  /** The nearest inherited component above, with no registration (the C# `Find<T>()`): null, as above. */
-  find(): null {
-    return null;
-  }
-
   getService(interfaceName: string): any {
     return resolveService(interfaceName);
   }

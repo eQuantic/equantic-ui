@@ -366,6 +366,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<ConsoleStrategy>();
         _strategyRegistry.Register<MathStrategy>();
         _strategyRegistry.Register<ServiceProviderStrategy>();
+        _strategyRegistry.Register<InheritedLookupStrategy>(); // context.DependOn<T>() with T's twin (#1395)
         _strategyRegistry.Register<ToStringStrategy>();
         _strategyRegistry.Register<CollectionMaterializationStrategy>();
 

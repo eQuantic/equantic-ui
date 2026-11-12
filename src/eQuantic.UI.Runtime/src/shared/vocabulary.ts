@@ -934,9 +934,8 @@ export class Simulated extends VisualNode {
  */
 /**
  * A value for a subtree (the C# `InheritedComponent`, after Flutter's `InheritedWidget`): an app
- * subclasses it with the value it holds, and a component below reads it through its context. It draws
- * its child alone. Until the browser builds on the element engine (E3b) a context has no position to
- * look it up from, so `dependOn` and `find` answer null here, as C# answers on a context with none.
+ * subclasses it with the value it holds, and a component below reads it through its context
+ * (`context.dependOn(Score)`, which eqc writes with the type's twin, #1395). It draws its child alone.
  */
 export abstract class InheritedComponent extends VisualNode {
   readonly nodeKind = 'inherited';

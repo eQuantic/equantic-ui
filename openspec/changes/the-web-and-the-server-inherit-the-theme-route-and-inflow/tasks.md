@@ -1,7 +1,7 @@
 ## 1. The lookup crosses to the browser
 
-- [ ] 1.1 An IR strategy lowers `DependOn<T>()` and `Find<T>()` with `T`'s twin, and the runtime's position looks it up by `instanceof`
-- [ ] 1.2 A spec reads an app's inherited value in the browser, and a change rebuilds its dependent alone
+- [x] 1.1 An IR strategy lowers `DependOn<T>()` and `Find<T>()` with `T`'s twin, and the runtime's position looks it up by `instanceof`
+- [x] 1.2 A spec reads an app's inherited value in the browser, and a change rebuilds its dependent alone
 
 ## 2. The route is the frame's
 
