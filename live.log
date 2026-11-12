@@ -124,3 +124,13 @@
   484  16.7  36304 /usr/libexec/spotlightknowledged.updater
   372  14.8  43344 /System/Library/PrivateFrameworks/CoreSuggestions.framework/Versions/A/Support/suggestd
   238   6.3  22464 /System/Library/PrivateFrameworks/BiomeStreams.framework/Support/biomed
+=== alive 13:46:20 app: 2259 watch: 
+--- sample 13:46:30 load: { 18.50 33.96 21.73 } System-wide memory free percentage: 81%
+156 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2235 dotnet run --no-build --project samples/PhotonDesktop
+2259 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 6646  58.9  32768 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 6353  34.5  35536 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 6633  29.2  32816 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 6635  29.1  32608 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+  114  27.6  77120 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
