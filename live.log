@@ -242,3 +242,15 @@ dotnet watch ⌚ Waiting for changes
     1   0.6  20048 /sbin/launchd
  2111   0.5   1600 /bin/bash
   987   0.5 106736 /Users/runner/actions-runner/cached/bin/Runner.Worker
+=== alive 13:48:16 app: 2224 watch: 2117
+--- sample 13:48:25 load: { 5.86 21.62 15.08 } System-wide memory free percentage: 79%
+159 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2117 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+2135 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+2223 /Users/runner/.dotnet/dotnet run --no-build -e DOTNET_WATCH=1 -e DOTNET_WATCH_ITERATION=1 -e DOTNET_MODIFIABLE_ASSE
+2224 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  304   1.2  25888 /usr/libexec/secd
+  724   0.8  56032 /System/Library/CoreServices/WiFiAgent.app/Contents/MacOS/WiFiAgent
+  987   0.3 106736 /Users/runner/actions-runner/cached/bin/Runner.Worker
+ 2135   0.2 277344 /Users/runner/.dotnet/dotnet
+  970   0.2  42528 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd1682140377
