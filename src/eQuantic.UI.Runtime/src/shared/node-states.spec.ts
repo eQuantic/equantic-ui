@@ -19,7 +19,8 @@ import { CodeLanguages } from './components/CodeLanguages';
 import { CodePosition } from './components/CodePosition';
 import { CodeRange } from './components/CodeRange';
 import { photonTheme } from './design-system.generated';
-import { InViewState } from './in-view';
+import { commitInViewObservers, declareInView, InViewState } from './in-view';
+import { commitCanvasSurfaces, declareCanvas } from './canvas-surface';
 import { ElementRoots, enterPass, exitPass } from './element-roots';
 import { lowerVisualNode, type LoweringContext } from './lowering';
 import { findNodeState, nodeStateFor } from './node-states';
@@ -28,7 +29,7 @@ import { commitScrollViewports, declareScrollViewport, ScrollViewportState } fro
 import { frameOf, positionsOf, specOwner } from './test-positions';
 import { Point, Size } from './value-types';
 import { CodeSurface, Column, ScrollView, Text, type VisualNode } from './vocabulary';
-import type { Element } from './runtime-exports';
+import type { Element as Position } from './runtime-exports';
 
 setPhotonTheme(photonTheme);
 
@@ -154,6 +155,71 @@ describe('a scroll view keeps its state on its position', () => {
   });
 });
 
+describe('an InView and a filling canvas keep their observers on their position', () => {
+  /** Observers a test drives by hand: each knows what it watches and whether it was let go. */
+  class FakeObserver {
+    static made: FakeObserver[] = [];
+    target: Element | null = null;
+    connected = true;
+    constructor(readonly callback: (entries: { target: Element; isIntersecting: boolean }[]) => void) {
+      FakeObserver.made.push(this);
+    }
+    observe(target: Element): void {
+      this.target = target;
+    }
+    disconnect(): void {
+      this.connected = false;
+    }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    FakeObserver.made = [];
+    vi.stubGlobal('IntersectionObserver', FakeObserver);
+    vi.stubGlobal('ResizeObserver', FakeObserver);
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('tells an InView that takes another\'s element that it is on screen, and lets the other go', () => {
+    const [before, after] = positionsOf(new Text('before', 'bodyM'), new Text('after', 'bodyM'));
+    const element = document.createElement('div');
+    document.body.append(element);
+    const seenBefore: boolean[] = [];
+    element.setAttribute('data-eq-inview', declareInView(before, { threshold: 0, onChanged: (v) => seenBefore.push(v) }));
+    commitInViewObservers();
+    FakeObserver.made[0].callback([{ target: element, isIntersecting: true }]);
+    expect(seenBefore).toEqual([true]);
+
+    // The reconciler hands the same element to the InView that took the first one's place.
+    const seenAfter: boolean[] = [];
+    element.setAttribute('data-eq-inview', declareInView(after, { threshold: 0, onChanged: (v) => seenAfter.push(v) }));
+    commitInViewObservers();
+
+    expect(FakeObserver.made[0].connected, "the first position's observer is let go").toBe(false);
+    expect(FakeObserver.made).toHaveLength(2);
+    FakeObserver.made[1].callback([{ target: element, isIntersecting: true }]);
+    expect(seenAfter, 'its first sight is reported, though the element was already on screen').toEqual([true]);
+    expect(seenBefore).toEqual([true]);
+  });
+
+  it("measures a filling canvas's element again when another position takes it, and lets the other go", () => {
+    const [before, after] = positionsOf(new Text('before', 'bodyM'), new Text('after', 'bodyM'));
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.getBoundingClientRect = () => ({ width: 100, height: 50, top: 0, left: 0, right: 100, bottom: 50, x: 0, y: 0, toJSON: () => ({}) });
+    document.body.append(svg);
+    let drawnBy = '';
+    svg.setAttribute('data-eq-canvas-fill', declareCanvas(before, { draw: () => { drawnBy = 'before'; } }));
+    commitCanvasSurfaces();
+
+    svg.setAttribute('data-eq-canvas-fill', declareCanvas(after, { draw: () => { drawnBy = 'after'; } }));
+    commitCanvasSurfaces();
+
+    expect(drawnBy).toBe('after');
+    expect(FakeObserver.made.map((observer) => observer.connected)).toEqual([false, true]);
+  });
+});
+
 describe('a code surface keeps its identity and its reveal on its position', () => {
   const surface = (key: string, editor: CodeEditorController): CodeSurface => {
     const node = new CodeSurface(new Text('', 'labelSmall'), editor);
@@ -251,7 +317,7 @@ describe('the trees of a document count their ids together', () => {
       BuildOwner.structural((component, built) => component.build(built) as unknown as VisualNode, false, ids);
     const context = photonComponentContext() as unknown as RenderContext;
     const all: number[] = [];
-    const collect = (position: Element) => {
+    const collect = (position: Position) => {
       all.push(position.id);
       position.visitChildren(collect);
     };

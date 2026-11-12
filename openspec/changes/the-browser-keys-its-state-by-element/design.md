@@ -37,8 +37,11 @@ own offset, or to the top. The observers belong to the state and watch the eleme
 position leaves, `NodeElement.OnDeactivated` disposes its state.
 
 Keying the DOM element by the position's id would also give a replaced node a fresh element. It was not
-chosen: an adaptive arm the position does not hold is built through a structural owner each render, and
-its keyed elements would then be recreated on every render.
+chosen, because it changes how the reconciler matches every element that carries an after-pass: a key
+changes sibling matching, the component parity fixtures compare keys with the server's markup (which has
+none), and a node whose position is replaced only has its DOM rebuilt where its after-pass needs a fresh
+start, which the handover already gives it. The canvas was keyed by its path before, and keeps a key, now
+its id.
 
 ### One count of ids per document
 
@@ -64,7 +67,7 @@ keeps `Element.Id`'s promise that an id is never given to another.
 ## Risks
 
 - A lowering of a node no tree built now throws. E3b-1 builds every tree the browser lowers through an
-  owner, including an unheld adaptive arm and a lowering with no page around it, so a throw here means
-  the engine and the lowering disagree. That should fail loudly, as `ElementFrame.at` does.
+  owner, a lowering with no page around it included, and its web owners hold every arm of an adaptive
+  node, so a throw here means the engine and the lowering disagree. That should fail loudly, as `ElementFrame.at` does.
 - #1464: eqc translates `state as IDisposable` as a null check, so `OnDeactivated` calls `dispose()` on
   any state in the browser. Every browser node state has a `dispose`.
