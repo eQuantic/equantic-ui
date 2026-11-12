@@ -397,6 +397,11 @@ public class TypeScriptEmitter
                 if (component.TypeIdentity.Length > 0)
                     c.Field("$typeId", null, JsStringLiteral.Quote(component.TypeIdentity), null, isStatic: true);
 
+                // The interfaces a type test can ask of the component, which JavaScript cannot (#1464).
+                if (component.ClassSyntax is { } componentClass && ModelFor(componentClass)?.GetDeclaredSymbol(componentClass) is INamedTypeSymbol self
+                    && Strategies.InterfaceTests.DeclaredBy(self) is { } interfaces)
+                    c.Field("$interfaces", null, JsExprWriter.Write(interfaces), null, isStatic: true);
+
                 // Component-level fields (static data / consts / instance fields), emitted at the top of
                 // the class. Skipped for primitives' INSTANCE fields, whose base ctor sets every prop via
                 // Object.assign — an uninitialised instance field would clobber that after super(); a static
@@ -2858,6 +2863,10 @@ public class TypeScriptEmitter
                 if (!asStatic && semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol equatable
                     && Strategies.ElementEquality.ContractMap(equatable) is { } contracts)
                     c.Field("$equatable", null, contracts, cls, isStatic: true);
+                // The interfaces a type test can ask of its values, which JavaScript cannot (#1464).
+                if (!asStatic && semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol implementing
+                    && Strategies.InterfaceTests.DeclaredBy(implementing) is { } interfaces)
+                    c.Field("$interfaces", null, JsExprWriter.Write(interfaces), cls, isStatic: true);
                 EmitStaticMembers(cls, c, asStatic);
                 if (!asStatic) EmitInheritedDefaults(cls, c);
                 // A class that never says what its text is writes its full name, as Object.ToString

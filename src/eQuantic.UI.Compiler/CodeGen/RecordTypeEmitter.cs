@@ -422,6 +422,10 @@ public class RecordTypeEmitter
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol equatable
                 && ElementEquality.ContractMap(equatable) is { } contracts)
                 sb.Append($"static $equatable = {contracts}; ");
+            // The interfaces a type test can ask of its values, which JavaScript cannot (#1464).
+            if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol implementing
+                && InterfaceTests.DeclaredBy(implementing) is { } interfaces)
+                sb.Append($"static $interfaces = {JsExprWriter.Write(interfaces)}; ");
 
             // The zero C# gives a struct: `default(S)`, an array's slot, an OrDefault, and `new S()`
             // where S declares no parameterless constructor. Every struct twin carries it, built
