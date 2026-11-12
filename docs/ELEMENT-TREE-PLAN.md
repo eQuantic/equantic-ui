@@ -667,7 +667,7 @@ the parity rows it closes flip.
      bridges are drawn with the round's route (`RenderChannels.Route`), which E4a left owed.
    - `InFlow.Current` goes: a position answers from the tree, and the web visitor hands a component
      it expands without a position the wrapper's flag in a context of its own.
-   - `Theme(value, child)` is the vocabulary's inherited theme, and `context.Theme` reads the nearest
+   - `new Theme(value, child)` is the vocabulary's inherited theme, and `context.Theme` reads the nearest
      one above, or the frame's. A colour a realizer picks for a node by itself (a field's text, a
      caret, an elevation's shadow) still reads the frame's theme on every target, so the server's
      markup and the browser's lowering agree; following the nearest `Theme` there is owed (noted on
