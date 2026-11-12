@@ -39,13 +39,16 @@ export class Slider extends StatelessComponent {
         let step = this.step > 0 ? this.step : Math.fround(span / 10);
         let accent = theme.colors(this.variant).base;
         let fill = this.disabled ? theme.borderStrong : accent;
-        let thumb = new Box(new BoxStyle({ width: Slider.thumbSize, height: Slider.thumbSize, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: Slider.thumbBorder, borderColor: theme.border, elevation: 2, transition: TransitionSpec.of(1, Motion.press) }));
+        let slot = theme.selectionControls;
+        let thumbSize = slot?.sliderThumbSize ?? Slider.thumbSize;
+        let trackHeight = slot?.sliderTrackHeight ?? Slider.trackHeight;
+        let thumb = new Box(new BoxStyle({ width: thumbSize, height: thumbSize, background: slot?.thumbFill ?? theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: slot?.sliderThumbBorder ?? Slider.thumbBorder, borderColor: slot?.sliderThumbBorderColor ?? theme.border, elevation: slot?.sliderThumbElevation ?? 2, transition: TransitionSpec.of(1, Motion.press) }));
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });
-        row.add(new Flexible(Slider.trackHalf(fill, true, !this.disabled, () => this.onChanged?.(Math.max(this.min, Math.fround(this.value - step)))), Slider.weight(fraction)));
+        row.add(new Flexible(Slider.trackHalf(fill, trackHeight, true, !this.disabled, () => this.onChanged?.(Math.max(this.min, Math.fround(this.value - step)))), Slider.weight(fraction)));
         row.add(thumb);
-        row.add(new Flexible(Slider.trackHalf(theme.surfaceSubtle, false, !this.disabled, () => this.onChanged?.(Math.min(this.max, Math.fround(this.value + step)))), Slider.weight(Math.fround(1 - fraction))));
+        row.add(new Flexible(Slider.trackHalf(slot?.sliderRestTrack ?? theme.surfaceSubtle, trackHeight, false, !this.disabled, () => this.onChanged?.(Math.min(this.max, Math.fround(this.value + step)))), Slider.weight(Math.fround(1 - fraction))));
         let surface = this.disabled ? row : new Draggable(row, null, { axis: 'horizontal', normalized: true, follows: false, min: 0, max: 1, restOffset: fraction, onMoved: (f: number) => this.onChanged?.(this.quantize(Math.fround(this.min + Math.fround(f * span)), step)) });
-        let box = new Box(new BoxStyle({ width: SizeValue.fill, minWidth: 120, height: 48, opacity: this.disabled ? theme.disabledOpacity : 1 }), surface);
+        let box = new Box(new BoxStyle({ width: SizeValue.fill, minWidth: slot?.sliderMinWidth ?? 120, height: 48, opacity: this.disabled ? theme.disabledOpacity : 1 }), surface);
         return this.disabled ? box : new Adjustable(box, (direction: number) => this.onChanged?.(this.quantize(Math.fround(this.value + Math.fround(Math.fround(direction) * step)), step)), { label: this.label, value: announced, valueText: this.valueText });
     }
 
@@ -57,8 +60,8 @@ export class Slider extends StatelessComponent {
         return Math.max(1, $eq.num.saturate($eq.math.roundSingle(Math.fround(fraction * 1000))));
     }
 
-    static trackHalf(color: ColorToken, filled: boolean, enabled: boolean, onPressed: () => void) {
-        let bar = new Box(new BoxStyle({ width: SizeValue.fill, height: Slider.trackHeight, background: color, cornerRadius: filled ? new CornerRadii(Math.fround(Slider.trackHeight / 2), 0, 0, Math.fround(Slider.trackHeight / 2)) : new CornerRadii(0, Math.fround(Slider.trackHeight / 2), Math.fround(Slider.trackHeight / 2), 0), transition: TransitionSpec.of(1, Motion.press) }));
+    static trackHalf(color: ColorToken, trackHeight: number, filled: boolean, enabled: boolean, onPressed: () => void) {
+        let bar = new Box(new BoxStyle({ width: SizeValue.fill, height: trackHeight, background: color, cornerRadius: filled ? new CornerRadii(Math.fround(trackHeight / 2), 0, 0, Math.fround(trackHeight / 2)) : new CornerRadii(0, Math.fround(trackHeight / 2), Math.fround(trackHeight / 2), 0), transition: TransitionSpec.of(1, Motion.press) }));
         let centered = new Column(0, 'start', 'stretch', false, null, null, { height: SizeValue.fill, main: 'center' });
         centered.add(bar);
         let target = new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill }), centered);
