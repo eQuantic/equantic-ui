@@ -13,6 +13,7 @@
 import { CodeLanguageRules } from './components/CodeLanguageRules';
 import { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
+import type { ButtonTheme, ControlsTheme } from './theme-slots';
 import { codeTokenColor, type AppTheme, type ColorToken, type FontFamily } from './value-types';
 
 /** `IAppTheme`'s defaults. */
@@ -37,6 +38,10 @@ export const IAppTheme = {
   sheet: (_theme: AppTheme): SheetTheme | null => null,
   /** `ColorToken Code(CodeTokenKind kind)` — a token's colour from the theme's own roles. */
   code: (theme: AppTheme, kind: string): ColorToken => codeTokenColor(theme, kind),
+  /** `ControlsTheme? Controls => null;` — `Sizing`'s ladder. */
+  controls: (_theme: AppTheme): ControlsTheme | null => null,
+  /** `ButtonTheme? Button => null;` — the button's own defaults. */
+  button: (_theme: AppTheme): ButtonTheme | null => null,
 };
 
 /** `ICodeLanguage`'s defaults. */

@@ -73,7 +73,7 @@ public sealed class IconButton : StatelessComponent
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
-        var side = Sizing.Height(Size, context.Density);
+        var side = ControlMetrics.Height(context, Size);
         var iconSize = Size switch
         {
             SizeVariant.Small => IconSize.Sm,
