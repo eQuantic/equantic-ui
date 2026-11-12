@@ -10,7 +10,7 @@
 
 - [x] 2.1 Each turn of the macOS window's loop in a pool of its own, popped on every way out of the turn
 - [x] 2.2 The camera's `startRunning` and `stopRunning`, on a pool thread, inside a pool
-- [x] 2.3 `scripts/check-frame-pools.sh`, run by the macOS samples job: fails on the loop without the pool (122 of 122 frames left their drawable) and passes with it (0)
+- [x] 2.3 `scripts/check-frame-pools.sh`, run by the macOS samples job: counts on the loop's thread, told apart as the one that reports the NSWindow, so the frameworks' own queues are not counted; fails on the loop without the pool (244 left over 122 frames, a drawable and a render pass descriptor each) and passes with it (0)
 
 ## 3. Documentation
 

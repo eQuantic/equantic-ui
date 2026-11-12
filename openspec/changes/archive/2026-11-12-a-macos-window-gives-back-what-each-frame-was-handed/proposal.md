@@ -33,8 +33,8 @@ or Spotlight's indexing. That cause is not fixed here; what the measurement says
 ## Impact
 
 - `src/eQuantic.UI.Native.Shell.MacOS/PhotonWindow.cs`, `src/eQuantic.UI.Native.Shell.Apple/ObjC.cs`
-  and `AppleCamera.cs`; `objc_autoreleasePoolPush` and `objc_autoreleasePoolPop` join the Apple
-  shell's interop, which is experimental surface.
+  and `AppleCamera.cs`; `AutoreleasePool`, over `objc_autoreleasePoolPush` and
+  `objc_autoreleasePoolPop`, joins the Apple shell, which is experimental surface.
 - `src/eQuantic.UI.Native.Components/PhotonHotReload.cs`, `scripts/measure-edit-to-view.cs`,
   `scripts/check-frame-pools.sh` and the samples job.
 - An app's macOS window holds the same memory after a thousand frames as after ten. No API an app

@@ -336,7 +336,12 @@ string WhyItWasNotDrawn(double saved)
         .Select(l => l.Text.Trim()).TakeLast(12).ToList();
     var appSaid = lines.Where(l => l.At > saved && l.Text.Contains("[eQuantic.HotReload]", StringComparison.Ordinal))
         .Select(l => l.Text.Trim()).TakeLast(6).ToList();
-    var running = watch is { HasExited: false } ? "running" : $"gone (exit code {watch?.ExitCode})";
+    var running = watch switch
+    {
+        null => "not started",
+        { HasExited: false } => "running",
+        _ => $"gone (exit code {watch.ExitCode})",
+    };
     return $"dotnet watch said: {(watchSaid.Count > 0 ? string.Join(" | ", watchSaid) : "nothing")}; "
         + $"the app said: {(appSaid.Count > 0 ? string.Join(" | ", appSaid) : "nothing, so no edit reached it")}; "
         + $"dotnet watch is {running}.";
