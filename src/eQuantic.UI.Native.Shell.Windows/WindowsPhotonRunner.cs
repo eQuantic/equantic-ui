@@ -71,7 +71,7 @@ public sealed class WindowsPhotonRunner : IPhotonRunner
         // The concrete controller only — an app that registered its own IThemeController has
         // taken over the switch, and this attach quietly steps aside.
         var themeController = app.Services.GetService(typeof(IThemeController)) as PhotonThemeController;
-        window.Run(app.Root(), options.Theme, mode, options.MaxFrames, themeController, cultureController,
+        window.Run(app.Root(), app.Theme, mode, options.MaxFrames, themeController, cultureController,
             followSystemTheme: options.Mode is null);
         ReportFrames($"frames presented: {window.FramesPresented} through {window.PresenterName}, "
             + $"{window.AveragePresentMs:F0} ms per frame", app);
@@ -121,7 +121,7 @@ public sealed class WindowsPhotonRunner : IPhotonRunner
         // seeding is the whole of it.
         (app.Services.GetService(typeof(IThemeController)) as PhotonThemeController)?.Attach(mode, _ => { });
 
-        var host = new PhotonHost(app.Root(), options.Theme,
+        var host = new PhotonHost(app.Root(), app.Theme,
             mode, options.Width, options.Height, textService)
         {
             TextRasterizer = textService,

@@ -73,15 +73,17 @@ public static class ProjectCompilationHelper
     }
 
     /// <summary><see cref="CreateCompilationFromSources"/>, with the way an assembly is read handed
-    /// over: null reads each file anew.</summary>
+    /// over (null reads each file anew) and what the files are parsed with (null is
+    /// <see cref="ParseDefaults.Options"/>, with no symbol defined).</summary>
     internal static Compilation CompilationOf(
         IEnumerable<string> sourceFiles,
         IEnumerable<string> assemblyPaths,
         string assemblyName,
         bool addStandardReferences,
-        Func<string, MetadataReference>? read)
+        Func<string, MetadataReference>? read,
+        CSharpParseOptions? parseOptions = null)
     {
-        var syntaxTrees = ParseSources(sourceFiles);
+        var syntaxTrees = ParseSources(sourceFiles, parseOptions);
         var references = LoadReferences(assemblyPaths, addStandardReferences, read: read);
 
         // Create compilation. Nullable annotations MUST be enabled: without them `Action?`/`string?`
@@ -101,13 +103,14 @@ public static class ProjectCompilationHelper
     internal static CSharpCompilationOptions Options { get; } =
         new(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable);
 
-    /// <summary>The files that exist, parsed in the order given.</summary>
-    internal static List<SyntaxTree> ParseSources(IEnumerable<string> sourceFiles) =>
+    /// <summary>The files that exist, parsed in the order given, with <paramref name="options"/> (null is
+    /// <see cref="ParseDefaults.Options"/>).</summary>
+    internal static List<SyntaxTree> ParseSources(IEnumerable<string> sourceFiles, CSharpParseOptions? options = null) =>
         sourceFiles
             .Where(File.Exists)
             .Select(file => CSharpSyntaxTree.ParseText(
                 File.ReadAllText(file),
-                ParseDefaults.Options,
+                options ?? ParseDefaults.Options,
                 path: file))
             .ToList();
 
@@ -280,8 +283,11 @@ public static class ProjectCompilationHelper
     /// </param>
     /// <param name="generatedDirectory">The configuration's generated-sources directory, or null to
     /// let <see cref="GetCompilerGeneratedFiles(string, string?)"/> fall back to sweeping <c>obj</c>.</param>
+    /// <param name="projectFiles">What the C# compiler compiled for the project of the first directory, in
+    /// place of walking it (#828): a file it removes is no module, and a file it links from outside its
+    /// directory is one. Null walks it.</param>
     public static IEnumerable<(string Directory, string File, bool IsGenerated)> GetCompilationUnits(
-        IReadOnlyList<string> sourceDirectories, string? generatedDirectory)
+        IReadOnlyList<string> sourceDirectories, string? generatedDirectory, IReadOnlyList<string>? projectFiles = null)
     {
         if (sourceDirectories.Count == 0) yield break;
 
@@ -290,9 +296,10 @@ public static class ProjectCompilationHelper
         // files on Linux — merging them would silently drop a module.
         var seen = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var directory in sourceDirectories)
+        for (var at = 0; at < sourceDirectories.Count; at++)
         {
-            foreach (var file in GetProjectSourceFiles(directory))
+            var directory = sourceDirectories[at];
+            foreach (var file in at == 0 && projectFiles is not null ? projectFiles : GetProjectSourceFiles(directory))
             {
                 var full = Path.GetFullPath(file);
                 if (seen.Add(full)) yield return (directory, full, false);

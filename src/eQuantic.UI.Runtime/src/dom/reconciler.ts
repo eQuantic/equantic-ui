@@ -932,12 +932,15 @@ export class Reconciler {
     virtualNode: HtmlNode,
     result: HydrationResult = { success: true, attachedListeners: 0, warnings: [] },
   ): HydrationResult {
-    // Text node - nothing to hydrate
+    // Text node: the client's text, when the server wrote another (#1302).
     if (virtualNode.tag === '#text') {
       if (existingElement.nodeType !== Node.TEXT_NODE) {
         result.warnings.push(`Expected text node, found ${existingElement.nodeName}`);
         result.success = false;
+        return result;
       }
+      const text = virtualNode.textContent ?? '';
+      if (existingElement.textContent !== text) existingElement.textContent = text;
       return result;
     }
 
@@ -985,17 +988,26 @@ export class Reconciler {
       result.attachedListeners += Object.keys(events).length;
     }
 
-    // FRAMEWORK MARKERS adopt too. Hydration deliberately leaves the SSR markup alone, but
-    // `data-eq-*` attributes are client infrastructure (after-pass sweeps find their elements by
-    // them), not content — SSR cannot know the client-side identity, so without this the sweep
-    // finds nothing until the first full re-render, which the sweep itself was meant to trigger.
-    if (virtualNode.attributes) {
-      for (const [name, value] of Object.entries(plainBag(virtualNode.attributes))) {
-        if (name.startsWith('data-eq-') && !existingElement.hasAttribute(name)) {
-          existingElement.setAttribute(name, String(value));
-        }
-      }
+    // The attributes become the CLIENT'S (#1302). The tree hydration keeps is the client's, so the
+    // next render diffs against it, and an attribute the server decided otherwise (a button it drew
+    // disabled because a capability is absent where it renders) would stay as the server wrote it for
+    // good. Same structure, other attributes: the DOM is made to say what the client's tree says.
+    // FRAMEWORK MARKERS are the one exception: `data-eq-*` attributes are client infrastructure
+    // (after-pass sweeps find their elements by them), not content, and one the server wrote that the
+    // client's tree does not name stays, while one the client names is written.
+    // A field the person already used is the other: a value typed or a box ticked before the runtime
+    // loaded is theirs, and writing the client's value would set the property and throw it away.
+    const wanted = { ...plainBag(virtualNode.attributes) };
+    const written: Record<string, string | undefined> = {};
+    for (const attribute of Array.from(existingElement.attributes)) {
+      if (attribute.name.startsWith('data-eq-') && !hasOwn(wanted, attribute.name)) continue;
+      written[attribute.name] = attribute.value;
     }
+    for (const name of Reconciler.usedByThePerson(existingElement)) {
+      delete wanted[name];
+      delete written[name];
+    }
+    this.updateAttributes(existingElement, written, wanted);
 
     // Recursively hydrate children. Both sides must use the SAME skip rule, otherwise
     // a virtual text node the server collapsed/omitted shifts the index alignment and the
@@ -1026,6 +1038,21 @@ export class Reconciler {
     }
 
     return result;
+  }
+
+  /**
+   * The field attributes a person changed on a served element before hydration: the live property
+   * stands apart from the default the server's markup gave it.
+   */
+  private static usedByThePerson(element: Element): string[] {
+    if (element instanceof HTMLInputElement) {
+      const used: string[] = [];
+      if (element.value !== element.defaultValue) used.push('value');
+      if (element.checked !== element.defaultChecked) used.push('checked');
+      return used;
+    }
+    if (element instanceof HTMLTextAreaElement && element.value !== element.defaultValue) return ['value'];
+    return [];
   }
 
   /** How many listeners a virtual subtree carries, counted the way the adopted path counts them. */
