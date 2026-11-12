@@ -44,4 +44,24 @@ public sealed record SegmentedTheme
     /// <summary>The size of the stepper's minus and plus glyphs (20), on the §07 whitelist (16, 20, 24
     /// or 32): an icon of any other size throws when it is built.</summary>
     public float? IconSize { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s, a nested slot merged the same way. Null
+    /// when both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static SegmentedTheme? Merge(SegmentedTheme? under, SegmentedTheme? over) =>
+        under is null ? over : over is null ? under : new SegmentedTheme
+        {
+            Controls = ControlsTheme.Merge(under.Controls, over.Controls),
+            Inset = over.Inset ?? under.Inset,
+            TrackFill = over.TrackFill ?? under.TrackFill,
+            ThumbFill = over.ThumbFill ?? under.ThumbFill,
+            ThumbElevation = over.ThumbElevation ?? under.ThumbElevation,
+            TrackBorderWidth = over.TrackBorderWidth ?? under.TrackBorderWidth,
+            TrackBorderColor = over.TrackBorderColor ?? under.TrackBorderColor,
+            BorderWidth = over.BorderWidth ?? under.BorderWidth,
+            BorderColor = over.BorderColor ?? under.BorderColor,
+            IconSize = over.IconSize ?? under.IconSize,
+        };
 }

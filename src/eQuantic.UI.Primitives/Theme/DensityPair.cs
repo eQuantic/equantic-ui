@@ -13,4 +13,16 @@ public sealed record DensityPair
 
     /// <summary>The value at <see cref="Density.Compact"/>.</summary>
     public float? Compact { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s, a nested slot merged the same way. Null
+    /// when both are. It is how a slot that holds one is merged.
+    /// </summary>
+    public static DensityPair? Merge(DensityPair? under, DensityPair? over) =>
+        under is null ? over : over is null ? under : new DensityPair
+        {
+            Comfortable = over.Comfortable ?? under.Comfortable,
+            Compact = over.Compact ?? under.Compact,
+        };
 }

@@ -38,4 +38,22 @@ public sealed record IconButtonTheme
 
     /// <summary>The opacity of the pressed colour over the tonal kind's container (0.24).</summary>
     public float? TonalPressOpacity { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s, a nested slot merged the same way. Null
+    /// when both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static IconButtonTheme? Merge(IconButtonTheme? under, IconButtonTheme? over) =>
+        under is null ? over : over is null ? under : new IconButtonTheme
+        {
+            Controls = ControlsTheme.Merge(under.Controls, over.Controls),
+            IconSize = SizeLadder.Merge(under.IconSize, over.IconSize),
+            Radius = over.Radius ?? under.Radius,
+            OutlineWidth = over.OutlineWidth ?? under.OutlineWidth,
+            OutlineColor = over.OutlineColor ?? under.OutlineColor,
+            GlyphColor = over.GlyphColor ?? under.GlyphColor,
+            QuietFill = over.QuietFill ?? under.QuietFill,
+            TonalPressOpacity = over.TonalPressOpacity ?? under.TonalPressOpacity,
+        };
 }

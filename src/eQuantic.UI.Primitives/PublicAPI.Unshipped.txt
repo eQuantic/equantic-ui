@@ -302,3 +302,9 @@ static eQuantic.UI.Primitives.ButtonTheme.Merge(eQuantic.UI.Primitives.ButtonThe
 static eQuantic.UI.Primitives.ControlsTheme.Merge(eQuantic.UI.Primitives.ControlsTheme? under, eQuantic.UI.Primitives.ControlsTheme? over) -> eQuantic.UI.Primitives.ControlsTheme?
 static eQuantic.UI.Primitives.DensityLadder.Merge(eQuantic.UI.Primitives.DensityLadder? under, eQuantic.UI.Primitives.DensityLadder? over) -> eQuantic.UI.Primitives.DensityLadder?
 static eQuantic.UI.Primitives.SizeLadder.Merge(eQuantic.UI.Primitives.SizeLadder? under, eQuantic.UI.Primitives.SizeLadder? over) -> eQuantic.UI.Primitives.SizeLadder?
+static eQuantic.UI.Primitives.ChipTheme.Merge(eQuantic.UI.Primitives.ChipTheme? under, eQuantic.UI.Primitives.ChipTheme? over) -> eQuantic.UI.Primitives.ChipTheme?
+static eQuantic.UI.Primitives.DensityPair.Merge(eQuantic.UI.Primitives.DensityPair? under, eQuantic.UI.Primitives.DensityPair? over) -> eQuantic.UI.Primitives.DensityPair?
+static eQuantic.UI.Primitives.IconButtonTheme.Merge(eQuantic.UI.Primitives.IconButtonTheme? under, eQuantic.UI.Primitives.IconButtonTheme? over) -> eQuantic.UI.Primitives.IconButtonTheme?
+static eQuantic.UI.Primitives.InputTheme.Merge(eQuantic.UI.Primitives.InputTheme? under, eQuantic.UI.Primitives.InputTheme? over) -> eQuantic.UI.Primitives.InputTheme?
+static eQuantic.UI.Primitives.SegmentedTheme.Merge(eQuantic.UI.Primitives.SegmentedTheme? under, eQuantic.UI.Primitives.SegmentedTheme? over) -> eQuantic.UI.Primitives.SegmentedTheme?
+static eQuantic.UI.Primitives.SelectionControlsTheme.Merge(eQuantic.UI.Primitives.SelectionControlsTheme? under, eQuantic.UI.Primitives.SelectionControlsTheme? over) -> eQuantic.UI.Primitives.SelectionControlsTheme?

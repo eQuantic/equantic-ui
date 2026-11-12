@@ -53,4 +53,27 @@ public sealed record ChipTheme
 
     /// <summary>The size of an input chip's remove glyph (20), on the §07 whitelist.</summary>
     public float? RemoveIconSize { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s, a nested slot merged the same way. Null
+    /// when both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static ChipTheme? Merge(ChipTheme? under, ChipTheme? over) =>
+        under is null ? over : over is null ? under : new ChipTheme
+        {
+            Controls = ControlsTheme.Merge(under.Controls, over.Controls),
+            PaddingX = over.PaddingX ?? under.PaddingX,
+            Gap = over.Gap ?? under.Gap,
+            LabelSize = over.LabelSize ?? under.LabelSize,
+            LabelLineHeight = over.LabelLineHeight ?? under.LabelLineHeight,
+            LabelWeight = over.LabelWeight ?? under.LabelWeight,
+            LabelTracking = over.LabelTracking ?? under.LabelTracking,
+            Radius = over.Radius ?? under.Radius,
+            Fill = over.Fill ?? under.Fill,
+            SelectedBorderWidth = over.SelectedBorderWidth ?? under.SelectedBorderWidth,
+            PressOpacity = over.PressOpacity ?? under.PressOpacity,
+            IconSize = over.IconSize ?? under.IconSize,
+            RemoveIconSize = over.RemoveIconSize ?? under.RemoveIconSize,
+        };
 }

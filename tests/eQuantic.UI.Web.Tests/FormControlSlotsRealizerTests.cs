@@ -115,6 +115,19 @@ public class FormControlSlotsRealizerTests
         missing.Should().BeEmpty("MaterialTheme fills the form control slots from Material 3's specifications");
     }
 
+    /// <summary>A slot given to <c>With</c> is laid over the theme's own member by member: one member
+    /// changed on Material's field leaves its height, its corner and its focus border Material's.</summary>
+    [Fact]
+    public void ASlotGivenToWith_LaysOverTheThemesOwn_MemberByMember()
+    {
+        var theme = MaterialTheme.Instance.With(input: new InputTheme { PaddingX = 20 });
+        var css = Css(new TextInput("ana", _ => { }, label: "Email"), theme, Density.Comfortable);
+
+        css.Should().Contain("padding:0 20px", "the member the given slot names wins");
+        css.Should().Contain("height:56px", "the height the given slot leaves null is Material's");
+        css.Should().Contain("border-radius:4px", "the corner the given slot leaves null is Material's");
+    }
+
     /// <summary>Material 3 gives a field, a segmented button and a chip one size, which a compact page and
     /// a size variant do not shrink: the ladder the slot names holds every rung at either density.</summary>
     [Fact]

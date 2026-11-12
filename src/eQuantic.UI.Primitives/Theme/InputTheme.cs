@@ -78,4 +78,35 @@ public sealed record InputTheme
 
     /// <summary>The height of a row of a picker's open panel (the field's own height).</summary>
     public float? PanelRowHeight { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s, a nested slot merged the same way. Null
+    /// when both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static InputTheme? Merge(InputTheme? under, InputTheme? over) =>
+        under is null ? over : over is null ? under : new InputTheme
+        {
+            Controls = ControlsTheme.Merge(under.Controls, over.Controls),
+            PaddingX = over.PaddingX ?? under.PaddingX,
+            PickerPaddingX = over.PickerPaddingX ?? under.PickerPaddingX,
+            Gap = over.Gap ?? under.Gap,
+            PickerGap = over.PickerGap ?? under.PickerGap,
+            BorderWidth = over.BorderWidth ?? under.BorderWidth,
+            FocusBorderWidth = over.FocusBorderWidth ?? under.FocusBorderWidth,
+            BorderColor = over.BorderColor ?? under.BorderColor,
+            Radius = over.Radius ?? under.Radius,
+            SearchRadius = over.SearchRadius ?? under.SearchRadius,
+            Fill = over.Fill ?? under.Fill,
+            DisabledFill = over.DisabledFill ?? under.DisabledFill,
+            SearchFill = over.SearchFill ?? under.SearchFill,
+            IconSize = over.IconSize ?? under.IconSize,
+            LabelGap = over.LabelGap ?? under.LabelGap,
+            CaptionGap = over.CaptionGap ?? under.CaptionGap,
+            LabelRole = over.LabelRole ?? under.LabelRole,
+            CaptionRole = over.CaptionRole ?? under.CaptionRole,
+            PanelElevation = over.PanelElevation ?? under.PanelElevation,
+            PanelBorderColor = over.PanelBorderColor ?? under.PanelBorderColor,
+            PanelRowHeight = over.PanelRowHeight ?? under.PanelRowHeight,
+        };
 }

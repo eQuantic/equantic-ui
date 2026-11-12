@@ -81,4 +81,36 @@ public sealed record SelectionControlsTheme
 
     /// <summary>The width a slider never shrinks below (120).</summary>
     public float? SliderMinWidth { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s, a nested slot merged the same way. Null
+    /// when both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static SelectionControlsTheme? Merge(SelectionControlsTheme? under, SelectionControlsTheme? over) =>
+        under is null ? over : over is null ? under : new SelectionControlsTheme
+        {
+            Box = DensityPair.Merge(under.Box, over.Box),
+            RadioSize = DensityPair.Merge(under.RadioSize, over.RadioSize),
+            BorderWidth = over.BorderWidth ?? under.BorderWidth,
+            BorderColor = over.BorderColor ?? under.BorderColor,
+            CheckboxRadius = over.CheckboxRadius ?? under.CheckboxRadius,
+            RadioDot = DensityPair.Merge(under.RadioDot, over.RadioDot),
+            RadioRowHeight = over.RadioRowHeight ?? under.RadioRowHeight,
+            LabelGap = over.LabelGap ?? under.LabelGap,
+            SwitchWidth = DensityPair.Merge(under.SwitchWidth, over.SwitchWidth),
+            SwitchHeight = DensityPair.Merge(under.SwitchHeight, over.SwitchHeight),
+            SwitchThumb = DensityPair.Merge(under.SwitchThumb, over.SwitchThumb),
+            SwitchInset = over.SwitchInset ?? under.SwitchInset,
+            SwitchOffTrack = over.SwitchOffTrack ?? under.SwitchOffTrack,
+            ThumbFill = over.ThumbFill ?? under.ThumbFill,
+            SwitchThumbElevation = over.SwitchThumbElevation ?? under.SwitchThumbElevation,
+            SliderTrackHeight = over.SliderTrackHeight ?? under.SliderTrackHeight,
+            SliderThumbSize = over.SliderThumbSize ?? under.SliderThumbSize,
+            SliderThumbBorder = over.SliderThumbBorder ?? under.SliderThumbBorder,
+            SliderThumbBorderColor = over.SliderThumbBorderColor ?? under.SliderThumbBorderColor,
+            SliderThumbElevation = over.SliderThumbElevation ?? under.SliderThumbElevation,
+            SliderRestTrack = over.SliderRestTrack ?? under.SliderRestTrack,
+            SliderMinWidth = over.SliderMinWidth ?? under.SliderMinWidth,
+        };
 }

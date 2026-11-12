@@ -41,9 +41,9 @@ internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, 
     public ControlsTheme? Controls => field ??= ControlsTheme.Merge(inner.Controls, controls);
     public ButtonTheme? Button => field ??= ButtonTheme.Merge(inner.Button, button);
     public ColorToken Code(CodeTokenKind kind) => inner.Code(kind);
-    public IconButtonTheme? IconButton => iconButton ?? inner.IconButton;
-    public InputTheme? Input => input ?? inner.Input;
-    public SelectionControlsTheme? SelectionControls => selectionControls ?? inner.SelectionControls;
-    public SegmentedTheme? Segmented => segmented ?? inner.Segmented;
-    public ChipTheme? Chip => chip ?? inner.Chip;
+    public IconButtonTheme? IconButton => field ??= IconButtonTheme.Merge(inner.IconButton, iconButton);
+    public InputTheme? Input => field ??= InputTheme.Merge(inner.Input, input);
+    public SelectionControlsTheme? SelectionControls => field ??= SelectionControlsTheme.Merge(inner.SelectionControls, selectionControls);
+    public SegmentedTheme? Segmented => field ??= SegmentedTheme.Merge(inner.Segmented, segmented);
+    public ChipTheme? Chip => field ??= ChipTheme.Merge(inner.Chip, chip);
 }
