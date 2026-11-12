@@ -608,7 +608,14 @@ the parity rows it closes flip.
    - `AmbientChannelsTests` names every `AsyncLocal` the source keeps with its reason, and the list
      may only shrink.
 
-   The error boundary's report and tally move onto the owner in E4c (#1452).
+   **E4c, a tree's error boundary is its own** (#1452,
+   `openspec/changes/a-trees-error-boundary-lives-on-its-owner`):
+   - `ComponentBoundary` is an instance, one per tree, and the tree's owner is made from it: its
+     diagnostics, report and tally are the tree's. The expansion walk keeps its thread-static depth,
+     and the email's walk keeps `Enter`, which has no boundary.
+   - The server keeps one for a request and hands it to the request's `MarkupHost` and each round's
+     `RenderChannels`. A Photon host keeps its window's (`PhotonHost.Boundary`), which every shell
+     arms with the app's report (`PhotonApplication.ArmBoundary`) and reads beside its frame summary.
 5. **E5, inherited components.** `InheritedComponent`, `DependOn`, `Find`,
    `OnDependenciesChanged`, dependency-driven rebuild, `Theme`, the route and `InFlow` as inherited
    components, `Navigator.Of`. Proof: a change rebuilds its dependents and nothing else, on both
