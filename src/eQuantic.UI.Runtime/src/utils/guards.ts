@@ -10,6 +10,7 @@
  */
 import { Decimal } from './decimal';
 import { exception, receiver } from './exceptions';
+import { format } from './format';
 import { comparerOf, type Ordering } from './ordering';
 import { isWhiteSpace } from './white-space';
 
@@ -47,6 +48,21 @@ export function throwIfNullOrWhiteSpace(argument: string | null, paramName: stri
 /** `ArgumentOutOfRangeException.ThrowIfNegative(value, paramName)`. */
 export function throwIfNegative<T>(value: T, paramName: string | null, text: (value: T) => string): void {
   if (isNegative(value)) throw outOfRange(value, paramName, text, 'must be a non-negative value.');
+}
+
+/**
+ * `ArgumentOutOfRangeException.ThrowIfNegative` of a count the runtime itself checks, a capacity or an index
+ * of a collection of .NET's, where .NET checks it with that guard: its `ParamName`, its `ActualValue` and its
+ * words, the value written as the current culture writes an `int`. The collections wrote the words by hand,
+ * so `ActualValue` reached C# as null while the message stated it (#1273).
+ */
+export function throwIfNegativeCount(value: number, paramName: string): void {
+  throwIfNegative(value, paramName, int32Text);
+}
+
+/** An `int` as `string.Format` writes it in the current culture. */
+function int32Text(value: number): string {
+  return format(value, null, undefined, undefined, 'int32');
 }
 
 /** `ArgumentOutOfRangeException.ThrowIfZero(value, paramName)`. */
