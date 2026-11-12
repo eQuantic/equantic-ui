@@ -7,5 +7,5 @@
 
 ## 2. Proved against the real thing
 
-- [ ] 2.1 The suites. Verify: Compiler, Web and Conformance pass, `tsc` is clean and the runtime's vitest passes
+- [x] 2.1 The suites. Verify: the pull request's CI, 23 checks on Ubuntu, Windows and macOS (Compiler, Web, Server, Conformance, the runtime's `tsc` and vitest, the samples) green on 3c585bd3f; the Release's subsection 2 found `tsc` clean and the pins 15 of 15 against E3b-1
 - [x] 2.2 A ledger entry under `docs/ledger/`
