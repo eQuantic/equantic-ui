@@ -2,6 +2,7 @@ using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace eQuantic.UI.Compiler.Services;
 
@@ -94,19 +95,55 @@ public static class RuntimeProvidedTypeScanner
         || ns.StartsWith("eQuantic.UI.Spreadsheets.");
 
     /// <summary>
-    /// The name the runtime exports <paramref name="type"/> under, which is what a module imports.
-    /// One vocabulary type crosses under another name: the context a component builds with is
-    /// <c>ComponentContext</c> in C# and <c>BuildContext</c> in the runtime, the name every
-    /// annotation of it is written with. Imported by its C# name, a helper that took the context
-    /// imported nothing its annotation named, and a seed that imported <c>BuildContext</c> into every
-    /// module clashed with an app's own class of that name (found by Copilot reviewing #653).
+    /// The name the runtime exports <paramref name="type"/> under for the way a module uses it, which is what the
+    /// module imports. One vocabulary type crosses under two names: the context a component builds with is
+    /// <c>ComponentContext</c> in C#, and the runtime exports an interface for it, <c>BuildContext</c>, which
+    /// every ANNOTATION of it is written with, and the class itself, <c>ComponentContext</c>, which a VALUE use
+    /// is written with: a construction or a static member. Imported by its C# name alone, a helper that took the
+    /// context imported nothing its annotation named, and a seed that imported <c>BuildContext</c> into every
+    /// module clashed with an app's own class of that name (found by Copilot reviewing #653). Imported by its
+    /// annotation's name alone, a module that constructed one named nothing its construction wrote, and the
+    /// element engine's first build threw a <c>ReferenceError</c> (#1475).
     /// </summary>
-    internal static string ExportedName(INamedTypeSymbol type) =>
-        type is { Name: "ComponentContext", ContainingNamespace: { } ns }
+    /// <param name="type">The type a module names.</param>
+    /// <param name="asValue">Whether the module uses it as a value (<see cref="IsValueUse"/>) rather than as an
+    /// annotation.</param>
+    internal static string ExportedName(INamedTypeSymbol type, bool asValue) =>
+        !asValue && type is { Name: "ComponentContext", ContainingNamespace: { } ns }
         && ns.ToDisplayString() == "eQuantic.UI.Primitives"
             ? "BuildContext"
             // A nested type crosses as its twin, named by its owner (#584): `CodeBlock$CodeMetrics`.
             : type.TwinReference();
+
+    /// <summary>
+    /// Whether <paramref name="name"/>, bound to <paramref name="symbol"/>, uses its type as a VALUE, which a module
+    /// writes under the type's class rather than under an annotation's name, as the bound tree says: the type of a
+    /// construction (an <see cref="IObjectCreationOperation"/>), the name of a constructor or of a static method
+    /// called through <c>using static</c>, which binds to the method, and the receiver of a static member read or
+    /// called through the type's name, whose member is static.
+    /// </summary>
+    private static bool IsValueUse(SimpleNameSyntax name, ISymbol? symbol, SemanticModel model)
+    {
+        if (symbol is IMethodSymbol) return true;
+        // The name as written, qualified or not: `ComponentContext`, `Primitives.ComponentContext`.
+        SyntaxNode written = name;
+        while (written.Parent is QualifiedNameSyntax qualified && qualified.Right == written) written = qualified;
+        try
+        {
+            return written.Parent switch
+            {
+                ObjectCreationExpressionSyntax creation when creation.Type == written =>
+                    model.GetOperation(creation) is IObjectCreationOperation,
+                MemberAccessExpressionSyntax access when access.Expression == written =>
+                    model.GetSymbolInfo(access).Symbol is { IsStatic: true },
+                _ => false,
+            };
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>Walks every identifier under <paramref name="root"/>, resolving symbols through
     /// <paramref name="model"/>, and buckets runtime-provided type names, enum type names, and —
@@ -174,8 +211,9 @@ public static class RuntimeProvidedTypeScanner
             var rebuiltNamespace = named.ContainingNamespace?.ToDisplayString() ?? string.Empty;
             if (IsRuntimeProvidedNamespace(rebuiltNamespace))
             {
+                // A rebuild is a construction.
                 if (IsFenced(named)) Fence(named, with);
-                else runtimeProvided.Add(ExportedName(named));
+                else runtimeProvided.Add(ExportedName(named, asValue: true));
             }
             else if (appTypes is not null && named.Locations.Any(l => l.IsInSource))
                 appTypes.Add(named.TwinReference());
@@ -237,7 +275,7 @@ public static class RuntimeProvidedTypeScanner
             if (isRuntimeProvided)
             {
                 if (IsFenced(type)) Fence(type, identifier);
-                else runtimeProvided.Add(ExportedName(type));
+                else runtimeProvided.Add(ExportedName(type, IsValueUse(identifier, symbol, model)));
                 continue;
             }
 
