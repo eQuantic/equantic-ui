@@ -48,6 +48,42 @@ public class Wave1ComponentTests
         box.Attributes["style"].Should().Contain($"border: 1px solid {TokenCss.Value(Theme.Colors(Variant.Primary).Base)}");
     }
 
+    private static IEnumerable<HtmlNode> Walk(HtmlNode node) =>
+        node.Children.SelectMany(Walk).Prepend(node);
+
+    /// <summary>The <c>color</c> declaration of a style, never the tail of <c>background-color</c>.</summary>
+    private static bool Colours(HtmlNode node, ColorToken token) =>
+        System.Text.RegularExpressions.Regex.IsMatch(node.Attributes.GetValueOrDefault("style", "") ?? "",
+            $@"(?<![-\w])color: {System.Text.RegularExpressions.Regex.Escape(TokenCss.Value(token))}");
+
+    /// <summary>B8's frame: the unselected filter chips ("All", "Expenses") are OUTLINED, a 1px
+    /// BorderStrong edge with no fill and TextPrimary text. The SurfaceSubtle rest is the Input chip's.</summary>
+    [Fact]
+    public void Chip_FilterUnselected_IsOutlined()
+    {
+        var box = Render(new Chip("Expenses", ChipKind.Filter, onPressed: () => { })).Children[0];
+        var style = box.Attributes["style"]!;
+        style.Should().NotContain("background-color", "an outlined chip has no fill at rest");
+        style.Should().Contain($"border: 1px solid {TokenCss.Value(Theme.BorderStrong)}");
+        Walk(box).Where(node => Colours(node, Theme.TextPrimary)).Should().NotBeEmpty("its label is TextPrimary");
+        Walk(box).Where(node => Colours(node, Theme.TextSecondary)).Should().BeEmpty("and nothing in it is TextSecondary");
+    }
+
+    /// <summary>B8's frame ("rio-trip.pdf"): the Input chip's label is TextPrimary, and its ✕ a tier
+    /// below it, TextMuted (the frame's <c>--tx3</c>).</summary>
+    [Fact]
+    public void Chip_Input_LabelIsPrimary_AndItsCloseIsMuted()
+    {
+        var box = Render(new Chip("rio-trip.pdf", ChipKind.Input, onRemove: () => { }));
+        box.Attributes["style"].Should().Contain($"background-color: {TokenCss.Value(Theme.SurfaceSubtle)}");
+        var close = Walk(box).Single(node => node.Attributes.GetValueOrDefault("aria-label", "") == SdkStrings.Remove);
+
+        Walk(box).Except(Walk(close)).Where(node => Colours(node, Theme.TextPrimary))
+            .Should().NotBeEmpty("the Input chip's label is TextPrimary");
+        Walk(close).Where(node => Colours(node, Theme.TextMuted)).Should().NotBeEmpty("its ✕ is TextMuted");
+        Walk(box).Where(node => Colours(node, Theme.TextSecondary)).Should().BeEmpty("and nothing in it is TextSecondary");
+    }
+
     [Fact]
     public void ProgressBar_SplitsTheTrackByFlexWeights()
     {
