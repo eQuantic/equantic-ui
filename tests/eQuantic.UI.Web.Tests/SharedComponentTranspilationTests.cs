@@ -243,6 +243,15 @@ public class SharedComponentTranspilationTests
             public int Run(int value) => _step(value);
         }
 
+        // A context annotated as the runtime's interface and constructed as its class, as the element engine builds
+        // one per position (#1475).
+        public sealed class EmittedContexts
+        {
+            private ComponentContext? _context;
+
+            public ComponentContext For(IAppTheme theme) => _context ??= new ComponentContext(theme);
+        }
+
         public sealed class EmittedItem(int depth)
         {
             public int Depth { get; } = depth;
@@ -419,7 +428,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts",
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.

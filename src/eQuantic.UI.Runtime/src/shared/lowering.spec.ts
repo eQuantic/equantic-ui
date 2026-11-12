@@ -175,7 +175,9 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(node.children[0].textContent).toBe('Saldo disponível');
   });
 
-  it('Text defaults to the theme TextPrimary and honors StyleOverride', () => {
+  // #614: a text with no colour of its own writes none and inherits the foreground above it, or the
+  // document's TextPrimary (the C# twin's WebLoweringVisitor.Text).
+  it('Text with no colour inherits it, and honors StyleOverride', () => {
     const text: VisualNodeValue = {
       nodeKind: 'text',
       content: 'Continuar',
@@ -185,7 +187,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     } as VisualNodeValue;
 
     const style = effectiveStyle(lowerVisualNode(text, ctx));
-    expect(style).toContain(`color: ${tokenValue(textPrimary)}`);
+    expect(style).not.toContain('color:');
     expect(style).toContain('font-size: 15px');
     expect(style).toContain('font-weight: 600');
     expect(style).toContain('letter-spacing: 0.1px');

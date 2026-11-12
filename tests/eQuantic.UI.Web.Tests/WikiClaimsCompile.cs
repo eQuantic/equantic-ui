@@ -500,6 +500,18 @@ public class WikiClaimsCompile
         }
     }
 
+    // Styling.md, "A colour the text inside inherits" (#614): a label and its arrow brighten together.
+    private static Pressable ReadTheDocs(IAppTheme theme, Action open) =>
+        Pressable(Box(new BoxStyle
+        {
+            Background = theme.Surface,
+            Foreground = theme.TextSecondary,
+            Hover = new StyleDiff { Foreground = theme.TextPrimary },
+        }, Row(gap: Space.S2, children: [
+            Text("Read the docs", TypeRole.Label),
+            Icon(Icons.ChevronRight, 16),
+        ])), onPressed: open);
+
     // Uploads.md (#1215): the policy the page and the server both read, a page that takes files with
     // FileUpload and receives them in its Server Action, and a component drawn over IUploads.
     private static class Uploads
