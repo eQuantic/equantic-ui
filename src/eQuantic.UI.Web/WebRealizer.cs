@@ -50,7 +50,8 @@ public static class WebRealizer
     {
         // No font here to measure with: a component that asks is answered 0 and remembered, so the
         // client draws it again instead of adopting geometry built on zeros (FontlessMeasurer).
-        var measurer = new FontlessMeasurer();
+        // The render's boundary, or one of its own: a lowering outside a render reports to nobody.
+        var measurer = new FontlessMeasurer(channels?.Boundary ?? new ComponentBoundary());
         var context = new ComponentContext(theme, typeScale, density, measurer.Measure);
         var root = LowerRoot(node, context, measurer, channels)
                ?? new RealizedElement("span"); // layout-only nodes outside a flex row lower to nothing

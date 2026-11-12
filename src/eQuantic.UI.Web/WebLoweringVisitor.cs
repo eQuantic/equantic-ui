@@ -266,7 +266,7 @@ internal sealed partial class WebLoweringVisitor(
         // the design host's, and neither prefetches.
         _channels?.Expansion?.Enter(component);
 
-        return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
+        return _measurer.Boundary.ExpandContained(component, _context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
             static (built, state) =>
             {
                 // Counted BEFORE the built tree lowers: the components inside it build during that

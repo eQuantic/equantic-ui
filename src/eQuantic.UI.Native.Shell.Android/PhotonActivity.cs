@@ -332,6 +332,8 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             // What Ctrl+C, X and V on a keyboard attached to the phone copy, cut and paste through.
             Clipboard = new AndroidClipboard(),
         };
+        // The window's error boundary (#1452), armed with the app's report.
+        app.ArmBoundary(_host.Boundary);
         cultureController?.Attach(_host.Invalidate);
 
         // The semantics bridge: TalkBack reads the SAME target-neutral tree the Apple shells read,
@@ -535,7 +537,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         if (forced == true && FramesPresented >= Application!.Options.MaxFrames)
         {
             ProbeAccessibility();
-            var contained = eQuantic.UI.Primitives.ComponentBoundary.Contained;
+            var contained = _host!.Boundary.Contained;
             var missing = eQuantic.UI.Primitives.FaceResolution.Unresolved;
             var summary = $"frames presented: {FramesPresented}";
             if (contained.Count > 0) summary += $" — CONTAINED: {string.Join(", ", contained)}";

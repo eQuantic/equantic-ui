@@ -57,7 +57,7 @@ public class ComponentBoundaryTests
     [Fact]
     public void The_panel_is_built_from_the_vocabulary_so_both_targets_draw_the_same_thing()
     {
-        var contained = new BrokenCard().BuildContained(Ctx);
+        var contained = new BrokenCard().BuildContainedAlone(Ctx);
 
         // Box → Row → [Icon, Flexible(Column)] — the shape ComponentBoundary.Describe produces; the
         // web realizer lowers this exact tree, which is what "write-once" means for a failure too.
@@ -123,18 +123,26 @@ public class ComponentBoundaryTests
         node.Children[2].Bounds.Width.Should().BeGreaterThan(0);
     }
 
+    /// <summary>A tree built through <paramref name="boundary"/> and laid out, as a host lays its own
+    /// out (#1452): the boundary is the tree's, and what it counted is read off it.</summary>
+    private LayoutNode LaidOut(VisualNode root, float width, float height, ComponentBoundary boundary)
+    {
+        var context = Layout;
+        var element = boundary.StructuralOwner().Build(root, context.Components, context.SizeClass, rebuildAll: true);
+        return LayoutEngine.Layout(root, width, height, context, rootElement: element);
+    }
+
     [Fact]
     public void A_cycle_is_tallied_exactly_as_a_throw_is()
     {
-        ComponentBoundary.ClearContained();
+        var boundary = new ComponentBoundary();
 
-        LayoutEngine.Layout(new OuroborosCard(), 400, 300, Layout);
+        LaidOut(new OuroborosCard(), 400, 300, boundary);
 
         // A host that refuses to exit zero while the tally is non-empty catches a cycle the same way
         // it catches a throw — which is the whole reason the bound lives at the boundary and not in
         // the layout engine.
-        ComponentBoundary.Contained.Should().Contain("OuroborosCard");
-        ComponentBoundary.ClearContained();
+        boundary.Contained.Should().Contain("OuroborosCard");
     }
 
     [Fact]
@@ -156,18 +164,14 @@ public class ComponentBoundaryTests
     public void An_ordinary_chain_of_components_is_not_a_cycle()
     {
         // The bound is for what never terminates; a component building a component is ordinary
-        // composition and must be untouched by it.
-        //
-        // CLEARED FIRST, and the reason is the assertion below: `Contained` is ambient state scoped
-        // to the RUN, not to this render, and the cyclic tests in this class fill it. Without this
-        // the result depends on which test ran before — a green assertion that a neighbour can turn
-        // red is exactly the instrument this epic exists to remove.
-        ComponentBoundary.ClearContained();
+        // composition and must be untouched by it. The tally is this tree's own (#1452), so no
+        // cyclic test of this class can fill it first, which an ambient tally needed clearing for.
+        var boundary = new ComponentBoundary();
 
-        var node = LayoutEngine.Layout(new WrapperCard(depth: 12), 400, 300, Layout);
+        var node = LaidOut(new WrapperCard(depth: 12), 400, 300, boundary);
 
         node.Bounds.Width.Should().BeGreaterThan(0);
-        ComponentBoundary.Contained.Should().BeEmpty();
+        boundary.Contained.Should().BeEmpty();
     }
 
     private sealed class WrapperCard(int depth) : StatelessComponent

@@ -20,6 +20,13 @@ namespace eQuantic.UI.Primitives;
 /// </para>
 ///
 /// <para>
+/// ONE PER TREE (docs/ELEMENT-TREE-PLAN.md 3.6, #1452): the owner of a tree is made from its boundary
+/// (<see cref="Owner"/>), and what the boundary reports, says and counts belongs to that tree. It was
+/// three <c>AsyncLocal</c>s any code in the flow could read or overwrite, so two windows in one process
+/// shared one tally. The server keeps one for a request, and a Photon host one for its window.
+/// </para>
+///
+/// <para>
 /// BEHAVIOUR remembers nothing; the DIAGNOSTIC remembers for the run. Those are different
 /// statements and the distinction is the point: a recovered component is built and drawn exactly
 /// like one that never threw, while <see cref="Contained"/> still names it until the run ends.
@@ -36,17 +43,15 @@ namespace eQuantic.UI.Primitives;
 /// </para>
 /// </summary>
 [ServerOnly]
-public static class ComponentBoundary
+public sealed class ComponentBoundary
 {
-    private static readonly AsyncLocal<bool> _diagnostics = new();
-    private static readonly AsyncLocal<Action<UiComponent, Exception>?> _report = new();
-    private static readonly AsyncLocal<List<string>?> _contained = new();
+    private readonly List<string> _contained = [];
 
     /// <summary>
-    /// How deep the current expansion walk is, in COMPONENTS. Thread-static rather than
-    /// <see cref="AsyncLocal{T}"/> like everything else here, and the difference is what each one
-    /// measures: those are a render SCOPE a host arms, which may cross an await, while this counts
-    /// one synchronous walk that never leaves its thread. Restored in a finally, so two walks
+    /// How deep the current expansion walk is, in COMPONENTS. Thread-static rather than the tree's,
+    /// like everything else here, and the difference is what each one measures: those belong to a
+    /// tree, while this counts one synchronous walk that never leaves its thread, whichever tree it
+    /// walks (the email's walk has no boundary at all). Restored in a finally, so two walks
     /// interleaved on one thread cannot see each other's depth either.
     /// </summary>
     [ThreadStatic] private static int _depth;
@@ -62,9 +67,8 @@ public static class ComponentBoundary
     private const int MaxDepth = 64;
 
     /// <summary>
-    /// Whether a DEVELOPER is watching. Armed by the host per render scope — the SSR pipeline from
-    /// the environment, the browser boot from <c>__EQ_DEV__</c>, a window from its build — the same
-    /// way the atomic style sink is armed around a page render.
+    /// Whether a DEVELOPER is watching. Set by the host of the tree: the SSR pipeline from the
+    /// environment, the browser boot from <c>__EQ_DEV__</c>, a window from its build.
     ///
     /// <para>
     /// Off, the panel says only that a section could not be displayed: an exception message is
@@ -72,25 +76,17 @@ public static class ComponentBoundary
     /// should never read. On, it names the component and quotes the throw.
     /// </para>
     /// </summary>
-    public static bool Diagnostics
-    {
-        get => _diagnostics.Value;
-        set => _diagnostics.Value = value;
-    }
+    public bool Diagnostics { get; set; }
 
     /// <summary>
     /// Where a contained failure goes so it is not merely swallowed — the host's logger. A boundary
     /// without this trades a loud crash for a silent one, which is worse: nobody is paged and the
     /// bug lives forever behind a small red box.
     /// </summary>
-    public static Action<UiComponent, Exception>? Report
-    {
-        get => _report.Value;
-        set => _report.Value = value;
-    }
+    public Action<UiComponent, Exception>? Report { get; set; }
 
     /// <summary>
-    /// Which components this scope has contained, by type name, first seen first. EMPTY is the
+    /// Which components this tree has contained, by type name, first seen first. EMPTY is the
     /// answer a healthy render gives, and that is the whole point of it.
     ///
     /// <para>
@@ -108,23 +104,22 @@ public static class ComponentBoundary
     /// strict one refuses to exit zero while it is non-empty.
     /// </para>
     /// </summary>
-    public static IReadOnlyCollection<string> Contained =>
-        _contained.Value is { } seen ? seen.ToArray() : [];
+    public IReadOnlyCollection<string> Contained => _contained.ToArray();
 
     /// <summary>
-    /// Forgets what was contained. A host arms a RUN with this, as it does the report sink — the
-    /// scope is the run and deliberately not the frame: a component that threw and then recovered
+    /// Forgets what was contained. A host that draws more than one run on the same tree starts each
+    /// with this. The scope is the run and deliberately not the frame: a component that threw and then recovered
     /// still threw, and a summary that drops it because the next frame was clean is the silence
     /// this tally exists to remove. What it prevents is a later run being read as carrying an
     /// earlier one's failures, which a long-lived host reaches immediately.
     /// </summary>
-    public static void ClearContained() => _contained.Value = null;
+    public void ClearContained() => _contained.Clear();
 
     /// <summary>
     /// Expands a component the way every realizer must: its subtree if <see cref="UiComponent.Build"/>
     /// returns, the contained failure surface if it throws.
     /// </summary>
-    public static VisualNode BuildContained(this UiComponent component, ComponentContext context)
+    public VisualNode BuildContained(UiComponent component, ComponentContext context)
     {
         try
         {
@@ -138,14 +133,14 @@ public static class ComponentBoundary
 
     /// <summary>
     /// A live owner whose components build through this boundary: the one a host keeps for the surface
-    /// it draws. The element engine is handed how a component builds rather than naming this class,
-    /// because the engine runs in the browser too and this boundary's report and diagnostics are host
-    /// state (docs/ELEMENT-TREE-PLAN.md 3.6 moves them onto the owner).
+    /// it draws, and the tree this boundary reports for. The element engine is handed how a component
+    /// builds rather than naming this class, because the engine runs in the browser too and this
+    /// boundary is host state.
     /// </summary>
-    public static BuildOwner Owner() => new(BuildAtDepth);
+    public BuildOwner Owner() => new(BuildAtDepth);
 
     /// <summary>A structural owner whose components build through this boundary: a tree laid out once.</summary>
-    public static BuildOwner StructuralOwner() => BuildOwner.Structural(BuildAtDepth);
+    public BuildOwner StructuralOwner() => BuildOwner.Structural(BuildAtDepth);
 
     /// <summary>
     /// Builds a component that stands <paramref name="depth"/> components deep in an element tree:
@@ -158,7 +153,7 @@ public static class ComponentBoundary
     /// component asked its measurer while it built, which hydration's unmeasured mark is made of.
     /// </para>
     /// </summary>
-    public static VisualNode BuildAtDepth(UiComponent component, ComponentContext context, int depth) =>
+    public VisualNode BuildAtDepth(UiComponent component, ComponentContext context, int depth) =>
         depth >= MaxDepth
             ? Contain(component, Exceeded(component), context)
             : BuildContained(component, context);
@@ -201,7 +196,7 @@ public static class ComponentBoundary
     /// it was found: <c>PerfHarnessTests.SteadyMotion_WithRecycledFrames_AllocatesFarLess</c> read
     /// 78,562 against a ceiling of 75,776 and failed.
     /// </remarks>
-    public static TResult ExpandContained<TState, TResult>(this UiComponent component,
+    public TResult ExpandContained<TState, TResult>(UiComponent component,
         ComponentContext context, TState state, Func<VisualNode, TState, TResult> realize)
     {
         if (_depth >= MaxDepth)
@@ -308,14 +303,13 @@ public static class ComponentBoundary
     /// the host's logger, and the surface that takes the subtree's place. Shared by the two ways a
     /// component can fail to produce one — a throw, and a chain that never ends.
     /// </summary>
-    private static VisualNode Contain(UiComponent component, Exception error, ComponentContext context)
+    private VisualNode Contain(UiComponent component, Exception error, ComponentContext context)
     {
         // DISTINCT, and the reason is the failure mode itself: a component that throws throws on
         // every frame, so a count would report the frame rate and bury the one fact worth
         // having, which is its name.
-        var seen = _contained.Value ??= [];
         var name = component.GetType().Name;
-        if (!seen.Contains(name)) seen.Add(name);
+        if (!_contained.Contains(name)) _contained.Add(name);
         Report?.Invoke(component, error);
         return Describe(component, error, context);
     }
@@ -324,7 +318,7 @@ public static class ComponentBoundary
     /// The surface that takes the failed subtree's place, built from the VOCABULARY — so it is the
     /// same surface on a page and in a window, and it costs no target-specific code to draw.
     /// </summary>
-    private static VisualNode Describe(UiComponent component, Exception error, ComponentContext context)
+    private VisualNode Describe(UiComponent component, Exception error, ComponentContext context)
     {
         var tint = context.Theme.Colors(Variant.Destructive);
         var diagnostics = Diagnostics;

@@ -1,1 +1,4 @@
 #nullable enable
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.Boundary.get -> eQuantic.UI.Primitives.ComponentBoundary!
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PhotonHost(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, float width, float height, eQuantic.UI.Native.Framework.ITextMeasurer? measurer = null, float typeScale = 1, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PhotonHost(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, float width, float height, eQuantic.UI.Native.Framework.ITextMeasurer? measurer = null, float typeScale = 1) -> void

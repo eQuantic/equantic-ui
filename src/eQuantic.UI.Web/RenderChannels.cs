@@ -23,14 +23,19 @@ public sealed class RenderChannels
     private static readonly AsyncLocal<RenderChannels?> Bridging = new();
 
     /// <summary>The channels of a render, with new sinks, the scope it expands components into, the
-    /// density the browser reported and the link policy of the request.</summary>
+    /// density the browser reported, the link policy of the request and the error boundary of its tree.</summary>
     public RenderChannels(ComponentExpansionScope? expansion = null, Density density = Density.Comfortable,
-        Func<string, string>? linkPolicy = null)
+        Func<string, string>? linkPolicy = null, ComponentBoundary? boundary = null)
     {
         Expansion = expansion;
         Density = density;
         LinkPolicy = linkPolicy;
+        Boundary = boundary ?? new ComponentBoundary();
     }
+
+    /// <summary>The error boundary of the tree the render draws (#1452): a write-once bridge inside an
+    /// escape-hatch page expands through it, so what fails there is reported and counted with the page.</summary>
+    public ComponentBoundary Boundary { get; }
 
     /// <summary>The atomic rules the render's markup references, which the server writes beside it.</summary>
     public StyleSink Styles { get; } = new();

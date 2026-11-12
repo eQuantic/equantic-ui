@@ -98,7 +98,8 @@ public sealed class PhotonWindow
     /// </summary>
     public void Run(VisualNode root, IAppTheme theme, ThemeMode mode = ThemeMode.Light, int maxFrames = 0,
         eQuantic.UI.Native.Hosting.PhotonThemeController? themeController = null,
-        eQuantic.UI.Native.Hosting.PhotonCultureController? cultureController = null)
+        eQuantic.UI.Native.Hosting.PhotonCultureController? cultureController = null,
+        ComponentBoundary? boundary = null)
     {
         LoadFrameworks();
         using var backend = new MetalBackend();
@@ -174,7 +175,7 @@ public sealed class PhotonWindow
         // ONE builder for the loop's lifetime: Reset keeps every buffer's capacity, so a steady
         // 120 Hz stops growing fresh lists per frame.
         var frameBuilder = new DisplayListBuilder();
-        var host = new PhotonHost(root, theme, mode, _width, _height, textService)
+        var host = new PhotonHost(root, theme, mode, _width, _height, textService, boundary: boundary)
         {
             // Production owns its frames: nothing retains a RealizeResult past the next render,
             // so each replaced tree feeds the next (LayoutNodePool).

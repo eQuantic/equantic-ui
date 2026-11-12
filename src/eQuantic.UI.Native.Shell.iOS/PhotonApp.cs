@@ -24,6 +24,7 @@ public static class PhotonApp
     private static ThemeMode? _mode;
     private static int _maxFrames;
     private static bool _smoothScroll = true;
+    private static ComponentBoundary? _boundary;
     private static PhotonViewController? _screen;
 
     /// <param name="args">The process arguments, as the platform handed them over.</param>
@@ -35,14 +36,17 @@ public static class PhotonApp
     /// <param name="forcedMode">Null follows the system's light/dark setting.</param>
     /// <param name="maxFrames">Stops after this many presents — the self-test's exit condition.</param>
     /// <param name="smoothScroll">Whether a scroll glides to where it was sent (see the host).</param>
+    /// <param name="boundary">The screen's error boundary, which the app arms with its report; a silent
+    /// one when null.</param>
     public static void Run(string[] args, Func<VisualNode> root, IAppTheme theme,
-        ThemeMode? forcedMode = null, int maxFrames = 0, bool smoothScroll = true)
+        ThemeMode? forcedMode = null, int maxFrames = 0, bool smoothScroll = true, ComponentBoundary? boundary = null)
     {
         _root = root;
         _theme = theme;
         _mode = forcedMode;
         _maxFrames = maxFrames;
         _smoothScroll = smoothScroll;
+        _boundary = boundary;
         UIApplication.Main(args, null, typeof(PhotonAppDelegate));
     }
 
@@ -57,6 +61,7 @@ public static class PhotonApp
     {
         MaxFrames = _maxFrames,
         SmoothScroll = _smoothScroll,
+        Boundary = _boundary ?? new ComponentBoundary(),
     };
 
     /// <summary>What is the process's and nothing else: which delegate each scene gets.</summary>

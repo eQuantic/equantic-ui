@@ -23,8 +23,9 @@ public sealed class PhotonHost
     private readonly LiveRegionAnnouncer _announcer = new();
 
     public PhotonHost(VisualNode root, IAppTheme theme, ThemeMode mode, float width, float height,
-        ITextMeasurer? measurer = null, float typeScale = 1f)
+        ITextMeasurer? measurer = null, float typeScale = 1f, ComponentBoundary? boundary = null)
     {
+        Boundary = boundary ?? new ComponentBoundary();
         _root = root;
         _theme = theme;
         Mode = mode;
@@ -32,6 +33,7 @@ public sealed class PhotonHost
         Height = height;
         _measurer = measurer;
         _typeScale = typeScale;
+        _owner = Boundary.Owner();
 
         // ONCE, for the whole tree: a SetState marks its position in the owner, and the owner asks
         // for the frame. Nothing subscribes per instance, so nothing can subscribe twice (#935: the
@@ -456,8 +458,18 @@ public sealed class PhotonHost
     }
 
     /// <summary>The tree this host keeps across frames: every position, the instances it retains, and
-    /// the order its components mount and unmount in, the root's included (see BuildOwner).</summary>
-    private readonly BuildOwner _owner = ComponentBoundary.Owner();
+    /// the order its components mount and unmount in, the root's included (see BuildOwner). Made from
+    /// <see cref="Boundary"/>, so its components build through the window's boundary.</summary>
+    private readonly BuildOwner _owner;
+
+    /// <summary>
+    /// The window's error boundary (#1452): every component of this host's tree builds through it, so a
+    /// component that throws is reported to its <see cref="ComponentBoundary.Report"/>, described as its
+    /// <see cref="ComponentBoundary.Diagnostics"/> say, and named in its
+    /// <see cref="ComponentBoundary.Contained"/>, and in no other window's. A shell arms the report and
+    /// reads the tally beside its frame summary.
+    /// </summary>
+    public ComponentBoundary Boundary { get; }
 
 
     private Pressable? _pressed;

@@ -30,20 +30,22 @@ public class ContainedIsNotSilentTests
         public override VisualNode Build(ComponentContext context) => new Text("ok", TypeRole.BodyM);
     }
 
-    private static void Render(VisualNode root)
+    /// <summary>The run's window's boundary (#1452): every render of a test draws in a window of its
+    /// own, and they all build through this one, as a run's windows report to its tally.</summary>
+    private readonly ComponentBoundary _boundary = new();
+
+    private void Render(VisualNode root)
     {
-        var host = new PhotonHost(root, PhotonTheme.Instance, ThemeMode.Light, 400, 300);
+        var host = new PhotonHost(root, PhotonTheme.Instance, ThemeMode.Light, 400, 300, boundary: _boundary);
         host.RenderFrame(new DisplayListBuilder());
     }
-
-    public ContainedIsNotSilentTests() => ComponentBoundary.ClearContained();
 
     [Fact]
     public void AHealthyRender_ContainsNothing()
     {
         Render(new Fine());
 
-        ComponentBoundary.Contained.Should().BeEmpty("empty is the answer a working app gives");
+        _boundary.Contained.Should().BeEmpty("empty is the answer a working app gives");
     }
 
     [Fact]
@@ -56,7 +58,7 @@ public class ContainedIsNotSilentTests
         Render(column);
 
         // The name is the actionable fact: a log line is for a human, this is for a check.
-        ComponentBoundary.Contained.Should().Equal(["Breaks"]);
+        _boundary.Contained.Should().Equal(["Breaks"]);
     }
 
     /// <summary>
@@ -69,13 +71,13 @@ public class ContainedIsNotSilentTests
         var root = new Breaks();
         for (var frame = 0; frame < 12; frame++) Render(root);
 
-        ComponentBoundary.Contained.Should().Equal("Breaks");
+        _boundary.Contained.Should().Equal("Breaks");
     }
 
     /// <summary>
     /// The tally belongs to a RUN, and a run has to say when it starts or the tally is whatever
     /// survived whatever ran before it in the same process — which a long-lived host (the design
-    /// host runs many apps) reaches immediately. `PhotonApplication.Run` arms it.
+    /// host runs many apps) reaches immediately. A window's host starts its own empty (#1452).
     /// <para>
     /// Within one run a component that threw and then recovered still counts, and that is the
     /// point rather than a rough edge: it DID throw, and a summary that hides a failure because it
@@ -90,12 +92,34 @@ public class ContainedIsNotSilentTests
         var flaky = new Breaks();
         Render(flaky);
         Render(new Fine());
-        ComponentBoundary.Contained.Should().Equal(["Breaks"], "it threw, and recovering does not unthrow it");
+        _boundary.Contained.Should().Equal(["Breaks"], "it threw, and recovering does not unthrow it");
 
-        // A new run arms the tally, the way PhotonApplication.Run does.
-        ComponentBoundary.ClearContained();
+        // A new run starts its tally empty.
+        _boundary.ClearContained();
         Render(new Fine());
 
-        ComponentBoundary.Contained.Should().BeEmpty("a healthy run is not accused of the last one's failure");
+        _boundary.Contained.Should().BeEmpty("a healthy run is not accused of the last one's failure");
+    }
+
+    /// <summary>
+    /// Two windows in one process keep two tallies (#1452). The tally was one ambient channel, so a
+    /// window that drew a healthy screen was accused of what the other one contained, and a shell that
+    /// refuses to exit zero while the tally is non-empty failed for a window it never drew.
+    /// </summary>
+    [Fact]
+    public void AComponentContainedInOneWindow_IsCountedByThatWindowAlone()
+    {
+        var reported = new List<string>();
+        var broken = new PhotonHost(new Breaks(), PhotonTheme.Instance, ThemeMode.Light, 400, 300);
+        broken.Boundary.Report = (component, _) => reported.Add(component.GetType().Name);
+        var healthy = new PhotonHost(new Fine(), PhotonTheme.Instance, ThemeMode.Light, 400, 300);
+        healthy.Boundary.Report = (component, _) => reported.Add("healthy window heard " + component.GetType().Name);
+
+        broken.RenderFrame(new DisplayListBuilder());
+        healthy.RenderFrame(new DisplayListBuilder());
+
+        broken.Boundary.Contained.Should().Equal(["Breaks"]);
+        healthy.Boundary.Contained.Should().BeEmpty("the healthy window contained nothing");
+        reported.Should().Equal(["Breaks"], "each window's report hears its own tree");
     }
 }

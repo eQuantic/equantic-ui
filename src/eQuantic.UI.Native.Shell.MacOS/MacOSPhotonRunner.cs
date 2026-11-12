@@ -64,9 +64,12 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
         // Null MEANS follow the system, which is what the option has always documented and what
         // iOS and Android have always done. This shell answered Light regardless, so a Mac in dark
         // mode opened every Photon app light.
+        // The window's error boundary (#1452), armed with the app's report and read for the summary.
+        var boundary = new eQuantic.UI.Primitives.ComponentBoundary();
+        app.ArmBoundary(boundary);
         window.Run(app.Root(), app.Theme, options.Mode ?? SystemMode(), options.MaxFrames,
-            themeController, cultureController);
-        ReportFrames($"frames presented: {window.FramesPresented}", app);
+            themeController, cultureController, boundary);
+        ReportFrames($"frames presented: {window.FramesPresented}", app, boundary);
     }
 
     /// <summary>
@@ -75,9 +78,10 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
     /// count — sides with the box. So the names go on the line everyone reads, and StrictRender
     /// decides whether the exit code says so too.
     /// </summary>
-    private static void ReportFrames(string summary, PhotonApplication app)
+    private static void ReportFrames(string summary, PhotonApplication app,
+        eQuantic.UI.Primitives.ComponentBoundary boundary)
     {
-        var contained = eQuantic.UI.Primitives.ComponentBoundary.Contained;
+        var contained = boundary.Contained;
         var missing = eQuantic.UI.Primitives.FaceResolution.Unresolved;
         if (contained.Count > 0) summary += $" — CONTAINED: {string.Join(", ", contained)}";
         // A face the machine does not have is the other thing only the pixels used to say, and it
@@ -124,6 +128,7 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
             IconRasterizer = new Shell.Apple.CoreGraphicsIconRasterizer(),
             Density = Density.Compact,
         };
+        app.ArmBoundary(host.Boundary);
 
         var width = (int)options.Width;
         var height = (int)options.Height;
@@ -142,6 +147,6 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
         File.WriteAllBytes(path, Engine.PngCodec.Encode(width, height, pixels));
         // The headless path needs this MORE than the windowed one, not less: a CI screenshot step
         // is exactly where nobody is looking at the picture.
-        ReportFrames($"screenshot: {path}", app);
+        ReportFrames($"screenshot: {path}", app, host.Boundary);
     }
 }

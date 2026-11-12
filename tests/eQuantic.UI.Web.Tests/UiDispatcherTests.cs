@@ -54,7 +54,7 @@ public class UiDispatcherTests
         }
 
         public Counter Counter { get; } = new();
-        public BuildOwner Owner { get; } = ComponentBoundary.Owner();
+        public BuildOwner Owner { get; } = new ComponentBoundary().Owner();
         public int Requests { get; private set; }
     }
 

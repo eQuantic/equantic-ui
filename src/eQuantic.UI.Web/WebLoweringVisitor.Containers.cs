@@ -40,7 +40,7 @@ internal sealed partial class WebLoweringVisitor
         // Through the boundary's bound rather than a hop count of this method's own: the loop
         // it replaces stopped ITSELF spinning after eight hops and then handed a still
         // unresolved component back, which `LowerStack` lowered straight into the same chain.
-        return component.ExpandContained(_context, this,
+        return _measurer.Boundary.ExpandContained(component, _context, this,
             static (built, visitor) => visitor.ResolveForPositioning(built));
     }
 

@@ -65,6 +65,10 @@ public sealed class PhotonViewController : UIViewController
         _forcedMode = forcedMode;
     }
 
+    /// <summary>The screen's error boundary (#1452): every component of its tree builds through it, and
+    /// what it contains is named on the self-test's summary line.</summary>
+    public ComponentBoundary Boundary { get; init; } = new();
+
     public PhotonViewController(NativeHandle handle) : base(handle) =>
         throw new NotSupportedException("PhotonViewController is built in code, not from a storyboard.");
 
@@ -107,7 +111,8 @@ public sealed class PhotonViewController : UIViewController
         eQuantic.UI.Native.Hosting.PhotonCultureController.ApplyToProcess(uiCulture, formatCulture);
 
         _text = new CoreTextService();
-        _host = new PhotonHost(_root, _theme, Mode(), (float)view.Bounds.Width, (float)view.Bounds.Height, _text)
+        _host = new PhotonHost(_root, _theme, Mode(), (float)view.Bounds.Width, (float)view.Bounds.Height, _text,
+            boundary: Boundary)
         {
             RecycleFrames = true,   // production owns its frames (LayoutNodePool)
             RenderScale = scale,
@@ -275,7 +280,7 @@ public sealed class PhotonViewController : UIViewController
             // What the render CONTAINED, on the one line a self-test reads. No exit code here — a
             // UIViewController has no process status to set — but silence was the worse half: this
             // shell printed nothing at all, so a run whose whole chrome threw looked like a clean one.
-            var contained = eQuantic.UI.Primitives.ComponentBoundary.Contained;
+            var contained = Boundary.Contained;
             var missing = eQuantic.UI.Primitives.FaceResolution.Unresolved;
             var summary = $"frames presented: {FramesPresented}";
             if (contained.Count > 0) summary += $" — CONTAINED: {string.Join(", ", contained)}";

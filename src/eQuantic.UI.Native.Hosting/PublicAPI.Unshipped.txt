@@ -2,3 +2,4 @@
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
 *REMOVED*[EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
 *REMOVED*[EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.Theme.set -> void
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.ArmBoundary(eQuantic.UI.Primitives.ComponentBoundary! boundary) -> void
