@@ -1,0 +1,9 @@
+=== plain run 10:23:16
+--- sample 10:23:16 load: { 48.34 47.90 22.37 } System-wide memory free percentage: 82%
+158 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2449 dotnet run --no-build --project samples/PhotonDesktop
+ 1973  78.0 960880 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+   90  28.0  12384 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+ 2449  19.3  46176 dotnet
+ 1176  12.9   6240 /usr/libexec/sysmond
+  729  12.3  50656 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
