@@ -17,3 +17,14 @@
   971   2.3  77216 /Users/runner/actions-runner/cached/bin/Runner.Listener
   978   0.4 106128 /Users/runner/actions-runner/cached/bin/Runner.Worker
   459   0.4  14832 /System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService
+=== alive 10:23:32 app running: 2286
+=== alive 10:23:42 app running: 2286
+--- sample 10:23:45 load: { 41.39 47.27 22.50 } System-wide memory free percentage: 83%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2262 dotnet run --no-build --project samples/PhotonDesktop
+2286 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  336 105.0 168576 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 2871   8.4  13680 diskutil
+  117   8.2   9712 /usr/libexec/diskarbitrationd
+  215   7.3  23952 /usr/libexec/storagekitd
+  114   6.8  56464 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
