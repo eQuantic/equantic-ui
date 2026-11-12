@@ -7,3 +7,13 @@
  2449  19.3  46176 dotnet
  1176  12.9   6240 /usr/libexec/sysmond
   729  12.3  50656 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
+=== alive 10:23:26 app running: 2505
+--- sample 10:23:34 load: { 38.38 45.71 22.03 } System-wide memory free percentage: 83%
+158 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2449 dotnet run --no-build --project samples/PhotonDesktop
+2505 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 1262  62.8  68480 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
+  378  17.9  84512 /System/Library/PrivateFrameworks/VoiceShortcuts.framework/Versions/A/Support/siriactionsd
+  422  13.8  31344 /System/Library/PrivateFrameworks/AXAssetLoader.framework/Support/axassetsd
+  159   2.8  29520 /System/Library/PrivateFrameworks/CoreAnalytics.framework/Support/analyticsd
+  452   1.6  62864 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/corespotlightd
