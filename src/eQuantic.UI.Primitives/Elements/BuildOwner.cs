@@ -23,7 +23,6 @@ namespace eQuantic.UI.Primitives;
 /// unmounts before what arrives mounts.
 /// </para>
 /// </summary>
-[ServerOnly]
 public sealed class BuildOwner
 {
     private readonly List<ComponentElement> _dirty = new();
@@ -42,6 +41,9 @@ public sealed class BuildOwner
     // build changed marks its dependents into this frame's list, behind the one building.
     private bool _inFrameBuild;
     private int _dirtyCursor = -1;
+    // The layer the realizer is showing, and which of its marked positions BuildDeferred is building.
+    private NodeElement? _showing;
+    private int _deferredCursor = -1;
     private int _stamp;
     private int _ids;
     private readonly Func<UiComponent, ComponentContext, int, VisualNode> _buildComponent;
@@ -257,6 +259,21 @@ public sealed class BuildOwner
 
     internal void ExitBuild() => _building--;
 
+    /// <summary>The realizer shows <paramref name="holder"/>'s layer: a build outside the frame's build
+    /// phase, whose dependents build in its <see cref="BuildDeferred"/>. One layer at a time: both
+    /// realizers show a layer and return before they walk it, so a layer inside it is shown after.</summary>
+    internal void EnterLayer(NodeElement holder)
+    {
+        EnterBuild();
+        _showing = holder;
+    }
+
+    internal void ExitLayer()
+    {
+        _showing = null;
+        ExitBuild();
+    }
+
     internal int NextStamp() => ++_stamp;
 
     /// <summary>The next id of this tree (<see cref="Element.Id"/>, <see cref="NodeElement.PartId"/>),
@@ -275,10 +292,23 @@ public sealed class BuildOwner
     /// A position whose dependency changed: built in THIS frame when the change happened in its build
     /// phase, as Flutter's dependents are, since a value its parent's build changed is one the frame
     /// shows. Behind the position building, by depth, so a parent still hands it its configuration
-    /// first. Outside the build phase it waits like a <c>SetState</c>.
+    /// first. A change while the realizer shows a layer builds in that layer's
+    /// <see cref="BuildDeferred"/>, before the layer is laid out (#1413). Anywhere else it waits like a
+    /// <c>SetState</c>.
     /// </summary>
     internal void ScheduleDependent(ComponentElement element)
     {
+        if (_showing is not null)
+        {
+            // While the layer's own marked positions build, behind the one building when it is this
+            // layer's; before that, or for a layer inside it, the list BuildDeferred reads.
+            if (_deferredCursor >= 0 && ReferenceEquals(DeferredHolderOf(element), _showing))
+                InsertBehind(_deferredScratch, _deferredCursor, element);
+            else
+                _dirtyDeferred.Add(element);
+            return;
+        }
+
         if (!_inFrameBuild)
         {
             Schedule(element);
@@ -292,9 +322,16 @@ public sealed class BuildOwner
             return;
         }
 
-        var at = _dirty.Count;
-        while (at > _dirtyCursor + 1 && _dirty[at - 1].Depth > element.Depth) at--;
-        _dirty.Insert(at, element);
+        InsertBehind(_dirty, _dirtyCursor, element);
+    }
+
+    /// <summary>Into a list sorted by depth that is being built, behind the position at
+    /// <paramref name="cursor"/>, in depth order.</summary>
+    private static void InsertBehind(List<ComponentElement> list, int cursor, ComponentElement element)
+    {
+        var at = list.Count;
+        while (at > cursor + 1 && list[at - 1].Depth > element.Depth) at--;
+        list.Insert(at, element);
     }
 
     /// <summary>A position marked dirty: built in this frame's phase when it is not running yet, in
@@ -363,9 +400,18 @@ public sealed class BuildOwner
         }
 
         mine.Sort(ByDepth);
-        foreach (var element in mine)
+        try
         {
-            if (WaitsToBuild(element)) element.Rebuild(force: false);
+            // By index: a dependent a build here marks joins the list (ScheduleDependent).
+            for (var i = 0; i < mine.Count; i++)
+            {
+                _deferredCursor = i;
+                if (WaitsToBuild(mine[i])) mine[i].Rebuild(force: false);
+            }
+        }
+        finally
+        {
+            _deferredCursor = -1;
         }
 
         mine.Clear();

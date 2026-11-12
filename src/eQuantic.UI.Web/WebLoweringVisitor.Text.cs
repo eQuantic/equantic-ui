@@ -165,10 +165,12 @@ internal sealed partial class WebLoweringVisitor
             ["aria-multiline"] = "true",
         };
         if (sheet.Label is { Length: > 0 } named) door["aria-label"] = named;
+        // Its value is what the grid says now (#1333, TS twin: lowerSheetSurface), as Photon gives the field.
         var input = new RealizedElement("textarea")
         {
             ClassName = "eq-code-input",
             RawAttributes = door,
+            InnerHtml = sheet.Announcement,
         };
         // The door's text and composition, declared as the pointer is. Its keydown, its clipboard trio and
         // its focus are the client-only handlers of every entry the parity net leaves to the browser.
@@ -252,12 +254,15 @@ internal sealed partial class WebLoweringVisitor
         // The child lowers with no inherited axis, as the client lowers it, and keeps its layers
         // (the code's mark layer among them) in a stacking context of its own, so a layer it raised
         // stays under the caret written after it.
+        // Its text is the door's value (#1333, TS twin: lowerCodeSurface), so what it draws is out of the
+        // reading order: a reader heard an empty field and then the code as lines of their own.
         if (Lower(surface.Child, null, LoweringPath.Child) is { } child)
         {
             if (child is RealizedElement realized)
             {
                 realized.Style ??= new HtmlStyle();
                 realized.Style.Isolation = "isolate";
+                realized.AriaHidden = true;
             }
             element.Children.Add(child);
         }
@@ -312,10 +317,13 @@ internal sealed partial class WebLoweringVisitor
             if (surface.HighlightedOption >= 0) input["aria-activedescendant"] = $"{listId}-{surface.HighlightedOption}";
         }
 
+        // The door holds what a reader hears the surface hold (#1333): the field and its text are one thing.
+        // The runtime keeps the value and the selection in step with the model after each render.
         var door = new RealizedElement("textarea")
         {
             ClassName = "eq-code-input",
             RawAttributes = input,
+            InnerHtml = surface.Model.Reading.Text,
         };
         foreach (var text in (ReadOnlySpan<string>)["beforeinput", "compositionupdate", "compositionend"])
             door.CustomEvents[text] = ClientDispatches;
