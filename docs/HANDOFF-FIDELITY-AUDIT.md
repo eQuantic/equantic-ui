@@ -49,6 +49,7 @@ Each of these has a test that names its handoff block, so the figure cannot drif
 | B2 ListItem · B8 Chip | no §10 hover on an interactive row or on any chip kind | `PointerContractFidelityTests` |
 | B10 SearchField | the clear affordance was a 20dp glyph with a 20dp hit rect | `PointerContractFidelityTests` |
 | B4 BottomNavigation · C16 NavigationRail | a pressed destination painted the hover's SurfaceSubtle instead of the selection's pill at 40% | `PressedFillPlacementTests`, `PressedFillPlacementRealizerTests` |
+| B8 Chip | the unselected filter chip rested on the Input chip's SurfaceSubtle, so its press showed nothing, where the frames draw it outlined; the Input chip's label was TextSecondary | `PressedFillPlacementTests`, `Wave1ComponentTests`, `PointerContractFidelityTests` |
 | A10 Icon | a labelled glyph carried a name and no `role="img"` | `DestinationSemanticsTests` |
 | B3 AppBar | the screen's title was a span, so a page had no level-1 heading | `HeadingOutlineTests` |
 | C7 Slider | thumb 20dp with a 2dp accent ring; the unfilled track painted BorderStrong | `SliderHandoffFidelityTests` |
@@ -375,10 +376,10 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:112  ? new Pressable(box, OnPressed)
-  Chip.cs:98    {
-  Chip.cs:114        Label = Label,
-  Chip.cs:107  Pressed = pressedFill is null ? null : new StyleDiff { Background = pressedFill },   // the pressed fill is the box's own Pressed diff since #616
+  Chip.cs:114  ? new Pressable(box, OnPressed)
+  Chip.cs:115    {
+  Chip.cs:116        Label = Label,
+  Chip.cs:109  Pressed = pressedFill is null ? null : new StyleDiff { Background = pressedFill },   // the pressed fill is the box's own Pressed diff since #616
   WebLoweringVisitor.Interaction.cs:530  AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
   ```
 
@@ -386,12 +387,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "Keys — A chip is a tab stop; Space/Enter toggles or activates; Delete/Backspace removes a removable chip — the ✕ is not a separate stop."
-- **Code**: Exactly inverted for Input chips. The chip body is wrapped in a Pressable only for Filter kind (Chip.cs:90), so a removable Input chip is NOT a tab stop; the ✕ IS one, because the remove glyph is its own Pressable (Chip.cs:73) and Pressable lowers to a real <button> (src/eQuantic.UI.Web/WebLoweringVisitor.Interaction.cs:474 LowerPressable). There is no Delete/Backspace handling anywhere in the component — no Shortcut node, no key binding.
+- **Code**: Exactly inverted for Input chips. The chip body is wrapped in a Pressable only for Filter kind (Chip.cs:113), so a removable Input chip is NOT a tab stop; the ✕ IS one, because the remove glyph is its own Pressable (Chip.cs:77) and Pressable lowers to a real <button> (src/eQuantic.UI.Web/WebLoweringVisitor.Interaction.cs:474 LowerPressable). There is no Delete/Backspace handling anywhere in the component — no Shortcut node, no key binding.
 - **Evidence**:
 
   ```
-  Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
-  Chip.cs:111  return Kind == ChipKind.Filter && OnPressed != null
+  Chip.cs:77  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
+  Chip.cs:113  return Kind == ChipKind.Filter && OnPressed != null
   WebLoweringVisitor.Interaction.cs:508  var element = new RealizedElement(wrapping ? "span" : "button")
   ```
 
@@ -399,12 +400,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "Hover: outlined/quiet chips = SurfaceSubtle; filled chips = fill→pressed midpoint (§10). The remove ✕ is its own hover target inside the chip."
-- **Code**: The chip's BoxStyle sets no Hover diff at all (Chip.cs:79-87), so a pointer gets no hover feedback on any chip kind. The capability exists and is used by the sibling control: BoxStyle.Hover (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) is set by Button (src/eQuantic.UI.Components/Button.cs:126). The generated stylesheet has no chip/pressable hover rule either — only :active and :focus-visible (src/eQuantic.UI.Web/ThemeStylesheet.cs:91-106).
+- **Code**: FIXED since the audit (see "Closed since the audit ran"): every pressable chip hovers, and since #1460 the outlined unselected filter chip on SurfaceSubtle, as B8 says (Chip.cs:83-91). The selected chip's "fill→pressed midpoint" is #1462. A Tag, which nothing presses, does not hover.
 - **Evidence**:
 
   ```
-  Chip.cs:98  var box = new Box(new BoxStyle
-  Chip.cs:102      Background = fill,
+  Chip.cs:100  var box = new Box(new BoxStyle
+  Chip.cs:104      Background = fill,
   Button.cs:133  Hover = inert || hoverFill is null ? null : new StyleDiff { Background = hoverFill },
   ```
 
@@ -1711,7 +1712,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:75  Label = SdkStrings.Remove,
+  Chip.cs:79  Label = SdkStrings.Remove,
   SdkResources.resx:16  <value>Remove</value>
   ```
 
@@ -1723,7 +1724,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
+  Chip.cs:77  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
   WebLoweringVisitor.Interaction.cs:513  Padding = "0",
   EmitVisitor.Interaction.cs:181  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
   ```
@@ -2706,7 +2707,7 @@ the pill's 40 down.
   BoxStyle.cs:154  public StyleDiff? Hover { get; init; }
   BoxStyle.cs:180  public PointerCursor Cursor { get; init; }
   BoxStyle.cs:157  /// Spec S5: style DIFF applied while the CONTROL this box is inside has keyboard focus (the
-  StyleAtomizer.cs:286-287  ControlFocus => $".eq-pressable:focus-visible .{className}:not(:where(.eq-pressable:focus-visible .eq-pressable .{className}))",   // since #616 it stops at a control nested in the focused one
+  StyleAtomizer.cs:273-274  ControlFocus => $".eq-pressable:focus-visible .{className}:not(:where(.eq-pressable:focus-visible .eq-pressable .{className}))",   // since #616 it stops at a control nested in the focused one
   ```
 
 ### A1 Box · missing-feature · **unverified**
@@ -3141,12 +3142,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "selection change animates check-in Fast 100ms"
-- **Code**: The check glyph is added to / removed from the Row unconditionally on rebuild with no motion wrapper (Chip.cs:66-69), so it pops in and out. Only the background transitions (the generated .eq-pressable rule animates background-color alone, src/eQuantic.UI.Web/ThemeStylesheet.cs:92).
+- **Code**: The check glyph is added to / removed from the Row unconditionally on rebuild with no motion wrapper (Chip.cs:69-72), so it pops in and out. Only the background transitions (the generated .eq-pressable rule animates background-color alone, src/eQuantic.UI.Web/ThemeStylesheet.cs:92).
 - **Evidence**:
 
   ```
-  Chip.cs:66  if (Kind == ChipKind.Filter && Selected)
-  Chip.cs:68      content.Add(new Icon(Icons.Check, IconSize.Sm, textColor));
+  Chip.cs:69  if (Kind == ChipKind.Filter && Selected)
+  Chip.cs:71      content.Add(new Icon(Icons.Check, IconSize.Sm, textColor));
   ```
 
 ### B8 Chip · missing-feature · **CONFIRMED**
@@ -3157,7 +3158,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
+  Chip.cs:77  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
   ```
 
 ### B8 Chip · metric · **REFUTED**
@@ -3169,7 +3170,7 @@ the pill's 40 down.
 
   ```
   Chip.cs:14  /// The design system's Chip / Tag (spec B8): height 32, Radius.Full, 12dp X padding, 13/600 label —
-  Chip.cs:100  Height = Sizing.Height(SizeVariant.Small, context.Density),
+  Chip.cs:102  Height = Sizing.Height(SizeVariant.Small, context.Density),
   Tokens.cs:83  SizeVariant.Small => density == Density.Compact ? 26 : 32,
   ```
 

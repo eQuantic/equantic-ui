@@ -33,13 +33,26 @@ public static class WebRealizer
     /// </summary>
     public static HtmlElement Lower(
         VisualNode node, IAppTheme theme, float typeScale = 1f, StyleSink? styles = null,
-        Density density = Density.Comfortable)
+        Density density = Density.Comfortable) =>
+        Lower(node, theme, typeScale, styles, density, channels: null);
+
+    /// <summary>
+    /// The same lowering inside a render (#1404): its atomic rules go to the render's style sink, it is
+    /// built at the render's density, and the expansion scope, the gradients, the faces and the link
+    /// policy are the render's. The escape hatch's bridge is its one caller.
+    /// </summary>
+    internal static HtmlElement Lower(VisualNode node, IAppTheme theme, float typeScale, RenderChannels channels) =>
+        Lower(node, theme, typeScale, channels.Styles, channels.Density, channels);
+
+    private static HtmlElement Lower(
+        VisualNode node, IAppTheme theme, float typeScale, StyleSink? styles, Density density,
+        RenderChannels? channels)
     {
         // No font here to measure with: a component that asks is answered 0 and remembered, so the
         // client draws it again instead of adopting geometry built on zeros (FontlessMeasurer).
         var measurer = new FontlessMeasurer();
         var context = new ComponentContext(theme, typeScale, density, measurer.Measure);
-        var root = LowerRoot(node, context, measurer)
+        var root = LowerRoot(node, context, measurer, channels)
                ?? new RealizedElement("span"); // layout-only nodes outside a flex row lower to nothing
         if (styles != null)
             StyleAtomizer.AtomizeTree(root, ThemeVarMap.For(theme), styles);
@@ -51,8 +64,9 @@ public static class WebRealizer
     /// <see cref="WebLoweringVisitor"/>'s, and this class is the entry point plus the atomizing
     /// step that wraps it.
     /// </summary>
-    private static HtmlElement? LowerRoot(VisualNode node, ComponentContext context, FontlessMeasurer measurer) =>
-        new WebLoweringVisitor(context, measurer).Lower(node, horizontalAxis: null);
+    private static HtmlElement? LowerRoot(VisualNode node, ComponentContext context, FontlessMeasurer measurer,
+        RenderChannels? channels) =>
+        new WebLoweringVisitor(context, measurer, channels: channels).Lower(node, horizontalAxis: null);
 
     internal static string PaintCss(VectorPaint paint) => paint.Kind switch
     {
