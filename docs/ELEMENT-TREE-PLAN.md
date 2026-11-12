@@ -559,14 +559,19 @@ the parity rows it closes flip.
    Then **the engine runs in the browser**
    (`openspec/changes/archive/2026-11-11-the-element-engine-runs-in-the-browser`), which closes E3a. The
    engine leaves `[ServerOnly]`, its modules are pinned beside the other engines' and accepted by the
-   runtime's `tsc`, and eleven of `ElementTreeTests`' cases run on .NET and on the transpiled engine with
+   runtime's `tsc`, and twelve of `ElementTreeTests`' cases run on .NET and on the transpiled engine with
    equal traces. They found what the browser's components lacked: C#'s empty `AdoptConfig` default, and
    the position a stateful instance is mounted at, whose `Place` and `Leave` became `EnterPosition` and
    `LeavePosition` because a JavaScript class has one namespace and two library components already had a
    private `Place`. A library module that extends a sibling now imports the base from its module, since
    the runtime's aggregator defines a re-export only once the barrel has loaded. eqc met one more
    emission defect on the way (#1396, a downcast to a type whose member is inherited), fixed by the bug
-   sweep. The served runtime grows by the engine's modules, recorded in its budget.
+   sweep. The inherited value (#1412) landed first, so its position crosses with the rest, and the
+   runtime's context gained what C#'s did there: a context made for a position reads the theme, density
+   and type scale from its owner's frame and registers the position as their reader, and answers InFlow
+   from the tree. The twelfth case holds it: a frame with another density builds what read it and nothing
+   else. A construction of the context met #1475 in eqc's imports, fixed by the bug sweep. The served
+   runtime grows by the engine's modules, recorded in its budget.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.
