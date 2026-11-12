@@ -57,6 +57,14 @@ public class WrittenArgumentOrderConformanceTests
             public Chained() : base(b: Seq.Int(2), a: Seq.Int(1)) { }
         }
 
+        // A params parameter that is the array it is on the twin, its elements packed after the arguments are
+        // evaluated as written (#1192 beside #1071): a method's and a class's constructor.
+        public sealed class Packed
+        {
+            public string Value;
+            public Packed(string tag, params int[] items) { Value = tag + ":" + string.Join(",", items) + ":" + items.Length; }
+        }
+
         public static class Shared
         {
             // A static constructor, so .NET runs the initializer at the first access and not before it.
@@ -99,6 +107,10 @@ public class WrittenArgumentOrderConformanceTests
             "Seq.Seen = \"\"; var c = new Chained(); return c.Value + \"|\" + Seq.Seen;"),
         ("a static's initializer, named arguments out of order",
             "Seq.Seen = \"\"; var v = Shared.Value; return v + \"|\" + Seq.Seen;"),
+        ("a params element named before the parameter it follows",
+            "Seq.Seen = \"\"; var r = Calls.Listed(rest: Seq.Int(2), head: Seq.Int(1)); return r + \"|\" + Seq.Seen;"),
+        ("a constructor's params element named before the parameter it follows",
+            "Seq.Seen = \"\"; var p = new Packed(items: Seq.Int(2), tag: Seq.Str(\"t\")); return p.Value + \"|\" + Seq.Seen;"),
     ];
 
     [SkippableTheory]
