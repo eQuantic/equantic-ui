@@ -20,7 +20,17 @@ if (args.Length is < 1 or > 2 || !Directory.Exists(args[0]))
 }
 
 const string Picture = "](assets/readme/";
-var readme = File.ReadAllText(args.Length == 2 ? args[1] : "README.md");
+const string HeadEnds = "<!-- end of the page's head -->";
+var readmePath = args.Length == 2 ? args[1] : "README.md";
+var repository = File.ReadAllText(readmePath);
+if (!repository.Contains(HeadEnds))
+{
+    Console.WriteLine($"::error::{readmePath} does not say where its head ends");
+    return 2;
+}
+// The page's head is drawn on nuget.org in Markdown, where HTML is shown as text (#882).
+var readme = File.ReadAllText(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(readmePath))!, "assets", "package-head.md")).TrimEnd()
+    + repository[(repository.IndexOf(HeadEnds, StringComparison.Ordinal) + HeadEnds.Length)..];
 var pictures = readme.Split(Picture).Length - 1;
 var packages = Directory.GetFiles(args[0], "*.nupkg");
 var failures = 0;
