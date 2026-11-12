@@ -92,3 +92,14 @@
   285  14.7 137984 /System/Library/CoreServices/Software Update.app/Contents/Resources/softwareupdated
   135   9.1  31856 /usr/libexec/dasd
   156   7.8   9152 /usr/sbin/cfprefsd
+=== alive 13:57:10 app: 2354 watch: 
+=== alive 13:57:20 app: 2354 watch: 
+--- sample 13:57:22 load: { 10.11 23.97 14.54 } System-wide memory free percentage: 81%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2288 dotnet run --no-build --project samples/PhotonDesktop
+2354 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  394  52.2  77040 /System/Library/CoreServices/iconservicesagent
+  991  26.4  42304 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd4166047580
+  380  20.6  68112 /usr/libexec/secinitd
+  305   7.1 308432 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  135   7.1  32832 /usr/libexec/dasd
