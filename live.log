@@ -92,3 +92,14 @@
  1000   0.4 132672 /Users/runner/actions-runner/cached/bin/Runner.Worker
     1   0.3  29440 /sbin/launchd
  2109   0.2 137424 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+=== alive 13:56:30 app: 2109 watch: 
+=== alive 13:56:40 app: 2109 watch: 
+--- sample 13:56:41 load: { 6.02 10.35 5.51 } System-wide memory free percentage: 93%
+161 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2089 dotnet run --no-build --project samples/PhotonDesktop
+2109 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 1000   8.1 132640 /Users/runner/actions-runner/cached/bin/Runner.Worker
+  979   2.2   7296 /usr/libexec/sysmond
+ 2083   0.3   1616 /bin/bash
+  976   0.3  44144 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd3646539152
+  542   0.3  39040 /System/Library/PrivateFrameworks/AppStoreDaemon.framework/Support/appstoreagent
