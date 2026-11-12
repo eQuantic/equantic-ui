@@ -417,25 +417,26 @@ public class FactoryAuthoringTests
     /// `.length` threw. It looked correct only when the caller passed an array whole.
     /// </summary>
     [Fact]
-    public void WithRefs_AParamsParameter_IsARestParameter()
+    public void WithRefs_AParamsParameter_IsTheArrayItIs()
     {
         var result = CompileWithRefs(Emit("""return $"{Count("a", "b")}{Count()}";"""));
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-        Assert.Contains("count(...xs", result.TypeScript);
-        Assert.Contains("P.count('a', 'b')", result.TypeScript);
-        Assert.Contains("P.count()", result.TypeScript);
+        Assert.Contains("count(xs", result.TypeScript);
+        Assert.Contains("P.count(['a', 'b'])", result.TypeScript);
+        Assert.Contains("P.count([])", result.TypeScript);
     }
 
-    /// <summary>C# lets the array be passed WHOLE as well, and that form has to spread — otherwise
-    /// the fix above just moves the wrongness to the other call shape.</summary>
+    /// <summary>C# lets the array be passed WHOLE as well, and that form is the array itself, with no
+    /// argument cap, as the callee holds the caller's array in .NET (#1159).</summary>
     [Fact]
-    public void WithRefs_AnArrayPassedWholeToParams_Spreads()
+    public void WithRefs_AnArrayPassedWholeToParams_IsPassedAsItIs()
     {
         var result = CompileWithRefs(Emit("""return $"{Count(new[] { "a" })}";"""));
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-        Assert.Contains("P.count(...", result.TypeScript);
+        Assert.DoesNotContain("P.count(...", result.TypeScript);
+        Assert.Contains("P.count(['a'])", result.TypeScript);
     }
 
     /// <summary>

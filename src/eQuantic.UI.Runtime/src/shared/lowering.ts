@@ -44,6 +44,7 @@ import {
   atomizePseudo,
   atomizeScrolled,
   CONTROL_FOCUS,
+  CONTROL_HOVER,
   CONTROL_PRESSED,
   ensureAdaptiveGate,
   gateCompactUntil,
@@ -221,15 +222,26 @@ export function px(dp: number): string {
 function transformValue(t: TransformValue): string | undefined {
   const tx = t.translateX ?? 0;
   const ty = t.translateY ?? 0;
+  const fx = t.translateFractionX ?? 0;
+  const fy = t.translateFractionY ?? 0;
   const rot = t.rotationDegrees ?? 0;
   const sx = t.scaleX ?? 1;
   const sy = t.scaleY ?? 1;
   const parts: string[] = [];
-  if (tx !== 0 || ty !== 0) parts.push(`translate(${px(tx)}, ${px(ty)})`);
+  if (tx !== 0 || ty !== 0 || fx !== 0 || fy !== 0)
+    parts.push(`translate(${offsetValue(tx, fx)}, ${offsetValue(ty, fy)})`);
   if (rot !== 0) parts.push(`rotate(${num(rot)}deg)`);
   if (sx !== 1 || sy !== 1)
     parts.push(sx === sy ? `scale(${num(sx)})` : `scale(${num(sx)}, ${num(sy)})`);
   return parts.length > 0 ? parts.join(' ') : undefined;
+}
+
+/** One axis of a translation (C# `TokenCss.Offset`): units, a percentage of the element's own size,
+ * or their sum. */
+function offsetValue(units: number, fraction: number): string {
+  if (fraction === 0) return px(units);
+  const percent = `${num(Math.fround(fraction * 100))}%`;
+  return units === 0 ? percent : `calc(${percent} + ${px(units)})`;
 }
 
 function radiusValue(radii: CornerRadiiValue): string {
@@ -403,7 +415,7 @@ function lowerNodeKind(
     case 'column':
       return lowerFlex(node as FlexNodeValue, context, path);
     case 'text':
-      return lowerText(node as TextNode, context);
+      return lowerText(node as TextNode);
     case 'textEntry':
       return lowerTextEntry(node as TextEntryNode, context);
     case 'overlay':
@@ -3202,6 +3214,8 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     padding:
       style.padding && !isZeroInsets(style.padding) ? paddingValue(style.padding) : undefined,
     'background-color': style.background ? tokenValue(style.background) : undefined,
+    // The foreground the text and icons inside inherit (C# twin, #614).
+    color: style.foreground ? tokenValue(style.foreground) : undefined,
     // Mirror of the C# realizer: the FIRST layer paints on top, so a gradient sits over the grid,
     // and background-size carries one entry per layer (`auto` stands in for the gradient).
     'background-image': backgroundLayers(style),
@@ -3278,8 +3292,9 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
 
   const result = element('div', entries);
 
+  // Inside an enabled control the hover is the control's (C# twin, #614).
   if (style.hover && !(simulatedState & SIMULATED_HOVERED))
-    appendDiff(result, ':hover', style.hover, style);
+    appendDiff(result, inEnabledControl ? CONTROL_HOVER : ':hover', style.hover, style);
   if (focus && !(simulatedState & SIMULATED_FOCUSED)) appendDiff(result, CONTROL_FOCUS, focus, style);
   if (pressed && !(simulatedState & SIMULATED_PRESSED))
     appendDiff(result, CONTROL_PRESSED, pressed, style);
@@ -3410,6 +3425,7 @@ const NO_COLOR: ColorTokenValue = {
 function diffEntries(diff: StyleDiffValue, style: BoxStyleValue): Record<string, string | undefined> {
   const entries: Record<string, string | undefined> = {};
   if (diff.background) entries['background-color'] = tokenValue(diff.background);
+  if (diff.foreground) entries['color'] = tokenValue(diff.foreground);
   // The border along the edges the BASE draws, in the base's own shape (C# twin, #506): the
   // shorthand for every edge, per-side widths for some, and a width alone in the base's colour.
   if (diff.borderWidth != null) {
@@ -3630,7 +3646,7 @@ function faceStack(family: string, mono: boolean): string {
   return `"${family}", ` + (mono ? MONO_STACK : SANS_STACK);
 }
 
-function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
+function lowerText(text: TextNode): HtmlNode {
   // A family the node names that ships files is declared in the document the first time text is set
   // in it (#1056), as the server declares it in the head of a page it renders.
   if (isWellFormedFace(text.styleOverride?.family?.name)) declareFamily(text.styleOverride!.family);
@@ -3639,7 +3655,8 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     // inline span inside a block parent it sat on the parent's line box and its body-font strut. The
     // multi-line clamp below replaces it with the box the clamp needs.
     display: 'block',
-    color: tokenValue(text.color ?? context.textPrimary),
+    // No colour of its own: it inherits the box's foreground or the document's (C# twin, #614).
+    color: text.color ? tokenValue(text.color) : undefined,
     // Line alignment inside the paragraph (C# twin) — wrapped lines of a centered headline
     // must center too.
     'text-align': text.align === 'center' ? 'center' : text.align === 'end' ? 'end' : undefined,
@@ -3922,11 +3939,13 @@ function lowerPressable(
   const outerSimulated = simulatedState;
   const outerDisabled = inDisabledControl;
   const outerInControl = inControl;
+  const outerInEnabledControl = inEnabledControl;
   if (disabled) {
     simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
     inDisabledControl = true;
-  } else if (inControl) simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
+  } else if (inControl) simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED | SIMULATED_HOVERED);
   inControl = true;
+  inEnabledControl = !disabled;
   // What THIS control is pictured as: its ring below reads it (C# `pictured`).
   const pictured = simulatedState;
   let child: HtmlNode | null;
@@ -3936,6 +3955,7 @@ function lowerPressable(
     simulatedState = outerSimulated;
     inDisabledControl = outerDisabled;
     inControl = outerInControl;
+    inEnabledControl = outerInEnabledControl;
   }
 
   // HTML forbids a button inside a button (and an anchor inside an anchor): the parser closes the
@@ -3949,6 +3969,8 @@ function lowerPressable(
     background: 'none',
     border: 'none',
     'font-family': 'inherit',
+    // The user agent's buttontext would stand between the content and its foreground (C# twin, #614).
+    color: 'inherit',
     'text-align': 'start',
     cursor: disabled ? undefined : 'pointer',
     // A Fill child needs the 100% chain to pass through the button (scrim et al.).
@@ -4595,6 +4617,8 @@ let simulatedState = 0;
 let inDisabledControl = false;
 /** True while an enabled control's subtree is lowered under a Simulated node (C# `_inControl`, #616). */
 let inControl = false;
+/** True while the nearest control is ENABLED, whose hover its boxes then take (C# `_inEnabledControl`, #614). */
+let inEnabledControl = false;
 
 /**
  * Draws the subtree in the given states (the C# `LowerSimulated`). `:hover` and `:focus-visible`
