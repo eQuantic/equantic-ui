@@ -1,0 +1,9 @@
+=== round 1 20:35:18
+--- sample 20:35:18 load: { 33.66 30.22 13.85 } System-wide memory free percentage: 83%
+157 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+ 1895  74.6 1001808 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+   90  25.9  12000 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+  135  16.7  31680 /usr/libexec/dasd
+ 2173  16.0  47280 dotnet
+  986  11.5   6240 /usr/libexec/sysmond
+  disk:    34.96 1013 34.60     0.00    0  0.00     0.00    0  0.00 
