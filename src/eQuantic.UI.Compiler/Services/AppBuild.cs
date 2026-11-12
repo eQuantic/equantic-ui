@@ -53,6 +53,15 @@ public sealed class AppBuild
         };
     }
 
+    /// <summary>Whether <paramref name="file"/> is a source of this build: the app's own, or a referenced
+    /// project's the app can name. What the build reads of the app's <c>Program.cs</c> is read from these
+    /// files alone (its service registrations, its layout).</summary>
+    private bool IsSourceOfTheBuild(string file) =>
+        _referenced?.CanBeNamedFrom(file)
+        ?? Path.GetFullPath(file).StartsWith(
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(_primarySourceDir)) + Path.DirectorySeparatorChar,
+            StringComparison.Ordinal);
+
     /// <summary>Where each type's TypeScript module is written before it is bundled.</summary>
     public string IntermediateDirectory => _intermediateDir;
 
@@ -296,12 +305,9 @@ public sealed class AppBuild
                 // What the app registered in its container, written in its own files or a referenced
                 // project's: a component that takes one of those services through its constructor has
                 // the browser build the same class (#1335).
-                var appDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(_primarySourceDir)) + Path.DirectorySeparatorChar;
-                var referenced = _referenced;
                 _compiler.SetServiceRegistrations(ServiceRegistrations.Read(
                     built is null ? [projectCompilation] : [projectCompilation, .. built.Values],
-                    file => referenced?.CanBeNamedFrom(file)
-                        ?? Path.GetFullPath(file).StartsWith(appDirectory, StringComparison.Ordinal)));
+                    IsSourceOfTheBuild));
                 _output.WriteLine($"📚 Loaded project compilation: {assemblyName} ({allSourceFiles.Count} files, {assemblyPaths.Count} refs)");
 
                 // Log success
@@ -449,6 +455,20 @@ public sealed class AppBuild
             // compiled: each type's name with a file that declares it.
             var reached = new Queue<ReferencedType>();
 
+            // The app's layout, which the browser loads by name as it loads a page: an entry point
+            // wherever its file sits, read from the UseLayout call the server reads (AppLayouts). One
+            // declared in a referenced project is compiled because it is named there, as nothing
+            // imports a layout.
+            var layouts = Compilation is { } declaring
+                ? AppLayouts.Read(new[] { declaring }.Concat(_referencedCompilations), IsSourceOfTheBuild)
+                : [];
+            var layoutModules = layouts.Select(AppLayouts.ModuleOf).ToHashSet();
+            foreach (var layout in layouts)
+            foreach (var declaration in AppLayouts.Declarations(layout))
+            {
+                if (_referenced?.ProjectOf(declaration.File) is not null) reached.Enqueue(declaration);
+            }
+
             // One module from one compiled type: its warnings, its name's claim, its file and map,
             // and whether the bundle starts from it. `claimedAs` is what makes two claims of a name
             // ONE type, and `describe` reads a file back for the message of a clash.
@@ -512,9 +532,9 @@ public sealed class AppBuild
 
                 // A PAGE is always an entry point, wherever its file sits: the server loads
                 // it by name, so a page that is only transpiled is a 404 the build never
-                // mentioned. The positional rule stays as well — a project laid out the
-                // conventional way keeps every module it had before.
-                if (result.IsPage || isEntryCandidate)
+                // mentioned. The app's LAYOUT is loaded by name too. The positional rule stays
+                // as well — a project laid out the conventional way keeps every module it had before.
+                if (result.IsPage || isEntryCandidate || layoutModules.Contains((result.Namespace, result.ComponentName)))
                 {
                     entryPoints.Add(tsPath);
                 }
