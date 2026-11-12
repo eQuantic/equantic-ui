@@ -208,7 +208,8 @@ public sealed class MaterialTheme : IAppTheme
 
     /// <summary>
     /// M3's chip (Chips, Specs): 32dp tall with a small (8dp) corner, 16dp of padding and 8dp between
-    /// its icons and its label in Label large; a selected filter chip is filled rather than outlined.
+    /// its icons and its label in Label large; an unselected filter chip has a 1dp outline, and a
+    /// selected one is filled rather than outlined.
     /// M3 draws the icons at 18dp, which is not on the §07 whitelist an icon is held to, so they take
     /// its next step, 20. M3 gives a chip one height, at either density.
     /// </summary>
@@ -226,6 +227,7 @@ public sealed class MaterialTheme : IAppTheme
         LabelTracking = 0.1f,
         Radius = 8,
         SelectedBorderWidth = 0,
+        OutlineWidth = 1,
         IconSize = IconSize.Dense,
         RemoveIconSize = IconSize.Dense,
     };

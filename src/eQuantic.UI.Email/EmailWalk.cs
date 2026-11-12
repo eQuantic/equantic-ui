@@ -47,6 +47,9 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
     /// </summary>
     public abstract Nothing Visit(UiComponent node, Nothing state);
 
+    /// <summary>A value for a subtree reaches a message as the child it holds.</summary>
+    public Nothing Visit(InheritedComponent node, Nothing state) => node.Child.Accept(this, state);
+
     /// <summary>
     /// The one refusal, loud and naming the node — the repo's rule: never a silent divergence. The
     /// alternative is a message that goes out without a piece of itself and says nothing about it.

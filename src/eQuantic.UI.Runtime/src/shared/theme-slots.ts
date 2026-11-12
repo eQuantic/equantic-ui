@@ -251,6 +251,8 @@ export class ChipTheme {
   radius: number | null = null;
   fill: ColorToken | null = null;
   selectedBorderWidth: number | null = null;
+  outlineWidth: number | null = null;
+  outlineColor: ColorToken | null = null;
   pressOpacity: number | null = null;
   iconSize: number | null = null;
   removeIconSize: number | null = null;
@@ -459,6 +461,8 @@ export function chipTheme(data: SlotData): ChipTheme {
     radius: slotValue<number>(data.radius),
     fill: slotToken(data.fill),
     selectedBorderWidth: slotValue<number>(data.selectedBorderWidth),
+    outlineWidth: slotValue<number>(data.outlineWidth),
+    outlineColor: slotToken(data.outlineColor),
     pressOpacity: slotValue<number>(data.pressOpacity),
     iconSize: slotValue<number>(data.iconSize),
     removeIconSize: slotValue<number>(data.removeIconSize),

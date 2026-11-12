@@ -297,6 +297,27 @@ eQuantic.UI.Primitives.SegmentedTheme.TrackBorderColor.get -> eQuantic.UI.Primit
 eQuantic.UI.Primitives.SegmentedTheme.TrackBorderColor.init -> void
 eQuantic.UI.Primitives.SegmentedTheme.TrackBorderWidth.get -> float?
 eQuantic.UI.Primitives.SegmentedTheme.TrackBorderWidth.init -> void
+*REMOVED*static eQuantic.UI.Primitives.Navigator.Go(string! destination) -> void
+*REMOVED*static eQuantic.UI.Primitives.Navigator.Handler.get -> System.Action<string!>?
+*REMOVED*static eQuantic.UI.Primitives.Navigator.Handler.set -> void
+static eQuantic.UI.Primitives.Navigator.Of(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.Navigator!
+eQuantic.UI.Primitives.Navigator.Go(string! destination) -> void
+eQuantic.UI.Primitives.BuildOwner.NavigationRequested.get -> System.Action<string!>?
+eQuantic.UI.Primitives.BuildOwner.NavigationRequested.set -> void
+eQuantic.UI.Primitives.InheritedElement
+eQuantic.UI.Primitives.InheritedElement.Inherited.get -> eQuantic.UI.Primitives.InheritedComponent!
+override eQuantic.UI.Primitives.InheritedElement.ChildAt(int slot) -> eQuantic.UI.Primitives.Element?
+override eQuantic.UI.Primitives.InheritedElement.VisitChildren(System.Action<eQuantic.UI.Primitives.Element!>! visitor) -> void
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.InheritedComponent! node, TState state) -> TResult
+eQuantic.UI.Primitives.InheritedComponent
+eQuantic.UI.Primitives.InheritedComponent.InheritedComponent(eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Primitives.InheritedComponent.Child.get -> eQuantic.UI.Primitives.VisualNode!
+override sealed eQuantic.UI.Primitives.InheritedComponent.NodeKind.get -> string!
+override sealed eQuantic.UI.Primitives.InheritedComponent.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+abstract eQuantic.UI.Primitives.InheritedComponent.UpdateShouldNotify(eQuantic.UI.Primitives.InheritedComponent! old) -> bool
+virtual eQuantic.UI.Primitives.StatefulComponent.OnDependenciesChanged() -> void
+eQuantic.UI.Primitives.ComponentContext.DependOn<T>() -> T?
+eQuantic.UI.Primitives.ComponentContext.Find<T>() -> T?
 static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!
 static eQuantic.UI.Primitives.ButtonTheme.Merge(eQuantic.UI.Primitives.ButtonTheme? under, eQuantic.UI.Primitives.ButtonTheme? over) -> eQuantic.UI.Primitives.ButtonTheme?
 static eQuantic.UI.Primitives.ControlsTheme.Merge(eQuantic.UI.Primitives.ControlsTheme? under, eQuantic.UI.Primitives.ControlsTheme? over) -> eQuantic.UI.Primitives.ControlsTheme?
@@ -308,3 +329,7 @@ static eQuantic.UI.Primitives.IconButtonTheme.Merge(eQuantic.UI.Primitives.IconB
 static eQuantic.UI.Primitives.InputTheme.Merge(eQuantic.UI.Primitives.InputTheme? under, eQuantic.UI.Primitives.InputTheme? over) -> eQuantic.UI.Primitives.InputTheme?
 static eQuantic.UI.Primitives.SegmentedTheme.Merge(eQuantic.UI.Primitives.SegmentedTheme? under, eQuantic.UI.Primitives.SegmentedTheme? over) -> eQuantic.UI.Primitives.SegmentedTheme?
 static eQuantic.UI.Primitives.SelectionControlsTheme.Merge(eQuantic.UI.Primitives.SelectionControlsTheme? under, eQuantic.UI.Primitives.SelectionControlsTheme? over) -> eQuantic.UI.Primitives.SelectionControlsTheme?
+eQuantic.UI.Primitives.ChipTheme.OutlineColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ChipTheme.OutlineColor.init -> void
+eQuantic.UI.Primitives.ChipTheme.OutlineWidth.get -> float?
+eQuantic.UI.Primitives.ChipTheme.OutlineWidth.init -> void

@@ -260,8 +260,8 @@ public sealed class PhotonTheme : IAppTheme
         IconSize = IconSize.Dense,
     };
 
-    /// <summary>The Chip: a pill padded 12, its label at 13 over 16 semi-bold, and a selected filter
-    /// chip's 1dp border.</summary>
+    /// <summary>The Chip: a pill padded 12, its label at 13 over 16 semi-bold, and a filter chip's
+    /// 1dp border, the selected one's and the outline of the unselected one.</summary>
     public ChipTheme? Chip => field ??= new ChipTheme
     {
         PaddingX = Space.S3,
@@ -272,6 +272,7 @@ public sealed class PhotonTheme : IAppTheme
         LabelTracking = 0,
         Radius = Radius.Full,
         SelectedBorderWidth = 1,
+        OutlineWidth = 1,
         PressOpacity = 0.24f,
         IconSize = IconSize.Sm,
         RemoveIconSize = IconSize.Dense,

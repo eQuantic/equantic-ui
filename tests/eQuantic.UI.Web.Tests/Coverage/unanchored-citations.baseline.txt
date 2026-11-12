@@ -21,7 +21,7 @@ docs/HANDOFF-FIDELITY-AUDIT.md Avatar.cs 7
 docs/HANDOFF-FIDELITY-AUDIT.md Badge.cs 2
 docs/HANDOFF-FIDELITY-AUDIT.md BottomNavigation.cs 7
 docs/HANDOFF-FIDELITY-AUDIT.md BottomSheet.cs 10
-docs/HANDOFF-FIDELITY-AUDIT.md Button.cs 3
+docs/HANDOFF-FIDELITY-AUDIT.md Button.cs 2
 docs/HANDOFF-FIDELITY-AUDIT.md Card.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md Checkbox.cs 7
 docs/HANDOFF-FIDELITY-AUDIT.md Chip.cs 10
@@ -67,7 +67,7 @@ docs/HANDOFF-FIDELITY-AUDIT.md Switch.cs 6
 docs/HANDOFF-FIDELITY-AUDIT.md Tabs.cs 6
 docs/HANDOFF-FIDELITY-AUDIT.md TextInput.cs 11
 docs/HANDOFF-FIDELITY-AUDIT.md TextInputRealizerTests.cs 1
-docs/HANDOFF-FIDELITY-AUDIT.md ThemeStylesheet.cs 18
+docs/HANDOFF-FIDELITY-AUDIT.md ThemeStylesheet.cs 17
 docs/HANDOFF-FIDELITY-AUDIT.md Toast.cs 9
 docs/HANDOFF-FIDELITY-AUDIT.md Tokens.cs 22
 docs/HANDOFF-FIDELITY-AUDIT.md UIExtensions.cs 1

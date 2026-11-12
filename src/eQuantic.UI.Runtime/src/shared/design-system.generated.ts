@@ -360,7 +360,7 @@ export const photonTheme: AppTheme = {
   input: inputTheme({"paddingX":14,"pickerPaddingX":12,"gap":10,"pickerGap":8,"borderWidth":1,"focusBorderWidth":2,"radius":10,"searchRadius":999,"iconSize":20,"labelGap":6,"captionGap":5,"labelRole":"label","captionRole":"caption","panelElevation":2}),
   selectionControls: selectionControlsTheme({"box":{"comfortable":22,"compact":20},"borderWidth":2,"checkboxRadius":4,"radioDot":{"comfortable":10,"compact":9},"radioRowHeight":44,"labelGap":12,"switchWidth":{"comfortable":52,"compact":44},"switchHeight":{"comfortable":32,"compact":26},"switchThumb":{"comfortable":26,"compact":20},"switchInset":3,"switchThumbElevation":1,"sliderTrackHeight":4,"sliderThumbSize":24,"sliderThumbBorder":1,"sliderThumbElevation":2,"sliderMinWidth":120}),
   segmented: segmentedTheme({"inset":3,"thumbElevation":1,"borderWidth":1,"iconSize":20}),
-  chip: chipTheme({"paddingX":12,"gap":6,"labelSize":13,"labelLineHeight":16,"labelWeight":"semiBold","labelTracking":0,"radius":999,"selectedBorderWidth":1,"pressOpacity":0.24,"iconSize":16,"removeIconSize":20}),
+  chip: chipTheme({"paddingX":12,"gap":6,"labelSize":13,"labelLineHeight":16,"labelWeight":"semiBold","labelTracking":0,"radius":999,"selectedBorderWidth":1,"outlineWidth":1,"pressOpacity":0.24,"iconSize":16,"removeIconSize":20}),
   colors(variant: string): VariantColors {
     return variantColors[variant] ?? variantColors.primary;
   },

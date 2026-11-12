@@ -37,12 +37,18 @@ public sealed record ChipTheme
     /// <summary>The corner radius (the theme's full shape: a pill).</summary>
     public float? Radius { get; init; }
 
-    /// <summary>The fill of an unselected filter chip and of an input or suggestion chip
-    /// (<see cref="IAppTheme.SurfaceSubtle"/>).</summary>
+    /// <summary>The fill of an input or suggestion chip, and the one an unselected filter chip takes
+    /// under the pointer and pressed (<see cref="IAppTheme.SurfaceSubtle"/>).</summary>
     public ColorToken? Fill { get; init; }
 
     /// <summary>A selected filter chip's border width (1).</summary>
     public float? SelectedBorderWidth { get; init; }
+
+    /// <summary>The width of an unselected filter chip's outline (1).</summary>
+    public float? OutlineWidth { get; init; }
+
+    /// <summary>The colour of an unselected filter chip's outline (<see cref="IAppTheme.BorderStrong"/>).</summary>
+    public ColorToken? OutlineColor { get; init; }
 
     /// <summary>The opacity of the pressed colour over a selected filter chip (0.24).</summary>
     public float? PressOpacity { get; init; }
@@ -72,6 +78,8 @@ public sealed record ChipTheme
             Radius = over.Radius ?? under.Radius,
             Fill = over.Fill ?? under.Fill,
             SelectedBorderWidth = over.SelectedBorderWidth ?? under.SelectedBorderWidth,
+            OutlineWidth = over.OutlineWidth ?? under.OutlineWidth,
+            OutlineColor = over.OutlineColor ?? under.OutlineColor,
             PressOpacity = over.PressOpacity ?? under.PressOpacity,
             IconSize = over.IconSize ?? under.IconSize,
             RemoveIconSize = over.RemoveIconSize ?? under.RemoveIconSize,
