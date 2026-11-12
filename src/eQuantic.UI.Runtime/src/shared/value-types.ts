@@ -323,7 +323,8 @@ export class Rect {
   }
 }
 
-/** Mirror of the C# `Transform2D` — components applied translate → rotate → scale, center-anchored. */
+/** Mirror of the C# `Transform2D` — components applied translate → rotate → scale, center-anchored.
+ * The translation is units plus fractions of the box's own size (#614). */
 export class Transform2D {
   constructor(
     readonly translateX = 0,
@@ -331,10 +332,15 @@ export class Transform2D {
     readonly rotationDegrees = 0,
     readonly scaleX = 1,
     readonly scaleY = 1,
+    readonly translateFractionX = 0,
+    readonly translateFractionY = 0,
   ) {}
 
   static translate(x: number, y = 0): Transform2D {
     return new Transform2D(x, y);
+  }
+  static fractionalTranslate(x: number, y = 0): Transform2D {
+    return new Transform2D(0, 0, 0, 1, 1, x, y);
   }
   static rotate(degrees: number): Transform2D {
     return new Transform2D(0, 0, degrees);
@@ -344,10 +350,13 @@ export class Transform2D {
   }
 
   withTranslate(x: number, y = 0): Transform2D {
-    return new Transform2D(x, y, this.rotationDegrees, this.scaleX, this.scaleY);
+    return new Transform2D(x, y, this.rotationDegrees, this.scaleX, this.scaleY, this.translateFractionX, this.translateFractionY);
+  }
+  withFractionalTranslate(x: number, y = 0): Transform2D {
+    return new Transform2D(this.translateX, this.translateY, this.rotationDegrees, this.scaleX, this.scaleY, x, y);
   }
   withRotate(degrees: number): Transform2D {
-    return new Transform2D(this.translateX, this.translateY, degrees, this.scaleX, this.scaleY);
+    return new Transform2D(this.translateX, this.translateY, degrees, this.scaleX, this.scaleY, this.translateFractionX, this.translateFractionY);
   }
   withScale(uniform: number): Transform2D {
     return new Transform2D(
@@ -356,6 +365,8 @@ export class Transform2D {
       this.rotationDegrees,
       uniform,
       uniform,
+      this.translateFractionX,
+      this.translateFractionY,
     );
   }
 }

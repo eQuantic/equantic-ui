@@ -54,6 +54,10 @@ internal sealed partial class WebLoweringVisitor(
     /// as the real ones do (#616). A <see cref="Simulated"/> node starts it over.</summary>
     private bool _inControl;
 
+    /// <summary>True while the nearest control around the box being lowered is ENABLED: its hover is
+    /// then the control's (#614). A disabled control's boxes keep their own, as before.</summary>
+    private bool _inEnabledControl;
+
     /// <summary>This node's place in the tree, as the browser's lowering spells it (<see cref="LoweringPath"/>): a
     /// table scopes its cells' ids by it (#1115). Each container steps down by the browser's segment for the same
     /// child, through <see cref="Lower(VisualNode, bool?, string)"/> or <see cref="At{T}"/>.</summary>
