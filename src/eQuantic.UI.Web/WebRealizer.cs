@@ -47,38 +47,6 @@ public static class WebRealizer
     }
 
     /// <summary>
-    /// Lower ONE FRAME OF A LIVE ELEMENT TREE: the tree a <see cref="BuildOwner"/> has just built,
-    /// rooted at <paramref name="root"/>. A component is lowered from what its position built in that
-    /// frame, by the instance the position keeps, and a layer (an overlay's child, an anchored panel)
-    /// is shown to the owner before it lowers, so what it holds builds in the slot that keeps it.
-    /// <para>
-    /// <see cref="Lower"/> builds every component again, which is the server's single frame. Over
-    /// a second frame that draws a stateful component nested in another at its defaults, because a
-    /// parent's build makes a fresh instance and the state lives on the one the element kept. This is
-    /// the lowering for a host that draws a tree more than once: a component test, and the request
-    /// owner of docs/ELEMENT-TREE-PLAN.md's E4.
-    /// </para>
-    /// <para>
-    /// Call it between <see cref="BuildOwner.Build"/> and <see cref="BuildOwner.EndFrame"/>, with the
-    /// theme, scale and density the owner built with: a layer shown here builds through the owner,
-    /// and a layer not shown leaves the tree when the frame ends.
-    /// </para>
-    /// </summary>
-    public static HtmlElement LowerFrame(
-        Element root, IAppTheme theme, float typeScale = 1f, StyleSink? styles = null,
-        Density density = Density.Comfortable)
-    {
-        var measurer = new FontlessMeasurer();
-        var context = new ComponentContext(theme, typeScale, density, measurer.Measure);
-        var lowered = new WebLoweringVisitor(context, measurer, new ElementFrame(root))
-                          .Lower(root.Configuration, horizontalAxis: null)
-                      ?? new RealizedElement("span");
-        if (styles != null)
-            StyleAtomizer.AtomizeTree(lowered, ThemeVarMap.For(theme), styles);
-        return lowered;
-    }
-
-    /// <summary>
     /// The pass's visitor, built once per lowering: what each word of the vocabulary becomes is
     /// <see cref="WebLoweringVisitor"/>'s, and this class is the entry point plus the atomizing
     /// step that wraps it.

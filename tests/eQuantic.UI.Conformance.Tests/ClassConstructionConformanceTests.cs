@@ -87,6 +87,36 @@ public class ClassConstructionConformanceTests
     public void AClassesMembers_StartInDeclarationOrder_BeforeItsBasesConstructor(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Initializers, typeAnnotations, InitializerCases);
 
+    /// <summary>A component's property that keeps its store with C# 14's <c>field</c>, built with no
+    /// configuration: the store starts as its initializer, or its type's zero, as a plain class's does. The
+    /// twin declared it and never started it, so it read <c>undefined</c> until something wrote it, and
+    /// <c>"" + Level</c> rendered the word (#1183).</summary>
+    private const string ComponentStores = """
+        using eQuantic.UI.Primitives;
+
+        public sealed class Gauge : StatefulComponent
+        {
+            public int Level { get => field; set => field = value * 2; }
+            public string Label { get => field; set => field = value; }
+            public int Start { get => field; set => field = value + 1; } = 5;
+            public bool On { get => field; set => field = value; }
+            public override VisualNode Build(ComponentContext context) => new Text("" + Level, TypeRole.BodyM);
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] ComponentStoreCases =
+    [
+        ("a store starts at its type's zero", "var g = new Gauge(); return g.Level + \"|\" + g.On + \"|\" + (g.Label == null) + \"|\" + (\"\" + g.Label + \"\").Length;"),
+        ("a store starts as its initializer, past its setter", "var g = new Gauge(); return g.Start.ToString();"),
+        ("a store is written through its setter", "var g = new Gauge(); g.Level = 3; g.Start = 1; return g.Level + \"|\" + g.Start;"),
+    ];
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AComponentsGuardedStore_StartsAsCSharpStartsIt(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(ComponentStores, typeAnnotations, ComponentStoreCases);
+
     private const string Initialized = """
         using System.Collections;
         using System.Collections.Generic;

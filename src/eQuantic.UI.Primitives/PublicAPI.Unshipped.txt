@@ -2,3 +2,4 @@
 *REMOVED*eQuantic.UI.Primitives.AdaptiveNode.Resolve(eQuantic.UI.Primitives.WindowSizeClass sizeClass) -> eQuantic.UI.Primitives.VisualNode!
 *REMOVED*eQuantic.UI.Primitives.BuildOwner.Build(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.ComponentContext! context, eQuantic.UI.Primitives.WindowSizeClass sizeClass, bool rebuildAll) -> eQuantic.UI.Primitives.Element!
 eQuantic.UI.Primitives.BuildOwner.Build(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.ComponentContext! context, float windowWidth, bool rebuildAll) -> eQuantic.UI.Primitives.Element!
+static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!
