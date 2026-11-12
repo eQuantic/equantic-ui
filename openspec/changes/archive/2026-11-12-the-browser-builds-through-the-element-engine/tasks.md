@@ -1,7 +1,7 @@
 ## 1. Measure before
 
 - [x] 1.1 The e2e suite in a real browser on the slice's base (bc42a5648): 15 of 15
-- [ ] 1.2 The runtime's suites (`tsc`, `vitest run`) on the base, as the baseline the slice keeps
+- [x] 1.2 The runtime's suites (`tsc`, `vitest run`) on the base, as the baseline the slice keeps: `tsc` clean, vitest 2972 of 2975 (the three red are the perf specs' timing under load)
 
 ## 2. The browser builds through the engine
 
@@ -25,5 +25,5 @@
 - [x] 4.1 The specs that asserted the store assert the same behaviour on elements, and the scenarios of this change have a spec each
 - [x] 4.2 The runtime's suites, the element engine's twins and the hydration contract pass (with #1477 in: twins and hydration crossing 25 of 25, Server 625 of 625)
 - [x] 4.3 The e2e suite in a real browser after the change: 15 of 15, as before it (with #1477 in)
-- [ ] 4.4 The served runtime's budget, re-recorded in a commit of its own if it moved
-- [ ] 4.5 `docs/ELEMENT-TREE-PLAN.md`, the ledger and `FlutterParityPinTests` where a row closes
+- [x] 4.4 The served runtime's budget, re-recorded in a commit of its own: 330,541 gzipped (+2,011)
+- [x] 4.5 `docs/ELEMENT-TREE-PLAN.md`, the ledger and `FlutterParityPinTests` where a row closes (the `Element` row's instance-handling half; the row stays partial for E5b)
