@@ -17,22 +17,13 @@ namespace eQuantic.UI.Web;
 /// rendered with no fill at all, on the layout where it was supposed to be visible.
 /// </para>
 /// <para>
-/// Without an ambient sink the realizer keeps writing the defs inline. A drawing rendered on its
-/// own, a unit test, a component realized outside a page — none of them have a document to put a
-/// container in, and all of them have to keep working.
+/// Without a render's sink (<see cref="RenderChannels.Gradients"/>) the realizer keeps writing the defs
+/// inline. A drawing rendered on its own, a unit test, a component realized outside a page — none of
+/// them have a document to put a container in, and all of them have to keep working.
 /// </para>
 /// </summary>
 public sealed class GradientSink
 {
-    private static readonly AsyncLocal<GradientSink?> _ambient = new();
-
-    /// <summary>The render-scoped sink, or null outside an SSR render.</summary>
-    public static GradientSink? Ambient
-    {
-        get => _ambient.Value;
-        set => _ambient.Value = value;
-    }
-
     /// <summary>The id the container carries, and the one the client twin looks for before it
     /// creates a second one — two containers means two defs with one id, which is this bug again
     /// through the other door.</summary>

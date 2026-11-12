@@ -2707,7 +2707,7 @@ the pill's 40 down.
   BoxStyle.cs:164  public StyleDiff? Hover { get; init; }
   BoxStyle.cs:190  public PointerCursor Cursor { get; init; }
   BoxStyle.cs:167  /// Spec S5: style DIFF applied while the CONTROL this box is inside has keyboard focus (the
-  StyleAtomizer.cs:299-300  ControlFocus => $".eq-pressable:focus-visible .{className}:not(:where(.eq-pressable:focus-visible .eq-pressable .{className}))",   // since #616 it stops at a control nested in the focused one
+  StyleAtomizer.cs:286-287  ControlFocus => $".eq-pressable:focus-visible .{className}:not(:where(.eq-pressable:focus-visible .eq-pressable .{className}))",   // since #616 it stops at a control nested in the focused one
   ```
 
 ### A1 Box · missing-feature · **unverified**
