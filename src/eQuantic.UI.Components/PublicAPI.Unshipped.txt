@@ -1,1 +1,2 @@
 #nullable enable
+static eQuantic.UI.Components.UI.Theme(eQuantic.UI.Primitives.IAppTheme! value, eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.Theme!
