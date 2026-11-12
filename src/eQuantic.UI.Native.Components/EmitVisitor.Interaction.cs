@@ -10,6 +10,23 @@ namespace eQuantic.UI.Native.Components;
 /// </summary>
 internal sealed partial class EmitVisitor
 {
+    /// <summary>Whether a box of this control, up to a control nested in it, declares a Hover diff:
+    /// what the control's hover would show. Walked by index, every frame, so it forms nothing: a cache
+    /// keyed on the laid-out node missed on every frame the layout ran again, and paid an entry and a
+    /// box for each control, which a steady frame measured (#614).</summary>
+    private static bool HoversWithItsControl(LayoutNode control)
+    {
+        var children = control.Children;
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child.Source is Pressable) continue;
+            if (child.Source is Box { Style.Hover.IsEmpty: false }) return true;
+            if (HoversWithItsControl(child)) return true;
+        }
+        return false;
+    }
+
     private void EmitPressable(Pressable pressable, EmitState s)
     {
         // A pressable answers where what it holds is DRAWN, as Flutter's GestureDetector defers to
@@ -20,6 +37,12 @@ internal sealed partial class EmitVisitor
             : s.Input;
         input.Add(new HitRegion(ExpandHitRect(s.Node.Bounds, s.Press.Density), s.Node.Bounds, pressable,
             PositionOf(s.Node)));
+        // An enabled control is hovered as a whole, and its boxes show their Hover diff while it is,
+        // wherever the pointer is on it (#614): the host tracks it as it tracks a hovering box, and
+        // only when a box of its own hovers with it, so a pointer crossing plain controls repaints
+        // nothing. Its drawn bounds, not the slop a finger is given: a pointer hovers what it is over.
+        if (!pressable.Disabled && HoversWithItsControl(s.Node))
+            input.Add(new HoverRegion(s.Node.Bounds, pressable, PositionOf(s.Node)));
 
         // A PRESSABLE IS THE STOP FOR ITS SUBTREE, exactly as a link, an Adjustable and a Navigable
         // are, and for the reason all four share: `Visit(Pressable)` announces and CONSUMES, so

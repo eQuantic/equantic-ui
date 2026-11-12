@@ -1,6 +1,8 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
 
 export class PythonLanguage {
+    static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
+
     constructor() {
         this.rules = (() => {
         const $o = new CodeLanguageRules();

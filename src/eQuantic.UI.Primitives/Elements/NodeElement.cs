@@ -82,20 +82,21 @@ public sealed class NodeElement : Element
             throw new InvalidOperationException(
                 $"A '{Configuration.NodeKind}' node has no slot the realizer shows.");
 
-        Owner.EnterBuild();
+        Owner.EnterLayer(this);
         try
         {
             var shown = UpdateChild(ChildAt(_deferred), configuration, Owner.RebuildingAll)!;
             _children[_deferred] = shown;
             _shownInFrame = Owner.Frame;
             // What a SetState marked under the slot builds now, with the configuration the layer
-            // shows; the dirty list left it for this moment (BuildOwner.BuildDeferred).
+            // shows, and so does what a value changed in the layer marked; the dirty list left it for
+            // this moment (BuildOwner.BuildDeferred).
             Owner.BuildDeferred(this);
             return shown;
         }
         finally
         {
-            Owner.ExitBuild();
+            Owner.ExitLayer();
         }
     }
 
