@@ -199,12 +199,19 @@ read through the property.
 
 ### Requirement: A field a case apart from a member keeps its own slot
 
-A plain class's instance field whose twin name is another member's, a property, a method, an event or another field of its type or its bases, or a property, a method or an event of a type derived from it that its own source declares, however far down, an explicit interface implementation counted under the name of the member it implements, SHALL live in a slot of its own, its name with a `$` after it, and a slot an ancestor already holds SHALL be taken whatever the spellings, so a field that would meet one SHALL take a `$` more until its slot is free. Every read and write of the field SHALL reach that slot, a call of a delegate field, a read of a field called `Count` and a pattern's included: a property subpattern SHALL read the member the model binds it to, each one along an extended path, and a positional pattern over a `Deconstruct` the app wrote SHALL call it and read the parts it hands back, never the members its outs are named after, and a pattern-matching operation SHALL call it once for each value, as .NET does, across the arms of a switch and the alternatives of an `or`, in an initializer too. The other member SHALL keep its name. A member a type declares on the slot of a field a base of ANOTHER project holds SHALL fail the build with EQ1007, naming the member and the field, since that project's build writes the field's slot without reading the types derived from it elsewhere. A class with such a field SHALL be written to JSON as System.Text.Json writes it: the property, read through its getter once, and never the field.
+A plain class's instance field whose twin name is another member's, a property, a method, an event or another field of its type or its bases, or a property, a method or an event of a type derived from it that its own source declares, however far down, an explicit interface implementation counted under the name of the member it implements, SHALL live in a slot of its own, its name with a `$` after it, and a slot an ancestor already holds SHALL be taken whatever the spellings, so a field that would meet one SHALL take a `$` more until its slot is free. Every read and write of the field SHALL reach that slot, a call of a delegate field, a read of a field called `Count` and a pattern's included: a property subpattern SHALL read the member the model binds it to, each one along an extended path, and a positional pattern over a `Deconstruct` the app wrote SHALL call it and read the parts it hands back, never the members its outs are named after, and a pattern-matching operation SHALL call it once for each value, as .NET does, across the arms of a switch and the alternatives of an `or`, in an initializer too. The other member SHALL keep its name. A member a type declares on the slot of a field a base of ANOTHER project holds SHALL fail the build with EQ1007, naming the member and the field, since that project's build writes the field's slot without reading the types derived from it elsewhere. A class with such a field SHALL be written to JSON as System.Text.Json writes it: the property, read through its getter once, and never the field. A STATIC field of a class, a static class, a record, a struct or a component, a constant's included, whose twin name a static member of its type or of its chain holds SHALL live in a slot of its own by the same rule, past the statics its ancestors hold and beside the statics the types its own source derives from it declare, every declaration, every initializer the type initializer orders and every access reaching that slot; a static and an instance member SHALL NOT move each other.
 
 #### Scenario: A setter beside its field
 
 - **WHEN** `int value;` stands beside `int Value { get => value; set => this.value = value * 2; }`, and `Value` is set to 3
 - **THEN** `Value` reads 6, as in .NET
+
+#### Scenario: A static setter beside its static field
+
+- **WHEN** `static int count;` stands beside `static int Count { get => count; set => count = value * 2; }`, and `Count` is set to 3
+- **THEN** `Count` reads 6, as in .NET, and so does a static field a type initializer starts
+  (`static int count = Seed();`), a record's static, a constant beside a static property of its name, and a
+  base's static beside a derived static method of its name
 
 #### Scenario: A method beside a field
 
@@ -543,6 +550,32 @@ comparison) tells `Box<int>` from `Box<string>`. Its equality, its text and its 
 - **THEN** its `Value`, its `Equals`, its `ToString` and its JSON answer as before, and its runtime type is
   not `Box<string>`'s
 
+### Requirement: A partial member is one member of its twin
+
+The two halves of a partial property, indexer or event SHALL be one member of the twin, written from
+the half that implements it by every emitter, a class's, a static class's, a record's, a struct's and a
+component's: the defining half SHALL hold no slot of its own, start no value in a constructor, and be
+neither compared, hashed, printed nor copied as a record's or a struct's state.
+
+#### Scenario: A partial property's setter
+
+- **WHEN** a class declares `public partial int Level { get; set; }` and
+  `public partial int Level { get => field; set => field = value * 2; }`, and `Level` is set to 3
+- **THEN** `Level` reads 6, as in .NET, and so does a static partial property and a record's, whose
+  equality and text read the property once
+
+#### Scenario: A partial indexer
+
+- **WHEN** a class declares `public partial int this[int i] { get; }` and
+  `public partial int this[int i] { get => i * 2; }`, and `new Grid()[4]` is read
+- **THEN** it answers 8, as in .NET, and the build reports no EQ1007
+
+#### Scenario: A partial event
+
+- **WHEN** a class declares `public partial event Action? Rung;` and its implementing half with `add`
+  and `remove`
+- **THEN** the twin holds no field named `rung`
+
 ### Requirement: A class's TypeScript twin passes the runtime's type check
 
 A class's twin, written as TypeScript, SHALL pass the runtime's strict `tsc` for every C# shape below, and SHALL
@@ -584,6 +617,20 @@ null SHALL each hold the type C# declares for it.
 - **WHEN** a class declares `class Base(string name)`
 - **THEN** its twin's constructor is `constructor(name: string = null!)`, and `tsc` takes it
 
+### Requirement: A component's store a property guards with field starts as C# starts it
+
+A component's instance property that keeps its store through `field` SHALL have that store start, when the component is built, as C# starts the backing field: the property's initializer, written to the store without its setter, or its type's zero, a reference's null included.
+
+#### Scenario: A component built with no configuration
+
+- **WHEN** a component declares `public int Level { get => field; set => field = value * 2; }` and `public string Label { get => field; set => field = value; }`, and is built with nothing written to either
+- **THEN** `Level` reads 0 and `Label` reads null, as in .NET; they read undefined
+
+#### Scenario: An initializer past the setter
+
+- **WHEN** a component declares `public int Start { get => field; set => field = value + 1; } = 5`
+- **THEN** `Start` reads 5, as in .NET, and 2 after `Start = 1`
+
 ### Requirement: A downcast to a type of the runtime keeps its type whichever class declares the member
 
 A downcast to a type the runtime carries a twin of SHALL keep its target's type for the checker, whichever class declares the member the cast reaches, and SHALL write the value alone only where that type is itself the server's (`[ServerOnly]`).
@@ -602,3 +649,19 @@ A downcast to a type the runtime carries a twin of SHALL keep its target's type 
 
 - **WHEN** code casts to `FlexNode`, itself `[ServerOnly]`
 - **THEN** the twin writes the value alone, as it did
+
+### Requirement: An array of an enum is typed as the enum crosses
+
+A field, a static's accessors or a local typed as an array of an enum, at any depth, SHALL be annotated with
+what the enum crosses as in the browser: a vocabulary enum's `<Enum>Value` union, imported from the runtime,
+and an app's own enum's member string, so the runtime's strict `tsc` takes the twin.
+
+#### Scenario: A static array of a vocabulary enum
+
+- **WHEN** a class declares `private static readonly TypeRole[] Roles = [TypeRole.BodyM];`
+- **THEN** its twin's accessors are typed `TypeRoleValue[]`, and its module imports `TypeRoleValue` from the runtime
+
+#### Scenario: An array of an app's enum
+
+- **WHEN** a class declares `private static readonly Shade[] Shades = [Shade.Light];`, `Shade` being an enum of the app's
+- **THEN** its twin's accessors are typed `string[]`

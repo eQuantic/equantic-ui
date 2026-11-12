@@ -927,6 +927,30 @@ export class Simulated extends VisualNode {
  * Draws an overlay WHERE IT STANDS (the C# `InFlow`): the surface, without the scrim, the
  * viewport-sized layer, the portal and the Escape binding that normally carry it.
  */
+/**
+ * A value for a subtree (the C# `InheritedComponent`, after Flutter's `InheritedWidget`): an app
+ * subclasses it with the value it holds, and a component below reads it through its context. It draws
+ * its child alone. Until the browser builds on the element engine (E3b) a context has no position to
+ * look it up from, so `dependOn` and `find` answer null here, as C# answers on a context with none.
+ */
+export abstract class InheritedComponent extends VisualNode {
+  readonly nodeKind = 'inherited';
+  child: VisualChild;
+
+  constructor(child: VisualChild, config?: EqConfig) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+
+  /**
+   * Whether the components that depend on this value rebuild when a new one replaces `old`. Public,
+   * as eqc writes C#'s `protected internal`: an app's override arrives without a modifier, and the
+   * element engine's `InheritedElement` asks it.
+   */
+  abstract updateShouldNotify(old: InheritedComponent): boolean;
+}
+
 export class InFlow extends VisualNode {
   readonly nodeKind = 'inFlow';
   child: VisualChild;

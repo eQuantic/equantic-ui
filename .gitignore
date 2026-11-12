@@ -60,6 +60,8 @@ coverage/
 # source twice without anything noticing (#273); untracked, it cannot. Its map is written with it (#1108).
 src/eQuantic.UI.Server/wwwroot/runtime.js
 src/eQuantic.UI.Server/wwwroot/runtime.js.map
+src/eQuantic.UI.Server/wwwroot/runtime.dev.js
+src/eQuantic.UI.Server/wwwroot/runtime.dev.js.map
 
 # Playwright e2e output
 tests/e2e/playwright-report/
@@ -79,3 +81,14 @@ artifacts/packages/*
 # "Consuming an unreleased SDK from local packages"):
 # packed on demand, never committed.
 artifacts/local-feed/
+
+# A promotion piece's outputs and its compiled tools (promotion/README.md): the recordings and the
+# renders are reproducible and heavy, the binaries are one `swiftc` away.
+promotion/*/raw/
+promotion/*/effectcraft/out/
+promotion/wallet-video/tools/probe
+promotion/wallet-video/tools/changes
+promotion/wallet-video/tools/trim
+promotion/wallet-video/tools/sheet
+promotion/wallet-video/tools/windows
+promotion/wallet-video/tools/winrec

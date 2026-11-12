@@ -140,6 +140,7 @@ export { FormSubmit } from './FormSubmit';
 export { FormulaBar } from './FormulaBar';
 export { IconButton } from './IconButton';
 export { IndentationFoldProvider } from './IndentationFoldProvider';
+export { InheritedElement } from './InheritedElement';
 export { JsonLanguage } from './JsonLanguage';
 export { LeadingSpans } from './LeadingSpans';
 export { List } from './List';

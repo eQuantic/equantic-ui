@@ -555,6 +555,19 @@ export abstract class StatefulComponent extends UiComponent {
   /** Runs when this instance's position LEAVES the tree (C# `OnUnmount`) — unsubscribe here. */
   onUnmount(): void {}
 
+  /**
+   * Runs before this instance builds again because a value it read through `context.dependOn`
+   * changed (C# `OnDependenciesChanged`, Flutter's `didChangeDependencies`) — the transpiled subclass
+   * overrides it.
+   */
+  onDependenciesChanged(): void {}
+
+  /** Called by the element engine before a build a changed dependency asked for (C#
+      `NotifyDependenciesChanged`). */
+  notifyDependenciesChanged(): void {
+    this.onDependenciesChanged();
+  }
+
   /** Called by the HOST — the element engine's owner, or `mount`/`hydrate` for a page root. Idempotent. */
   notifyMounted(): void {
     if (this._lifecycleMounted) return;

@@ -594,19 +594,38 @@ past it).
 ### Requirement: The board's Roadmap shows real dates and a measured forecast
 
 `scripts/roadmap.py` SHALL measure the pace as the points delivered over the last 28 calendar days,
-never divided by fewer than seven, and plan the open work with one lane per epic, each working at the
-share of the pace it had, a lane that runs out of work handing its place to the next one waiting. With
+never divided by fewer than seven, and plan the open work with one lane per epic. A lane SHALL rank by
+the issue it works next: first by the milestone that issue's work belongs to, the earliest due date
+first, then by its epic's Priority (Urgent, High, Medium, Low, and an epic with none after Low). Each
+day the lanes that rank first SHALL take the whole pace and share it equally. What a lane leaves of
+its part, because it ran out of work or because its next issue ranks lower, SHALL go to the lanes that
+rank next the same day. Inside a lane the work that carries the earliest milestone SHALL come before
+work begun outside it. With
 `--apply` it SHALL write on every epic and feature the Start date its work really began, the Target
 date it really ended once delivered, and the plan's dates otherwise, and SHALL show In progress a
 parent whose sub-issues show it under way and Done a closed issue. It SHALL never close an issue, and
 its report SHALL give each open milestone the plan's date, a range from repeated runs, and the date it
-would land with all the pace.
+would land with all the pace. It SHALL list the open issues the plan cannot count as they are, each
+with what it lacks.
+
+#### Scenario: The highest priority takes the pace
+
+- **WHEN** an Urgent epic and a Medium epic both have work, and the Medium one delivered more in the
+  window
+- **THEN** the Urgent epic's work is planned first with the whole pace, and the Medium epic waits
 
 #### Scenario: A finished lane hands its place on
 
-- **WHEN** an epic that delivered in the window runs out of work, and another epic that did not deliver
-  has work waiting
-- **THEN** the waiting epic starts the next day, at the share the finished one had
+- **WHEN** the epics that rank first run out of work partway through a day, and another epic ranks
+  next
+- **THEN** that epic starts the same day, with what the day has left
+
+#### Scenario: A milestone's work goes ahead of a higher priority
+
+- **WHEN** a Medium epic holds an issue of the earliest milestone, and an Urgent epic holds work in no
+  milestone
+- **THEN** the milestone's issue is planned first, and the Medium epic ranks below the Urgent one once
+  its milestone work is done
 
 #### Scenario: A parent's sub-issues are all closed
 
@@ -624,10 +643,12 @@ would land with all the pace.
 `scripts/roadmap.py` SHALL keep the board's Iteration field as sprints of two weeks on the grid of its
 first iteration, named Sprint N in order of start, adding sprints before them until the first holds the
 repository's first day and after them until the last holds the end of the plan. With `--apply` it SHALL
-put every delivered issue with no sub-issue in the sprint holding the day it closed, and every open
-issue with no open sub-issue in the sprint holding the day the plan ends it. It SHALL take an issue
-out of its sprint when the plan no longer reaches it, and SHALL leave an open issue's sprint as it is
-when no pace was measured.
+put every delivered issue with no sub-issue in the sprint holding the day it closed, every open issue
+with no open sub-issue shown In progress or In review in the sprint holding today, and every other
+open issue with no open sub-issue in the sprint holding the day the plan ends it. It SHALL take an
+issue out of its sprint when the plan no longer reaches it, and SHALL leave an open issue's sprint as
+it is when no pace was measured. Its report SHALL list the issues shown under way for a week or more
+with no pull request.
 
 #### Scenario: The plan reaches past the last sprint
 
@@ -645,6 +666,12 @@ when no pace was measured.
 
 - **WHEN** a feature is open and one of its sub-issues is open
 - **THEN** the sub-issue is put in a sprint and the feature in none
+
+#### Scenario: Work under way is this sprint's
+
+- **WHEN** an issue is shown In review and the plan, which ranks its epic low, ends it three sprints
+  from now
+- **THEN** it is put in the sprint holding today
 
 #### Scenario: The board already shows the sprints
 
@@ -786,6 +813,28 @@ publish time.
 - **THEN** it installs the extension's `package-lock.json` with `npm ci` and publishes the verified
   archive with the vsce that install put in `node_modules/.bin`
 
+### Requirement: The extension is published with no stored credential
+
+The extension's Marketplace publish SHALL authenticate through the Marketplace's trusted publishing,
+with `vsce publish --oidc` and the job's own OIDC token, and the job that publishes SHALL read no
+secret and SHALL run no package's install script, since any of its steps can ask for that token. A
+check run on every pull request SHALL fail a workflow that breaks any of these.
+
+#### Scenario: A stored token comes back
+
+- **WHEN** a change makes `publish-extension` read `secrets.VSCE_PAT`
+- **THEN** `scripts/check-publish-packages.sh` fails, saying the job reads a stored credential
+
+#### Scenario: The install runs the tree's scripts
+
+- **WHEN** `publish-extension` installs with `npm ci` and no `--ignore-scripts`
+- **THEN** the check fails, saying the job runs install scripts beside its token
+
+#### Scenario: The job loses its token
+
+- **WHEN** `publish-extension` is not granted `id-token: write`
+- **THEN** the check fails, saying so
+
 ### Requirement: No page holds a conflict a merge left
 
 The docs guards SHALL fail when a page of the wiki, in any of its languages, or a Markdown file git tracks in
@@ -803,6 +852,38 @@ never fails.
 
 - **WHEN** a page underlines a title with `=======` on the line under it
 - **THEN** the guards pass
+
+### Requirement: An issue is created whole
+
+An issue SHALL be created with what the plan counts it by. Every issue needs a type. An epic needs its
+Priority and nothing above it. Every other issue needs an open parent under an epic, and points, one
+of 1, 2, 3, 5, 8 or 13, except a feature or a story created to be split, which carries none of its own. `scripts/new-issue.py` SHALL refuse, before any request, an issue that lacks
+one of them, naming what it lacks. It SHALL create the issue with its type, parent, milestone,
+assignee and priority, put it on the board with its points and status, read it back, and fail naming
+whatever did not land. A session's `PreToolUse` hook SHALL refuse the other ways a session creates an
+issue (`gh issue create`, the GraphQL `createIssue`, a REST `POST` to `/issues` and an MCP tool that
+creates one), naming the script, and SHALL let a read, a comment, an edit and a phrase quoted in an
+argument pass.
+
+#### Scenario: A task with no points
+
+- **WHEN** `scripts/new-issue.py --type Task --parent 160 --title … --body-file …` is run
+- **THEN** it exits 2 naming the points, and no issue is created
+
+#### Scenario: An epic with no priority
+
+- **WHEN** an epic is to be created without `--priority`
+- **THEN** the script exits 2 naming the priority
+
+#### Scenario: A session runs gh issue create
+
+- **WHEN** a session's Bash command is `gh issue create --title x`
+- **THEN** the hook exits 2, the command does not run, and the session is told to use the script
+
+#### Scenario: A commit message names the command
+
+- **WHEN** a session commits with a message that says "gh issue create"
+- **THEN** the hook lets the commit run
 
 ### Requirement: An issue a person took is left to them
 
@@ -850,3 +931,17 @@ SHALL cancel the run of the push it replaces.
 
 - **WHEN** a second push reaches main while the run of the first is still going
 - **THEN** the first run is cancelled and the second runs whole
+
+### Requirement: A merge group the queue discarded does not keep its run
+
+The CI SHALL cancel the run of every merge group the queue discarded, which it tells by the group's ref being deleted while its commit is not on main. Every merge group's run, every push to main and a run by hand SHALL sweep the workflow's unfinished merge-group runs, the sweeping run's own included and cancelled last. A run whose ref still exists, or whose commit is on main, SHALL NOT be cancelled. A lookup that fails any other way than a 404 SHALL cancel nothing and SHALL fail the sweep's step, which SHALL NOT fail its run. The sweep SHALL NOT be a required check.
+
+#### Scenario: An entry ahead fails
+
+- **WHEN** a group is discarded and the queue builds a new group behind the failed entry
+- **THEN** the new group's run cancels the discarded group's run, and every live group's run goes on
+
+#### Scenario: A lookup fails
+
+- **WHEN** the lookup of a group's ref answers 500
+- **THEN** that run is left as it is, and the sweep fails, naming it

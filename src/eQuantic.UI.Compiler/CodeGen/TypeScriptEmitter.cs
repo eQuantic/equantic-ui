@@ -404,7 +404,7 @@ public class TypeScriptEmitter
                     && TypeInitializer.Orders(staticsOf, ModelFor);
                 _converter.SetCurrentClass(component.Name);
                 var initializedStatics = orderedStatics
-                    ? TypeInitializer.Collect(component.ClassSyntax!, type => DeclarationType(component, type.ValueText()),
+                    ? TypeInitializer.Collect(component.ClassSyntax!, ModelFor, type => DeclarationType(component, type.ValueText()),
                         type => ValueTypeDefault(type.ValueText(), type) ?? "null", StaticValue)
                     : [];
                 var slots = initializedStatics.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
@@ -415,7 +415,7 @@ public class TypeScriptEmitter
                     {
                         if (component.IsPrimitive && !field.IsStatic) continue;
                         // A static that initializes in order is its slot's, and holds no field.
-                        if (field.IsStatic && slots.Contains(field.Name.ToCamelCase())) continue;
+                        if (field.IsStatic && slots.Contains(field.Slot)) continue;
                         var tsType = DeclarationType(component, field.Type);
                         var tsDefault = field.DefaultValueNode is not { Parent: EqualsValueClauseSyntax given } ? null
                             : field.IsStatic && field.TypeNode is { } declared ? StaticValue(given, declared)
@@ -432,11 +432,11 @@ public class TypeScriptEmitter
                         // static one, which TypeScript does not ask that of, with no initializer.
                         if (tsDefault == "undefined")
                         {
-                            if (field.IsStatic) c.Field(field.Name.ToCamelCase(), tsType, null, field.DefaultValueNode, isStatic: true);
+                            if (field.IsStatic) c.Field(field.Slot, tsType, null, field.DefaultValueNode, isStatic: true);
                             else c.State(field.Name.ToCamelCase(), tsType, field.DefaultValueNode);
                             continue;
                         }
-                        c.Field(field.Name.ToCamelCase(), tsType, tsDefault, field.DefaultValueNode, field.IsStatic);
+                        c.Field(field.Slot, tsType, tsDefault, field.DefaultValueNode, field.IsStatic);
                     }
 
 
@@ -590,7 +590,7 @@ public class TypeScriptEmitter
                     if (component.ClassSyntax is { } indexed)
                     {
                         _converter.SetCurrentClass(component.Name);
-                        foreach (var indexer in indexed.Members.OfType<IndexerDeclarationSyntax>())
+                        foreach (var indexer in indexed.TwinMembers().OfType<IndexerDeclarationSyntax>())
                             EmitIndexer(indexer, c);
                     }
 
@@ -605,6 +605,15 @@ public class TypeScriptEmitter
                         .Where(p => !p.IsStatic && IsAutoProperty(p)
                                     && (p.DefaultValueNode != null || ImplicitDefault(p) != null))
                         .ToList();
+                    // The stores the properties that guard their own with `field` keep, each started as C#
+                    // starts it (GuardedStoreStart): declared alone, a store read undefined until a
+                    // configuration or a hydration wrote it, and `"" + Level` rendered the word (#1183).
+                    var guardedStores = component.Properties
+                        .Where(p => !p.IsStatic && p.Node is { } declared
+                                    && Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(declared))
+                        .Select(p => (Slot: Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p.Node!), Value: GuardedStoreStart(p)))
+                        .Where(store => store.Value is not null)
+                        .ToList();
                     // EITHER form of body counts: a block, or the arrow a one-line constructor is
                     // written with. Only the block was read, so `public Chart(x) => _x = x;` emitted a
                     // constructor that assigned nothing and left the field undefined.
@@ -613,7 +622,7 @@ public class TypeScriptEmitter
                     // a constructor to start it in (TypeInitializer.StartedIn) whether or not C# wrote one:
                     // without, `new Dial()` ran the static constructor never.
                     var startsOnConstruction = orderedStatics && TypeInitializer.HasStaticConstructor(component.ClassSyntax!);
-                    if (ctorParams.Count > 0 || autoDefaults.Count > 0 || hasCtorBody || startsOnConstruction)
+                    if (ctorParams.Count > 0 || autoDefaults.Count > 0 || guardedStores.Count > 0 || hasCtorBody || startsOnConstruction)
                     {
                         // C# optional parameters keep their defaults as JS default parameters
                         // (`variant: any = 'primary'`) — without them `new Button("x")` would run the
@@ -718,6 +727,10 @@ public class TypeScriptEmitter
                                     : ImplicitDefault(p)!;
                                 statements.Add(DefaultIfUndefined(cn, def));
                             }
+                            // Written to the store itself, never through the setter: C# initializes the
+                            // backing field, so `{ set => field = value + 1; } = 5` holds 5.
+                            foreach (var (slot, value) in guardedStores)
+                                statements.Add(Assign(JsExpr.ThisMember(slot), JsExpr.Opaque(value!)));
                             var bodyLine = statements.Count + 1;
                             if (ctorDef?.BodyNode is { } ctorBlock) statements.Add(Contents(ctorBlock));
                             else if (ctorDef?.ExpressionBodyNode is { } ctorExpression)
@@ -834,8 +847,10 @@ public class TypeScriptEmitter
     
     /// <summary>Every identifier the emitted body mentions — the authority on which imports are live.</summary>
     private static HashSet<string> ReferencedIdentifiers(string emittedBody) =>
+        // Outside string literals: the catalogue id in `$eq.str('Strings', 'Hero.Title')` is text, and was
+        // read as a reference to a type of that name, which the module then imported (#824).
         System.Text.RegularExpressions.Regex
-            .Matches(emittedBody, @"[A-Za-z_$][A-Za-z0-9_$]*")
+            .Matches(WithoutStrings(emittedBody), @"[A-Za-z_$][A-Za-z0-9_$]*")
             .Select(m => m.Value)
             .ToHashSet();
 
@@ -1249,6 +1264,27 @@ public class TypeScriptEmitter
         // alone: writing it would only emit `if (this.width === undefined) this.width = undefined`.
         var value = _converter.DefaultAt(type, node.Type);
         return value is "null" or "undefined" ? null : value;
+    }
+
+    /// <summary>
+    /// What a store a property guards with <c>field</c> starts as, on a component's instance: the
+    /// property's initializer, or its type's zero, a reference's null included, which reads as C#'s does
+    /// where an undefined one wrote "undefined" into a text. Null for a struct whose twin cannot build its
+    /// zero, whose store is left as the undefined it reads as its own default (<see cref="DefaultValue"/>).
+    /// </summary>
+    private string? GuardedStoreStart(PropertyDefinition property)
+    {
+        if (property.DefaultValueNode is { } given)
+            return Initializer(given, _converter.ConvertExpression(given, property.Type));
+        if (property.Node is not { } node) return null;
+        return DefaultOf(node.Type) switch
+        {
+            "undefined" => null,
+            // Said to be null where TypeScript reads the store as never null, as a member that starts at
+            // null is (TwinConstructor.StartOf).
+            "null" => TypeAnnotations ? "null!" : "null",
+            var zero => zero,
+        };
     }
 
     private static string? ImplicitValueTypeDefault(string csharpType) => csharpType switch
@@ -1709,7 +1745,7 @@ public class TypeScriptEmitter
             // initializer after a field's written below it.
             var ordered = TypeInitializer.Orders(cls, ModelFor);
             _converter.SetCurrentClass(name);
-            var initialized = ordered ? TypeInitializer.Collect(cls, DeclaredType, DefaultOf, StaticValue) : [];
+            var initialized = ordered ? TypeInitializer.Collect(cls, ModelFor, DeclaredType, DefaultOf, StaticValue) : [];
             var slots = initialized.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
             foreach (var f in cls.Members.OfType<FieldDeclarationSyntax>())
             {
@@ -1725,7 +1761,8 @@ public class TypeScriptEmitter
                     var isStaticMember = asStatic
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
-                    var fieldName = v.Identifier.ValueText.ToCamelCase();
+                    // In its slot, which moves a case apart from a static member of its name (#1175).
+                    var fieldName = v.SlotOf(ModelFor(v));
                     // A static that initializes in order is its slot's, and holds no field.
                     if (isStaticMember && slots.Contains(fieldName)) continue;
                     // An instance field is state, declared and started with the class's other state, in
@@ -1737,7 +1774,7 @@ public class TypeScriptEmitter
                     c.Field(fieldName, DeclaredType(f.Declaration.Type), def ?? DefaultOf(f.Declaration.Type), v, isStatic: true);
                 }
             }
-            foreach (var p in cls.Members.OfType<PropertyDeclarationSyntax>())
+            foreach (var p in cls.TwinMembers().OfType<PropertyDeclarationSyntax>())
             {
                 // An enumerator's explicit IEnumerator.Current beside its generic one holds its name, and
                 // answers alike: written, it replaced the generic one and read itself (#612). So does an
@@ -1830,7 +1867,7 @@ public class TypeScriptEmitter
             // subscription is a use of the type, which runs its static constructor first, and the
             // handlers that constructor adds come before the subscriber's, as in .NET. As a plain
             // field, it was subscribed to before the constructor ran.
-            foreach (var e in cls.Members.OfType<EventFieldDeclarationSyntax>())
+            foreach (var e in cls.TwinMembers().OfType<EventFieldDeclarationSyntax>())
             {
                 var isStaticEvent = asStatic || e.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
                 foreach (var v in e.Declaration.Variables)
@@ -1849,7 +1886,7 @@ public class TypeScriptEmitter
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
                 EmitClassMethod(m, c, asStatic);
-            foreach (var indexer in cls.Members.OfType<IndexerDeclarationSyntax>())
+            foreach (var indexer in cls.TwinMembers().OfType<IndexerDeclarationSyntax>())
                 EmitIndexer(indexer, c);
             // A sequence of the app's is iterable as its own GetEnumerator() says (#612).
             if (!asStatic && ModelFor(cls)?.GetDeclaredSymbol(cls) is INamedTypeSymbol sequence
@@ -1900,10 +1937,14 @@ public class TypeScriptEmitter
             // name, read through the property, as System.Text.Json writes the property: JSON.stringify
             // writes an object's own properties, so a server action received `$name` and bound nothing.
             // So does one whose field moved a case apart from a member (`value$`, #396), whose own key
-            // is storage no server reads. A derived class inherits it.
-            if (!asStatic && (cls.Members.OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
-                    || cls.Members.OfType<FieldDeclarationSyntax>().SelectMany(field => field.Declaration.Variables)
-                        .Any(variable => SlotOf(variable, ModelFor(cls)).EndsWith('$'))))
+            // is storage no server reads. A derived class inherits it. A static's slot is the class's,
+            // which no JSON of an instance writes (#1175).
+            if (!asStatic && (cls.TwinMembers().OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
+                    || cls.Members.OfType<FieldDeclarationSyntax>()
+                        .Where(field => !field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
+                            && !field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword))
+                        .SelectMany(field => field.Declaration.Variables)
+                        .Any(variable => variable.SlotOf(ModelFor(cls)).EndsWith('$'))))
             {
                 _converter.UsedHelpers.Add(Eq.Import);
                 c.Member(JsClassMember.Method("", "toJSON", "", "", "",
@@ -2260,7 +2301,7 @@ public class TypeScriptEmitter
         foreach (var parameter in cls.ParameterList?.Parameters ?? default)
             if (cls.HoldsParameter(parameter, model))
                 state.Add(new(parameter.Identifier.ValueText.ToCamelCase(), DeclaredType(parameter.Type), parameter));
-        foreach (var member in cls.Members)
+        foreach (var member in cls.TwinMembers())
         {
             if (member.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                 || member.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword)) continue;
@@ -2268,7 +2309,7 @@ public class TypeScriptEmitter
             {
                 case FieldDeclarationSyntax field:
                     foreach (var variable in field.Declaration.Variables)
-                        state.Add(new(SlotOf(variable, model), DeclaredType(field.Declaration.Type), variable));
+                        state.Add(new(variable.SlotOf(model), DeclaredType(field.Declaration.Type), variable));
                     break;
                 case EventFieldDeclarationSyntax handler:
                     foreach (var variable in handler.Declaration.Variables)
@@ -2282,11 +2323,6 @@ public class TypeScriptEmitter
         }
         return state;
     }
-
-    /// <summary>The slot an instance field's variable lives in (<see cref="Extensions.FieldSlotExtensions"/>):
-    /// its twin name, or, a case apart from another member, the name with a <c>$</c> after it.</summary>
-    private static string SlotOf(VariableDeclaratorSyntax variable, SemanticModel? model) =>
-        model?.GetDeclaredSymbol(variable) is IFieldSymbol field ? field.TwinSlot() : variable.Identifier.ValueText.ToCamelCase();
 
     /// <summary>
     /// Whether <paramref name="method"/> reads <paramref name="parameter"/>. Asked of the model where
@@ -2380,9 +2416,13 @@ public class TypeScriptEmitter
         // maps to `NavigableMove[]` before this runs, and the enum is one level further in than a
         // single pass over TypeArguments can see. Walking only the top level left that emitting the
         // C# spelling with no import — the exact defect this block exists to end, one nesting down.
-        if (!echoed && resolved is INamedTypeSymbol { TypeArguments.Length: > 0 } generic)
+        // And inside an array, echoed or not, since the mapper keeps an array's element as C# spells it:
+        // `CodeCommand[]` named an enum no module exports, and the runtime's tsc refused the twin (#1064).
+        if (resolved is IArrayTypeSymbol || !echoed && resolved is INamedTypeSymbol { TypeArguments.Length: > 0 })
         {
-            foreach (var argument in generic.TypeArguments.SelectMany(Nested))
+            var inside = resolved is IArrayTypeSymbol array ? Nested(array.ElementType)
+                : ((INamedTypeSymbol)resolved).TypeArguments.SelectMany(Nested);
+            foreach (var argument in inside)
             {
                 // An exception and a delegate are the same defect two kinds along (TsStandIn):
                 // `Action<Exception>` named an `Exception` no module defines.
@@ -2417,7 +2457,7 @@ public class TypeScriptEmitter
             { } kind when TsStandIn.For(kind, _converter.UsedRuntimeTypes) is { } standIn => standIn,
             { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
             // A nested type is its twin, named by its owner (#584).
-            INamedTypeSymbol nested when nested.NestedTwinName() is { } twin => Annotated(nested, twin),
+            INamedTypeSymbol nested when nested.RenamedTwin() is { } twin => Annotated(nested, twin),
             // .NET's builder (utils/string-builder.ts), built through `$eq.text.stringBuilder` and named by a field
             // or a parameter that holds one: imported where a member names it (#1074). Asked of the symbol, so an
             // app's own `StringBuilder` stays the app's (Copilot on #1079).
@@ -2475,7 +2515,7 @@ public class TypeScriptEmitter
             var at = new System.Text.RegularExpressions.Regex(
                 $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(part.Name)}(?![\w$])").Match(mapped, from);
             if (!at.Success) continue;
-            var twin = part.NestedTwinName() is { } nested ? named?.Invoke(part, nested) ?? nested : part.Name;
+            var twin = part.RenamedTwin() is { } nested ? named?.Invoke(part, nested) ?? nested : part.Name;
             mapped = mapped[..at.Index] + twin + mapped[(at.Index + at.Length)..];
             from = at.Index + twin.Length;
         }
@@ -2516,6 +2556,12 @@ public class TypeScriptEmitter
     /// </summary>
     private static IEnumerable<ITypeSymbol> Nested(ITypeSymbol type)
     {
+        // An array's element is one level further in, as a generic's argument is (#1064).
+        if (type is IArrayTypeSymbol array)
+        {
+            foreach (var inner in Nested(array.ElementType)) yield return inner;
+            yield break;
+        }
         yield return type;
         if (type is not INamedTypeSymbol { TypeArguments.Length: > 0 } generic) yield break;
         foreach (var argument in generic.TypeArguments)
@@ -2881,8 +2927,7 @@ public class TypeScriptEmitter
         // A compat value type is not in an eQuantic namespace, so the scanner above never buckets
         // it — but a factory's `DateOnly? selected` annotates with the name all the same.
         foreach (var compat in RuntimeValueTypes) runtimeProvided.Add(compat);
-        runtimeProvided.RemoveWhere(referenced => !System.Text.RegularExpressions.Regex.IsMatch(
-            emitted, $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(referenced)}(?![\w$])"));
+        runtimeProvided.RemoveWhere(referenced => !NamedIn(emitted, referenced));
         core.UnionWith(runtimeProvided);
         if (core.Count > 0) imports.Add(new JsImport(core.ToList(), "@equantic/runtime"));
         // The base class is imported whether or not the syntax scanner noticed it: `extends` is the

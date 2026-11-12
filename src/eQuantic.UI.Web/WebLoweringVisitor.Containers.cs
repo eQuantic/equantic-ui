@@ -31,11 +31,11 @@ internal sealed partial class WebLoweringVisitor
         if (_frame is { } frame)
         {
             var (kept, built) = frame.At(component);
-            ComponentExpansionScope.Ambient?.Enter(kept);
+            _channels?.Expansion?.Enter(kept);
             return built is not null ? ResolveForPositioning(built) : child;
         }
 
-        ComponentExpansionScope.Ambient?.Enter(component);
+        _channels?.Expansion?.Enter(component);
 
         // Through the boundary's bound rather than a hop count of this method's own: the loop
         // it replaces stopped ITSELF spinning after eight hops and then handed a still
@@ -444,6 +444,12 @@ internal sealed partial class WebLoweringVisitor
                 MarginBottom = top && !bridge ? TokenCss.Px(anchored.Gap) : null,
                 PaddingTop = !top && bridge ? TokenCss.Px(anchored.Gap) : null,
                 PaddingBottom = top && bridge ? TokenCss.Px(anchored.Gap) : null,
+                // A hover panel at rest is HIDDEN, not only transparent: opacity takes it out of
+                // sight and leaves it in the accessibility tree, so a reader met a closed tooltip as a
+                // line of its own (#1329). The theme's reveal rules show it on hover and on keyboard
+                // focus, and it stays the anchor's description while hidden (aria-describedby reads a
+                // hidden element it names).
+                Visibility = bridge ? "hidden" : null,
             },
         };
         if (anchored.Motion is { } motion && !anchored.OpenOnHover)

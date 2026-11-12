@@ -123,6 +123,8 @@
   "InFlow",
   "InView",
   "IndentationFoldProvider",
+  "InheritedComponent",
+  "InheritedElement",
   "JsonLanguage",
   "KeyChord",
   "LinearGradient",
