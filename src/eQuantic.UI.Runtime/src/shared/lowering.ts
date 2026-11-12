@@ -96,6 +96,7 @@ import type {
   HoverableNode,
   DropTargetNode,
   InFlowNode,
+  InheritedNode,
   InViewNode,
   SimulatedNode,
   ScrollViewNode,
@@ -495,6 +496,11 @@ function lowerNodeKind(
       return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
     case 'inFlow':
       return lowerInFlow(node as unknown as InFlowNode, context, horizontalAxis, path);
+    // An inherited component holds a value for its subtree and draws nothing of its own: every pass
+    // draws its child as if it were not there (the C# `WebLoweringVisitor`). Who depends on its value
+    // is the element engine's to track, which drives the browser from E3b.
+    case 'inherited':
+      return lowerNode((node as unknown as InheritedNode).child, context, horizontalAxis, path + '/0');
     case 'inView':
       return lowerInView(node as unknown as InViewNode, context, horizontalAxis, path);
     case 'positioned':
@@ -3771,6 +3777,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     // recorded above: the host takes the child's 100% and drops its maximum.
     case 'simulated':
     case 'inFlow':
+    case 'inherited':
     case 'inView':
       return capsAt(value.child);
     default:
@@ -3828,6 +3835,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as SimulatedNode).child);
     case 'inFlow':
       return fills((node as InFlowNode).child);
+    case 'inherited':
+      return fills((node as unknown as InheritedNode).child);
     case 'inView':
       return fills((node as InViewNode).child);
     case 'flexible':

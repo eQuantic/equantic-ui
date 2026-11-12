@@ -49,6 +49,8 @@ internal static class ChildSlots
         "icon" => NodeSlots.None,
         "image" => NodeSlots.None,
         "inFlow" => NodeSlots.One(((InFlow)node).Child),
+        // A value for a subtree holds its one child through an element of its own; that never asks this.
+        "inherited" => NodeSlots.None,
         "inView" => NodeSlots.One(((InView)node).Child),
         "link" => NodeSlots.One(((Link)node).Child),
         "loopMotion" => NodeSlots.One(((LoopMotion)node).Child),
