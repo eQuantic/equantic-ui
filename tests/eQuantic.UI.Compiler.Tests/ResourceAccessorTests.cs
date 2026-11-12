@@ -45,6 +45,13 @@ public class ResourceAccessorTests
 
     private static CompilationResult Compile(string componentSource, params string[] extraSources)
     {
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(CompilationOf(componentSource, extraSources));
+        return compiler.CompileSource(componentSource, "Page.cs").Single();
+    }
+
+    private static CSharpCompilation CompilationOf(string componentSource, params string[] extraSources)
+    {
         var trees = new List<Microsoft.CodeAnalysis.SyntaxTree>
         {
             CSharpSyntaxTree.ParseText(componentSource, path: "Page.cs"),
@@ -63,10 +70,7 @@ public class ResourceAccessorTests
                 nullableContextOptions: NullableContextOptions.Enable));
         Assert.Empty(compilation.GetDiagnostics()
             .Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.ToString()));
-
-        var compiler = new ComponentCompiler();
-        compiler.SetProjectCompilation(compilation);
-        return compiler.CompileSource(componentSource, "Page.cs").Single();
+        return compilation;
     }
 
     /// <summary>The same compile, keeping the compiler — the catalog is aggregated ON it, across
@@ -297,5 +301,38 @@ public class ResourceAccessorTests
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
         Assert.Contains("$eq.str('Quoted.Strings', 'it\\'s \"quoted\" \\\\ here')", result.TypeScript);
+    }
+
+    /// <summary>
+    /// A module that reads a string imports no <c>./Strings</c>, as an app's build compiles it, with the
+    /// project's scan beside the compilation (#824): the Designer is no module, which the scan asked
+    /// differently from the parser, and the catalogue's id in <c>$eq.str('Strings', 'Hero.Title')</c> is
+    /// text, not a reference to a type of that name.
+    /// </summary>
+    [Fact]
+    public void AModuleThatReadsAString_ImportsNoModuleOfTheResourceClass()
+    {
+        const string page = """
+            using Demo.Resources;
+            using eQuantic.UI.Primitives;
+
+            namespace Demo;
+
+            public sealed class Hero : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(Strings.Hero_Title, TypeRole.BodyM);
+            }
+            """;
+        var compilation = CompilationOf(page);
+        var resolver = ComponentDependencyResolver.From(compilation);
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        compiler.SetDependencyResolver(resolver);
+
+        var hero = compiler.CompileSource(page, "Page.cs").Single(result => result.ComponentName == "Hero");
+
+        Assert.Contains("$eq.str('Strings', 'Hero.Title')", hero.TypeScript);
+        Assert.DoesNotContain("./Strings", hero.TypeScript);
+        Assert.False(resolver.IsModule("Strings"), "a Designer class is rewritten at each read, and no module of it is written");
     }
 }

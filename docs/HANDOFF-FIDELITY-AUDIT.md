@@ -49,6 +49,7 @@ Each of these has a test that names its handoff block, so the figure cannot drif
 | B2 ListItem · B8 Chip | no §10 hover on an interactive row or on any chip kind | `PointerContractFidelityTests` |
 | B10 SearchField | the clear affordance was a 20dp glyph with a 20dp hit rect | `PointerContractFidelityTests` |
 | B4 BottomNavigation · C16 NavigationRail | a pressed destination painted the hover's SurfaceSubtle instead of the selection's pill at 40% | `PressedFillPlacementTests`, `PressedFillPlacementRealizerTests` |
+| B8 Chip | the unselected filter chip rested on the Input chip's SurfaceSubtle, so its press showed nothing, where the frames draw it outlined; the Input chip's label was TextSecondary | `PressedFillPlacementTests`, `Wave1ComponentTests`, `PointerContractFidelityTests` |
 | A10 Icon | a labelled glyph carried a name and no `role="img"` | `DestinationSemanticsTests` |
 | B3 AppBar | the screen's title was a span, so a page had no level-1 heading | `HeadingOutlineTests` |
 | C7 Slider | thumb 20dp with a 2dp accent ring; the unfilled track painted BorderStrong | `SliderHandoffFidelityTests` |
@@ -215,7 +216,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Button.cs`
 - **Handoff**: Hit rect: Small "≥48 (slop)", Medium "≥48 (slop)" — "Sizes — toggle "Hit areas" in the top bar: Small 32 · hit 48 / Medium 40 · hit 48".
-- **Code**: The Button never asks for the hit rect: Button.cs:62-66 reads the size ladder for height, padding, gap and the two type sizes and asks for no hit slot at all — `Touch.MinTarget` has zero references in Button.cs, and no min-size reaches the tree. (The row was filed against `ButtonStyles.Metrics`, a tuple whose seventh slot the Button discarded; the tuple is gone and the seven calls are read straight, which changes the mechanism and not the outcome.) Only the Photon realizer expands (EmitVisitor.Interaction.cs:199-208 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2842-2978) nor LowerPressable (WebLoweringVisitor.Interaction.cs:471-527 LowerPressable) nor the generated `.eq-pressable` rules (ThemeStylesheet.cs:91-106) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
+- **Code**: The Button never asks for the hit rect: Button.cs:62-66 reads the size ladder for height, padding, gap and the two type sizes and asks for no hit slot at all — `Touch.MinTarget` has zero references in Button.cs, and no min-size reaches the tree. (The row was filed against `ButtonStyles.Metrics`, a tuple whose seventh slot the Button discarded; the tuple is gone and the seven calls are read straight, which changes the mechanism and not the outcome.) Only the Photon realizer expands (EmitVisitor.Interaction.cs:200-208 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2842-2978) nor LowerPressable (WebLoweringVisitor.Interaction.cs:471-527 LowerPressable) nor the generated `.eq-pressable` rules (ThemeStylesheet.cs:91-106) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
 - **Evidence**:
 
   ```
@@ -375,10 +376,10 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:112  ? new Pressable(box, OnPressed)
-  Chip.cs:98    {
-  Chip.cs:114        Label = Label,
-  Chip.cs:107  Pressed = pressedFill is null ? null : new StyleDiff { Background = pressedFill },   // the pressed fill is the box's own Pressed diff since #616
+  Chip.cs:114  ? new Pressable(box, OnPressed)
+  Chip.cs:115    {
+  Chip.cs:116        Label = Label,
+  Chip.cs:109  Pressed = pressedFill is null ? null : new StyleDiff { Background = pressedFill },   // the pressed fill is the box's own Pressed diff since #616
   WebLoweringVisitor.Interaction.cs:537  AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
   ```
 
@@ -386,12 +387,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "Keys — A chip is a tab stop; Space/Enter toggles or activates; Delete/Backspace removes a removable chip — the ✕ is not a separate stop."
-- **Code**: Exactly inverted for Input chips. The chip body is wrapped in a Pressable only for Filter kind (Chip.cs:90), so a removable Input chip is NOT a tab stop; the ✕ IS one, because the remove glyph is its own Pressable (Chip.cs:73) and Pressable lowers to a real <button> (src/eQuantic.UI.Web/WebLoweringVisitor.Interaction.cs:474 LowerPressable). There is no Delete/Backspace handling anywhere in the component — no Shortcut node, no key binding.
+- **Code**: Exactly inverted for Input chips. The chip body is wrapped in a Pressable only for Filter kind (Chip.cs:113), so a removable Input chip is NOT a tab stop; the ✕ IS one, because the remove glyph is its own Pressable (Chip.cs:77) and Pressable lowers to a real <button> (src/eQuantic.UI.Web/WebLoweringVisitor.Interaction.cs:474 LowerPressable). There is no Delete/Backspace handling anywhere in the component — no Shortcut node, no key binding.
 - **Evidence**:
 
   ```
-  Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
-  Chip.cs:111  return Kind == ChipKind.Filter && OnPressed != null
+  Chip.cs:77  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
+  Chip.cs:113  return Kind == ChipKind.Filter && OnPressed != null
   WebLoweringVisitor.Interaction.cs:512  var element = new RealizedElement(wrapping ? "span" : "button")
   ```
 
@@ -399,12 +400,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "Hover: outlined/quiet chips = SurfaceSubtle; filled chips = fill→pressed midpoint (§10). The remove ✕ is its own hover target inside the chip."
-- **Code**: The chip's BoxStyle sets no Hover diff at all (Chip.cs:79-87), so a pointer gets no hover feedback on any chip kind. The capability exists and is used by the sibling control: BoxStyle.Hover (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) is set by Button (src/eQuantic.UI.Components/Button.cs:126). The generated stylesheet has no chip/pressable hover rule either — only :active and :focus-visible (src/eQuantic.UI.Web/ThemeStylesheet.cs:91-106).
+- **Code**: FIXED since the audit (see "Closed since the audit ran"): every pressable chip hovers, and since #1460 the outlined unselected filter chip on SurfaceSubtle, as B8 says (Chip.cs:83-91). The selected chip's "fill→pressed midpoint" is #1462. A Tag, which nothing presses, does not hover.
 - **Evidence**:
 
   ```
-  Chip.cs:98  var box = new Box(new BoxStyle
-  Chip.cs:102      Background = fill,
+  Chip.cs:100  var box = new Box(new BoxStyle
+  Chip.cs:104      Background = fill,
   Button.cs:133  Hover = inert || hoverFill is null ? null : new StyleDiff { Background = hoverFill },
   ```
 
@@ -1711,7 +1712,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:75  Label = SdkStrings.Remove,
+  Chip.cs:79  Label = SdkStrings.Remove,
   SdkResources.resx:16  <value>Remove</value>
   ```
 
@@ -1723,7 +1724,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
+  Chip.cs:77  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
   WebLoweringVisitor.Interaction.cs:517  Padding = "0",
   EmitVisitor.Interaction.cs:204  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
   ```
@@ -1765,7 +1766,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Pointer: I-beam over the field; hover swaps the border Border→BorderStrong (Motion.Press).
-- **Code**: There is no hover state at all: the border colour is a pure function of hasError and _focused, and the resting colour is already BorderStrong, so the hover swap the pointer contract describes can never happen. The component does not wrap the container in a Hoverable (the node exists — src/eQuantic.UI.Runtime/src/shared/lowering.ts:382 lowerHoverable) and sets no Transition, so Motion.Press is unused here too.
+- **Code**: There is no hover state at all: the border colour is a pure function of hasError and _focused, and the resting colour is already BorderStrong, so the hover swap the pointer contract describes can never happen. The component does not wrap the container in a Hoverable (the node exists — src/eQuantic.UI.Runtime/src/shared/lowering.ts:406 lowerHoverable) and sets no Transition, so Motion.Press is unused here too.
 - **Evidence**:
 
   ```
@@ -2699,7 +2700,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Pointer — Inert — arrow cursor, no hover, right-click falls through. A Box gains pointer states only by composing Pressable.
-- **Code**: A bare Box carries two pointer facilities of its own: a Hover style diff and a Cursor (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs). The web realizer lowers them to the box's own :hover rule and a cursor declaration (WebLoweringVisitor.Containers.cs:845 LowerBox; WebLoweringVisitor.Containers.cs:845 LowerBox) and Photon registers a HoverRegion and a CursorRegion for the box (EmitVisitor.Chrome.cs:106-108 EmitStyledChrome; EmitVisitor.Chrome.cs:25-26 EmitStyledChrome) — no Pressable involved. Its Focus and Pressed diffs are not facilities of its own: a box never takes focus, so they apply only while the Pressable around it is focused or pressed (BoxStyle.cs:165-174 BoxStyle.Focus), through the selector `.eq-pressable:focus-visible .<class>` on the web (StyleAtomizer.cs:271 StyleSink.StateSelector) and the control's state on Photon (EmitVisitor.Chrome.cs:409-414 EffectiveStyle).
+- **Code**: A bare Box carries two pointer facilities of its own: a Hover style diff and a Cursor (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs). The web realizer lowers them to the box's own :hover rule and a cursor declaration (WebLoweringVisitor.Containers.cs:845 LowerBox; WebLoweringVisitor.Containers.cs:845 LowerBox) and Photon registers a HoverRegion and a CursorRegion for the box (EmitVisitor.Chrome.cs:105-107 EmitStyledChrome; EmitVisitor.Chrome.cs:24-25 EmitStyledChrome) — no Pressable involved. Its Focus and Pressed diffs are not facilities of its own: a box never takes focus, so they apply only while the Pressable around it is focused or pressed (BoxStyle.cs:166-173 BoxStyle.Focus), through the selector `.eq-pressable:focus-visible .<class>` on the web (StyleAtomizer.cs:271 StyleSink.StateSelector) and the control's state on Photon (EmitVisitor.Chrome.cs:410-415 EffectiveStyle).
 - **Evidence**:
 
   ```
@@ -3141,12 +3142,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "selection change animates check-in Fast 100ms"
-- **Code**: The check glyph is added to / removed from the Row unconditionally on rebuild with no motion wrapper (Chip.cs:66-69), so it pops in and out. Only the background transitions (the generated .eq-pressable rule animates background-color alone, src/eQuantic.UI.Web/ThemeStylesheet.cs:92).
+- **Code**: The check glyph is added to / removed from the Row unconditionally on rebuild with no motion wrapper (Chip.cs:69-72), so it pops in and out. Only the background transitions (the generated .eq-pressable rule animates background-color alone, src/eQuantic.UI.Web/ThemeStylesheet.cs:92).
 - **Evidence**:
 
   ```
-  Chip.cs:66  if (Kind == ChipKind.Filter && Selected)
-  Chip.cs:68      content.Add(new Icon(Icons.Check, IconSize.Sm, textColor));
+  Chip.cs:69  if (Kind == ChipKind.Filter && Selected)
+  Chip.cs:71      content.Add(new Icon(Icons.Check, IconSize.Sm, textColor));
   ```
 
 ### B8 Chip · missing-feature · **CONFIRMED**
@@ -3157,7 +3158,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
+  Chip.cs:77  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
   ```
 
 ### B8 Chip · metric · **REFUTED**
@@ -3169,7 +3170,7 @@ the pill's 40 down.
 
   ```
   Chip.cs:14  /// The design system's Chip / Tag (spec B8): height 32, Radius.Full, 12dp X padding, 13/600 label —
-  Chip.cs:100  Height = Sizing.Height(SizeVariant.Small, context.Density),
+  Chip.cs:102  Height = Sizing.Height(SizeVariant.Small, context.Density),
   Tokens.cs:83  SizeVariant.Small => density == Density.Compact ? 26 : 32,
   ```
 
