@@ -159,6 +159,30 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
     }
 
     [Fact]
+    public async Task AValueWithPrivateState_CrossesAsTheValueItIs()
+    {
+        // The payload's keys alone built it, so it equalled nothing and its counter was NaN (#590).
+        var (html, drawn) = await CrossAsync("/crossing-private-state", nameof(CrossingPrivateStatePage));
+
+        var expected = "equal True True | state x! 1 | position 0 2".Split(" | ");
+        foreach (var line in expected) html.Should().Contain(line);
+        drawn[0].Split(" | ").Should().Equal(expected);
+        drawn[1].Should().Be(drawn[0]);
+    }
+
+    [Fact]
+    public async Task ADictionaryKeyedByARecord_FindsItsKeysOnTheirTwins()
+    {
+        // A key arrived as the plain object JSON parses, so the first build missed it (#706).
+        var (html, drawn) = await CrossAsync("/crossing-record-keys", nameof(CrossingRecordKeysPage));
+
+        var expected = "keys ,1:2=5 | point 5 True False | cell far True".Split(" | ");
+        foreach (var line in expected) html.Should().Contain(line);
+        drawn[0].Split(" | ").Should().Equal(expected);
+        drawn[1].Should().Be(drawn[0]);
+    }
+
+    [Fact]
     public async Task AnUnnamedValueOfAnEnum_CrossesAsTheBrowserHoldsIt()
     {
         // A value no member names, of an enum that is not a flags one, as a field, a dictionary's key and a
