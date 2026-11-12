@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using eQuantic.UI.Compiler.CodeGen;
@@ -81,5 +82,39 @@ public class EmittedGlobalsTests
     {
         global.ToJsIdentifier().Should().Be(global + "$",
             $"a C# local called {global} would hide the global every lowering in its scope reads");
+    }
+
+    /// <summary>
+    /// No type whose twin eqc writes into the runtime, a type of a namespace it transpiles whole or a
+    /// vocabulary type marked <c>[TwinIsTranspiled]</c>, is named like a word JavaScript reserves or a
+    /// global the emitted code reads. A reference renames such a type's twin (<c>Map$</c>, #934, #890), while the runtime's index
+    /// exports its types under the names C# gives them, so a type of the component library named
+    /// <c>Map</c> would be imported under a name the runtime does not export.
+    /// </summary>
+    [Fact]
+    public void NoTypeTheRuntimeShips_IsNamedLikeAGlobalOrAReservedWord()
+    {
+        var shipped = Directory.GetFiles(AppContext.BaseDirectory, "eQuantic.UI.*.dll")
+            .Select(path =>
+            {
+                try { return Assembly.LoadFrom(path); }
+                catch (BadImageFormatException) { return null; }
+            })
+            .OfType<Assembly>()
+            .SelectMany(assembly =>
+            {
+                try { return assembly.GetTypes(); }
+                catch (ReflectionTypeLoadException exception) { return exception.Types.OfType<Type>().ToArray(); }
+            })
+            .Where(type => type is { IsNested: false, Namespace: { } ns } && (type.IsClass || type is { IsValueType: true, IsEnum: false })
+                && (RuntimeProvidedTypeScanner.IsTranspiledNamespace(ns)
+                    // A vocabulary type whose twin eqc writes too (#592).
+                    || type.CustomAttributes.Any(attribute => attribute.AttributeType.Name == "TwinIsTranspiledAttribute")))
+            .Select(type => type.Name.Split('`')[0])
+            .ToList();
+
+        shipped.Should().Contain("Button", "the component library is among the assemblies read");
+        shipped.Where(name => name.ToJsIdentifier() != name).Should().BeEmpty(
+            "a reference would name such a type's twin with a $ the runtime does not export");
     }
 }

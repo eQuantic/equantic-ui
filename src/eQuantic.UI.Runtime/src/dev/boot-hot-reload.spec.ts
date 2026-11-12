@@ -66,7 +66,7 @@ describe('the boot only reaches for hot reload when the server streams rebuilds'
     // `initialized` is module state and a second boot() returns at once, so each case takes a
     // fresh module.
     vi.resetModules();
-    const { boot: start } = await import('../../../eQuantic.UI.Sdk/Resources/boot');
+    const { boot: start } = await import('../../../eQuantic.UI.Sdk/Resources/boot.dev');
     await start();
   }
 
@@ -180,7 +180,7 @@ describe('a hot reload replay and the server-data door', () => {
     w.__EQ_DEV__ = false;
     vi.doMock(module, () => ({ Sized: Resized }));
     vi.resetModules();
-    const { boot } = await import('../../../eQuantic.UI.Sdk/Resources/boot');
+    const { boot } = await import('../../../eQuantic.UI.Sdk/Resources/boot.dev');
     await boot();
 
     const page = Resized.mounted!;
@@ -230,7 +230,7 @@ describe('what the rebuild stream says, and what the page does about it', () => 
     window.__EQ_CONFIG = { hotReload: true };
     window.__EQ_DEV__ = false;
     vi.resetModules();
-    const { boot } = await import('../../../eQuantic.UI.Sdk/Resources/boot');
+    const { boot } = await import('../../../eQuantic.UI.Sdk/Resources/boot.dev');
     await boot();
   });
 
@@ -350,7 +350,7 @@ describe('the boot after a rebuild, against the markup the server sent', () => {
     window.__EQ_DEV__ = false;
     vi.doMock(module, () => ({ Counted }));
     vi.resetModules();
-    const { boot } = await import('../../../eQuantic.UI.Sdk/Resources/boot');
+    const { boot } = await import('../../../eQuantic.UI.Sdk/Resources/boot.dev');
     await boot();
     // The render the replay asked for.
     await new Promise((resolve) => setTimeout(resolve, 50));

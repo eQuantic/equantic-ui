@@ -1182,16 +1182,13 @@ jobs:
     # shares no prefix with `v*`.
     if: startsWith(github.ref, 'refs/tags/ext-v')
     runs-on: ubuntu-latest
+    # The Marketplace's trusted publishing: the job's OIDC token, which `id-token: write` lets it ask
+    # for, is exchanged for a publishing credential that lives fifteen minutes, under the policy on the
+    # publisher's page for this repository and workflow. No credential is stored, so none can leak or
+    # expire, the way nuget.org's is exchanged for publish-nuget (#1224, #1271).
     permissions:
       id-token: write
       contents: read
-    env:
-      # Read as job-level env so the steps can BRANCH on which credential exists — a secret cannot be
-      # tested directly in a step's `if`.
-      VSCE_PAT: ${{ secrets.VSCE_PAT }}
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     steps:
       - uses: actions/setup-node@v4
         with:
@@ -1234,44 +1231,19 @@ jobs:
           echo "publishing $packaged"
 
       # `npm ci` installs exactly the lockfile, integrity hashes checked, and fails on a drift from the
-      # manifest instead of resolving around it: the same install package-extension ran. It runs the
-      # tree's install scripts, so the Marketplace credentials the job reads are blanked for this step:
-      # an install needs none of them.
+      # manifest instead of resolving around it: the same install package-extension ran. With no
+      # install script: every step of this job can ask GitHub for the token the Marketplace takes, so
+      # no package's script runs here. The one the tree carries, @vscode/vsce-sign's, installs a
+      # signing binary that `publish` calls only with `--signTool`.
       - name: Install the vsce the lockfile pinned
         working-directory: extensions/vscode
-        env:
-          VSCE_PAT: ''
-          AZURE_CLIENT_ID: ''
-          AZURE_TENANT_ID: ''
-          AZURE_SUBSCRIPTION_ID: ''
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund --ignore-scripts
 
-      # Microsoft Entra, when it is configured. `vsce publish --azure-credential` acquires its token
-      # through the Azure CLI, so something has to log that CLI in first — on GitHub Actions that is
-      # this action with workload identity federation, and no secret is stored.
-      - name: Sign in to Azure
-        if: env.AZURE_CLIENT_ID != ''
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
+      # `--oidc` asks GitHub for the job's token and the Marketplace for the credential, and never
+      # falls back to a stored one: a policy that disagrees with this workflow fails here, and the fix
+      # is on the publisher's Trusted Publishing page, never a token in the secrets.
       - name: Publish to the Marketplace
-        shell: bash
-        run: |
-          set -euo pipefail
-          vsce=extensions/vscode/node_modules/.bin/vsce
-          if [ -n "${AZURE_CLIENT_ID:-}" ]; then
-            "$vsce" publish --packagePath equantic-ui.vsix --azure-credential
-          elif [ -n "${VSCE_PAT:-}" ]; then
-            # Retires 2026-12-01. Kept because it is the only path that needs nothing but a secret.
-            "$vsce" publish --packagePath equantic-ui.vsix
-          else
-            echo "::error::No Marketplace credential. Set VSCE_PAT, or AZURE_CLIENT_ID + AZURE_TENANT_ID + AZURE_SUBSCRIPTION_ID for Entra."
-            echo "::error::(vsce 3.9.2 has no --oidc; trusted publishing is on the tool's main branch and not released yet.)"
-            exit 1
-          fi
+        run: extensions/vscode/node_modules/.bin/vsce publish --packagePath equantic-ui.vsix --oidc
 
   publish-nuget:
     needs: gate-templates
