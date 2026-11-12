@@ -181,3 +181,30 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
     expect(t.surface.light).toBeDefined();
   });
 });
+
+describe('theme bridge: the slots and the code palette cross (E6a, #1241; #936)', () => {
+  const theme = materializeTheme(photonData as unknown as ThemeData);
+
+  it('carries the control ladder and the Button slot as the generated Photon theme holds them', () => {
+    expect(theme.controls).toEqual(photonTheme.controls);
+    expect(theme.button).toEqual(photonTheme.button);
+    expect(theme.controls?.height?.compact?.medium).toBe(32);
+    expect(theme.button?.minWidth).toBe(64);
+  });
+
+  it('answers code(kind) from the palette the server wrote', () => {
+    const custom = materializeTheme({
+      ...(photonData as unknown as ThemeData),
+      code: { keyword: [[1, 2, 3, 255], [4, 5, 6, 255]] },
+    });
+    expect(custom.code('keyword').light).toEqual({ r: 1, g: 2, b: 3, a: 255 });
+    // A kind the payload does not carry derives as before.
+    expect(custom.code('comment')).toEqual(photonTheme.code('comment'));
+  });
+
+  it('leaves a slot the theme does not answer null', () => {
+    const bare = materializeTheme({ ...(photonData as unknown as ThemeData), controls: undefined, button: undefined });
+    expect(bare.controls).toBeNull();
+    expect(bare.button).toBeNull();
+  });
+});

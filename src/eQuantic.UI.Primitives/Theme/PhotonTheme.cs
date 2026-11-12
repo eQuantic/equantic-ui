@@ -168,6 +168,48 @@ public sealed class PhotonTheme : IAppTheme
         Rgba(0x0F1720, (byte)MathF.Round(lightAlpha * 255)),
         Rgba(0x000000, (byte)MathF.Round(darkAlpha * 255)));
 
+    // ---- Slots (docs/ELEMENT-TREE-PLAN.md §3.10) ------------------------------------------------------
+    // Today's constants, now the design system's rather than each component's. The ladder is Sizing's
+    // own, read rung by rung, so the slot and the fallback cannot disagree under this theme.
+
+    /// <summary>The control ladder (spec §09): <see cref="Sizing"/>, every rung of it.</summary>
+    public ControlsTheme? Controls { get; } = new()
+    {
+        Height = ByDensity(Sizing.Height),
+        PaddingX = ByDensity(Sizing.PaddingX),
+        LabelSize = ByDensity(Sizing.LabelSize),
+        Gap = BySize(Sizing.Gap),
+        Icon = BySize(Sizing.Icon),
+        Radius = BySize(Sizing.Radius),
+    };
+
+    /// <summary>The Button (spec A12): a 64dp floor, a semi-bold label at 0.1 tracking, a 1dp outline in
+    /// BorderStrong, a link padded by 6, and the quiet variants filling with SurfaceSubtle.</summary>
+    public ButtonTheme? Button => field ??= new ButtonTheme
+    {
+        MinWidth = Sizing.ButtonMinWidth,
+        LabelWeight = FontWeight.SemiBold,
+        LabelTracking = 0.1f,
+        OutlineWidth = 1,
+        LinkPaddingX = 6,
+        OutlineColor = BorderStrong,
+        QuietFill = SurfaceSubtle,
+    };
+
+    private static SizeLadder BySize(Func<SizeVariant, float> rung) => new()
+    {
+        Small = rung(SizeVariant.Small),
+        Medium = rung(SizeVariant.Medium),
+        Large = rung(SizeVariant.Large),
+        XLarge = rung(SizeVariant.XLarge),
+    };
+
+    private static DensityLadder ByDensity(Func<SizeVariant, Density, float> rung) => new()
+    {
+        Comfortable = BySize(size => rung(size, Density.Comfortable)),
+        Compact = BySize(size => rung(size, Density.Compact)),
+    };
+
     // ---- helpers ----------------------------------------------------------------------------------
     private static ColorToken Token(uint lightRgb, uint darkRgb) => new(Rgb(lightRgb), Rgb(darkRgb));
 

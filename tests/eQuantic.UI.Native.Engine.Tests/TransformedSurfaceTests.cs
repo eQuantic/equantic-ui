@@ -515,6 +515,32 @@ public class TransformedSurfaceTests
         released().Should().BeApproximately(40, 0.01f);
     }
 
+    /// <summary>
+    /// A surface turned by its OWN transform turns what it draws, not the line its offset moves along:
+    /// the offset is painted outside the surface's transform, so the drag is read along the axis
+    /// around it, and a normalized one divides by the surface's own extent. The web reads it the same
+    /// way, since its `translate` is applied outside the box's own `transform` (#1204).
+    /// </summary>
+    [Fact]
+    public void ADragWhoseSurfaceIsTurnedByItsOwnTransform_TravelsAlongTheAxisItsOffsetMovesOn()
+    {
+        var released = float.NaN;
+        var turned = new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill, Transform = Transform2D.Rotate(90) });
+        var drag = new Draggable(turned, value => released = value)
+        {
+            Axis = DragAxis.Horizontal,
+            Normalized = true,
+            Min = 0,
+            Max = 1,
+        };
+        var host = Mount(drag, Transform2D.Translate(0, 0));
+
+        DragOffsetAfter(host, 300, 250, 340, 250).Should().BeApproximately(40, 0.01f);
+
+        host.PressUp(340, 250);
+        released.Should().BeApproximately(0.2f, 0.001f, "40 of its own 200, as the web reports it");
+    }
+
     /// <summary>A slop is the finger's: the same 16 on the screen arms a drag past a slop of 12 at any
     /// size it is drawn, and 8 arms none, as the web measures it. In the surface's own space 16 was
     /// only 8 at twice the size, and a surface drawn at a quarter armed on a tremor of 4.</summary>
