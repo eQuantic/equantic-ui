@@ -145,3 +145,14 @@
   386  13.3  39936 /System/Library/PrivateFrameworks/CloudKitDaemon.framework/Support/cloudd
   305  12.3 494640 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
   991  10.8  42848 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd4166047580
+=== alive 13:58:31 app: 2354 watch: 
+=== alive 13:58:41 app: 2354 watch: 
+--- sample 13:58:49 load: { 7.47 20.08 13.97 } System-wide memory free percentage: 79%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2288 dotnet run --no-build --project samples/PhotonDesktop
+2354 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 1020   4.1   6512 /usr/libexec/sysmond
+  991   3.2  42688 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd4166047580
+ 2280   2.6   1600 /bin/bash
+  453   1.6 100496 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/corespotlightd
+  246   0.1   6736 /usr/libexec/audioclocksyncd
