@@ -1,4 +1,4 @@
-import { $eq, BuildOwner, ComponentElement, InFlow, NodeElement, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, BuildOwner, ComponentElement, InFlow, InheritedComponent, InheritedElement, NodeElement, UiComponent, VisualNode } from "../runtime-exports";
 
 export abstract class Element {
     constructor(configuration: VisualNode) {
@@ -10,6 +10,7 @@ export abstract class Element {
         this.owner = null!;
         this.componentDepth = 0;
         this.underInFlow = false;
+        this.nearestInherited = null;
         this.matchStamp = 0;
         this.configuration = configuration;
     }
@@ -22,13 +23,13 @@ export abstract class Element {
     owner!: BuildOwner;
     componentDepth!: number;
     underInFlow!: boolean;
+    nearestInherited!: InheritedElement | null;
     matchStamp!: number;
     abstract childAt(slot: number): Element | null;
     abstract visitChildren(visitor: (element: Element) => void): void;
 
     static create(configuration: VisualNode) {
-        let component: any; 
-        return (configuration instanceof UiComponent && (component = configuration, true)) ? new ComponentElement(component) : new NodeElement(configuration);
+        return (() => { const $s = configuration; if ($s instanceof UiComponent) { const component = $s; return new ComponentElement(component); } if ($s instanceof InheritedComponent) { const inherited = $s; return new InheritedElement(inherited); } return new NodeElement(configuration); })();
     }
 
     static canUpdate(current: VisualNode, next: VisualNode) {
@@ -42,6 +43,7 @@ export abstract class Element {
         this.depth = parent == null ? 0 : parent.depth + 1;
         this.componentDepth = parent == null ? 0 : parent.componentDepth + (parent instanceof ComponentElement ? 1 : 0);
         this.underInFlow = !(parent == null) && (parent.underInFlow || parent.configuration instanceof InFlow);
+        this.nearestInherited = (($as: any) => $as instanceof InheritedElement ? $as : null)(parent) ?? (parent?.nearestInherited ?? null);
         this.isActive = true;
         this.firstBuild();
     }

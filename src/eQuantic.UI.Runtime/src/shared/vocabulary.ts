@@ -943,8 +943,12 @@ export abstract class InheritedComponent extends VisualNode {
     if (config) Object.assign(this, config);
   }
 
-  /** Whether the components that depend on this value rebuild when a new one replaces `old`. */
-  protected abstract updateShouldNotify(old: InheritedComponent): boolean;
+  /**
+   * Whether the components that depend on this value rebuild when a new one replaces `old`. Public,
+   * as eqc writes C#'s `protected internal`: an app's override arrives without a modifier, and the
+   * element engine's `InheritedElement` asks it.
+   */
+  abstract updateShouldNotify(old: InheritedComponent): boolean;
 }
 
 export class InFlow extends VisualNode {

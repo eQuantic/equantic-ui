@@ -10,7 +10,6 @@ namespace eQuantic.UI.Primitives;
 /// subtree between this position and its dependents keeps what it built, unless its own nodes changed.
 /// </para>
 /// </summary>
-[ServerOnly]
 public sealed class InheritedElement : Element
 {
     private Element? _child;
