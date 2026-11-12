@@ -34,3 +34,19 @@ the rest.
 - **WHEN** the theme's `Markdown` slot names a block gap of 23 and a table radius of 17, and a
   Markdown's own `Style` names a block gap of 31
 - **THEN** its blocks are 31 apart and its tables keep the radius of 17
+
+### Requirement: A shipped theme leaves a role's colour to the component
+
+`PhotonTheme` and `MaterialTheme` SHALL leave null every colour of a slot that would equal one of
+their own roles, the Button's slot included, so the component reads the role itself and a theme built
+from them that recolours the role recolours the component.
+
+#### Scenario: A decorator recolours a role
+
+- **WHEN** a theme wraps `PhotonTheme`, forwards its slots, and answers `TextMuted` with green
+- **THEN** an unselected tab's label, a calendar's weekday names and an empty state's icon are green
+
+#### Scenario: No slot copies a role
+
+- **WHEN** every colour of every slot `With` takes is read under `PhotonTheme` and `MaterialTheme`
+- **THEN** none of them equals one of the theme's roles

@@ -17,10 +17,15 @@ import type {
   BadgeTheme,
   ButtonTheme,
   CalendarTheme,
+  ChipTheme,
   ControlsTheme,
+  IconButtonTheme,
+  InputTheme,
   ListTheme,
   MarkdownTheme,
   NavigationTheme,
+  SegmentedTheme,
+  SelectionControlsTheme,
   TableTheme,
 } from './theme-slots';
 import { codeTokenColor, type AppTheme, type ColorToken, type FontFamily } from './value-types';
@@ -51,6 +56,16 @@ export const IAppTheme = {
   controls: (_theme: AppTheme): ControlsTheme | null => null,
   /** `ButtonTheme? Button => null;` — the button's own defaults. */
   button: (_theme: AppTheme): ButtonTheme | null => null,
+  /** `IconButtonTheme? IconButton => null;` — the icon button's own defaults. */
+  iconButton: (_theme: AppTheme): IconButtonTheme | null => null,
+  /** `InputTheme? Input => null;` — each field's own defaults. */
+  input: (_theme: AppTheme): InputTheme | null => null,
+  /** `SelectionControlsTheme? SelectionControls => null;` — each selection control's own defaults. */
+  selectionControls: (_theme: AppTheme): SelectionControlsTheme | null => null,
+  /** `SegmentedTheme? Segmented => null;` — each segmented control's own defaults. */
+  segmented: (_theme: AppTheme): SegmentedTheme | null => null,
+  /** `ChipTheme? Chip => null;` — the chip's own defaults. */
+  chip: (_theme: AppTheme): ChipTheme | null => null,
   /** `NavigationTheme? Navigation => null;` — each component's own defaults. */
   navigation: (_theme: AppTheme): NavigationTheme | null => null,
   /** `ListTheme? List => null;` — each component's own defaults. */

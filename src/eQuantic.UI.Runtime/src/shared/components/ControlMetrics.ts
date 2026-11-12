@@ -1,4 +1,4 @@
-import { BuildContext, ControlsTheme, DensityLadder, DensityValue, SizeLadder, SizeVariantValue, Sizing } from "../runtime-exports";
+import { BuildContext, ControlsTheme, DensityLadder, DensityPair, DensityValue, SizeLadder, SizeVariantValue, Sizing } from "../runtime-exports";
 
 export class ControlMetrics {
     static height(context: BuildContext, size: SizeVariantValue, family: ControlsTheme | null = null) {
@@ -35,6 +35,10 @@ export class ControlMetrics {
 
     static atSize(ladder: SizeLadder | null, size: SizeVariantValue) {
         return ControlMetrics.rung(ladder, size);
+    }
+
+    static atDensity(value: DensityPair | null, density: DensityValue) {
+        return density === 'compact' ? (value?.compact ?? null) : (value?.comfortable ?? null);
     }
 }
 

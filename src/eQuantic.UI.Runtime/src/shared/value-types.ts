@@ -14,10 +14,15 @@ import type {
   BadgeTheme,
   ButtonTheme,
   CalendarTheme,
+  ChipTheme,
   ControlsTheme,
+  IconButtonTheme,
+  InputTheme,
   ListTheme,
   MarkdownTheme,
   NavigationTheme,
+  SegmentedTheme,
+  SelectionControlsTheme,
   TableTheme,
 } from './theme-slots';
 import { hashesByValue } from '../utils/hash';
@@ -614,6 +619,16 @@ export interface AppTheme {
   controls?: ControlsTheme | null;
   /** The Button's slot (C# `IAppTheme.Button`), absent or null for its own defaults. */
   button?: ButtonTheme | null;
+  /** The IconButton's slot (C# `IAppTheme.IconButton`), absent or null for its own defaults. */
+  iconButton?: IconButtonTheme | null;
+  /** The fields' slot (C# `IAppTheme.Input`), absent or null for their own defaults. */
+  input?: InputTheme | null;
+  /** The selection controls' slot (C# `IAppTheme.SelectionControls`), absent or null for their own defaults. */
+  selectionControls?: SelectionControlsTheme | null;
+  /** The segmented controls' slot (C# `IAppTheme.Segmented`), absent or null for their own defaults. */
+  segmented?: SegmentedTheme | null;
+  /** The Chip's slot (C# `IAppTheme.Chip`), absent or null for its own defaults. */
+  chip?: ChipTheme | null;
   /** The navigation family's slot (C# `IAppTheme.Navigation`), absent or null for each component's own defaults. */
   navigation?: NavigationTheme | null;
   /** The list family's slot (C# `IAppTheme.List`), absent or null for each component's own defaults. */

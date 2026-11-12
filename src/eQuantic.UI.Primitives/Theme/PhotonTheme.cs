@@ -178,8 +178,9 @@ public sealed class PhotonTheme : IAppTheme
         Radius = BySize(Sizing.Radius),
     };
 
-    /// <summary>The Button (spec A12): a 64dp floor, a semi-bold label at 0.1 tracking, a 1dp outline in
-    /// BorderStrong, a link padded by 6, and the quiet variants filling with SurfaceSubtle.</summary>
+    /// <summary>The Button (spec A12): a 64dp floor, a semi-bold label at 0.1 tracking, a 1dp outline and
+    /// a link padded by 6. Its outline (BorderStrong) and its quiet fill (SurfaceSubtle) stay null: the
+    /// Button reads those roles itself, so a theme that changes one recolours it.</summary>
     public ButtonTheme? Button => field ??= new ButtonTheme
     {
         MinWidth = Sizing.ButtonMinWidth,
@@ -187,21 +188,104 @@ public sealed class PhotonTheme : IAppTheme
         LabelTracking = 0.1f,
         OutlineWidth = 1,
         LinkPaddingX = 6,
-        OutlineColor = BorderStrong,
-        QuietFill = SurfaceSubtle,
     };
 
-    // Navigation and collections (E6d): what each component drew, now the design system's. A colour is
-    // the role the component chose, cached on first read since a role is an instance member.
+    // The form controls' slots (E6b): what each control drew, now the design system's. Their own
+    // ladders stay null, so the theme's Controls above reaches them. A colour a control takes from one
+    // of the theme's roles stays null too: the control reads the role itself, so a theme that changes
+    // the role (a decorator, or a spread of this theme in the browser) recolours the control, which a
+    // copy of the role taken here would not. Cached on first read.
+
+    /// <summary>The IconButton (spec A13): the §07 glyph ladder, a circle, a 1dp outline, and the tonal
+    /// press at 24%.</summary>
+    public IconButtonTheme? IconButton => field ??= new IconButtonTheme
+    {
+        IconSize = new SizeLadder { Small = IconSize.Sm, Medium = IconSize.Dense, Large = IconSize.Md, XLarge = IconSize.Md },
+        Radius = Radius.Full,
+        OutlineWidth = 1,
+        TonalPressOpacity = 0.24f,
+    };
+
+    /// <summary>The fields (spec B9, B10): 14 and 10 for a text field's padding and gap, 12 and 8 for
+    /// a picker's, a 1dp border that grows to 2 while focused, the medium corner, the search pill, and
+    /// the label 6 above and the helper 5 below.</summary>
+    public InputTheme? Input => field ??= new InputTheme
+    {
+        PaddingX = 14,
+        PickerPaddingX = Space.S3,
+        Gap = 10,
+        PickerGap = Space.S2,
+        BorderWidth = 1,
+        FocusBorderWidth = 2,
+        Radius = Radius.Md,
+        SearchRadius = Radius.Full,
+        IconSize = IconSize.Dense,
+        LabelGap = 6,
+        CaptionGap = 5,
+        LabelRole = TypeRole.Label,
+        CaptionRole = TypeRole.Caption,
+        PanelElevation = 2,
+    };
+
+    /// <summary>The selection controls (spec B11-B13, C7): Sizing's selection ladder, a 2dp border, the
+    /// extra-small corner, a 44dp radio row, and the slider's 4dp track under a 24dp thumb.</summary>
+    public SelectionControlsTheme? SelectionControls => field ??= new SelectionControlsTheme
+    {
+        Box = ByDensityAlone(Sizing.SelectionBox),
+        BorderWidth = 2,
+        CheckboxRadius = Radius.Xs,
+        RadioDot = ByDensityAlone(Sizing.RadioDot),
+        RadioRowHeight = 44,
+        LabelGap = Space.S3,
+        SwitchWidth = ByDensityAlone(Sizing.SwitchWidth),
+        SwitchHeight = ByDensityAlone(Sizing.SwitchHeight),
+        SwitchThumb = ByDensityAlone(Sizing.SwitchThumb),
+        SwitchInset = Sizing.SwitchInset,
+        SwitchThumbElevation = 1,
+        SliderTrackHeight = 4,
+        SliderThumbSize = 24,
+        SliderThumbBorder = 1,
+        SliderThumbElevation = 2,
+        SliderMinWidth = 120,
+    };
+
+    /// <summary>The segmented controls: a 3dp lip, the selected segment raised on the surface, and
+    /// the stepper's 1dp border around 20dp glyphs.</summary>
+    public SegmentedTheme? Segmented => field ??= new SegmentedTheme
+    {
+        Inset = 3,
+        ThumbElevation = 1,
+        BorderWidth = 1,
+        IconSize = IconSize.Dense,
+    };
+
+    /// <summary>The Chip: a pill padded 12, its label at 13 over 16 semi-bold, and a filter chip's
+    /// 1dp border, the selected one's and the outline of the unselected one.</summary>
+    public ChipTheme? Chip => field ??= new ChipTheme
+    {
+        PaddingX = Space.S3,
+        Gap = 6,
+        LabelSize = 13,
+        LabelLineHeight = 16,
+        LabelWeight = FontWeight.SemiBold,
+        LabelTracking = 0,
+        Radius = Radius.Full,
+        SelectedBorderWidth = 1,
+        OutlineWidth = 1,
+        PressOpacity = 0.24f,
+        IconSize = IconSize.Sm,
+        RemoveIconSize = IconSize.Dense,
+    };
+
+    // Navigation and collections (E6d): what each component drew, now the design system's. A colour a
+    // component takes from one of the theme's roles stays null, as the form controls' do: the component
+    // reads the role itself, so a theme that changes the role recolours it. Cached on first read.
 
     /// <summary>The navigation family (spec B3, B4, C16): a 48dp tab strip under a 3dp indicator inset 16,
     /// a 56dp bar of 56 by 26 pills, an 80dp rail of 52 by 30 pills with a 1dp trailing edge, a 56dp app
     /// bar, 30dp page cells and 6dp dots.</summary>
     public NavigationTheme? Navigation => field ??= new NavigationTheme
     {
-        InactiveColor = TextMuted,
-        QuietFill = SurfaceSubtle,
-        Background = Surface,
         TabHeight = 48,
         TabLabelSize = 14,
         TabLabelLineHeight = 18,
@@ -233,32 +317,24 @@ public sealed class PhotonTheme : IAppTheme
         RailSelectedLabelLineHeight = 16,
         RailSelectedLabelWeight = FontWeight.Bold,
         RailBorderWidth = 1,
-        RailBorderColor = Border,
         AppBarHeight = 56,
         AppBarPaddingX = 4,
         TitleSize = 20,
         TitleLineHeight = 26,
         TitleWeight = FontWeight.SemiBold,
-        TitleColor = TextPrimary,
         TitleInset = Space.S3,
         TitleGap = Space.S2,
         ScrolledElevation = 2,
         CrumbGap = Space.S1,
-        CrumbColor = TextSecondary,
-        CurrentCrumbColor = TextPrimary,
         SeparatorSize = IconSize.Sm,
-        SeparatorColor = BorderStrong,
         PageCellSize = 30,
         PageGap = 3,
         PaginationGap = Space.S2,
         PageRadius = Radius.Sm,
-        PageColor = TextSecondary,
-        EllipsisColor = TextMuted,
         DotSize = 6,
         CurrentDotWidth = 18,
         DotGap = Space.S1,
         DotRadius = Radius.Full,
-        DotColor = BorderStrong,
     };
 
     /// <summary>The list family (spec A7, B2): 52, 68 and 88dp rows padded 16 by 8 with 12 between their
@@ -266,7 +342,6 @@ public sealed class PhotonTheme : IAppTheme
     /// action.</summary>
     public ListTheme? List => field ??= new ListTheme
     {
-        QuietFill = SurfaceSubtle,
         ItemHeight = 52,
         TwoLineItemHeight = 68,
         ThreeLineItemHeight = 88,
@@ -277,21 +352,16 @@ public sealed class PhotonTheme : IAppTheme
         TitleSize = 15,
         TitleLineHeight = 20,
         TitleWeight = FontWeight.Medium,
-        TitleColor = TextPrimary,
-        SubtitleColor = TextSecondary,
         DividerThickness = 1,
-        DividerColor = Border,
         DividerInset = Space.S4,
         HeaderHeight = Sizing.Height(SizeVariant.Large),
         SectionPaddingX = Space.S3,
         SectionPaddingBottom = Space.S3,
         HeaderGap = Space.S2,
         ChevronSize = IconSize.Sm,
-        ChevronColor = TextSecondary,
         SwipeActionWidth = 96,
         SwipeActionGap = 3,
         SwipeIconSize = IconSize.Dense,
-        SwipeSurface = Surface,
     };
 
     /// <summary>The table family: cells padded 12 by 8, a Table's 44dp rows 12 apart, and a DataTable's
@@ -300,27 +370,20 @@ public sealed class PhotonTheme : IAppTheme
     {
         CellPaddingX = Space.S3,
         CellPaddingY = Space.S2,
-        HoverFill = SurfaceSubtle,
         ColumnGap = Space.S3,
         RowMinHeight = 44,
-        TableHeaderColor = TextSecondary,
         DataRowHeight = 52,
         SelectionColumnWidth = 44,
-        HeaderFill = SurfaceSubtle,
-        DataHeaderColor = TextMuted,
-        SortedHeaderColor = TextPrimary,
         HeaderUppercase = true,
         HeaderIconGap = Space.S1,
         SortIconSize = IconSize.Sm,
         BorderWidth = 1,
-        BorderColor = Border,
     };
 
     /// <summary>The badge family (spec B6, B7): an 8dp dot and a 16dp count ringed 2dp in Surface, the
     /// avatar's own ladder, and an empty state's 64dp well over a 20/26 semi-bold title.</summary>
     public BadgeTheme? Badge => field ??= new BadgeTheme
     {
-        RingColor = Surface,
         RingWidth = 2,
         DotSize = 8,
         CountHeight = 16,
@@ -328,19 +391,12 @@ public sealed class PhotonTheme : IAppTheme
         CountLabelSize = 10,
         CountLabelLineHeight = 12,
         CountLabelWeight = FontWeight.Bold,
-        NeutralFill = SurfaceSubtle,
-        NeutralColor = TextSecondary,
         AvatarSize = BySize(Sizing.Avatar),
         AvatarLabelSize = BySize(Sizing.AvatarInitials),
         AvatarLabelWeight = FontWeight.SemiBold,
         AvatarGlyphSize = new SizeLadder { Small = IconSize.Sm, Medium = IconSize.Dense, Large = IconSize.Md, XLarge = IconSize.Lg },
-        AvatarFill = SurfaceSubtle,
-        AvatarGlyphColor = TextMuted,
-        OfflineColor = TextMuted,
         WellSize = 64,
-        WellFill = SurfaceSubtle,
         WellIconSize = IconSize.Lg,
-        WellIconColor = TextMuted,
         EmptyPaddingX = Space.S4,
         EmptyPaddingY = Space.S12,
         WellGap = Space.S4,
@@ -350,8 +406,6 @@ public sealed class PhotonTheme : IAppTheme
         EmptyTitleSize = 20,
         EmptyTitleLineHeight = 26,
         EmptyTitleWeight = FontWeight.SemiBold,
-        EmptyTitleColor = TextPrimary,
-        EmptyBodyColor = TextSecondary,
     };
 
     /// <summary>The calendar family (spec C15): 44dp day cells under a 28dp row of weekday names, a 1.5dp
@@ -363,21 +417,14 @@ public sealed class PhotonTheme : IAppTheme
         HeaderGap = Space.S1,
         Gap = Space.S2,
         TitleRole = TypeRole.TitleSmall,
-        TitleColor = TextPrimary,
         WeekdayRole = TypeRole.Caption,
-        WeekdayColor = TextMuted,
         DayRole = TypeRole.BodyM,
-        DayColor = TextPrimary,
-        DayHoverFill = SurfaceSubtle,
         TodayRingWidth = 1.5f,
-        PanelFill = Surface,
         PanelRadius = Radius.Md,
         PanelBorderWidth = 1,
-        PanelBorderColor = Border,
         PanelElevation = 2,
         PanelPadding = Space.S3,
         OpenerIconSize = IconSize.Dense,
-        OpenerColor = TextSecondary,
     };
 
     /// <summary>The rendered document: headings on the type scale's heading roles, prose in BodyM 14
@@ -394,25 +441,24 @@ public sealed class PhotonTheme : IAppTheme
         CodeInverse = false,
         HeadingSpace = 10,
         SubheadingSpace = 6,
-        HeadingColor = TextPrimary,
-        BodyColor = TextSecondary,
         InlineCodeMaxSize = 13.5f,
-        InlineCodeColor = TextPrimary,
         QuoteIndent = Space.S4,
         QuotePaddingY = 2,
         QuoteRuleWidth = 3,
-        QuoteRuleColor = BorderStrong,
         ListGap = Space.S2,
         MarkerGap = 10,
         ListIndent = Space.S5,
-        MarkerColor = TextMuted,
         TableRadius = 12,
         TableBorderWidth = 1,
-        TableBorderColor = Border,
-        TableHeaderFill = SurfaceSubtle,
         TableCellPaddingX = 14,
         TableHeaderPaddingY = 10,
         TableCellPaddingY = 11,
+    };
+
+    private static DensityPair ByDensityAlone(Func<Density, float> side) => new()
+    {
+        Comfortable = side(Density.Comfortable),
+        Compact = side(Density.Compact),
     };
 
     private static SizeLadder BySize(Func<SizeVariant, float> rung) => new()

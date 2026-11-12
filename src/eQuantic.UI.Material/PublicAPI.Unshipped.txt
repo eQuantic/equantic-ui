@@ -4,3 +4,8 @@ eQuantic.UI.Material.MaterialTheme.Navigation.get -> eQuantic.UI.Primitives.Navi
 eQuantic.UI.Material.MaterialTheme.List.get -> eQuantic.UI.Primitives.ListTheme?
 eQuantic.UI.Material.MaterialTheme.Badge.get -> eQuantic.UI.Primitives.BadgeTheme?
 eQuantic.UI.Material.MaterialTheme.Calendar.get -> eQuantic.UI.Primitives.CalendarTheme?
+eQuantic.UI.Material.MaterialTheme.Chip.get -> eQuantic.UI.Primitives.ChipTheme?
+eQuantic.UI.Material.MaterialTheme.IconButton.get -> eQuantic.UI.Primitives.IconButtonTheme?
+eQuantic.UI.Material.MaterialTheme.Input.get -> eQuantic.UI.Primitives.InputTheme?
+eQuantic.UI.Material.MaterialTheme.Segmented.get -> eQuantic.UI.Primitives.SegmentedTheme?
+eQuantic.UI.Material.MaterialTheme.SelectionControls.get -> eQuantic.UI.Primitives.SelectionControlsTheme?

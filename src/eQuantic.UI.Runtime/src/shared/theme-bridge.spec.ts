@@ -210,6 +210,49 @@ describe('theme bridge: the slots and the code palette cross (E6a, #1241; #936)'
   });
 });
 
+describe('theme bridge: the form control slots cross (E6b, #1242)', () => {
+  const theme = materializeTheme(photonData as unknown as ThemeData);
+
+  it('carries the five slots as the generated Photon theme holds them', () => {
+    expect(theme.iconButton).toEqual(photonTheme.iconButton);
+    expect(theme.input).toEqual(photonTheme.input);
+    expect(theme.selectionControls).toEqual(photonTheme.selectionControls);
+    expect(theme.segmented).toEqual(photonTheme.segmented);
+    expect(theme.chip).toEqual(photonTheme.chip);
+  });
+
+  it('carries each kind of member: a number, a ladder, a value by density, a colour and an enum', () => {
+    expect(theme.chip?.paddingX).toBe(12);
+    expect(theme.iconButton?.iconSize?.small).toBe(16);
+    expect(theme.selectionControls?.box?.compact).toBe(20);
+    expect(theme.input?.labelRole).toBe('label');
+    expect(theme.chip?.labelWeight).toBe('semiBold');
+  });
+
+  // Photon leaves a colour that is one of its roles null, so the control reads the role itself and a
+  // theme that changes the role recolours it; a colour crosses when a theme names one of its own.
+  it('carries a colour a theme names in a slot, and leaves a role Photon reads itself null', () => {
+    expect(theme.input?.borderColor).toBeNull();
+    const green: [number[], number[]] = [
+      [0, 128, 0, 255],
+      [0, 160, 0, 255],
+    ];
+    const custom = materializeTheme({
+      ...(photonData as unknown as ThemeData),
+      input: { borderColor: green },
+    } as unknown as ThemeData);
+    expect(custom.input?.borderColor?.light).toEqual({ r: 0, g: 128, b: 0, a: 255 });
+    expect(custom.input?.borderColor?.dark).toEqual({ r: 0, g: 160, b: 0, a: 255 });
+  });
+
+  it("answers a member the server's theme names, and leaves a slot it does not answer null", () => {
+    const custom = materializeTheme({ ...(photonData as unknown as ThemeData), chip: { paddingX: 20 }, input: undefined });
+    expect(custom.chip?.paddingX).toBe(20);
+    expect(custom.chip?.gap).toBeNull();
+    expect(custom.input).toBeNull();
+  });
+});
+
 describe('theme bridge: the navigation and collection slots and the document\'s cross (E6d, #1244)', () => {
   const theme = materializeTheme(photonData as unknown as ThemeData);
   const families = ['navigation', 'list', 'table', 'badge', 'calendar', 'markdown'] as const;
@@ -228,7 +271,8 @@ describe('theme bridge: the navigation and collection slots and the document\'s 
       }
     }
     expect(theme.navigation?.tabHeight).toBe(48);
-    expect(theme.navigation?.inactiveColor).toEqual(photonTheme.textMuted);
+    // A colour that is one of Photon's roles stays null, so the component reads the role itself.
+    expect(theme.navigation?.inactiveColor).toBeNull();
     expect(theme.badge?.avatarSize?.xLarge).toBe(56);
     expect(theme.calendar?.titleRole).toBe('titleSmall');
     expect(theme.table?.headerUppercase).toBe(true);
@@ -246,7 +290,9 @@ describe('theme bridge: the navigation and collection slots and the document\'s 
   it('With lays each of the six slots it is given over the theme and forwards the rest', () => {
     const navigation = new NavigationTheme({ tabHeight: 60 });
     const markdown = new MarkdownTheme({ blockGap: 30 });
-    const replaced = AppThemeExtensions.with(theme, null, null, navigation, null, null, null, null, markdown);
+    const replaced = AppThemeExtensions.with(
+      theme, null, null, null, null, null, null, null, navigation, null, null, null, null, markdown,
+    );
     expect(replaced.navigation?.tabHeight).toBe(60);
     expect(replaced.navigation?.barHeight).toBe(theme.navigation?.barHeight);
     expect(replaced.markdown?.blockGap).toBe(30);

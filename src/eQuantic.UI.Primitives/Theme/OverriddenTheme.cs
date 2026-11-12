@@ -7,8 +7,9 @@ namespace eQuantic.UI.Primitives;
 /// <see cref="IAppTheme"/> this class leaves to the interface.
 /// </summary>
 internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, ButtonTheme? button,
-    NavigationTheme? navigation, ListTheme? list, TableTheme? table, BadgeTheme? badge, CalendarTheme? calendar,
-    MarkdownTheme? markdown) : IAppTheme
+    IconButtonTheme? iconButton, InputTheme? input, SelectionControlsTheme? selectionControls, SegmentedTheme? segmented,
+    ChipTheme? chip, NavigationTheme? navigation, ListTheme? list, TableTheme? table, BadgeTheme? badge,
+    CalendarTheme? calendar, MarkdownTheme? markdown) : IAppTheme
 {
     public ColorToken Background => inner.Background;
     public ColorToken Surface => inner.Surface;
@@ -40,6 +41,11 @@ internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, 
     // A slot it was given is laid over the wrapped theme's, member by member, once.
     public ControlsTheme? Controls => field ??= ControlsTheme.Merge(inner.Controls, controls);
     public ButtonTheme? Button => field ??= ButtonTheme.Merge(inner.Button, button);
+    public IconButtonTheme? IconButton => field ??= IconButtonTheme.Merge(inner.IconButton, iconButton);
+    public InputTheme? Input => field ??= InputTheme.Merge(inner.Input, input);
+    public SelectionControlsTheme? SelectionControls => field ??= SelectionControlsTheme.Merge(inner.SelectionControls, selectionControls);
+    public SegmentedTheme? Segmented => field ??= SegmentedTheme.Merge(inner.Segmented, segmented);
+    public ChipTheme? Chip => field ??= ChipTheme.Merge(inner.Chip, chip);
     public NavigationTheme? Navigation => field ??= NavigationTheme.Merge(inner.Navigation, navigation);
     public ListTheme? List => field ??= ListTheme.Merge(inner.List, list);
     public TableTheme? Table => field ??= TableTheme.Merge(inner.Table, table);

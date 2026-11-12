@@ -211,4 +211,33 @@ public interface IAppTheme
         CodeTokenKind.Punctuation => TextSecondary,
         _ => TextPrimary,
     };
+
+    /// <summary>
+    /// The IconButton's slot (<see cref="IconButtonTheme"/>), NULL by default, which an icon button reads
+    /// as its own defaults: the side through <see cref="Controls"/>, and its constants.
+    /// </summary>
+    IconButtonTheme? IconButton => null;
+
+    /// <summary>
+    /// The fields' slot (<see cref="InputTheme"/>): TextInput, SearchField, Select and TimePicker, NULL by
+    /// default, which each reads as its own defaults.
+    /// </summary>
+    InputTheme? Input => null;
+
+    /// <summary>
+    /// The selection controls' slot (<see cref="SelectionControlsTheme"/>): Checkbox, RadioGroup, Switch and
+    /// Slider, NULL by default, which each reads as its own defaults.
+    /// </summary>
+    SelectionControlsTheme? SelectionControls => null;
+
+    /// <summary>
+    /// The segmented controls' slot (<see cref="SegmentedTheme"/>): SegmentedControl and Stepper, NULL by
+    /// default, which each reads as its own defaults.
+    /// </summary>
+    SegmentedTheme? Segmented => null;
+
+    /// <summary>
+    /// The Chip's slot (<see cref="ChipTheme"/>), NULL by default, which a chip reads as its own defaults.
+    /// </summary>
+    ChipTheme? Chip => null;
 }

@@ -66,6 +66,12 @@ export interface ThemeData {
   controls?: SlotData;
   /** The Button's slot, by the same rule. */
   button?: SlotData;
+  /** The form controls' slots (E6b), by the same rule. */
+  iconButton?: SlotData;
+  input?: SlotData;
+  selectionControls?: SlotData;
+  segmented?: SlotData;
+  chip?: SlotData;
   /** The navigation and collection families' slots and the document's (E6d), by the same rule. */
   navigation?: SlotData;
   list?: SlotData;

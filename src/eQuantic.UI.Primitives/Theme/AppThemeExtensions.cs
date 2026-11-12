@@ -14,7 +14,10 @@ public static class AppThemeExtensions
     /// <code>ui.UseTheme(MaterialTheme.Instance.With(button: new ButtonTheme { MinWidth = 88 }));</code>
     /// </summary>
     public static IAppTheme With(this IAppTheme theme, ControlsTheme? controls = null, ButtonTheme? button = null,
-        NavigationTheme? navigation = null, ListTheme? list = null, TableTheme? table = null, BadgeTheme? badge = null,
-        CalendarTheme? calendar = null, MarkdownTheme? markdown = null) =>
-        new OverriddenTheme(theme, controls, button, navigation, list, table, badge, calendar, markdown);
+        IconButtonTheme? iconButton = null, InputTheme? input = null, SelectionControlsTheme? selectionControls = null,
+        SegmentedTheme? segmented = null, ChipTheme? chip = null, NavigationTheme? navigation = null,
+        ListTheme? list = null, TableTheme? table = null, BadgeTheme? badge = null, CalendarTheme? calendar = null,
+        MarkdownTheme? markdown = null) =>
+        new OverriddenTheme(theme, controls, button, iconButton, input, selectionControls, segmented, chip, navigation,
+            list, table, badge, calendar, markdown);
 }

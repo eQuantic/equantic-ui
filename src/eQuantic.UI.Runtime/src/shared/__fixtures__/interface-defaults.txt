@@ -1,9 +1,12 @@
 IAppTheme.badge
 IAppTheme.button
 IAppTheme.calendar
+IAppTheme.chip
 IAppTheme.code
 IAppTheme.controls
 IAppTheme.data
+IAppTheme.iconButton
+IAppTheme.input
 IAppTheme.list
 IAppTheme.markdown
 IAppTheme.monoFamily
@@ -12,7 +15,9 @@ IAppTheme.onSelection
 IAppTheme.placeholder
 IAppTheme.scrollbarThumb
 IAppTheme.scrollbarTrack
+IAppTheme.segmented
 IAppTheme.selection
+IAppTheme.selectionControls
 IAppTheme.sheet
 IAppTheme.table
 IAppTheme.textFamily
