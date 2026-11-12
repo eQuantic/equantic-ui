@@ -136,6 +136,23 @@ public class AppLayoutTests
         html.Should().Contain("Downloads: 42");
     }
 
+    /// <summary>The location is the path the app writes, so a page served under a language segment is
+    /// at the path its in-app links name: a layout comparing it with an href it wrote still matches.</summary>
+    [Fact]
+    public async Task UnderALanguageSegment_TheLocationIsThePathTheAppWrites()
+    {
+        var options = Options(layout: true).UseCultureRoutes("en", "pt-BR");
+        var context = Request("/pt-BR/layout/stats");
+        context.Request.PathBase = "/app";
+
+        var result = await Service(options).RenderPageAsync(typeof(StatsPage), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("layout at /layout/stats",
+            "the language segment and the app's base are not the app's to write in an href");
+        result.Html.Should().NotContain("layout at /pt-BR");
+    }
+
     [Fact]
     public async Task WithoutALayout_ThePageIsRenderedAlone()
     {

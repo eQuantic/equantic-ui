@@ -32,10 +32,12 @@ public sealed class Navigator
     }
 
     /// <summary>
-    /// The path of the page being shown: <c>/charts</c>, with no query and no fragment. An app's layout
-    /// builds around every page, and marks the destination it shows with this (the entry of a sidebar
-    /// whose destination equals it). The server answers the path of the request it renders, the
-    /// browser the path in the address, which a navigation updates before anything builds for it.
+    /// The path of the page being shown, as the app writes it: <c>/charts</c>, with no query, no
+    /// fragment and no language segment, so a page served at <c>/pt-BR/charts</c> is at <c>/charts</c>,
+    /// the href its own links name (<c>UseCultureRoutes</c> adds the segment as a link is drawn). An
+    /// app's layout builds around every page, and marks the destination it shows with this (the entry of
+    /// a sidebar whose destination equals it). The server answers the path of the request it renders,
+    /// the browser the path in the address, which a navigation updates before anything builds for it.
     /// </summary>
     public string Location { get; }
 

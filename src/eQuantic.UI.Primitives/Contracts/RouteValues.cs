@@ -39,9 +39,10 @@ public sealed class RouteValues
     }
 
     /// <summary>
-    /// The path the route was matched on, as the address names it: <c>/docs/getting-started</c>, with
-    /// no query and no fragment. What <see cref="Navigator.Location"/> answers, so a layout can mark the
-    /// destination of the page it shows.
+    /// The path the route was matched on, as the app writes it: <c>/docs/getting-started</c>, with no
+    /// query, no fragment, no base and no language segment (a page served at <c>/pt-BR/docs</c> is at
+    /// <c>/docs</c>, the path its in-app links name). What <see cref="Navigator.Location"/> answers, so
+    /// a layout can mark the destination of the page it shows.
     /// </summary>
     public string Path { get; }
 

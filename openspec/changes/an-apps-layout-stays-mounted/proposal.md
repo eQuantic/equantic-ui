@@ -45,7 +45,8 @@ steps on both sides: the layout is `r0/Layout@`, and the page's own data travels
 key, never `Type#0`.
 
 **A layout knows where it is.** `Navigator.Of(context).Location` answers the path of the page being
-shown: the request's on the server, the address bar's in the browser. A layout marks its active
+shown as the app writes it, with no language segment (`/pt-BR/charts` is `/charts`, the href its links
+name): the request's on the server, the address bar's in the browser. A layout marks its active
 destination with it.
 
 **The dashboard moves its frame into a layout**, `ConsoleLayout`, which owns the sidebar's state.

@@ -132,7 +132,7 @@ public class ServerRenderingService : IServerRenderingService
             // ONE route, in the shape with no target in it — a write-once page reads
             // context.Route.Param("slug") instead of reaching for ASP.NET (and losing Photon), and
             // the web's `context.Route` is this same value rather than a copy of it.
-            Primitives.RouteValues.Current = BuildRouteValues(context);
+            Primitives.RouteValues.Current = BuildRouteValues(context, _options.CultureRoutes);
             // Where a component in the MIDDLE of the tree finds a capability — the REQUEST's
             // container, so a scoped one resolves and a page's own registrations win.
             Primitives.CapabilityScope.Current = context.RequestServices.GetService;
@@ -799,7 +799,7 @@ public class ServerRenderingService : IServerRenderingService
     /// query string and the path, so SSR sees the same parameters the client router will (e.g.
     /// <c>id</c> in <c>/users/{id}</c>).
     /// </summary>
-    private static Primitives.RouteValues BuildRouteValues(HttpContext context)
+    private static Primitives.RouteValues BuildRouteValues(HttpContext context, CultureRouteMap? cultureRoutes)
     {
         var routeParams = new Dictionary<string, string>();
         foreach (var rv in context.Request.RouteValues)
@@ -819,10 +819,14 @@ public class ServerRenderingService : IServerRenderingService
             query[q.Key] = q.Value.Count > 0 ? q.Value[0] ?? string.Empty : string.Empty;
         }
 
-        // The path as the address names it, the app's base included, which is what the browser's
-        // location answers for the same page (Navigator.Location).
-        var path = (context.Request.PathBase + context.Request.Path).Value;
-        return new Primitives.RouteValues(routeParams, query, string.IsNullOrEmpty(path) ? "/" : path);
+        // The path as the app writes it (Navigator.Location): the route a page declares and an in-app
+        // link names, so a layout compares it with the href it wrote. Neither the app's base nor the
+        // language segment is the app's to write, since a link gains the segment as it is drawn
+        // (UseCultureRoutes), and the browser's location answers the same path for the same page.
+        var path = context.Request.Path.Value;
+        path = string.IsNullOrEmpty(path) ? "/" : path;
+        if (cultureRoutes is not null) path = cultureRoutes.Split(path).Path;
+        return new Primitives.RouteValues(routeParams, query, path);
     }
 
     /// <summary>

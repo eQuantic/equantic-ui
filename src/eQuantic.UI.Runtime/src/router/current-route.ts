@@ -1,5 +1,6 @@
 import type { RouteMatch } from './route-table';
 import { RouteValues } from '../shared/route-values';
+import { splitCulturePath } from '../utils/culture-routes';
 
 /**
  * The router's view of the ambient route. The VALUE lives on `RouteValues` — the vocabulary's own
@@ -19,5 +20,5 @@ export function getCurrentRoute(): RouteValues {
 
 /** Sets the current route from a router match + URL (params from the pattern, query and path from the URL). */
 export function setCurrentRouteFrom(match: RouteMatch, url: URL): void {
-  RouteValues.setCurrent(RouteValues.from(match.params, url.searchParams, url.pathname));
+  RouteValues.setCurrent(RouteValues.from(match.params, url.searchParams, splitCulturePath(url.pathname)[1]));
 }
