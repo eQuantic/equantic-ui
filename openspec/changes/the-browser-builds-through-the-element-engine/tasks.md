@@ -18,12 +18,12 @@
 - [x] 3.2 The web's owners hold every arm (`holdsEveryArm`); the frameless arm and the threshold listener go
 - [x] 3.3 The browser adopts by `r{tree}/{type}@{slots}` on every build of a fresh instance
 - [x] 3.4 The server names by the frame's key, draws a bridge through `MarkupHost.DrawOnce`, puts back before a build, and measures a page's keys below it (`ForPage`)
-- [ ] 3.5 The engine regenerated, a twin case for slots, and the payload's tests read keys by type
+- [x] 3.5 The engine regenerated, a twin case for slots, and the payload's tests read keys by type
 
 ## 4. Proof
 
 - [x] 4.1 The specs that asserted the store assert the same behaviour on elements, and the scenarios of this change have a spec each
-- [ ] 4.2 The runtime's suites, the element engine's twins and the hydration contract pass
-- [ ] 4.3 The e2e suite in a real browser after the change
+- [x] 4.2 The runtime's suites, the element engine's twins and the hydration contract pass (with #1477 in: twins and hydration crossing 25 of 25, Server 625 of 625)
+- [x] 4.3 The e2e suite in a real browser after the change: 15 of 15, as before it (with #1477 in)
 - [ ] 4.4 The served runtime's budget, re-recorded in a commit of its own if it moved
 - [ ] 4.5 `docs/ELEMENT-TREE-PLAN.md`, the ledger and `FlutterParityPinTests` where a row closes
