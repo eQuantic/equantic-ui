@@ -14,7 +14,13 @@
  * offset to, so the box keeps its own `transform` and its hover's for the whole gesture (#511). The
  * inline value is the gesture's only while it lasts: a release or a cancel takes it away again and
  * the markup's rest, with the markup's glide, decides where the surface ends.
+ *
+ * `translate` resolves in the surface's parent's space, so that is where the finger is read
+ * (`gestureSpace`): along the track as it is drawn under a turned ancestor, and in the surface's own
+ * pixels under a scaled one, as Photon reads it (#1195, #1204).
  */
+import { gestureSpace } from './gesture-space';
+
 const SLOP = 12; // Touch.PressCancelSlop — cross-pinned with the C# host
 
 let installed = false;
@@ -31,19 +37,6 @@ export function resetDraggableController(): void {
   document.removeEventListener('pointerdown', onPointerDown);
 }
 
-/**
- * The scale the surface's own `transform` draws it at along an axis, 1 when it has none. A browser
- * reports a transform with any 3D part (a `translateZ` layer hint) as `matrix3d`, whose first two
- * columns hold the same four numbers a `matrix` does.
- */
-function ownScale(surface: HTMLElement, horizontal: boolean): number {
-  const matrix = /^matrix(3d)?\(([^)]+)\)$/.exec(getComputedStyle(surface).transform);
-  if (!matrix) return 1;
-  const values = matrix[2].split(',').map(Number);
-  const [a, b, c, d] = matrix[1] ? [values[0], values[1], values[4], values[5]] : values;
-  return (horizontal ? Math.hypot(a, b) : Math.hypot(c, d)) || 1;
-}
-
 function onPointerDown(down: Event): void {
   const target = down.target as Element | null;
   const surface = target?.closest?.('[data-eq-drag]') as HTMLElement | null;
@@ -58,31 +51,35 @@ function onPointerDown(down: Event): void {
   const moves = surface.getAttribute('data-eq-drag-moves') === '1';
 
   // What a NORMALIZED gesture divides by: the surface's own extent, which only the client can
-  // measure — a slider's track is fluid, so the component cannot know its width and the DOM can.
-  // The rect is what the finger crosses, so what scales the page around the surface stays in it,
-  // and the surface's OWN transform leaves it: a normalized rest is a `translate` percentage, which
-  // CSS resolves against the untransformed box and applies outside the surface's scale. Divided by
-  // the scaled rect, a 200px surface scaled to 0.5 read its rest of 0.25 as 25px, not the 50px it
-  // sits at, and jumped on the first move.
-  const box = surface.getBoundingClientRect();
-  const extent = (horizontal ? box.width : box.height) / ownScale(surface, horizontal);
-  // …and the percentage's own box, which is what a fraction is written back in.
-  const boxExtent = (horizontal ? surface.offsetWidth : surface.offsetHeight) || extent;
+  // measure — a slider's track is fluid, so the component cannot know its width and the DOM can. It
+  // is the untransformed box, the one a `translate` percentage resolves against, which is how the
+  // lowering writes a normalized rest, so a fraction is read and written back in the same pixels.
+  // It used to be the rect, which holds every transform the surface is drawn under: divided by a
+  // rect at its own `scale(.5)`, a 200px surface read its rest of 0.25 as 25px, not the 50px it sits
+  // at, and jumped on the first move (#702), and under a quarter turn the rect's width is the
+  // track's thickness (#1204).
+  const extent = horizontal ? surface.offsetWidth : surface.offsetHeight;
 
-  const start = horizontal ? (down as PointerEvent).clientX : (down as PointerEvent).clientY;
+  const space = gestureSpace(surface);
+  const pointer = down as PointerEvent;
+  const startX = pointer.clientX;
+  const startY = pointer.clientY;
+  const slop = space.onScreen(horizontal, SLOP);
   let active = false;
+
+  // How far the finger has carried the surface along its own axis, in the space its offset is in.
+  const travelled = (ev: Event): number =>
+    space.along(horizontal, (ev as PointerEvent).clientX - startX, (ev as PointerEvent).clientY - startY);
 
   // Where the gesture now IS, measured from the rest it started at.
   const travelOf = (ev: Event): number => {
-    const now = horizontal ? (ev as PointerEvent).clientX : (ev as PointerEvent).clientY;
-    const raw = now - start;
+    const raw = travelled(ev);
     const at = rest + (normalized && extent > 0 ? raw / extent : raw);
     return Math.min(max, Math.max(min, at));
   };
 
   const move = (ev: Event): void => {
-    const raw = (horizontal ? (ev as PointerEvent).clientX : (ev as PointerEvent).clientY) - start;
-    if (!active && Math.abs(raw) > SLOP) {
+    if (!active && Math.abs(travelled(ev)) > slop) {
       active = true;
       if (follows) surface.style.transition = 'none';
     }
@@ -92,7 +89,7 @@ function onPointerDown(down: Event): void {
     ev.preventDefault();
     const offset = travelOf(ev);
     if (follows) {
-      const px = normalized ? offset * boxExtent : offset;
+      const px = normalized ? offset * extent : offset;
       // Through setProperty: the property is newer than the CSSOM's named accessors, and the
       // generic one writes it on every engine.
       surface.style.setProperty('translate', horizontal ? `${px}px` : `0 ${px}px`);

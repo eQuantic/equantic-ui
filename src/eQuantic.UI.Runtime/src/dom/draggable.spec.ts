@@ -120,8 +120,11 @@ describe('draggable controller', () => {
     expect(released).toEqual([-56]);
   });
 
-  // jsdom measures nothing, so the numbers are stated here; #702 records them measured in Chromium.
+  // jsdom measures nothing, so the numbers are stated here: #702 records them measured in Chromium,
+  // and so do #1195 and #1204. jsdom reports a transform as it was written, so each is written as
+  // the matrix a browser computes from it.
   it('does not jump when the surface it normalizes by has a scale of its own (#702)', () => {
+    // The rect, at the surface's own scale, is half the box: what is divided by is the box.
     surface.style.transform = 'matrix(0.5, 0, 0, 0.5, 0, 0)';
     surface.getBoundingClientRect = () => ({ width: 100, height: 20, left: 0, top: 0 }) as DOMRect;
     Object.defineProperty(surface, 'offsetWidth', { value: 200 });
@@ -139,26 +142,131 @@ describe('draggable controller', () => {
     expect(released).toEqual([0.35]);
   });
 
-  it('reads the scale out of a 3D transform too', () => {
-    surface.style.transform = 'matrix3d(0.5, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)';
-    surface.getBoundingClientRect = () => ({ width: 100, height: 20, left: 0, top: 0 }) as DOMRect;
+  /** The surface inside a parent drawn under `parent`, and that parent inside one drawn under `outer`. */
+  const under = (parent: string, outer?: string): void => {
+    document.body.innerHTML = '<div id="o"><div id="p"></div></div>';
+    const p = document.getElementById('p') as HTMLElement;
+    p.style.transform = parent;
+    if (outer) (document.getElementById('o') as HTMLElement).style.transform = outer;
+    p.appendChild(surface);
+  };
+
+  const QUARTER_TURN = 'matrix(0, 1, -1, 0, 0, 0)'; // rotate(90deg): its x runs down the screen
+
+  it('travels along its track as it is drawn under a turned ancestor (#1195)', () => {
+    // A horizontal track turned a quarter is drawn down the screen. Read along clientX it heard
+    // nothing there, and a sideways move, across its track, drove it instead. Photon: 40 (#734).
+    under(QUARTER_TURN);
+    surface.setAttribute('data-eq-drag-max', '96');
+
+    down(100, 100);
+    move(100, 140);
+    expect(surface.style.getPropertyValue('translate')).toBe('40px'); // drawn 40 down the screen
+    up(100, 140);
+    expect(released).toEqual([40]);
+  });
+
+  it('does not arm on a move across its track under a turned ancestor', () => {
+    under(QUARTER_TURN);
+    surface.setAttribute('data-eq-drag-max', '96');
+
+    down(100, 100);
+    move(140, 100);
+    up(140, 100);
+
+    expect(surface.style.getPropertyValue('translate')).toBe('');
+    expect(released).toEqual([]);
+  });
+
+  it('divides a normalized drag by its own box under a turned ancestor (#1204)', () => {
+    // The rect of a track turned a quarter is as wide as the track is thick.
+    under(QUARTER_TURN);
+    surface.getBoundingClientRect = () => ({ width: 40, height: 200, left: 0, top: 0 }) as DOMRect;
     Object.defineProperty(surface, 'offsetWidth', { value: 200 });
     surface.setAttribute('data-eq-drag-normalized', '1');
     surface.setAttribute('data-eq-drag-min', '0');
     surface.setAttribute('data-eq-drag-max', '1');
-    surface.setAttribute('data-eq-drag-rest', '0.25');
 
     down(100, 100);
-    move(120, 100);
+    move(100, 140);
+    expect(surface.style.getPropertyValue('translate')).toBe('40px');
+    up(100, 140);
+    expect(released).toEqual([0.2]); // 40 of its 200, not all 40 of the rect
+  });
 
-    expect(surface.style.getPropertyValue('translate')).toBe('70px');
-    up(120, 100);
-    expect(released).toEqual([0.35]);
+  it('divides a normalized drag by its own box when the surface itself is turned (#1204)', () => {
+    // Its own transform turns what it draws, not the line its offset moves along: `translate` is
+    // applied outside the box's transform, as Photon paints a drag's offset outside its child's. So
+    // the finger is read along the parent's axis, as Photon reads it, and divided by the box, not
+    // by the rect, which is as wide as the track is thick.
+    surface.style.transform = QUARTER_TURN;
+    surface.getBoundingClientRect = () => ({ width: 40, height: 200, left: 0, top: 0 }) as DOMRect;
+    Object.defineProperty(surface, 'offsetWidth', { value: 200 });
+    surface.setAttribute('data-eq-drag-normalized', '1');
+    surface.setAttribute('data-eq-drag-min', '0');
+    surface.setAttribute('data-eq-drag-max', '1');
+
+    down(100, 100);
+    move(140, 100);
+    expect(surface.style.getPropertyValue('translate')).toBe('40px');
+    up(140, 100);
+    expect(released).toEqual([0.2]); // it read 1, the whole track, for 40px
+  });
+
+  it('reports its own pixels under a scaled parent, and is drawn under the finger (#1204)', () => {
+    // `translate` resolves in the parent's space, so 40 on the screen is 20 of a parent drawn at
+    // twice the size, which is what it reports and what it writes: the row moves 40, with the
+    // finger. Read on the screen it wrote 40 and moved 80. Photon: 20 (#734).
+    under('matrix(2, 0, 0, 2, 0, 0)');
+    surface.setAttribute('data-eq-drag-max', '96');
+
+    down(100, 100);
+    move(140, 100);
+    expect(surface.style.getPropertyValue('translate')).toBe('20px');
+    up(140, 100);
+    expect(released).toEqual([20]);
+  });
+
+  it('arms by the distance on the screen whatever its parent is drawn at', () => {
+    // A slop is the finger's: 16 on the screen arms past 12 at twice the size, where it is only 8
+    // of the parent's own pixels, and 8 on the screen arms nothing. Photon measures it so (#734).
+    under('matrix(2, 0, 0, 2, 0, 0)');
+    surface.setAttribute('data-eq-drag-max', '96');
+
+    down(100, 100);
+    move(108, 100);
+    expect(surface.style.getPropertyValue('translate')).toBe('');
+    move(116, 100);
+    expect(surface.style.getPropertyValue('translate')).toBe('8px');
+    up(116, 100);
+  });
+
+  it('reads an ancestor scale out of a 3D transform too', () => {
+    // A browser reports a transform with any 3D part (a translateZ layer hint) as matrix3d.
+    under('matrix3d(2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)');
+    surface.setAttribute('data-eq-drag-max', '96');
+
+    down(100, 100);
+    move(140, 100);
+    up(140, 100);
+    expect(released).toEqual([20]);
+  });
+
+  it('composes its ancestors in the order they are drawn', () => {
+    // The parent turns the track down the screen, and the outer box stretches only across it, so a
+    // move of 40 down the screen is 40 along the track. Composed the other way round it read 20.
+    under(QUARTER_TURN, 'matrix(2, 0, 0, 1, 0, 0)');
+    surface.setAttribute('data-eq-drag-max', '96');
+
+    down(100, 100);
+    move(100, 140);
+    up(100, 140);
+    expect(released).toEqual([40]);
   });
 
   it('reports a fraction of its own extent when the gesture is normalized', () => {
     // A slider's track is fluid: the component cannot know its pixel width, and the DOM can.
-    surface.getBoundingClientRect = () => ({ width: 200, height: 40, left: 0, top: 0 }) as DOMRect;
+    Object.defineProperty(surface, 'offsetWidth', { value: 200 });
     surface.setAttribute('data-eq-drag-normalized', '1');
     surface.setAttribute('data-eq-drag-min', '0');
     surface.setAttribute('data-eq-drag-max', '1');
