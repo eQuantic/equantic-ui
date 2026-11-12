@@ -16,9 +16,11 @@ both modes: .NET 21, 52 and 52, JavaScript "threw" three times.
   `MethodLowering.Indexer`, which already serves "a class, a component, a record, a struct". Every emitter that
   writes a twin calls it: the class and static-class path (as now), the record and struct writer, and the
   component writer. `TypeScriptEmitter.EmitEventAccessors` goes; its body is the new writer's.
-- The new writer asks no `[ServerOnly]` question. `ComponentParser.StaysOnTheServer` answers false for an
-  `EventDeclarationSyntax` whatever its `inAComponent` argument, and `[ServerOnly]` cannot mark an event (CS0592,
-  measured), so the call the class path makes today decides nothing.
+- An accessor that stays on the server stays out of every twin. `[ServerOnly]` cannot mark an event (CS0592,
+  measured) but can mark its accessor, a method, and so can `[ServerAction]`: `ComponentParser.StaysOnTheServer`
+  gains a case for an event's accessor (`[ServerOnly]` in any type, `[ServerAction]` on a component's), the writer
+  asks it, and a subscription from client code that calls such an accessor is refused with EQ2010, as a call of a
+  `[ServerOnly]` method is.
 - An app writes nothing new: the subscription it already wrote runs. No contract surface
   (`PublicAPI.Unshipped.txt`) and no developer surface (`developer-surface.baseline.txt`) moves:
   `eQuantic.UI.Compiler` is a tool surface, and every member touched is internal.
@@ -36,7 +38,8 @@ both modes: .NET 21, 52 and 52, JavaScript "threw" three times.
 
 ## Impact
 
-eqc only: `eQuantic.UI.Compiler` (`MethodLowering`, `TypeScriptEmitter`, `RecordTypeEmitter`). No runtime, no
+eqc only: `eQuantic.UI.Compiler` (`MethodLowering`, `TypeScriptEmitter`, `RecordTypeEmitter`, `ComponentParser`,
+`EventSubscriptionStrategy`, `HostOnlySymbolExtensions`). No runtime, no
 realizer, no Photon shell, no SDK, no template. The transpiled pins move only for a type that declares an event
 with accessors.
 

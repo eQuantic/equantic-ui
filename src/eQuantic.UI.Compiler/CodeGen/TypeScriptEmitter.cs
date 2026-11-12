@@ -604,10 +604,6 @@ public class TypeScriptEmitter
                         _converter.SetCurrentClass(component.Name);
                         foreach (var indexer in indexed.TwinMembers().OfType<IndexerDeclarationSyntax>())
                             EmitIndexer(indexer, c);
-                        // An event declared with accessors, as a class's is (#1445).
-                        foreach (var e in indexed.Members.OfType<EventDeclarationSyntax>())
-                            foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic: false))
-                                c.Member(member, member.Origin?.Member);
                     }
 
                     // Constructor: assign positional params, apply auto-property defaults (only when a prop
@@ -803,7 +799,17 @@ public class TypeScriptEmitter
                     }
                 }
                 // Abstract classes: no build method emitted
-                
+
+                // An event declared with accessors, as a class's is (#1445), on every branch above: a
+                // primitive's, and an abstract base's that holds nothing else for the branch to count.
+                if (component.ClassSyntax is { } withEvents)
+                {
+                    _converter.SetCurrentClass(component.Name);
+                    foreach (var e in withEvents.TwinMembers().OfType<EventDeclarationSyntax>())
+                        foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic: false, inAComponent: true))
+                            c.Member(member, member.Origin?.Member);
+                }
+
                 // Server Actions
                 foreach (var action in component.ServerActions)
                 {
@@ -1904,8 +1910,8 @@ public class TypeScriptEmitter
             // accessors, which every subscription calls as C# compiles `+=` into a call of them (#746).
             // Nothing wrote them, so a handler subscribed through an interface landed on a key of the
             // event's name that the accessors never read.
-            foreach (var e in cls.Members.OfType<EventDeclarationSyntax>())
-                foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic))
+            foreach (var e in cls.TwinMembers().OfType<EventDeclarationSyntax>())
+                foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic, inAComponent: false))
                     c.Member(member, member.Origin?.Member);
             if (ordered)
             {

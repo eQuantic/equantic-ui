@@ -53,6 +53,8 @@ public class EventSubscriptionStrategy : IConversionStrategy
                 ? place.Modify([value], Next, answerOld: false)
                 : ReadModifyWrite.Assign(context.Converter.ConvertIr(assignment.Left), [value], Next, answerOld: false, context));
         }
+        // An accessor no twin holds is refused where the subscription is written (EQ2010, #1445).
+        (adds ? symbol.AddMethod : symbol.RemoveMethod)?.ReportIfAccessorStaysOnTheServer(assignment, context);
         var target = context.Converter.ConvertExpression(assignment.Left);
         var handler = context.Converter.ConvertExpression(assignment.Right);
 

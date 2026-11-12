@@ -193,7 +193,11 @@ internal sealed class MethodLowering
     /// <param name="declaredType">The emitter's annotation for a declared type.</param>
     /// <param name="asStatic">Emit them as statics whatever the event's modifiers say: a static class's
     /// members are its twin's statics.</param>
-    public IEnumerable<JsClassMember> EventAccessors(EventDeclarationSyntax e, Func<TypeSyntax?, string> declaredType, bool asStatic)
+    /// <param name="inAComponent">Whether a component declares the event: its <c>[ServerAction]</c>
+    /// accessor stays on the server, as a <c>[ServerOnly]</c> one does in every type
+    /// (<see cref="Parser.ComponentParser.StaysOnTheServer"/>), and no twin holds it.</param>
+    public IEnumerable<JsClassMember> EventAccessors(EventDeclarationSyntax e, Func<TypeSyntax?, string> declaredType,
+        bool asStatic, bool inAComponent)
     {
         if (e.AccessorList is null) yield break;
         var twin = _modelFor(e)?.GetDeclaredSymbol(e) is IEventSymbol symbol
@@ -204,7 +208,8 @@ internal sealed class MethodLowering
         foreach (var accessor in e.AccessorList.Accessors)
         {
             var verb = accessor.Keyword.ValueText;
-            if (verb is not ("add" or "remove")) continue;
+            if (verb is not ("add" or "remove")
+                || Parser.ComponentParser.StaysOnTheServer(accessor, inAComponent, _modelFor(accessor))) continue;
             JsStatement? body = accessor.Body is { } block ? AccessorBody(block)
                 : accessor.ExpressionBody is { } arrow ? ExpressionBody(arrow.Expression, returns: false)
                 : null;
