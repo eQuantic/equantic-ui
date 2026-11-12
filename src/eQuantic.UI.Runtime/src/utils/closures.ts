@@ -9,8 +9,9 @@
 const closures = new WeakMap<object, string>();
 
 /** `value` as built for the closed type `typeArguments` names. */
-export const closing = <T extends object>(value: T, typeArguments: string): T => {
-  closures.set(value, typeArguments);
+export const closing = <T>(value: T, typeArguments: string): T => {
+  // A generic method's answer is marked at its call, and a record class's may be null.
+  if (typeof value === 'object' && value !== null) closures.set(value, typeArguments);
   return value;
 };
 

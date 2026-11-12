@@ -81,7 +81,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
         if (name.Identifier.ValueText == "ToLookup"
             && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { TypeArguments: [_, var lookupKey, ..] })
         {
-            template = template.Replace("$x.key === $key", LinqKeys.Matches(lookupKey, "$x.key", "$key", context));
+            template = template.Replace("$x.key === $key", LinqKeys.Matches(lookupKey, "$x.key", "$key", invocation, context));
         }
         // A key, and the element of a set operator, is found as its type's default comparer finds it, in
         // the runtime's dictionary and set, where a JavaScript Map and Set compare by reference: a join by
@@ -121,7 +121,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
         if (at < 0 || context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { TypeArguments: var arguments }
             || at >= arguments.Length)
             return null;
-        return ElementEquality.Of(arguments[at]);
+        return ElementEquality.Of(arguments[at], invocation, context);
     }
 
     /// <summary>A shape whose <c>Map</c> and <c>Set</c> find their keys by <paramref name="equality"/>: the
@@ -216,7 +216,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
         if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { TypeArguments: [_, var key, ..] })
             return null;
         var holes = selectors == 2 ? "{1}, {2}" : "{1}";
-        var byValue = ElementEquality.Of(key) is { } equality
+        var byValue = ElementEquality.Of(key, invocation, context) is { } equality
             ? selectors == 2 ? $", {equality}" : $", null, {equality}"
             : "";
         return ($"{Eq.LinqToDictionary}({{0}}, {holes}{byValue})", null);
@@ -244,7 +244,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
         }
         context.UsedHelpers.Add(Eq.Import);
         var element = method is { TypeArguments: [var item] } ? item : null;
-        return JsExpr.Call(JsExpr.Identifier(Eq.HashSet), JsExpr.Literal(ElementEquality.Of(element) ?? "false"),
+        return JsExpr.Call(JsExpr.Identifier(Eq.HashSet), JsExpr.Literal(ElementEquality.Of(element, invocation, context) ?? "false"),
             context.Converter.ConvertIr(receiver));
     }
 
