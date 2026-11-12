@@ -29,14 +29,14 @@ Triggers: fix, bug, broken, regression, wrong output, an issue of type Bug.
 
 | # | Stage | Agent | Writes | Done when |
 |---|---|---|---|---|
-| 1 | Diagnose | `debugger`, one per hypothesis when there are several, in parallel as readers | a failing test, and nothing else | the root cause is named with its evidence, and a test fails for that reason |
+| 1 | Diagnose | `debugger`, one per hypothesis when there are several, in parallel while they only read | a failing test, and nothing else | the root cause is named with its evidence, and a test fails for that reason |
 | 2 | Propose | `architect` | the OpenSpec change | the scenario the fix makes true is written, as small as the fix |
 | 3 | Fix | `engineer` | the structural fix, at the shared place | the failing test passes, and every caller of what changed was read |
 | 4 | Documentation | `docs-writer` | the duties of the diff | the docs guards pass |
 | 5 | Gate | the reviewers, then `prover` | reports only | the test fails without the fix AND with the most plausible wrong one |
 
-Several debuggers write nothing while they run in parallel: the test is written by the one whose
-hypothesis held, afterwards. A gap in the SDK found on the way is fixed or filed, never worked
+Several debuggers neither write nor build while they run in parallel: they read and reason. The
+test is written and run afterwards, by the one whose hypothesis held, alone. A gap in the SDK found on the way is fixed or filed, never worked
 around (`docs/PRINCIPLES.md`, 14).
 
 ## refactor

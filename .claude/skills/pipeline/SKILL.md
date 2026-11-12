@@ -2,7 +2,12 @@
 name: pipeline
 description: Deliver a change through its registered pipeline - the stages in order, the agent, model and effort of each, the gate and the shipping steps. Use when a request is a delivery (implement or add a feature, fix a bug, refactor, write or change documentation) or a review of a pull request or branch, and to resume a delivery whose state is under .claude/pipelines/.
 argument-hint: "[issue number or the request] [high-effort]"
+disable-model-invocation: true
 ---
+
+This is a PILOT (#1493): it runs only when a person invokes it, and it measures itself (section 2)
+so that adopting it is decided on numbers. Until then a delivery nobody asked to pipe runs as the
+Workflow says, without it.
 
 You are the ORCHESTRATOR of a delivery. You decide, delegate and keep the state; the agents under
 `.claude/agents/` read the code and write it. This skill is the order of the work and who does each
@@ -45,6 +50,11 @@ One folder per delivery, `.claude/pipelines/<issue>-<slug>/`, which git ignores:
   the OpenSpec change's name, the pull request, the STAGES COPIED from the registry (name, agent,
   status `pending|in_progress|completed|failed|not_applicable`, the agent's id for a resume, the
   report's path), the gate's round, Copilot's round, the last CI run and the commit it saw.
+- in the same file, what the pilot MEASURES, written as it happens and never reconstructed: when
+  each stage started and ended, the tokens each agent's answer reports, how many times the session
+  was compacted, every defect found after the pull request opened (the round, or the queue's exit,
+  that found it), and for a macOS run asked for on the branch, whether it caught something and
+  whether the queue's own run would have caught it too.
 - `<stage>.md`: each stage's report, written by its agent.
 
 Write the state before the first stage and at every transition. It exists so a compacted or a new
@@ -59,6 +69,10 @@ search for the issue before creating one; an issue assigned to someone else, lab
 `good first issue` or already In progress is that person's, so stop and say so; create a missing
 one with `scripts/new-issue.py`; move it to In progress; `git fetch`, then the branch from
 `origin/main`; run the `roadmap` skill. Set no git identity: on a laptop it is the person's own.
+
+Ask once, here, whether this host has a LOCK for the test suites (a wrapper the person runs them
+through, so that parallel sessions do not run suites at the same time), and write its command in
+the state. Every proof command handed to an agent is then given already wrapped in it.
 
 ## 4. Stages
 
@@ -85,11 +99,19 @@ Agent call's `model` and `effort`:
 Run a test PROJECT, or a filter of one, never the whole solution: that is CI's, and it takes a
 quarter of an hour here.
 
+**One build at a time.** Reading in parallel is cheap; building is what loads the machine, and
+other sessions share it. At most one agent of a delivery builds or runs a suite at any moment,
+through the host's lock when it has one. Agents that run in parallel read, and run nothing.
+
 **One writer in the tree.** Agents that only read run in parallel, in one message. Agents that
 write run one at a time, in the session's own tree, in the order the dependency gives: the
 vocabulary before the realizers, a realizer's C# and its TypeScript twin by the same engineer. No
 agent is isolated in a worktree: one starts from the default branch, so it would not see the
 proposal, and the wiki guards pass in silence inside one. Nobody but you commits or pushes.
+
+**Every commit is pushed as it lands.** A branch that exists only on one disk is lost with the
+disk. Commit each green unit and push it at once: a push outside `main` starts no CI before the
+pull request exists, so the backup is free.
 
 **Whoever wrote it does not verify it.** The prover is never the engineer, and it runs alone: its
 A/B takes the fix out of the tree for a while.
@@ -135,11 +157,13 @@ after the second stops the delivery, with the reports, for the person.
 
 The steps are the Workflow's "Pull requests"; this is their order here.
 
-1. Push the branch, and the wiki's branch of the same name when the delivery wrote one (CI reads
-   it for the docs guards); open the pull request from `.github/pull_request_template.md`, closing the issue; read the
+1. The branch is already pushed, commit by commit. Push the wiki's branch of the same name when
+   the delivery wrote one (CI reads it for the docs guards); open the pull request from `.github/pull_request_template.md`, closing the issue; read the
    body back; the issue moves to In review.
 2. When the diff touches the native track, the SDKs, packaging, `Directory.Build.props` or a
    sample: ask for the macOS jobs on the branch now, since packing and the samples run only there.
+   Those runners are the scarcest thing the queue has, so the pilot counts what this run buys:
+   record in the state what it caught, and whether the queue's own run would have caught it.
 3. Copilot's loop. A subagent reads the review threads and answers with the sorted findings, never
    the raw threads. Each round with a defect: the author fixes, the prover runs its A/B again, ONE
    push, the threads answered and resolved, the next round asked for.

@@ -45,7 +45,9 @@ two sides that agree can both be wrong.
 - Stay on your hypothesis. Evidence for another cause is reported, not chased.
 
 You write the failing test and nothing else: no fix, no commit, no branch. When other debuggers run
-beside you, write nothing at all and describe the test in the report.
+beside you, write nothing and build nothing: read, reason, and describe the test in the report.
+Run a command you were given exactly as given, the wrapper in front of it included: it is the
+host's lock, which keeps sessions from running suites at the same time.
 
 ## Answer
 

@@ -9,12 +9,17 @@
 
 - [x] 2.1 The `pipeline` skill and its registry of five pipelines
 - [x] 2.2 Seven agents, each with its tools, model, effort and cap of turns
-- [x] 2.3 The hook that refuses a branch outside `<type>/<slug>`, in `.claude/settings.json`
-- [x] 2.4 `scripts/new-issue.py` reads the issue types from the repository
-- [x] 2.5 Check: the hook's self-test passes, refuses `claude/x` in this repository and passes it in another, and fails on a cited path that is not there
+- [x] 2.3 The skill is invoked on purpose only, and the state records what the pilot measures
+- [x] 2.4 One build at a time, through the host's lock when it has one; every commit pushed as it lands
+- [x] 2.5 Check: the self-test fails on a path the skill or an agent cites that is not there
 
 ## 3. The delivery
 
-- [x] 3.1 The self-test runs in CI's `roadmap` job
-- [x] 3.2 The ledger entry, and the pointer in `CLAUDE.md`
-- [ ] 3.3 Check against the real thing: one pipeline run end to end on a real issue, and what it cost
+- [x] 3.1 The ledger entry, and the pointer in `CLAUDE.md`
+
+## 4. The pilot
+
+- [ ] 4.1 A bug fix delivered through it, with its measures
+- [ ] 4.2 A feature delivered through it, with its measures
+- [ ] 4.3 A documentation change delivered through it, with its measures
+- [ ] 4.4 Check against the real thing: the three compared with deliveries of the same size made without it (wall time and cost per point, defects found after the pull request opened, compactions), and the decision to adopt or not

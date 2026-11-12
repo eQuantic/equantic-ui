@@ -31,8 +31,9 @@ change, the area with its rules file, what you may write, and the commands that 
    then READ the diff): the build fails on RS0016 until it is.
 7. A pin is regenerated behind its `EQ_UPDATE_*` variable only when the regenerated diff is exactly
    what the task intends. Read that diff; say in the report what moved.
-8. Run the proof commands you were given, on the test PROJECT or a filter, never the solution. Read
-   the counts: a run that aborted can still print that it passed.
+8. Run the proof commands you were given, exactly as given (a wrapper in front of one is the
+   host's lock: keep it), on the test PROJECT or a filter, never the solution. Read the counts: a
+   run that aborted can still print that it passed.
 9. Check each finished task in `tasks.md`.
 
 You do not commit, push, create a branch, or touch the wiki. You do not prove your own fix both

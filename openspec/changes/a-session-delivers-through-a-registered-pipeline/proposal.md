@@ -1,7 +1,8 @@
 # A session delivers through a registered pipeline
 
-Closes #1493, a Task under the epic #160 (Instruments that fail, not warn). This is a proof of
-concept, offered for evaluation.
+Closes #1493, a Task under the epic #160 (Instruments that fail, not warn). This is a PILOT: the
+skill runs only when a person invokes it, and it is adopted, or not, on what three real deliveries
+measure.
 
 ## Why
 
@@ -26,9 +27,16 @@ What changes is how a session works in this repository.
 - A gate before the pull request: the author's review the Workflow already asks for, a review
   against the project's rules, a security review where the diff asks for one, then the independent
   proof, alone. Findings are sorted as the Workflow sorts Copilot's, in two rounds at most.
-- A hook refuses the creation of a branch of this repository named outside `<type>/<slug>`.
-- `scripts/new-issue.py` reads the issue types from the repository, so an account that is not a
-  member of the organization can create an issue.
+- The skill is invoked on purpose only (`disable-model-invocation`), so merging it adopts nothing:
+  no session takes it up by itself.
+- A delivery's state records what the pilot measures: the time and the tokens of each stage, the
+  compactions, the defects found after the pull request opened, and what a macOS run asked for on
+  the branch caught that the queue's own run would not have.
+- At most one agent of a delivery builds or runs a suite at a time, through the host's lock when
+  it has one, and every commit is pushed as it lands.
+
+The hook that refuses a branch named outside the convention, and the fix that lets a contributor
+create an issue, were split into a pull request of their own, which this one follows.
 
 No public surface and no developer surface moves. Nothing is removed.
 
@@ -40,12 +48,12 @@ No public surface and no developer surface moves. Nothing is removed.
 
 ## Impact
 
-`.claude/skills/pipeline/`, `.claude/agents/`, `.claude/hooks/`, `.claude/settings.json`, the
-`roadmap` job of the CI workflow, a pointer in `CLAUDE.md` outside its Workflow section.
+`.claude/skills/pipeline/`, `.claude/agents/`, a pointer in `CLAUDE.md` outside its Workflow
+section.
 
 ## Principles
 
-It follows 9 (the instrument that fails: the branch's name is refused, not warned about, and a
-cited path that is missing fails a self-test) and PROVING 4 (the hook is exercised in the condition
-it exists for). It bends none. The skill restates no rule of the Workflow: it cites them, and the
+It follows 9 (the instrument that fails: a path the skill or an agent cites that is missing fails
+a self-test CI runs) and PROVING 3 (every claim is a hypothesis: the pilot measures before anyone
+adopts). It bends none. The skill restates no rule of the Workflow: it cites them, and the
 Workflow wins where the two differ.

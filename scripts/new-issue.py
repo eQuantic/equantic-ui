@@ -128,7 +128,7 @@ def main():
 
     # The repository answers its types to anyone who can open an issue there; the organization
     # answers null for each to an account that is not a member of it (#1493).
-    type_id = next((t["id"] for t in context["repository"]["issueTypes"]["nodes"] if t["name"] == args.type), None)
+    type_id = next((t["id"] for t in context["repository"]["issueTypes"]["nodes"] if t and t.get("name") == args.type), None)
     if type_id is None:
         refuse([f"an issue type the repository has ({args.type} is not one of them)"])
     fields = []

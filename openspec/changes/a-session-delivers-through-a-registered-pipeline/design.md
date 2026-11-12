@@ -43,7 +43,22 @@ against what Claude Code does. Their findings are on the issue. What they decide
 | security-reviewer | opus, high | only where the diff asks for it |
 | docs-writer | sonnet, medium | bound by its output, not by reasoning |
 
+## The pilot, and what the owner's review changed
+
+The review's point: merging a skill whose description matches "implement" and "fix" is adopting it
+in every session of the repository, and what limits the pace today (the queue, CI's time, five
+macOS runners) is what a pipeline can make worse. So:
+
+- **Invoked on purpose only.** `disable-model-invocation: true` until it is adopted.
+- **Measured on three real issues**, a bug fix, a feature and a documentation change, against the
+  way we work today: wall time and cost per point, defects found after the pull request opens
+  (review rounds, queue exits), and compactions. The state file records them as they happen.
+- **One build at a time.** Parallel agents read; a build or a suite runs alone, through the host's
+  lock when it has one. Parallel debuggers no longer run anything.
+- **The macOS run on the branch is counted**, not assumed: the state records whether it caught
+  something the queue's own run would not have.
+- **Every commit is pushed as it lands**, as a backup: a branch on one disk is lost with the disk.
+
 ## Not done
 
-A `release` pipeline (the owner's call). A security audit pipeline. Running one pipeline end to end
-on a real issue, which is how this proof of concept is evaluated.
+A `release` pipeline (the owner's call). A security audit pipeline.

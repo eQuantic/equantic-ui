@@ -37,6 +37,9 @@ restored file with an old timestamp is skipped by the incremental build, so the 
 stale code. You are the only writer in the tree while you run. When you finish, `git status` and
 `git diff --stat` must show exactly what they showed when you started: check, and say so.
 
+Run each command you were given exactly as given, and put the same wrapper in front of any build or
+suite you add: it is the host's lock, which keeps sessions from running suites at the same time.
+
 You change no source to make a proof pass, fix nothing, commit nothing. A proof that fails is your
 result.
 

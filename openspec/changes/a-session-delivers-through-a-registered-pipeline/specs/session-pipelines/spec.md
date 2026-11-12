@@ -39,21 +39,26 @@ keep a security finding rated high out of every issue, pull request and commit m
 - **WHEN** the security reviewer rates a finding high
 - **THEN** it is written only in the delivery's report, and the session stops and asks the person to open a private advisory
 
-### Requirement: A branch named outside the convention is refused when it is created
+### Requirement: A pipeline runs only when a person asks for it, and measures itself
 
-A session's command that creates a branch of this repository named outside `<type>/<slug>` SHALL
-be refused before it runs, with the convention as the reason. A command aimed at another
-repository, and one the hook cannot read, SHALL pass.
+While it is a pilot, the `pipeline` skill SHALL run only when a person invokes it, and a delivery
+that runs through it SHALL record, as it happens, the time and the tokens of each stage, the
+session's compactions and every defect found after its pull request opened.
 
-#### Scenario: A tool's own prefix
+#### Scenario: A request to fix a bug
 
-- **WHEN** a session runs `git switch -c claude/fix-the-thing` in this repository
-- **THEN** the command is refused, and the session is told the type and the shape of the slug
+- **WHEN** a person asks a session to fix a bug and does not invoke the skill
+- **THEN** the session delivers as the Workflow says, without the pipeline
 
-#### Scenario: The wiki's clone
+### Requirement: One agent of a delivery builds at a time
 
-- **WHEN** a session runs `git -C ../equantic-ui.wiki switch -c anything`
-- **THEN** the command passes
+At most one agent of a delivery SHALL build or run a suite at any moment, through the host's lock
+for the suites when the host has one. Agents that run in parallel SHALL only read.
+
+#### Scenario: Three hypotheses about a defect
+
+- **WHEN** three debuggers investigate in parallel
+- **THEN** none of them builds or runs a test, and the reproduction is written and run afterwards by one, alone
 
 ### Requirement: What the skill and the agents cite is there
 
