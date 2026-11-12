@@ -83,6 +83,14 @@ function documentFor(instance: object, Layout: LayoutClass | null): MountableCom
   return Layout && instance instanceof UiComponent ? new LayoutHost(Layout, instance) : asPage(instance);
 }
 
+/**
+ * Whether the app's layout frames a page: it declared one and the page is a write-once component. A
+ * page written as DOM is shown alone, as `documentFor` shows it and as the server renders it.
+ */
+function framedByLayout(Page: new () => MountableComponent, config: EqConfig): boolean {
+  return !!config.layout && Page.prototype instanceof UiComponent;
+}
+
 /** The page a document shows: the one in the layout's slot, the one behind the escape hatch, or itself. */
 function pageOf(document: MountableComponent | null): object | null {
   if (document instanceof LayoutHost) return document.page;
@@ -430,7 +438,7 @@ async function loadAndMountPage(
     loadPageModule(pageName, config),
     loadLayoutModule(config),
   ]);
-  if (!ComponentClass || (config.layout && !Layout)) {
+  if (!ComponentClass || (!Layout && framedByLayout(ComponentClass, config))) {
     const missing = ComponentClass ? config.layout! : pageName;
     // DEGRADE, never destroy. The server rendered this page correctly and it is on screen: a
     // bundle that did not arrive costs interactivity, not content. Replacing it with a 404 tells
@@ -557,8 +565,12 @@ async function navigateToPage(
     const ComponentClass = await bundle;
     const Layout = await layout;
     if (isCurrent && !isCurrent()) return;
-    if (!ComponentClass) {
-      render404(root, pageName);
+    // A page the layout frames is never shown without it: a layout whose module did not arrive is the
+    // missing module, as it is on a first load. A document already in the layout keeps the one it holds.
+    const unframed = !!ComponentClass && !Layout && framedByLayout(ComponentClass, config)
+      && !(currentComponent instanceof LayoutHost);
+    if (!ComponentClass || unframed) {
+      render404(root, ComponentClass ? config.layout! : pageName);
       currentComponent = null;
       return;
     }

@@ -116,6 +116,25 @@ test.describe('An app layout', () => {
     expect(frame!.current, 'the server lit the destination of the page it rendered').toEqual(['/charts']);
   });
 
+  test('a page the layout frames is never shown without it, when the layout\'s module does not arrive', async ({ page }) => {
+    // The layout's chunk is lost to a CDN hiccup or a deploy race: the browser's import of it fails as
+    // it does for any chunk the server answers 404 for.
+    await page.route('**/_equantic/ConsoleLayout.js*', (route) => route.fulfill({ status: 404, body: '' }));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/charts');
+    await page.waitForLoadState('networkidle');
+
+    // A first load keeps what the server rendered, the page inside its frame: it loses only interactivity.
+    await expect(page.getByText('Revenue by quarter')).toBeVisible();
+
+    // A navigation shows the next page inside the layout, or says it cannot: never the page alone, a
+    // document the server never drew.
+    await page.locator('a[href="/table"]').filter({ visible: true }).first().click();
+    await page.waitForURL('**/table');
+    await expect(page.locator('.eq-status-page code')).toHaveText('ConsoleLayout');
+    await expect(page.getByRole('table', { name: "Excel's grid" })).toHaveCount(0);
+  });
+
   test('what the payments screen owns still answers inside the layout', async ({ page }) => {
     // Its search, palette, sandbox switch and "New payment" sat in the frame while every screen drew
     // its own; they change the screen's state, so the screen draws them now, and the layout's

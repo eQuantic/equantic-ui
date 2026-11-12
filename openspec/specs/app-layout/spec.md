@@ -52,6 +52,13 @@ components SHALL unmount before the new page's mount.
 - **WHEN** an app declares no layout and a link is followed
 - **THEN** the new page is patched over the old one position by position, as before this change
 
+#### Scenario: A layout whose module does not arrive
+
+- **WHEN** an app declares a layout, the browser cannot load the layout's module, and a link to a page
+  that is a component is followed
+- **THEN** the page is not shown without the layout, and the boot reports the layout's module as the
+  one missing; a page written as DOM, which the layout never frames, is shown alone
+
 ### Requirement: A layout reads the location it shows
 
 `Navigator.Of(context).Location` SHALL answer the path of the page being shown as the app writes it,
