@@ -38,6 +38,7 @@ public sealed class ComponentTester : IDisposable
     private readonly MarkupHost _host;
     private VisualNode? _root;
     private HtmlNode? _frame;
+    private HtmlNode? _paintServers;
     private AnnouncedTree? _announced;
     private string? _html;
     private bool _disposed;
@@ -81,8 +82,10 @@ public sealed class ComponentTester : IDisposable
     /// <summary>What a page's prefetch resolves its dependencies from.</summary>
     public IServiceProvider Services { get; }
 
-    /// <summary>The markup of the current frame, as the web realizer lowered it.</summary>
-    public string Html => _html ??= HtmlRenderer.RenderNode(Frame);
+    /// <summary>The markup of the current frame, as the web realizer lowered it, followed by the paint
+    /// servers its drawings use, which the server declares once for the document beside the page.</summary>
+    public string Html => _html ??= HtmlRenderer.RenderNode(Frame)
+        + (_paintServers is { } servers ? HtmlRenderer.RenderNode(servers) : "");
 
     /// <summary>The current frame's markup as a tree, for a test that walks it.</summary>
     public HtmlNode Root => Frame;
@@ -212,12 +215,13 @@ public sealed class ComponentTester : IDisposable
     {
         using var culture = new CultureScope(Culture);
         _host.Build(_root!, Width, rebuildAll);
-        // Through a style sink, as the server lowers: the sink is what knows which of a node's classes
-        // hide it, an adaptive arm's gate among them.
-        var styles = new StyleSink();
-        _frame = _host.Lower(styles).Render();
+        // Inside a render of its own, as the server lowers: the style sink is what knows which of a
+        // node's classes hide it, an adaptive arm's gate among them.
+        var channels = new RenderChannels(density: Density);
+        _frame = _host.Lower(channels).Render();
         _host.EndFrame();
-        _announced = AnnouncedTree.Read(_frame, styles, Width);
+        _paintServers = channels.Gradients.IsEmpty ? null : channels.Gradients.Container().Render();
+        _announced = AnnouncedTree.Read(_frame, channels.Styles, Width);
         _html = null;
     }
 
@@ -230,17 +234,8 @@ public sealed class ComponentTester : IDisposable
     {
         using var culture = new CultureScope(Culture);
         var scope = new ComponentExpansionScope();
-        ComponentExpansionScope.Ambient = scope;
-        try
-        {
-            _host.Build(page, Width);
-            _host.Lower(new StyleSink());
-        }
-        finally
-        {
-            ComponentExpansionScope.Ambient = null;
-        }
-
+        _host.Build(page, Width);
+        _host.Lower(new RenderChannels(scope, Density));
         return scope;
     }
 

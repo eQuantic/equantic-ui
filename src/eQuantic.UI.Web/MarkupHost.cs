@@ -78,18 +78,19 @@ public sealed class MarkupHost
         Owner.Build(root, _context, windowWidth, rebuildAll);
 
     /// <summary>
-    /// Lowers the frame <see cref="Build"/> just built. With <paramref name="styles"/>, every element's
-    /// style becomes atomic classes collected into the sink, as <see cref="WebRealizer.Lower"/> does.
+    /// Lowers the frame <see cref="Build"/> just built. With a render's <paramref name="channels"/>, every
+    /// element's style becomes atomic classes collected into its style sink, as <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density)"/>
+    /// does, and the expansion scope, the gradients, the faces and the link policy are the render's (#1404).
     /// </summary>
     /// <exception cref="InvalidOperationException">Nothing was built yet.</exception>
-    public HtmlElement Lower(StyleSink? styles = null)
+    public HtmlElement Lower(RenderChannels? channels = null)
     {
         var root = Owner.Root ?? throw new InvalidOperationException("Nothing was built yet: call Build before Lower.");
-        var lowered = new WebLoweringVisitor(_context, _measurer, new ElementFrame(root))
+        var lowered = new WebLoweringVisitor(_context, _measurer, new ElementFrame(root), channels)
                           .Lower(root.Configuration, horizontalAxis: null)
                       ?? new RealizedElement("span");
-        if (styles != null)
-            StyleAtomizer.AtomizeTree(lowered, ThemeVarMap.For(Theme), styles);
+        if (channels is not null)
+            StyleAtomizer.AtomizeTree(lowered, ThemeVarMap.For(Theme), channels.Styles);
         return lowered;
     }
 

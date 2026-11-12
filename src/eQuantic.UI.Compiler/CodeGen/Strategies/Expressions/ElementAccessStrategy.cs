@@ -32,7 +32,7 @@ public class ElementAccessStrategy : IExpressionIrStrategy
             var indexerArgs = string.Join(", ", elementAccess.ArgumentList.Arguments
                 .Select(a => context.Converter.ConvertExpression(a.Expression)));
             var receiver = context.Converter.ConvertExpression(elementAccess.Expression);
-            return JsExpr.Callish($"{extensionHome.Name}.item({receiver}, {indexerArgs})");
+            return JsExpr.Callish($"{extensionHome.TwinReference()}.item({receiver}, {indexerArgs})");
         }
 
         // An INSTANCE indexer a twin carries (#427) reads through its getter, `receiver.item(keys)`:

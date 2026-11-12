@@ -149,18 +149,9 @@ public class FrameLoweringTests
         var kept = KeptCounter(host.Owner.Root!);
 
         var scope = new ComponentExpansionScope();
-        ComponentExpansionScope.Ambient = scope;
-        try
-        {
-            // Every component builds again, so the page hands the position a FRESH counter.
-            host.Build(page, 1200f, rebuildAll: true);
-            host.Lower();
-        }
-        finally
-        {
-            ComponentExpansionScope.Ambient = null;
-        }
-
+        // Every component builds again, so the page hands the position a FRESH counter.
+        host.Build(page, 1200f, rebuildAll: true);
+        host.Lower(new RenderChannels(scope));
         host.EndFrame();
         scope.Expanded.Values.OfType<Counter>().Should().ContainSingle().Which.Should().BeSameAs(kept);
     }
