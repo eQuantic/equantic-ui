@@ -1,7 +1,7 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// The theme <see cref="AppThemeExtensions.With"/> answers: the slots it was given, and every other member of the
+/// The theme <see cref="AppThemeExtensions.With"/> answers: the slots it was given laid over the wrapped theme's, and every other member of the
 /// theme it wraps, forwarded. Every member is declared here, the interface's defaults included, so the
 /// wrapped theme answers each one as it would alone; <c>OverriddenThemeTests</c> fails on a member of
 /// <see cref="IAppTheme"/> this class leaves to the interface.
@@ -35,7 +35,8 @@ internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, 
     public float DisabledOpacity => inner.DisabledOpacity;
     public DataPalette Data => inner.Data;
     public SheetTheme? Sheet => inner.Sheet;
-    public ControlsTheme? Controls => controls ?? inner.Controls;
-    public ButtonTheme? Button => button ?? inner.Button;
+    // A slot it was given is laid over the wrapped theme's, member by member, once.
+    public ControlsTheme? Controls => field ??= ControlsTheme.Merge(inner.Controls, controls);
+    public ButtonTheme? Button => field ??= ButtonTheme.Merge(inner.Button, button);
     public ColorToken Code(CodeTokenKind kind) => inner.Code(kind);
 }

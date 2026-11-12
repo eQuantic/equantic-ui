@@ -38,4 +38,22 @@ public sealed record ButtonTheme
     /// <summary>The fill an outline or a ghost button takes when hovered or pressed
     /// (<see cref="IAppTheme.SurfaceSubtle"/>).</summary>
     public ColorToken? QuietFill { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s, a nested slot merged the same way. Null
+    /// when both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static ButtonTheme? Merge(ButtonTheme? under, ButtonTheme? over) =>
+        under is null ? over : over is null ? under : new ButtonTheme
+        {
+            Controls = ControlsTheme.Merge(under.Controls, over.Controls),
+            MinWidth = over.MinWidth ?? under.MinWidth,
+            LabelWeight = over.LabelWeight ?? under.LabelWeight,
+            LabelTracking = over.LabelTracking ?? under.LabelTracking,
+            OutlineWidth = over.OutlineWidth ?? under.OutlineWidth,
+            LinkPaddingX = over.LinkPaddingX ?? under.LinkPaddingX,
+            OutlineColor = over.OutlineColor ?? under.OutlineColor,
+            QuietFill = over.QuietFill ?? under.QuietFill,
+        };
 }

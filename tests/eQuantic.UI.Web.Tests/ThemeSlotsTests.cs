@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using eQuantic.UI.Components;
+using eQuantic.UI.Material;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Web;
 using FluentAssertions;
@@ -111,7 +112,7 @@ public class ThemeSlotsTests
         type is { IsClass: true } && type.Assembly == typeof(IAppTheme).Assembly && type != typeof(string);
 
     /// <summary>A slot record with every member set to a value of its kind.</summary>
-    private static object Populated(Type record)
+    private static object Populated(Type record, int seed = 1)
     {
         var instance = Activator.CreateInstance(record)!;
         foreach (var property in SlotMembers(record))
@@ -119,14 +120,14 @@ public class ThemeSlotsTests
             var type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
             object value = type switch
             {
-                _ when type == typeof(float) => 1f,
-                _ when type == typeof(int) => 1,
-                _ when type == typeof(bool) => true,
-                { IsEnum: true } => Enum.GetValues(type).GetValue(0)!,
-                _ when type == typeof(ColorToken) => new ColorToken(Color.Black),
-                _ when type == typeof(EdgeInsets) => new EdgeInsets(1, 2, 3, 4),
-                _ when type == typeof(TypeStyle) => TypeStyle.OfSize(13, FontWeight.SemiBold),
-                _ when IsRecord(type) => Populated(type),
+                _ when type == typeof(float) => (float)seed,
+                _ when type == typeof(int) => seed,
+                _ when type == typeof(bool) => seed == 1,
+                { IsEnum: true } => Enum.GetValues(type).GetValue((seed - 1) % Enum.GetValues(type).Length)!,
+                _ when type == typeof(ColorToken) => new ColorToken(seed == 1 ? Color.Black : Color.FromRgb((byte)seed, 0, 0)),
+                _ when type == typeof(EdgeInsets) => new EdgeInsets(seed, 2, 3, 4),
+                _ when type == typeof(TypeStyle) => TypeStyle.OfSize(12 + seed, FontWeight.SemiBold),
+                _ when IsRecord(type) => Populated(type, seed),
                 _ => throw new NotSupportedException($"{record.Name}.{property.Name} is a {type.Name}, which this test cannot set"),
             };
             property.SetValue(instance, value);
@@ -137,13 +138,17 @@ public class ThemeSlotsTests
     [Fact]
     public void ASlot_CrossesWithTheRungsItNames_AndNothingElse()
     {
-        var theme = Photon.With(controls: new ControlsTheme
+        var slot = new ControlsTheme
         {
             Height = new DensityLadder { Comfortable = new SizeLadder { Medium = 52 } },
-        });
+        };
+        ThemeBridge.SlotJson(slot).Should().Be("{\"height\":{\"comfortable\":{\"medium\":52}}}");
 
-        using var json = JsonDocument.Parse(ThemeBridge.SerializeJson(theme));
-        json.RootElement.GetProperty("controls").GetRawText().Should().Be("{\"height\":{\"comfortable\":{\"medium\":52}}}");
+        // Laid over Photon's ladder, the theme crosses Photon's rungs with the one it named.
+        using var json = JsonDocument.Parse(ThemeBridge.SerializeJson(Photon.With(controls: slot)));
+        var comfortable = json.RootElement.GetProperty("controls").GetProperty("height").GetProperty("comfortable");
+        comfortable.GetProperty("medium").GetSingle().Should().Be(52);
+        comfortable.GetProperty("small").GetSingle().Should().Be(Photon.Controls!.Height!.Comfortable!.Small!.Value);
     }
 
     [Fact]
@@ -173,17 +178,88 @@ public class ThemeSlotsTests
     }
 
     [Fact]
-    public void With_ReplacesTheSlotItIsGiven_AndForwardsTheRest()
+    public void With_LaysTheSlotItIsGivenOverTheThemes_AndForwardsTheRest()
     {
-        var button = new ButtonTheme { MinWidth = 88 };
-        var theme = new EveryMemberTheme(Photon).With(button: button);
+        var theme = new EveryMemberTheme(Photon).With(button: new ButtonTheme { MinWidth = 88 });
 
-        theme.Button.Should().BeSameAs(button);
+        theme.Button!.MinWidth.Should().Be(88);
+        theme.Button.LabelWeight.Should().Be(Photon.Button!.LabelWeight, "a member the given slot leaves null is the theme's");
+        theme.Button.OutlineColor.Should().Be(Photon.Button.OutlineColor);
         theme.Controls.Should().BeSameAs(Photon.Controls, "a slot it was not given is the wrapped theme's");
         theme.Sheet.Should().NotBeNull("a default the wrapped theme answers is forwarded, not the interface's");
         theme.Code(CodeTokenKind.Keyword).Should().Be(new EveryMemberTheme(Photon).Code(CodeTokenKind.Keyword));
         theme.Colors(Variant.Primary).Should().Be(Photon.Colors(Variant.Primary));
-        theme.With(controls: new ControlsTheme()).Button.Should().BeSameAs(button, "a With on the override keeps its slot");
+        theme.With(controls: new ControlsTheme()).Button!.MinWidth.Should().Be(88, "a With on the override keeps its slot");
+    }
+
+    /// <summary>The case that found it (#1472's review): a theme that overrides one member of a slot its
+    /// design system fills keeps every other member, nested ladders included.</summary>
+    [Fact]
+    public void With_OneMember_KeepsEveryOtherTheDesignSystemSet()
+    {
+        var material = MaterialTheme.Instance;
+        var theme = material.With(button: new ButtonTheme { MinWidth = 88 });
+
+        theme.Button!.MinWidth.Should().Be(88);
+        theme.Button.LabelWeight.Should().Be(material.Button!.LabelWeight);
+        theme.Button.LinkPaddingX.Should().Be(material.Button.LinkPaddingX);
+        theme.Button.Controls.Should().Be(material.Button.Controls, "the button's own ladder is Material's, rung for rung");
+
+        var taller = Photon.With(controls: new ControlsTheme
+        {
+            Height = new DensityLadder { Comfortable = new SizeLadder { Medium = 44 } },
+        });
+        taller.Controls!.Height!.Comfortable!.Medium.Should().Be(44);
+        taller.Controls.Height.Comfortable.Small.Should().Be(Photon.Controls!.Height!.Comfortable!.Small, "a rung left null is the theme's");
+        taller.Controls.Height.Compact.Should().Be(Photon.Controls.Height.Compact, "a side left null is the theme's");
+        taller.Controls.Radius.Should().Be(Photon.Controls.Radius, "a ladder left null is the theme's");
+    }
+
+    /// <summary>
+    /// Every slot record merges member by member: for each of its members, an override that names only that
+    /// member wins it and keeps every other member of the record it is laid over. A member a record's
+    /// <c>Merge</c> forgot would be dropped by every <c>With</c> that names any other one, and a record with
+    /// no <c>Merge</c> could not be laid over a theme at all.
+    /// </summary>
+    [Fact]
+    public void EverySlotRecord_MergesMemberByMember()
+    {
+        var records = new HashSet<Type>();
+        void Collect(Type record)
+        {
+            if (!records.Add(record)) return;
+            foreach (var member in SlotMembers(record))
+                if (IsRecord(Nullable.GetUnderlyingType(member.PropertyType) ?? member.PropertyType))
+                    Collect(member.PropertyType);
+        }
+        // The slots With takes, and every slot record they hold.
+        foreach (var parameter in typeof(AppThemeExtensions).GetMethod(nameof(AppThemeExtensions.With))!.GetParameters().Skip(1))
+            Collect(Nullable.GetUnderlyingType(parameter.ParameterType) ?? parameter.ParameterType);
+        records.Should().Contain([typeof(SizeLadder), typeof(DensityLadder), typeof(ControlsTheme), typeof(ButtonTheme)]);
+
+        var wrong = new List<string>();
+        foreach (var record in records)
+        {
+            var merge = record.GetMethod("Merge", BindingFlags.Public | BindingFlags.Static, [record, record]);
+            if (merge is null) { wrong.Add($"{record.Name} has no public static Merge({record.Name}?, {record.Name}?)"); continue; }
+
+            var under = Populated(record, 1);
+            if (merge.Invoke(null, [under, null]) != under) wrong.Add($"{record.Name}.Merge(under, null) is not under");
+            if (merge.Invoke(null, [null, under]) != under) wrong.Add($"{record.Name}.Merge(null, over) is not over");
+            foreach (var member in SlotMembers(record))
+            {
+                var over = Activator.CreateInstance(record)!;
+                var named = member.GetValue(Populated(record, 2));
+                member.SetValue(over, named);
+                var merged = merge.Invoke(null, [under, over])!;
+                if (!Equals(member.GetValue(merged), named)) wrong.Add($"{record.Name}.{member.Name}: the override's value does not win");
+                foreach (var other in SlotMembers(record).Where(other => other != member))
+                    if (!Equals(other.GetValue(merged), other.GetValue(under)))
+                        wrong.Add($"{record.Name}.{other.Name}: dropped when {member.Name} is overridden");
+            }
+        }
+
+        wrong.Should().BeEmpty("a With that names one member keeps every other member of the slot it is laid over");
     }
 
     // ---- the ladder --------------------------------------------------------------------------------
