@@ -687,6 +687,10 @@ public static class Eq
     /// <summary>Whether two runtime types are one, as <c>Type</c>'s <c>==</c> answers it.</summary>
     public const string TypesSame = "$eq.types.same";
 
+    /// <summary>Whether a value implements an interface, by the <c>static $interfaces</c> its class's twin declares
+    /// (<see cref="Strategies.InterfaceTests"/>, #1464).</summary>
+    public const string TypesImplements = "$eq.types.implements";
+
     /// <summary>A <c>throw</c> expression: throws its one argument, which is evaluated where C#
     /// evaluates the exception, in the caller's own function.</summary>
     public const string Raise = "$eq.exceptions.raise";
