@@ -1,8 +1,8 @@
 ## 1. The engine's count
 
 - [x] 1.1 `ElementIds`, and an optional count on `BuildOwner`'s constructor and `Structural`, with their PublicAPI lines
-- [ ] 1.2 The twins regenerated (`EQ_UPDATE_TRANSPILED=1` on SharedComponentTranspilationTests, through the lock). Verify: ElementTreeTests and ElementEngineTwinTests pass
-- [ ] 1.3 Every owner the browser makes takes the document's count (after E3b-1's owners land)
+- [x] 1.2 The twins regenerated (`EQ_UPDATE_TRANSPILED=1` on SharedComponentTranspilationTests, through the lock). Verify: ElementTreeTests and ElementEngineTwinTests pass
+- [x] 1.3 Every owner the browser makes takes the document's count (`liveOwner`, `structuralOwner`)
 
 ## 2. State on the position
 
@@ -15,6 +15,6 @@
 
 - [x] 3.1 A spec per scenario of this change (`node-states.spec.ts`) and the C# count test
 - [ ] 3.2 The runtime's suites, with the specs that read a path attribute reading the position's id
-- [ ] 3.3 The e2e suite in a real browser
-- [ ] 3.4 The served runtime's budget, re-recorded in a commit of its own if it moved
+- [x] 3.3 The e2e suite in a real browser: 16 of 16 on the dashboard sample
+- [x] 3.4 The served runtime's budget: inside it, nothing re-recorded
 - [ ] 3.5 `docs/ELEMENT-TREE-PLAN.md` and one ledger entry citing #1454
