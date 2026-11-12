@@ -108,10 +108,73 @@ public class FormControlSlotsRealizerTests
         Expect("the checkbox", new Checkbox(false, () => { }, "Remember me"), "width:18px", "height:18px", "border-radius:2px");
         Expect("the radio", new RadioGroup(["Card", "Cash"], 0, _ => { }), "width:20px", "width:10px");
         Expect("the switch", new Switch(true, () => { }), "width:52px", "height:32px", "width:24px");
-        Expect("the segmented button", new SegmentedControl(["All", "Income"], 0, _ => { }), "height:40px");
+        Expect("the segmented button", new SegmentedControl(["All", "Income"], 0, _ => { }), "height:40px",
+            "border:1px solid");
         Expect("the chip", new Chip("Income", ChipKind.Filter, false, () => { }), "height:32px", "border-radius:8px");
 
         missing.Should().BeEmpty("MaterialTheme fills the form control slots from Material 3's specifications");
+    }
+
+    /// <summary>Material 3 gives a field, a segmented button and a chip one size, which a compact page and
+    /// a size variant do not shrink: the ladder the slot names holds every rung at either density.</summary>
+    [Fact]
+    public void MaterialTheme_KeepsItsOneSize_AtEveryRungAndDensity()
+    {
+        var material = MaterialTheme.Instance;
+        var missing = new List<string>();
+
+        void Expect(string what, VisualNode node, string declaration)
+        {
+            if (!Css(node, material, Density.Compact).Contains(declaration, StringComparison.Ordinal))
+                missing.Add($"{what}: {declaration}");
+        }
+
+        Expect("the compact text field", new TextInput("ana", _ => { }, label: "Email"), "height:56px");
+        Expect("the compact search bar", new SearchField("harbour", _ => { }), "height:56px");
+        Expect("the compact chip", new Chip("Income", ChipKind.Filter, false, () => { }), "height:32px");
+        Expect("the compact small segmented button",
+            new SegmentedControl(["All", "Income"], 0, _ => { }) { Size = SizeVariant.Small }, "height:40px");
+
+        missing.Should().BeEmpty("Material 3 does not shrink these controls for a dense layout or a size");
+    }
+
+    /// <summary>A picker's panel rows are the field's height unless the slot names their own: Material's
+    /// menu items are 48dp under a 56dp field, and Photon's rows stay the field's height.</summary>
+    [Fact]
+    public void APickersPanelRows_TakeTheSlotsRowHeight_OrTheFields()
+    {
+        float?[] RowHeights(IAppTheme theme)
+        {
+            var select = new Select(["Card", "Cash", "Transfer"], 0, _ => { });
+            return Walk(select.BuildContained(new ComponentContext(theme)), theme)
+                .OfType<Pressable>()
+                .Where(p => p.Role == PressableRole.Option)
+                .Select(p => p.Child is Box { Style.Height: { Kind: SizeKind.Fixed } height } ? height.Value : (float?)null)
+                .ToArray();
+        }
+
+        RowHeights(MaterialTheme.Instance).Should().Equal(48f, 48f, 48f);
+        var field = Sizing.Height(SizeVariant.Medium, Density.Comfortable);
+        RowHeights(Photon).Should().Equal(field, field, field);
+    }
+
+    private static IEnumerable<VisualNode> Walk(VisualNode node, IAppTheme theme)
+    {
+        yield return node;
+        var children = node switch
+        {
+            FlexNode flex => flex.Children,
+            Box box => box.Child is { } only ? new[] { only } : Array.Empty<VisualNode>(),
+            Pressable pressable => new[] { pressable.Child },
+            Flexible flexible => new[] { flexible.Child },
+            Anchored anchored => new[] { anchored.Anchor, anchored.Panel },
+            Shortcut shortcut => new[] { shortcut.Child },
+            UiComponent component => new[] { component.BuildContained(new ComponentContext(theme)) },
+            _ => Array.Empty<VisualNode>(),
+        };
+        foreach (var child in children)
+            foreach (var descendant in Walk(child, theme))
+                yield return descendant;
     }
 
     private static string Css(VisualNode node, IAppTheme theme, Density density)

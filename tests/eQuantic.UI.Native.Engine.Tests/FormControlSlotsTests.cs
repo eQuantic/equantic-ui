@@ -147,6 +147,29 @@ public class FormControlSlotsTests
         missing.Should().BeEmpty("MaterialTheme fills the form control slots from Material 3's specifications");
     }
 
+    /// <summary>Material 3 gives a field, a segmented button and a chip one size, which a compact host and
+    /// a size variant do not shrink: the ladder the slot names holds every rung at either density.</summary>
+    [Fact]
+    public void MaterialTheme_KeepsItsOneSize_AtEveryRungAndDensity()
+    {
+        var material = MaterialTheme.Instance;
+        var missing = new List<string>();
+
+        void ExpectHeight(string what, VisualNode node, float height)
+        {
+            if (!Boxes(node, material, Density.Compact).Any(r => Near(r.Height, height)))
+                missing.Add($"{what} {height} tall");
+        }
+
+        ExpectHeight("the compact text field", new TextInput("ana", _ => { }, label: "Email"), 56);
+        ExpectHeight("the compact search bar", new SearchField("harbour", _ => { }), 56);
+        ExpectHeight("the compact chip", new Chip("Income", ChipKind.Filter, false, () => { }), 32);
+        ExpectHeight("the compact small segmented button",
+            new SegmentedControl(["All", "Income"], 0, _ => { }) { Size = SizeVariant.Small }, 40);
+
+        missing.Should().BeEmpty("Material 3 does not shrink these controls for a dense layout or a size");
+    }
+
     /// <summary>Every glyph a slot sizes is held to the §07 whitelist, which an icon enforces by throwing:
     /// a Material 3 size off it (the chip's 18) turned the control into its boundary's error panel. Each
     /// control that draws a slot-sized glyph is built under both themes and must not fall back.</summary>

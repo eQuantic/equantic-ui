@@ -75,4 +75,7 @@ public sealed record InputTheme
 
     /// <summary>The border colour of a picker's open panel (<see cref="IAppTheme.Border"/>).</summary>
     public ColorToken? PanelBorderColor { get; init; }
+
+    /// <summary>The height of a row of a picker's open panel (the field's own height).</summary>
+    public float? PanelRowHeight { get; init; }
 }

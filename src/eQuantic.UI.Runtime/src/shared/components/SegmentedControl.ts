@@ -41,7 +41,7 @@ export class SegmentedControl extends StatelessComponent {
             let press = new Pressable(segment, this.disabled || selected ? null : () => this.onChanged?.(index), { disabled: this.disabled, label: $eq.collections.item(this.segments, index), role: 'radio', selected: selected });
             row.add(this.stretch ? new Flexible(press, 1) : press);
         }
-        let track = new Box(new BoxStyle({ width: this.stretch ? SizeValue.fill : SizeValue.hug, height: height, padding: EdgeInsets.all(inset), background: slot?.trackFill ?? theme.surfaceSubtle, cornerRadius: new CornerRadii(trackRadius), opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
+        let track = new Box(new BoxStyle({ width: this.stretch ? SizeValue.fill : SizeValue.hug, height: height, padding: EdgeInsets.all(inset), background: slot?.trackFill ?? theme.surfaceSubtle, cornerRadius: new CornerRadii(trackRadius), borderWidth: slot?.trackBorderWidth ?? 0, borderColor: slot?.trackBorderColor ?? theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
         if (this.disabled || this.onChanged == null || $eq.collections.count(this.segments) === 0) return track;
         let count = $eq.collections.count(this.segments);
         return new Adjustable(track, (direction: number) => this.onChanged!($eq.num.intRem(this.selectedIndex + direction + count, count)), { role: 'radiogroup' });

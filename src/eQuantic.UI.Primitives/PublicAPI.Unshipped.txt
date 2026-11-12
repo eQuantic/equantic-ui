@@ -291,3 +291,9 @@ eQuantic.UI.Primitives.ButtonTheme.OutlineColor.get -> eQuantic.UI.Primitives.Co
 eQuantic.UI.Primitives.ButtonTheme.OutlineColor.init -> void
 eQuantic.UI.Primitives.ButtonTheme.QuietFill.get -> eQuantic.UI.Primitives.ColorToken?
 eQuantic.UI.Primitives.ButtonTheme.QuietFill.init -> void
+eQuantic.UI.Primitives.InputTheme.PanelRowHeight.get -> float?
+eQuantic.UI.Primitives.InputTheme.PanelRowHeight.init -> void
+eQuantic.UI.Primitives.SegmentedTheme.TrackBorderColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.SegmentedTheme.TrackBorderColor.init -> void
+eQuantic.UI.Primitives.SegmentedTheme.TrackBorderWidth.get -> float?
+eQuantic.UI.Primitives.SegmentedTheme.TrackBorderWidth.init -> void

@@ -60,13 +60,15 @@ public sealed class TimePicker : StatefulComponent
     {
         var theme = context.Theme;
         // The theme's Input slot, then its control ladder, then the component's own (§3.10): the field
-        // and each row of its panel share the height, the padding and the gap.
+        // and each row of its panel share the padding and the gap, and a row is the field's height
+        // unless the slot names its own.
         var input = theme.Input;
         var height = ControlMetrics.Height(context, SizeVariant.Medium, input?.Controls);
         var paddingX = input?.PickerPaddingX ?? Space.S3;
         var gap = input?.PickerGap ?? Space.S2;
         var radius = input?.Radius ?? theme.Shape(ShapeScale.Medium);
         var borderWidth = input?.BorderWidth ?? 1;
+        var rowHeight = input?.PanelRowHeight ?? height;
         // A closed panel is never realized — the web target returns before it, and the native one
         // does not paint it — so the rows are built only when they will be seen. At a one-minute
         // step that is 1440 rows, each with its own closure, skipped on every render until the
@@ -114,7 +116,7 @@ public sealed class TimePicker : StatefulComponent
 
             list.Add(new Pressable(new Box(new BoxStyle
             {
-                Height = height,
+                Height = rowHeight,
                 Padding = EdgeInsets.Symmetric(paddingX, 0),
                 Width = SizeValue.Fill,
                 Background = picked ? theme.Colors(Variant.Primary).Subtle

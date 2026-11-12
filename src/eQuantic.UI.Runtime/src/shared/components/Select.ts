@@ -40,6 +40,7 @@ export class Select extends StatefulComponent {
         let gap = slot?.pickerGap ?? 8;
         let radius = slot?.radius ?? theme.shape('medium');
         let borderWidth = slot?.borderWidth ?? 1;
+        let rowHeight = slot?.panelRowHeight ?? height;
         let hasValue = this.selectedIndex >= 0 && this.selectedIndex < $eq.collections.count(this.options);
         let fieldRow = new Row(gap, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
         fieldRow.add(new Text(hasValue ? $eq.collections.item(this.options, this.selectedIndex) : this.placeholder ?? 'Select…', 'bodyM', hasValue ? theme.textPrimary : theme.textMuted, 1));
@@ -57,7 +58,7 @@ export class Select extends StatefulComponent {
                 row.add(new Icon(IconGlyph.fromIcons('check'), 16, theme.colors('primary').onSubtle));
             }
             let highlighted = this._open && i === this._highlight;
-            list.add(new Pressable(new Box(new BoxStyle({ height: height, padding: EdgeInsets.symmetric(paddingX, 0), width: SizeValue.fill, background: selected ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.choose(index), { role: 'option', selected: selected }));
+            list.add(new Pressable(new Box(new BoxStyle({ height: rowHeight, padding: EdgeInsets.symmetric(paddingX, 0), width: SizeValue.fill, background: selected ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.choose(index), { role: 'option', selected: selected }));
         }
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: slot?.panelBorderColor ?? theme.border, elevation: slot?.panelElevation ?? 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
         let trigger = new Pressable(field, this.disabled ? null : this.toggle.bind(this), { disabled: this.disabled, expanded: this._open && !this.disabled });

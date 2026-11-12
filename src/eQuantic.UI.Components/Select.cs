@@ -56,13 +56,15 @@ public sealed class Select : StatefulComponent
     {
         var theme = context.Theme;
         // The theme's Input slot, then its control ladder, then the component's own (§3.10): the field
-        // and each row of its panel share the height, the padding and the gap.
+        // and each row of its panel share the padding and the gap, and a row is the field's height
+        // unless the slot names its own.
         var slot = theme.Input;
         var height = ControlMetrics.Height(context, SizeVariant.Medium, slot?.Controls);
         var paddingX = slot?.PickerPaddingX ?? Space.S3;
         var gap = slot?.PickerGap ?? Space.S2;
         var radius = slot?.Radius ?? theme.Shape(ShapeScale.Medium);
         var borderWidth = slot?.BorderWidth ?? 1;
+        var rowHeight = slot?.PanelRowHeight ?? height;
         var hasValue = SelectedIndex >= 0 && SelectedIndex < Options.Count;
 
         var fieldRow = new Row(gap: gap) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
@@ -102,7 +104,7 @@ public sealed class Select : StatefulComponent
             var highlighted = _open && i == _highlight;
             list.Add(new Pressable(new Box(new BoxStyle
             {
-                Height = height,
+                Height = rowHeight,
                 Padding = EdgeInsets.Symmetric(paddingX, 0),
                 Width = SizeValue.Fill,
                 // The keyboard's row wears the hover coat: one visual language for "you are here",

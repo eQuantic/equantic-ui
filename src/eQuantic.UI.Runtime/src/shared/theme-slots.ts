@@ -112,6 +112,7 @@ export class InputTheme {
   captionRole: TypeRoleValue | null = null;
   panelElevation: number | null = null;
   panelBorderColor: ColorToken | null = null;
+  panelRowHeight: number | null = null;
 
   constructor(config?: Partial<InputTheme>) {
     if (config) Object.assign(this, config);
@@ -155,6 +156,8 @@ export class SegmentedTheme {
   trackFill: ColorToken | null = null;
   thumbFill: ColorToken | null = null;
   thumbElevation: number | null = null;
+  trackBorderWidth: number | null = null;
+  trackBorderColor: ColorToken | null = null;
   borderWidth: number | null = null;
   borderColor: ColorToken | null = null;
   iconSize: number | null = null;
@@ -318,6 +321,7 @@ export function inputTheme(data: SlotData): InputTheme {
     captionRole: slotValue<TypeRoleValue>(data.captionRole),
     panelElevation: slotValue<number>(data.panelElevation),
     panelBorderColor: slotToken(data.panelBorderColor),
+    panelRowHeight: slotValue<number>(data.panelRowHeight),
   });
 }
 
@@ -357,6 +361,8 @@ export function segmentedTheme(data: SlotData): SegmentedTheme {
     trackFill: slotToken(data.trackFill),
     thumbFill: slotToken(data.thumbFill),
     thumbElevation: slotValue<number>(data.thumbElevation),
+    trackBorderWidth: slotValue<number>(data.trackBorderWidth),
+    trackBorderColor: slotToken(data.trackBorderColor),
     borderWidth: slotValue<number>(data.borderWidth),
     borderColor: slotToken(data.borderColor),
     iconSize: slotValue<number>(data.iconSize),

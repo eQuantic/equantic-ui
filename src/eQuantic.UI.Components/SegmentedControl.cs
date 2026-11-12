@@ -101,6 +101,8 @@ public sealed class SegmentedControl : StatelessComponent
             Padding = EdgeInsets.All(inset),
             Background = slot?.TrackFill ?? theme.SurfaceSubtle,
             CornerRadius = new CornerRadii(trackRadius),
+            BorderWidth = slot?.TrackBorderWidth ?? 0f,
+            BorderColor = slot?.TrackBorderColor ?? theme.BorderStrong,
             Opacity = Disabled ? theme.DisabledOpacity : 1f,
         }, row);
 

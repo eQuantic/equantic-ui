@@ -1061,7 +1061,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:127-137  VisualNode select = new Anchored(trigger, panel)
+  Select.cs:129-139  VisualNode select = new Anchored(trigger, panel)
           {
               Open = _open && !Disabled,
               OnDismiss = () => SetState(() => _open = false),
@@ -1079,7 +1079,7 @@ the pill's 40 down.
   ```
   Select.cs:27-28  public Select(IReadOnlyList<string> options, int selectedIndex = -1,
           Action<int>? onChanged = null, string? placeholder = null)
-  Select.cs:135  var trigger = new Pressable(field, Disabled ? null : Toggle) { Disabled = Disabled, Expanded = _open && !Disabled };
+  Select.cs:137  var trigger = new Pressable(field, Disabled ? null : Toggle) { Disabled = Disabled, Expanded = _open && !Disabled };
   ```
 
 ### C14 Select · missing-feature · **unverified**
@@ -1090,7 +1090,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:86-87  var list = new Column(gap: 0) { Width = SizeValue.Fill };
+  Select.cs:88-89  var list = new Column(gap: 0) { Width = SizeValue.Fill };
           for (var i = 0; i < Options.Count; i++)
   ```
 
@@ -1102,7 +1102,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:149-153  var live = _open && !Disabled && Options.Count > 0;
+  Select.cs:151-155  var live = _open && !Disabled && Options.Count > 0;
           select = new Shortcut(select, KeyChord.ArrowDown,
               () => SetState(() => _highlight = Math.Min(Options.Count - 1, _highlight + 1))) { Enabled = live };
           select = new Shortcut(select, KeyChord.ArrowUp,
@@ -2282,9 +2282,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  SegmentedControl.cs:112  return new Adjustable(track,
-  SegmentedControl.cs:113      direction => OnChanged.Invoke((SelectedIndex + direction + count) % count))
-  SegmentedControl.cs:115      Role = AdjustableRole.Radiogroup,
+  SegmentedControl.cs:114  return new Adjustable(track,
+  SegmentedControl.cs:115      direction => OnChanged.Invoke((SelectedIndex + direction + count) % count))
+  SegmentedControl.cs:117      Role = AdjustableRole.Radiogroup,
   ```
 
 ### C6 SegmentedControl · missing-feature · **unverified**
@@ -2607,7 +2607,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:82  BorderColor = slot?.BorderColor ?? theme.BorderStrong,
+  Select.cs:84  BorderColor = slot?.BorderColor ?? theme.BorderStrong,
               Opacity = Disabled ? theme.DisabledOpacity : null,
               Hover = Disabled ? null : new StyleDiff { BorderColor = theme.Colors(Variant.Primary).Base },
   ```
@@ -3627,7 +3627,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Select.cs:61  var height = ControlMetrics.Height(context, SizeVariant.Medium, slot?.Controls);
+  Select.cs:62  var height = ControlMetrics.Height(context, SizeVariant.Medium, slot?.Controls);
               Width = SizeValue.Fill,
               Padding = EdgeInsets.Symmetric(Space.S3, 0),
   TextInput.cs:22  Icons? leading = null, SizeVariant size = SizeVariant.Large)

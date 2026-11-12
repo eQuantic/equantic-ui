@@ -28,6 +28,13 @@ public sealed record SegmentedTheme
     /// <summary>The selected segment's elevation (1).</summary>
     public int? ThumbElevation { get; init; }
 
+    /// <summary>The width of the segmented control's outline around its track (0, none).</summary>
+    public float? TrackBorderWidth { get; init; }
+
+    /// <summary>The colour of the segmented control's outline (<see cref="IAppTheme.BorderStrong"/>),
+    /// drawn only when <see cref="TrackBorderWidth"/> is above zero.</summary>
+    public ColorToken? TrackBorderColor { get; init; }
+
     /// <summary>The stepper's border width (1).</summary>
     public float? BorderWidth { get; init; }
 

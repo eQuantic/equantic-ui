@@ -138,13 +138,14 @@ public sealed class MaterialTheme : IAppTheme
     /// M3's text field (Text fields, Specs): a 56dp container with an extra-small (4dp) corner, a 1dp
     /// outline that grows to 2dp while focused, 16dp of padding and of gap to a 24dp icon, and the
     /// supporting text 4dp below. The search field is M3's search bar, 56dp and fully rounded, and a
-    /// picker's field is the text field its menu anchors to.
+    /// picker's field is the text field its menu anchors to, whose items are 48dp (Menus, Specs). M3
+    /// gives a field one height, so every rung of the ladder is 56, at either density.
     /// </summary>
     public InputTheme? Input { get; } = new()
     {
         Controls = new ControlsTheme
         {
-            Height = new DensityLadder { Comfortable = new SizeLadder { Medium = 56, Large = 56, XLarge = 56 } },
+            Height = OneSize(56),
         },
         PaddingX = 16,
         PickerPaddingX = 16,
@@ -156,6 +157,7 @@ public sealed class MaterialTheme : IAppTheme
         SearchRadius = 999,
         IconSize = 24,
         CaptionGap = 4,
+        PanelRowHeight = 48,
     };
 
     /// <summary>
@@ -185,21 +187,22 @@ public sealed class MaterialTheme : IAppTheme
 
     /// <summary>
     /// M3's segmented button (Segmented buttons, Specs): 40dp tall, fully rounded, its label in Label
-    /// large (14), 12dp of padding, flat, with no lip around the selected segment and a 1dp outline;
-    /// its 18dp icons take the §07 whitelist's next step, 20.
+    /// large (14), 12dp of padding, flat, with no lip around the selected segment and a 1dp outline
+    /// around the track; its 18dp icons take the §07 whitelist's next step, 20. M3 gives the control one
+    /// size, so every rung of the ladder is that size, at either density.
     /// </summary>
     public SegmentedTheme? Segmented { get; } = new()
     {
         Controls = new ControlsTheme
         {
-            Height = new DensityLadder { Comfortable = new SizeLadder { Medium = 40 } },
-            PaddingX = new DensityLadder { Comfortable = new SizeLadder { Medium = 12 } },
-            LabelSize = new DensityLadder { Comfortable = new SizeLadder { Medium = 14 } },
+            Height = OneSize(40),
+            PaddingX = OneSize(12),
+            LabelSize = OneSize(14),
             Radius = new SizeLadder { Small = 999, Medium = 999, Large = 999, XLarge = 999 },
         },
         Inset = 0,
         ThumbElevation = 0,
-        BorderWidth = 1,
+        TrackBorderWidth = 1,
         IconSize = IconSize.Dense,
     };
 
@@ -207,13 +210,13 @@ public sealed class MaterialTheme : IAppTheme
     /// M3's chip (Chips, Specs): 32dp tall with a small (8dp) corner, 16dp of padding and 8dp between
     /// its icons and its label in Label large; a selected filter chip is filled rather than outlined.
     /// M3 draws the icons at 18dp, which is not on the §07 whitelist an icon is held to, so they take
-    /// its next step, 20.
+    /// its next step, 20. M3 gives a chip one height, at either density.
     /// </summary>
     public ChipTheme? Chip { get; } = new()
     {
         Controls = new ControlsTheme
         {
-            Height = new DensityLadder { Comfortable = new SizeLadder { Small = 32 } },
+            Height = OneSize(32),
         },
         PaddingX = 16,
         Gap = 8,
@@ -226,6 +229,15 @@ public sealed class MaterialTheme : IAppTheme
         IconSize = IconSize.Dense,
         RemoveIconSize = IconSize.Dense,
     };
+
+    /// <summary>A ladder whose every rung, at either density, is <paramref name="value"/>: Material 3
+    /// specifies one size for a field, a segmented button and a chip, and does not shrink it for a
+    /// dense layout.</summary>
+    private static DensityLadder OneSize(float value)
+    {
+        var rungs = new SizeLadder { Small = value, Medium = value, Large = value, XLarge = value };
+        return new DensityLadder { Comfortable = rungs, Compact = rungs };
+    }
 
     // ---- Elevation — the M3 levels (seed-independent) --------------------------------------------
     public ShadowSpec Elevation(int level) => level switch

@@ -47,6 +47,7 @@ export class TimePicker extends StatefulComponent {
         let gap = input?.pickerGap ?? 8;
         let radius = input?.radius ?? theme.shape('medium');
         let borderWidth = input?.borderWidth ?? 1;
+        let rowHeight = input?.panelRowHeight ?? height;
         let open = this._open && !this.disabled;
         let times = open ? this.slots() : [];
         let highlight = $eq.collections.count(times) > 0 ? Math.min(this._highlight, $eq.collections.count(times) - 1) : -1;
@@ -64,7 +65,7 @@ export class TimePicker extends StatefulComponent {
             let highlighted = i === highlight;
             let row = new Row(gap, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
             row.add(new Text(TimePicker.format(slot), 'bodyM', picked ? theme.colors('primary').onSubtle : theme.textPrimary, 1));
-            list.add(new Pressable(new Box(new BoxStyle({ height: height, padding: EdgeInsets.symmetric(paddingX, 0), width: SizeValue.fill, background: picked ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: picked ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.pick(slot), { role: 'option', selected: picked }));
+            list.add(new Pressable(new Box(new BoxStyle({ height: rowHeight, padding: EdgeInsets.symmetric(paddingX, 0), width: SizeValue.fill, background: picked ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: picked ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.pick(slot), { role: 'option', selected: picked }));
         }
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: input?.panelBorderColor ?? theme.border, elevation: input?.panelElevation ?? 2, padding: EdgeInsets.symmetric(0, 4), height: SizeValue.fixed(TimePicker.panelHeight), clip: true }), new ScrollView(list));
         let picker: VisualNode = new Anchored(new Pressable(box, this.disabled ? null : this.toggle.bind(this), { disabled: this.disabled, label: this.label.length > 0 ? this.label : SdkStrings.chooseTime, expanded: this._open && !this.disabled }), panel, { open: open, onDismiss: this.close.bind(this), matchAnchorWidth: true, panelRole: 'listbox', activeIndex: open ? highlight : -1 });
