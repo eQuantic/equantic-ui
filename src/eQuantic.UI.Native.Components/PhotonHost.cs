@@ -71,8 +71,9 @@ public sealed class PhotonHost
         {
             if (_density == value) return;
             _density = value;
-            // Every control reads it while it builds, so the next frame builds them all again.
-            RebuildAll();
+            // The next frame hands every build the new density, and its owner builds again the
+            // positions that read it, and only those (docs/ELEMENT-TREE-PLAN.md, 3.4).
+            NeedsRender = true;
         }
     }
 
@@ -296,16 +297,16 @@ public sealed class PhotonHost
     /// <summary>The NAVIGATION seam (write-once Link): a tap no pressable claims, landing on a link
     /// region, reports the destination here — the platform shell maps it to a page (the native router's
     /// future home). Null = links are inert (visuals only).
-    /// <para>Setting it also installs <see cref="Navigator"/>'s handler, so a component that
-    /// navigates PROGRAMMATICALLY (a command palette's ↵) reaches the same shell. One surface owns
-    /// the seam — the last host to take it wins, which is the desktop/mobile shape.</para></summary>
+    /// <para>It is also where a component of this host's tree that navigates PROGRAMMATICALLY (a command
+    /// palette's ↵) is sent, through <c>Navigator.Of(context)</c>: the tree's owner holds it, so each
+    /// window of a process navigates its own.</para></summary>
     public Action<string>? NavigationRequested
     {
         get => _navigationRequested;
         set
         {
             _navigationRequested = value;
-            Navigator.Handler = value;
+            _owner.NavigationRequested = value;
         }
     }
 

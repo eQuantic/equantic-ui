@@ -42,12 +42,25 @@ public static class NodeKindTsGenerator
     /// </summary>
     public const string Seam = "component";
 
+    /// <summary>
+    /// The ABSTRACT families whose kind every subclass shares, because the family seals it: the
+    /// expansion seam's <c>UiComponent</c>, and <c>InheritedComponent</c>, a value for a subtree that an
+    /// app subclasses. No scan of concrete types reaches them, so they are listed, after the concrete
+    /// kinds and in this order; <c>NodeKindTsGeneratorTests</c> fails on an abstract family that seals a
+    /// kind and is missing here, and on a kind here that the family does not declare.
+    /// </summary>
+    public static readonly IReadOnlyList<(Type Family, string Kind)> Families =
+    [
+        (typeof(UiComponent), Seam),
+        (typeof(InheritedComponent), "inherited"),
+    ];
+
     public static string Generate()
     {
         var ts = new CodeWriter();
         ts.AppendLine("/**");
         ts.AppendLine(" * GENERATED — do not edit. Every wire kind the C# vocabulary declares");
-        ts.AppendLine(" * (eQuantic.UI.Primitives, VisualNode.NodeKind), plus the expansion seam.");
+        ts.AppendLine(" * (eQuantic.UI.Primitives, VisualNode.NodeKind), plus the abstract families' kinds.");
         ts.AppendLine(" * Regenerate: EQ_UPDATE_NODE_KINDS_TS=1 dotnet test eQuantic.UI.Web.Tests");
         ts.AppendLine(" * (NodeKindTsGeneratorTests pins this file byte-for-byte against the generator).");
         ts.AppendLine(" *");
@@ -105,11 +118,11 @@ public static class NodeKindTsGenerator
                 + "AND written as a case in the browser's lowering, and the two must match exactly: "
                 + $"{string.Join(", ", unwritable)}");
 
-        var stolen = all.Where(d => d.Kind == Seam).Select(d => d.Node).ToList();
+        var stolen = all.Where(d => Families.Any(family => family.Kind == d.Kind)).Select(d => d.Node).ToList();
         if (stolen.Count > 0)
             throw new InvalidOperationException(
-                $"\"{Seam}\" is UiComponent's kind — the expansion seam — and belongs to no concrete "
-                + $"node: {string.Join(", ", stolen)}");
+                "A kind an abstract family seals for every subclass (\"" + string.Join("\", \"", Families.Select(family => family.Kind))
+                + $"\") belongs to no concrete node: {string.Join(", ", stolen)}");
 
         var shared = all.GroupBy(d => d.Kind, StringComparer.Ordinal)
             .Where(group => group.Count() > 1)
@@ -122,7 +135,7 @@ public static class NodeKindTsGenerator
 
         return all.Select(d => d.Kind)
             .OrderBy(kind => kind, StringComparer.Ordinal)
-            .Append(Seam)
+            .Concat(Families.Select(family => family.Kind))
             .ToList();
     }
 

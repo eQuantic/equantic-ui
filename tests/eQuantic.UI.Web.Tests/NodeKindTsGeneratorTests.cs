@@ -60,10 +60,10 @@ public class NodeKindTsGeneratorTests
     {
         var kinds = NodeKindTsGenerator.Kinds();
 
-        kinds.Should().HaveCount(NodeKindTsGenerator.Vocabulary().Count() + 1,
-            "every concrete node contributes its kind, and the seam is the one word no concrete node declares");
+        kinds.Should().HaveCount(NodeKindTsGenerator.Vocabulary().Count() + NodeKindTsGenerator.Families.Count,
+            "every concrete node contributes its kind, and each abstract family the one word it seals");
         kinds.Should().OnlyHaveUniqueItems();
-        kinds.Should().EndWith([NodeKindTsGenerator.Seam]);
+        kinds.Should().EndWith(NodeKindTsGenerator.Families.Select(family => family.Kind));
         kinds.Should().Contain("box").And.Contain("webFrame").And.Contain("sheetSurface");
         NodeKindTsGenerator.Vocabulary().Should().HaveCountGreaterThan(20,
             "the vocabulary has to be real for this to mean anything");
@@ -159,7 +159,41 @@ public class NodeKindTsGeneratorTests
     public void AWellFormedSet_IsAcceptedSortedWithTheSeamLast()
     {
         NodeKindTsGenerator.Kinds([("Row", "row"), ("Box", "box"), ("Anchored", "anchored")])
-            .Should().Equal("anchored", "box", "row", NodeKindTsGenerator.Seam);
+            .Should().Equal("anchored", "box", "row", NodeKindTsGenerator.Seam, "inherited");
+    }
+
+    /// <summary>
+    /// An abstract family that seals its kind for every subclass is one no scan of concrete types
+    /// reaches, so it is listed by hand, and this is what keeps the list honest: every abstract node of
+    /// the vocabulary that declares a sealed <c>NodeKind</c> is in it, and the kind it lists is the one a
+    /// subclass actually answers. <c>InheritedComponent</c> was the second such family, and the union
+    /// left it out until it was listed.
+    /// </summary>
+    [Fact]
+    public void EveryAbstractFamilyThatSealsAKind_IsListedWithTheKindItSeals()
+    {
+        var sealedFamilies = typeof(VisualNode).Assembly.GetExportedTypes()
+            .Where(type => type is { IsAbstract: true } && typeof(VisualNode).IsAssignableFrom(type)
+                && type.GetProperty(nameof(VisualNode.NodeKind), System.Reflection.BindingFlags.Public
+                    | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly)?.GetMethod is { IsFinal: true })
+            .ToList();
+
+        NodeKindTsGenerator.Families.Select(family => family.Family).Should().BeEquivalentTo(sealedFamilies);
+        KindOf<ProbeComponent>().Should().Be(NodeKindTsGenerator.Families.Single(f => f.Family == typeof(UiComponent)).Kind);
+        KindOf<ProbeInherited>().Should().Be(NodeKindTsGenerator.Families.Single(f => f.Family == typeof(InheritedComponent)).Kind);
+    }
+
+    private static string KindOf<T>() where T : VisualNode =>
+        ((VisualNode)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(T))).NodeKind;
+
+    private sealed class ProbeComponent : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new Text("probe", TypeRole.BodyM);
+    }
+
+    private sealed class ProbeInherited(VisualNode child) : InheritedComponent(child)
+    {
+        protected override bool UpdateShouldNotify(InheritedComponent old) => false;
     }
 
     /// <summary>And the real vocabulary is one of those: the case that must keep passing.</summary>
