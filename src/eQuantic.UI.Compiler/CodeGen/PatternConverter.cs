@@ -368,6 +368,7 @@ public static class PatternConverter
             case "bool" or "boolean": return $"typeof {access} === 'boolean'";
         }
 
+
         // A class that lowers to a REAL JS class supports `instanceof`. That is the whole VOCABULARY
         // — every `VisualNode` is an `export class` in the runtime, components included (UiComponent
         // derives from VisualNode). An exception is an Error carrying its .NET types, which its own
@@ -415,6 +416,12 @@ public static class PatternConverter
                 + TwinlessTypeExtensions.PackageRemedy);
             return "false";
         }
+
+        // An INTERFACE: what the value's class declares it implements, or a refusal where the browser cannot say
+        // (#1464). It fell through to the null-check below, so any value passed. A package's interface is EQ2004's
+        // above, which names its assembly.
+        if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol { TypeKind: TypeKind.Interface } contract)
+            return InterfaceTests.Test(contract, access, typeSyntax, context);
 
         return $"{access} != null";
     }
