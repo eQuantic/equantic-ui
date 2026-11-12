@@ -57,10 +57,15 @@ internal static class PropertyStore
     /// </summary>
     public static string? SlotOf(PropertyDeclarationSyntax property) =>
         KeepsAStore(property) ? FieldExpressionStrategy.BackingSlot(property)
-        : !property.Modifiers.Any(SyntaxKind.StaticKeyword) && !property.Modifiers.Any(SyntaxKind.AbstractKeyword)
-          && IsAuto(property)
-            ? TwinName.Of(property.Identifier.ValueText)
-            : null;
+        : IsKeptUnderItsName(property) ? TwinName.Of(property.Identifier.ValueText)
+        : null;
+
+    /// <summary>Whether an instance property of a class, a record or a struct keeps its value under its
+    /// own name: an auto-property no override can reach, which the twin holds as a field, so reading it
+    /// runs nothing.</summary>
+    public static bool IsKeptUnderItsName(PropertyDeclarationSyntax property) =>
+        !property.Modifiers.Any(SyntaxKind.StaticKeyword) && !property.Modifiers.Any(SyntaxKind.AbstractKeyword)
+        && IsAuto(property) && !KeepsAStore(property);
 
     /// <summary>
     /// The accessors an override inherits: C# lets it declare only the getter, or only the setter, of a
