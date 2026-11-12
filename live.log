@@ -145,3 +145,14 @@
   998   0.2 111216 /Users/runner/actions-runner/cached/bin/Runner.Listener
  2109   0.1 139296 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
   123   0.1  12496 /usr/libexec/thermalmonitord
+=== alive 13:57:51 app: 2109 watch: 
+=== alive 13:58:01 app: 2109 watch: 
+--- sample 13:58:05 load: { 2.69 8.12 5.11 } System-wide memory free percentage: 92%
+161 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2089 dotnet run --no-build --project samples/PhotonDesktop
+2109 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  252  17.2  34160 /usr/libexec/nsurlsessiond
+  653  16.5  48048 /usr/libexec/trustd
+  839   2.0  17504 /System/Library/PrivateFrameworks/StreamingZip.framework/Versions/A/XPCServices/com.apple.StreamingUnzipService.privileged.xpc/Contents/MacOS/com.apple.StreamingUnzipService.privileged
+  385   1.6 128048 /System/Library/CoreServices/iconservicesagent
+  368   0.7  38944 /usr/libexec/secinitd
