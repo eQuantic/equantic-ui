@@ -15,6 +15,9 @@ import type { VisualNodeValue } from './nodes';
 const nextFrame = () =>
   new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
+/** The instance each label's position keeps: the first made, which the engine keeps. */
+const kept: Record<string, Counter> = {};
+
 /** A counter with a press: the smallest thing whose state shows. */
 class Counter extends StatefulComponent {
   label: string;
@@ -23,6 +26,11 @@ class Counter extends StatefulComponent {
   constructor(label: string) {
     super();
     this.label = label;
+    kept[label] ??= this;
+  }
+
+  bump(): void {
+    this.setState(() => this.count++);
   }
 
   adoptConfig(next: Counter): void {
@@ -95,7 +103,23 @@ async function pressAndCompare(page: Page, container: HTMLElement, label: string
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  for (const label of Object.keys(kept)) delete kept[label];
 });
+
+/** A component holding a counter of its own, both with a state that shows. */
+class Holder extends StatefulComponent {
+  count = 0;
+
+  bump(): void {
+    this.setState(() => this.count++);
+  }
+
+  build(): VisualNodeValue {
+    holder ??= this;
+    return column(new Text(`holder: ${this.count}`, 'label'), new Counter('inner'));
+  }
+}
+let holder: Holder | null = null;
 
 describe('a dirty element lowers its own subtree', () => {
   it('lowers the component that built and patches its DOM, and the DOM is the whole lowering’s', async () => {
@@ -134,6 +158,43 @@ describe('a dirty element lowers its own subtree', () => {
     expect(lowered, 'every component of the page lowered').toBe(2);
     expect(container.textContent).toContain('a: 1');
     expect(patched).toBe(whole);
+  });
+
+  it('lowers each of two components that built, and nothing between them', async () => {
+    const page = new Page(() => column(new Counter('a'), new Text('between', 'label'), new Counter('b')));
+    const container = mount(page);
+    const before = componentLowerings();
+
+    kept.a.bump();
+    kept.b.bump();
+    await nextFrame();
+
+    expect(componentLowerings() - before).toBe(2);
+    const patched = container.innerHTML;
+    expect(container.textContent).toContain('a: 1');
+    expect(container.textContent).toContain('b: 1');
+    page.rebuild();
+    await nextFrame();
+    expect(patched).toBe(container.innerHTML);
+  });
+
+  it('lowers a component and one inside it that both built as one subtree, from the outer', async () => {
+    holder = null;
+    const page = new Page(() => column(new Holder(), new Counter('other')));
+    const container = mount(page);
+    const before = componentLowerings();
+
+    holder!.bump();
+    kept.inner.bump();
+    await nextFrame();
+
+    expect(componentLowerings() - before, 'the holder and the counter inside it').toBe(2);
+    const patched = container.innerHTML;
+    expect(container.textContent).toContain('holder: 1');
+    expect(container.textContent).toContain('inner: 1');
+    page.rebuild();
+    await nextFrame();
+    expect(patched).toBe(container.innerHTML);
   });
 
   it('keeps the shortcuts the components it did not lower declared', async () => {
