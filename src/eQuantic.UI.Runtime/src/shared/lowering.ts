@@ -11,7 +11,7 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
-import { adoptServerStateFor, componentIdentity, nextTree, runLoweringWalk } from '../core/component';
+import { adoptServerStateFor, awaitsServerState, componentIdentity, nextTree, runLoweringWalk } from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { Dictionary, plainBag } from '../utils/dictionary';
@@ -248,8 +248,10 @@ function buildComponent(
   depth: number,
   owner: BuildOwner,
 ): VisualNodeValue {
-  const key = serverDataKey(component, owner);
-  if (key !== null) adoptServerStateFor(component, key);
+  if (awaitsServerState(component)) {
+    const key = serverDataKey(component, owner);
+    if (key !== null) adoptServerStateFor(component, key);
+  }
   const name = component.constructor?.name ?? 'Component';
   try {
     if (depth >= MAX_COMPONENT_DEPTH) {
