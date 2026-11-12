@@ -255,6 +255,28 @@ internal static class HostOnlySymbolExtensions
         };
     }
 
+    /// <summary>
+    /// Reports and returns true when a subscription, <c>+=</c> or <c>-=</c>, calls an event's accessor that
+    /// stays on the server (#1445): marked <c>[ServerOnly]</c>, or <c>[ServerAction]</c> on a component's, as
+    /// <see cref="Parser.ComponentParser.StaysOnTheServer"/> says for the twins that leave it out. C# calls
+    /// the accessor for the code without naming it, as it calls <c>Dispose</c> in a <c>using</c>, and the
+    /// subscription would call a method the browser does not have.
+    /// </summary>
+    internal static bool ReportIfAccessorStaysOnTheServer(this IMethodSymbol accessor, SyntaxNode node, ConversionContext context)
+    {
+        if (accessor.AssociatedSymbol is not IEventSymbol handled) return false;
+        var inAComponent = accessor.ContainingType.IsUiComponent();
+        if (!accessor.OriginalDefinition.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
+                .Any(declaration => Parser.ComponentParser.StaysOnTheServer(declaration, inAComponent, context.SemanticModel)))
+            return false;
+        var verb = accessor.MethodKind == MethodKind.EventAdd ? "add" : "remove";
+        return Refuse(WhereWritten(node, context), "EQ2010",
+            $"'{accessor.ContainingType.ToDisplayString()}.{handled.Name}' is subscribed from client code, and its '{verb}' accessor "
+            + "stays on the server ([ServerOnly], or a component's [ServerAction]), which no module holds: the subscription "
+            + "would call a member the browser does not have. Subscribe from server code, a [ServerAction] or a [ServerOnly] "
+            + "member, or take the mark off the accessor so it crosses.", context);
+    }
+
     /// <summary>Tells a refusal at <paramref name="node"/>, an in-tree node, and remembers where it was
     /// told (<see cref="ConversionContext.Refused"/>).</summary>
     private static bool Refuse(SyntaxNode node, string code, string message, ConversionContext context)
