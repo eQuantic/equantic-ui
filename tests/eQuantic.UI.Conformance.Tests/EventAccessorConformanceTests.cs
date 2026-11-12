@@ -277,6 +277,62 @@ public class EventAccessorConformanceTests
     public void AnEventsServerOnlyAccessor_StaysOnTheServer(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(KeptAccessors, typeAnnotations, KeptAccessorCases);
 
+    /// <summary>A null-conditional subscription, C# 14's <c>s?.Fired += h</c> (#1445): it went through the guarded
+    /// assignment, which wrote <c>$t.fired += h</c>, never the event's accessors, so a handler subscribed so to an
+    /// event with accessors was never raised. A null receiver subscribes nothing and evaluates the handler never.</summary>
+    private const string NullConditional = """
+        using System;
+        using eQuantic.UI.Primitives;
+
+        public sealed class Board
+        {
+            private Action<int>? _posted;
+            public event Action<int> Posted { add => _posted += value; remove => _posted -= value; }
+            public void Post(int n) => _posted?.Invoke(n);
+        }
+
+        public sealed record Signal(int Id)
+        {
+            private Action<int>? _fired;
+            public event Action<int> Fired { add => _fired += value; remove => _fired -= value; }
+            public void Fire(int n) => _fired?.Invoke(n);
+        }
+
+        public sealed class Meter : StatefulComponent
+        {
+            private Action<int>? _moved;
+            public event Action<int> Moved { add => _moved += value; remove => _moved -= value; }
+            public void Move(int n) => _moved?.Invoke(n);
+            public override VisualNode Build(ComponentContext context) => new Text("meter", TypeRole.BodyM);
+        }
+
+        public static class Made
+        {
+            public static int Count;
+            public static Action<int> Handler(Action<int> handler) { Count++; return handler; }
+        }
+        """;
+
+    private static string NullConditionalCase(string construct, string type, string @event, string raise) =>
+        $"var sum = 0; {type}? x = {construct}; Action<int> add = n => sum += n; x?.{@event} += add; "
+        + $"x?.{@event} += Made.Handler(n => sum += n * 10); x?.{raise}(2); x?.{@event} -= add; x?.{raise}(3); return sum + \"|\" + Made.Count;";
+
+    private static readonly (string Name, string Statements)[] NullConditionalCases =
+    [
+        ("a class's event subscribed through ?.", NullConditionalCase("new Board()", "Board", "Posted", "Post")),
+        ("a class's event subscribed through ?. on null", NullConditionalCase("null", "Board", "Posted", "Post")),
+        ("a record's event subscribed through ?.", NullConditionalCase("new Signal(1)", "Signal", "Fired", "Fire")),
+        ("a record's event subscribed through ?. on null", NullConditionalCase("null", "Signal", "Fired", "Fire")),
+        ("a component's event subscribed through ?.", NullConditionalCase("new Meter()", "Meter", "Moved", "Move")),
+        ("a component's event subscribed through ?. on null", NullConditionalCase("null", "Meter", "Moved", "Move")),
+    ];
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ANullConditionalSubscription_LowersToTheEventsAccessors(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(NullConditional, typeAnnotations, NullConditionalCases);
+
     /// <summary>A subscription from client code that calls an accessor no twin holds is refused (EQ2010), as a
     /// call of a <c>[ServerOnly]</c> method is: it would call a method the browser does not have (#1445).</summary>
     [Theory]

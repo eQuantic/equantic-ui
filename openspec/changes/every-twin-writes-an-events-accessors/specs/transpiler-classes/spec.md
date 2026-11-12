@@ -69,3 +69,10 @@ a local or a property of one, SHALL compose its invocation list as on an event.
 - **WHEN** client code writes `s.Fired -= a` where `Fired`'s `remove` is `[ServerOnly]`, or `m.Moved += a` where a
   component's `add` is `[ServerAction]`
 - **THEN** the build refuses it with EQ2010
+
+#### Scenario: A null-conditional subscription to an event with accessors
+
+- **WHEN** a class's, a record's and a component's event declared with accessors is subscribed and unsubscribed
+  through `x?.E += h` and `x?.E -= h`, with `x` non-null and with `x` null
+- **THEN** a non-null receiver's accessors run as in .NET, and a null receiver subscribes nothing and evaluates the
+  handler never

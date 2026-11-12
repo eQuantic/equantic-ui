@@ -193,16 +193,15 @@ internal sealed class MethodLowering
     /// <param name="declaredType">The emitter's annotation for a declared type.</param>
     /// <param name="asStatic">Emit them as statics whatever the event's modifiers say: a static class's
     /// members are its twin's statics.</param>
-    /// <param name="inAComponent">Whether a component declares the event: its <c>[ServerAction]</c>
-    /// accessor stays on the server, as a <c>[ServerOnly]</c> one does in every type
-    /// (<see cref="Parser.ComponentParser.StaysOnTheServer"/>), and no twin holds it.</param>
-    public IEnumerable<JsClassMember> EventAccessors(EventDeclarationSyntax e, Func<TypeSyntax?, string> declaredType,
-        bool asStatic, bool inAComponent)
+    /// <remarks>An accessor that stays on the server is no member of any twin
+    /// (<see cref="Parser.ComponentParser.StaysOnTheServer"/>): a <c>[ServerOnly]</c> one, and a
+    /// <c>[ServerAction]</c> one where the type that declares the event is a component.</remarks>
+    public IEnumerable<JsClassMember> EventAccessors(EventDeclarationSyntax e, Func<TypeSyntax?, string> declaredType, bool asStatic)
     {
         if (e.AccessorList is null) yield break;
-        var twin = _modelFor(e)?.GetDeclaredSymbol(e) is IEventSymbol symbol
-            ? symbol.MemberTwinName()
-            : e.Identifier.ValueText.ToCamelCase();
+        var symbol = _modelFor(e)?.GetDeclaredSymbol(e) as IEventSymbol;
+        var twin = symbol?.MemberTwinName() ?? e.Identifier.ValueText.ToCamelCase();
+        var inAComponent = symbol?.ContainingType.IsUiComponent() == true;
         var modifiers = asStatic || e.Modifiers.Any(SyntaxKind.StaticKeyword) ? "static " : "";
         var parameter = Param("value", declaredType(e.Type));
         foreach (var accessor in e.AccessorList.Accessors)

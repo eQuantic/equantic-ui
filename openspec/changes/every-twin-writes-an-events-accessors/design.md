@@ -31,8 +31,7 @@ sibling: an accessor-bodied member turned into `JsClassMember`s, "one path for a
 struct and an interface's default", called by each emitter with its own `declaredType`. The new member imitates it:
 
 ```csharp
-public IEnumerable<JsClassMember> EventAccessors(EventDeclarationSyntax e, Func<TypeSyntax?, string> declaredType,
-    bool asStatic, bool inAComponent)
+public IEnumerable<JsClassMember> EventAccessors(EventDeclarationSyntax e, Func<TypeSyntax?, string> declaredType, bool asStatic)
 ```
 
 It yields `$add$<twin>` and `$remove$<twin>` (`CodeGen.EventAccessors.Name`, the twin name from
@@ -65,12 +64,21 @@ crosses is, `ComponentParser.StaysOnTheServer`, which gains a case for an event'
 when it is marked `[ServerOnly]`, in any type, or `[ServerAction]` on a component's, the one type where that
 attribute means a body that never crosses, exactly as for a method. The writer asks it of each accessor, and the
 scans that walk a declaration (`RuntimeProvidedTypeScanner`, `NamedSourceTypes`) stop at it as they stop at a
-`[ServerOnly]` method. That is why the writer takes `inAComponent` again: it decides a `[ServerAction]` accessor.
+`[ServerOnly]` method. Whether the type is a component, which decides a `[ServerAction]` accessor, the writer asks of
+the event's declaring type (`IsUiComponent`), as the subscription's refusal does, rather than each caller saying it.
 
 A subscription from client code that calls such an accessor is refused, EQ2010, as a call of a `[ServerOnly]`
 method is: C# calls the accessor for the code without naming it, as it calls `Dispose` in a `using`, and the call
 would reach a member the browser does not have (`HostOnlySymbolExtensions.ReportIfAccessorStaysOnTheServer`,
 asked by `EventSubscriptionStrategy`). The accessor beside it, unmarked, crosses and runs.
+
+### A null-conditional subscription is a subscription
+
+`s?.Fired += h`, C# 14's null-conditional assignment, reaches `ConditionalAccessStrategy`, never
+`EventSubscriptionStrategy`, and its guarded lowering (`NullConditionalAssignment`) wrote `$t.fired += h`: no event's
+accessors, and no EQ2010 (gate round 2). The lowering of a subscription is one member,
+`EventSubscriptionStrategy.Subscription`, taking the event, the assignment, the composed target and the receiver,
+and the guarded path hands it the value its guard read once (`$t`). The refusal is inside it, so both paths ask it.
 
 ## Risks / Trade-offs
 

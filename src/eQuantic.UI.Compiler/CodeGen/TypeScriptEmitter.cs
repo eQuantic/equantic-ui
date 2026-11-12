@@ -806,7 +806,7 @@ public class TypeScriptEmitter
                 {
                     _converter.SetCurrentClass(component.Name);
                     foreach (var e in withEvents.TwinMembers().OfType<EventDeclarationSyntax>())
-                        foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic: false, inAComponent: true))
+                        foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic: false))
                             c.Member(member, member.Origin?.Member);
                 }
 
@@ -1911,7 +1911,7 @@ public class TypeScriptEmitter
             // Nothing wrote them, so a handler subscribed through an interface landed on a key of the
             // event's name that the accessors never read.
             foreach (var e in cls.TwinMembers().OfType<EventDeclarationSyntax>())
-                foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic, inAComponent: false))
+                foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic))
                     c.Member(member, member.Origin?.Member);
             if (ordered)
             {

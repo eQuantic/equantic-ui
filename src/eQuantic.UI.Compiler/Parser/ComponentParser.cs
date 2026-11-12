@@ -570,7 +570,7 @@ public class ComponentParser
         if (accessor.AttributeLists.Count == 0) return false;
         if (SymbolOf(accessor, model) is { } symbol)
             return PlainClassModule.IsServerOnly(symbol) || inAComponent && PlainClassModule.IsServerAction(symbol);
-        var attributes = accessor.AttributeLists.SelectMany(list => list.Attributes).ToList();
+        var attributes = accessor.AttributeLists.SelectMany(list => list.Attributes);
         return attributes.Any(attribute => attribute.IsNamed("ServerOnly"))
             || inAComponent && attributes.Any(attribute => attribute.IsNamed("ServerAction"));
     }

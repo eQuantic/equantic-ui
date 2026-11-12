@@ -544,7 +544,7 @@ public class RecordTypeEmitter
         // An event declared with accessors, as the methods every subscription to it calls (#1445).
         _converter.SetCurrentClass(name);
         foreach (var e in type.TwinMembers().OfType<EventDeclarationSyntax>())
-            foreach (var member in _lowering.EventAccessors(e, TsTypeOf, asStatic: false, inAComponent: false)) sb.Append(Written(member));
+            foreach (var member in _lowering.EventAccessors(e, TsTypeOf, asStatic: false)) sb.Append(Written(member));
 
         // OPERATOR overloads. JavaScript cannot overload `+`, so the operator becomes a static
         // method and the call site is rewritten to call it — dropping it silently made `a + b` on
