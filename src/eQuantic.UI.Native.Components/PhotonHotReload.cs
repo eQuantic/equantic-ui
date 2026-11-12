@@ -71,11 +71,20 @@ public static class PhotonHotReload
     /// the loops present within a tick and the new bodies draw with all state intact.</summary>
     public static void UpdateApplication(Type[]? updatedTypes)
     {
+        var woken = 0;
         lock (Hosts)
         {
             Hosts.RemoveAll(reference => !reference.TryGetTarget(out _));
             foreach (var reference in Hosts)
-                if (reference.TryGetTarget(out var host)) host.Invalidate();
+            {
+                if (!reference.TryGetTarget(out var host)) continue;
+                host.Invalidate();
+                woken++;
+            }
         }
+        // Said as the edit arrives, as the host says the frame that draws it: an edit that never reached
+        // the window is told apart from one that reached it and was never drawn, which the edit-to-view
+        // measurement could not tell when a window did not draw an edit on CI (#1473).
+        Console.WriteLine($"[eQuantic.HotReload] an edit was applied to {updatedTypes?.Length ?? 0} types, and {woken} windows were woken to draw it");
     }
 }
