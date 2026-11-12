@@ -788,6 +788,21 @@ export class TableScrollRequest {
   }
 }
 
+/** Mirror of the C# `TextReading` (#1333): the text a screen reader hears a surface hold as its field's
+ * value, and the selection in it, its anchor and its focus, in UTF-16 code units of that text. A code
+ * surface's model answers one, and the door writes it. */
+export class TextReading {
+  readonly text: string;
+  readonly anchor: number;
+  readonly focus: number;
+
+  constructor(text = '', anchor = 0, focus = 0) {
+    this.text = text;
+    this.anchor = anchor;
+    this.focus = focus;
+  }
+}
+
 /** Mirror of the C# `ScrollRequest`: an offset a scroll view is asked to go to, honoured once per version. */
 export class ScrollRequest {
   readonly version: number;
@@ -806,6 +821,7 @@ hashesByValue(
   TableOffset,
   TableRange,
   TableScrollRequest,
+  TextReading,
   ScrollRequest,
   SizeValue,
   WebContent,

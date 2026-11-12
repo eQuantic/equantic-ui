@@ -1,6 +1,8 @@
 import { CancellationToken, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeDocument, CodePosition, CodeSnippet, CodeSnippetDefinition } from "../runtime-exports";
 
 export class CodeSnippetCompletionProvider {
+    static $interfaces = ['eQuantic.UI.Code.ICodeCompletionProvider'];
+
     constructor(snippets: CodeSnippetDefinition[]) {
         this._items = [];
         for (const snippet of snippets) {
