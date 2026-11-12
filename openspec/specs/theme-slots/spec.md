@@ -26,15 +26,24 @@ member optional, and a theme that answers no slot SHALL draw every control as be
 - **WHEN** a page renders under `PhotonTheme`
 - **THEN** it renders byte for byte as it did before the slots, since its slots are the ladder
 
-### Requirement: A theme is built from another with one slot replaced
+### Requirement: A theme is built from another with a slot laid over its own
 
-`theme.With(…)` SHALL return a theme with the slots it is given and every other member of the theme it
-wraps, the interface's defaults included, and a further `With` SHALL keep the slots already replaced.
+`theme.With(…)` SHALL return a theme whose every slot it is given is laid over the wrapped theme's, member
+by member: a member the given slot names SHALL win, a member it leaves null SHALL be the wrapped theme's,
+and a member holding a slot record SHALL merge the same way. Every other member of the wrapped theme SHALL
+be forwarded, the interface's defaults included, and a further `With` SHALL keep the slots already laid
+over. Every slot record SHALL carry `Merge(under, over)`, the member-wise merge `With` uses, in C# and in
+its TypeScript twin.
 
 #### Scenario: A theme from Photon with its own button
 
 - **WHEN** an app selects `PhotonTheme.Instance.With(button: new ButtonTheme { MinWidth = 88 })`
 - **THEN** its buttons never shrink below 88, and every other member answers what `PhotonTheme` answers
+
+#### Scenario: One member of a slot the design system fills
+
+- **WHEN** an app selects `MaterialTheme.Instance.With(button: new ButtonTheme { MinWidth = 88 })`
+- **THEN** its buttons never shrink below 88, and keep Material 3's label weight, link padding and ladder
 
 ### Requirement: Every member of the theme reaches the browser
 

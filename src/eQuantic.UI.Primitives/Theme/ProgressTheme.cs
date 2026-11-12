@@ -37,4 +37,23 @@ public sealed record ProgressTheme
 
     /// <summary>The glint that crosses a skeleton (the theme's <see cref="IAppTheme.SurfaceHighlight"/>).</summary>
     public ColorToken? SkeletonHighlight { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/> laid over <paramref name="under"/>, member by member: a member the over
+    /// sets wins, and one it leaves null is the under's. Null only when both are, which is what a theme
+    /// built with <c>With</c> answers for a slot neither theme sets.
+    /// </summary>
+    public static ProgressTheme? Merge(ProgressTheme? under, ProgressTheme? over) =>
+        under is null ? over : over is null ? under : new ProgressTheme
+        {
+            BarHeight = over.BarHeight ?? under.BarHeight,
+            ProminentBarHeight = over.ProminentBarHeight ?? under.ProminentBarHeight,
+            BarShape = over.BarShape ?? under.BarShape,
+            TrackColor = over.TrackColor ?? under.TrackColor,
+            RefreshSpinner = over.RefreshSpinner ?? under.RefreshSpinner,
+            SkeletonLineHeight = over.SkeletonLineHeight ?? under.SkeletonLineHeight,
+            SkeletonShape = over.SkeletonShape ?? under.SkeletonShape,
+            SkeletonFill = over.SkeletonFill ?? under.SkeletonFill,
+            SkeletonHighlight = over.SkeletonHighlight ?? under.SkeletonHighlight,
+        };
 }

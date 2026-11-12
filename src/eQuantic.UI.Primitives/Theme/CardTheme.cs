@@ -25,4 +25,19 @@ public sealed record CardTheme
 
     /// <summary>An elevated card's border: none in light, the theme's border in dark.</summary>
     public ColorToken? ElevatedBorderColor { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/> laid over <paramref name="under"/>, member by member: a member the over
+    /// sets wins, and one it leaves null is the under's. Null only when both are, which is what a theme
+    /// built with <c>With</c> answers for a slot neither theme sets.
+    /// </summary>
+    public static CardTheme? Merge(CardTheme? under, CardTheme? over) =>
+        under is null ? over : over is null ? under : new CardTheme
+        {
+            Shape = over.Shape ?? under.Shape,
+            BorderWidth = over.BorderWidth ?? under.BorderWidth,
+            Elevation = over.Elevation ?? under.Elevation,
+            FilledColor = over.FilledColor ?? under.FilledColor,
+            ElevatedBorderColor = over.ElevatedBorderColor ?? under.ElevatedBorderColor,
+        };
 }

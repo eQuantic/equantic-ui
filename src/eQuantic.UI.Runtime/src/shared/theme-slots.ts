@@ -22,6 +22,11 @@ export class SizeLadder {
   constructor(config?: Partial<SizeLadder>) {
     if (config) Object.assign(this, config);
   }
+
+  /** C# `SizeLadder.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: SizeLadder | null, over: SizeLadder | null): SizeLadder | null {
+    return mergeSlot(under, over);
+  }
 }
 
 /** A `SizeLadder` per density: both ride, since the density is the browser's to report. */
@@ -31,6 +36,11 @@ export class DensityLadder {
 
   constructor(config?: Partial<DensityLadder>) {
     if (config) Object.assign(this, config);
+  }
+
+  /** C# `DensityLadder.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: DensityLadder | null, over: DensityLadder | null): DensityLadder | null {
+    return mergeSlot(under, over);
   }
 }
 
@@ -45,6 +55,11 @@ export class ControlsTheme {
 
   constructor(config?: Partial<ControlsTheme>) {
     if (config) Object.assign(this, config);
+  }
+
+  /** C# `ControlsTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: ControlsTheme | null, over: ControlsTheme | null): ControlsTheme | null {
+    return mergeSlot(under, over);
   }
 }
 
@@ -62,6 +77,37 @@ export class ButtonTheme {
   constructor(config?: Partial<ButtonTheme>) {
     if (config) Object.assign(this, config);
   }
+
+  /** C# `ButtonTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: ButtonTheme | null, over: ButtonTheme | null): ButtonTheme | null {
+    return mergeSlot(under, over);
+  }
+}
+
+/** The slot records a merge recurses into: a member holding one is merged member by member, as the C#
+ * `Merge` of the record that holds it does. A family adds its records here. */
+export const slotClasses = new Set<unknown>([SizeLadder, DensityLadder, ControlsTheme, ButtonTheme]);
+
+/**
+ * The twin of every slot record's C# `Merge`: `over`'s members laid over `under`'s. A member `over`
+ * names wins, one it leaves null is `under`'s, and a member holding a slot record merges the same way.
+ * Null when both are. A colour, insets or a type style is a value and is taken whole.
+ */
+export function mergeSlot<T extends object>(under: T | null | undefined, over: T | null | undefined): T | null {
+  if (over == null) return under ?? null;
+  if (under == null) return over;
+  const merged = new (over.constructor as new () => T)() as unknown as Record<string, unknown>;
+  const below = under as unknown as Record<string, unknown>;
+  const above = over as unknown as Record<string, unknown>;
+  for (const key of new Set([...Object.keys(below), ...Object.keys(above)])) {
+    const a = below[key];
+    const b = above[key];
+    merged[key] =
+      a != null && b != null && typeof b === 'object' && slotClasses.has((b as object).constructor)
+        ? mergeSlot(a as object, b as object)
+        : (b ?? a ?? null);
+  }
+  return merged as unknown as T;
 }
 
 /** The modal surfaces' slot: Dialog, BottomSheet and Drawer (E6c, #1243). */
@@ -87,6 +133,11 @@ export class ModalTheme {
   constructor(config?: Partial<ModalTheme>) {
     if (config) Object.assign(this, config);
   }
+
+  /** C# `ModalTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: ModalTheme | null, over: ModalTheme | null): ModalTheme | null {
+    return mergeSlot(under, over);
+  }
 }
 
 /** The menus' slot: Popover, Menu and Tooltip (E6c, #1243). */
@@ -106,6 +157,11 @@ export class MenuTheme {
 
   constructor(config?: Partial<MenuTheme>) {
     if (config) Object.assign(this, config);
+  }
+
+  /** C# `MenuTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: MenuTheme | null, over: MenuTheme | null): MenuTheme | null {
+    return mergeSlot(under, over);
   }
 }
 
@@ -136,6 +192,11 @@ export class NoticeTheme {
   constructor(config?: Partial<NoticeTheme>) {
     if (config) Object.assign(this, config);
   }
+
+  /** C# `NoticeTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: NoticeTheme | null, over: NoticeTheme | null): NoticeTheme | null {
+    return mergeSlot(under, over);
+  }
 }
 
 /** The Card's slot (E6c, #1243). */
@@ -148,6 +209,11 @@ export class CardTheme {
 
   constructor(config?: Partial<CardTheme>) {
     if (config) Object.assign(this, config);
+  }
+
+  /** C# `CardTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: CardTheme | null, over: CardTheme | null): CardTheme | null {
+    return mergeSlot(under, over);
   }
 }
 
@@ -165,6 +231,11 @@ export class ProgressTheme {
 
   constructor(config?: Partial<ProgressTheme>) {
     if (config) Object.assign(this, config);
+  }
+
+  /** C# `ProgressTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: ProgressTheme | null, over: ProgressTheme | null): ProgressTheme | null {
+    return mergeSlot(under, over);
   }
 }
 
@@ -369,8 +440,9 @@ export const slotBuilders: Record<string, (data: SlotData) => unknown> = {
 
 /**
  * The twin of C# `AppThemeExtensions`, as the static home its extension lowers to (`theme.With(…)` is
- * `AppThemeExtensions.with(theme, …)`, the receiver first): the theme with a slot replaced and every
- * other member forwarded, its defaults included, as `OverriddenTheme` does.
+ * `AppThemeExtensions.with(theme, …)`, the receiver first): the theme with each slot it is given laid over
+ * its own, member by member (`mergeSlot`), and every other member forwarded, its defaults included, as
+ * `OverriddenTheme` does.
  */
 export class AppThemeExtensions {
   static with(
@@ -383,11 +455,23 @@ export class AppThemeExtensions {
     progress: ProgressTheme | null = null,
     card: CardTheme | null = null,
   ): AppTheme {
-    const replaced: Record<string, unknown> = { controls, button, modal, menu, notice, progress, card };
+    // A map, so a slot's name is never confused with a member every object inherits; each merge once.
+    const given = new Map<PropertyKey, object | null>([
+      ['controls', controls],
+      ['button', button],
+      ['modal', modal],
+      ['menu', menu],
+      ['notice', notice],
+      ['progress', progress],
+      ['card', card],
+    ]);
+    const merged = new Map<PropertyKey, unknown>();
     return new Proxy(theme, {
       get(target, key) {
-        if (typeof key === 'string' && key in replaced)
-          return replaced[key] ?? (target as unknown as Record<string, unknown>)[key] ?? null;
+        if (given.has(key)) {
+          if (!merged.has(key)) merged.set(key, mergeSlot(Reflect.get(target, key, target) as object | null, given.get(key)));
+          return merged.get(key);
+        }
         const value = Reflect.get(target, key, target);
         return typeof value === 'function' ? value.bind(target) : value;
       },

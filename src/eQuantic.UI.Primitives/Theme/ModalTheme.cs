@@ -63,4 +63,31 @@ public sealed record ModalTheme
 
     /// <summary>Inside the drawer (16 all round).</summary>
     public EdgeInsets? DrawerPadding { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/> laid over <paramref name="under"/>, member by member: a member the over
+    /// sets wins, and one it leaves null is the under's. Null only when both are, which is what a theme
+    /// built with <c>With</c> answers for a slot neither theme sets.
+    /// </summary>
+    public static ModalTheme? Merge(ModalTheme? under, ModalTheme? over) =>
+        under is null ? over : over is null ? under : new ModalTheme
+        {
+            DialogMaxWidth = over.DialogMaxWidth ?? under.DialogMaxWidth,
+            DialogShape = over.DialogShape ?? under.DialogShape,
+            DialogElevation = over.DialogElevation ?? under.DialogElevation,
+            DialogPadding = over.DialogPadding ?? under.DialogPadding,
+            DialogGap = over.DialogGap ?? under.DialogGap,
+            DialogTextGap = over.DialogTextGap ?? under.DialogTextGap,
+            DialogActionGap = over.DialogActionGap ?? under.DialogActionGap,
+            DialogGutter = over.DialogGutter ?? under.DialogGutter,
+            BottomSheetShape = over.BottomSheetShape ?? under.BottomSheetShape,
+            BottomSheetElevation = over.BottomSheetElevation ?? under.BottomSheetElevation,
+            BottomSheetPadding = over.BottomSheetPadding ?? under.BottomSheetPadding,
+            BottomSheetGap = over.BottomSheetGap ?? under.BottomSheetGap,
+            HandleWidth = over.HandleWidth ?? under.HandleWidth,
+            HandleHeight = over.HandleHeight ?? under.HandleHeight,
+            HandleColor = over.HandleColor ?? under.HandleColor,
+            DrawerElevation = over.DrawerElevation ?? under.DrawerElevation,
+            DrawerPadding = over.DrawerPadding ?? under.DrawerPadding,
+        };
 }

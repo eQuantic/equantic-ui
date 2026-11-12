@@ -47,4 +47,26 @@ public sealed record MenuTheme
 
     /// <summary>A tooltip's words (the theme's <see cref="IAppTheme.TextInverse"/>).</summary>
     public ColorToken? TooltipText { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/> laid over <paramref name="under"/>, member by member: a member the over
+    /// sets wins, and one it leaves null is the under's. Null only when both are, which is what a theme
+    /// built with <c>With</c> answers for a slot neither theme sets.
+    /// </summary>
+    public static MenuTheme? Merge(MenuTheme? under, MenuTheme? over) =>
+        under is null ? over : over is null ? under : new MenuTheme
+        {
+            PanelShape = over.PanelShape ?? under.PanelShape,
+            PanelBorderWidth = over.PanelBorderWidth ?? under.PanelBorderWidth,
+            PanelElevation = over.PanelElevation ?? under.PanelElevation,
+            PopoverPadding = over.PopoverPadding ?? under.PopoverPadding,
+            MenuMinWidth = over.MenuMinWidth ?? under.MenuMinWidth,
+            MenuPadding = over.MenuPadding ?? under.MenuPadding,
+            ItemPadding = over.ItemPadding ?? under.ItemPadding,
+            ItemGap = over.ItemGap ?? under.ItemGap,
+            TooltipShape = over.TooltipShape ?? under.TooltipShape,
+            TooltipPadding = over.TooltipPadding ?? under.TooltipPadding,
+            TooltipFill = over.TooltipFill ?? under.TooltipFill,
+            TooltipText = over.TooltipText ?? under.TooltipText,
+        };
 }

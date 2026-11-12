@@ -265,3 +265,12 @@ eQuantic.UI.Primitives.ButtonTheme.OutlineColor.init -> void
 eQuantic.UI.Primitives.ButtonTheme.QuietFill.get -> eQuantic.UI.Primitives.ColorToken?
 eQuantic.UI.Primitives.ButtonTheme.QuietFill.init -> void
 static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!
+static eQuantic.UI.Primitives.ButtonTheme.Merge(eQuantic.UI.Primitives.ButtonTheme? under, eQuantic.UI.Primitives.ButtonTheme? over) -> eQuantic.UI.Primitives.ButtonTheme?
+static eQuantic.UI.Primitives.ControlsTheme.Merge(eQuantic.UI.Primitives.ControlsTheme? under, eQuantic.UI.Primitives.ControlsTheme? over) -> eQuantic.UI.Primitives.ControlsTheme?
+static eQuantic.UI.Primitives.DensityLadder.Merge(eQuantic.UI.Primitives.DensityLadder? under, eQuantic.UI.Primitives.DensityLadder? over) -> eQuantic.UI.Primitives.DensityLadder?
+static eQuantic.UI.Primitives.SizeLadder.Merge(eQuantic.UI.Primitives.SizeLadder? under, eQuantic.UI.Primitives.SizeLadder? over) -> eQuantic.UI.Primitives.SizeLadder?
+static eQuantic.UI.Primitives.CardTheme.Merge(eQuantic.UI.Primitives.CardTheme? under, eQuantic.UI.Primitives.CardTheme? over) -> eQuantic.UI.Primitives.CardTheme?
+static eQuantic.UI.Primitives.MenuTheme.Merge(eQuantic.UI.Primitives.MenuTheme? under, eQuantic.UI.Primitives.MenuTheme? over) -> eQuantic.UI.Primitives.MenuTheme?
+static eQuantic.UI.Primitives.ModalTheme.Merge(eQuantic.UI.Primitives.ModalTheme? under, eQuantic.UI.Primitives.ModalTheme? over) -> eQuantic.UI.Primitives.ModalTheme?
+static eQuantic.UI.Primitives.NoticeTheme.Merge(eQuantic.UI.Primitives.NoticeTheme? under, eQuantic.UI.Primitives.NoticeTheme? over) -> eQuantic.UI.Primitives.NoticeTheme?
+static eQuantic.UI.Primitives.ProgressTheme.Merge(eQuantic.UI.Primitives.ProgressTheme? under, eQuantic.UI.Primitives.ProgressTheme? over) -> eQuantic.UI.Primitives.ProgressTheme?

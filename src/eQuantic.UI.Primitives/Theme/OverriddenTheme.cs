@@ -1,7 +1,7 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// The theme <see cref="AppThemeExtensions.With"/> answers: the slots it was given, and every other member of the
+/// The theme <see cref="AppThemeExtensions.With"/> answers: the slots it was given laid over the wrapped theme's, and every other member of the
 /// theme it wraps, forwarded. Every member is declared here, the interface's defaults included, so the
 /// wrapped theme answers each one as it would alone; <c>OverriddenThemeTests</c> fails on a member of
 /// <see cref="IAppTheme"/> this class leaves to the interface.
@@ -35,12 +35,13 @@ internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, 
     public float DisabledOpacity => inner.DisabledOpacity;
     public DataPalette Data => inner.Data;
     public SheetTheme? Sheet => inner.Sheet;
-    public ControlsTheme? Controls => controls ?? inner.Controls;
-    public ButtonTheme? Button => button ?? inner.Button;
-    public ModalTheme? Modal => modal ?? inner.Modal;
-    public MenuTheme? Menu => menu ?? inner.Menu;
-    public NoticeTheme? Notice => notice ?? inner.Notice;
-    public ProgressTheme? Progress => progress ?? inner.Progress;
-    public CardTheme? Card => card ?? inner.Card;
+    // A slot it was given is laid over the wrapped theme's, member by member, once.
+    public ControlsTheme? Controls => field ??= ControlsTheme.Merge(inner.Controls, controls);
+    public ButtonTheme? Button => field ??= ButtonTheme.Merge(inner.Button, button);
+    public ModalTheme? Modal => field ??= ModalTheme.Merge(inner.Modal, modal);
+    public MenuTheme? Menu => field ??= MenuTheme.Merge(inner.Menu, menu);
+    public NoticeTheme? Notice => field ??= NoticeTheme.Merge(inner.Notice, notice);
+    public ProgressTheme? Progress => field ??= ProgressTheme.Merge(inner.Progress, progress);
+    public CardTheme? Card => field ??= CardTheme.Merge(inner.Card, card);
     public ColorToken Code(CodeTokenKind kind) => inner.Code(kind);
 }
