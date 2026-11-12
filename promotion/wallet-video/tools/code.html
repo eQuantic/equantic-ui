@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; background: transparent; }
+  body { width: 940px; }
+  .card {
+    width: 940px; height: 500px; box-sizing: border-box;
+    background: #111722; border: 2px solid #2B3443; border-radius: 22px; overflow: hidden;
+    font-family: "SF Mono", Menlo, Monaco, monospace;
+  }
+  .bar { height: 62px; display: flex; align-items: center; padding: 0 22px; gap: 9px; border-bottom: 2px solid #1E2633; background: #151C28; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; }
+  .name { margin-left: 14px; color: #8D98A8; font-size: 22px; font-family: -apple-system, "Helvetica Neue", sans-serif; font-weight: 500; }
+  pre { margin: 0; padding: 36px 0 36px 44px; font-size: 29px; line-height: 52px; color: #D4D4D4; font-family: inherit; }
+  .k { color: #569CD6; } .t { color: #4EC9B0; } .m { color: #DCDCAA; } .s { color: #CE9178; } .v { color: #9CDCFE; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="bar"><span class="dot" style="background:#FF5F57"></span><span class="dot" style="background:#FEBC2E"></span><span class="dot" style="background:#28C840"></span><span class="name">WalletApp.cs</span></div>
+<pre><span class="k">var</span> <span class="v">content</span> = <span class="k">new</span> <span class="t">Column</span>(<span class="v">gap</span>: <span class="t">Space</span>.S4);
+<span class="v">content</span>.<span class="m">Add</span>(<span class="m">BalanceCard</span>(<span class="v">theme</span>));
+<span class="v">content</span>.<span class="m">Add</span>(<span class="v">filters</span>);
+<span class="v">content</span>.<span class="m">Add</span>(<span class="m">EntryCard</span>(<span class="v">theme</span>, <span class="v">_ledger</span>.Recent));
+<span class="v">content</span>.<span class="m">Add</span>(<span class="k">new</span> <span class="t">Banner</span>(<span class="t">Variant</span>.Warning,
+    <span class="s">"Limit almost reached"</span>,
+    <span class="s">"92% of April's transfer limit used."</span>));</pre>
+</div>
+</body>
+</html>

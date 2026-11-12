@@ -297,3 +297,4 @@ eQuantic.UI.Primitives.SegmentedTheme.TrackBorderColor.get -> eQuantic.UI.Primit
 eQuantic.UI.Primitives.SegmentedTheme.TrackBorderColor.init -> void
 eQuantic.UI.Primitives.SegmentedTheme.TrackBorderWidth.get -> float?
 eQuantic.UI.Primitives.SegmentedTheme.TrackBorderWidth.init -> void
+static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!
