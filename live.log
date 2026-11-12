@@ -7,3 +7,13 @@
  2288  16.6  42688 dotnet
   135  10.8  32080 /usr/libexec/dasd
   991  10.5  41472 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd4166047580
+=== alive 13:54:58 app: 2354 watch: 
+--- sample 13:55:05 load: { 30.70 32.90 15.60 } System-wide memory free percentage: 83%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2288 dotnet run --no-build --project samples/PhotonDesktop
+2354 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 2547  84.9  10288 /System/Cryptexes/App/usr/libexec/SafariBookmarksSyncAgent
+ 1204  33.2  59776 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
+ 2546  22.7   9200 /System/Cryptexes/App/usr/libexec/PasswordBreachAgent
+ 1963  19.9 875504 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+  385  15.9  85872 /System/Library/PrivateFrameworks/VoiceShortcuts.framework/Versions/A/Support/siriactionsd
