@@ -124,6 +124,16 @@ page's culture there, as .NET reads the current one.
 |---|---|---|
 | `EQ2115` | An inline handler of the escape hatch in an app that turned on the Content-Security-Policy: `HtmlElement.OnClientClick` or `OnLoad`, or a `DynamicElement.CustomAttributes` key that starts with `on`. They write JavaScript as text into an `onclick` or an `onload`, and a strict policy refuses every inline handler in the browser, wherever the markup was written. Read in every source of the build, the projects the app references included. | Handle the event in C#: an `OnClick`, or an entry of `CustomEvents`, which the runtime attaches as a listener. |
 
+## EQ2116 — an app's own service in the browser
+
+A component that takes an app's own service through its constructor gets it in the browser from the
+app's registration in `Program.cs`, built as the container builds it (#1335). The build refuses the
+cases where the browser would have nothing to resolve, instead of the page failing at hydration.
+
+| Code | Meaning | What to do |
+|---|---|---|
+| `EQ2116` | A service the browser resolves cannot be built there: a component needs an app service that `Program.cs` does not register (`AddSingleton`, `AddScoped`, `AddTransient` or their `TryAdd` forms), or registers only as something the server runs (a factory, an instance), or registers more than once; or its implementation has no public constructor, takes a parameter no container provides, has two public constructors of the most parameters, which the container cannot choose between, or depends on itself through its own registrations; or the app declares two interfaces of one name, which the browser's container, keyed by the name, cannot tell apart. Read in the app's sources and the projects it references. | Register the class itself, `builder.Services.AddSingleton<IService, Service>()`, once; give a constructor parameter that is not a service a default; or declare the component's parameter as `IService?` when it can work without it. |
+
 ## EQ3001–EQ3007 — the Photon app generator
 
 | Code | Meaning |
