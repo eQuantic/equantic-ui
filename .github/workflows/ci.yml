@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [watch, plain]
+        mode: [watch-noedit, plain-modifiable]
         attempt: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
@@ -48,17 +48,15 @@ jobs:
           ) &
           shipper=$!
           status=0
-          if [ "${{ matrix.mode }}" = "plain" ]; then
-            echo "=== plain run $(date -u +%H:%M:%S)" | tee -a "$live"
-            dotnet run --no-build --project samples/PhotonDesktop >> "$live" 2>&1 &
-            app=$!
-            for t in $(seq 1 18); do sleep 10; echo "=== alive $(date -u +%H:%M:%S) app running: $(pgrep -x PhotonDesktop | head -1)" | tee -a "$live"; done
-            kill $app || true; pkill -x PhotonDesktop || true
+          if [ "${{ matrix.mode }}" = "plain-modifiable" ]; then
+            echo "=== plain-modifiable run $(date -u +%H:%M:%S)" | tee -a "$live"
+            DOTNET_MODIFIABLE_ASSEMBLIES=debug dotnet run --no-build --project samples/PhotonDesktop >> "$live" 2>&1 &
           else
-            for round in 1 2 3; do
-              echo "=== round $round $(date -u +%H:%M:%S)" | tee -a "$live"
-              dotnet run scripts/measure-edit-to-view.cs -- desktop --runs 6 2>&1 | tee -a "$live" || status=1
-            done
+            echo "=== watch-noedit run $(date -u +%H:%M:%S)" | tee -a "$live"
+            DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=1 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile >> "$live" 2>&1 &
           fi
+          app=$!
+          for t in $(seq 1 24); do sleep 10; echo "=== alive $(date -u +%H:%M:%S) app: $(pgrep -x PhotonDesktop | head -1) watch: $(pgrep -f 'dotnet watch' | head -1)" | tee -a "$live"; done
+          kill $app || true; pkill -x PhotonDesktop || true; pkill -f 'dotnet watch' || true
           kill $shipper || true
           exit $status
