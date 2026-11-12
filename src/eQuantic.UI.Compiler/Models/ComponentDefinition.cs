@@ -241,6 +241,10 @@ public class StateField
     /// <summary>True for <c>static</c>/<c>const</c> fields — emitted as a <c>static</c> class member and
     /// referenced as <c>ClassName.field</c> rather than <c>this.field</c>.</summary>
     public bool IsStatic { get; set; }
+    /// <summary>The name the twin holds the field under (<c>FieldSlotExtensions.TwinSlot</c>): a static's
+    /// moves to <c>name$</c> a case apart from a static member of its name (#1175), and an instance
+    /// field's never moves, its name being the one the server hydrates.</summary>
+    public string Slot { get; set; } = string.Empty;
 }
 
 /// <summary>

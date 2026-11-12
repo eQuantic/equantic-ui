@@ -60,6 +60,8 @@ coverage/
 # source twice without anything noticing (#273); untracked, it cannot. Its map is written with it (#1108).
 src/eQuantic.UI.Server/wwwroot/runtime.js
 src/eQuantic.UI.Server/wwwroot/runtime.js.map
+src/eQuantic.UI.Server/wwwroot/runtime.dev.js
+src/eQuantic.UI.Server/wwwroot/runtime.dev.js.map
 
 # Playwright e2e output
 tests/e2e/playwright-report/

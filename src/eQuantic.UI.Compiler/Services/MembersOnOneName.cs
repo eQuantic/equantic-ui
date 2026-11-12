@@ -29,7 +29,8 @@ namespace eQuantic.UI.Compiler.Services;
 /// <para>
 /// So every member the twin holds is put on its key, as the emitters write it: a field in its slot
 /// (<see cref="FieldSlotExtensions.TwinSlot"/>, which moves a plain class's field out of a member's way,
-/// #396), a method under <see cref="TwinMethodName"/> (a method that hides a member holds a name of its
+/// #396, and a static field of any type out of a static member's, #1175, so the field of the first pair
+/// above stands now), a method under <see cref="TwinMethodName"/> (a method that hides a member holds a name of its
 /// own, #563), a property, an event and a held primary constructor's parameter camelCased, an operator
 /// and a conversion under the static the twin calls, an extension block's members as statics of the
 /// class. The two accessors of a property are one member, and so are the two halves of a partial property
@@ -200,7 +201,8 @@ internal static class MembersOnOneName
             yield return new(held.ToCamelCase(), false, $"{name}({held})", parameter.Identifier, Held: true);
         }
 
-        foreach (var member in type.Members)
+        // A partial member's defining half is the member its implementing half declares (#1172).
+        foreach (var member in type.TwinMembers())
         {
             switch (member)
             {
@@ -212,8 +214,7 @@ internal static class MembersOnOneName
                             IsStatic(field), $"{name}.{variable.Identifier.ValueText}", variable.Identifier, Held: true);
                     break;
 
-                // The defining half of a partial event is the event its implementing half declares.
-                case EventFieldDeclarationSyntax handler when !handler.Modifiers.Any(SyntaxKind.PartialKeyword):
+                case EventFieldDeclarationSyntax handler:
                     foreach (var variable in handler.Declaration.Variables)
                         yield return new(variable.Identifier.ValueText.ToCamelCase(), IsStatic(handler),
                             $"{name}.{variable.Identifier.ValueText}", variable.Identifier, Held: true);
@@ -224,8 +225,7 @@ internal static class MembersOnOneName
                         $"{name}.{handler.Identifier.ValueText}", handler.Identifier, Held: false);
                     break;
 
-                case PropertyDeclarationSyntax { ExplicitInterfaceSpecifier: null } property
-                    when !DefinesAPartial(property, ownModel):
+                case PropertyDeclarationSyntax { ExplicitInterfaceSpecifier: null } property:
                     yield return new(property.Identifier.ValueText.ToCamelCase(), IsStatic(property),
                         $"{name}.{property.Identifier.ValueText}", property.Identifier, Held: PropertyStore.IsAuto(property));
                     break;
@@ -272,14 +272,6 @@ internal static class MembersOnOneName
             }
         }
     }
-
-    /// <summary>The defining half of a partial property, which is the property its implementing half
-    /// declares, as a partial method's two halves are one method: asked of the model, and of the syntax
-    /// where there is none, the half whose accessors have no body.</summary>
-    private static bool DefinesAPartial(PropertyDeclarationSyntax property, SemanticModel? model) =>
-        model?.GetDeclaredSymbol(property) is IPropertySymbol symbol
-            ? symbol.IsPartialDefinition
-            : property.Modifiers.Any(SyntaxKind.PartialKeyword) && PropertyStore.IsAuto(property);
 
     /// <summary>
     /// Whether the twin holds a primary constructor's parameter on each instance as a member of its own,
