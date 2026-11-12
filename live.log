@@ -177,3 +177,16 @@ dotnet watch ⌚ Waiting for changes
  5633  10.4  30960 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
   114   9.6  57968 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
  5632   9.4  30960 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+=== alive 13:51:07 app: 2474 watch: 2290
+=== alive 13:51:17 app: 2474 watch: 2290
+--- sample 13:51:23 load: { 10.87 23.05 13.80 } System-wide memory free percentage: 79%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2290 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+2308 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+2441 /Users/runner/.dotnet/dotnet run --no-build -e DOTNET_WATCH=1 -e DOTNET_WATCH_ITERATION=1 -e DOTNET_MODIFIABLE_ASSE
+2474 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  169  95.9  56944 /usr/libexec/mobileassetd
+  347  57.4  47168 /usr/libexec/secinitd
+  363  46.0  72736 /System/Library/CoreServices/iconservicesagent
+  973  10.8  42576 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd3259508295
+ 1127   5.8   6624 /usr/libexec/sysmond
