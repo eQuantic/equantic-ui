@@ -42,23 +42,9 @@ namespace eQuantic.UI.Web;
 /// </summary>
 public sealed class ComponentExpansionScope
 {
-    private static readonly System.Threading.AsyncLocal<ComponentExpansionScope?> Current = new();
-
     private readonly Dictionary<string, int> _ordinals = new(StringComparer.Ordinal);
     private readonly Dictionary<string, UiComponent> _expanded = new(StringComparer.Ordinal);
     private readonly HashSet<string> _replaced = new(StringComparer.Ordinal);
-
-    /// <summary>
-    /// The render-scoped ambient scope, armed by the SSR pipeline around an expansion and null
-    /// everywhere else — the same shape <see cref="StyleSink.Ambient"/> uses, and for the same
-    /// reason: a component deep in the tree contributes to one per-page collection without every
-    /// visit signature growing a parameter.
-    /// </summary>
-    public static ComponentExpansionScope? Ambient
-    {
-        get => Current.Value;
-        set => Current.Value = value;
-    }
 
     /// <summary>What each key LOADED in an earlier round, to be put back as that component is
     /// reached again. The server's discovery loop fills this, because a rebuild constructs new
