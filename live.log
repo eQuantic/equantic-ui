@@ -50,3 +50,72 @@
   382  22.0  70496 /System/Library/PrivateFrameworks/VoiceShortcuts.framework/Versions/A/Support/siriactionsd
  1174  20.0   6320 /usr/libexec/sysmond
   disk:    16.46 1066 17.14     0.00    0  0.00     6.35   16  0.10 
+[watch 19:27:44.174] dotnet watch : Loaded 21 project(s) in 2.8s.
+[watch 19:27:46.272] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Codegen/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Codegen/eQuantic.UI.Codegen.csproj'
+[watch 19:27:46.272] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Codegen/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Codegen/eQuantic.UI.Codegen.csproj'
+[watch 19:27:46.279] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Primitives/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj'
+[watch 19:27:46.279] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Primitives/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj'
+[watch 19:27:46.283] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Components/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Components/eQuantic.UI.Components.csproj'
+[watch 19:27:46.283] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Components/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Components/eQuantic.UI.Components.csproj'
+[watch 19:27:46.286] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Code/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Code/eQuantic.UI.Code.csproj'
+[watch 19:27:46.286] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Code/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Code/eQuantic.UI.Code.csproj'
+[watch 19:27:46.289] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Components/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Components/eQuantic.UI.Native.Components.csproj'
+[watch 19:27:46.289] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Components/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Components/eQuantic.UI.Native.Components.csproj'
+[watch 19:27:46.291] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine/eQuantic.UI.Native.Engine.csproj'
+[watch 19:27:46.291] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine/eQuantic.UI.Native.Engine.csproj'
+[watch 19:27:46.293] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Framework/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Framework/eQuantic.UI.Native.Framework.csproj'
+[watch 19:27:46.293] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Framework/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Framework/eQuantic.UI.Native.Framework.csproj'
+[watch 19:27:46.299] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Reference/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Reference/eQuantic.UI.Native.Engine.Reference.csproj'
+[watch 19:27:46.299] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Reference/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Reference/eQuantic.UI.Native.Engine.Reference.csproj'
+[watch 19:27:46.304] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Apple/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Apple/eQuantic.UI.Native.Shell.Apple.csproj'
+[watch 19:27:46.304] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Apple/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Apple/eQuantic.UI.Native.Shell.Apple.csproj'
+[watch 19:27:46.316] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Windows/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Windows/eQuantic.UI.Native.Shell.Windows.csproj'
+[watch 19:27:46.316] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Windows/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.Windows/eQuantic.UI.Native.Shell.Windows.csproj'
+[watch 19:27:46.320] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Hosting/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Hosting/eQuantic.UI.Native.Hosting.csproj'
+[watch 19:27:46.320] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Hosting/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Hosting/eQuantic.UI.Native.Hosting.csproj'
+[watch 19:27:46.325] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Vulkan/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Vulkan/eQuantic.UI.Native.Engine.Vulkan.csproj'
+[watch 19:27:46.325] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Vulkan/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Vulkan/eQuantic.UI.Native.Engine.Vulkan.csproj'
+[watch 19:27:46.354] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sheet/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sheet/eQuantic.UI.Sheet.csproj'
+[watch 19:27:46.355] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sheet/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Sheet/eQuantic.UI.Sheet.csproj'
+[watch 19:27:46.358] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Charts/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Charts/eQuantic.UI.Charts.csproj'
+[watch 19:27:46.359] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Charts/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Charts/eQuantic.UI.Charts.csproj'
+[watch 19:27:46.363] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Spreadsheets/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Spreadsheets/eQuantic.UI.Spreadsheets.csproj'
+[watch 19:27:46.364] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Spreadsheets/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Spreadsheets/eQuantic.UI.Spreadsheets.csproj'
+[watch 19:27:46.364] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.MacOS/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.MacOS/eQuantic.UI.Native.Shell.MacOS.csproj'
+[watch 19:27:46.364] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.MacOS/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Shell.MacOS/eQuantic.UI.Native.Shell.MacOS.csproj'
+[watch 19:27:46.368] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Metal/PublicAPI.Shipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Metal/eQuantic.UI.Native.Engine.Metal.csproj'
+[watch 19:27:46.368] dotnet watch : msbuild: [Warning] Duplicate source file '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Metal/PublicAPI.Unshipped.txt' in project '/Users/runner/work/equantic-ui/equantic-ui/src/eQuantic.UI.Native.Engine.Metal/eQuantic.UI.Native.Engine.Metal.csproj'
+[watch 19:27:47.955] dotnet watch : Waiting for changes
+[watch 19:27:53.197] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:27:54.320] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:27:54.339] dotnet watch : C# and Razor changes applied in 1115ms.
+[watch 19:27:54.394] [eQuantic.HotReload] drew the edit 77ms after it was applied
+desktop run 1 (cold): total 1348ms, delta 1271ms, frame 77ms
+[watch 19:27:56.592] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:27:56.764] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:27:56.764] dotnet watch : C# and Razor changes applied in 170ms.
+[watch 19:27:56.783] [eQuantic.HotReload] drew the edit 19ms after it was applied
+desktop run 2: total 252ms, delta 233ms, frame 19ms
+[watch 19:27:59.017] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:27:59.188] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:27:59.188] dotnet watch : C# and Razor changes applied in 167ms.
+[watch 19:27:59.294] [eQuantic.HotReload] drew the edit 107ms after it was applied
+desktop run 3: total 393ms, delta 286ms, frame 107ms
+--- sample 19:28:00 load: { 33.30 39.61 19.38 } System-wide memory free percentage: 80%
+156 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2407 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+2408 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+2738 /Users/runner/.dotnet/dotnet run --no-build -e DOTNET_WATCH=1 -e DOTNET_WATCH_ITERATION=1 -e DOTNET_MODIFIABLE_ASSE
+2742 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  app 2742: 75 MB  10 MB 0 B 384 KB 594 IOAccelerator (graphics)
+ 2408  97.3 430672 /Users/runner/.dotnet/dotnet
+ 1513  32.7  51424 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
+  382   9.0  89040 /System/Library/PrivateFrameworks/VoiceShortcuts.framework/Versions/A/Support/siriactionsd
+ 1174   7.7   6464 /usr/libexec/sysmond
+ 2915   2.6   7216 /usr/libexec/taskgated
+[watch 19:28:01.457] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:28:01.579] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:28:01.579] dotnet watch : C# and Razor changes applied in 121ms.
+[watch 19:28:01.677] [eQuantic.HotReload] drew the edit 98ms after it was applied
+desktop run 4: total 337ms, delta 239ms, frame 98ms
+  disk:    18.77  168  3.09     0.00    0  0.00     0.00    0  0.00 
