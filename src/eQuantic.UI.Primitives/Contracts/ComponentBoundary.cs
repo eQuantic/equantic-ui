@@ -152,8 +152,13 @@ public static class ComponentBoundary
     /// what <see cref="ExpandContained"/> answers, with the depth read from the tree instead of
     /// counted by a walk. The element engine builds each position on its own, outside its parent's
     /// expansion, so there is no walk to count, and the tree knows the nesting anyway.
+    /// <para>
+    /// It is what <see cref="Owner"/> and <see cref="StructuralOwner"/> hand the engine, and public for
+    /// a host that composes its own build around it: the web's (<c>MarkupHost</c>) notes which
+    /// component asked its measurer while it built, which hydration's unmeasured mark is made of.
+    /// </para>
     /// </summary>
-    internal static VisualNode BuildAtDepth(UiComponent component, ComponentContext context, int depth) =>
+    public static VisualNode BuildAtDepth(UiComponent component, ComponentContext context, int depth) =>
         depth >= MaxDepth
             ? Contain(component, Exceeded(component), context)
             : BuildContained(component, context);
