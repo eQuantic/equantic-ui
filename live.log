@@ -1,0 +1,9 @@
+=== plain-modifiable run 13:43:07
+--- sample 13:43:07 load: { 68.05 53.50 24.07 } System-wide memory free percentage: 82%
+156 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2235 dotnet run --no-build --project samples/PhotonDesktop
+ 1925  33.1 923648 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+   90  25.5  12640 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+  877  17.2  71808 /System/Library/PrivateFrameworks/SiriInference.framework/Versions/A/siriinferenced
+ 1703  17.0  31424 /usr/sbin/spindump
+  135  13.9  32144 /usr/libexec/dasd
