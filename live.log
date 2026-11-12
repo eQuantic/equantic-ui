@@ -1,0 +1,8 @@
+=== round 1 10:01:09
+--- sample 10:01:09 load: { 34.84 30.61 13.96 } System-wide memory free percentage: 83%
+155 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+ 1972  77.7 901392 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+   90  36.5  12432 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+ 1752  26.4  36864 /usr/sbin/spindump
+  114  16.1  42992 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+  383   9.8  71712 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
