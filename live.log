@@ -228,3 +228,16 @@ dotnet watch ⌚ Waiting for changes
  7617  37.5  31312 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
  7338  22.1  35232 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
   114  16.2  67392 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+=== alive 13:52:18 app: 2474 watch: 2290
+=== alive 13:52:28 app: 2474 watch: 2290
+--- sample 13:52:31 load: { 10.85 20.64 13.62 } System-wide memory free percentage: 77%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2290 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+2308 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+2441 /Users/runner/.dotnet/dotnet run --no-build -e DOTNET_WATCH=1 -e DOTNET_WATCH_ITERATION=1 -e DOTNET_MODIFIABLE_ASSE
+2474 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  510  59.9 532976 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  973  34.6  42448 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd3259508295
+  490   4.2  66992 /System/Applications/Weather.app/Contents/PlugIns/WeatherWidget.appex/Contents/MacOS/WeatherWidget
+  165   1.1  18368 /usr/libexec/runningboardd
+ 7694   1.0  32704 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
