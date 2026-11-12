@@ -247,14 +247,10 @@ import {
   typeInitialization,
 } from './utils/exceptions';
 import {
-  isDefined as enumIsDefined,
   declaredNames as enumNames,
-  name as enumName,
   parse as enumParse,
   text as enumText,
   tryParse as enumTryParse,
-  unbox as enumUnbox,
-  values as enumValues,
   zero as enumZero,
 } from './utils/enums';
 import { closing, closingLike, sameClosure } from './utils/closures';
@@ -273,6 +269,16 @@ import {
   throwIfZero,
 } from './utils/guards';
 import { implementsInterface, named as namedType, of as typeOfValue, same as sameType } from './utils/runtime-types';
+import {
+  box,
+  isBoxOf,
+  isDefined as enumIsDefined,
+  name as enumName,
+  unbox,
+  unboxEnum as enumUnbox,
+  values as enumValues,
+} from './utils/box';
+import { anonymousObject, asReference } from './utils/marks';
 import { lockGate, newObject } from './utils/net-object';
 import { provideService, resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
@@ -344,6 +350,16 @@ export const or = (left: boolean, right: boolean): boolean => left || right;
 export const and = (left: boolean, right: boolean): boolean => left && right;
 
 export const $eq = {
+  /** A boxing conversion of an enum member or a float into `object`, which carries its type (#552, #768, #954). */
+  box,
+  /** An unboxing to a primitive value type, which refuses a box of another type. */
+  unbox,
+  /** `o is Tone` and `o is float` over a value held as `object`. */
+  isBox: isBoxOf,
+  /** A list or an array converted to `object` or an interface, compared and hashed by its identity from then on (#954). */
+  reference: asReference,
+  /** An anonymous object, never equal to a value held as data of the same members (#742). */
+  anonymous: anonymousObject,
   /** A rewritten resx accessor (Track L D2): resolves against the installed culture catalog at
    * CALL time — the whole reason the compiler never inlines it. */
   str,
