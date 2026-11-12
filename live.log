@@ -1,0 +1,9 @@
+=== watch-noedit run 13:50:49
+--- sample 13:50:49 load: { 40.03 33.51 15.16 } System-wide memory free percentage: 83%
+163 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2119 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+ 1886  86.9 914416 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+   90  33.5  12048 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+  733  31.6  56416 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
+  114  11.3  44016 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+  348  10.6  71984 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
