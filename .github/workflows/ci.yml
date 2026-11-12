@@ -1,10 +1,12 @@
 name: CI
 on:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   desktop:
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -16,38 +18,38 @@ jobs:
           dotnet-version: 10.0.x
       - name: Build the desktop sample
         run: dotnet build samples/PhotonDesktop
-      - name: Edit to view on the desktop, three times, watched
+      - name: Edit to view on the desktop, shipped live
         shell: bash
-        timeout-minutes: 12
+        timeout-minutes: 10
+        env:
+          EQ_EDIT_TO_VIEW_ECHO: "1"
+          LOG_BRANCH: test/desktop-edit-log-${{ github.run_id }}-${{ matrix.attempt }}
         run: |
           set -uo pipefail
+          live="$RUNNER_TEMP/live.log"
+          : > "$live"
+          ship="$RUNNER_TEMP/ship"
+          git worktree add -q --detach "$ship"
+          ( cd "$ship" && git checkout -q --orphan "$LOG_BRANCH" && git rm -rq --cached . && find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} + )
+          git -C "$ship" config user.name ci; git -C "$ship" config user.email ci@localhost
           (
             set +e +o pipefail
             while true; do
-              echo "--- sample $(date -u +%H:%M:%S) load: $(sysctl -n vm.loadavg) $(memory_pressure -Q 2>/dev/null | tail -1)"
-              for pid in $(pgrep -x PhotonDesktop); do
-                fp=$(footprint -p "$pid" 2>/dev/null | awk '/phys_footprint:/ {print $2, $3; exit}')
-                gfx=$(footprint -p "$pid" 2>/dev/null | /usr/bin/grep -i -E 'IOAccelerator|IOSurface' | head -2 | tr -s ' ' | tr '\n' ';')
-                echo "  PhotonDesktop pid $pid footprint $fp graphics: $gfx"
-                mb=$(footprint -p "$pid" -f bytes 2>/dev/null | awk '/phys_footprint:/ {print int($2/1048576); exit}')
-                if [ -n "$mb" ] && [ "$mb" -gt 2500 ]; then echo "WATCHDOG: PhotonDesktop (pid $pid) footprint ${mb} MB, killed"; kill -9 "$pid"; fi
-              done
-              sleep 5
+              {
+                echo "--- sample $(date -u +%H:%M:%S) load: $(sysctl -n vm.loadavg) $(memory_pressure -Q 2>/dev/null | tail -1)"
+                pgrep -lf 'PhotonDesktop|WindowServer' | cut -c1-120
+                ps -axo pid=,%cpu=,rss=,comm= | sort -k2 -nr | head -5
+              } >> "$live"
+              cp "$live" "$ship/live.log"
+              git -C "$ship" add live.log && git -C "$ship" commit -qm "log $(date -u +%H:%M:%S)" && git -C "$ship" push -q origin "HEAD:refs/heads/$LOG_BRANCH" 2>/dev/null
+              sleep 15
             done
           ) &
-          sampler=$!
+          shipper=$!
           status=0
           for round in 1 2 3; do
-            echo "::group::round $round"
-            dotnet run scripts/measure-edit-to-view.cs -- desktop --runs 6 --report "$RUNNER_TEMP/round-$round.json" || status=1
-            echo "::endgroup::"
+            echo "=== round $round $(date -u +%H:%M:%S)" | tee -a "$live"
+            dotnet run scripts/measure-edit-to-view.cs -- desktop --runs 6 2>&1 | tee -a "$live" || status=1
           done
-          kill $sampler || true
+          kill $shipper || true
           exit $status
-      - name: Keep the reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: reports-${{ matrix.attempt }}
-          path: ${{ runner.temp }}/round-*
-          if-no-files-found: ignore

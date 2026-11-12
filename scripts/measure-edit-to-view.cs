@@ -389,8 +389,9 @@ Process StartWatch()
         start.Environment["ASPNETCORE_URLS"] = $"http://127.0.0.1:{port}";
     }
     var process = Process.Start(start) ?? throw new InvalidOperationException("dotnet watch did not start");
-    process.OutputDataReceived += (_, e) => { if (e.Data is { } text) lines.Enqueue((Now(), text)); };
-    process.ErrorDataReceived += (_, e) => { if (e.Data is { } text) lines.Enqueue((Now(), text)); };
+    var echo = Environment.GetEnvironmentVariable("EQ_EDIT_TO_VIEW_ECHO") == "1";
+    process.OutputDataReceived += (_, e) => { if (e.Data is { } text) { lines.Enqueue((Now(), text)); if (echo) Console.WriteLine($"[watch {DateTime.UtcNow:HH:mm:ss.fff}] {text}"); } };
+    process.ErrorDataReceived += (_, e) => { if (e.Data is { } text) { lines.Enqueue((Now(), text)); if (echo) Console.WriteLine($"[watch {DateTime.UtcNow:HH:mm:ss.fff}] {text}"); } };
     process.BeginOutputReadLine();
     process.BeginErrorReadLine();
     return process;
