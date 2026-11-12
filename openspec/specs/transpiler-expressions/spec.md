@@ -680,10 +680,11 @@ convert as it did, and a lifted conversion, to a nullable type, SHALL still answ
 ### Requirement: A params parameter takes what C# hands it
 
 eqc SHALL pass a params parameter what the bound tree says the call hands it: each element a call lists,
-as it is, after a named argument too, or a collection handed whole, spread into the rest parameter the
-parameter is on the other side, named or not. An array handed to a params parameter of another element
-type SHALL be one element where C# makes it one. A C# 13 params collection SHALL be read as an array is.
-This SHALL hold for a call, an app type's constructor and a vocabulary type's constructor alike.
+as it is, after a named argument too, or a collection handed whole, spread where the parameter is a rest
+parameter on the other side (one of the SDK's own) and passed as it is where it is the array it is, named or
+not. An array handed to a params parameter of another element type SHALL be one element where C# makes it
+one. A C# 13 params collection SHALL be read as an array is. This SHALL hold for a call, an app type's
+constructor and a vocabulary type's constructor alike.
 
 #### Scenario: A collection handed whole
 
