@@ -22,6 +22,10 @@
 *.ttf binary
 *.otf binary
 *.nupkg binary
+*.mp4 binary
+*.mov binary
+*.flac binary
+*.mid binary
 
 # The maps beside the runtime's transpiled modules, written and pinned by SharedComponentTranspilationTests
 # (#1108): generated, so a review shows them collapsed. The pin is what reads them.
