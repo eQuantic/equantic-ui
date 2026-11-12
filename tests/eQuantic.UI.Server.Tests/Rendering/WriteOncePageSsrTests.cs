@@ -323,6 +323,45 @@ public class WriteOncePageSsrTests
         result.Html.Should().Contain("document: page=");
     }
 
+    private sealed class Tally(int count, VisualNode child) : InheritedComponent(child)
+    {
+        public int Count { get; } = count;
+
+        protected override bool UpdateShouldNotify(InheritedComponent old) => ((Tally)old).Count != Count;
+    }
+
+    private static readonly IAppTheme Inverse = PhotonTheme.Instance.With();
+
+    /// <summary>Reads the value above it and says which theme its context answers.</summary>
+    private sealed class TallyReader : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Text(
+                $"tally={context.DependOn<Tally>()?.Count} theme={(ReferenceEquals(context.Theme, Inverse) ? "inverse" : "app")}",
+                TypeRole.BodyM);
+    }
+
+    [Page("/tallied")]
+    private sealed class TalliedPage : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Column { new Tally(3, new TallyReader()), new Theme(Inverse, new Tally(5, new TallyReader())) };
+    }
+
+    /// <summary>
+    /// The server draws a page through an owner for the request, so a component reads the inherited value
+    /// above it and the theme a <see cref="Theme"/> hands its subtree, as on Photon and in the browser
+    /// (#1395).
+    /// </summary>
+    [Fact]
+    public async Task APage_ReadsTheInheritedValueAndTheThemeAboveEachComponent()
+    {
+        var result = await CreateService().RenderPageAsync(typeof(TalliedPage), RequestFor());
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("tally=3 theme=app").And.Contain("tally=5 theme=inverse");
+    }
+
     private static ServerRenderingService CreateService(IAppTheme? theme = null)
     {
         var options = new UIOptions();

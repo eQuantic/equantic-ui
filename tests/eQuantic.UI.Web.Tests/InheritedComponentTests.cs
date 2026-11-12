@@ -277,7 +277,7 @@ public class InheritedComponentTests
     [Fact]
     public void AContextWithNoPosition_FindsNoInheritedValue()
     {
-        Comfortable.DependOn<Score>().Should().BeNull("the web and the server build with no element per position until #1395");
+        Comfortable.DependOn<Score>().Should().BeNull("a context made outside any tree, as an email's, has no position to look up from");
         Comfortable.Find<Score>().Should().BeNull();
     }
 
