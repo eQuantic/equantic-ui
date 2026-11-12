@@ -514,3 +514,13 @@ eQuantic.UI.Primitives.TableTheme.BorderWidth.init -> void
 eQuantic.UI.Primitives.TableTheme.BorderColor.get -> eQuantic.UI.Primitives.ColorToken?
 eQuantic.UI.Primitives.TableTheme.BorderColor.init -> void
 static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!
+static eQuantic.UI.Primitives.ButtonTheme.Merge(eQuantic.UI.Primitives.ButtonTheme? under, eQuantic.UI.Primitives.ButtonTheme? over) -> eQuantic.UI.Primitives.ButtonTheme?
+static eQuantic.UI.Primitives.ControlsTheme.Merge(eQuantic.UI.Primitives.ControlsTheme? under, eQuantic.UI.Primitives.ControlsTheme? over) -> eQuantic.UI.Primitives.ControlsTheme?
+static eQuantic.UI.Primitives.DensityLadder.Merge(eQuantic.UI.Primitives.DensityLadder? under, eQuantic.UI.Primitives.DensityLadder? over) -> eQuantic.UI.Primitives.DensityLadder?
+static eQuantic.UI.Primitives.SizeLadder.Merge(eQuantic.UI.Primitives.SizeLadder? under, eQuantic.UI.Primitives.SizeLadder? over) -> eQuantic.UI.Primitives.SizeLadder?
+static eQuantic.UI.Primitives.BadgeTheme.Merge(eQuantic.UI.Primitives.BadgeTheme? under, eQuantic.UI.Primitives.BadgeTheme? over) -> eQuantic.UI.Primitives.BadgeTheme?
+static eQuantic.UI.Primitives.CalendarTheme.Merge(eQuantic.UI.Primitives.CalendarTheme? under, eQuantic.UI.Primitives.CalendarTheme? over) -> eQuantic.UI.Primitives.CalendarTheme?
+static eQuantic.UI.Primitives.ListTheme.Merge(eQuantic.UI.Primitives.ListTheme? under, eQuantic.UI.Primitives.ListTheme? over) -> eQuantic.UI.Primitives.ListTheme?
+static eQuantic.UI.Primitives.MarkdownTheme.Merge(eQuantic.UI.Primitives.MarkdownTheme? under, eQuantic.UI.Primitives.MarkdownTheme? over) -> eQuantic.UI.Primitives.MarkdownTheme?
+static eQuantic.UI.Primitives.NavigationTheme.Merge(eQuantic.UI.Primitives.NavigationTheme? under, eQuantic.UI.Primitives.NavigationTheme? over) -> eQuantic.UI.Primitives.NavigationTheme?
+static eQuantic.UI.Primitives.TableTheme.Merge(eQuantic.UI.Primitives.TableTheme? under, eQuantic.UI.Primitives.TableTheme? over) -> eQuantic.UI.Primitives.TableTheme?

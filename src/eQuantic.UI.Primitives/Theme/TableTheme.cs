@@ -70,4 +70,30 @@ public sealed record TableTheme
 
     /// <summary>The colour of a DataTable's header and row borders (<see cref="IAppTheme.Border"/>).</summary>
     public ColorToken? BorderColor { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s. Null when
+    /// both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static TableTheme? Merge(TableTheme? under, TableTheme? over) =>
+        under is null ? over : over is null ? under : new TableTheme
+        {
+            CellPaddingX = over.CellPaddingX ?? under.CellPaddingX,
+            CellPaddingY = over.CellPaddingY ?? under.CellPaddingY,
+            HoverFill = over.HoverFill ?? under.HoverFill,
+            ColumnGap = over.ColumnGap ?? under.ColumnGap,
+            RowMinHeight = over.RowMinHeight ?? under.RowMinHeight,
+            TableHeaderColor = over.TableHeaderColor ?? under.TableHeaderColor,
+            DataRowHeight = over.DataRowHeight ?? under.DataRowHeight,
+            SelectionColumnWidth = over.SelectionColumnWidth ?? under.SelectionColumnWidth,
+            HeaderFill = over.HeaderFill ?? under.HeaderFill,
+            DataHeaderColor = over.DataHeaderColor ?? under.DataHeaderColor,
+            SortedHeaderColor = over.SortedHeaderColor ?? under.SortedHeaderColor,
+            HeaderUppercase = over.HeaderUppercase ?? under.HeaderUppercase,
+            HeaderIconGap = over.HeaderIconGap ?? under.HeaderIconGap,
+            SortIconSize = over.SortIconSize ?? under.SortIconSize,
+            BorderWidth = over.BorderWidth ?? under.BorderWidth,
+            BorderColor = over.BorderColor ?? under.BorderColor,
+        };
 }

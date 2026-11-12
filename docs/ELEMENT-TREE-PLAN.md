@@ -367,8 +367,9 @@ decoration's colour or its kind's, and a Markdown's own `Style` ahead of its def
 the `Markdown` slot's first step.
 
 **A subtree.** `Theme(theme, child)` overrides the theme below it, and `theme.With(button: …)` builds
-the override from the current theme with one slot replaced. `With` is the SDK's, a member that
-forwards every other member, defaults included. The decorators apps write today forward the
+the override from the current theme with a slot laid over its own, member by member, so naming one
+value keeps every other the design system set. `With` is the SDK's, a member that forwards every
+other member, defaults included. The decorators apps write today forward the
 abstract members and leave the defaults to the interface: one wrapped around `MaterialTheme` would
 lose its slots.
 

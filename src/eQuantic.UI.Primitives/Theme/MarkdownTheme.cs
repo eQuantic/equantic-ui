@@ -106,4 +106,43 @@ public sealed record MarkdownTheme
 
     /// <summary>A body cell's vertical padding (11).</summary>
     public float? TableCellPaddingY { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s. Null when
+    /// both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static MarkdownTheme? Merge(MarkdownTheme? under, MarkdownTheme? over) =>
+        under is null ? over : over is null ? under : new MarkdownTheme
+        {
+            Heading1 = over.Heading1 ?? under.Heading1,
+            Heading2 = over.Heading2 ?? under.Heading2,
+            Heading3 = over.Heading3 ?? under.Heading3,
+            Heading4 = over.Heading4 ?? under.Heading4,
+            Body = over.Body ?? under.Body,
+            BlockGap = over.BlockGap ?? under.BlockGap,
+            CodeLineNumbers = over.CodeLineNumbers ?? under.CodeLineNumbers,
+            CodeInverse = over.CodeInverse ?? under.CodeInverse,
+            HeadingSpace = over.HeadingSpace ?? under.HeadingSpace,
+            SubheadingSpace = over.SubheadingSpace ?? under.SubheadingSpace,
+            HeadingColor = over.HeadingColor ?? under.HeadingColor,
+            BodyColor = over.BodyColor ?? under.BodyColor,
+            InlineCodeMaxSize = over.InlineCodeMaxSize ?? under.InlineCodeMaxSize,
+            InlineCodeColor = over.InlineCodeColor ?? under.InlineCodeColor,
+            QuoteIndent = over.QuoteIndent ?? under.QuoteIndent,
+            QuotePaddingY = over.QuotePaddingY ?? under.QuotePaddingY,
+            QuoteRuleWidth = over.QuoteRuleWidth ?? under.QuoteRuleWidth,
+            QuoteRuleColor = over.QuoteRuleColor ?? under.QuoteRuleColor,
+            ListGap = over.ListGap ?? under.ListGap,
+            MarkerGap = over.MarkerGap ?? under.MarkerGap,
+            ListIndent = over.ListIndent ?? under.ListIndent,
+            MarkerColor = over.MarkerColor ?? under.MarkerColor,
+            TableRadius = over.TableRadius ?? under.TableRadius,
+            TableBorderWidth = over.TableBorderWidth ?? under.TableBorderWidth,
+            TableBorderColor = over.TableBorderColor ?? under.TableBorderColor,
+            TableHeaderFill = over.TableHeaderFill ?? under.TableHeaderFill,
+            TableCellPaddingX = over.TableCellPaddingX ?? under.TableCellPaddingX,
+            TableHeaderPaddingY = over.TableHeaderPaddingY ?? under.TableHeaderPaddingY,
+            TableCellPaddingY = over.TableCellPaddingY ?? under.TableCellPaddingY,
+        };
 }

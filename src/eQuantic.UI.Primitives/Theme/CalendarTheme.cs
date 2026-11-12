@@ -74,4 +74,34 @@ public sealed record CalendarTheme
 
     /// <summary>That glyph's colour (<see cref="IAppTheme.TextSecondary"/>).</summary>
     public ColorToken? OpenerColor { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s. Null when
+    /// both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static CalendarTheme? Merge(CalendarTheme? under, CalendarTheme? over) =>
+        under is null ? over : over is null ? under : new CalendarTheme
+        {
+            CellSize = over.CellSize ?? under.CellSize,
+            WeekdayHeight = over.WeekdayHeight ?? under.WeekdayHeight,
+            HeaderGap = over.HeaderGap ?? under.HeaderGap,
+            Gap = over.Gap ?? under.Gap,
+            TitleRole = over.TitleRole ?? under.TitleRole,
+            TitleColor = over.TitleColor ?? under.TitleColor,
+            WeekdayRole = over.WeekdayRole ?? under.WeekdayRole,
+            WeekdayColor = over.WeekdayColor ?? under.WeekdayColor,
+            DayRole = over.DayRole ?? under.DayRole,
+            DayColor = over.DayColor ?? under.DayColor,
+            DayHoverFill = over.DayHoverFill ?? under.DayHoverFill,
+            TodayRingWidth = over.TodayRingWidth ?? under.TodayRingWidth,
+            PanelFill = over.PanelFill ?? under.PanelFill,
+            PanelRadius = over.PanelRadius ?? under.PanelRadius,
+            PanelBorderWidth = over.PanelBorderWidth ?? under.PanelBorderWidth,
+            PanelBorderColor = over.PanelBorderColor ?? under.PanelBorderColor,
+            PanelElevation = over.PanelElevation ?? under.PanelElevation,
+            PanelPadding = over.PanelPadding ?? under.PanelPadding,
+            OpenerIconSize = over.OpenerIconSize ?? under.OpenerIconSize,
+            OpenerColor = over.OpenerColor ?? under.OpenerColor,
+        };
 }

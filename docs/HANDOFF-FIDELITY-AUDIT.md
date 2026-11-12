@@ -166,7 +166,7 @@ the pill's 40 down.
       public bool Visit(Text node, LayoutNode laidOut) =>
           node.PlainContent.Length > 0
   src/eQuantic.UI.Native.Components/SemanticsVisitor.Interaction.cs:320  if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
-  src/eQuantic.UI.Components/Markdown.cs:188  return new Text("", body, style.BodyColor ?? theme.TextSecondary, maxLines: 0) { Spans = spans };
+  src/eQuantic.UI.Components/Markdown.cs:149  return new Text("", body, style.BodyColor ?? theme.TextSecondary, maxLines: 0) { Spans = spans };
   ```
 
 ### A8 Text · documented-deviation · **unverified**

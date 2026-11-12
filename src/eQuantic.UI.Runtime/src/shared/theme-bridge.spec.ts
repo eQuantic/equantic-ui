@@ -243,12 +243,14 @@ describe('theme bridge: the navigation and collection slots and the document\'s 
     expect('rowSpacing' in (newer.list as object)).toBe(false);
   });
 
-  it('With replaces each of the six slots it is given and forwards the rest', () => {
+  it('With lays each of the six slots it is given over the theme and forwards the rest', () => {
     const navigation = new NavigationTheme({ tabHeight: 60 });
     const markdown = new MarkdownTheme({ blockGap: 30 });
     const replaced = AppThemeExtensions.with(theme, null, null, navigation, null, null, null, null, markdown);
-    expect(replaced.navigation).toBe(navigation);
-    expect(replaced.markdown).toBe(markdown);
+    expect(replaced.navigation?.tabHeight).toBe(60);
+    expect(replaced.navigation?.barHeight).toBe(theme.navigation?.barHeight);
+    expect(replaced.markdown?.blockGap).toBe(30);
+    expect(replaced.markdown?.heading1).toBe(theme.markdown?.heading1);
     for (const family of ['list', 'table', 'badge', 'calendar'] as const) {
       expect(replaced[family], family).toBe(theme[family]);
     }

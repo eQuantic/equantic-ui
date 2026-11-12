@@ -14,17 +14,11 @@ export class Markdown extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let style = Markdown.merge(this.style, theme.markdown);
+        let style = MarkdownTheme.merge(theme.markdown, this.style) ?? new MarkdownTheme();
         let blocks = MarkdownParser.parse(this.source);
         let column = new Column(style.blockGap ?? 14, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         for (const block of blocks) column.add(Markdown.blockView(block, theme, style, context));
         return column;
-    }
-
-    static merge(own: any, slot: any) {
-        if (own == null) return slot ?? new MarkdownTheme();
-        if (slot == null) return own;
-        return new MarkdownTheme({ heading1: own.heading1 ?? slot.heading1, heading2: own.heading2 ?? slot.heading2, heading3: own.heading3 ?? slot.heading3, heading4: own.heading4 ?? slot.heading4, body: own.body ?? slot.body, blockGap: own.blockGap ?? slot.blockGap, codeLineNumbers: own.codeLineNumbers ?? slot.codeLineNumbers, codeInverse: own.codeInverse ?? slot.codeInverse, headingSpace: own.headingSpace ?? slot.headingSpace, subheadingSpace: own.subheadingSpace ?? slot.subheadingSpace, headingColor: own.headingColor ?? slot.headingColor, bodyColor: own.bodyColor ?? slot.bodyColor, inlineCodeMaxSize: own.inlineCodeMaxSize ?? slot.inlineCodeMaxSize, inlineCodeColor: own.inlineCodeColor ?? slot.inlineCodeColor, quoteIndent: own.quoteIndent ?? slot.quoteIndent, quotePaddingY: own.quotePaddingY ?? slot.quotePaddingY, quoteRuleWidth: own.quoteRuleWidth ?? slot.quoteRuleWidth, quoteRuleColor: own.quoteRuleColor ?? slot.quoteRuleColor, listGap: own.listGap ?? slot.listGap, markerGap: own.markerGap ?? slot.markerGap, listIndent: own.listIndent ?? slot.listIndent, markerColor: own.markerColor ?? slot.markerColor, tableRadius: own.tableRadius ?? slot.tableRadius, tableBorderWidth: own.tableBorderWidth ?? slot.tableBorderWidth, tableBorderColor: own.tableBorderColor ?? slot.tableBorderColor, tableHeaderFill: own.tableHeaderFill ?? slot.tableHeaderFill, tableCellPaddingX: own.tableCellPaddingX ?? slot.tableCellPaddingX, tableHeaderPaddingY: own.tableHeaderPaddingY ?? slot.tableHeaderPaddingY, tableCellPaddingY: own.tableCellPaddingY ?? slot.tableCellPaddingY });
     }
 
     static bodyRole(style: MarkdownTheme) {

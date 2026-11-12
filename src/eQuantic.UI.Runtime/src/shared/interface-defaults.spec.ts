@@ -73,11 +73,12 @@ describe('the vocabulary interface defaults (cross-pinned with VocabularyInterfa
 });
 
 describe('AppThemeExtensions.with, the C# OverriddenTheme (E6a, #1241)', () => {
-  it('replaces the slot it is given and forwards every other member', () => {
+  it('lays the slot it is given over the theme and forwards every other member', () => {
     const button = new ButtonTheme({ minWidth: 88 });
     const theme = AppThemeExtensions.with(photonTheme, null, button);
 
-    expect(theme.button).toBe(button);
+    expect(theme.button?.minWidth).toBe(88);
+    expect(theme.button?.labelWeight).toBe(photonTheme.button?.labelWeight);
     expect(theme.controls).toBe(photonTheme.controls);
     expect(theme.colors('primary')).toBe(photonTheme.colors('primary'));
     expect(theme.code('keyword')).toEqual(photonTheme.code('keyword'));
@@ -88,7 +89,8 @@ describe('AppThemeExtensions.with, the C# OverriddenTheme (E6a, #1241)', () => {
     const controls = new ControlsTheme();
     const again = AppThemeExtensions.with(AppThemeExtensions.with(photonTheme, null, button), controls, null);
 
-    expect(again.controls).toBe(controls);
-    expect(again.button).toBe(button);
+    // An empty controls slot laid over Photon's is Photon's ladder, rung for rung.
+    expect(again.controls).toEqual(photonTheme.controls);
+    expect(again.button?.minWidth).toBe(88);
   });
 });

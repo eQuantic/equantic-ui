@@ -41,53 +41,14 @@ public sealed class Markdown : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var style = Merge(Style, theme.Markdown);
+        // The document's own style laid over the theme's slot, member by member (§3.10).
+        var style = MarkdownTheme.Merge(theme.Markdown, Style) ?? new MarkdownTheme();
         var blocks = MarkdownParser.Parse(Source);
 
         var column = new Column(gap: style.BlockGap ?? 14) { Width = SizeValue.Fill };
         foreach (var block in blocks)
             column.Add(BlockView(block, theme, style, context));
         return column;
-    }
-
-    /// <summary>The document's style and the theme's slot, the document's member winning wherever it has
-    /// one (§3.10). A member both leave null stays null, and the view reading it supplies the default.</summary>
-    private static MarkdownTheme Merge(MarkdownTheme? own, MarkdownTheme? slot)
-    {
-        if (own is null) return slot ?? new MarkdownTheme();
-        if (slot is null) return own;
-        return new MarkdownTheme
-        {
-            Heading1 = own.Heading1 ?? slot.Heading1,
-            Heading2 = own.Heading2 ?? slot.Heading2,
-            Heading3 = own.Heading3 ?? slot.Heading3,
-            Heading4 = own.Heading4 ?? slot.Heading4,
-            Body = own.Body ?? slot.Body,
-            BlockGap = own.BlockGap ?? slot.BlockGap,
-            CodeLineNumbers = own.CodeLineNumbers ?? slot.CodeLineNumbers,
-            CodeInverse = own.CodeInverse ?? slot.CodeInverse,
-            HeadingSpace = own.HeadingSpace ?? slot.HeadingSpace,
-            SubheadingSpace = own.SubheadingSpace ?? slot.SubheadingSpace,
-            HeadingColor = own.HeadingColor ?? slot.HeadingColor,
-            BodyColor = own.BodyColor ?? slot.BodyColor,
-            InlineCodeMaxSize = own.InlineCodeMaxSize ?? slot.InlineCodeMaxSize,
-            InlineCodeColor = own.InlineCodeColor ?? slot.InlineCodeColor,
-            QuoteIndent = own.QuoteIndent ?? slot.QuoteIndent,
-            QuotePaddingY = own.QuotePaddingY ?? slot.QuotePaddingY,
-            QuoteRuleWidth = own.QuoteRuleWidth ?? slot.QuoteRuleWidth,
-            QuoteRuleColor = own.QuoteRuleColor ?? slot.QuoteRuleColor,
-            ListGap = own.ListGap ?? slot.ListGap,
-            MarkerGap = own.MarkerGap ?? slot.MarkerGap,
-            ListIndent = own.ListIndent ?? slot.ListIndent,
-            MarkerColor = own.MarkerColor ?? slot.MarkerColor,
-            TableRadius = own.TableRadius ?? slot.TableRadius,
-            TableBorderWidth = own.TableBorderWidth ?? slot.TableBorderWidth,
-            TableBorderColor = own.TableBorderColor ?? slot.TableBorderColor,
-            TableHeaderFill = own.TableHeaderFill ?? slot.TableHeaderFill,
-            TableCellPaddingX = own.TableCellPaddingX ?? slot.TableCellPaddingX,
-            TableHeaderPaddingY = own.TableHeaderPaddingY ?? slot.TableHeaderPaddingY,
-            TableCellPaddingY = own.TableCellPaddingY ?? slot.TableCellPaddingY,
-        };
     }
 
     /// <summary>The prose role, the one more than one view reads.</summary>

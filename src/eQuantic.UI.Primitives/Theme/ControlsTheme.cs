@@ -30,4 +30,20 @@ public sealed record ControlsTheme
 
     /// <summary>A control's corner radius (<see cref="Sizing.Radius"/>).</summary>
     public SizeLadder? Radius { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s ladders laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s, a nested slot merged the same way. Null
+    /// when both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static ControlsTheme? Merge(ControlsTheme? under, ControlsTheme? over) =>
+        under is null ? over : over is null ? under : new ControlsTheme
+        {
+            Height = DensityLadder.Merge(under.Height, over.Height),
+            PaddingX = DensityLadder.Merge(under.PaddingX, over.PaddingX),
+            LabelSize = DensityLadder.Merge(under.LabelSize, over.LabelSize),
+            Gap = SizeLadder.Merge(under.Gap, over.Gap),
+            Icon = SizeLadder.Merge(under.Icon, over.Icon),
+            Radius = SizeLadder.Merge(under.Radius, over.Radius),
+        };
 }

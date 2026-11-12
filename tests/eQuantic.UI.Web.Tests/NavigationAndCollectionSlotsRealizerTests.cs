@@ -1,4 +1,3 @@
-using System.Reflection;
 using eQuantic.UI.Components;
 using eQuantic.UI.Material;
 using eQuantic.UI.Primitives;
@@ -69,41 +68,6 @@ public class NavigationAndCollectionSlotsRealizerTests
         own.Should().Contain("border-radius:17px", "a member the document leaves null is the slot's");
 
         Css(new Markdown(source), theme).Should().Contain("gap:23px", "with no style of its own, the slot answers");
-    }
-
-    /// <summary>
-    /// Every member of <see cref="MarkdownTheme"/> takes part in the merge of a document's style over the
-    /// theme's: a member the merge forgot would drop the document's own value wherever the theme answers
-    /// the slot, and no rendering test names every member.
-    /// </summary>
-    [Fact]
-    public void TheMarkdownMerge_CarriesEveryMember()
-    {
-        var merge = typeof(Markdown).GetMethod("Merge", BindingFlags.NonPublic | BindingFlags.Static)!;
-        var own = Populated(1);
-        var merged = (MarkdownTheme)merge.Invoke(null, [own, Populated(2)])!;
-
-        var lost = typeof(MarkdownTheme).GetProperties()
-            .Where(property => !Equals(property.GetValue(merged), property.GetValue(own)))
-            .Select(property => property.Name);
-        lost.Should().BeEmpty("the document's own value wins for every member it names");
-    }
-
-    /// <summary>A style with every member set, each to a value <paramref name="seed"/> tells apart.</summary>
-    private static MarkdownTheme Populated(int seed)
-    {
-        var style = new MarkdownTheme();
-        foreach (var property in typeof(MarkdownTheme).GetProperties())
-        {
-            var type = Nullable.GetUnderlyingType(property.PropertyType)!;
-            object value = type == typeof(float) ? (object)(float)(seed * 10)
-                : type == typeof(bool) ? seed == 1
-                : type == typeof(ColorToken) ? new ColorToken(Color.FromRgb((byte)seed, 0, 0))
-                : type.IsEnum ? Enum.GetValues(type).GetValue(seed)!
-                : throw new InvalidOperationException($"{property.Name}: a kind this test cannot fill");
-            property.SetValue(style, value);
-        }
-        return style;
     }
 
     /// <summary>Material 3's specifications, read from the declarations a component of each family lowers

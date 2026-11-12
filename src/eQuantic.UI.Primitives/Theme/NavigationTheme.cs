@@ -211,4 +211,74 @@ public sealed record NavigationTheme
 
     /// <summary>The colour of a dot that is not the current page's (<see cref="IAppTheme.BorderStrong"/>).</summary>
     public ColorToken? DotColor { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s. Null when
+    /// both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static NavigationTheme? Merge(NavigationTheme? under, NavigationTheme? over) =>
+        under is null ? over : over is null ? under : new NavigationTheme
+        {
+            InactiveColor = over.InactiveColor ?? under.InactiveColor,
+            QuietFill = over.QuietFill ?? under.QuietFill,
+            Background = over.Background ?? under.Background,
+            TabHeight = over.TabHeight ?? under.TabHeight,
+            TabLabelSize = over.TabLabelSize ?? under.TabLabelSize,
+            TabLabelLineHeight = over.TabLabelLineHeight ?? under.TabLabelLineHeight,
+            TabLabelWeight = over.TabLabelWeight ?? under.TabLabelWeight,
+            TabSelectedLabelWeight = over.TabSelectedLabelWeight ?? under.TabSelectedLabelWeight,
+            TabLabelTracking = over.TabLabelTracking ?? under.TabLabelTracking,
+            IndicatorThickness = over.IndicatorThickness ?? under.IndicatorThickness,
+            IndicatorInset = over.IndicatorInset ?? under.IndicatorInset,
+            IndicatorRadius = over.IndicatorRadius ?? under.IndicatorRadius,
+            PillRadius = over.PillRadius ?? under.PillRadius,
+            PillPressOpacity = over.PillPressOpacity ?? under.PillPressOpacity,
+            PillLabelGap = over.PillLabelGap ?? under.PillLabelGap,
+            BarHeight = over.BarHeight ?? under.BarHeight,
+            BarIconSize = over.BarIconSize ?? under.BarIconSize,
+            BarPillWidth = over.BarPillWidth ?? under.BarPillWidth,
+            BarPillHeight = over.BarPillHeight ?? under.BarPillHeight,
+            BarLabelSize = over.BarLabelSize ?? under.BarLabelSize,
+            BarLabelLineHeight = over.BarLabelLineHeight ?? under.BarLabelLineHeight,
+            BarLabelWeight = over.BarLabelWeight ?? under.BarLabelWeight,
+            BarLabelTracking = over.BarLabelTracking ?? under.BarLabelTracking,
+            RailWidth = over.RailWidth ?? under.RailWidth,
+            RailPaddingY = over.RailPaddingY ?? under.RailPaddingY,
+            RailGap = over.RailGap ?? under.RailGap,
+            RailItemHeight = over.RailItemHeight ?? under.RailItemHeight,
+            RailIconSize = over.RailIconSize ?? under.RailIconSize,
+            RailPillWidth = over.RailPillWidth ?? under.RailPillWidth,
+            RailPillHeight = over.RailPillHeight ?? under.RailPillHeight,
+            RailSelectedLabelSize = over.RailSelectedLabelSize ?? under.RailSelectedLabelSize,
+            RailSelectedLabelLineHeight = over.RailSelectedLabelLineHeight ?? under.RailSelectedLabelLineHeight,
+            RailSelectedLabelWeight = over.RailSelectedLabelWeight ?? under.RailSelectedLabelWeight,
+            RailBorderWidth = over.RailBorderWidth ?? under.RailBorderWidth,
+            RailBorderColor = over.RailBorderColor ?? under.RailBorderColor,
+            AppBarHeight = over.AppBarHeight ?? under.AppBarHeight,
+            AppBarPaddingX = over.AppBarPaddingX ?? under.AppBarPaddingX,
+            TitleSize = over.TitleSize ?? under.TitleSize,
+            TitleLineHeight = over.TitleLineHeight ?? under.TitleLineHeight,
+            TitleWeight = over.TitleWeight ?? under.TitleWeight,
+            TitleColor = over.TitleColor ?? under.TitleColor,
+            TitleInset = over.TitleInset ?? under.TitleInset,
+            TitleGap = over.TitleGap ?? under.TitleGap,
+            ScrolledElevation = over.ScrolledElevation ?? under.ScrolledElevation,
+            CrumbGap = over.CrumbGap ?? under.CrumbGap,
+            CrumbColor = over.CrumbColor ?? under.CrumbColor,
+            CurrentCrumbColor = over.CurrentCrumbColor ?? under.CurrentCrumbColor,
+            SeparatorSize = over.SeparatorSize ?? under.SeparatorSize,
+            SeparatorColor = over.SeparatorColor ?? under.SeparatorColor,
+            PageCellSize = over.PageCellSize ?? under.PageCellSize,
+            PageGap = over.PageGap ?? under.PageGap,
+            PaginationGap = over.PaginationGap ?? under.PaginationGap,
+            PageRadius = over.PageRadius ?? under.PageRadius,
+            PageColor = over.PageColor ?? under.PageColor,
+            EllipsisColor = over.EllipsisColor ?? under.EllipsisColor,
+            DotSize = over.DotSize ?? under.DotSize,
+            CurrentDotWidth = over.CurrentDotWidth ?? under.CurrentDotWidth,
+            DotGap = over.DotGap ?? under.DotGap,
+            DotRadius = over.DotRadius ?? under.DotRadius,
+            DotColor = over.DotColor ?? under.DotColor,
+        };
 }

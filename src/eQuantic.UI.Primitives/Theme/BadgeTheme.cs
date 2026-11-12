@@ -121,4 +121,46 @@ public sealed record BadgeTheme
 
     /// <summary>An empty state body's colour (<see cref="IAppTheme.TextSecondary"/>).</summary>
     public ColorToken? EmptyBodyColor { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s, a ladder merged rung by rung. Null when
+    /// both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static BadgeTheme? Merge(BadgeTheme? under, BadgeTheme? over) =>
+        under is null ? over : over is null ? under : new BadgeTheme
+        {
+            RingColor = over.RingColor ?? under.RingColor,
+            RingWidth = over.RingWidth ?? under.RingWidth,
+            DotSize = over.DotSize ?? under.DotSize,
+            CountHeight = over.CountHeight ?? under.CountHeight,
+            CountPaddingX = over.CountPaddingX ?? under.CountPaddingX,
+            CountLabelSize = over.CountLabelSize ?? under.CountLabelSize,
+            CountLabelLineHeight = over.CountLabelLineHeight ?? under.CountLabelLineHeight,
+            CountLabelWeight = over.CountLabelWeight ?? under.CountLabelWeight,
+            NeutralFill = over.NeutralFill ?? under.NeutralFill,
+            NeutralColor = over.NeutralColor ?? under.NeutralColor,
+            AvatarSize = SizeLadder.Merge(under.AvatarSize, over.AvatarSize),
+            AvatarLabelSize = SizeLadder.Merge(under.AvatarLabelSize, over.AvatarLabelSize),
+            AvatarLabelWeight = over.AvatarLabelWeight ?? under.AvatarLabelWeight,
+            AvatarGlyphSize = SizeLadder.Merge(under.AvatarGlyphSize, over.AvatarGlyphSize),
+            AvatarFill = over.AvatarFill ?? under.AvatarFill,
+            AvatarGlyphColor = over.AvatarGlyphColor ?? under.AvatarGlyphColor,
+            OfflineColor = over.OfflineColor ?? under.OfflineColor,
+            WellSize = over.WellSize ?? under.WellSize,
+            WellFill = over.WellFill ?? under.WellFill,
+            WellIconSize = over.WellIconSize ?? under.WellIconSize,
+            WellIconColor = over.WellIconColor ?? under.WellIconColor,
+            EmptyPaddingX = over.EmptyPaddingX ?? under.EmptyPaddingX,
+            EmptyPaddingY = over.EmptyPaddingY ?? under.EmptyPaddingY,
+            WellGap = over.WellGap ?? under.WellGap,
+            BodyGap = over.BodyGap ?? under.BodyGap,
+            ActionsGap = over.ActionsGap ?? under.ActionsGap,
+            ActionSpacing = over.ActionSpacing ?? under.ActionSpacing,
+            EmptyTitleSize = over.EmptyTitleSize ?? under.EmptyTitleSize,
+            EmptyTitleLineHeight = over.EmptyTitleLineHeight ?? under.EmptyTitleLineHeight,
+            EmptyTitleWeight = over.EmptyTitleWeight ?? under.EmptyTitleWeight,
+            EmptyTitleColor = over.EmptyTitleColor ?? under.EmptyTitleColor,
+            EmptyBodyColor = over.EmptyBodyColor ?? under.EmptyBodyColor,
+        };
 }

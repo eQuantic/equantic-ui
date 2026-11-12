@@ -104,4 +104,40 @@ public sealed record ListTheme
 
     /// <summary>The surface of the row that slides over the action (<see cref="IAppTheme.Surface"/>).</summary>
     public ColorToken? SwipeSurface { get; init; }
+
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
+    /// names wins, what it leaves null is <paramref name="under"/>'s. Null when
+    /// both are. It is how <see cref="AppThemeExtensions.With"/> lays a slot over a theme's.
+    /// </summary>
+    public static ListTheme? Merge(ListTheme? under, ListTheme? over) =>
+        under is null ? over : over is null ? under : new ListTheme
+        {
+            QuietFill = over.QuietFill ?? under.QuietFill,
+            ItemHeight = over.ItemHeight ?? under.ItemHeight,
+            TwoLineItemHeight = over.TwoLineItemHeight ?? under.TwoLineItemHeight,
+            ThreeLineItemHeight = over.ThreeLineItemHeight ?? under.ThreeLineItemHeight,
+            ItemPaddingX = over.ItemPaddingX ?? under.ItemPaddingX,
+            ItemPaddingY = over.ItemPaddingY ?? under.ItemPaddingY,
+            ItemGap = over.ItemGap ?? under.ItemGap,
+            TextGap = over.TextGap ?? under.TextGap,
+            TitleSize = over.TitleSize ?? under.TitleSize,
+            TitleLineHeight = over.TitleLineHeight ?? under.TitleLineHeight,
+            TitleWeight = over.TitleWeight ?? under.TitleWeight,
+            TitleColor = over.TitleColor ?? under.TitleColor,
+            SubtitleColor = over.SubtitleColor ?? under.SubtitleColor,
+            DividerThickness = over.DividerThickness ?? under.DividerThickness,
+            DividerColor = over.DividerColor ?? under.DividerColor,
+            DividerInset = over.DividerInset ?? under.DividerInset,
+            HeaderHeight = over.HeaderHeight ?? under.HeaderHeight,
+            SectionPaddingX = over.SectionPaddingX ?? under.SectionPaddingX,
+            SectionPaddingBottom = over.SectionPaddingBottom ?? under.SectionPaddingBottom,
+            HeaderGap = over.HeaderGap ?? under.HeaderGap,
+            ChevronSize = over.ChevronSize ?? under.ChevronSize,
+            ChevronColor = over.ChevronColor ?? under.ChevronColor,
+            SwipeActionWidth = over.SwipeActionWidth ?? under.SwipeActionWidth,
+            SwipeActionGap = over.SwipeActionGap ?? under.SwipeActionGap,
+            SwipeIconSize = over.SwipeIconSize ?? under.SwipeIconSize,
+            SwipeSurface = over.SwipeSurface ?? under.SwipeSurface,
+        };
 }
