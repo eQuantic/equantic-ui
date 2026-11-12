@@ -8,5 +8,5 @@
 
 ## 2. Proved against the real thing
 
-- [ ] 2.1 The suites. Verify: Compiler, Web and Conformance pass, `tsc` is clean and the runtime's vitest passes
+- [x] 2.1 The suites. Verify: on the first head Web 1427, Compiler 2910, Conformance 7818/7819, `tsc` clean and vitest 2986/2986; on the final head, after the two scanner fixes, Compiler 2911, `tsc` clean and Web 1426/1427, the one being the wiki's Diagnostics guard reading a wiki master that already carries main's newer EQ2116
 - [x] 2.2 A ledger entry under `docs/ledger/`. No wiki page describes how a module names the build context, so none changes
