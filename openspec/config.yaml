@@ -26,6 +26,7 @@ rules:
     - "Say what changes for a developer using the SDK, in their terms: the C# they write, the setting they set, what the browser or the native shell does differently"
     - "Name every part the change reaches (eqc, the runtime, the web realizer, the Photon shells, the SDKs, the templates) and say whether the public surface or the developer surface moves"
     - "A break is allowed in preview: name what goes, what replaces it, and the one migration line an upgrading app needs"
+    - "Name the rules of docs/PRINCIPLES.md the change follows, and any it bends, with why"
   specs:
     - "A capability gets its spec when a change first touches it, not before"
     - "State behaviour as observable requirements, each with a scenario a test can execute; for a translation rule, the scenario is the C# input and the answer .NET gives for it"
@@ -34,6 +35,7 @@ rules:
     - "Prefer the structural fix to the patch and the mechanism .NET already has to a home-grown one; an instrument that fails beats one that warns"
   tasks:
     - "End every task group with the check that proves it against the real thing (the conformance suite executed on both sides, a sample in a browser, a shell in a simulator), not only a unit test"
+    - "Prove each fix as docs/PROVING.md says: the test fails without the fix and with the most plausible wrong one, and a claim about what .NET does is measured"
     - "Include the documentation in the same pull request: the wiki page in every language it is written in, and one entry for the ledger citing the issue, as a file of its own under docs/ledger/"
 
 operations:

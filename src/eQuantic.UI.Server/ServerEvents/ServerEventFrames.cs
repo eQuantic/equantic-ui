@@ -12,6 +12,31 @@ internal static class ServerEventFrames
 {
     public const string Heartbeat = ": ping\n\n";
 
+    /// <summary>Whether an event id can stand on a frame's <c>id:</c> line: no line break, and no NUL,
+    /// which a browser's <c>EventSource</c> drops the whole field for.</summary>
+    public static bool IsWritableId(string? id) => id is null || id.AsSpan().IndexOfAny('\r', '\n', '\0') < 0;
+
+    /// <summary>
+    /// Whether an envelope can be written as a frame: its id one a line can carry, and its payload one
+    /// JSON value, as the publisher writes it. Anything else came from a writer that is not this app's
+    /// publisher, and could add fields of its own to the frame or to the message the page reads (#1292).
+    /// </summary>
+    public static bool CanCarry(ServerEventEnvelope envelope)
+    {
+        if (!IsWritableId(envelope.Id)) return false;
+        try
+        {
+            var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(envelope.Payload));
+            reader.Read();
+            reader.Skip();
+            return !reader.Read();
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
     public static string Connected(string connectionId) =>
         $"event: connection\ndata: {{\"id\":{JsonSerializer.Serialize(connectionId)}}}\n\n";
 

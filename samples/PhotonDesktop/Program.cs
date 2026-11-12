@@ -26,9 +26,10 @@ public partial class Program
                .Category(AppCategory.DeveloperTools)
                .UrlScheme("equantic-studio");
 
+        builder.UseTheme(PhotonTheme.Instance);
+
         builder.Configure(photon =>
         {
-            photon.Theme = PhotonTheme.Instance;
             photon.Title = "eQuantic Studio";
             // The handoff's own canvas, to the pixel: a window 100dp narrower squeezes every
             // column and reads as "the proportions are off" before a single token is wrong.

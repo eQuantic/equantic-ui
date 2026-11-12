@@ -20,6 +20,18 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|mcp__.*(create_issue|issue_write).*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/issues-are-born-whole.py\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

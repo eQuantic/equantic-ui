@@ -13,10 +13,16 @@ Run it whenever the work moves, as the Workflow section of CLAUDE.md says. On Pr
   Target date it really ended;
 - on epics and features still open, the Start and Target dates the forecast gives them;
 - the sprints: two weeks each, named Sprint N and added as the plan reaches them, a delivered issue in
-  the one it closed in and an open one in the one the plan finishes it in.
+  the one it closed in, an open one under way in the one holding today, and any other open one in the
+  one the plan finishes it in.
+
+The plan gives the pace to the lanes (one per epic) by the milestone of the issue each works next,
+then by the epic's Priority, never by what each delivered before.
 
 It never closes an issue: the report lists the open parents whose sub-issues are all closed, for a
-person to close or to leave open. It also puts each open milestone's forecast beside its due date, as
+person to close or to leave open, the open issues the plan cannot count as they are (an epic with no
+priority, an issue with no type, no epic above it or no points), and the work shown under way for a
+week with no pull request. It also puts each open milestone's forecast beside its due date, as
 the plan's date, a range, and the date it would land with all the pace. How the forecast is made is
 docs/ROADMAP-FORECAST.md, and scripts/roadmap_model.py says it in code. Needs gh, logged in with the
 project scope.
@@ -29,10 +35,8 @@ import math
 from collections import defaultdict
 
 import roadmap_board as board
-from roadmap_model import (NO_EPIC, POINTS, calendar, changes, cost_of, done_below, finish, forecast, inflow,
-                           monte_carlo, percentile, plan, scope, sprint_changes, sprint_load)
-
-TYPES = ("Epic", "Feature", "User Story", "Task", "Bug")
+from roadmap_model import (NO_EPIC, POINTS, TYPES, calendar, changes, cost_of, done_below, finish, forecast, idle,
+                           incomplete, inflow, monte_carlo, percentile, plan, scope, sprint_changes, sprint_load)
 
 
 def when(fc, days) -> str:
@@ -75,21 +79,30 @@ def report(issues: dict, milestones: dict, fc, sprints: list, calendar_changes: 
     print(f"Left: {left:.0f} points in {len(ahead)} open issues, {len(unpointed)} of them not pointed yet. In the same "
           f"days the board gained {gained} issues, {gained_cost:.0f} points, which no forecast below counts.\n")
 
-    print("Lanes, in the order a waiting one takes a freed place:")
-    for lane in fc.order:
-        name = "no epic" if lane == NO_EPIC else f"#{lane} {issues[lane].title[:58]}"
+    print("Lanes, in the order the pace reaches them (the milestone of the issue each works next, then the epic's\n"
+          "priority), beside the part of the window's points each delivered, which is what the sessions did:")
+    for lane in sorted(fc.lanes, key=lambda lane: (fc.rank(lane, fc.lanes[lane][0]), lane == NO_EPIC, lane)):
+        name = "no epic" if lane == NO_EPIC else f"#{lane} {issues[lane].title[:52]}"
+        priority = (issues[lane].priority if lane in issues else None) or "-"
         share = p.shares.get(lane, 0.0)
         cost = sum(cost_of(w, fc.cost) for w in fc.lanes[lane])
-        print(f"  {name:<64} {share:5.0%} of the pace  {cost:6.1f} left  ends {when(fc, finish(fc.span, fc.lanes[lane]))}")
+        print(f"  {name:<58} {priority:<7} delivered {share:4.0%}  {cost:6.1f} left  "
+              f"ends {when(fc, finish(fc.span, fc.lanes[lane]))}")
 
-    untyped = [i for i in issues.values() if not i.closed and not i.typed]
-    if untyped:
-        print(f"\nOpen issues with no type, forecast as tasks: {numbers(untyped)}")
-    if fc.lanes.get(NO_EPIC):
-        print(f"Open issues no epic holds, forecast in a lane of their own: {numbers(fc.lanes[NO_EPIC])}")
     split = [w for w in ahead if w.points is not None and w.points > POINTS[-1]]
     if split:
         print(f"Open issues pointed past {POINTS[-1]}, to split into slices: {numbers(split)}")
+    lacking = incomplete(issues)
+    if lacking:
+        print(f"\nOpen issues the plan cannot count as they are ({len(lacking)}), which scripts/new-issue.py creates none of: "
+              "with no type it forecasts a task, with no epic it holds them in a lane of their own, and with no "
+              "points it counts their type's mean.")
+        for issue, missing in lacking:
+            print(f"  #{issue.number:<5} {issue.type:<10} lacks {', '.join(missing):<34} {issue.title[:52]}")
+    stalled = idle(issues, fc.today)
+    if stalled:
+        print(f"Shown under way for a week or more with no pull request, so held in the current sprint: "
+              f"{numbers(stalled)}. Move back the ones nobody is on.")
     closable = done_below(issues)
     if closable:
         print(f"Open, with every sub-issue closed: {numbers(closable)}. Each is forecast as one more of its type; "
