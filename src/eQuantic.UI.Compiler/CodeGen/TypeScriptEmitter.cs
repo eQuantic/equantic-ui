@@ -1957,16 +1957,20 @@ public class TypeScriptEmitter
             // So does one whose field moved a case apart from a member (`value$`, #396), whose own key
             // is storage no server reads. A derived class inherits it. A static's slot is the class's,
             // which no JSON of an instance writes (#1175).
-            if (!asStatic && (cls.TwinMembers().OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
+            // And a twin that holds more than the serializer writes writes only what it does (#745).
+            var written = !asStatic && ModelFor(cls)?.GetDeclaredSymbol(cls) is INamedTypeSymbol contract ? JsonContract.Members(contract) : null;
+            if (written is not null || (!asStatic && (cls.TwinMembers().OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
                     || cls.Members.OfType<FieldDeclarationSyntax>()
                         .Where(field => !field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                             && !field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword))
                         .SelectMany(field => field.Declaration.Variables)
-                        .Any(variable => variable.SlotOf(ModelFor(cls)).EndsWith('$'))))
+                        .Any(variable => variable.SlotOf(ModelFor(cls)).EndsWith('$')))))
             {
                 _converter.UsedHelpers.Add(Eq.Import);
                 c.Member(JsClassMember.Method("", "toJSON", "", "", "",
-                    JsStatement.Return(JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This))), cls);
+                    JsStatement.Return(written is null
+                        ? JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This)
+                        : JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This, JsExpr.Opaque(written)))), cls);
             }
 
             EmitExtensionBlocks(cls, c);
