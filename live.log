@@ -115,3 +115,16 @@
  3194  13.0  31104 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
  3196  11.5  30704 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
   disk:     7.24  968  6.85     0.00    0  0.00     0.00    0  0.00 
+--- sample 19:04:21 load: { 23.47 35.64 18.54 } System-wide memory free percentage: 78%
+159 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2250 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+2253 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+2347 /Users/runner/.dotnet/dotnet run --no-build -e DOTNET_WATCH=1 -e DOTNET_WATCH_ITERATION=1 -e DOTNET_MODIFIABLE_ASSE
+2350 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  app 2350: 62 MB 3440 KB 0 B 256 KB 156 IOAccelerator (graphics)
+  995  21.4  41296 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd1754615100
+  114  11.4  59616 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 3585  10.2  33520 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 1149   9.9   6288 /usr/libexec/sysmond
+  323   9.8 244464 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  disk:    23.70  481 11.14     0.00    0  0.00     0.00    0  0.00 
