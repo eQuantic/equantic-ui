@@ -83,6 +83,13 @@ public class ConversionContext
     /// </summary>
     internal Services.ResourceCatalogIds? ResourceIds { get; set; }
 
+    /// <summary>
+    /// What the app registered in its container, which a resolution in the browser repeats
+    /// (<see cref="BrowserServices"/>). None for a host that read no registration. It describes the
+    /// host and survives <see cref="Reset"/>.
+    /// </summary>
+    internal Services.ServiceRegistrations AppServices { get; set; } = Services.ServiceRegistrations.None;
+
     /// <summary>The catalogue id a read of <paramref name="resourceClass"/> is written with, which
     /// the catalogs are keyed by.</summary>
     internal string CatalogIdOf(INamedTypeSymbol resourceClass) =>

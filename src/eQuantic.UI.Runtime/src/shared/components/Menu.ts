@@ -42,7 +42,7 @@ export class Menu extends StatefulComponent {
             list.add(new Pressable(surface, item.disabled ? null : () => this.choose(index), { disabled: item.disabled, role: 'menuItem' }));
         }
         let panel = new Box(new BoxStyle({ minWidth: 180, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
-        let menu: VisualNode = new Anchored(new Pressable(this.trigger, this.toggle.bind(this), { expanded: this._open }), panel, { placement: this.placement, open: this._open, onDismiss: () => this.setState(() => this._open = false), panelRole: 'menu', activeIndex: this._open ? this._highlight : -1 });
+        let menu: VisualNode = new Anchored(new Pressable(this.trigger, $eq.delegates.bound(this, this.toggle), { expanded: this._open }), panel, { placement: this.placement, open: this._open, onDismiss: () => this.setState(() => this._open = false), panelRole: 'menu', activeIndex: this._open ? this._highlight : -1 });
         let live = this._open && $eq.collections.count(this.items) > 0;
         menu = new Shortcut(menu, KeyChord.arrowDown, () => this.setState(() => this._highlight = this.step(+1)), { enabled: live });
         menu = new Shortcut(menu, KeyChord.arrowUp, () => this.setState(() => this._highlight = this.step(-1)), { enabled: live });

@@ -92,7 +92,8 @@ public static class CapabilityScope
 
     public static T Require<T>(string component) where T : class =>
         Resolve<T>() ?? throw new InvalidOperationException(
-            $"{component} needs {typeof(T).Name}, and this target has none. Register it with the "
-            + $"host, or declare the parameter as {typeof(T).Name}? if the component can work "
+            $"{component} needs {typeof(T).Name}, and this target has none. Register it in Program.cs "
+            + $"with builder.Services.AddSingleton<{typeof(T).Name}, TImplementation>() (or AddScoped, "
+            + $"AddTransient), or declare the parameter as {typeof(T).Name}? if the component can work "
             + "without it.");
 }

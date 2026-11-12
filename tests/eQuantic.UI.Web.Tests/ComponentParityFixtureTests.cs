@@ -201,6 +201,15 @@ public class ComponentParityFixtureTests
         // value in a cell, and a range selected, so the band, the ring and the fill handle are marks.
         ("spreadsheet", Sheet(), NoPresses),
         ("spreadsheet-editing", new eQuantic.UI.Spreadsheets.Spreadsheet(Editing()) { Width = SizeValue.Fill, Height = SizeValue.Fixed(240) }, NoPresses),
+        // Two spreadsheets on one page, two tables with no label, two group table views with none, and two
+        // calendars of one month: every spreadsheet is labelled alike, an unlabelled table view hashed the empty
+        // string, a group's reading order owns its cells as a table's does (#1331), and a calendar is labelled by
+        // its month, so their cells shared ids. Each owns its own now (#1115, #1426).
+        ("two-spreadsheets", Stack(8, Sheet(), Sheet()), NoPresses),
+        ("two-unlabelled-tables", Stack(8, Unlabelled(), Unlabelled()), NoPresses),
+        ("two-unlabelled-group-tables", Stack(8, UnlabelledGroup(), UnlabelledGroup()), NoPresses),
+        ("two-calendars", Stack(8, new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17)),
+            new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17))), NoPresses),
         ("formula-bar", new eQuantic.UI.Spreadsheets.FormulaBar(Editing()), NoPresses),
         ("name-box", new eQuantic.UI.Spreadsheets.NameBox(Editing()), NoPresses),
         ("status-bar", new eQuantic.UI.Spreadsheets.StatusBar(Summing()), NoPresses),
@@ -470,6 +479,18 @@ public class ComponentParityFixtureTests
         Current = new TableRange(3, 2),
     };
 
+    /// <summary>A table view with no label and no role, a group: the likely case, since both are optional, whose
+    /// reading order owns its cells as a table's rows do (#1331, #1426).</summary>
+    private static TableView UnlabelledGroup() => new(new UniformTableSpans(3, 28), new UniformTableSpans(2, 96),
+        (row, column) => new Text($"{row}:{column}", TypeRole.Caption, Theme.TextPrimary));
+
+    /// <summary>A table with no label, which a reader still reads as rows of cells.</summary>
+    private static TableView Unlabelled() => new(new UniformTableSpans(3, 28), new UniformTableSpans(2, 96),
+        (row, column) => new Text($"{row}:{column}", TypeRole.Caption, Theme.TextPrimary))
+    {
+        Role = TableRole.Table,
+    };
+
     private static TableView TableGrid() => new(new UniformTableSpans(6, 28), new UniformTableSpans(4, 96),
         (row, column) => new Text($"{row}:{column}", TypeRole.Caption, Theme.TextPrimary))
     {
@@ -662,7 +683,10 @@ public class ComponentParityFixtureTests
 
         void Walk(HtmlNode node)
         {
-            if (node.Attributes.TryGetValue("id", out var id) && id is not null) ids.Add(id);
+            // An id is one element's: a second one makes every reference resolve to the first, so a reader in a
+            // second table heard the first table's cells (#1115).
+            if (node.Attributes.TryGetValue("id", out var id) && id is not null)
+                ids.Add(id).Should().BeTrue($"the id {id} must be one element's, or what names it reaches the first");
             foreach (var name in new[] { "aria-activedescendant", "aria-controls", "aria-labelledby",
                          "aria-describedby", "aria-owns" })
                 if (node.Attributes.TryGetValue(name, out var value) && value is not null)

@@ -1,4 +1,4 @@
-import { $eq, BuildContext, InheritedComponent, InheritedElement, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, BuildContext, ComponentContext, InheritedComponent, InheritedElement, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
 import { Element } from "./Element";
 
 export class ComponentElement extends Element {
