@@ -44,7 +44,7 @@ public sealed class Stepper : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var height = Sizing.Height(Size, context.Density);
+        var height = ControlMetrics.Height(context, Size);
         var canDecrement = !Disabled && Value - Step >= Min;
         var canIncrement = !Disabled && Value + Step <= Max;
 
@@ -65,7 +65,7 @@ public sealed class Stepper : StatelessComponent
         {
             Align = TextAlignment.Center,
             Tabular = true,
-            StyleOverride = theme.Type(TypeRole.Label).WithSize(Sizing.LabelSize(Size, context.Density)),
+            StyleOverride = theme.Type(TypeRole.Label).WithSize(ControlMetrics.LabelSize(context, Size)),
         });
         row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
 
@@ -77,7 +77,7 @@ public sealed class Stepper : StatelessComponent
             Width = SizeValue.Hug,
             Height = height,
             Background = Disabled ? theme.SurfaceSubtle : theme.Surface,
-            CornerRadius = new CornerRadii(Sizing.Radius(Size)),
+            CornerRadius = new CornerRadii(ControlMetrics.Radius(context, Size)),
             BorderWidth = 1,
             BorderColor = theme.BorderStrong,
             Opacity = Disabled ? theme.DisabledOpacity : 1f,
