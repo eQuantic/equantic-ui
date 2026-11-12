@@ -81,3 +81,14 @@
   114   9.6  58672 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
  4742   8.7  31168 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
  4750   7.6  32464 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+=== alive 13:56:49 app: 2354 watch: 
+=== alive 13:56:59 app: 2354 watch: 
+--- sample 13:57:05 load: { 10.09 24.89 14.63 } System-wide memory free percentage: 81%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2288 dotnet run --no-build --project samples/PhotonDesktop
+2354 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 5246  89.6  28096 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 5250  19.1  13216 /usr/libexec/securityuploadd
+  285  14.7 137984 /System/Library/CoreServices/Software Update.app/Contents/Resources/softwareupdated
+  135   9.1  31856 /usr/libexec/dasd
+  156   7.8   9152 /usr/sbin/cfprefsd
