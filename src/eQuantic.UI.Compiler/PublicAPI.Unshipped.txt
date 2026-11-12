@@ -1,4 +1,11 @@
 #nullable enable
+const eQuantic.UI.Compiler.CodeGen.Eq.FixedSize = "$eq.collections.fixedSize" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CollectionIsReadOnly = "$eq.collections.isReadOnly" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.CollectionIsReadOnlyStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.Priority.get -> int
 eQuantic.UI.Compiler.Models.StateField.Slot.get -> string!
 eQuantic.UI.Compiler.Models.StateField.Slot.set -> void
 *REMOVED*static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnits(System.Collections.Generic.IReadOnlyList<string!>! sourceDirectories, string? generatedDirectory) -> System.Collections.Generic.IEnumerable<(string! Directory, string! File, bool IsGenerated)>!

@@ -228,9 +228,10 @@ public class InvocationStrategy : IExpressionIrStrategy
         var written = new List<JsExpr>();
         foreach (var arg in invocation.ArgumentList.Arguments)
         {
-            // A `params` parameter is a REST parameter on the other side, so the two C# call forms
+            // A `params` parameter that is a REST parameter on the other side makes the two C# call forms
             // diverge: `Count("a", "b")` already lines up, and a collection handed whole,
-            // `Count(names)`, would arrive as ONE element, so it spreads (BoundArguments.Convert).
+            // `Count(names)`, would arrive as ONE element, so it spreads (BoundArguments.Convert). One that
+            // is the array it is takes the first form packed, below (BoundArguments.Packed).
             written.Add(arg.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword) ? JsExpr.Identifier("undefined")
                 : replaced.TryGetValue(arg, out var held) ? held
                 : arg.Expression is DeclarationExpressionSyntax declaration
@@ -260,7 +261,7 @@ public class InvocationStrategy : IExpressionIrStrategy
             }
             argsList = BoundArguments.PassedAsWritten(invocation.ArgumentList.Arguments, written, slots, replaced.Keys.ToHashSet(), context);
         }
-        var argIrs = argsList;
+        var argIrs = BoundArguments.Packed(invocation, argsList, symbol, context);
         // The same arguments as text, for the template branches that splice them.
         var args = string.Join(", ", argIrs.Select(a => JsExprWriter.WriteIn(a, JsPrecedence.Assignment)));
 

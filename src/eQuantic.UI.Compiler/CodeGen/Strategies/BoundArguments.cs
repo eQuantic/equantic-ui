@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -153,8 +154,44 @@ internal sealed class BoundArguments
     private static bool IsHandedWhole(ArgumentSyntax argument, ConversionContext context) =>
         context.SemanticHelper.GetOperation(argument) is IArgumentOperation
         {
-            ArgumentKind: ArgumentKind.Explicit, Parameter.IsParams: true,
-        };
+            ArgumentKind: ArgumentKind.Explicit, Parameter: { IsParams: true } parameter,
+        } && !TakesAnArray(parameter);
+
+    /// <summary>
+    /// Whether a params parameter is the array it is in C#, on a twin a build writes, this one's or a referenced
+    /// project's, which reaches it as metadata: a call that lists its elements packs them, and an array handed whole is
+    /// passed as it is, so it meets no argument cap and the callee holds the caller's array (#1159). A constructor's stays
+    /// a rest parameter, which its overloads dispatch on (#1192), and so does a parameter of the SDK's own, which a
+    /// hand-written twin may spell.
+    /// </summary>
+    internal static bool TakesAnArray(IParameterSymbol parameter) =>
+        parameter is { IsParams: true, ContainingSymbol: IMethodSymbol { MethodKind: not MethodKind.Constructor, ContainingType: { } type } }
+        && !type.IsFramework() && !BoundaryShape.IsPlatform(type);
+
+    /// <summary>Whether a method's parameter a build of <paramref name="compilation"/> writes is a rest parameter: a
+    /// params one that does not <see cref="TakesAnArray"/>. The method is that build's own, and a component's arrives
+    /// here as rewritten syntax no model binds, so it is the build that is asked. With no compilation, no call
+    /// packs anything either.</summary>
+    internal static bool IsRest(ParameterSyntax parameter, Compilation? compilation) =>
+        parameter.Modifiers.Any(SyntaxKind.ParamsKeyword)
+        && (compilation?.Assembly is not { } assembly || assembly.IsSdk());
+
+    /// <summary>
+    /// A call's arguments in parameter order, with the elements a call lists for a params parameter that
+    /// <see cref="TakesAnArray"/> packed into the array C# packs them into.
+    /// </summary>
+    internal static List<JsExpr> Packed(InvocationExpressionSyntax invocation, List<JsExpr> arguments, IMethodSymbol? method,
+        ConversionContext context)
+    {
+        if (method?.Parameters is not [.., { IsParams: true } last] || !TakesAnArray(last)
+            || context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation { Arguments: var bound }
+            || !bound.Any(argument => argument.ArgumentKind is ArgumentKind.ParamArray or ArgumentKind.ParamCollection))
+            return arguments;
+        var before = last.Ordinal - method.Parameters.Take(last.Ordinal).Count(parameter => parameter.RefKind == RefKind.Out);
+        // An optional parameter a call left out before it takes its default.
+        var missing = Enumerable.Repeat<JsExpr>(JsExpr.Identifier("undefined"), Math.Max(0, before - arguments.Count));
+        return [.. arguments.Take(before), .. missing, JsExpr.Array(arguments.Skip(before).ToList())];
+    }
 
     /// <summary>
     /// A call's written arguments, read from its syntax, in its parameters' places, each by its index in
