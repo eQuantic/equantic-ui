@@ -190,10 +190,15 @@ public sealed class NodeElement : Element
             Element? claimed = null;
             if (node.Key is { Length: > 0 } key)
             {
-                claimed = byKey.TryGetValue(key, out var keyed) && keyed.MatchStamp != stamp
-                                                                && CanUpdate(keyed.Configuration, node)
-                    ? keyed
-                    : NextUnclaimed(node, stamp);
+                // A key the table does not hold is a member no old one can be (CanUpdate compares the
+                // keys), so it is made below without a pass over the old list: a window whose keys all
+                // changed passed over every old member once per new one (#1505).
+                if (byKey.TryGetValue(key, out var keyed))
+                {
+                    claimed = keyed.MatchStamp != stamp && CanUpdate(keyed.Configuration, node)
+                        ? keyed
+                        : NextUnclaimed(node, stamp);
+                }
             }
             else if (i < _children.Count && _children[i] is { } indexed && indexed.Configuration.Key is not { Length: > 0 }
                      && indexed.MatchStamp != stamp && CanUpdate(indexed.Configuration, node))
@@ -225,8 +230,9 @@ public sealed class NodeElement : Element
     /// The first old member <paramref name="node"/> can take that nothing claimed yet, in order: what a
     /// key shared by two siblings falls back to, since the table holds one member per key. Siblings
     /// that repeat a key are matched first to first and second to second, so each keeps its state
-    /// across a rebuild instead of the second being made again every time. Only reached when the
-    /// table's member was taken or is of another type, which a list without repeated keys never is.
+    /// across a rebuild instead of the second being made again every time. Only reached for a key the
+    /// table holds, when its member was taken or is of another type, and it answers only a member
+    /// with that same key, which <see cref="Element.CanUpdate"/> compares.
     /// </summary>
     private Element? NextUnclaimed(VisualNode node, int stamp)
     {

@@ -15,7 +15,9 @@ hands the position a node of the same runtime type and the same `Key` SHALL keep
 instance, and the fresh instance's configuration SHALL reach the kept one through `AdoptConfig`. A
 node of another type or another key SHALL replace the element, and its instance SHALL start fresh.
 Among the children of a `Row`, a `Column`, a `Stack`, a `Grid` and a `Navigable`, a child with a key
-SHALL be matched by its key wherever it moves, and a child without one by its index.
+SHALL be matched by its key wherever it moves, and a child without one by its index. A child whose key
+none of the old children held SHALL be made without being compared with each old child, so replacing
+every key of a list SHALL cost what building the list and letting the old one go cost.
 
 #### Scenario: A parent rebuilds
 
@@ -28,6 +30,24 @@ SHALL be matched by its key wherever it moves, and a child without one by its in
 - **WHEN** a column holds two stateful rows keyed `a` and `b`, row `a` was pressed once, and the
   column rebuilds with `b` before `a`
 - **THEN** the row keyed `a` still shows one press, now in second place, and `b` shows none
+
+#### Scenario: A key inserted at the front
+
+- **WHEN** a column holds two stateful rows keyed `a` and `b`, pressed once and twice, and the column
+  rebuilds with `c` before `a`
+- **THEN** the row keyed `c` is a new instance with no presses, and the row keyed `a` is the same
+  instance with one press, now in second place
+
+#### Scenario: Every key replaced
+
+- **WHEN** a column of two stateful rows keyed `a` and `b`, both pressed, rebuilds with rows keyed `c`
+  and `d`
+- **THEN** both rows are new instances with no presses
+
+#### Scenario: Every key of a long list replaced
+
+- **WHEN** a column of 10,000 rows keyed `a0` to `a9999` rebuilds with rows keyed `b0` to `b9999`
+- **THEN** the rebuild costs less than five times what the first build of the column cost
 
 #### Scenario: The type at a position changes
 
