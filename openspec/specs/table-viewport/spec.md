@@ -285,6 +285,7 @@ the mark where it stands. A gliding mark SHALL be clipped and hidden by the pinn
 ### Requirement: A viewport may read as a table or a grid
 
 A viewport SHALL read as a group of its cells unless it says it is a table or a grid, on every target.
+A group SHALL read its built cells row by row, and in a row column by column, whichever band draws them.
 A table or a grid SHALL read as rows of cells: each row that holds built cells as one row, its cells in
 the order of their columns whichever band draws them, the pinned column's first; each cell with its row
 and its column in the whole grid, and the rows and columns it spans when it spans more than one; and the
@@ -323,7 +324,13 @@ viewport, `aria-rowindex` on each row and `aria-colindex` on each cell, counted 
 #### Scenario: A group by default
 
 - **WHEN** a viewport says nothing of its role
-- **THEN** it reads as a group, as before, and its cells carry no row, column or count
+- **THEN** it reads as a group, and its cells carry no row, column or count
+
+#### Scenario: A group with a pinned row and column
+
+- **WHEN** a group viewport with its first row and column pinned builds rows 0 to 5 and columns 0 to 3
+- **THEN** on the web and on Photon a reader meets the cells of row 0 first, column by column, then those
+  of row 1, and so on, never the pinned row's band, then the pinned column's, then the body's
 
 ### Requirement: A cell says its part
 

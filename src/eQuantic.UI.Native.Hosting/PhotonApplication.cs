@@ -24,10 +24,11 @@ public sealed class PhotonApplication
 {
     private readonly IHost _host;
 
-    internal PhotonApplication(IHost host, string[] args)
+    internal PhotonApplication(IHost host, string[] args, IAppTheme theme)
     {
         _host = host;
         Args = args;
+        Theme = theme;
         Options = host.Services.GetRequiredService<IOptions<PhotonOptions>>().Value;
     }
 
@@ -56,6 +57,9 @@ public sealed class PhotonApplication
     public IConfiguration Configuration => _host.Services.GetRequiredService<IConfiguration>();
 
     public PhotonOptions Options { get; }
+
+    /// <summary>The theme the whole tree resolves against, as the builder's <c>UseTheme</c> chose it.</summary>
+    public IAppTheme Theme { get; }
 
     public string[] Args { get; }
 
