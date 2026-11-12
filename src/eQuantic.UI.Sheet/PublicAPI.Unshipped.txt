@@ -1,1 +1,23 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Sheet.SheetController.Fill(eQuantic.UI.Sheet.SheetRange source, eQuantic.UI.Sheet.SheetRange target, eQuantic.UI.Sheet.SheetRange? selectionBefore = null) -> bool
+*REMOVED*eQuantic.UI.Sheet.SheetEdit.SelectionAfter.get -> eQuantic.UI.Sheet.SheetRange
+*REMOVED*eQuantic.UI.Sheet.SheetEdit.SelectionBefore.get -> eQuantic.UI.Sheet.SheetRange
+eQuantic.UI.Sheet.SheetController.Fill(eQuantic.UI.Sheet.SheetRange source, eQuantic.UI.Sheet.SheetRange target, eQuantic.UI.Sheet.SheetSelection? selectionBefore = null) -> bool
+eQuantic.UI.Sheet.SheetEdit.SelectionAfter.get -> eQuantic.UI.Sheet.SheetSelection!
+eQuantic.UI.Sheet.SheetEdit.SelectionBefore.get -> eQuantic.UI.Sheet.SheetSelection!
+eQuantic.UI.Sheet.SheetSelection
+eQuantic.UI.Sheet.SheetSelection.<Clone>$() -> eQuantic.UI.Sheet.SheetSelection!
+eQuantic.UI.Sheet.SheetSelection.Active.get -> eQuantic.UI.Sheet.CellRef
+eQuantic.UI.Sheet.SheetSelection.Active.init -> void
+eQuantic.UI.Sheet.SheetSelection.Deconstruct(out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Sheet.SheetRange>! Ranges, out eQuantic.UI.Sheet.CellRef Active) -> void
+eQuantic.UI.Sheet.SheetSelection.Equals(eQuantic.UI.Sheet.SheetSelection? other) -> bool
+eQuantic.UI.Sheet.SheetSelection.Range.get -> eQuantic.UI.Sheet.SheetRange
+eQuantic.UI.Sheet.SheetSelection.Ranges.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Sheet.SheetRange>!
+eQuantic.UI.Sheet.SheetSelection.Ranges.init -> void
+eQuantic.UI.Sheet.SheetSelection.SheetSelection(eQuantic.UI.Sheet.SheetRange range) -> void
+eQuantic.UI.Sheet.SheetSelection.SheetSelection(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Sheet.SheetRange>! Ranges, eQuantic.UI.Sheet.CellRef Active) -> void
+override eQuantic.UI.Sheet.SheetSelection.Equals(object? obj) -> bool
+override eQuantic.UI.Sheet.SheetSelection.GetHashCode() -> int
+override eQuantic.UI.Sheet.SheetSelection.ToString() -> string!
+static eQuantic.UI.Sheet.SheetSelection.operator !=(eQuantic.UI.Sheet.SheetSelection? left, eQuantic.UI.Sheet.SheetSelection? right) -> bool
+static eQuantic.UI.Sheet.SheetSelection.operator ==(eQuantic.UI.Sheet.SheetSelection? left, eQuantic.UI.Sheet.SheetSelection? right) -> bool

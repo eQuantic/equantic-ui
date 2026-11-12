@@ -122,6 +122,14 @@ public class SheetRangesTests
         foreach (var a1 in new[] { "B2", "D4", "D5" }) sheet.Document.GetCell(Cell(a1)).Should().BeEmpty();
         sheet.Undo().Should().BeTrue();
         foreach (var a1 in new[] { "B2", "D4", "D5" }) sheet.Document.GetCell(Cell(a1)).Should().Be("x");
+        sheet.Ranges.Should().Equal([Range("B2"), Range("D4", "D5")], "the undo gives back every range it took (#1100)");
+        sheet.ActiveCell.Should().Be(Cell("D4"));
+
+        sheet.Selection = Range("A1");
+        sheet.Redo().Should().BeTrue();
+        foreach (var a1 in new[] { "B2", "D4", "D5" }) sheet.Document.GetCell(Cell(a1)).Should().BeEmpty();
+        sheet.Ranges.Should().Equal([Range("B2"), Range("D4", "D5")], "and so does the redo");
+        sheet.ActiveCell.Should().Be(Cell("D4"));
     }
 
     [Fact]
@@ -165,6 +173,48 @@ public class SheetRangesTests
         foreach (var a1 in new[] { "B2", "D4", "D5" }) sheet.Document.GetCell(Cell(a1)).Should().Be("x");
         sheet.Undo();
         foreach (var a1 in new[] { "B2", "D4", "D5" }) sheet.Document.GetCell(Cell(a1)).Should().BeEmpty();
+        sheet.Ranges.Should().Equal([Range("B2"), Range("D4", "D5")], "the undo gives back every range it filled (#1100)");
+        sheet.ActiveCell.Should().Be(Cell("D4"));
+    }
+
+    /// <summary>
+    /// An undo and a redo bring the active cell back where it was, not to its range's anchor: Tab walked it to
+    /// C2 inside B2:C3 before Delete, and Excel's undo leaves it there (#1100).
+    /// </summary>
+    [Fact]
+    public void AnUndoAndARedo_BringTheActiveCellBackWhereItWas()
+    {
+        var sheet = new SheetController();
+        foreach (var a1 in new[] { "B2", "C2", "B3", "C3" }) sheet.Document.SetCell(Cell(a1), "x");
+        sheet.Selection = Range("B2", "C3");
+        Key(sheet, "Tab");
+        sheet.ActiveCell.Should().Be(Cell("C2"), "Tab walks the active cell inside the range");
+
+        Key(sheet, "Delete");
+        sheet.Selection = Range("E5");
+        sheet.Undo().Should().BeTrue();
+
+        sheet.Ranges.Should().Equal([Range("B2", "C3")]);
+        sheet.ActiveCell.Should().Be(Cell("C2"));
+
+        sheet.Selection = Range("E5");
+        sheet.Redo().Should().BeTrue();
+        sheet.Ranges.Should().Equal([Range("B2", "C3")]);
+        sheet.ActiveCell.Should().Be(Cell("C2"));
+    }
+
+    /// <summary>A paste selects what it pasted with the active cell where it landed, as Excel does: the active
+    /// cell a Tab left elsewhere in the old range is not left outside the new one.</summary>
+    [Fact]
+    public void APaste_LeavesTheActiveCellWhereItLanded()
+    {
+        var sheet = new SheetController { Selection = Range("B2", "C3") };
+        Key(sheet, "Tab");
+
+        sheet.Paste("x").Should().BeTrue();
+
+        sheet.Ranges.Should().Equal([Range("B2")]);
+        sheet.ActiveCell.Should().Be(Cell("B2"));
     }
 
     [Fact]
