@@ -55,7 +55,7 @@ public sealed class SearchField : StatelessComponent
             // Touch.MinTarget's own doc says "the framework expands hit-slop symmetrically" and NO
             // realizer implements that — a framework-wide gap this component cannot close alone, and
             // the reason Slider and PageIndicator each size their own target by hand.
-            var side = Sizing.Height(SizeVariant.Medium, context.Density);
+            var side = ControlMetrics.Height(context, SizeVariant.Medium);
             row.Add(new Pressable(
                 new Box(new BoxStyle
                 {
@@ -74,7 +74,7 @@ public sealed class SearchField : StatelessComponent
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Height = Sizing.Height(SizeVariant.Medium, context.Density),
+            Height = ControlMetrics.Height(context, SizeVariant.Medium),
             Background = theme.SurfaceSubtle,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             Padding = EdgeInsets.Symmetric(14, 0),
