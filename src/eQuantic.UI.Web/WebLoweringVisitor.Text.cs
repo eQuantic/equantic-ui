@@ -391,7 +391,9 @@ internal sealed partial class WebLoweringVisitor
                 // its alignment and its gradient read across that width. The multi-line clamp
                 // below replaces it with the box the clamp needs.
                 Display = Display.Block,
-                Color = TokenCss.Value(text.Color ?? _context.Theme.TextPrimary),
+                // A text with no colour of its own writes none and inherits the foreground of the box
+                // above it, or the document's TextPrimary, as an icon already did (#614).
+                Color = text.Color is { } own ? TokenCss.Value(own) : null,
                 // Line alignment inside the paragraph: wrapped lines of a centered headline must
                 // center too — container alignment only places the block.
                 TextAlign = text.Align switch
