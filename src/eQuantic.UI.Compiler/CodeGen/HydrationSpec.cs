@@ -255,7 +255,9 @@ public static class HydrationSpec
         References referenced, HashSet<INamedTypeSymbol> visiting)
     {
         var parts = new List<string> { $"dict: {Of(value, referenced, visiting) ?? "null"}" };
+        // A key is a value like any other: a record or a struct on its twin, or it equals no key built here (#706).
         if (KeyTag(key) is { } tag) parts.Add($"key: {tag}");
+        else if (Of(key, referenced, visiting) is { } keySpec) parts.Add($"keyOf: {keySpec}");
         if (dictionary.DictionaryFactory() is Eq.SortedDictionary or Eq.SortedList)
         {
             // Which of the two: a SortedList refuses a key already there in its own words.

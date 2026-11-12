@@ -863,7 +863,10 @@ assignee and priority, put it on the board with its points and status, read it b
 whatever did not land. A session's `PreToolUse` hook SHALL refuse the other ways a session creates an
 issue (`gh issue create`, the GraphQL `createIssue`, a REST `POST` to `/issues` and an MCP tool that
 creates one), naming the script, and SHALL let a read, a comment, an edit and a phrase quoted in an
-argument pass.
+argument pass. It SHALL read the file of a script the command runs, and the scripts that file runs one
+level down, and refuse the command when one of them creates an issue (`gh issue create` as a line or
+as an argument list, or the GraphQL `createIssue`); `scripts/new-issue.py` and the hook itself SHALL
+pass.
 
 #### Scenario: A task with no points
 
@@ -884,6 +887,17 @@ argument pass.
 
 - **WHEN** a session commits with a message that says "gh issue create"
 - **THEN** the hook lets the commit run
+
+#### Scenario: A script creates an issue inside itself
+
+- **WHEN** a session runs `python3 file-subissues.py 1128 task …`, whose file calls
+  `["gh", "issue", "create", …]` from a `subprocess`
+- **THEN** the hook exits 2 and the script does not run
+
+#### Scenario: A script only reads issues
+
+- **WHEN** a session runs a script whose file lists or comments on issues and creates none
+- **THEN** the hook lets it run
 
 ### Requirement: An issue a person took is left to them
 

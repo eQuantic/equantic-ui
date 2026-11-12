@@ -1,4 +1,4 @@
-import { BuildContext, ComponentContext } from "@equantic/runtime";
+import { $eq, BuildContext, ComponentContext } from "@equantic/runtime";
 
 export class EmittedContexts {
     constructor() {
@@ -9,6 +9,10 @@ export class EmittedContexts {
 
     for(theme: any) {
         return this._context ?? (this._context = new ComponentContext(theme));
+    }
+
+    toJSON() {
+        return $eq.json(this, []);
     }
 
     toString(): string {
