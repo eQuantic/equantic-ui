@@ -7,3 +7,13 @@
  1189  19.9  67584 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
   544  17.9  36640 /usr/sbin/spindump
   375  13.7  70528 /System/Library/PrivateFrameworks/VoiceShortcuts.framework/Versions/A/Support/siriactionsd
+=== alive 10:23:22 app running: 2286
+--- sample 10:23:29 load: { 51.08 49.32 22.77 } System-wide memory free percentage: 83%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2262 dotnet run --no-build --project samples/PhotonDesktop
+2286 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  336   3.9  95392 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  113   2.4  10736 /usr/libexec/warmd
+  971   2.3  77216 /Users/runner/actions-runner/cached/bin/Runner.Listener
+  978   0.4 106128 /Users/runner/actions-runner/cached/bin/Runner.Worker
+  459   0.4  14832 /System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService
