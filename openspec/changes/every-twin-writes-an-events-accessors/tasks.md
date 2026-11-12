@@ -7,7 +7,7 @@
 
 - [x] 2.1 `RecordTypeEmitter.EmitModule` appends `Written(member)` for each event of the record or struct, after the indexers
 - [x] 2.2 `TypeScriptEmitter.Emit(ComponentDefinition)` writes each event of `component.ClassSyntax` inside the class callback, `asStatic: false`
-- [ ] 2.3 Prove it as `docs/PROVING.md` says. Verify: `EQ_REQUIRE_JS=1 dotnet test tests/eQuantic.UI.Conformance.Tests --filter "FullyQualifiedName~EventAccessorConformanceTests"` passes 4 of 4, with .NET's 21, 52 and 52 on both sides; it fails with 2.1 reverted (the record and struct rows throw) and with 2.2 reverted (the component row throws), the most plausible wrong fixes
+- [x] 2.3 Prove it as `docs/PROVING.md` says. Verify: `EQ_REQUIRE_JS=1 dotnet test tests/eQuantic.UI.Conformance.Tests --filter "FullyQualifiedName~EventAccessorConformanceTests"` passes 4 of 4, with .NET's 21, 52 and 52 on both sides; it fails with 2.1 reverted (the record and struct rows throw) and with 2.2 reverted (the component row throws), the most plausible wrong fixes
 
 ## 3. Proved against the real thing
 
