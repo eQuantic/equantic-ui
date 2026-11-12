@@ -155,10 +155,11 @@ public class IdentifierStrategy : IExpressionIrStrategy
                                 context.UsedHelpers.Add(Eq.Import);
                                 return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), JsExpr.This, JsExpr.Identifier(Eq.SameItem));
                             }
-                            return JsExpr.Call(JsExpr.Member(member, "bind"),
+                            context.UsedHelpers.Add(Eq.Import);
+                            return JsExpr.Call(JsExpr.Identifier(Eq.DelegateBound),
                                 context.SemanticHelper.GetOperation(identifier) is IMethodReferenceOperation { Instance: { } self }
                                     ? ValueCopies.Captured(self.Type, JsExpr.This)
-                                    : JsExpr.This);
+                                    : JsExpr.This, member);
                         }
                     }
 

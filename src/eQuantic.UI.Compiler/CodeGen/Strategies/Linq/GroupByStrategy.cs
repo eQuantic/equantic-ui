@@ -87,7 +87,7 @@ public class GroupByStrategy : IExpressionIrStrategy
         // A key groups as the key type's default comparer finds it (LinqKeys.Matches): by === two equal
         // records were two groups.
         var key = bound is { TypeArguments.Length: > 1 } ? bound.TypeArguments[1] : null;
-        var matches = LinqKeys.Matches(key, "$x.key", "$key", context);
+        var matches = LinqKeys.Matches(key, "$x.key", "$key", node, context);
         // Where the output is TypeScript the accumulator is typed: the seed `[]` alone gave it `never[]`
         // over a typed source and `any` over a loose one, and a strict tsc refused the reduce either way
         // (#727). As `any[]`, `find` types its own parameter, and so does a lookup's indexer over it.
