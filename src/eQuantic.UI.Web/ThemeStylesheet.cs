@@ -317,17 +317,20 @@ public static class ThemeStylesheet
         css.AppendLine(".eq-anchor-t-center { bottom: 100%; inset-inline-start: 50%; transform: translateX(-50%); }");
         // Wave 3b hover reveal (the Tooltip mechanism): the panel exists in the DOM but only shows
         // while the HOST is hovered — pure CSS, zero JS, never on touch (hover media handled by
-        // the browser's hover emulation rules).
-        css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
-        css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
+        // the browser's hover emulation rules). At rest the panel carries an atomic
+        // visibility:hidden, which takes it out of the accessibility tree as opacity alone does not
+        // (#1329); these rules outrank that class, and visibility rides the fade so it flips at its
+        // start on the way in and at its end on the way out.
+        css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out, visibility 120ms ease-out; }");
+        css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; visibility: visible; }");
         // Keyboard FOCUS reveals the same panel — :focus-visible, not :focus-within, because a
         // tooltip popping on every mouse click sits in the way; keyboard users are the ones who
         // cannot hover. Still zero JS.
-        css.AppendLine(".eq-hoverreveal:has(:focus-visible) > .eq-anchor-panel { opacity: 1; }");
+        css.AppendLine(".eq-hoverreveal:has(:focus-visible) > .eq-anchor-panel { opacity: 1; visibility: visible; }");
         // WCAG 1.4.13: Escape hides a revealed panel WITHOUT moving pointer or focus. The class is
         // set by the runtime's suppression controller and cleared when the trigger condition ends
         // (mouseleave/focusout) — !important because it must beat both reveal rules above.
-        css.AppendLine(".eq-hoverreveal.eq-reveal-suppressed > .eq-anchor-panel { opacity: 0 !important; }");
+        css.AppendLine(".eq-hoverreveal.eq-reveal-suppressed > .eq-anchor-panel { opacity: 0 !important; visibility: hidden !important; }");
 
         // Link mechanics: the anchor is pure semantics — the child owns every visual (the Pressable
         // contract). display:block keeps flex/stack sizing natural.
@@ -441,9 +444,10 @@ public static class ThemeStylesheet
             + "-webkit-background-clip: text; background-clip: text; "
             + "-webkit-text-fill-color: var(--eq-color-text-primary); "
             + "caret-color: var(--eq-color-text-primary); }");
-        // The entry's description twin: clipped, NOT display:none — a hidden target still reads
-        // for aria-describedby, but only a rendered one announces as a live region.
-        css.AppendLine(".eq-desc, .eq-announcement { position: absolute; width: 1px; height: 1px; margin: -1px; border: 0; padding: 0; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }");
+        // A surface's announcement: clipped, NOT display:none — only a rendered region announces as
+        // a live region. The entry's description twin is no live region any more, and is `hidden`
+        // (#1332): aria-describedby reads it all the same.
+        css.AppendLine(".eq-announcement { position: absolute; width: 1px; height: 1px; margin: -1px; border: 0; padding: 0; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }");
 
         // Loop motion (spec §06, transform-only): ONE keyframe pair per effect reads its per-element
         // endpoints from custom properties the realizers set at the style tail; duration rides the

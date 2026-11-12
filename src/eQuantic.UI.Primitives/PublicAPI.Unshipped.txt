@@ -8,3 +8,4 @@ eQuantic.UI.Primitives.ContrastLevel
 eQuantic.UI.Primitives.ContrastLevel.Standard = 0 -> eQuantic.UI.Primitives.ContrastLevel
 eQuantic.UI.Primitives.ContrastLevel.More = 1 -> eQuantic.UI.Primitives.ContrastLevel
 eQuantic.UI.Primitives.ColorToken.WithMore(eQuantic.UI.Primitives.Color light, eQuantic.UI.Primitives.Color dark) -> eQuantic.UI.Primitives.ColorToken
+static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!

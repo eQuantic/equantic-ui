@@ -148,6 +148,11 @@ jobs:
       - name: The forecast's arithmetic holds
         run: python3 -m unittest discover -s scripts -p 'roadmap_*_test.py' -v
 
+      # A session creates an issue only through scripts/new-issue.py (#1430): the hook that refuses
+      # the other ways still tells a creation from a read, a comment and a quoted phrase.
+      - name: The session hook still tells an issue's creation apart
+        run: python3 .claude/hooks/issues-are-born-whole.py --self-test
+
   # The SessionStart hook acts only in a cloud container, a path no laptop takes, so nothing else
   # would notice the day it stopped working. This runs it the way a fresh container would (a hostile
   # global git config, no dotnet on PATH) and asserts every promise, with two controls: a commit
