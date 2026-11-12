@@ -23,6 +23,11 @@ internal sealed class ServerEventsOptionsValidator : IValidateOptions<ServerEven
             failures.Add(Failure(nameof(ServerEventsOptions.MaxTopicsPerConnection), options.MaxTopicsPerConnection, "at least 1"));
         if (options.MaxPayloadBytes < 1)
             failures.Add(Failure(nameof(ServerEventsOptions.MaxPayloadBytes), options.MaxPayloadBytes, "at least 1"));
+        if (options.MaxConnections < 1)
+            failures.Add(Failure(nameof(ServerEventsOptions.MaxConnections), options.MaxConnections, "at least 1"));
+        if (options.MaxConnectionLifetime <= TimeSpan.Zero || options.MaxConnectionLifetime > LongestHeartbeat)
+            failures.Add(Failure(nameof(ServerEventsOptions.MaxConnectionLifetime), options.MaxConnectionLifetime,
+                $"longer than zero and no longer than {LongestHeartbeat}"));
         if (options.MaxQueuedEventsPerConnection < 1)
             failures.Add(Failure(nameof(ServerEventsOptions.MaxQueuedEventsPerConnection), options.MaxQueuedEventsPerConnection,
                 "at least 1"));
