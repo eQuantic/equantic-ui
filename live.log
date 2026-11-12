@@ -17,3 +17,14 @@
   368  14.8  89600 /System/Library/PrivateFrameworks/VoiceShortcuts.framework/Versions/A/Support/siriactionsd
   415  14.2  31744 /System/Library/PrivateFrameworks/AXAssetLoader.framework/Support/axassetsd
   113   8.4  10640 /usr/libexec/warmd
+=== alive 10:23:19 app running: 2341
+=== alive 10:23:29 app running: 2341
+--- sample 10:23:32 load: { 34.90 40.72 19.44 } System-wide memory free percentage: 82%
+156 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2319 dotnet run --no-build --project samples/PhotonDesktop
+2341 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 2878  31.1  32560 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+  114  29.6  54960 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 2810  26.0  35168 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 2820  20.2  35712 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 2818  19.8  35776 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
