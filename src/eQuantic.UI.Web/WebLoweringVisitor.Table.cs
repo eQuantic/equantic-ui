@@ -20,7 +20,7 @@ internal sealed partial class WebLoweringVisitor
     public HtmlElement? Visit(TableViewport viewport, bool? horizontalAxis) => LowerTableViewport(viewport);
 
     /// <summary>A cell outside a viewport has nothing to be placed against: it is its child.</summary>
-    public HtmlElement? Visit(TableViewCell cell, bool? horizontalAxis) => Lower(cell.Child, horizontalAxis);
+    public HtmlElement? Visit(TableViewCell cell, bool? horizontalAxis) => Lower(cell.Child, horizontalAxis, LoweringPath.Child);
 
     private HtmlElement LowerTableViewport(TableViewport viewport)
     {
@@ -48,20 +48,19 @@ internal sealed partial class WebLoweringVisitor
                 TouchAction = "none",
             },
         };
-        // A table or a grid reads as rows of cells (TS twin: lowerTableViewport, #1081); a group adds nothing.
-        TableSemantics? semantics = viewport.Role == TableRole.Group
-            ? null
-            : new TableSemantics(viewport.Role == TableRole.Grid, StyleAtomizer.Hash(viewport.Label ?? ""));
+        // A table or a grid reads as rows of cells (TS twin: lowerTableViewport, #1081). A group has no rows,
+        // and is still read row by row, as Photon reads it, whichever band draws a cell (#1331).
+        var semantics = new TableSemantics(viewport.Role, LoweringPath.Scope(_path));
         element.RawAttributes = new Dictionary<string, string>
         {
             ["role"] = viewport.Role switch { TableRole.Table => "table", TableRole.Grid => "grid", _ => "group" },
         };
-        if (semantics is { } table)
+        if (semantics.Rows)
         {
             // The whole grid's count, not the cells built: a reader is told where it is in a million rows.
             element.RawAttributes["aria-rowcount"] = rows.Count.ToString(CultureInfo.InvariantCulture);
             element.RawAttributes["aria-colcount"] = columns.Count.ToString(CultureInfo.InvariantCulture);
-            if (table.Grid) element.RawAttributes["aria-multiselectable"] = "true";
+            if (semantics.Grid) element.RawAttributes["aria-multiselectable"] = "true";
         }
         // A stop of the Tab order itself, before its cells': the keys it takes scroll it, and a scroller
         // a keyboard cannot reach scrolls for nobody who only has a keyboard. Unless it declines, for a
@@ -75,16 +74,23 @@ internal sealed partial class WebLoweringVisitor
                 element.Children.Add(LowerTableBand(viewport, band, marks == 1, pinnedRows, pinnedColumns,
                     pinnedAcross, pinnedDown, semantics));
         }
-        element.Children.Add(LowerTableScrollbar(semantics is not null));
-        element.Children.Add(LowerTableScrollbar(semantics is not null));
-        if (semantics is { } owner) element.Children.Add(LowerTableRows(viewport, owner));
+        element.Children.Add(LowerTableScrollbar(semantics.Rows));
+        element.Children.Add(LowerTableScrollbar(semantics.Rows));
+        element.Children.Add(semantics.Rows ? LowerTableRows(viewport, semantics) : LowerGroupOrder(viewport, semantics));
         return element;
     }
 
-    /// <summary>What a table or a grid adds for a reader (#1081): whether it is a grid, and the scope its
-    /// cells' ids are unique in, the label hashed as a <see cref="Navigable"/> grid's are
-    /// (<see cref="NavigableScope"/>).</summary>
-    private readonly record struct TableSemantics(bool Grid, string Scope);
+    /// <summary>What a table view adds for a reader (#1081): its role, and the scope its cells' ids are
+    /// unique in, its place in the tree hashed (<see cref="LoweringPath.Scope"/>), the same on the server's
+    /// first pass and after hydration. Its label was the scope, so two table views of one label, two
+    /// spreadsheets or two unlabelled table views, shared their cells' ids (#1115, #1426). A table and a grid
+    /// read as rows of cells; a group as its cells, in the same order.</summary>
+    private readonly record struct TableSemantics(TableRole Role, string Scope)
+    {
+        public bool Grid => Role == TableRole.Grid;
+
+        public bool Rows => Role != TableRole.Group;
+    }
 
     /// <summary>The id a table's cell answers to, which its row's <c>aria-owns</c> names (TS twin:
     /// tableCellId).</summary>
@@ -95,6 +101,8 @@ internal sealed partial class WebLoweringVisitor
     private static void DescribeTableCell(HtmlElement wrapper, TableViewCell cell, TableSemantics table)
     {
         wrapper.Id = TableCellId(table.Scope, cell.Row, cell.Column);
+        // A group's cell is only owned, in reading order (LowerGroupOrder): it has no row to stand in.
+        if (!table.Rows) return;
         wrapper.Role = cell.Role switch
         {
             TableCellRole.ColumnHeader => "columnheader",
@@ -138,6 +146,22 @@ internal sealed partial class WebLoweringVisitor
         return group;
     }
 
+    /// <summary>The reading order of a group (TS twin: lowerGroupOrder, #1331): one box of no size that owns
+    /// every built cell row by row, then column by column, whichever band draws it, which is the order Photon
+    /// reads a group's cells in. Without it the web read them band by band: the pinned row, the pinned
+    /// column, then the body. Last among the viewport's children, where the after-pass never looks.</summary>
+    private static HtmlElement LowerGroupOrder(TableViewport viewport, TableSemantics table)
+    {
+        var owned = string.Join(" ", viewport.Cells.Where(cell => !cell.Mark)
+            .OrderBy(cell => cell.Row).ThenBy(cell => cell.Column)
+            .Select(cell => TableCellId(table.Scope, cell.Row, cell.Column)));
+        return new RealizedElement("div")
+        {
+            Style = new HtmlStyle { Position = Position.Absolute, Width = "0", Height = "0", Overflow = "hidden" },
+            AriaOwns = owned.Length > 0 ? owned : null,
+        };
+    }
+
     /// <summary>One band: a clipping box at its edges, and the layer its cells sit on.</summary>
     private HtmlElement LowerTableBand(TableViewport viewport, int band, bool marks, int pinnedRows,
         int pinnedColumns, float pinnedAcross, float pinnedDown, TableSemantics? semantics)
@@ -168,21 +192,23 @@ internal sealed partial class WebLoweringVisitor
         // reader lands on, whatever it holds.
         if (marks) (box.RawAttributes ??= new())["inert"] = "";
         // In a table or a grid the bands are boxes and nothing else: the rows own the cells they hold.
-        if (semantics is not null)
+        if (semantics is { Rows: true })
         {
             box.Role = "none";
             layer.Role = "none";
         }
 
         var offset = viewport.Scroll.Offset;
-        foreach (var cell in viewport.Cells)
+        for (var index = 0; index < viewport.Cells.Count; index++)
         {
+            var cell = viewport.Cells[index];
             if (cell.Mark != marks) continue;
             var inPinnedRow = cell.Row < pinnedRows;
             var inPinnedColumn = cell.Column < pinnedColumns;
             if ((inPinnedColumn ? 1 : 0) + (inPinnedRow ? 2 : 0) != band) continue;
-            layer.Children.Add(LowerTableCell(viewport, cell, inPinnedRow, inPinnedColumn, pinnedAcross,
-                pinnedDown, offset, marks ? null : semantics));
+            // One step down at the cell's key, its position, as the browser's: the window moves its index.
+            layer.Children.Add(At(LoweringPath.Cell(cell.Key, index), () => LowerTableCell(viewport, cell, inPinnedRow,
+                inPinnedColumn, pinnedAcross, pinnedDown, offset, marks ? null : semantics)));
         }
         return box;
     }
@@ -218,7 +244,7 @@ internal sealed partial class WebLoweringVisitor
                 Height = TokenCss.Px((float)(rows.OffsetOf(endRow) - top)),
             },
         };
-        if (Lower(cell.Child, horizontalAxis: null) is { } child) wrapper.Children.Add(child);
+        if (Lower(cell.Child, horizontalAxis: null, LoweringPath.Child) is { } child) wrapper.Children.Add(child);
         if (semantics is { } table) DescribeTableCell(wrapper, cell, table);
         return Decorate(cell, wrapper)!;
     }

@@ -96,6 +96,7 @@ import type {
   HoverableNode,
   DropTargetNode,
   InFlowNode,
+  InheritedNode,
   InViewNode,
   SimulatedNode,
   ScrollViewNode,
@@ -495,6 +496,11 @@ function lowerNodeKind(
       return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
     case 'inFlow':
       return lowerInFlow(node as unknown as InFlowNode, context, horizontalAxis, path);
+    // An inherited component holds a value for its subtree and draws nothing of its own: every pass
+    // draws its child as if it were not there (the C# `WebLoweringVisitor`). Who depends on its value
+    // is the element engine's to track, which drives the browser from E3b.
+    case 'inherited':
+      return lowerNode((node as unknown as InheritedNode).child, context, horizontalAxis, path + '/0');
     case 'inView':
       return lowerInView(node as unknown as InViewNode, context, horizontalAxis, path);
     case 'positioned':
@@ -503,7 +509,8 @@ function lowerNodeKind(
     case 'component': {
       // W6 slice 2: resolve against the positional store BEFORE building — a retained instance
       // (same path + type + key) keeps its state and adopts the fresh config. Mirrors the C#
-      // LayoutEngine.MeasureComponent; the build output expands at the wrapper position (path/0).
+      // LayoutEngine.MeasureComponent; the build output expands one step down (path/~), a step the
+      // scope of a grid's ids reads past (pathScope), since a page mounted as a root takes none.
       const pass = getActivePass();
       const resolved = (
         pass ? pass.store.reconcile(path, node, pass.invalidator) : node
@@ -529,7 +536,7 @@ function lowerNodeKind(
         reportComponentFailure(name, error);
         built = describeComponentFailure(name, error, getPhotonTheme());
       }
-      return lowerNode(built as VisualNodeValue, context, horizontalAxis, path + '/0');
+      return lowerNode(built as VisualNodeValue, context, horizontalAxis, path + '/~');
     }
     // THE DOOR CLOSED. `nodeKind` is the generated NodeKind union, so this arm is unreachable for
     // every kind the vocabulary declares — and the day it declares one more, this line stops
@@ -1277,7 +1284,7 @@ function warmsOnHover(destination: string): boolean {
 }
 
 function lowerLink(node: LinkNode, context: LoweringContext, path: string): HtmlNode {
-  // The active language rides the href (C# twin: RenderContext.ResolveDestination). An author
+  // The active language rides the href (C# twin: RenderChannels.ResolveDestination). An author
   // writes `/pricing` once and the link is right in every language — including after a
   // client-side switch, which re-renders this node with a different active culture.
   // A destination whose scheme an href never carries is no href (C# twin, #1286).
@@ -1497,13 +1504,15 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
   }
   if (node.invalid === true) input.attributes['aria-invalid'] = 'true';
 
-  // C# twin: the STABLE .eq-field shell — input + the sr-only description twin, present (empty)
-  // from the first paint so a later error swap ANNOUNCES, and so the shape never flips (a
-  // presence-flip would replace the <input> and drop focus mid-edit). The id is the content's
-  // FNV hash — the atomizer's identity rule, deterministic across SSR and client.
+  // C# twin: the STABLE .eq-field shell — input + the HIDDEN description twin, the field's
+  // description through aria-describedby and no line of the page: the component that draws the
+  // message draws it in a LiveRegion of its own, announced once and read once (#1332). Present
+  // (empty) from the first paint so the shape never flips (a presence-flip would replace the
+  // <input> and drop focus mid-edit). The id is the content's FNV hash — the atomizer's identity
+  // rule, deterministic across SSR and client.
   const description = element('span', {});
   prependClass(description, 'eq-desc');
-  description.attributes['aria-live'] = 'polite';
+  description.attributes['hidden'] = '';
   if (node.description) {
     const descriptionId = `eq-desc-${hashDeclaration(node.description)}`;
     description.attributes['id'] = descriptionId;
@@ -1929,9 +1938,13 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
   const pinnedDown = Math.fround(node.rows.offsetOf(pinnedRows));
   const offset = node.scroll.offset;
   const role = node.role ?? 'group';
-  // A table or a grid reads as rows of cells (C# twin: LowerTableViewport, #1081); a group adds nothing.
-  const semantics: TableSemantics | null =
-    role === 'group' ? null : { grid: role === 'grid', scope: hashDeclaration(node.label ?? '') };
+  // A table or a grid reads as rows of cells (C# twin: LowerTableViewport, #1081). A group has no rows,
+  // and is still read row by row, as Photon reads it, whichever band draws a cell (#1331).
+  const semantics: TableSemantics = {
+    grid: role === 'grid',
+    rows: role !== 'group',
+    scope: pathScope(path),
+  };
   const children: HtmlNode[] = [];
   for (let marks = 0; marks < 2; marks++) {
     for (let band = 0; band < 4; band++) {
@@ -1940,8 +1953,8 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
       );
     }
   }
-  children.push(lowerTableScrollbar(semantics !== null), lowerTableScrollbar(semantics !== null));
-  if (semantics) children.push(lowerTableRows(node, semantics));
+  children.push(lowerTableScrollbar(semantics.rows), lowerTableScrollbar(semantics.rows));
+  children.push(semantics.rows ? lowerTableRows(node, semantics) : lowerGroupOrder(node, semantics));
   const view = element(
     'div',
     {
@@ -1960,7 +1973,7 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
     children,
   );
   view.attributes['role'] = role;
-  if (semantics) {
+  if (semantics.rows) {
     // The whole grid's count, not the cells built: a reader is told where it is in a million rows.
     view.attributes['aria-rowcount'] = String(node.rows.count);
     view.attributes['aria-colcount'] = String(node.columns.count);
@@ -2031,18 +2044,37 @@ function lowerTableBand(
   // lands on, whatever it holds.
   if (marks) box.attributes['inert'] = '';
   // In a table or a grid the bands are boxes and nothing else: the rows own the cells they hold.
-  if (semantics) {
+  if (semantics?.rows) {
     box.attributes['role'] = 'none';
     layer.attributes['role'] = 'none';
   }
   return box;
 }
 
-/** What a table or a grid adds for a reader (#1081): whether it is a grid, and the scope its cells' ids
- * are unique in, the label hashed as a `Navigable` grid's are (`navigableScope`). */
+/** What a table view adds for a reader (#1081): whether it is a grid, whether it reads as rows (a table
+ * and a grid do, a group reads as its cells in the same order), and the scope its cells' ids are unique
+ * in, its place in the tree (`pathScope`), as a `Navigable` grid's are. */
 interface TableSemantics {
   readonly grid: boolean;
+  readonly rows: boolean;
   readonly scope: string;
+}
+
+/**
+ * The scope a grid's or a table's cells' ids are unique in: its path below its root, past the steps into what a
+ * component builds (`~`), hashed with the atomizer's FNV, the same on both sides whichever root this pass gave it
+ * and whether a component was mounted as a root or met inside the tree (C# twin: LoweringPath.Scope). The label was the
+ * scope, so two grids of one label, two spreadsheets or two unlabelled tables shared their cells' ids (#1115).
+ */
+function pathScope(path: string): string {
+  const below = path.indexOf('/');
+  const steps = below < 0 ? [] : path.slice(below + 1).split('/');
+  return hashDeclaration(
+    steps
+      .filter((step) => step !== '~')
+      .map((step) => '/' + step)
+      .join(''),
+  );
 }
 
 /** The id a table's cell answers to, which its row's `aria-owns` names (C# twin: TableCellId). */
@@ -2055,6 +2087,8 @@ function tableCellId(scope: string, row: number, column: number): string {
 function describeTableCell(wrapper: HtmlNode, cell: TableViewCellNode, semantics: TableSemantics): void {
   const role = cell.role ?? 'cell';
   wrapper.attributes['id'] = tableCellId(semantics.scope, cell.row, cell.column);
+  // A group's cell is only owned, in reading order (lowerGroupOrder): it has no row to stand in.
+  if (!semantics.rows) return;
   wrapper.attributes['role'] =
     role === 'columnHeader' ? 'columnheader' : role === 'rowHeader' ? 'rowheader' : semantics.grid ? 'gridcell' : 'cell';
   wrapper.attributes['aria-colindex'] = String(cell.column + 1);
@@ -2065,6 +2099,21 @@ function describeTableCell(wrapper: HtmlNode, cell: TableViewCellNode, semantics
   if (role === 'cell') wrapper.attributes['aria-selected'] = cell.selected ? 'true' : 'false';
   else if (cell.selected) wrapper.attributes['aria-selected'] = 'true';
   if (cell.current) wrapper.attributes['aria-current'] = 'true';
+}
+
+/** The reading order of a group (C# twin: LowerGroupOrder, #1331): one box of no size that owns every built
+ * cell row by row, then column by column, whichever band draws it, which is the order Photon reads a group's
+ * cells in. Last among the viewport's children, where the after-pass never looks. */
+function lowerGroupOrder(node: TableViewportNode, semantics: TableSemantics): HtmlNode {
+  const cells = (node.cells ?? [])
+    .filter((cell) => !cell.mark)
+    .slice()
+    .sort((a, b) => a.row - b.row || a.column - b.column);
+  const owner = element('div', { position: 'absolute', width: '0', height: '0', overflow: 'hidden' }, []);
+  if (cells.length > 0) {
+    owner.attributes['aria-owns'] = cells.map((cell) => tableCellId(semantics.scope, cell.row, cell.column)).join(' ');
+  }
+  return owner;
 }
 
 /** The rows of a table or a grid (C# twin: LowerTableRows): one per row that holds built cells, owning
@@ -3746,6 +3795,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     // recorded above: the host takes the child's 100% and drops its maximum.
     case 'simulated':
     case 'inFlow':
+    case 'inherited':
     case 'inView':
       return capsAt(value.child);
     default:
@@ -3803,6 +3853,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as SimulatedNode).child);
     case 'inFlow':
       return fills((node as InFlowNode).child);
+    case 'inherited':
+      return fills((node as unknown as InheritedNode).child);
     case 'inView':
       return fills((node as InViewNode).child);
     case 'flexible':
@@ -4425,17 +4477,6 @@ function navigableCellId(scope: string, row: number, item: number): string {
 }
 
 /**
- * What makes one grid's cell ids distinct from another's on the same page: the grid's NAME, hashed
- * with the atomizer's FNV — the one hash both producers compute identically, which is what SSR
- * hydration needs. Two grids that also share a name (the same month rendered twice) would still
- * collide, which is the point where a caller should give them names that differ; a screen reader
- * needs that anyway.
- */
-function navigableScope(node: NavigableNode): string {
-  return hashDeclaration(node.label ?? '');
-}
-
-/**
  * A KEY, as the MOVE it means (C# twin: NavigableMove). The design system's C15 keyboard: arrows
  * walk a day, PgUp/PgDn a month, +Shift a year, Home/End the week's bounds. Returns null for a key
  * this composite does not claim — which must then reach the page untouched, or an inline grid
@@ -4478,7 +4519,7 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
   host.attributes['role'] = node.role ?? 'grid';
   host.attributes['tabindex'] = '0';
   if (node.label) host.attributes['aria-label'] = node.label;
-  const scope = navigableScope(node);
+  const scope = pathScope(path);
   if (node.activeCell)
     host.attributes['aria-activedescendant'] = navigableCellId(
       scope,
@@ -4722,7 +4763,9 @@ function buildAnchorPanel(node: AnchoredNode, context: LoweringContext, path: st
     transform: closed
       ? `translateY(${px(top ? ANCHOR_MOTION_LIFT : -ANCHOR_MOTION_LIFT)})`
       : undefined,
-    visibility: closed ? 'hidden' : undefined,
+    // C# twin: a hover panel at rest is hidden, not only transparent, or a reader meets a closed
+    // tooltip as a line of its own (#1329); the theme's reveal rules show it.
+    visibility: closed || node.openOnHover === true ? 'hidden' : undefined,
     'pointer-events': closed ? 'none' : undefined,
   });
   if (node.matchAnchorWidth === true) prependClass(panel, 'eq-anchor-match');

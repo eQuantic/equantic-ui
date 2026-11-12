@@ -210,7 +210,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // A nested type, a component among them, is constructed by its twin's name and imported from
         // there, whichever branch below builds it (#584): `new Host.Page()` constructed `Page`.
         if (createdType is INamedTypeSymbol keptOut && keptOut.ReportIfKeptOut(creation, context)) return Undefined;
-        if (createdType is INamedTypeSymbol nestedType && nestedType.NestedTwinName() is not null)
+        if (createdType is INamedTypeSymbol nestedType && nestedType.RenamedTwin() is not null)
         {
             typeName = nestedType.IntroduceTwin(context);
             genericTypeName = null;
@@ -222,7 +222,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             && aliased.HasTwin() && creation.Type is IdentifierNameSyntax { Identifier.ValueText: var written } && written != aliased.Name)
         {
             aliased.RegisterIntroduced(context);
-            typeName = aliased.Name;
+            typeName = aliased.TwinReference();
         }
 
         // A HOST-ONLY type constructed from client code. `new Matrix2D(...)` compiled, emitted an
@@ -876,7 +876,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private static string TwinOf(ITypeSymbol type, ConversionContext context)
     {
         if (type is not INamedTypeSymbol named) return type.Name;
-        if (named.NestedTwinName() is not null) named.RegisterIntroduced(context);
+        if (named.RenamedTwin() is not null) named.RegisterIntroduced(context);
         return named.TwinReference();
     }
 

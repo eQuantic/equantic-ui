@@ -23,17 +23,70 @@ on:
         required: false
         default: ""
 
-# A new push to a pull request cancels the run of the head it replaces (#1309): every run holds macOS
-# runners, the scarcest kind, and a stale one made every other pull request wait for them. Only a pull
-# request's runs share a group, keyed on its number; a run on main, on a tag, on a merge group or by
-# hand gets a group of its own run, so nothing ever cancels it or queues it behind another. The
-# reasons live here and not inside the expressions, where a `#` is not a comment but a parse error
-# that fails the whole workflow before any job starts.
+# A new push to a pull request cancels the run of the head it replaces (#1309): a stale run held
+# runners every other pull request waited for. The scarcest kind, macOS, a pull request's run no longer
+# takes at all (#1385). A push to main does the same to the run of the push before it (#1421): since
+# the merge queue, every merge is a push to main whose run repeats the suite the queue just ran on the
+# same tree, and on 2026-11-11 a merge group waited for macOS behind twelve of them, eleven already
+# superseded. What a push to main adds is the convenience feed's packages, and the newest push's
+# packages are the ones it wants. A run on a tag, on a merge group or by hand gets a group of its own
+# run, so nothing ever cancels it or queues it behind another. The reasons live here and not inside
+# the expressions, where a `#` is not a comment but a parse error that fails the whole workflow before
+# any job starts.
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('ci-pull-request-{0}', github.event.pull_request.number) || format('ci-run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.event_name == 'pull_request' && format('ci-pull-request-{0}', github.event.pull_request.number) || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'ci-main' || format('ci-run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
+  # What the change can affect (#1421), read once and handed to the jobs below as three switches,
+  # each "false" only when that job's work cannot fail because of the change: `code` (the build, the
+  # runtime's tests, conformance, the Mac jobs, the samples), `dotnet_tests` (the .NET test groups at
+  # all) and `extension`. scripts/ci-changes.sh decides, and fails OPEN: anything it does not know,
+  # a push, a tag or a manual run is the whole pipeline. The jobs read the switches as `!= 'false'`,
+  # so a failure of this job runs everything rather than nothing.
+  #
+  # The required checks keep their names whatever runs. A job skipped by its `if:` reports success,
+  # but a MATRIX job skipped as a whole never creates its per-entry checks, and the ruleset waits for
+  # them forever: the matrix jobs (`test`, `build-platform-runtimes`) always run and skip their steps,
+  # on Ubuntu when their own runner would be Windows with nothing to do.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.scope.outputs.code }}
+      dotnet_tests: ${{ steps.scope.outputs.dotnet_tests }}
+      extension: ${{ steps.scope.outputs.extension }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # A pull request's run checks out its merge commit, whose first parent is the base it would
+          # merge into: the two commits are the change, whatever the base did meanwhile.
+          fetch-depth: 2
+
+      - name: The classifier still classifies
+        run: ./scripts/ci-changes.sh --self-test
+
+      - name: What this change touches
+        id: scope
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+        run: |
+          set -uo pipefail
+          paths=$(mktemp)
+          case "$EVENT" in
+            pull_request)
+              git diff --name-only HEAD^1 HEAD > "$paths" || : > "$paths" ;;
+            merge_group)
+              { git fetch --no-tags --depth=1 origin "$QUEUE_BASE" && git diff --name-only "$QUEUE_BASE" HEAD > "$paths"; } || : > "$paths" ;;
+            *)
+              : > "$paths" ;;
+          esac
+          echo "::group::$(wc -l < "$paths" | tr -d ' ') paths changed"
+          cat "$paths"
+          echo "::endgroup::"
+          ./scripts/ci-changes.sh < "$paths" | tee -a "$GITHUB_OUTPUT"
+
   # A commit message says something about the change and nothing about what composed it. Three
   # squash messages on main ended with the scaffolding of the tool that wrote them before anything
   # compared, so this compares. On a pull request it reads the branch's commits, which is
@@ -95,6 +148,11 @@ jobs:
       - name: The forecast's arithmetic holds
         run: python3 -m unittest discover -s scripts -p 'roadmap_*_test.py' -v
 
+      # A session creates an issue only through scripts/new-issue.py (#1430): the hook that refuses
+      # the other ways still tells a creation from a read, a comment and a quoted phrase.
+      - name: The session hook still tells an issue's creation apart
+        run: python3 .claude/hooks/issues-are-born-whole.py --self-test
+
   # The SessionStart hook acts only in a cloud container, a path no laptop takes, so nothing else
   # would notice the day it stopped working. This runs it the way a fresh container would (a hostile
   # global git config, no dotnet on PATH) and asserts every promise, with two controls: a commit
@@ -132,6 +190,33 @@ jobs:
       - name: The wiki checkout still discriminates
         run: ./scripts/checkout-wiki.sh --self-test
 
+  # The merge queue discards a group when an entry ahead of it fails or leaves, and does not cancel its
+  # run: each group's ref is its own, so the concurrency above never groups it with the run that replaced
+  # it, and its macOS jobs waited for the plan's five runners beside the live groups' (#1446: eleven
+  # discarded runs on 2026-11-11, and #1378 timed out of the queue twice). Every merge group's run, every
+  # push to main and a run by hand cancel the merge-group runs whose ref the queue deleted, the sweeping
+  # run's own included, last. A group the queue still holds keeps its ref, a group that merged is on main,
+  # and a lookup that fails any other way cancels nothing. On a pull request or a tag only the self-test
+  # runs. Not a required check, so nothing in the ruleset names it, and a sweep the API failed marks its
+  # step rather than turning main red: housekeeping nothing waits on.
+  discarded-merge-groups:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The sweep still tells a discarded group from a live one
+        run: ./scripts/cancel-discarded-merge-groups.sh --self-test
+
+      - name: Cancel the runs of the merge groups the queue discarded
+        if: github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/cancel-discarded-merge-groups.sh
+
   # The loop that publishes a release, run against a stub of the push and of nuget.org's index. The
   # jobs that publish run only on a `v*` tag or by hand, so this is the only place the loop runs
   # before a release depends on it: 0.2.0-preview.61 stopped after 33 of 50 packages on three 500s
@@ -153,6 +238,8 @@ jobs:
   # the Server's own build, in every job that builds it, and a library build of the same sources
   # used to travel from here to the packages instead (#335).
   test-runtime:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -167,6 +254,8 @@ jobs:
 
   # Build platform-specific runtime packages
   package-extension:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.extension != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -198,69 +287,70 @@ jobs:
           path: extensions/vscode/equantic-ui.vsix
 
   build-platform-runtimes:
-    needs: test-runtime
-    runs-on: ${{ matrix.os }}
+    needs: [changes, test-runtime]
+    # Runs whenever the runtime's tests passed or were not needed, so its two checks always report;
+    # with no code changed it skips its steps, on Ubuntu (see `changes`).
+    if: ${{ !cancelled() && (needs.test-runtime.result == 'success' || needs.test-runtime.result == 'skipped') }}
+    runs-on: ${{ needs.changes.outputs.code != 'false' && matrix.os || 'ubuntu-latest' }}
+    env:
+      EQ_RUN: ${{ needs.changes.outputs.code != 'false' }}
     strategy:
       matrix:
         include:
           # Each OS leg packs BOTH architectures of its platform — packing only zips the right
-          # Bun binary, it does not depend on the host arch. The SDK references all six.
+          # Bun binary, it does not depend on the host arch. The SDK references all six. macOS packs
+          # in the job below, which a pull request's run leaves out (#1385).
           - os: ubuntu-latest
             runtime: Linux64
             runtime2: LinuxArm64
           - os: windows-latest
             runtime: Win64
             runtime2: WinArm64
-          - os: macos-latest
-            runtime: Osx64
-            runtime2: OsxArm64
 
+    steps:
+      - name: Nothing here for this change
+        if: env.EQ_RUN != 'true'
+        run: echo "No code changed, so the runtime packages are not built for this change and this check reports success."
+
+      - uses: actions/checkout@v4
+        if: env.EQ_RUN == 'true'
+
+      - uses: ./.github/actions/pack-runtime
+        if: env.EQ_RUN == 'true'
+        with:
+          runtime: ${{ matrix.runtime }}
+          runtime2: ${{ matrix.runtime2 }}
+
+  # The macOS runtimes, out of the matrix above and under the check's own name (#1385). GitHub Free
+  # runs five macOS jobs at once, and every push to a pull request held four of them, so pull requests
+  # queued behind each other and behind the release's own tag run. The macOS jobs now run where a merge
+  # is decided, the merge queue (#1308), and on main, on a tag and by hand; a pull request's run skips
+  # them, and so does a change that touches no code (#1421). A job skipped by its own `if` reports as
+  # skipped under its name, which satisfies a required check, while a matrix leg cannot be skipped
+  # alone: a job-level `if` cannot read the matrix, and a matrix skipped whole reports under its
+  # unexpanded name, which no required check names.
+  build-platform-runtimes-macos:
+    name: build-platform-runtimes (macos-latest, Osx64, OsxArm64)
+    needs: [changes, test-runtime]
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: ./.github/actions/pack-runtime
         with:
-          dotnet-version: 10.0.x
-
-      - name: Determine Version
-        id: version
-        shell: bash
-        run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            # A release tag IS the version: v0.2.0-preview.1 -> 0.2.0-preview.1
-            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.inputs.version }}" != "" ]; then
-            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            # Read version from Directory.Build.props (single source of truth)
-            VERSION=$(grep -o '<Version>[^<]*</Version>' Directory.Build.props | sed 's/<Version>//;s/<\/Version>//')
-            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-            echo "Using version from Directory.Build.props: $VERSION"
-          fi
-
-      - name: Build and Pack Runtime.${{ matrix.runtime }} + ${{ matrix.runtime2 }}
-        shell: bash
-        run: |
-          VERSION="${{ steps.version.outputs.VERSION }}"
-          dotnet pack src/eQuantic.UI.Runtime.${{ matrix.runtime }}/eQuantic.UI.Runtime.${{ matrix.runtime }}.csproj -c Release -p:Version=$VERSION
-          dotnet pack src/eQuantic.UI.Runtime.${{ matrix.runtime2 }}/eQuantic.UI.Runtime.${{ matrix.runtime2 }}.csproj -c Release -p:Version=$VERSION
-
-      - name: Upload Runtime.${{ matrix.runtime }} + ${{ matrix.runtime2 }} Packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: runtime-${{ matrix.runtime }}-package
-          path: |
-            src/eQuantic.UI.Runtime.${{ matrix.runtime }}/bin/Release/*.nupkg
-            src/eQuantic.UI.Runtime.${{ matrix.runtime2 }}/bin/Release/*.nupkg
+          runtime: Osx64
+          runtime2: OsxArm64
 
   # Build core packages (platform-agnostic)
   build-packages:
-    needs: build-platform-runtimes
+    needs: [changes, build-platform-runtimes, build-platform-runtimes-macos]
     # macOS: the package set includes the iOS/Android shells, whose target frameworks need
     # platform workloads that only install on a Mac. It builds, packs and checks the packages, and
     # runs no test: the suite ran here a third time, 13 minutes 38 seconds on the run's longest path,
-    # for the facts only a Mac answers, which `test-macos` now runs beside it (#1311).
+    # for the facts only a Mac answers, which `test-macos` now runs beside it (#1311). A pull
+    # request's run skips it, as it skips every macOS job; the merge queue runs it (#1385).
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.build-platform-runtimes.result == 'success' && needs.build-platform-runtimes-macos.result == 'success' }}
     runs-on: macos-latest
 
     steps:
@@ -422,8 +512,15 @@ jobs:
   # scripts/test-groups.sh's: Conformance, Web, and every other project found under tests/, so a new
   # project lands in `rest` without an edit here, and a group that finds no project fails.
   test:
-    needs: test-runtime
-    runs-on: ${{ matrix.os }}
+    needs: [changes, test-runtime]
+    # Every entry runs and reports, so the six checks always exist (see `changes`). A change to
+    # documents still runs `web` and `rest`, whose projects read docs/, the ledger, the design handoff,
+    # the wiki and CLAUDE.md; it skips `conformance`, which reads code only. A change to the extension
+    # alone runs none of them.
+    if: ${{ !cancelled() && (needs.test-runtime.result == 'success' || needs.test-runtime.result == 'skipped') }}
+    runs-on: ${{ (needs.changes.outputs.dotnet_tests == 'false' || (needs.changes.outputs.code == 'false' && matrix.group == 'conformance')) && 'ubuntu-latest' || matrix.os }}
+    env:
+      EQ_RUN: ${{ needs.changes.outputs.dotnet_tests != 'false' && !(needs.changes.outputs.code == 'false' && matrix.group == 'conformance') }}
     strategy:
       # Every job always reports. Cancelling one because another failed is how a two-OS gap gets
       # read as a one-OS gap, and how a red group hides the state of the other two.
@@ -433,15 +530,22 @@ jobs:
         group: [conformance, web, rest]
 
     steps:
+      - name: Nothing here for this change
+        if: env.EQ_RUN != 'true'
+        run: echo "This group cannot be affected by this change (see the changes job), so its projects do not run and this check reports success."
+
       - uses: actions/checkout@v4
+        if: env.EQ_RUN == 'true'
 
       - name: Setup .NET
+        if: env.EQ_RUN == 'true'
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
 
       # The packages a restore downloads, kept between runs, keyed on what the repository declares (#1312).
       - name: Cache the NuGet packages
+        if: env.EQ_RUN == 'true'
         uses: ./.github/actions/nuget-cache
         with:
           scope: ${{ github.job }}
@@ -451,10 +555,12 @@ jobs:
       # would answer "unreleased" for everything and pass having checked nothing. The release tags
       # only, not every branch as well, which the guard never reads (#999).
       - name: Fetch the release tags (for the version-mark guard)
+        if: env.EQ_RUN == 'true'
         shell: bash
         run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
 
       - name: Check out the wiki (for the docs guards)
+        if: env.EQ_RUN == 'true'
         shell: bash
         continue-on-error: true
         env:
@@ -476,13 +582,14 @@ jobs:
       # Once a run, for an answer that is the same on every system and group: the split of a fixture
       # tree, and what moves the NuGet cache's key.
       - name: The test groups and the cache key still discriminate
-        if: matrix.group == 'rest'
+        if: env.EQ_RUN == 'true' && matrix.group == 'rest'
         shell: bash
         run: |
           ./scripts/test-groups.sh --self-test
           ./scripts/nuget-cache-key.sh --self-test
 
       - name: Test
+        if: env.EQ_RUN == 'true'
         shell: bash
         env:
           # Conformance must FAIL (not skip) if no JS engine works on the runner.
@@ -542,7 +649,10 @@ jobs:
   # a workload it looks for, a helper elsewhere); a project that runs no test fails the step.
   test-macos:
     name: test (macos-latest)
-    needs: test-runtime
+    needs: [changes, test-runtime]
+    # In the merge queue, on main, on a tag and by hand, never on a pull request's push (#1385), and
+    # only when the change touches code (#1421).
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -601,9 +711,11 @@ jobs:
   # something about anyone else's. Debug, because that is the configuration a developer runs and
   # the one `IsEQuanticDevMode` wires to project references.
   samples:
-    needs: test-runtime
+    needs: [changes, test-runtime]
     # macOS is the only runner that can build every target framework the samples declare: ios and
-    # android need workloads that install on a Mac, and the desktop head needs CoreGraphics.
+    # android need workloads that install on a Mac, and the desktop head needs CoreGraphics. So it
+    # runs in the merge queue, on main, on a tag and by hand, never on a pull request's push (#1385).
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
     runs-on: macos-latest
 
     steps:
@@ -1070,16 +1182,13 @@ jobs:
     # shares no prefix with `v*`.
     if: startsWith(github.ref, 'refs/tags/ext-v')
     runs-on: ubuntu-latest
+    # The Marketplace's trusted publishing: the job's OIDC token, which `id-token: write` lets it ask
+    # for, is exchanged for a publishing credential that lives fifteen minutes, under the policy on the
+    # publisher's page for this repository and workflow. No credential is stored, so none can leak or
+    # expire, the way nuget.org's is exchanged for publish-nuget (#1224, #1271).
     permissions:
       id-token: write
       contents: read
-    env:
-      # Read as job-level env so the steps can BRANCH on which credential exists — a secret cannot be
-      # tested directly in a step's `if`.
-      VSCE_PAT: ${{ secrets.VSCE_PAT }}
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     steps:
       - uses: actions/setup-node@v4
         with:
@@ -1122,44 +1231,19 @@ jobs:
           echo "publishing $packaged"
 
       # `npm ci` installs exactly the lockfile, integrity hashes checked, and fails on a drift from the
-      # manifest instead of resolving around it: the same install package-extension ran. It runs the
-      # tree's install scripts, so the Marketplace credentials the job reads are blanked for this step:
-      # an install needs none of them.
+      # manifest instead of resolving around it: the same install package-extension ran. With no
+      # install script: every step of this job can ask GitHub for the token the Marketplace takes, so
+      # no package's script runs here. The one the tree carries, @vscode/vsce-sign's, installs a
+      # signing binary that `publish` calls only with `--signTool`.
       - name: Install the vsce the lockfile pinned
         working-directory: extensions/vscode
-        env:
-          VSCE_PAT: ''
-          AZURE_CLIENT_ID: ''
-          AZURE_TENANT_ID: ''
-          AZURE_SUBSCRIPTION_ID: ''
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund --ignore-scripts
 
-      # Microsoft Entra, when it is configured. `vsce publish --azure-credential` acquires its token
-      # through the Azure CLI, so something has to log that CLI in first — on GitHub Actions that is
-      # this action with workload identity federation, and no secret is stored.
-      - name: Sign in to Azure
-        if: env.AZURE_CLIENT_ID != ''
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
+      # `--oidc` asks GitHub for the job's token and the Marketplace for the credential, and never
+      # falls back to a stored one: a policy that disagrees with this workflow fails here, and the fix
+      # is on the publisher's Trusted Publishing page, never a token in the secrets.
       - name: Publish to the Marketplace
-        shell: bash
-        run: |
-          set -euo pipefail
-          vsce=extensions/vscode/node_modules/.bin/vsce
-          if [ -n "${AZURE_CLIENT_ID:-}" ]; then
-            "$vsce" publish --packagePath equantic-ui.vsix --azure-credential
-          elif [ -n "${VSCE_PAT:-}" ]; then
-            # Retires 2026-12-01. Kept because it is the only path that needs nothing but a secret.
-            "$vsce" publish --packagePath equantic-ui.vsix
-          else
-            echo "::error::No Marketplace credential. Set VSCE_PAT, or AZURE_CLIENT_ID + AZURE_TENANT_ID + AZURE_SUBSCRIPTION_ID for Entra."
-            echo "::error::(vsce 3.9.2 has no --oidc; trusted publishing is on the tool's main branch and not released yet.)"
-            exit 1
-          fi
+        run: extensions/vscode/node_modules/.bin/vsce publish --packagePath equantic-ui.vsix --oidc
 
   publish-nuget:
     needs: gate-templates

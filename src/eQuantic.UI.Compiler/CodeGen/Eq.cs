@@ -615,6 +615,10 @@ public static class Eq
     /// <summary>The container, for a constructor dependency — the browser's ActivatorUtilities.</summary>
     public const string ResolveService = "$eq.services.resolve";
 
+    /// <summary>Registers a service the app registered when nothing has yet, and answers its key: what
+    /// a resolution of an app's own service names in the browser (<see cref="BrowserServices"/>).</summary>
+    public const string ProvideService = "$eq.services.provide";
+
     /// <summary>How many a collection holds, whichever shape it turned out to be.</summary>
     public const string Count = "$eq.collections.count";
 

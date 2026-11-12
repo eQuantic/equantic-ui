@@ -9,9 +9,13 @@ namespace eQuantic.UI.Web;
 /// off a switch with a default arm and onto the visitor the compiler checks.
 /// </summary>
 internal sealed partial class WebLoweringVisitor(
-    ComponentContext context, FontlessMeasurer measurer, ElementFrame? frame = null)
+    ComponentContext context, FontlessMeasurer measurer, ElementFrame? frame = null, RenderChannels? channels = null)
     : IVisualNodeVisitor<bool?, HtmlElement?>
 {
+    /// <summary>What this render collects and reads (#1404): the expansion scope, the gradient and face
+    /// sinks and the link policy. Null for a lowering with no render around it, which collects nothing.</summary>
+    private readonly RenderChannels? _channels = channels;
+
     /// <summary>The theme and type scale this lowering runs against — fixed for the pass.</summary>
     private readonly ComponentContext _context = context;
 
@@ -49,6 +53,31 @@ internal sealed partial class WebLoweringVisitor(
     /// node: a control nested in it is another control, and the picture's press and focus stop at it,
     /// as the real ones do (#616). A <see cref="Simulated"/> node starts it over.</summary>
     private bool _inControl;
+
+    /// <summary>This node's place in the tree, as the browser's lowering spells it (<see cref="LoweringPath"/>): a
+    /// table scopes its cells' ids by it (#1115). Each container steps down by the browser's segment for the same
+    /// child, through <see cref="Lower(VisualNode, bool?, string)"/> or <see cref="At{T}"/>.</summary>
+    private string _path = LoweringPath.Root;
+
+    /// <summary><paramref name="node"/> lowered one step down the tree, at <paramref name="segment"/>.</summary>
+    private HtmlElement? Lower(VisualNode node, bool? horizontalAxis, string segment) =>
+        At(segment, () => Lower(node, horizontalAxis));
+
+    /// <summary><paramref name="lower"/> run one step down the tree, at <paramref name="segment"/>: a container that
+    /// places its child through a rule of its own, which lowers it where it stands.</summary>
+    private T At<T>(string segment, Func<T> lower)
+    {
+        var parent = _path;
+        _path = LoweringPath.Below(parent, segment);
+        try
+        {
+            return lower();
+        }
+        finally
+        {
+            _path = parent;
+        }
+    }
 
     /// <summary>
     /// The single dispatch every node passes through — and therefore the one place the design-mode
@@ -148,7 +177,7 @@ internal sealed partial class WebLoweringVisitor(
     /// <summary>A Positioned outside a Stack has no anchor frame — degrade to its child (parity
     /// with native).</summary>
     public HtmlElement? Visit(Positioned positioned, bool? horizontalAxis) =>
-        Lower(positioned.Child, horizontalAxis);
+        Lower(positioned.Child, horizontalAxis, LoweringPath.Child);
 
     public HtmlElement? Visit(Flexible flexible, bool? horizontalAxis) =>
         LowerFlexible(flexible, horizontalAxis);
@@ -227,6 +256,10 @@ internal sealed partial class WebLoweringVisitor(
 
     public HtmlElement? Visit(InFlow inFlow, bool? horizontalAxis) => LowerInFlow(inFlow, horizontalAxis);
 
+    /// <summary>A value for a subtree lowers as its child: the web builds with no element per position
+    /// until #1395, so nothing below reads it from here.</summary>
+    public HtmlElement? Visit(InheritedComponent inherited, bool? horizontalAxis) => Lower(inherited.Child, horizontalAxis);
+
     public HtmlElement? Visit(Simulated simulated, bool? horizontalAxis) =>
         LowerSimulated(simulated, horizontalAxis);
 
@@ -242,14 +275,17 @@ internal sealed partial class WebLoweringVisitor(
     {
         // A FRAME OF A LIVE TREE built it already, through the same boundary, with the instance
         // its position keeps. What it built is lowered as it stands, and a discovery round names
-        // the KEPT instance, the one whose fields the next frame reads. The unmeasured mark below is
-        // hydration's, and a frame's tree has no server markup to adopt yet: the owner that renders
-        // a request (E4) is the one that will need it, and it builds through a measurer it owns.
+        // the KEPT instance, the one whose fields the next frame reads. Whether its build asked for a
+        // width is the host's measurer's to say, since the owner built every component of the frame
+        // before this lowering began.
         if (_frame is { } frame)
         {
             var (kept, built) = frame.At(component);
-            ComponentExpansionScope.Ambient?.Enter(kept);
-            return built is not null ? Lower(built, horizontalAxis) : null;
+            _channels?.Expansion?.Enter(kept);
+            if (built is null) return null;
+            var lowered = Lower(built, horizontalAxis, LoweringPath.Built);
+            if (lowered is not null && _measurer.BuiltUnmeasured(kept)) MarkUnmeasured(lowered);
+            return lowered;
         }
 
         // NAMED BEFORE IT BUILDS, and the order is the whole mechanism: ExpandContained runs
@@ -257,7 +293,7 @@ internal sealed partial class WebLoweringVisitor(
         // has to be back on it by now or the build reads the empty defaults again. Null outside an
         // SSR expansion, which is every other caller — the web realizer is also the email one's and
         // the design host's, and neither prefetches.
-        ComponentExpansionScope.Ambient?.Enter(component);
+        _channels?.Expansion?.Enter(component);
 
         return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
             static (built, state) =>
@@ -265,7 +301,7 @@ internal sealed partial class WebLoweringVisitor(
                 // Counted BEFORE the built tree lowers: the components inside it build during that
                 // lowering, and what they ask is theirs, not this one's.
                 var unmeasured = state.Visitor._measurer.Asks > state.Asked;
-                var element = state.Visitor.Lower(built, state.Axis);
+                var element = state.Visitor.Lower(built, state.Axis, LoweringPath.Built);
                 if (unmeasured && element is not null) MarkUnmeasured(element);
                 return element;
             });

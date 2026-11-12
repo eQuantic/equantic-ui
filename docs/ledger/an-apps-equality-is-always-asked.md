@@ -1,4 +1,4 @@
-- **2026-11-03 · An app's Equals is always asked, and two delegates compare by target and method**: bugs under #849
+- **2026-11-11 · An app's Equals is always asked, and two delegates compare by target and method**: bugs under #849
   ([#979](https://github.com/eQuantic/equantic-ui/issues/979),
   [#980](https://github.com/eQuantic/equantic-ui/issues/980),
   [#962](https://github.com/eQuantic/equantic-ui/issues/962),

@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Every rule that decides a design, each with the case it came from and the test that holds it, is in
+[docs/PRINCIPLES.md](docs/PRINCIPLES.md), and how a change is proved is in
+[docs/PROVING.md](docs/PROVING.md). GitHub Copilot reviews every pull request with the same rules,
+from `.github/copilot-instructions.md` and `.github/instructions/`. This file states the main ones at
+length; where the two differ, this file wins and the page is corrected.
+
 ## THE PRODUCT PRINCIPLE (read this first — it decides designs)
 
 **A developer using eQuantic.UI never writes a line of Swift, an Xcode setting, an Android
@@ -139,18 +145,26 @@ and issues, even where the file around it is in Portuguese. Never a code comment
 ### Every change starts from an issue on the board
 
 The board is the [eQuantic UI project](https://github.com/orgs/eQuantic/projects/11). Before the
-branch, find the issue the change serves. If there is none, create it as a SUB-ISSUE of the epic or
-feature it belongs to, with the right type (Epic, Feature, User Story, Task or Bug), and add it to
-the board. Its status moves with the work, in the same step as git: In progress when the branch
-starts, In review when the pull request opens, Done when it merges. A sub-issue and a type are set
-through GraphQL (`addSubIssue`, `updateIssueIssueType`), and the board status through
-`updateProjectV2ItemFieldValue`.
+branch, find the issue the change serves. If there is none, create it with `scripts/new-issue.py`, as
+a SUB-ISSUE of the epic or feature it belongs to, with the right type (Epic, Feature, User Story, Task
+or Bug): the script creates an issue whole or not at all, puts it on the board and reads it back, and
+a session's hook refuses every other way of creating one (#1430). Its status moves with the work, in
+the same step as git: In progress when the branch starts, In review when the pull request opens, Done
+when it merges, through GraphQL (`updateProjectV2ItemFieldValue`).
 
 A new issue carries its points in the board's Estimate field: 1, 2, 3, 5, 8 or 13, given against
-what was delivered before it, and an issue bigger than 13 is a parent split into slices. Whenever the
+what was delivered before it, and an issue bigger than 13 is a parent split into slices. An epic
+carries its Priority instead (Urgent, High, Medium or Low), which is how the plan gives its lane the
+pace: a milestone's work first, then the highest priority (#1429). Whenever the
 work moves (an issue starts, a pull request merges), `python3 scripts/roadmap.py` reports the board's
 real dates and the forecast of the rest, each milestone's included, and `--apply` writes them to the
 board; `docs/ROADMAP-FORECAST.md` is the method.
+
+An issue is taken by assigning it. Every issue starts assigned to the owner's account, which every
+session works as, so one assigned to anyone else is that person's, and so is one labelled
+`good first issue`, which is kept for a person's first step: no session starts it, and no session
+pushes to a branch of its. A contributor takes an issue by assigning it to themselves and moving it
+to In progress, and an issue already In progress is someone's, whoever it is assigned to.
 
 ### Branches
 
@@ -240,10 +254,16 @@ is not the owner's.
    exhausted and Copilot cannot review, skip this step.
 4. **Squash-merge on green CI, composing nothing.** The ruleset requires the CI's jobs (the list is
    the `working-agreement` spec's) on a run that saw the `main` the pull request lands on (#287). Once ruleset 21198869 merges
-   through GitHub's merge queue (#1308), a reviewed, green pull request enters the queue with
-   `gh pr merge <n>`: the queue runs CI on it together with every pull request ahead of it, merges it
+   through GitHub's merge queue (#1308), a reviewed, green pull request enters the queue through the
+   GraphQL mutation `enqueuePullRequest(input: {pullRequestId: "<the pull request's node id>"})`,
+   which answers its position: `gh pr merge <n>` asks for auto-merge, which this repository refuses
+   ("Auto merge is not allowed for this repository"). The queue runs CI on it together with every
+   pull request ahead of it, merges it
    with a squash when that run is green, and nobody merges `main` into a pull request only to bring
-   it up to date. Until the queue is on, when `main` moved after the CI ran, merge `main` into the
+   it up to date. A pull request's own run skips the four macOS jobs, which hold the scarcest
+   runners and report as skipped, satisfying their checks: the queue's run is the one that runs them
+   (#1385), and a pull request that changes the Apple track asks for them on its branch first with
+   `gh workflow run ci.yml --ref <branch>`. Until the queue is on, when `main` moved after the CI ran, merge `main` into the
    pull request first (CI runs again, and it costs no Copilot round), then `gh pr merge <n> --squash`.
    Either way the squash takes the repository's default, the pull request's title and its commits'
    messages, so the commit's subject IS the title that was already read and its body is what the
@@ -649,7 +669,10 @@ suite compares, and CI reports the page modules' on every pull request):
    it as the bare module `@equantic/runtime` through the shell's import map, and the Server serves its
    own embedded copy at that route. That copy is a BUILD OUTPUT: the Server's `BundleRuntime` writes
    `wwwroot/runtime.js` from `Resources/boot.ts` before every build, and it is never committed — a
-   committed copy lagged the runtime's source twice without anything noticing (#273)
+   committed copy lagged the runtime's source twice without anything noticing (#273). It carries no
+   module of the runtime's `src/dev/`: the dev loop (the error overlay, the capture and replay of a
+   page's fields around a hot reload) is `runtime.dev.js`, the same boot from `Resources/boot.dev.ts`,
+   which the server names in the import map instead in Development and under hot reload (#1359)
 2. **`<Component>.js`**, and a **`.js.map`** only where a developer is debugging — one module per
    page or component, flat. The map carries the C# it came from, so `EQuanticSourceMaps` is `full`
    in Debug and `none` everywhere else (`external` writes one without the C# for an error reporter),

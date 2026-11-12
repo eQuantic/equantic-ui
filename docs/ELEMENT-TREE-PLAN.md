@@ -574,8 +574,41 @@ the parity rows it closes flip.
      this section's rule. Rebuilding everything instead loses a stateless component's data, and a
      test fails on it.
 
-   What remains E4's: the owner per request, the channels moving onto it, and the mark's
-   attribution.
+   What remained E4's: the owner per request, the channels moving onto it, and the mark's
+   attribution. It is split in two, E4a (#1403) and E4b (#1404).
+
+   **E4a, the server draws a write-once page through an owner for the request**
+   (`openspec/changes/the-server-draws-a-page-through-an-owner-for-the-request`):
+   - The server keeps a structural `MarkupHost` for the request, and each prefetch round is a frame
+     of one tree: a component that loaded has its position marked, only that subtree builds again,
+     and the instance that loaded is the one drawn. The rounds are `ServerDataRounds`, which the
+     component tester runs too, so the two cannot drift.
+   - `MarkupHost` replaces the provisional `WebRealizer.LowerFrame`. Its components build through
+     the boundary with a fontless measurer that notes which build asked
+     (`ComponentBoundary.BuildAtDepth` is public for it), so a frame writes hydration's unmeasured
+     mark on the elements a tree drawn once does, and the parity fixture compares the first frame
+     whole.
+   - A client navigation's discovery runs the same rounds through the same kind of host, so E5b
+     can take the route off the async flow without leaving a navigation behind it.
+   - An escape-hatch page makes its write-once bridges anew on every render, so they have no
+     position to keep an owner at, and stay trees drawn once with what loaded put back by name.
+     E5b owes them a route of their own (noted on #1395).
+   - The server cannot see the window, so its tree resolves an adaptive node for `Expanded`: the
+     markup is the same for every class, and the class decides only which arm keeps its instances
+     between rounds.
+
+   **E4b, a request's render channels live on its owner** (#1404,
+   `openspec/changes/a-requests-render-channels-live-on-its-owner`):
+   - The web's five channels and the reported density are one `RenderChannels` a render is handed:
+     the server makes one for each prefetch round and each discovery, and `MarkupHost.Lower` hands it
+     to the lowering visitor. The six `AsyncLocal`s go.
+   - The escape hatch's bridge is the one reader of an ambient: an `HtmlElement`'s `Render()` takes
+     no parameter, so the server arms the round's channels around such a page
+     (`RenderChannels.BridgeWith`) and the bridge reads them there.
+   - `AmbientChannelsTests` names every `AsyncLocal` the source keeps with its reason, and the list
+     may only shrink.
+
+   The error boundary's report and tally move onto the owner in E4c (#1452).
 5. **E5, inherited components.** `InheritedComponent`, `DependOn`, `Find`,
    `OnDependenciesChanged`, dependency-driven rebuild, `Theme`, the route and `InFlow` as inherited
    components, `Navigator.Of`. Proof: a change rebuilds its dependents and nothing else, on both

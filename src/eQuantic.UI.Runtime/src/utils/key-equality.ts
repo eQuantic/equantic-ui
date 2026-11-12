@@ -114,16 +114,19 @@ const HELD_AS: Readonly<Record<string, string>> = {
   double: 'number',
 };
 
+/** The runtime's class for a type C# names by a keyword and the browser holds as an object. */
+const HELD_IN: Readonly<Record<string, string>> = { decimal: 'Decimal', object: 'Object' };
+
 /**
  * Whether a value may be of the type a contract's key names after its `|`, as far as what the browser holds
  * says: a primitive by its kind, so the first of two number types answers, and anything else by the name of
- * its class or of one it derives from.
+ * its class or of one it derives from, a `decimal` by the runtime's `Decimal`.
  */
 function isOfContract(contract: string, value: unknown): boolean {
   if (value === null || value === undefined) return false;
   const type = contract.slice(contract.indexOf('|') + 1);
   if (typeof value !== 'object') return HELD_AS[type] === typeof value;
-  const name = type.slice(type.lastIndexOf('.') + 1);
+  const name = HELD_IN[type] ?? type.slice(type.lastIndexOf('.') + 1);
   for (let at = Object.getPrototypeOf(value); at !== null; at = Object.getPrototypeOf(at)) {
     if ((at as { constructor?: { name?: string } }).constructor?.name === name) return true;
   }
