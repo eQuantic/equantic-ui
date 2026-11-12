@@ -135,3 +135,13 @@
   117   0.9  11632 /usr/libexec/diskarbitrationd
     1   0.6  29680 /sbin/launchd
   155   0.4  12720 /usr/sbin/cfprefsd
+=== alive 13:57:41 app: 2109 watch: 
+--- sample 13:57:48 load: { 2.60 8.49 5.16 } System-wide memory free percentage: 93%
+161 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2089 dotnet run --no-build --project samples/PhotonDesktop
+2109 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 2083   0.8   1632 /bin/bash
+  976   0.8  44496 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd3646539152
+  998   0.2 111216 /Users/runner/actions-runner/cached/bin/Runner.Listener
+ 2109   0.1 139296 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  123   0.1  12496 /usr/libexec/thermalmonitord
