@@ -139,6 +139,63 @@ public class StandInAnnotationTests
     }
 
     /// <summary>
+    /// A context a module CONSTRUCTS is written under the runtime's class, <c>ComponentContext</c>, and the module
+    /// imports it beside the interface its annotations are written with, <c>BuildContext</c>. The construction was
+    /// written with nothing to name, since every reference to the type imported the annotation's name: the element
+    /// engine, which builds a context per position (#1412), failed <c>tsc</c> and threw on its first build (#1475).
+    /// </summary>
+    [Fact]
+    public void AContextAModuleConstructs_ImportsItsClass_BesideTheInterfaceItsAnnotationsName()
+    {
+        const string helper = """
+            using eQuantic.UI.Primitives;
+
+            public sealed class Contexts
+            {
+                private ComponentContext? _context;
+
+                public ComponentContext For(IAppTheme theme) => _context ??= new ComponentContext(theme);
+            }
+            """;
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(GeneratedProject.Of(helper, "Contexts.cs"));
+        var twin = compiler.CompileSource(helper, "Contexts.cs")
+            .Single(result => result.ComponentName == "Contexts").TypeScript;
+
+        twin.Should().Contain("new ComponentContext(theme)");
+        twin.Should().MatchRegex(@"import \{[^}]*\bComponentContext\b[^}]*\} from", "the construction names the class");
+        twin.Should().MatchRegex(@"import \{[^}]*\bBuildContext\b[^}]*\} from", "the annotations name the interface");
+    }
+
+    /// <summary>
+    /// A construction through a constructor the compilation cannot reach is a construction all the same: the element
+    /// engine builds a position's context through <c>ComponentContext</c>'s internal constructor, which a compilation
+    /// outside the vocabulary's assembly binds to an invalid operation rather than to an object creation, and the
+    /// module imported the annotation's name alone again (#1475, found by the Release's subsection 2 on #1405).
+    /// </summary>
+    [Fact]
+    public void AContextBuiltThroughAConstructorOutOfReach_ImportsItsClass()
+    {
+        const string helper = """
+            using eQuantic.UI.Primitives;
+
+            public sealed class Positions
+            {
+                private ComponentContext? _context;
+
+                public ComponentContext For(ComponentElement position) => _context ??= new ComponentContext(position);
+            }
+            """;
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(GeneratedProject.Of(helper, "Positions.cs"));
+        var twin = compiler.CompileSource(helper, "Positions.cs")
+            .Single(result => result.ComponentName == "Positions").TypeScript;
+
+        twin.Should().Contain("new ComponentContext(position)");
+        twin.Should().MatchRegex(@"import \{[^}]*\bComponentContext\b[^}]*\} from", "the construction names the class");
+    }
+
+    /// <summary>
     /// An app's own class named <c>BuildContext</c> is the app's: its module declares it and imports
     /// nothing of that name from the runtime. Every class module imported the runtime's
     /// <c>BuildContext</c>, and this one declared the name twice (found by Copilot reviewing #653).
