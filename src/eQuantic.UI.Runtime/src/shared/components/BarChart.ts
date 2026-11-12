@@ -131,7 +131,7 @@ export class BarChart extends StatefulComponent {
     plot(context: BuildContext) {
         let theme = context.theme;
         let vertical = this._orientation === 'vertical';
-        let canvas = new Canvas(this.draw.bind(this), SizeValue.fill, SizeValue.fill, { label: this._title, onPointerMove: this.pointer.bind(this), onPointerLeave: () => {
+        let canvas = new Canvas($eq.delegates.bound(this, this.draw), SizeValue.fill, SizeValue.fill, { label: this._title, onPointerMove: $eq.delegates.bound(this, this.pointer).bind(this), onPointerLeave: () => {
             if (this._hover >= 0) this.setState(() => this._hover = -1);
         } });
         let stack = new Stack('topStart', { width: SizeValue.fill, height: SizeValue.fixed(this._plotHeight) });

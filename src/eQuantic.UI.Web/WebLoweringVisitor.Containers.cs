@@ -72,7 +72,8 @@ internal sealed partial class WebLoweringVisitor
         foreach (var raw in stack.Children)
         {
             depth++;
-            if (LowerLayer(stack, raw, depth) is { } layer) element.Children.Add(layer);
+            var at = depth;
+            if (At(LoweringPath.Item(depth - 1), () => LowerLayer(stack, raw, at)) is { } layer) element.Children.Add(layer);
         }
 
         return element;
@@ -109,7 +110,7 @@ internal sealed partial class WebLoweringVisitor
 
         if (child is Positioned positioned)
         {
-            var lowered = Lower(positioned.Child, horizontalAxis: null);
+            var lowered = Lower(positioned.Child, horizontalAxis: null, LoweringPath.Child);
             if (lowered is null) return null;
             // An absolutely-positioned box with ONE edge shrink-wraps its content; with two it spans
             // between them. Native measures a positioned child against the stack's full extent, so a
@@ -285,7 +286,7 @@ internal sealed partial class WebLoweringVisitor
             ? $"eq-panel-{StyleAtomizer.Hash(TextContentOf(anchored.Panel))}"
             : null;
 
-        if (Lower(anchored.Anchor, horizontalAxis: null) is { } anchor)
+        if (Lower(anchored.Anchor, horizontalAxis: null, LoweringPath.Child) is { } anchor)
         {
             // What a screen reader reads AFTER the control's name — whether or not the panel is
             // visually revealed. On the anchor's root, which for the ordinary Tooltip(child:
@@ -353,7 +354,7 @@ internal sealed partial class WebLoweringVisitor
         // both the dismissal and the page veil.
         var scrimBox = new Box((anchored.ScrimStyle ?? default) with { Width = SizeValue.Fill, Height = SizeValue.Fill });
         if (anchored.OnDismiss is { } dismiss
-            && Lower(new Pressable(scrimBox, dismiss) { Label = "Dismiss" }, horizontalAxis: null) is { } scrim)
+            && Lower(new Pressable(scrimBox, dismiss) { Label = "Dismiss" }, horizontalAxis: null, LoweringPath.Scrim) is { } scrim)
         {
             scrim.ClassName = string.IsNullOrEmpty(scrim.ClassName)
                 ? "eq-anchor-scrim" : $"{scrim.ClassName} eq-anchor-scrim";
@@ -469,7 +470,7 @@ internal sealed partial class WebLoweringVisitor
         // A layer of a live tree is SHOWN before it lowers, so its components build in the slot
         // that keeps them; a frame that lowers no panel leaves the slot to be taken out at its end.
         var layer = _frame?.Show(anchored, anchored.Panel) ?? anchored.Panel;
-        if (Lower(layer, horizontalAxis: null) is { } content)
+        if (Lower(layer, horizontalAxis: null, LoweringPath.Second) is { } content)
             panel.Children.Add(content);
         return panel;
     }
@@ -523,7 +524,7 @@ internal sealed partial class WebLoweringVisitor
             },
         };
 
-        if (Lower(safeArea.Child, horizontalAxis: null) is { } child)
+        if (Lower(safeArea.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
         {
             // Transparent to its child's size, as Photon measures it: the insets go around whatever
             // the child takes, so a child that fills makes the area fill, the insets inside it. Read
@@ -637,7 +638,7 @@ internal sealed partial class WebLoweringVisitor
         if (pinned.ScrolledStyle is { IsEmpty: false } scrolled)
             element.ScrolledDeclarations.AddRange(DiffDeclarations(scrolled, Pinned.ScrolledBase));
 
-        if (Lower(pinned.Child, horizontalAxis: null) is { } child)
+        if (Lower(pinned.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         // Marked so the runtime can MEASURE it: a bookmark keeps room above itself equal to the
         // chrome that would cover it, and the height of a content-sized bar is not knowable here.
@@ -692,8 +693,8 @@ internal sealed partial class WebLoweringVisitor
         // Content that FILLS the viewport is the item of the scroller's flex line, and so is each ARM of
         // an adaptive child, whose gates are display:contents (TS twin: lowerScrollView).
         var child = scroll.FillViewport
-            ? Place(scroll.Child, arm => FillsViewport(Lower(arm, horizontalAxis: null), horizontal))
-            : Lower(scroll.Child, horizontalAxis: null);
+            ? At(LoweringPath.Child, () => Place(scroll.Child, arm => FillsViewport(Lower(arm, horizontalAxis: null), horizontal)))
+            : Lower(scroll.Child, horizontalAxis: null, LoweringPath.Child);
         if (child != null) element.Children.Add(child);
         if (scroll.FillViewport)
         {
@@ -789,7 +790,7 @@ internal sealed partial class WebLoweringVisitor
             }
         }
         var layer = _frame?.Show(overlay, overlay.Child) ?? overlay.Child;
-        if (Lower(layer, horizontalAxis: null) is { } child)
+        if (Lower(layer, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
     }
@@ -946,7 +947,7 @@ internal sealed partial class WebLoweringVisitor
             else AppendDiff(element, StyleSink.ControlPressed, pressed, box.Style);
         }
 
-        if (box.Child is not null && Lower(box.Child, horizontalAxis: null) is { } child)
+        if (box.Child is not null && Lower(box.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
         {
             // A box with a DECIDED height hands that height to an auto-sized container child — the
             // native twin of this is the block stretch the layout engine applies on both axes. CSS
@@ -1184,9 +1185,10 @@ internal sealed partial class WebLoweringVisitor
         };
 
         Func<VisualNode, HtmlElement?> item = child => LowerFlexItem(child, horizontal);
-        foreach (var child in flex.Children)
+        for (var index = 0; index < flex.Children.Count; index++)
         {
-            if (Place(child, item) is { } lowered) element.Children.Add(lowered);
+            var child = flex.Children[index];
+            if (At(LoweringPath.Item(index), () => Place(child, item)) is { } lowered) element.Children.Add(lowered);
         }
         return element;
     }
@@ -1222,7 +1224,7 @@ internal sealed partial class WebLoweringVisitor
     /// <para>
     /// A component stands where it stands and builds in its own visit, once, so the rule waits for
     /// what it builds (<see cref="_placing"/>): an AdaptiveNode out of a component is placed like one
-    /// written there, and anything else ends the wait in <see cref="Lower"/> (#738).
+    /// written there, and anything else ends the wait in <see cref="Lower(VisualNode, bool?)"/> (#738).
     /// </para>
     /// </summary>
     private HtmlElement? Place(VisualNode child, Func<VisualNode, HtmlElement?> rule)
@@ -1253,9 +1255,9 @@ internal sealed partial class WebLoweringVisitor
     {
         var wrapper = new RealizedElement("div") { Style = new HtmlStyle { Display = Display.Contents } };
 
-        void AddVariant(VisualNode variant, string gate)
+        void AddVariant(VisualNode variant, string gate, int index)
         {
-            if (Arm(adaptive, variant, place) is not { } lowered) return;
+            if (Arm(adaptive, variant, place, index) is not { } lowered) return;
             var gated = new RealizedElement("div") { AdaptiveGate = gate };
             gated.Children.Add(lowered);
             wrapper.Children.Add(gated);
@@ -1263,17 +1265,17 @@ internal sealed partial class WebLoweringVisitor
 
         // A lone Compact needs no gating — it IS the tree at every size.
         if (adaptive.Medium is null && adaptive.Expanded is null)
-            return Arm(adaptive, adaptive.Compact, place) ?? wrapper;
+            return Arm(adaptive, adaptive.Compact, place, 0) ?? wrapper;
 
         // Ranges chain off the DECLARED variants and the node's own thresholds (a design that
         // switches at 1024 gets 1024 gates, not the spec's 600/840).
         AddVariant(adaptive.Compact, AdaptiveGates.CompactUntil(
-            adaptive.Medium is not null ? adaptive.MediumFrom : adaptive.ExpandedFrom));
+            adaptive.Medium is not null ? adaptive.MediumFrom : adaptive.ExpandedFrom), 0);
         if (adaptive.Medium is { } medium)
             AddVariant(medium, AdaptiveGates.MediumFrom(
-                adaptive.MediumFrom, adaptive.Expanded is not null ? adaptive.ExpandedFrom : 0));
+                adaptive.MediumFrom, adaptive.Expanded is not null ? adaptive.ExpandedFrom : 0), 1);
         if (adaptive.Expanded is { } expanded)
-            AddVariant(expanded, AdaptiveGates.ExpandedFrom(adaptive.ExpandedFrom));
+            AddVariant(expanded, AdaptiveGates.ExpandedFrom(adaptive.ExpandedFrom), 2);
         return wrapper;
     }
 
@@ -1284,14 +1286,15 @@ internal sealed partial class WebLoweringVisitor
     /// media rules hide at this size, and a change of size replaces the arm's subtree on both
     /// targets, so no instance they would have kept is ever shown.
     /// </summary>
-    private HtmlElement? Arm(AdaptiveNode adaptive, VisualNode arm, Func<VisualNode, HtmlElement?> place)
+    private HtmlElement? Arm(AdaptiveNode adaptive, VisualNode arm, Func<VisualNode, HtmlElement?> place, int index)
     {
-        if (_frame is not { } frame || frame.HoldsArm(adaptive, arm)) return place(arm);
+        // Each arm one step down, at its place among the arms (compact, medium, expanded), as the browser's.
+        if (_frame is not { } frame || frame.HoldsArm(adaptive, arm)) return At(LoweringPath.Item(index), () => place(arm));
 
         _frame = null;
         try
         {
-            return place(arm);
+            return At(LoweringPath.Item(index), () => place(arm));
         }
         finally
         {
@@ -1328,9 +1331,10 @@ internal sealed partial class WebLoweringVisitor
                 Padding = grid.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(grid.Padding),
             },
         };
-        foreach (var child in grid.Children)
+        for (var index = 0; index < grid.Children.Count; index++)
         {
-            if (Place(child, LowerGridItem) is { } lowered) element.Children.Add(lowered);
+            var child = grid.Children[index];
+            if (At(LoweringPath.Item(index), () => Place(child, LowerGridItem)) is { } lowered) element.Children.Add(lowered);
         }
         return element;
     }
@@ -1417,7 +1421,7 @@ internal sealed partial class WebLoweringVisitor
                 MinHeight = horizontalAxis is false ? "0" : null,
             },
         };
-        if (Lower(flexible.Child, horizontalAxis) is { } child)
+        if (Lower(flexible.Child, horizontalAxis, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
     }

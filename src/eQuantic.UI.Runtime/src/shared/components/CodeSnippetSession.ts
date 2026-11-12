@@ -9,7 +9,7 @@ export class CodeSnippetSession {
         this._placing = false;
         this.changed = null;
         this._editor = editor;
-        editor.changed = $eq.delegates.combine(editor.changed, this.carry.bind(this));
+        editor.changed = $eq.delegates.combine(editor.changed, $eq.delegates.bound(this, this.carry));
         editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, (_) => this.followed());
     }
 

@@ -120,7 +120,7 @@ public class ServiceProviderStrategy : IConversionStrategy
             }
 
             context.UsedHelpers.Add(Eq.Import);
-            return $"{Eq.ResolveService}('{capability}')";
+            return $"{Eq.ResolveService}({BrowserServices.Key(capability, ServiceOf(invocation, context), null, node, context)})";
         }
 
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
@@ -143,7 +143,7 @@ public class ServiceProviderStrategy : IConversionStrategy
                 simpleTypeName = parts[^1]; // Get last part
             }
 
-            return $"{caller}.{jsMethodName}('{simpleTypeName}')";
+            return $"{caller}.{jsMethodName}({BrowserServices.Key(simpleTypeName, ServiceOf(invocation, context), null, node, context)})";
         }
 
         // Check for typeof(T) argument: GetService(typeof(T))
@@ -163,7 +163,10 @@ public class ServiceProviderStrategy : IConversionStrategy
                     simpleTypeName = parts[^1];
                 }
 
-                return $"{caller}.{jsMethodName}('{simpleTypeName}')";
+                var named = args[0].Expression is TypeOfExpressionSyntax typeOf
+                    ? context.SemanticHelper.GetType(typeOf.Type)
+                    : null;
+                return $"{caller}.{jsMethodName}({BrowserServices.Key(simpleTypeName, named, null, node, context)})";
             }
 
             var arg = context.Converter.ConvertExpression(args[0].Expression);
@@ -179,6 +182,12 @@ public class ServiceProviderStrategy : IConversionStrategy
             + "interface NAME, and there is nothing to key on here.");
         return "null";
     }
+
+    /// <summary>The service a <c>GetService&lt;T&gt;()</c> names, when the model knows it.</summary>
+    private static ITypeSymbol? ServiceOf(InvocationExpressionSyntax invocation, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { TypeArguments.Length: > 0 } method
+            ? method.TypeArguments[0]
+            : null;
 
     public int Priority => 10;
 }

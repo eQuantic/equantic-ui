@@ -6,7 +6,7 @@ import {
   decParse,
   decTryParse,
 } from './utils/decimal';
-import { combineDelegate, removeDelegate } from './utils/delegates';
+import { boundDelegate, combineDelegate, delegateOver, removeDelegate } from './utils/delegates';
 import { hydrate } from './utils/hydrate';
 import { twinJson } from './utils/twin-json';
 import { long } from './utils/long';
@@ -266,7 +266,7 @@ import {
 } from './utils/guards';
 import { named as namedType, of as typeOfValue, same as sameType } from './utils/runtime-types';
 import { lockGate, newObject } from './utils/net-object';
-import { resolveService } from './utils/services';
+import { provideService, resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
@@ -529,7 +529,7 @@ export const $eq = {
    * sorted family (SortedSet / SortedDictionary / SortedList).
    */
   /** What a transpiled constructor resolves its dependencies through — see utils/services. */
-  services: { resolve: resolveService },
+  services: { resolve: resolveService, provide: provideService },
   collections: {
     queue,
     stack,
@@ -621,7 +621,7 @@ export const $eq = {
    * C# multicast delegates: `+=` composes an invocation list and `-=` drops the last occurrence.
    * JavaScript has neither, and emitting `+=` literally made `null + function` a STRING.
    */
-  delegates: { combine: combineDelegate, remove: removeDelegate },
+  delegates: { combine: combineDelegate, remove: removeDelegate, bound: boundDelegate, over: delegateOver },
   /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */
   equals,
   /** The method group `value.Equals` of a value the browser holds as data: a delegate over it. */
