@@ -103,3 +103,13 @@
  5687  27.7  50112 /System/Library/PrivateFrameworks/UIFoundation.framework/Versions/A/XPCServices/nsattributedstringagent.xpc/Contents/MacOS/nsattributedstringagent
  5698  12.4  14160 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
  5690   9.5  17392 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+=== alive 10:25:53 app running: 2286
+--- sample 10:26:02 load: { 10.24 32.28 20.07 } System-wide memory free percentage: 81%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2262 dotnet run --no-build --project samples/PhotonDesktop
+2286 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  368  63.7  27136 /usr/libexec/secinitd
+  390  44.3  59408 /System/Library/CoreServices/iconservicesagent
+ 1126  10.6   6464 /usr/libexec/sysmond
+  114   8.4  64672 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+  352   7.2  12960 /usr/libexec/containermanagerd
