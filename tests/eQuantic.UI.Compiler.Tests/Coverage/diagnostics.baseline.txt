@@ -38,6 +38,7 @@ EQ2112 eQuantic.UI.Compiler/CodeGen/Extensions/ServerPlatform.cs
 EQ2113 eQuantic.UI.Compiler/CodeGen/Strategies/Async/TaskMethodStrategy.cs
 EQ2114 eQuantic.UI.Generators/HydrationManifestGenerator.cs
 EQ2115 eQuantic.UI.Compiler/Services/InlineHandlers.cs
+EQ2116 eQuantic.UI.Compiler/CodeGen/BrowserServices.cs
 EQ3001 eQuantic.UI.Native.Generators/PhotonProgramGenerator.cs
 EQ3002 eQuantic.UI.Native.Generators/PhotonProgramGenerator.cs
 EQ3003 eQuantic.UI.Native.Generators/CapabilityDeclarations.cs
