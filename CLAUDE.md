@@ -145,15 +145,17 @@ and issues, even where the file around it is in Portuguese. Never a code comment
 ### Every change starts from an issue on the board
 
 The board is the [eQuantic UI project](https://github.com/orgs/eQuantic/projects/11). Before the
-branch, find the issue the change serves. If there is none, create it as a SUB-ISSUE of the epic or
-feature it belongs to, with the right type (Epic, Feature, User Story, Task or Bug), and add it to
-the board. Its status moves with the work, in the same step as git: In progress when the branch
-starts, In review when the pull request opens, Done when it merges. A sub-issue and a type are set
-through GraphQL (`addSubIssue`, `updateIssueIssueType`), and the board status through
-`updateProjectV2ItemFieldValue`.
+branch, find the issue the change serves. If there is none, create it with `scripts/new-issue.py`, as
+a SUB-ISSUE of the epic or feature it belongs to, with the right type (Epic, Feature, User Story, Task
+or Bug): the script creates an issue whole or not at all, puts it on the board and reads it back, and
+a session's hook refuses every other way of creating one (#1430). Its status moves with the work, in
+the same step as git: In progress when the branch starts, In review when the pull request opens, Done
+when it merges, through GraphQL (`updateProjectV2ItemFieldValue`).
 
 A new issue carries its points in the board's Estimate field: 1, 2, 3, 5, 8 or 13, given against
-what was delivered before it, and an issue bigger than 13 is a parent split into slices. Whenever the
+what was delivered before it, and an issue bigger than 13 is a parent split into slices. An epic
+carries its Priority instead (Urgent, High, Medium or Low), which is how the plan gives its lane the
+pace: a milestone's work first, then the highest priority (#1429). Whenever the
 work moves (an issue starts, a pull request merges), `python3 scripts/roadmap.py` reports the board's
 real dates and the forecast of the rest, each milestone's included, and `--apply` writes them to the
 board; `docs/ROADMAP-FORECAST.md` is the method.
@@ -667,7 +669,10 @@ suite compares, and CI reports the page modules' on every pull request):
    it as the bare module `@equantic/runtime` through the shell's import map, and the Server serves its
    own embedded copy at that route. That copy is a BUILD OUTPUT: the Server's `BundleRuntime` writes
    `wwwroot/runtime.js` from `Resources/boot.ts` before every build, and it is never committed — a
-   committed copy lagged the runtime's source twice without anything noticing (#273)
+   committed copy lagged the runtime's source twice without anything noticing (#273). It carries no
+   module of the runtime's `src/dev/`: the dev loop (the error overlay, the capture and replay of a
+   page's fields around a hot reload) is `runtime.dev.js`, the same boot from `Resources/boot.dev.ts`,
+   which the server names in the import map instead in Development and under hot reload (#1359)
 2. **`<Component>.js`**, and a **`.js.map`** only where a developer is debugging — one module per
    page or component, flat. The map carries the C# it came from, so `EQuanticSourceMaps` is `full`
    in Debug and `none` everywhere else (`external` writes one without the C# for an error reporter),
