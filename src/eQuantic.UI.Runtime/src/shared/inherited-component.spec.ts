@@ -24,7 +24,7 @@ class Brand extends InheritedComponent {
     super(child);
   }
 
-  protected updateShouldNotify(old: InheritedComponent): boolean {
+  updateShouldNotify(old: InheritedComponent): boolean {
     return (old as Brand).name !== this.name;
   }
 }

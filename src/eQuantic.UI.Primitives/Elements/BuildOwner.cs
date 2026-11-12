@@ -23,7 +23,6 @@ namespace eQuantic.UI.Primitives;
 /// unmounts before what arrives mounts.
 /// </para>
 /// </summary>
-[ServerOnly]
 public sealed class BuildOwner
 {
     private readonly List<ComponentElement> _dirty = new();
