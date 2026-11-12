@@ -10,19 +10,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        side: [pool, nopool]
+        side: [nodrop, drop]
         attempt: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-      - name: The loop without the pool
-        if: matrix.side == 'nopool'
+      - name: The host keeps its content caches across an edit
+        if: matrix.side == 'nodrop'
         shell: bash
         run: |
-          cp .github/ab/PhotonWindow.nopool.cs src/eQuantic.UI.Native.Shell.MacOS/PhotonWindow.cs
-          ! grep -q objc_autoreleasePoolPush src/eQuantic.UI.Native.Shell.MacOS/PhotonWindow.cs
+          python3 - <<'PY'
+          p='src/eQuantic.UI.Native.Components/PhotonHost.cs'
+          s=open(p).read()
+          old="            _textCache.Clear();\n            _iconCache.Clear();\n            _imageCache.Clear();\n"
+          assert old in s
+          open(p,'w').write(s.replace(old,""))
+          PY
+          ! grep -q '_textCache.Clear();' src/eQuantic.UI.Native.Components/PhotonHost.cs
       - name: Build the desktop sample
         run: dotnet build samples/PhotonDesktop
       - name: Edit to view on the desktop, shipped live
