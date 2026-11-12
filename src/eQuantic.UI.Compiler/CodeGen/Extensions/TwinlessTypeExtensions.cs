@@ -46,6 +46,10 @@ internal static class TwinlessTypeExtensions
             && (assembly == SdkAssembly || assembly.StartsWith(SdkAssembly + ".", StringComparison.Ordinal))
         || type is INamedTypeSymbol named && named.IsRuntimeProvided();
 
+    /// <summary>Whether an assembly is one of the SDK's own.</summary>
+    internal static bool IsSdk(this IAssemblySymbol assembly) =>
+        assembly.Name == SdkAssembly || assembly.Name.StartsWith(SdkAssembly + ".", StringComparison.Ordinal);
+
     /// <summary>The name the SDK's assemblies share, as the packages that carry them are named.</summary>
     private const string SdkAssembly = "eQuantic.UI";
 }
