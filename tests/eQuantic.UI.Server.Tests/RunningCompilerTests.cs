@@ -244,6 +244,35 @@ public class RunningCompilerTests
     }
 
     /// <summary>
+    /// A shutdown while MSBuild is still being asked stops it and throws nothing, however the asking's own
+    /// release of it falls against the wait. Disposing read the MSBuild under the gate and stopped it
+    /// outside, so the asking, woken by the kill, released it between the look and the wait, and Windows
+    /// refused the wait with an invalid handle, which the host's disposal threw (#1375, measured on CI's
+    /// Windows leg). Repeated, because the release races the wait.
+    /// </summary>
+    [Fact]
+    public async Task Disposing_WhileMsBuildIsAsked_StopsIt_AndThrowsNothing()
+    {
+        for (var round = 0; round < 25; round++)
+        {
+            var compiler = new RunningCompiler(c => c.Asked(Silent(), Path.GetTempPath(), TimeSpan.FromMinutes(2)));
+            var asking = Task.Run(compiler.Prepare);
+            SpinWait.SpinUntil(() => compiler.AskingId is not null, TimeSpan.FromSeconds(30)).Should().BeTrue();
+            var pid = compiler.AskingId!.Value;
+            try
+            {
+                compiler.Invoking(c => c.Dispose()).Should().NotThrow($"round {round}");
+                await asking.WaitAsync(TimeSpan.FromSeconds(30));
+                Running(pid).Should().BeFalse("the MSBuild being asked belongs to the app, and stops with it");
+            }
+            finally
+            {
+                EndIfRunning(pid);
+            }
+        }
+    }
+
+    /// <summary>
     /// eqc is started without the variables dotnet watch gives the app it runs: with them, eqc loaded
     /// dotnet watch's agent and reached for the app's own channel to it.
     /// </summary>

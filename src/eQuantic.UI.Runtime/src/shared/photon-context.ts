@@ -63,6 +63,20 @@ export class ComponentContext {
    * through.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /**
+   * The nearest inherited component above, registering this component as its dependent (the C#
+   * `DependOn<T>()`). A context with no position has none to look up, which is every browser context
+   * until it builds on the element engine (E5b), so it answers null, as C# does on such a context.
+   */
+  dependOn(): null {
+    return null;
+  }
+
+  /** The nearest inherited component above, with no registration (the C# `Find<T>()`): null, as above. */
+  find(): null {
+    return null;
+  }
+
   getService(interfaceName: string): any {
     return resolveService(interfaceName);
   }

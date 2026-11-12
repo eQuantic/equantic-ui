@@ -11,9 +11,10 @@ namespace eQuantic.UI.Primitives;
 /// next node a frame happens to address the same way.
 /// </para>
 /// <para>
-/// Two kinds: <see cref="ComponentElement"/>, which builds, and <see cref="NodeElement"/>, which holds
-/// a vocabulary node's children. The tree is driven by a <see cref="BuildOwner"/>; nothing outside
-/// the engine makes one.
+/// Three kinds: <see cref="ComponentElement"/>, which builds, <see cref="InheritedElement"/>, which holds
+/// a value for its subtree and knows what reads it, and <see cref="NodeElement"/>, which holds a
+/// vocabulary node's children. The tree is driven by a <see cref="BuildOwner"/>; nothing outside the
+/// engine makes one.
 /// </para>
 /// <para>
 /// HOST ONLY until the browser drives the same engine (E3): eqc routes this namespace to the runtime,
@@ -76,14 +77,22 @@ public abstract class Element
     /// that builds alone, outside its parent's walk, still builds with the intent armed.</summary>
     internal bool UnderInFlow { get; private set; }
 
+    /// <summary>The nearest inherited position above this one, where a lookup by a component below it
+    /// starts: read from the parent when this position mounts, since a position never moves.</summary>
+    internal InheritedElement? NearestInherited { get; private set; }
+
     /// <summary>The reconciliation that last claimed this position (see <see cref="NodeElement"/>):
     /// a stamp rather than a flag, so nothing has to be cleared between two of them.</summary>
     internal int MatchStamp;
 
-    /// <summary>The element a node is held by: a component builds, every other node holds children.</summary>
-    internal static Element Create(VisualNode configuration) => configuration is UiComponent component
-        ? new ComponentElement(component)
-        : new NodeElement(configuration);
+    /// <summary>The element a node is held by: a component builds, an inherited value holds its child and
+    /// what reads it, every other node holds children.</summary>
+    internal static Element Create(VisualNode configuration) => configuration switch
+    {
+        UiComponent component => new ComponentElement(component),
+        InheritedComponent inherited => new InheritedElement(inherited),
+        _ => new NodeElement(configuration),
+    };
 
     /// <summary>
     /// Flutter's <c>canUpdate</c>: a position keeps its element when the next node is of the same
@@ -101,6 +110,7 @@ public abstract class Element
         Depth = parent is null ? 0 : parent.Depth + 1;
         ComponentDepth = parent is null ? 0 : parent.ComponentDepth + (parent is ComponentElement ? 1 : 0);
         UnderInFlow = parent is not null && (parent.UnderInFlow || parent.Configuration is InFlow);
+        NearestInherited = parent as InheritedElement ?? parent?.NearestInherited;
         IsActive = true;
         FirstBuild();
     }

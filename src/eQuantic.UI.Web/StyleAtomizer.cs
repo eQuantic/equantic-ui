@@ -156,19 +156,6 @@ public interface IAdaptiveGated
 /// </summary>
 public sealed class StyleSink
 {
-    private static readonly AsyncLocal<StyleSink?> _ambient = new();
-
-    /// <summary>
-    /// The render-scoped ambient sink: the SSR pipeline arms one around a page render so every
-    /// <see cref="VisualNodeComponent"/> INSIDE the tree (Core pages compose bridges internally)
-    /// contributes to a single per-page rule set. Null outside an SSR render.
-    /// </summary>
-    public static StyleSink? Ambient
-    {
-        get => _ambient.Value;
-        set => _ambient.Value = value;
-    }
-
     private readonly Dictionary<string, string> _rules = new();
 
     /// <summary>
