@@ -1,4 +1,4 @@
-- **<date> · A value held as object keeps the type its answers depend on**: bugs under #849
+- **2026-11-12 · A value held as object keeps the type its answers depend on**: bugs under #849
   ([#552](https://github.com/eQuantic/equantic-ui/issues/552),
   [#742](https://github.com/eQuantic/equantic-ui/issues/742),
   [#768](https://github.com/eQuantic/equantic-ui/issues/768),
