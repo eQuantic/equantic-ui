@@ -113,3 +113,14 @@
  1020  11.3   6464 /usr/libexec/sysmond
   380  11.1  33056 /usr/libexec/secinitd
  6184   6.8  24272 /System/Library/ExtensionKit/Extensions/ODDIExperimentationExtension.appex/Contents/MacOS/ODDIExperimentationExtension
+=== alive 13:57:40 app: 2354 watch: 
+=== alive 13:57:50 app: 2354 watch: 
+--- sample 13:57:56 load: { 12.44 22.97 14.55 } System-wide memory free percentage: 81%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2288 dotnet run --no-build --project samples/PhotonDesktop
+2354 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+ 6226  30.8  35648 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 6539  19.4  34768 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 6487  17.8  36016 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+  991  16.2  42288 /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/provjobd4166047580
+  114  13.3  72112 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
