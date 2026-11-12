@@ -11,15 +11,25 @@ let output = URL(fileURLWithPath: arguments[6])
 try? FileManager.default.removeItem(at: output)
 
 let done = DispatchSemaphore(value: 0)
+// What went wrong, said on standard error with a non-zero exit, so a recipe that runs the tools in a row
+// stops at the one that failed instead of going on with a clip that was never written.
+var failure: String?
 Task {
+    defer { done.signal() }
     do {
-        let track = try await asset.loadTracks(withMediaType: .video).first!
+        guard let track = try await asset.loadTracks(withMediaType: .video).first else {
+            failure = "\(arguments[1]) has no video track"
+            return
+        }
         let natural = try await track.load(.naturalSize)
         let range = CMTimeRange(start: CMTime(seconds: start, preferredTimescale: 600),
                                 duration: CMTime(seconds: length, preferredTimescale: 600))
 
         let composition = AVMutableComposition()
-        let video = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)!
+        guard let video = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            failure = "no video track could be added to the composition"
+            return
+        }
         try video.insertTimeRange(range, of: track, at: .zero)
 
         let instruction = AVMutableVideoCompositionInstruction()
@@ -34,18 +44,24 @@ Task {
         render.instructions = [instruction]
 
         guard let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
-            print("error: no export session for \(output.lastPathComponent) at the highest-quality preset")
-            done.signal()
+            failure = "no export session for \(output.lastPathComponent) at the highest-quality preset"
             return
         }
         export.videoComposition = render
         export.outputURL = output
         export.outputFileType = .mp4
         await export.export()
-        print("\(output.lastPathComponent): status \(export.status.rawValue) \(export.error.map { "\($0)" } ?? "")")
+        guard export.status == .completed else {
+            failure = "\(output.lastPathComponent) was not exported (status \(export.status.rawValue)) \(export.error.map { "\($0)" } ?? "")"
+            return
+        }
+        print("\(output.lastPathComponent): exported")
     } catch {
-        print("error \(error)")
+        failure = "\(error)"
     }
-    done.signal()
 }
 done.wait()
+if let failure {
+    FileHandle.standardError.write(Data("error: \(failure)\n".utf8))
+    exit(1)
+}
