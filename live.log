@@ -218,3 +218,56 @@ desktop run 6: total 257ms, delta 203ms, frame 54ms
   114   9.7  57856 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
  3272   9.1  33232 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
   disk:    14.19  648  8.98     0.00    0  0.00     0.00    0  0.00 
+[watch 19:41:16.681] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:41:17.384] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:41:17.391] dotnet watch : C# and Razor changes applied in 680ms.
+[watch 19:41:17.422] [eQuantic.HotReload] drew the edit 39ms after it was applied
+desktop run 1 (cold): total 818ms, delta 779ms, frame 39ms
+[watch 19:41:19.628] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:41:19.762] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:41:19.772] dotnet watch : C# and Razor changes applied in 137ms.
+[watch 19:41:19.837] [eQuantic.HotReload] drew the edit 75ms after it was applied
+desktop run 2: total 317ms, delta 242ms, frame 75ms
+[watch 19:41:21.899] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:41:22.010] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:41:22.010] dotnet watch : C# and Razor changes applied in 112ms.
+[watch 19:41:22.050] [eQuantic.HotReload] drew the edit 39ms after it was applied
+desktop run 3: total 197ms, delta 158ms, frame 39ms
+[watch 19:41:24.299] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:41:24.387] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:41:24.387] dotnet watch : C# and Razor changes applied in 87ms.
+[watch 19:41:24.507] [eQuantic.HotReload] drew the edit 112ms after it was applied
+desktop run 4: total 296ms, delta 184ms, frame 112ms
+[watch 19:41:26.619] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:41:26.682] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:41:26.683] dotnet watch : C# and Razor changes applied in 62ms.
+[watch 19:41:26.717] [eQuantic.HotReload] drew the edit 35ms after it was applied
+desktop run 5: total 113ms, delta 78ms, frame 35ms
+[watch 19:41:28.828] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 19:41:28.863] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 19:41:28.864] dotnet watch : C# and Razor changes applied in 34ms.
+[watch 19:41:28.982] [eQuantic.HotReload] drew the edit 118ms after it was applied
+desktop run 6: total 218ms, delta 100ms, frame 118ms
+
+### Edit to view: desktop, warm median against a bar of 1000ms
+
+| part | min | median | max | cold |
+|---|---:|---:|---:|---:|
+| total | 113 | 218 | 317 | 818 |
+| delta | 78 | 158 | 242 | 779 |
+| frame | 35 | 75 | 118 | 39 |
+=== round 3 19:41:31
+[watch 19:41:32.711] dotnet watch : Hot reload enabled. For a list of supported edits, see https://aka.ms/dotnet/hot-reload.
+[watch 19:41:32.724] dotnet watch : Press Ctrl+R to restart.
+[watch 19:41:33.547]   Determining projects to restore...
+--- sample 19:41:34 load: { 27.19 39.22 20.79 } System-wide memory free percentage: 81%
+155 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+3775 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+3776 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+3777 /Users/runner/.dotnet/dotnet build /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/PhotonDesktop.c
+ 3777  59.2 163232 /Users/runner/.dotnet/dotnet
+ 1970  44.3 899584 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
+ 3786  43.4 102352 /Users/runner/.dotnet/dotnet
+ 3787  42.6 101232 /Users/runner/.dotnet/dotnet
+ 3790  11.1  14688 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+  disk:    29.91  462 13.48     0.00    0  0.00     0.00    0  0.00 
