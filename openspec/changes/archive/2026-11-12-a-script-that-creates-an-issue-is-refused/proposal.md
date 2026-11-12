@@ -18,8 +18,8 @@ points, so their fields were set by hand afterwards.
   read always did.
 - `scripts/new-issue.py`, the one door, and the hook itself, whose self-test names every refusal, are
   the two scripts allowed to name a creation.
-- The local tool that slipped through is retired outside the repository, with a message naming the
-  script.
+- The local tool that slipped through lives outside the repository, and the hook now refuses it: a
+  session that runs it is told to use the script.
 
 Nothing an app writes changes, and neither the public surface nor the developer surface moves.
 
