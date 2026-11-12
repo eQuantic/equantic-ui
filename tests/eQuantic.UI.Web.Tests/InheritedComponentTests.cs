@@ -345,6 +345,5 @@ public class InheritedComponentTests
 
         inside.Context!.InFlow.Should().BeTrue();
         outside.Context!.InFlow.Should().BeFalse();
-        InFlow.Current.Should().BeFalse("a position answers from the tree, and arms no ambient channel");
     }
 }

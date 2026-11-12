@@ -27,7 +27,11 @@ interface ContextPosition {
   readonly underInFlow: boolean;
   dependOn(matches: (value: object) => boolean): object | null;
   find(matches: (value: object) => boolean): object | null;
-  readonly owner: { readonly context: RenderContext; readFrame(reader: ContextPosition): void };
+  readonly owner: {
+    readonly context: RenderContext;
+    readFrame(reader: ContextPosition): void;
+    readRoute(reader: ContextPosition): void;
+  };
   visitChildren(visitor: unknown): void;
 }
 
@@ -50,6 +54,8 @@ export class ComponentContext {
   private readonly _theme: AppTheme;
   private readonly _typeScale: number;
   private readonly _density: DensityValue;
+  private readonly _route: RouteValues;
+  private readonly _inFlow: boolean;
 
   constructor(
     theme: AppTheme | ContextPosition,
@@ -57,7 +63,15 @@ export class ComponentContext {
     /** How tight this target's controls are — the C# `Density`, in its own words rather than in
         a `string` a component would then have to be trusted with. */
     density: DensityValue = 'comfortable',
+    /** The C# measurer: the browser measures with its own canvas, so what is handed here is not read. */
+    _measureText?: unknown,
+    /** The route the frame is drawn for (C# `route`); the empty one when none is handed. */
+    route: RouteValues | null = null,
+    /** Whether the frame's components were asked to draw in the flow (C# `inFlow`). */
+    inFlow = false,
   ) {
+    this._route = route ?? RouteValues.empty;
+    this._inFlow = inFlow;
     if (isPosition(theme)) {
       this._position = theme;
       this._theme = null!;
@@ -101,20 +115,25 @@ export class ComponentContext {
 
   /**
    * What the ROUTE said — `context.Route.Param("slug")` transpiles to `context.route.param("slug")`.
-   * Reads the ambient current route, which the router updates before mounting a page and boot seeds
-   * from the initial URL: the same values the server built with, so a param page hydrates matching.
+   * A position reads its owner's frame, which the page hands the router's route (the same values the
+   * server built with, so a param page hydrates matching), and is registered as one of the route's
+   * readers, apart from the theme's: a navigation within one page type builds what read the route
+   * and nothing else (#1395). A frame's context answers the route it was handed.
    */
   get route(): RouteValues {
-    return RouteValues.current;
+    const position = this._position;
+    if (!position) return this._route;
+    if (position.isActive) position.owner.readRoute(position);
+    return position.owner.context.route ?? RouteValues.empty;
   }
 
   /**
    * Whether this component was asked to draw WHERE IT STANDS rather than over everything (the C#
    * `ComponentContext.InFlow`). Only the overlays answer it. A position answers from the tree above
-   * it, a frame's context from the ambient intent.
+   * it, a frame's context what it was handed.
    */
   get inFlow(): boolean {
-    return this._position ? this._position.underInFlow : inFlowState;
+    return this._position ? this._position.underInFlow : this._inFlow;
   }
 
   /**
@@ -391,23 +410,6 @@ export function getPhotonTheme(): AppTheme {
 /** The active type scale — a page's context has to carry the SAME one its subtree is lowered with. */
 export function getPhotonTypeScale(): number {
   return activeTypeScale;
-}
-
-/**
- * The ambient in-flow intent, armed while an `InFlow` subtree builds — the C# `InFlow.Current`
- * twin. Read through `ComponentContext.inFlow`.
- */
-let inFlowState = false;
-
-/** The ambient in-flow intent — what a RenderContext carries into a transpiled build. */
-export function getInFlow(): boolean {
-  return inFlowState;
-}
-
-export function setInFlow(value: boolean): boolean {
-  const previous = inFlowState;
-  inFlowState = value;
-  return previous;
 }
 
 /** The context handed to shared components' `build(context)` (directly or via lowering expansion). */

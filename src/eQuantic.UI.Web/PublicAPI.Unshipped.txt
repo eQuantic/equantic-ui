@@ -44,3 +44,14 @@ eQuantic.UI.Web.MarkupHost.Build(eQuantic.UI.Primitives.VisualNode! root, bool r
 eQuantic.UI.Web.ComponentExpansionScope.Name(eQuantic.UI.Primitives.UiComponent! component, string! key) -> void
 eQuantic.UI.Web.ComponentExpansionScope.PutBack(eQuantic.UI.Primitives.UiComponent! component, string! key) -> void
 static eQuantic.UI.Web.MarkupHost.ForPage(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> eQuantic.UI.Web.MarkupHost!
+eQuantic.UI.Web.MarkupHost.MarkupHost(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, eQuantic.UI.Primitives.RouteValues? route = null) -> void
+eQuantic.UI.Web.RenderChannels.RenderChannels(eQuantic.UI.Web.ComponentExpansionScope? expansion = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, System.Func<string!, string!>? linkPolicy = null, eQuantic.UI.Primitives.RouteValues? route = null) -> void
+eQuantic.UI.Web.RenderChannels.Route.get -> eQuantic.UI.Primitives.RouteValues!
+eQuantic.UI.Web.RenderContext.RenderContext(eQuantic.UI.Primitives.RouteValues? route = null) -> void
+static eQuantic.UI.Web.MarkupHost.ForPage(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, eQuantic.UI.Primitives.RouteValues? route = null) -> eQuantic.UI.Web.MarkupHost!
+static eQuantic.UI.Web.MarkupHost.Structural(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, eQuantic.UI.Primitives.RouteValues? route = null) -> eQuantic.UI.Web.MarkupHost!
+*REMOVED*eQuantic.UI.Web.MarkupHost.MarkupHost(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> void
+*REMOVED*eQuantic.UI.Web.RenderChannels.RenderChannels(eQuantic.UI.Web.ComponentExpansionScope? expansion = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, System.Func<string!, string!>? linkPolicy = null) -> void
+*REMOVED*eQuantic.UI.Web.RenderContext.RenderContext() -> void
+*REMOVED*static eQuantic.UI.Web.MarkupHost.ForPage(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> eQuantic.UI.Web.MarkupHost!
+*REMOVED*static eQuantic.UI.Web.MarkupHost.Structural(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> eQuantic.UI.Web.MarkupHost!

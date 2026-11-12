@@ -15,7 +15,6 @@ import { getCurrentRoute } from '../router/current-route';
 import { ElementRoots, enterPass, exitPass, lowerRoot } from '../shared/element-roots';
 import {
   getPhotonDensity,
-  getInFlow,
   getPhotonTheme,
   getPhotonTypeScale,
   measurePhotonText,
@@ -281,7 +280,6 @@ function pageContext(serviceProvider: ServiceProvider): RenderContext {
     getService: <T>(key: import('./types').ServiceKey<T>) => serviceProvider.getService<T>(key),
     serviceProvider,
     route: getCurrentRoute(),
-    inFlow: getInFlow(),
     theme: getPhotonTheme(),
     density: getPhotonDensity(),
     typeScale: getPhotonTypeScale(),

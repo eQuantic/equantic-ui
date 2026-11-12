@@ -156,6 +156,8 @@ public static class UIExtensions
         // and had to guess the mode it was drawing.
         // The controller reads the request's cookie, so it needs the accessor.
         services.AddHttpContextAccessor();
+        // The request's route, for a prefetch outside the tree (#1395).
+        services.AddRequestRoute();
         services.TryAddSingleton<eQuantic.UI.Primitives.IThemeController>(provider =>
             new SsrThemeController(
                 provider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>(),

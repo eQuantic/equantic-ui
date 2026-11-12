@@ -242,8 +242,9 @@ public class WriteOncePageSsrTests
         [ServerOnly]
         public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
         {
-            // The route is ambient by now, so a loader can key off it without being handed one.
-            _loaded = $"document:{RouteValues.Current.Param("slug")}";
+            // The request's route is one of its services, so a loader can key off it without being
+            // handed one (#1395).
+            _loaded = $"document:{services.GetRequiredService<RouteValues>().Param("slug")}";
             return Task.CompletedTask;
         }
 
@@ -255,10 +256,12 @@ public class WriteOncePageSsrTests
     {
         var context = new DefaultHttpContext
         {
-            RequestServices = new ServiceCollection().BuildServiceProvider(),
+            RequestServices = new ServiceCollection().AddRequestRoute().BuildServiceProvider(),
         };
         context.Request.RouteValues["slug"] = slug;
         context.Request.QueryString = new QueryString($"?page={page}");
+        // What ASP.NET's hosting does for every request when the accessor is registered.
+        context.RequestServices.GetRequiredService<IHttpContextAccessor>().HttpContext = context;
         return context;
     }
 
@@ -293,15 +296,18 @@ public class WriteOncePageSsrTests
     }
 
     /// <summary>
-    /// The ambient route does not OUTLIVE its request. SSR renders concurrent requests on shared
-    /// state, and a slug left behind is one visitor's document served to the next one.
+    /// Each request reads its OWN route. SSR renders concurrent requests, and a slug that reached the
+    /// next request would be one visitor's document served to another; the route is the request's,
+    /// handed to its owner and registered in its services, with no channel between the two.
     /// </summary>
     [Fact]
-    public async Task TheRoute_DoesNotSurviveTheRequest()
+    public async Task EachRequest_ReadsItsOwnRoute()
     {
-        await CreateService().RenderPageAsync(typeof(RoutedDocPage), RequestFor("first", "1"));
+        var service = CreateService();
+        await service.RenderPageAsync(typeof(RoutedDocPage), RequestFor("first", "1"));
+        var second = await service.RenderPageAsync(typeof(RoutedDocPage), RequestFor("second", "2"));
 
-        RouteValues.Current.Param("slug").Should().BeNull();
+        second.Html.Should().Contain("document:second").And.Contain("page=2").And.NotContain("first");
     }
 
     /// <summary>A page rendered with no route at all reads null rather than throwing — every page

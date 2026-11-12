@@ -17,7 +17,8 @@ internal sealed partial class WebLoweringVisitor(
     private readonly RenderChannels? _channels = channels;
 
     /// <summary>The theme and type scale this lowering runs against — fixed for the pass.</summary>
-    private readonly ComponentContext _context = context;
+    // Not readonly: a subtree under an InFlow drawn without positions builds with an in-flow copy.
+    private ComponentContext _context = context;
 
     /// <summary>The context's measurer, which answers 0 and counts: how <see cref="Visit(UiComponent, bool?)"/>
     /// learns that a component was built on widths nobody measured.</summary>

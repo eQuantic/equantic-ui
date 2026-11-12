@@ -577,7 +577,6 @@ public class ElementTreeTests
 
         inside.Should().Equal(true, true);
         outside.Should().Equal(false);
-        InFlow.Current.Should().BeFalse("the intent is put back after the build");
     }
 
     // ---- what a target keeps for a node (#975) ---------------------------------------------------

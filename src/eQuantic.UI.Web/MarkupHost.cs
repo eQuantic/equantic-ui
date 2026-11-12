@@ -36,16 +36,17 @@ public sealed class MarkupHost
     /// <param name="theme">The theme every component of the tree builds and lowers with.</param>
     /// <param name="typeScale">The text scale the tree builds and lowers at.</param>
     /// <param name="density">The density the tree builds and lowers at.</param>
-    public MarkupHost(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable)
-        : this(theme, typeScale, density, live: true)
+    /// <param name="route">The route the tree is drawn for, which its components read from their context.</param>
+    public MarkupHost(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable, RouteValues? route = null)
+        : this(theme, typeScale, density, route, live: true)
     {
     }
 
-    private MarkupHost(IAppTheme theme, float typeScale, Density density, bool live)
+    private MarkupHost(IAppTheme theme, float typeScale, Density density, RouteValues? route, bool live)
     {
         ArgumentNullException.ThrowIfNull(theme);
         Theme = theme;
-        _context = new ComponentContext(theme, typeScale, density, _measurer.Measure);
+        _context = new ComponentContext(theme, typeScale, density, _measurer.Measure, route);
         // The web draws every arm of an adaptive node behind its own media rule, so each is a position.
         Owner = live
             ? new BuildOwner(BuildAt, holdsEveryArm: true)
@@ -57,8 +58,9 @@ public sealed class MarkupHost
     /// <param name="theme">The theme every component of the tree builds and lowers with.</param>
     /// <param name="typeScale">The text scale the tree builds and lowers at.</param>
     /// <param name="density">The density the tree builds and lowers at.</param>
-    public static MarkupHost Structural(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable) =>
-        new(theme, typeScale, density, live: false);
+    /// <param name="route">The route the tree is drawn for.</param>
+    public static MarkupHost Structural(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable, RouteValues? route = null) =>
+        new(theme, typeScale, density, route, live: false);
 
     /// <summary>
     /// The host of a write-once PAGE drawn for a request: structural, with the page component at its
@@ -68,19 +70,20 @@ public sealed class MarkupHost
     /// <param name="theme">The theme every component of the tree builds and lowers with.</param>
     /// <param name="typeScale">The text scale the tree builds and lowers at.</param>
     /// <param name="density">The density the tree builds and lowers at.</param>
-    public static MarkupHost ForPage(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable) =>
-        new(theme, typeScale, density, live: false) { KeyDepth = 1 };
+    /// <param name="route">The route the page is drawn for: the request's.</param>
+    public static MarkupHost ForPage(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable, RouteValues? route = null) =>
+        new(theme, typeScale, density, route, live: false) { KeyDepth = 1 };
 
     /// <summary>
     /// A tree drawn ONCE inside a render (#1404): an escape-hatch page's bridge, through a structural
     /// host of its own, so its components have positions and each is named by where it stands, as the
     /// browser names it (#1477), and what an earlier round loaded is put back on the fresh instance at
-    /// that position before it builds. Its atomic rules, density, expansion scope, gradients, faces and
-    /// link policy are the render's.
+    /// that position before it builds. Its atomic rules, density, route, expansion scope, gradients, faces
+    /// and link policy are the render's: an escape-hatch page's bridge reads its page's route (#1395).
     /// </summary>
     internal static HtmlElement DrawOnce(VisualNode node, IAppTheme theme, float typeScale, RenderChannels channels)
     {
-        var host = new MarkupHost(theme, typeScale, channels.Density, live: false)
+        var host = new MarkupHost(theme, typeScale, channels.Density, channels.Route, live: false)
         {
             Tree = channels.NextTree(),
             PutBackFrom = channels.Expansion,

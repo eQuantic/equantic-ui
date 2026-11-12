@@ -29,7 +29,7 @@ import type { PickedFile } from './picked-file';
 export { CanvasPointer };
 import { floatText } from './css-values';
 import { lowerVisualNode } from './lowering';
-import { ambientLoweringContext, getInFlow, setInFlow } from './photon-context';
+import { ambientLoweringContext } from './photon-context';
 import {
   artworkAspect,
   CornerRadii,
@@ -963,20 +963,6 @@ export class InFlow extends VisualNode {
     super();
     this.child = child;
     if (config) Object.assign(this, config);
-  }
-
-  /**
-   * Whether the subtree being built right now was asked to draw in the flow (the C# static
-   * `InFlow.Current`). The element engine arms it around a component's build, the lowering around
-   * an `InFlow`'s child, and both read and write the ONE ambient the build context reports. A static
-   * here is what C#'s AsyncLocal is there: the browser builds on one thread.
-   */
-  static get current(): boolean {
-    return getInFlow();
-  }
-
-  static set current(value: boolean) {
-    setInFlow(value);
   }
 }
 

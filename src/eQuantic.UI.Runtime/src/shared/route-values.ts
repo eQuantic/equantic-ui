@@ -90,26 +90,4 @@ export class RouteValues {
 
   /** The route nothing matched — every lookup answers null (C# `RouteValues.Empty`). */
   static readonly empty = new RouteValues();
-
-  private static active: RouteValues = RouteValues.empty;
-
-  /**
-   * The route for what is being rendered right now. On the server this is per-request state; here
-   * there is one document, so it is whatever the router last set — seeded by boot from the initial
-   * URL and updated before a page mounts, which is the same value the server built with.
-   */
-  static get current(): RouteValues {
-    return RouteValues.active;
-  }
-
-  /** Set by the router, and by boot for the initial URL. */
-  static setCurrent(values: RouteValues): void {
-    RouteValues.active = values;
-  }
-
-  /** The C# `ClearCurrent` — a per-request seam the server needs and a document does not, so here
-   * it puts the empty route back rather than doing nothing. */
-  static clearCurrent(): void {
-    RouteValues.active = RouteValues.empty;
-  }
 }

@@ -39,21 +39,24 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
-    /// Arms the in-flow intent while the child BUILDS. The overlay reads it in its own Build — that
-    /// is the only moment the answer can change anything, because by the time a tree exists the
-    /// scrim and the layer are already in it.
+    /// The in-flow intent, for the child's BUILDS. The overlay reads it in its own Build — that is the
+    /// only moment the answer can change anything, because by the time a tree exists the scrim and the
+    /// layer are already in it. A position answers it from the tree; a tree drawn without positions
+    /// builds the child's components with a context that says so, and no ambient channel is armed
+    /// (#1395).
     /// </summary>
     private HtmlElement? LowerInFlow(InFlow inFlow, bool? horizontalAxis)
     {
-        var previous = Primitives.InFlow.Current;
-        Primitives.InFlow.Current = true;
+        if (_frame is not null || _context.InFlow) return Lower(inFlow.Child, horizontalAxis, LoweringPath.Child);
+        var outer = _context;
+        _context = new ComponentContext(outer.Theme, outer.TypeScale, outer.Density, _measurer.Measure, outer.Route, inFlow: true);
         try
         {
             return Lower(inFlow.Child, horizontalAxis, LoweringPath.Child);
         }
         finally
         {
-            Primitives.InFlow.Current = previous;
+            _context = outer;
         }
     }
 

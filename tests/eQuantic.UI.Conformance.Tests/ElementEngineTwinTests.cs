@@ -497,7 +497,6 @@ public class ElementEngineTwinTests
         var root = Frame(owner, column);
         ComponentAt<ReadsInFlow>(root.ChildAt(0)!.ChildAt(0)!).Touch();
         Frame(owner, column, rebuildAll: false);
-        seen.Add($"after:{(InFlow.Current ? "in" : "out")}");
 
         OnTheWeb("""
             const column = new Column();
@@ -505,7 +504,6 @@ public class ElementEngineTwinTests
             const root = frame(column);
             componentAt(root.childAt(0).childAt(0)).touch();
             frame(column, false);
-            trace.push('after:' + (InFlow.current ? 'in' : 'out'));
             """).Should().Equal(seen);
     }
 

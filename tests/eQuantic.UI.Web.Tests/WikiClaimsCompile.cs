@@ -19,7 +19,7 @@ public class WikiClaimsCompile
         [ServerOnly]
         public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
             => _doc = await services.GetRequiredService<IDocs>()
-                .FindAsync(RouteValues.Current.Param("slug"), cancellationToken);
+                .FindAsync(services.GetRequiredService<RouteValues>().Param("slug"), cancellationToken);
 
         public override VisualNode Build(ComponentContext context)
         {

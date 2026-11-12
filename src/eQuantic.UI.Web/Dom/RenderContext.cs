@@ -16,18 +16,25 @@ namespace eQuantic.UI.Web;
 /// </para>
 ///
 /// <para>
-/// What is left is the one thing that is genuinely the web's: the LINK POLICY. Everything else
-/// here reads the vocabulary's ambient rather than a copy of it.
+/// What is left is the one thing that is genuinely the web's: the LINK POLICY. The route is the one
+/// its render was handed, and a capability is read from the vocabulary's scope.
 /// </para>
 /// </summary>
 public class RenderContext
 {
+    /// <summary>The context of a render drawn for <paramref name="route"/>.</summary>
+    /// <param name="route">The route the render is drawn for; <see cref="RouteValues.Empty"/> when none is handed.</param>
+    public RenderContext(RouteValues? route = null)
+    {
+        Route = route ?? RouteValues.Empty;
+    }
+
     /// <summary>
     /// What the ROUTE said — matched parameters and the query string
     /// (<c>context.Route.Param("id")</c>), transpiled to the runtime's <c>context.route</c>.
-    /// It is <see cref="RouteValues.Current"/> itself, never a copy.
+    /// The route the render was handed, as a write-once component's context reads its frame's (#1395).
     /// </summary>
-    public RouteValues Route => RouteValues.Current;
+    public RouteValues Route { get; }
 
     /// <summary>
     /// A capability, for code that has a context — <c>context.GetService&lt;ITextClipboard&gt;()</c>.

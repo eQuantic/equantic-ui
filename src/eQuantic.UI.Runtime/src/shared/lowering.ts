@@ -44,7 +44,6 @@ import {
   ambientLoweringContext,
   getPhotonTheme,
   photonComponentContext,
-  setInFlow,
 } from './photon-context';
 import { declareInView } from './in-view';
 import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
@@ -4844,18 +4843,18 @@ function lowerInView(
   return wrapper;
 }
 
+/**
+ * The child, lowered where it stands. Whether it was asked to draw in the flow is read by the
+ * components below from their positions (`underInFlow`), which every tree the browser lowers has, so
+ * no ambient channel is armed (#1395).
+ */
 function lowerInFlow(
   node: InFlowNode,
   context: LoweringContext,
   horizontalAxis: boolean | null,
   path: string,
 ): HtmlNode | null {
-  const previous = setInFlow(true);
-  try {
-    return lowerNode(node.child, context, horizontalAxis, path + '/0');
-  } finally {
-    setInFlow(previous);
-  }
+  return lowerNode(node.child, context, horizontalAxis, path + '/0');
 }
 
 /**

@@ -44,3 +44,10 @@ static eQuantic.UI.Primitives.BuildOwner.Structural(System.Func<eQuantic.UI.Prim
 eQuantic.UI.Primitives.BuildOwner.Building.get -> eQuantic.UI.Primitives.ComponentElement?
 eQuantic.UI.Primitives.Element.Slot.get -> int
 eQuantic.UI.Primitives.Element.SlotsBelow(int depth) -> string!
+*REMOVED*eQuantic.UI.Primitives.ComponentContext.ComponentContext(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, System.Func<string!, eQuantic.UI.Primitives.TypeStyle, float>? measureText = null) -> void
+eQuantic.UI.Primitives.ComponentContext.ComponentContext(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, System.Func<string!, eQuantic.UI.Primitives.TypeStyle, float>? measureText = null, eQuantic.UI.Primitives.RouteValues? route = null, bool inFlow = false) -> void
+*REMOVED*static eQuantic.UI.Primitives.InFlow.Current.get -> bool
+*REMOVED*static eQuantic.UI.Primitives.InFlow.Current.set -> void
+*REMOVED*static eQuantic.UI.Primitives.RouteValues.ClearCurrent() -> void
+*REMOVED*static eQuantic.UI.Primitives.RouteValues.Current.get -> eQuantic.UI.Primitives.RouteValues!
+*REMOVED*static eQuantic.UI.Primitives.RouteValues.Current.set -> void
