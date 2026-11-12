@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Reconciler, UNMEASURED_MARK } from './reconciler';
 import { commitShortcuts, declareShortcut, resetShortcuts } from './shortcuts';
 import { RenderManager } from './renderer';
@@ -564,5 +564,120 @@ describe('a key a shortcut took', () => {
     expect(seen).toEqual(['a']);
     parent.remove();
     resetShortcuts();
+  });
+});
+
+/**
+ * #1302: hydration adopts the server's elements, and the tree it keeps is the client's, so an attribute or
+ * a text the server decided otherwise is made the client's then, or no later render ever corrects it.
+ */
+describe('Hydration takes the client attributes and text', () => {
+  const node = (tag: string, attributes: Record<string, string>, children: HtmlNode[] = []): HtmlNode => ({
+    tag,
+    attributes,
+    events: {},
+    children,
+  });
+  const text = (content: string): HtmlNode => ({
+    tag: '#text',
+    textContent: content,
+    attributes: {},
+    events: {},
+    children: [],
+  });
+  const served = (html: string) => {
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    return container;
+  };
+
+  it('enables a button the server drew disabled, and keeps it the same element', () => {
+    const container = served('<div class="page"><button class="save" disabled="">Save</button></div>');
+    const button = container.querySelector('button')!;
+    const pressed = vi.fn();
+    const save = { ...node('button', { class: 'save' }, [text('Save')]), events: { click: pressed } };
+
+    const result = new Reconciler().hydrateRoot(container, node('div', { class: 'page' }, [save]));
+
+    expect(result.success).toBe(true);
+    expect(container.querySelector('button')).toBe(button);
+    expect(button.disabled).toBe(false);
+    expect(button.hasAttribute('disabled')).toBe(false);
+    button.click();
+    expect(pressed).toHaveBeenCalledTimes(1);
+    container.remove();
+  });
+
+  it('writes the client value of an attribute both sides have, and one only the client has', () => {
+    const container = served('<div class="page"><a class="link" href="/en/terms">terms</a></div>');
+
+    new Reconciler().hydrateRoot(
+      container,
+      node('div', { class: 'page' }, [node('a', { class: 'link', href: '/pt-BR/terms', 'aria-current': 'page' }, [text('terms')])]),
+    );
+
+    const link = container.querySelector('a')!;
+    expect(link.getAttribute('href')).toBe('/pt-BR/terms');
+    expect(link.getAttribute('aria-current')).toBe('page');
+    container.remove();
+  });
+
+  it('writes the client text where the server wrote another', () => {
+    const container = served('<div class="page"><span class="state">Unavailable</span></div>');
+
+    new Reconciler().hydrateRoot(
+      container,
+      node('div', { class: 'page' }, [node('span', { class: 'state' }, [text('Ready')])]),
+    );
+
+    expect(container.querySelector('.state')?.textContent).toBe('Ready');
+    container.remove();
+  });
+
+  it("keeps a framework marker the server wrote that the client's tree does not name", () => {
+    const container = served('<div class="page" data-eq-island="a1"><span>x</span></div>');
+
+    new Reconciler().hydrateRoot(container, node('div', { class: 'page' }, [node('span', {}, [text('x')])]));
+
+    expect(container.firstElementChild?.getAttribute('data-eq-island')).toBe('a1');
+    container.remove();
+  });
+
+  it("writes the client's value of a framework marker both sides name", () => {
+    const container = served('<div class="page" data-eq-island="server"><span>x</span></div>');
+
+    new Reconciler().hydrateRoot(
+      container,
+      node('div', { class: 'page', 'data-eq-island': 'client' }, [node('span', {}, [text('x')])]),
+    );
+
+    expect(container.firstElementChild?.getAttribute('data-eq-island')).toBe('client');
+    container.remove();
+  });
+
+  it('keeps what a person typed or ticked before the runtime loaded, and fills a field nobody used', () => {
+    const container = served(
+      '<div class="page"><input class="typed" value=""><input class="untouched" value="">' +
+        '<input class="ticked" type="checkbox"></div>',
+    );
+    const typed = container.querySelector<HTMLInputElement>('.typed')!;
+    const ticked = container.querySelector<HTMLInputElement>('.ticked')!;
+    typed.value = 'what I wrote';
+    ticked.checked = true;
+
+    new Reconciler().hydrateRoot(
+      container,
+      node('div', { class: 'page' }, [
+        node('input', { class: 'typed', value: 'draft' }),
+        node('input', { class: 'untouched', value: 'draft' }),
+        node('input', { class: 'ticked', type: 'checkbox' }),
+      ]),
+    );
+
+    expect(typed.value).toBe('what I wrote');
+    expect(ticked.checked).toBe(true);
+    expect(container.querySelector<HTMLInputElement>('.untouched')!.value).toBe('draft');
+    container.remove();
   });
 });
