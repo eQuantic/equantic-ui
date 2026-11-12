@@ -159,6 +159,15 @@ function spreadsheet(): unknown {
   return new Spreadsheet(sheet, { width: SizeValue.fill, height: SizeValue.fixed(240) });
 }
 
+/** The C# `UnlabelledGroup`: a table view of three rows and two columns with no label and no role. */
+function unlabelledGroup(): unknown {
+  return new TableView(
+    new UniformTableSpans(3, 28),
+    new UniformTableSpans(2, 96),
+    (row: number, column: number) => new Text(`${row}:${column}`, 'caption', photonTheme.textPrimary),
+  );
+}
+
 /** The C# `Unlabelled`: a table of three rows and two columns with no label. */
 function unlabelled(): unknown {
   return new TableView(
@@ -468,10 +477,11 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     ),
     spreadsheet: still(spreadsheet()),
     'spreadsheet-editing': still(new Spreadsheet(editing(), { width: SizeValue.fill, height: SizeValue.fixed(240) })),
-    // Two spreadsheets on one page, two tables with no label and two grids of one label (the same month
-    // twice), each owning its own cells (#1115).
+    // Two spreadsheets on one page, two tables with no label, two group table views with none and two grids of
+    // one label (the same month twice), each owning its own cells (#1115, #1426).
     'two-spreadsheets': still(column(8, spreadsheet(), spreadsheet())),
     'two-unlabelled-tables': still(column(8, unlabelled(), unlabelled())),
+    'two-unlabelled-group-tables': still(column(8, unlabelledGroup(), unlabelledGroup())),
     'two-calendars': still(column(8, new Calendar(dateOnly(2026, 7, 17)), new Calendar(dateOnly(2026, 7, 17)))),
     'formula-bar': still(new FormulaBar(editing())),
     'name-box': still(new NameBox(editing())),

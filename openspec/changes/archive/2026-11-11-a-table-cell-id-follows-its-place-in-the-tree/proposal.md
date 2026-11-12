@@ -1,12 +1,12 @@
 # Proposal
 
-Closes #1115, a Bug under #849.
+Closes #1115, a Bug under #849, and #1426, a Bug under #1174.
 
 ## Why
 
 On the web, a table or a grid gives each cell an id that its row's `aria-owns` names, and a `Navigable` grid gives each cell one its `aria-activedescendant` names. Both scoped those ids by the grid's label, hashed, because the hash was the one thing the server's first pass and the browser's lowering computed alike.
 
-A label is not unique on a page. Every `Spreadsheet` is labelled alike, an unlabelled table hashed the empty string, and a `Calendar` is labelled by its month. So two spreadsheets on one page, two unlabelled tables, or two calendars of one month wrote the same ids. `getElementById` then resolved the second grid's references to the first grid's cells, and a reader in the second grid heard the first grid's values.
+A label is not unique on a page. Every `Spreadsheet` is labelled alike, an unlabelled table hashed the empty string, and a `Calendar` is labelled by its month. So two spreadsheets on one page, two unlabelled tables, or two calendars of one month wrote the same ids. #1331 then made a group table view's reading order own its cells too, scoped the same way, and a group is a table view's default role, so two unlabelled table views on one page were the likely case (#1426). `getElementById` then resolved the second grid's references to the first grid's cells, and a reader in the second grid heard the first grid's values.
 
 ## What Changes
 

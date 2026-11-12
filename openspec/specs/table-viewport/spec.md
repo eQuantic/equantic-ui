@@ -368,7 +368,7 @@ order rather than by its `aria-colindex`.
 
 ### Requirement: A cell's id names one element on the page
 
-On the web, the id of each cell of a table or a grid, which its row's `aria-owns` names, and of each cell of a `Navigable` grid, which the grid's `aria-activedescendant` names, SHALL be scoped by the grid's place in the tree, so that no two elements of a page share an id whatever the grids are labelled. The server's first pass and the browser's lowering SHALL write the same ids for the same tree.
+On the web, the id of each cell of a table view, which a table's or a grid's row and a group's reading order name with `aria-owns`, and of each cell of a `Navigable` grid, which the grid's `aria-activedescendant` names, SHALL be scoped by the grid's place in the tree, so that no two elements of a page share an id whatever the grids are labelled. The server's first pass and the browser's lowering SHALL write the same ids for the same tree.
 
 #### Scenario: Two spreadsheets on one page
 
@@ -379,6 +379,12 @@ On the web, the id of each cell of a table or a grid, which its row's `aria-owns
 
 - **WHEN** a column holds two tables of 3 rows and 2 columns with no label
 - **THEN** no id names two elements, and the browser's lowering writes the same markup as the server's
+
+#### Scenario: Two unlabelled group table views
+
+- **WHEN** a column holds two table views of 3 rows and 2 columns with no label and no role, groups
+- **THEN** no id names two elements, each group's reading order owns its own cells, and the browser's lowering
+  writes the same markup as the server's
 
 #### Scenario: Two calendars of one month
 
