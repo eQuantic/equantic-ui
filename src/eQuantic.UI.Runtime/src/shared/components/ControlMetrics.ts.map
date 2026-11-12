@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "ControlMetrics.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/ControlMetrics.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAkBI;QACI;;;IAIJ;QACI;;;IAIJ;QACI;;;IAIJ;QACI;;;IAEJ;QACI;;;IAIJ;QAEI;;;IAGJ;QAAoE;;;IASpE;QACI"
+}

@@ -1,4 +1,103 @@
 #nullable enable
+eQuantic.UI.Primitives.ButtonTheme
+eQuantic.UI.Primitives.ButtonTheme.<Clone>$() -> eQuantic.UI.Primitives.ButtonTheme!
+eQuantic.UI.Primitives.ButtonTheme.ButtonTheme() -> void
+eQuantic.UI.Primitives.ButtonTheme.Equals(eQuantic.UI.Primitives.ButtonTheme? other) -> bool
+override eQuantic.UI.Primitives.ButtonTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.ButtonTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.ButtonTheme.ToString() -> string!
+static eQuantic.UI.Primitives.ButtonTheme.operator !=(eQuantic.UI.Primitives.ButtonTheme? left, eQuantic.UI.Primitives.ButtonTheme? right) -> bool
+static eQuantic.UI.Primitives.ButtonTheme.operator ==(eQuantic.UI.Primitives.ButtonTheme? left, eQuantic.UI.Primitives.ButtonTheme? right) -> bool
+eQuantic.UI.Primitives.ButtonTheme.Controls.get -> eQuantic.UI.Primitives.ControlsTheme?
+eQuantic.UI.Primitives.ButtonTheme.Controls.init -> void
+eQuantic.UI.Primitives.ButtonTheme.MinWidth.get -> float?
+eQuantic.UI.Primitives.ButtonTheme.MinWidth.init -> void
+eQuantic.UI.Primitives.ButtonTheme.LabelWeight.get -> eQuantic.UI.Primitives.FontWeight?
+eQuantic.UI.Primitives.ButtonTheme.LabelWeight.init -> void
+eQuantic.UI.Primitives.ButtonTheme.LabelTracking.get -> float?
+eQuantic.UI.Primitives.ButtonTheme.LabelTracking.init -> void
+eQuantic.UI.Primitives.ButtonTheme.OutlineWidth.get -> float?
+eQuantic.UI.Primitives.ButtonTheme.OutlineWidth.init -> void
+eQuantic.UI.Primitives.ButtonTheme.LinkPaddingX.get -> float?
+eQuantic.UI.Primitives.ButtonTheme.LinkPaddingX.init -> void
+eQuantic.UI.Primitives.ControlsTheme
+eQuantic.UI.Primitives.ControlsTheme.<Clone>$() -> eQuantic.UI.Primitives.ControlsTheme!
+eQuantic.UI.Primitives.ControlsTheme.ControlsTheme() -> void
+eQuantic.UI.Primitives.ControlsTheme.Equals(eQuantic.UI.Primitives.ControlsTheme? other) -> bool
+override eQuantic.UI.Primitives.ControlsTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.ControlsTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.ControlsTheme.ToString() -> string!
+static eQuantic.UI.Primitives.ControlsTheme.operator !=(eQuantic.UI.Primitives.ControlsTheme? left, eQuantic.UI.Primitives.ControlsTheme? right) -> bool
+static eQuantic.UI.Primitives.ControlsTheme.operator ==(eQuantic.UI.Primitives.ControlsTheme? left, eQuantic.UI.Primitives.ControlsTheme? right) -> bool
+eQuantic.UI.Primitives.ControlsTheme.Height.get -> eQuantic.UI.Primitives.DensityLadder?
+eQuantic.UI.Primitives.ControlsTheme.Height.init -> void
+eQuantic.UI.Primitives.ControlsTheme.PaddingX.get -> eQuantic.UI.Primitives.DensityLadder?
+eQuantic.UI.Primitives.ControlsTheme.PaddingX.init -> void
+eQuantic.UI.Primitives.ControlsTheme.LabelSize.get -> eQuantic.UI.Primitives.DensityLadder?
+eQuantic.UI.Primitives.ControlsTheme.LabelSize.init -> void
+eQuantic.UI.Primitives.ControlsTheme.Gap.get -> eQuantic.UI.Primitives.SizeLadder?
+eQuantic.UI.Primitives.ControlsTheme.Gap.init -> void
+eQuantic.UI.Primitives.ControlsTheme.Icon.get -> eQuantic.UI.Primitives.SizeLadder?
+eQuantic.UI.Primitives.ControlsTheme.Icon.init -> void
+eQuantic.UI.Primitives.ControlsTheme.Radius.get -> eQuantic.UI.Primitives.SizeLadder?
+eQuantic.UI.Primitives.ControlsTheme.Radius.init -> void
+eQuantic.UI.Primitives.DensityLadder.Comfortable.get -> eQuantic.UI.Primitives.SizeLadder?
+eQuantic.UI.Primitives.DensityLadder.Comfortable.init -> void
+eQuantic.UI.Primitives.DensityLadder.Compact.get -> eQuantic.UI.Primitives.SizeLadder?
+eQuantic.UI.Primitives.DensityLadder.Compact.init -> void
+eQuantic.UI.Primitives.DensityLadder
+eQuantic.UI.Primitives.DensityLadder.<Clone>$() -> eQuantic.UI.Primitives.DensityLadder!
+eQuantic.UI.Primitives.DensityLadder.DensityLadder() -> void
+eQuantic.UI.Primitives.DensityLadder.Equals(eQuantic.UI.Primitives.DensityLadder? other) -> bool
+override eQuantic.UI.Primitives.DensityLadder.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.DensityLadder.GetHashCode() -> int
+override eQuantic.UI.Primitives.DensityLadder.ToString() -> string!
+static eQuantic.UI.Primitives.DensityLadder.operator !=(eQuantic.UI.Primitives.DensityLadder? left, eQuantic.UI.Primitives.DensityLadder? right) -> bool
+static eQuantic.UI.Primitives.DensityLadder.operator ==(eQuantic.UI.Primitives.DensityLadder? left, eQuantic.UI.Primitives.DensityLadder? right) -> bool
+eQuantic.UI.Primitives.IAppTheme.Controls.get -> eQuantic.UI.Primitives.ControlsTheme?
+eQuantic.UI.Primitives.IAppTheme.Button.get -> eQuantic.UI.Primitives.ButtonTheme?
+eQuantic.UI.Primitives.PhotonTheme.Controls.get -> eQuantic.UI.Primitives.ControlsTheme?
+eQuantic.UI.Primitives.PhotonTheme.Button.get -> eQuantic.UI.Primitives.ButtonTheme?
+eQuantic.UI.Primitives.SizeLadder.Small.get -> float?
+eQuantic.UI.Primitives.SizeLadder.Small.init -> void
+eQuantic.UI.Primitives.SizeLadder.Medium.get -> float?
+eQuantic.UI.Primitives.SizeLadder.Medium.init -> void
+eQuantic.UI.Primitives.SizeLadder.Large.get -> float?
+eQuantic.UI.Primitives.SizeLadder.Large.init -> void
+eQuantic.UI.Primitives.SizeLadder.XLarge.get -> float?
+eQuantic.UI.Primitives.SizeLadder.XLarge.init -> void
+eQuantic.UI.Primitives.SizeLadder
+eQuantic.UI.Primitives.SizeLadder.<Clone>$() -> eQuantic.UI.Primitives.SizeLadder!
+eQuantic.UI.Primitives.SizeLadder.Equals(eQuantic.UI.Primitives.SizeLadder? other) -> bool
+eQuantic.UI.Primitives.SizeLadder.SizeLadder() -> void
+override eQuantic.UI.Primitives.SizeLadder.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.SizeLadder.GetHashCode() -> int
+override eQuantic.UI.Primitives.SizeLadder.ToString() -> string!
+static eQuantic.UI.Primitives.SizeLadder.operator !=(eQuantic.UI.Primitives.SizeLadder? left, eQuantic.UI.Primitives.SizeLadder? right) -> bool
+static eQuantic.UI.Primitives.SizeLadder.operator ==(eQuantic.UI.Primitives.SizeLadder? left, eQuantic.UI.Primitives.SizeLadder? right) -> bool
+eQuantic.UI.Primitives.AppThemeExtensions
+static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null) -> eQuantic.UI.Primitives.IAppTheme!
+eQuantic.UI.Primitives.ButtonTheme.OutlineColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ButtonTheme.OutlineColor.init -> void
+eQuantic.UI.Primitives.ButtonTheme.QuietFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ButtonTheme.QuietFill.init -> void
+eQuantic.UI.Primitives.ICodeSurfaceModel.Reading.get -> eQuantic.UI.Primitives.TextReading
+eQuantic.UI.Primitives.TextReading
+eQuantic.UI.Primitives.TextReading.Deconstruct(out string! Text, out int Anchor, out int Focus) -> void
+eQuantic.UI.Primitives.TextReading.Equals(eQuantic.UI.Primitives.TextReading other) -> bool
+eQuantic.UI.Primitives.TextReading.TextReading() -> void
+eQuantic.UI.Primitives.TextReading.TextReading(string! Text, int Anchor, int Focus) -> void
+override eQuantic.UI.Primitives.TextReading.GetHashCode() -> int
+static eQuantic.UI.Primitives.TextReading.operator !=(eQuantic.UI.Primitives.TextReading left, eQuantic.UI.Primitives.TextReading right) -> bool
+static eQuantic.UI.Primitives.TextReading.operator ==(eQuantic.UI.Primitives.TextReading left, eQuantic.UI.Primitives.TextReading right) -> bool
+~override eQuantic.UI.Primitives.TextReading.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.TextReading.ToString() -> string
+eQuantic.UI.Primitives.TextReading.Text.get -> string!
+eQuantic.UI.Primitives.TextReading.Text.init -> void
+eQuantic.UI.Primitives.TextReading.Anchor.get -> int
+eQuantic.UI.Primitives.TextReading.Anchor.init -> void
+eQuantic.UI.Primitives.TextReading.Focus.get -> int
+eQuantic.UI.Primitives.TextReading.Focus.init -> void
 eQuantic.UI.Primitives.Transform2D.Deconstruct(out float TranslateX, out float TranslateY, out float RotationDegrees, out float ScaleX, out float ScaleY, out float TranslateFractionX, out float TranslateFractionY) -> void
 eQuantic.UI.Primitives.Transform2D.Resolved(float width, float height) -> eQuantic.UI.Primitives.Transform2D
 eQuantic.UI.Primitives.Transform2D.Transform2D(float TranslateX = 0, float TranslateY = 0, float RotationDegrees = 0, float ScaleX = 1, float ScaleY = 1, float TranslateFractionX = 0, float TranslateFractionY = 0) -> void
@@ -36,3 +135,7 @@ virtual eQuantic.UI.Primitives.StatefulComponent.OnDependenciesChanged() -> void
 eQuantic.UI.Primitives.ComponentContext.DependOn<T>() -> T?
 eQuantic.UI.Primitives.ComponentContext.Find<T>() -> T?
 static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!
+static eQuantic.UI.Primitives.ButtonTheme.Merge(eQuantic.UI.Primitives.ButtonTheme? under, eQuantic.UI.Primitives.ButtonTheme? over) -> eQuantic.UI.Primitives.ButtonTheme?
+static eQuantic.UI.Primitives.ControlsTheme.Merge(eQuantic.UI.Primitives.ControlsTheme? under, eQuantic.UI.Primitives.ControlsTheme? over) -> eQuantic.UI.Primitives.ControlsTheme?
+static eQuantic.UI.Primitives.DensityLadder.Merge(eQuantic.UI.Primitives.DensityLadder? under, eQuantic.UI.Primitives.DensityLadder? over) -> eQuantic.UI.Primitives.DensityLadder?
+static eQuantic.UI.Primitives.SizeLadder.Merge(eQuantic.UI.Primitives.SizeLadder? under, eQuantic.UI.Primitives.SizeLadder? over) -> eQuantic.UI.Primitives.SizeLadder?
