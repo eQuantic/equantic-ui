@@ -6,11 +6,12 @@ permissions:
 jobs:
   desktop:
     runs-on: macos-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
     strategy:
       fail-fast: false
       matrix:
-        attempt: [1, 2, 3, 4]
+        mode: [watch, plain]
+        attempt: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -23,7 +24,7 @@ jobs:
         timeout-minutes: 10
         env:
           EQ_EDIT_TO_VIEW_ECHO: "1"
-          LOG_BRANCH: test/desktop-edit-log-${{ github.run_id }}-${{ matrix.attempt }}
+          LOG_BRANCH: test/desktop-edit-log-${{ github.run_id }}-${{ matrix.mode }}-${{ matrix.attempt }}
         run: |
           set -uo pipefail
           live="$RUNNER_TEMP/live.log"
@@ -47,9 +48,17 @@ jobs:
           ) &
           shipper=$!
           status=0
-          for round in 1 2 3; do
-            echo "=== round $round $(date -u +%H:%M:%S)" | tee -a "$live"
-            dotnet run scripts/measure-edit-to-view.cs -- desktop --runs 6 2>&1 | tee -a "$live" || status=1
-          done
+          if [ "${{ matrix.mode }}" = "plain" ]; then
+            echo "=== plain run $(date -u +%H:%M:%S)" | tee -a "$live"
+            dotnet run --no-build --project samples/PhotonDesktop >> "$live" 2>&1 &
+            app=$!
+            for t in $(seq 1 18); do sleep 10; echo "=== alive $(date -u +%H:%M:%S) app running: $(pgrep -x PhotonDesktop | head -1)" | tee -a "$live"; done
+            kill $app || true; pkill -x PhotonDesktop || true
+          else
+            for round in 1 2 3; do
+              echo "=== round $round $(date -u +%H:%M:%S)" | tee -a "$live"
+              dotnet run scripts/measure-edit-to-view.cs -- desktop --runs 6 2>&1 | tee -a "$live" || status=1
+            done
+          fi
           kill $shipper || true
           exit $status
