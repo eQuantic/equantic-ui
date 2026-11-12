@@ -1,6 +1,8 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
 
 export class XmlLanguage {
+    static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
+
     constructor() {
         this.rules = (() => { let $n0: CodeLanguageRules; return ($n0 = new CodeLanguageRules(), $n0.blockComment = ['<!--', '-->'], $n0.brackets = [['<', '>'], ['(', ')'], ['[', ']']], $n0.indentAfter = ['>'], $n0.outdentOn = ['<'], $n0.indentWidth = 2, $n0); })();
     }

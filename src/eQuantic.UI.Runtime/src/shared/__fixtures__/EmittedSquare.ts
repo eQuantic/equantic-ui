@@ -1,3 +1,4 @@
+import { $eq } from "@equantic/runtime";
 import { EmittedShape } from "./EmittedShape";
 
 export class EmittedSquare extends EmittedShape {
@@ -8,6 +9,10 @@ export class EmittedSquare extends EmittedShape {
     }
 
     side!: number;
+
+    toJSON() {
+        return $eq.json(this, ['side']);
+    }
 
     toString(): string {
         return 'eQuantic.UI.Web.Tests.Fixtures.EmittedSquare';

@@ -398,6 +398,11 @@ public class TypeScriptEmitter
                 if (component.TypeIdentity.Length > 0)
                     c.Field("$typeId", null, JsStringLiteral.Quote(component.TypeIdentity), null, isStatic: true);
 
+                // The interfaces a type test can ask of the component, which JavaScript cannot (#1464).
+                if (component.ClassSyntax is { } componentClass && ModelFor(componentClass)?.GetDeclaredSymbol(componentClass) is INamedTypeSymbol self
+                    && Strategies.InterfaceTests.DeclaredBy(self) is { } interfaces)
+                    c.Field("$interfaces", null, JsExprWriter.Write(interfaces), null, isStatic: true);
+
                 // Component-level fields (static data / consts / instance fields), emitted at the top of
                 // the class. Skipped for primitives' INSTANCE fields, whose base ctor sets every prop via
                 // Object.assign — an uninitialised instance field would clobber that after super(); a static
@@ -1953,16 +1958,20 @@ public class TypeScriptEmitter
             // So does one whose field moved a case apart from a member (`value$`, #396), whose own key
             // is storage no server reads. A derived class inherits it. A static's slot is the class's,
             // which no JSON of an instance writes (#1175).
-            if (!asStatic && (cls.TwinMembers().OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
+            // And a twin that holds more than the serializer writes writes only what it does (#745).
+            var written = !asStatic && ModelFor(cls)?.GetDeclaredSymbol(cls) is INamedTypeSymbol contract ? JsonContract.Members(contract) : null;
+            if (written is not null || (!asStatic && (cls.TwinMembers().OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
                     || cls.Members.OfType<FieldDeclarationSyntax>()
                         .Where(field => !field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                             && !field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword))
                         .SelectMany(field => field.Declaration.Variables)
-                        .Any(variable => variable.SlotOf(ModelFor(cls)).EndsWith('$'))))
+                        .Any(variable => variable.SlotOf(ModelFor(cls)).EndsWith('$')))))
             {
                 _converter.UsedHelpers.Add(Eq.Import);
                 c.Member(JsClassMember.Method("", "toJSON", "", "", "",
-                    JsStatement.Return(JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This))), cls);
+                    JsStatement.Return(written is null
+                        ? JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This)
+                        : JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This, JsExpr.Opaque(written)))), cls);
             }
 
             EmitExtensionBlocks(cls, c);
@@ -2859,6 +2868,10 @@ public class TypeScriptEmitter
                 if (!asStatic && semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol equatable
                     && Strategies.ElementEquality.ContractMap(equatable) is { } contracts)
                     c.Field("$equatable", null, contracts, cls, isStatic: true);
+                // The interfaces a type test can ask of its values, which JavaScript cannot (#1464).
+                if (!asStatic && semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol implementing
+                    && Strategies.InterfaceTests.DeclaredBy(implementing) is { } interfaces)
+                    c.Field("$interfaces", null, JsExprWriter.Write(interfaces), cls, isStatic: true);
                 EmitStaticMembers(cls, c, asStatic);
                 if (!asStatic) EmitInheritedDefaults(cls, c);
                 // A class that never says what its text is writes its full name, as Object.ToString
