@@ -38,6 +38,11 @@ public class EnumMethodStrategy : IConversionStrategy
 
         var shape = EnumShape.Of(enumType);
         context.UsedHelpers.Add(Eq.Import);
+        // The overloads that take a Type answer `object` and `Array`, which hold the members boxed (Boxing), and
+        // the statics that take an `object` refuse a box of another enum by the type's name.
+        var typeName = JsStringLiteral.Quote(Boxing.NameOf(enumType));
+        var boxes = !call.TargetMethod.IsGenericMethod;
+        string Boxed(string value) => boxes ? $"{Eq.Box}({value}, {typeName}, {shape})" : value;
 
         // Each argument converts once, in the order it is written, which is the order C# evaluates
         // it in, and its hole names the parameter it binds to: `Parse(ignoreCase: NextBool(), value:
@@ -69,9 +74,9 @@ public class EnumMethodStrategy : IConversionStrategy
             case "GetNames":
                 return $"{Eq.EnumNames}({shape})";
             case "GetValues":
-                return $"{Eq.EnumValues}({shape})";
+                return boxes ? $"{Eq.EnumValues}({shape}, {typeName})" : $"{Eq.EnumValues}({shape})";
             case "Parse" when holes.TryGetValue("value", out var text):
-                return Write($"{Eq.EnumParse}({text.Hole}, {shape}{IgnoreCase()})");
+                return Write(Boxed($"{Eq.EnumParse}({text.Hole}, {shape}{IgnoreCase()})"));
             case "GetName" when holes.TryGetValue("value", out var named):
             {
                 // Given as the enum, as a number, or as an `object` holding either; a flags
@@ -84,7 +89,7 @@ public class EnumMethodStrategy : IConversionStrategy
                         or SpecialType.System_Int64 or SpecialType.System_UInt64 } => "number",
                     _ => "object",
                 };
-                return Write($"{Eq.EnumName}({named.Hole}, {shape}, '{kind}')");
+                return Write(kind == "object" ? $"{Eq.EnumName}({named.Hole}, {shape}, '{kind}', {typeName})" : $"{Eq.EnumName}({named.Hole}, {shape}, '{kind}')");
             }
             case "IsDefined" when holes.TryGetValue("value", out var given):
                 // Given as the enum, as a number, or by its declared name: the argument's own type
@@ -99,14 +104,14 @@ public class EnumMethodStrategy : IConversionStrategy
                         or SpecialType.System_Int64 or SpecialType.System_UInt64 } => "number",
                     _ => "object",
                 };
-                return Write($"{Eq.EnumIsDefined}({given.Hole}, {shape}, '{mode}')");
+                return Write(mode == "object" ? $"{Eq.EnumIsDefined}({given.Hole}, {shape}, '{mode}', {typeName})" : $"{Eq.EnumIsDefined}({given.Hole}, {shape}, '{mode}')");
             case "TryParse" when holes.TryGetValue("value", out var input) && result is not null:
             {
                 // True with the value in the out argument, or false with what .NET leaves there: the
                 // generic overload's default, and null for the one that takes a Type. A discard
                 // receives nothing, and a bare name is assigned in place.
                 var failed = call.TargetMethod.IsGenericMethod ? $"{Eq.EnumZero}({shape})" : "null";
-                var parse = JsExpr.Template($"{Eq.EnumTryParse}({input.Hole}, {shape}{IgnoreCase()})", parts);
+                var parse = JsExpr.Template(Boxed($"{Eq.EnumTryParse}({input.Hole}, {shape}{IgnoreCase()})"), parts);
                 string Answer(string template, List<JsExpr> answerParts) =>
                     JsExprWriter.Write(JsExpr.Template(template, answerParts));
                 if (OutArgument.IsDiscard(result, context)) return Answer("({0} !== undefined)", [parse]);
@@ -140,7 +145,7 @@ public class EnumMethodStrategy : IConversionStrategy
                 }
                 var parameters = string.Join(", ", bound.Select((_, at) => $"${at}"));
                 var arguments = string.Join(", ", bound.Select((_, at) => $"{{{at}}}"));
-                var read = $"{Eq.EnumTryParse}({text}, {shape}{(ignoreCase is null ? "" : $", {ignoreCase}")})";
+                var read = Boxed($"{Eq.EnumTryParse}({text}, {shape}{(ignoreCase is null ? "" : $", {ignoreCase}")})");
                 return Answer(
                     $"(({parameters}) => (($r) => ($r !== undefined ? (({place} = $r), true) : (({place} = {failed}), false)))({read}))({arguments})",
                     bound);

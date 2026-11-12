@@ -196,6 +196,99 @@ public sealed class PhotonTheme : IAppTheme
         QuietFill = SurfaceSubtle,
     };
 
+    // The form controls' slots (E6b): what each control drew, now the design system's. Their own
+    // ladders stay null, so the theme's Controls above reaches them. A colour a control takes from one
+    // of the theme's roles stays null too: the control reads the role itself, so a theme that changes
+    // the role (a decorator, or a spread of this theme in the browser) recolours the control, which a
+    // copy of the role taken here would not. Cached on first read.
+
+    /// <summary>The IconButton (spec A13): the §07 glyph ladder, a circle, a 1dp outline, and the tonal
+    /// press at 24%.</summary>
+    public IconButtonTheme? IconButton => field ??= new IconButtonTheme
+    {
+        IconSize = new SizeLadder { Small = IconSize.Sm, Medium = IconSize.Dense, Large = IconSize.Md, XLarge = IconSize.Md },
+        Radius = Radius.Full,
+        OutlineWidth = 1,
+        TonalPressOpacity = 0.24f,
+    };
+
+    /// <summary>The fields (spec B9, B10): 14 and 10 for a text field's padding and gap, 12 and 8 for
+    /// a picker's, a 1dp border that grows to 2 while focused, the medium corner, the search pill, and
+    /// the label 6 above and the helper 5 below.</summary>
+    public InputTheme? Input => field ??= new InputTheme
+    {
+        PaddingX = 14,
+        PickerPaddingX = Space.S3,
+        Gap = 10,
+        PickerGap = Space.S2,
+        BorderWidth = 1,
+        FocusBorderWidth = 2,
+        Radius = Radius.Md,
+        SearchRadius = Radius.Full,
+        IconSize = IconSize.Dense,
+        LabelGap = 6,
+        CaptionGap = 5,
+        LabelRole = TypeRole.Label,
+        CaptionRole = TypeRole.Caption,
+        PanelElevation = 2,
+    };
+
+    /// <summary>The selection controls (spec B11-B13, C7): Sizing's selection ladder, a 2dp border, the
+    /// extra-small corner, a 44dp radio row, and the slider's 4dp track under a 24dp thumb.</summary>
+    public SelectionControlsTheme? SelectionControls => field ??= new SelectionControlsTheme
+    {
+        Box = ByDensityAlone(Sizing.SelectionBox),
+        BorderWidth = 2,
+        CheckboxRadius = Radius.Xs,
+        RadioDot = ByDensityAlone(Sizing.RadioDot),
+        RadioRowHeight = 44,
+        LabelGap = Space.S3,
+        SwitchWidth = ByDensityAlone(Sizing.SwitchWidth),
+        SwitchHeight = ByDensityAlone(Sizing.SwitchHeight),
+        SwitchThumb = ByDensityAlone(Sizing.SwitchThumb),
+        SwitchInset = Sizing.SwitchInset,
+        SwitchThumbElevation = 1,
+        SliderTrackHeight = 4,
+        SliderThumbSize = 24,
+        SliderThumbBorder = 1,
+        SliderThumbElevation = 2,
+        SliderMinWidth = 120,
+    };
+
+    /// <summary>The segmented controls: a 3dp lip, the selected segment raised on the surface, and
+    /// the stepper's 1dp border around 20dp glyphs.</summary>
+    public SegmentedTheme? Segmented => field ??= new SegmentedTheme
+    {
+        Inset = 3,
+        ThumbElevation = 1,
+        BorderWidth = 1,
+        IconSize = IconSize.Dense,
+    };
+
+    /// <summary>The Chip: a pill padded 12, its label at 13 over 16 semi-bold, and a filter chip's
+    /// 1dp border, the selected one's and the outline of the unselected one.</summary>
+    public ChipTheme? Chip => field ??= new ChipTheme
+    {
+        PaddingX = Space.S3,
+        Gap = 6,
+        LabelSize = 13,
+        LabelLineHeight = 16,
+        LabelWeight = FontWeight.SemiBold,
+        LabelTracking = 0,
+        Radius = Radius.Full,
+        SelectedBorderWidth = 1,
+        OutlineWidth = 1,
+        PressOpacity = 0.24f,
+        IconSize = IconSize.Sm,
+        RemoveIconSize = IconSize.Dense,
+    };
+
+    private static DensityPair ByDensityAlone(Func<Density, float> side) => new()
+    {
+        Comfortable = side(Density.Comfortable),
+        Compact = side(Density.Compact),
+    };
+
     private static SizeLadder BySize(Func<SizeVariant, float> rung) => new()
     {
         Small = rung(SizeVariant.Small),
