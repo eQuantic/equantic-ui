@@ -61,6 +61,11 @@ public sealed class SheetNameBox : ICodeSurfaceModel
     /// <inheritdoc />
     public int FocusVersion => _focusVersion;
 
+    /// <inheritdoc />
+    /// <remarks>What is typed into the box while it holds the keyboard, and the active cell's address at
+    /// rest (#1333).</remarks>
+    public TextReading Reading => Typing ? _box.Reading : new TextReading(_sheet.ActiveCell.ToA1(), 0, 0);
+
     /// <summary>Asks for the keyboard: F5 and the Go To chord, through the sheet's keymap.</summary>
     public void RequestFocus() => _focusVersion++;
 
