@@ -204,6 +204,7 @@ export {
   TableOffset,
   TableRange,
   TableScrollRequest,
+  TextReading,
   Transform2D,
   TypeStyle,
   VariantColors,

@@ -2,6 +2,8 @@ import { $eq, CodeLanguageRules } from "../runtime-exports";
 import { CurlyBraceLanguage } from "./CurlyBraceLanguage";
 
 export class CSharpLanguage extends CurlyBraceLanguage {
+    static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
+
     constructor() {
         const $$$rules: CodeLanguageRules = (() => {
         const $o = new CodeLanguageRules();

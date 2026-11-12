@@ -265,7 +265,7 @@ import {
   throwIfNullOrWhiteSpace,
   throwIfZero,
 } from './utils/guards';
-import { named as namedType, of as typeOfValue, same as sameType } from './utils/runtime-types';
+import { implementsInterface, named as namedType, of as typeOfValue, same as sameType } from './utils/runtime-types';
 import { lockGate, newObject } from './utils/net-object';
 import { provideService, resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
@@ -711,7 +711,7 @@ export const $eq = {
     throwIfLessThanOrEqual,
   },
   /** `a.GetType() == b.GetType()` and against `typeof(X)`, where the browser knows the runtime type. */
-  types: { of: typeOfValue, named: namedType, same: sameType },
+  types: { of: typeOfValue, named: namedType, same: sameType, implements: implementsInterface },
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },
 } as const;
