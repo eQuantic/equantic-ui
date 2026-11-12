@@ -15,3 +15,4 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.CanCo
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.PrimitiveEqualsStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.Priority.get -> int
+const eQuantic.UI.Compiler.CodeGen.Eq.TypesImplements = "$eq.types.implements" -> string!
