@@ -32,6 +32,7 @@
   <a href="#how-it-works">How It Works</a> •
   <a href="#documentation">Documentation</a>
 </p>
+<!-- end of the page's head -->
 
 ![The dashboard sample in a browser, on its payments page, with a sidebar of pages for rows, a spreadsheet, Markdown, a code editor, a diff, forms, localization and charts](assets/readme/web-dashboard.png)
 
