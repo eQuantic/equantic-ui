@@ -28,3 +28,14 @@
   117   8.2   9712 /usr/libexec/diskarbitrationd
   215   7.3  23952 /usr/libexec/storagekitd
   114   6.8  56464 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+=== alive 10:23:52 app running: 2286
+=== alive 10:24:02 app running: 2286
+--- sample 10:24:02 load: { 31.87 44.72 22.16 } System-wide memory free percentage: 83%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2262 dotnet run --no-build --project samples/PhotonDesktop
+2286 /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/bin/Debug/net10.0/PhotonDesktop
+  336  86.6 257792 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  114  22.3  59280 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 3123  20.3  33568 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 3102  20.1  33888 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 3135  19.5  32912 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
