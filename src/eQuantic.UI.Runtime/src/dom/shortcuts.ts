@@ -68,8 +68,19 @@ export function commitShortcuts(replacing?: (binding: ShortcutBinding) => boolea
   const at = active.findIndex(replacing);
   const kept = active.filter((binding) => !replacing(binding));
   kept.splice(at < 0 ? kept.length : Math.min(at, kept.length), 0, ...pending);
+  // Where bindings that had no place before belong in the list only a whole pass can say: the caller
+  // asked first (`partialCommitIsExact`) and renders whole when it cannot.
   active = kept;
   pending = [];
+}
+
+/**
+ * Whether a partial commit (`commitShortcuts(replacing)`) would list the bindings where a whole pass
+ * lists them: it would, unless the components lowered again declare bindings now and had none before,
+ * since there is no place of theirs to put them in.
+ */
+export function partialCommitIsExact(replacing: (binding: ShortcutBinding) => boolean): boolean {
+  return pending.length === 0 || active.some(replacing);
 }
 
 /** Test seam: the bindings a keydown would currently reach. */

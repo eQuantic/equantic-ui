@@ -9,6 +9,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { StatefulComponent } from '../core/component';
 import { activeShortcuts } from '../dom/shortcuts';
 import { componentLowerings } from './lowered-records';
+import { RenderManager } from '../dom/renderer';
+import type { HtmlNode } from '../core/types';
 import { Column, Flexible, Presence, Pressable, Row, Shortcut, Text } from './vocabulary';
 import type { VisualNodeValue } from './nodes';
 
@@ -213,4 +215,58 @@ describe('a dirty element lowers its own subtree', () => {
     expect(componentLowerings() - before).toBe(1);
     expect(activeShortcuts().map((binding) => binding.chord)).toEqual(['command+s']);
   });
+
+  it('lowers the page whole when the component starts declaring a shortcut it had no place for', async () => {
+    class Saver extends StatefulComponent {
+      armed = false;
+
+      arm(): void {
+        this.setState(() => (this.armed = true));
+      }
+
+      build(): VisualNodeValue {
+        saver ??= this;
+        const body = new Text(this.armed ? 'armed' : 'idle', 'label');
+        return (this.armed
+          ? new Shortcut(body, { key: 'k', modifiers: 4 } as never, () => {})
+          : body) as unknown as VisualNodeValue;
+      }
+    }
+    let saver: Saver | null = null;
+    const page = new Page(() =>
+      column(new Saver(), new Shortcut(new Text('saves', 'label'), { key: 's', modifiers: 4 } as never, () => {})),
+    );
+    const container = mount(page);
+    const before = componentLowerings();
+
+    saver!.arm();
+    await nextFrame();
+
+    expect(componentLowerings() - before, 'lowered alone, then the page whole, to list the new binding in its place').toBe(2);
+    const listed = activeShortcuts().map((binding) => binding.chord);
+    page.rebuild();
+    await nextFrame();
+    expect(listed).toEqual(activeShortcuts().map((binding) => binding.chord));
+    expect(container.textContent).toContain('armed');
+  });
 });
+
+describe('a patch finds the DOM it patches', () => {
+  it('refuses a patch whose element is not where the tree says, as after a hydration that wrote no empty text', () => {
+    const text = (content: string): HtmlNode => ({ tag: '#text', attributes: {}, events: {}, children: [], textContent: content });
+    const span: HtmlNode = { tag: 'span', attributes: {}, events: {}, children: [text('a')] };
+    const tail: HtmlNode = { tag: 'em', attributes: {}, events: {}, children: [text('b')] };
+    const tree: HtmlNode = { tag: 'div', attributes: {}, events: {}, children: [text(''), span, tail] };
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const manager = new RenderManager();
+    manager.mount(tree, container);
+    // The markup the server wrote for an empty text has no node for it.
+    container.firstChild!.removeChild(container.firstChild!.firstChild!);
+
+    const next: HtmlNode = { tag: 'span', attributes: { class: 'patched' }, events: {}, children: [text('a!')] };
+    expect(manager.patch(span, next)).toBe(false);
+    expect(container.innerHTML).toBe('<div><span>a</span><em>b</em></div>');
+  });
+});
+

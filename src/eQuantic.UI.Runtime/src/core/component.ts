@@ -13,6 +13,7 @@ import { hydrate, type HydrationSpec } from '../utils/hydrate';
 import { adoptMember } from '../utils/adopt-member';
 import { getCurrentRoute } from '../router/current-route';
 import { ElementRoots, enterPass, exitPass, lowerRoot, relowerRoot, type Relowered } from '../shared/element-roots';
+import { partialCommitIsExact } from '../dom/shortcuts';
 import {
   getPhotonDensity,
   getInFlow,
@@ -355,6 +356,8 @@ function patchPage(root: object, roots: ElementRoots, invalidate: () => void, ma
     enterPass(roots, invalidate, false);
     try {
       answer = relowerRoot(last as VisualNodeValue);
+      // Bindings with no place in the list yet are placed by a whole render.
+      if (answer && !partialCommitIsExact((answer as Relowered).declaredBy)) answer = null;
     } finally {
       // The bindings the components lowered again declared give way to the ones they declared now;
       // a render that falls back replaces them all in the whole render that follows.
