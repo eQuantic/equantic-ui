@@ -92,3 +92,50 @@ desktop run 1 (cold): total 1065ms, delta 1040ms, frame 25ms
  1828  17.4 926704 /Users/runner/.dotnet/sdk/10.0.404/Roslyn/bincore/VBCSCompiler
  1174   9.9   6352 /usr/libexec/sysmond
  1450   5.3  68912 /System/Library/PrivateFrameworks/WorkflowKit.framework/XPCServices/BackgroundShortcutRunner.xpc/Contents/MacOS/BackgroundShortcutRunner
+[watch 14:09:27.219] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:09:27.382] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:09:27.382] dotnet watch : C# and Razor changes applied in 157ms.
+[watch 14:09:27.450] [eQuantic.HotReload] drew the edit 68ms after it was applied
+desktop run 2: total 266ms, delta 198ms, frame 68ms
+[watch 14:09:29.643] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:09:29.697] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:09:29.697] dotnet watch : C# and Razor changes applied in 53ms.
+[watch 14:09:29.718] [eQuantic.HotReload] drew the edit 21ms after it was applied
+desktop run 3: total 158ms, delta 137ms, frame 21ms
+[watch 14:09:31.838] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:09:31.921] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:09:31.921] dotnet watch : C# and Razor changes applied in 81ms.
+[watch 14:09:32.004] [eQuantic.HotReload] drew the edit 83ms after it was applied
+desktop run 4: total 256ms, delta 173ms, frame 83ms
+[watch 14:09:34.130] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:09:34.177] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:09:34.177] dotnet watch : C# and Razor changes applied in 54ms.
+[watch 14:09:34.223] [eQuantic.HotReload] drew the edit 46ms after it was applied
+desktop run 5: total 143ms, delta 97ms, frame 46ms
+[watch 14:09:36.390] dotnet watch : File updated: ./samples/PhotonDesktop/Studio/StudioShell.cs
+[watch 14:09:36.454] [eQuantic.HotReload] an edit was applied to 2 types, and 1 windows were woken to draw it
+[watch 14:09:36.454] dotnet watch : C# and Razor changes applied in 63ms.
+[watch 14:09:36.527] [eQuantic.HotReload] drew the edit 73ms after it was applied
+desktop run 6: total 168ms, delta 95ms, frame 73ms
+
+### Edit to view: desktop, warm median against a bar of 1000ms
+
+| part | min | median | max | cold |
+|---|---:|---:|---:|---:|
+| total | 143 | 168 | 266 | 1065 |
+| delta | 95 | 137 | 198 | 1040 |
+| frame | 21 | 68 | 83 | 25 |
+=== round 2 14:09:39
+[watch 14:09:40.374] dotnet watch : Hot reload enabled. For a list of supported edits, see https://aka.ms/dotnet/hot-reload.
+[watch 14:09:40.385] dotnet watch : Press Ctrl+R to restart.
+[watch 14:09:41.129]   Determining projects to restore...
+--- sample 14:09:42 load: { 31.06 26.35 11.97 } System-wide memory free percentage: 81%
+154 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon
+2760 dotnet watch --project samples/PhotonDesktop --non-interactive run --no-launch-profile
+2763 /Users/runner/.dotnet/dotnet /Users/runner/.dotnet/sdk/10.0.404/DotnetTools/dotnet-watch/10.0.404/tools/net10.0/any
+2765 /Users/runner/.dotnet/dotnet build /Users/runner/work/equantic-ui/equantic-ui/samples/PhotonDesktop/PhotonDesktop.c
+ 2765  72.6 182208 /Users/runner/.dotnet/dotnet
+ 2772  54.0 136576 /Users/runner/.dotnet/dotnet
+ 2774  46.2 126912 /Users/runner/.dotnet/dotnet
+  280  19.7  33360 /System/Library/CoreServices/Software Update.app/Contents/Resources/softwareupdated
+ 1114  13.0  10960 /System/Library/PrivateFrameworks/StreamingZip.framework/Versions/A/XPCServices/com.apple.StreamingUnzipService.privileged.xpc/Contents/MacOS/com.apple.StreamingUnzipService.privileged
