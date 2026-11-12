@@ -668,7 +668,10 @@ the parity rows it closes flip.
    - `InFlow.Current` goes: a position answers from the tree, and the web visitor hands a component
      it expands without a position the wrapper's flag in a context of its own.
    - `Theme(value, child)` is the vocabulary's inherited theme, and `context.Theme` reads the nearest
-     one above, or the frame's.
+     one above, or the frame's. A colour a realizer picks for a node by itself (a field's text, a
+     caret, an elevation's shadow) still reads the frame's theme on every target, so the server's
+     markup and the browser's lowering agree; following the nearest `Theme` there is owed (noted on
+     #1395).
 6. **E6, the theme slots.** Section 3.10, on the inherited theme of E5.
 
 E1 to E5 are [#937](https://github.com/eQuantic/equantic-ui/issues/937), and E6 is
