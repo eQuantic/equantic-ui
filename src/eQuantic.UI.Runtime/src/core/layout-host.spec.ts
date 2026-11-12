@@ -160,6 +160,34 @@ describe('the layout stays mounted across client navigations', () => {
 
     expect(events).toEqual(['unmount charts', 'unmount layout']);
   });
+
+  it('patches nothing for a page shown after the document left', () => {
+    const { host, container } = hostAt('/charts', new Charts());
+    host.disposeQuietly();
+    const drawn = container.innerHTML;
+    events = [];
+
+    host.show(new Table());
+
+    expect(events).toEqual([]);
+    expect(container.innerHTML).toBe(drawn);
+  });
+
+  it('holds a page shown before it mounts, and draws that page when it mounts', () => {
+    history.replaceState(null, '', '/table');
+    const host = new LayoutHost(SidebarLayout as unknown as LayoutClass, new Charts());
+
+    host.show(new Table());
+    expect(events).toEqual([]);
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    host.mount(container);
+
+    expect(container.textContent).toContain('table page');
+    expect(container.textContent).not.toContain('charts page');
+    expect(events).toEqual(['mount layout', 'mount table']);
+  });
 });
 
 describe("hydration adopts the layout's markup", () => {

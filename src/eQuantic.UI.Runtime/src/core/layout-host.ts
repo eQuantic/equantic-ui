@@ -82,12 +82,15 @@ export class LayoutHost {
    * instance at the position and hand it the new one's configuration (`Element.canUpdate`): a
    * navigation is a new page, as it is without a layout, where each one is a fresh instance. A page
    * of another type needs no key, and keeps the DOM patched position by position.
+   *
+   * A document that is not drawn (never mounted, or left for one without the layout) holds the page
+   * and draws it when it mounts, as `_scheduleRender` waits for the mount: it has no DOM to patch.
    */
   show(page: UiComponent): void {
     if (page.constructor === this.slot.page.constructor) page.key = `eq-navigation-${++this.navigations}`;
     this.slot.page = page;
     this.roots.requestPageBuild();
-    this.renderManager.update(this.render());
+    if (this.mounted) this.renderManager.update(this.render());
   }
 
   /**
