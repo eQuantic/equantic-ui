@@ -94,6 +94,9 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     /// <inheritdoc cref="Seam"/>
     public bool Visit(UiComponent node, LayoutNode laidOut) => Seam;
 
+    /// <summary>A value for a subtree says nothing to assistive technology: what it holds does.</summary>
+    public bool Visit(InheritedComponent node, LayoutNode laidOut) => Wraps;
+
     // ---- announcing ----------------------------------------------------------------------------
 
     /// <summary>Add one stop and consume the subtree.</summary>

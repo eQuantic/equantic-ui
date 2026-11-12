@@ -9,21 +9,12 @@ namespace eQuantic.UI.Web;
 /// faces in the page's head, leaving out the ones the theme's stylesheet declares, so a family built by
 /// hand or read from a library's catalog loads on the web as Photon loads it, the first time text asks.
 /// <para>
-/// Without an ambient sink nothing is collected: a component realized on its own, outside a page, has no
-/// head to declare a face in.
+/// Without a render's sink (<see cref="RenderChannels.Faces"/>) nothing is collected: a component realized
+/// on its own, outside a page, has no head to declare a face in.
 /// </para>
 /// </summary>
 public sealed class FaceSink
 {
-    private static readonly AsyncLocal<FaceSink?> _ambient = new();
-
-    /// <summary>The render-scoped sink, or null outside a server render.</summary>
-    public static FaceSink? Ambient
-    {
-        get => _ambient.Value;
-        set => _ambient.Value = value;
-    }
-
     /// <summary>The id of the style element a page declares the faces in.</summary>
     public const string ElementId = "eq-faces";
 

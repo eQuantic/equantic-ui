@@ -173,6 +173,7 @@ export {
   LinearGradient,
   RadialGradient,
   InFlow,
+  InheritedComponent,
   InView,
   Simulated,
   TextEntry,
@@ -232,7 +233,6 @@ export { materializeTheme } from './shared/theme-bridge';
 export { watchFaces } from './shared/face-declarations';
 export type { ThemeData } from './shared/theme-bridge';
 export { VisualNodeComponent } from './shared/visual-node-component';
-export { installErrorOverlay } from './dev/error-overlay';
 // The shared component LIBRARY (write-once) — transpiled modules embedded in the runtime, byte-pinned
 // to the live eqc output (SharedComponentTranspilationTests). `using eQuantic.UI.Components`
 // in app code routes imports here; the standard web components keep their per-app ./modules, so the
