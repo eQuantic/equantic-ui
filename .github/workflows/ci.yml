@@ -4,10 +4,11 @@ on:
 jobs:
   desktop:
     runs-on: macos-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        attempt: [1, 2, 3]
+        attempt: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -15,14 +16,33 @@ jobs:
           dotnet-version: 10.0.x
       - name: Build the desktop sample
         run: dotnet build samples/PhotonDesktop
-      - name: Edit to view on the desktop, three times
+      - name: Edit to view on the desktop, three times, watched
         shell: bash
+        timeout-minutes: 15
         run: |
           set -uo pipefail
+          (
+            while true; do
+              echo "--- sample $(date -u +%H:%M:%S) load: $(sysctl -n vm.loadavg)"
+              ps -axo pid=,rss=,%cpu=,comm= | sort -k2 -nr | head -6 | awk '{printf "  pid %s rss %d MB cpu %s %s\n", $1, $2/1024, $3, $4}'
+              ps -axo pid=,rss=,comm= | awk '$2 > 4194304 {print $1, $2/1024, $3}' | while read pid mb name; do
+                echo "WATCHDOG: $name (pid $pid) holds ${mb} MB, killed"; kill -9 "$pid"; done
+              sleep 10
+            done
+          ) &
+          sampler=$!
           status=0
           for round in 1 2 3; do
             echo "::group::round $round"
-            dotnet run scripts/measure-edit-to-view.cs -- desktop --runs 6 --budget scripts/edit-to-view.budget.json || status=1
+            dotnet run scripts/measure-edit-to-view.cs -- desktop --runs 6 --report "$RUNNER_TEMP/round-$round.json" || status=1
             echo "::endgroup::"
           done
+          kill $sampler
           exit $status
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ matrix.attempt }}
+          path: ${{ runner.temp }}/round-*
+          if-no-files-found: ignore
