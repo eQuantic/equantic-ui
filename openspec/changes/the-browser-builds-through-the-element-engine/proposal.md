@@ -23,8 +23,18 @@ builds through the same engine every frame. The browser is the last target that 
   keeps and what it built, from a frame of the tree; they no longer reconcile or build. A lowering with
   no page around it builds through a structural owner and discards it, as the server does.
 - A component's build runs inside the owner's build callback, which keeps today's boundary (a throw
-  costs the component's own subtree) and adopts the server's state (`Type#ordinal`) before an
-  instance's first build.
+  costs the component's own subtree) and hands a fresh instance what the server loaded for its position
+  before it builds.
+- **Every arm of an adaptive node is a position on the web** (#1477): the web's owners hold every arm
+  (`BuildOwner(…, holdsEveryArm: true)`), so no window size class decides an arm there. `MarkupHost.Build`
+  loses its size class, and the frameless arm, in C# and TypeScript, goes.
+- **Server data is keyed by position** (#1477): `r{tree}/{type}@{slots}`, read off the element on both
+  sides (`Element.Slot`, `Element.SlotsBelow`, `BuildOwner.Building`), in place of `Type#ordinal`, whose
+  build order and lowering order parted once the browser built through the engine. A page's own
+  component keeps `Type#0`. The server names by it as it lowers (`ComponentExpansionScope.Name`), draws
+  an escape-hatch bridge through a host of its own (`MarkupHost.DrawOnce`) and puts back what loaded
+  before a fresh instance builds (`PutBack`); `Enter` and `Reserved` go, and `MarkupHost.ForPage` measures
+  a page's keys below the page.
 - A nested component's `SetState` marks its own element. The owner asks the page for a render, and that
   render lowers the tree the page last built, without building the page again, so the owner builds the
   marked element and nothing else. Any other render (the page's own `SetState`, a navigation, a theme,
@@ -39,8 +49,14 @@ The path attributes, the per-commit module maps and the identities derived from 
 they move in E3b-2 (#1454).
 
 For someone using the SDK: nothing they write changes. A nested component's state change no longer runs
-the `Build` of every other component on its page.
+the `Build` of every other component on its page, and a component composed in two arms of an adaptive
+node, or inside an overlay, keeps the data the server loaded for it. The hydration payload's keys change
+shape, which only a hand-written payload would notice. For a test that called
+`MarkupHost.Build(root, sizeClass)`: drop the size class.
 
 Parts reached: the runtime (`core/component.ts`, `shared/lowering.ts`, `shared/instance-store.ts`, which
 goes, `shared/visual-node-component.ts`, a frame of the tree beside the lowering), its specs, and the
-served runtime's budget.
+served runtime's budget; the element engine (`Element`, `NodeElement`, `ChildSlots`, `NodeSlots`,
+`BuildOwner`, regenerated into the runtime, with its twins); the web realizer (`MarkupHost`,
+`ElementFrame`, `ComponentExpansionScope`, `VisualNodeComponent`, `WebRealizer`), the server's rendering,
+the component tester, and the tests that read a payload's keys.

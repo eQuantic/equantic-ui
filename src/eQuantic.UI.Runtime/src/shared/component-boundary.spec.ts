@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { ColorTokenValue, VisualNodeValue } from './nodes';
 import { lowerVisualNode } from './lowering';
+import { StatelessComponent } from '../core/component';
 
 /**
  * The BOUNDARY: a component whose build throws costs its own subtree and nothing else.
@@ -16,15 +17,20 @@ const textPrimary: ColorTokenValue = {
 };
 const ctx = { textPrimary };
 
-/** A component that fails the way real ones do — mid-build, on data it assumed was there. */
-const exploding = (name = 'BrokenCard'): VisualNodeValue =>
-  ({
-    nodeKind: 'component',
-    constructor: { name },
-    build: () => {
-      throw new TypeError("Cannot read properties of undefined (reading 'title')");
+/**
+ * A component that fails the way real ones do — mid-build, on data it assumed was there. A real
+ * one, as transpiled code makes it, named as its class: the element engine builds a `UiComponent`.
+ */
+const exploding = (name = 'BrokenCard'): VisualNodeValue => {
+  const named = {
+    [name]: class extends StatelessComponent {
+      build(): never {
+        throw new TypeError("Cannot read properties of undefined (reading 'title')");
+      }
     },
-  }) as unknown as VisualNodeValue;
+  };
+  return new named[name]() as unknown as VisualNodeValue;
+};
 
 const text = (content: string): VisualNodeValue =>
   ({ nodeKind: 'text', content, role: 'body', maxLines: 1 }) as unknown as VisualNodeValue;
@@ -90,19 +96,16 @@ describe('component boundary', () => {
   });
 
   it('a REAL stateless component gets the boundary too — it is a component', async () => {
-    const { StatelessComponent } = await import('../core/component');
     class BrokenCard extends StatelessComponent {
       build(): never {
         throw new TypeError("Cannot read properties of undefined (reading 'title')");
       }
     }
 
-    // The cases above hand-write `nodeKind: 'component'` onto a literal, so they exercise the
-    // BRANCH. This one composes the real base a transpiled stateless component extends, which is
-    // how the library actually reaches the lowering. That base IS a component node now (C#
-    // `UiComponent : VisualNode`), so the throw is contained by the lowering's `component` arm, as
-    // C#'s ComponentBoundary contains every UiComponent's build. It was contained before too, by the
-    // catch in the component's own render(); the surface and the report it leaves are the same.
+    // A component the class declares by name, as the library's are, composed beside two nodes. That
+    // base IS a component node (C# `UiComponent : VisualNode`), so the throw is contained by the
+    // owner's build callback, as C#'s ComponentBoundary contains every UiComponent's build, and the
+    // position draws the surface the lowering then lowers.
     const row = {
       nodeKind: 'row',
       gap: 8,

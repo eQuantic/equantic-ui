@@ -726,9 +726,9 @@ public class ElementTreeTests
     {
         var ids = new ElementIds();
         Func<UiComponent, ComponentContext, int, VisualNode> build = (component, context, _) => component.Build(context);
-        var live = Frame(new BuildOwner(build, ids), new Page(["a", "b"]));
-        var structural = Frame(BuildOwner.Structural(build, ids), new Page(["c"]));
-        var part = ((NodeElement)Frame(BuildOwner.Structural(build, ids), Keyed("d"))).PartId(0);
+        var live = Frame(new BuildOwner(build, ids: ids), new Page(["a", "b"]));
+        var structural = Frame(BuildOwner.Structural(build, ids: ids), new Page(["c"]));
+        var part = ((NodeElement)Frame(BuildOwner.Structural(build, ids: ids), Keyed("d"))).PartId(0);
 
         Everything(live).Concat(Everything(structural)).Select(element => element.Id).Append(part)
             .Should().OnlyHaveUniqueItems("the trees take their ids, parts included, from one count");

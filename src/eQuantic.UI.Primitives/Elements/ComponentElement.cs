@@ -13,6 +13,8 @@ namespace eQuantic.UI.Primitives;
 public sealed class ComponentElement : Element
 {
     private Element? _child;
+    private ComponentContext? _context;
+    private HashSet<InheritedElement>? _dependencies;
 
     internal ComponentElement(UiComponent component) : base(component)
     {
@@ -30,6 +32,62 @@ public sealed class ComponentElement : Element
     /// its parent's build already rebuilt is passed over by the dirty list, and a <c>SetState</c>
     /// from inside that build waits for the next frame.</summary>
     internal int BuiltInFrame { get; private set; }
+
+    /// <summary>Whether a value this position read through <c>DependOn</c> changed since it last built:
+    /// a stateful component hears it (<c>OnDependenciesChanged</c>) before it builds again.</summary>
+    internal bool DependenciesChanged { get; private set; }
+
+    /// <summary>Where this position stands among those that read what its owner's frame hands every build
+    /// (the theme, the density, the type scale), so a frame that hands others builds it again; -1 for
+    /// one that read none of it.</summary>
+    internal int FrameReaderIndex { get; set; } = -1;
+
+    /// <summary>
+    /// What this position builds with: ONE context for as long as the position lives, a view of where it
+    /// stands (docs/ELEMENT-TREE-PLAN.md, 3.3). It reads the frame's theme, density and type scale from
+    /// the owner, and the values a subtree holds from the inherited positions above it.
+    /// </summary>
+    internal ComponentContext Context => _context ??= new ComponentContext(this);
+
+    /// <summary>
+    /// The nearest inherited value above this position that <paramref name="matches"/>, with this position
+    /// registered as a dependent of it, so it builds again when the value changes. A predicate rather than
+    /// a type argument, because the engine is written once and a type argument does not reach the browser.
+    /// </summary>
+    internal InheritedComponent? DependOn(Func<InheritedComponent, bool> matches)
+    {
+        var found = Nearest(matches);
+        if (found is null) return null;
+        // A position that left the tree (a handler that kept its context) reads, and registers nothing.
+        if (!IsActive) return found.Inherited;
+        found.AddDependent(this);
+        (_dependencies ??= new HashSet<InheritedElement>()).Add(found);
+        return found.Inherited;
+    }
+
+    /// <summary>The nearest inherited value above this position that <paramref name="matches"/>, read once:
+    /// this position does not build again when it changes.</summary>
+    internal InheritedComponent? Find(Func<InheritedComponent, bool> matches) => Nearest(matches)?.Inherited;
+
+    private InheritedElement? Nearest(Func<InheritedComponent, bool> matches)
+    {
+        for (var at = NearestInherited; at is not null; at = at.Above)
+        {
+            if (matches(at.Inherited)) return at;
+        }
+
+        return null;
+    }
+
+    /// <summary>A value this position depends on changed: it builds again in this frame.</summary>
+    internal void DependencyChanged()
+    {
+        if (!IsActive) return;
+        DependenciesChanged = true;
+        if (Dirty) return;
+        Dirty = true;
+        Owner.ScheduleDependent(this);
+    }
 
     /// <inheritdoc />
     public override Element? ChildAt(int slot) => slot == 0 ? _child : null;
@@ -84,28 +142,19 @@ public sealed class ComponentElement : Element
         // than being lost to a flag that was about to be reset.
         Dirty = false;
         BuiltInFrame = Owner.Frame;
+        if (DependenciesChanged)
+        {
+            DependenciesChanged = false;
+            if (Component is StatefulComponent stateful) stateful.NotifyDependenciesChanged();
+        }
+
         var built = BuildContained();
-        _child = UpdateChild(_child, built, force);
+        _child = UpdateChild(_child, built, 0, force);
     }
 
-    private VisualNode BuildContained()
-    {
-        // The intent an InFlow arms while its subtree builds. Written only where it differs from
-        // what is armed, because an AsyncLocal write allocates and nearly every build has none.
-        var armed = InFlow.Current;
-        if (armed == UnderInFlow)
-            return Owner.BuildComponent(Component, Owner.Context, ComponentDepth);
-
-        InFlow.Current = UnderInFlow;
-        try
-        {
-            return Owner.BuildComponent(Component, Owner.Context, ComponentDepth);
-        }
-        finally
-        {
-            InFlow.Current = armed;
-        }
-    }
+    // With this position's own context, which answers whether an InFlow is above it from the tree
+    // (Element.UnderInFlow) rather than from an ambient channel armed around the build.
+    private VisualNode BuildContained() => Owner.BuildComponent(this);
 
     /// <summary>Asks for this position to build again: a <c>SetState</c>, through the instance. The
     /// owner counts the request even when the position is already waiting to build
@@ -136,6 +185,13 @@ public sealed class ComponentElement : Element
 
     private protected override void OnDeactivated()
     {
+        Owner.ForgetFrameReader(this);
+        if (_dependencies is not null)
+        {
+            foreach (var dependency in _dependencies) dependency.RemoveDependent(this);
+            _dependencies = null;
+        }
+
         // One instance a parent placed at two positions stays mounted until the last of them leaves.
         if (Owner.Live && Component is StatefulComponent stateful && stateful.LeavePosition(this))
             Owner.QueueUnmount(stateful);

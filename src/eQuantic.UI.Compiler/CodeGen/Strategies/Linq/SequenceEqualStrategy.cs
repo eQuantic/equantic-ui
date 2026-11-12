@@ -75,7 +75,7 @@ public class SequenceEqualStrategy : IConversionStrategy
 
         var spans = method.ContainingType?.Name == "MemoryExtensions";
         var other = spans ? "other" : "second";
-        var equality = ElementEquality.Of(method.TypeArguments.FirstOrDefault());
+        var equality = ElementEquality.Of(method.TypeArguments.FirstOrDefault(), invocation, context);
         string[] settled = spans ? [equality ?? "false", "true"] : equality is null ? [] : [equality];
         var call = LinqArguments.Call(Eq.LinqSequenceEqual, LinqSource.Ir(access.Expression, context), [other], invocation,
             argument => LinqSource.Argument(argument, invocation, context), context, settled, dropped: "comparer");

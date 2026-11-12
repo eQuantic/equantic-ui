@@ -117,8 +117,8 @@ public class ServerTopicEmissionTests
     public void AGenericRecordPayload_IsDescribedByItsOwnMembers()
     {
         var ts = Ticker();
-        ts.Should().Contain("new ServerTopic('counts', { of: Box, members: { value: 'long' } })");
-        ts.Should().Contain("new ServerTopic('wrapped', { of: Box, members: { value: Notice } })");
+        ts.Should().Contain("new ServerTopic('counts', { of: Box, members: { value: 'long' }, closed: 'long' })");
+        ts.Should().Contain("new ServerTopic('wrapped', { of: Box, members: { value: Notice }, closed: 'global::Notice' })");
     }
 
     [Fact]

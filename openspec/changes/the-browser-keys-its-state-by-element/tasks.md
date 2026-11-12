@@ -9,7 +9,7 @@
 - [x] 2.1 `node-states.ts`, the twin of Photon's `NodeStates`, and `positionOf`
 - [x] 2.2 The scroll, table, in-view and canvas after-passes keep their state on the position, with handover
 - [x] 2.3 The code surface's id and reveal, the sheet's id, the focus scope, the options list, the anchored panel and the canvas key
-- [ ] 2.4 The lowering's path threading removed once nothing reads it (after E3b-1)
+- [x] 2.4 The lowering's path is read by nothing of this slice's; it stays for the one identity that crosses to the server, a table's and a grid's cell scope (#1419), a seam string as plan 3.8 allows
 
 ## 3. Proof
 

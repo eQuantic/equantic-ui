@@ -83,7 +83,7 @@ public static class ShadowedRuntimeMembers
     /// <summary>
     /// The members the base this component ACTUALLY extends carries. One union of all of them would
     /// be simpler and wrong: the bases differ by eleven names — <c>setState</c>, <c>key</c>,
-    /// <c>onMount</c>, <c>_sharedStateful</c> and the rest belong to a STATEFUL component — and a
+    /// <c>onMount</c>, <c>mountedAt</c> and the rest belong to a STATEFUL component — and a
     /// union refuses them on a stateless one, where they shadow nothing at all. <c>HtmlElement</c>
     /// is its own case again, carrying the DOM surface a component does not.
     /// <para>

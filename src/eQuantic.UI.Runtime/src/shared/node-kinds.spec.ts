@@ -64,6 +64,8 @@ describe('a kind this bundle has never heard of', () => {
     // loudly is the repo's rule applied to the case the compiler cannot reach.
     const impostor = { nodeKind: 'holograph' } as unknown as VisualNodeValue;
 
-    expect(() => lowerVisualNode(impostor, context)).toThrow(/Unhandled node kind/);
+    // The element engine meets it first, building the tree, and refuses it by its kind; the
+    // lowering's own refusal stays behind it for a tree the engine did not build.
+    expect(() => lowerVisualNode(impostor, context)).toThrow(/no child slots for a 'holograph' node/);
   });
 });

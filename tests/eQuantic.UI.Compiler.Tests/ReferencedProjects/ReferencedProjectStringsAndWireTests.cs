@@ -42,6 +42,18 @@ public sealed class ReferencedProjectStringsAndWireTests : IClassFixture<Referen
             .And.Contain("$eq.str('Common.Resources.Strings', 'Brand')");
     }
 
+    /// <summary>A module that reads a string imports no module of the catalogue's class, and the build
+    /// writes none: a resource class is rewritten away at each read, and the catalogue's id in
+    /// <c>$eq.str('…Strings', 'Title')</c> is text (#824). Each page imported <c>./Strings</c>, a module
+    /// nothing wrote, which only the bundler's dropping of an unused import kept from failing.</summary>
+    [Fact]
+    public void AReadOfAString_ImportsNoModuleOfTheResourceClass()
+    {
+        _built.Modules.Should().NotContain("Strings");
+        _built.SiblingImportsOf("Home").Should().NotContain("Strings");
+        _built.SiblingImportsOf("Wordmark").Should().NotContain("Strings");
+    }
+
     [Theory]
     [InlineData("neutral", "One page", "A mark", "Shared")]
     [InlineData("pt-BR", "Uma página do Brasil", "Uma marca do Brasil", "Compartilhada")]

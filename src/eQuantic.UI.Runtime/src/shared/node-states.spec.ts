@@ -20,6 +20,7 @@ import { CodePosition } from './components/CodePosition';
 import { CodeRange } from './components/CodeRange';
 import { photonTheme } from './design-system.generated';
 import { InViewState } from './in-view';
+import { ElementRoots, enterPass, exitPass } from './element-roots';
 import { lowerVisualNode, type LoweringContext } from './lowering';
 import { findNodeState, nodeStateFor } from './node-states';
 import { photonComponentContext, setPhotonTheme } from './photon-context';
@@ -27,7 +28,6 @@ import { commitScrollViewports, declareScrollViewport, ScrollViewportState } fro
 import { frameOf, positionsOf, specOwner } from './test-positions';
 import { Point, Size } from './value-types';
 import { CodeSurface, Column, ScrollView, Text, type VisualNode } from './vocabulary';
-import type { ElementFrame } from './element-frame';
 import type { Element } from './runtime-exports';
 
 setPhotonTheme(photonTheme);
@@ -165,12 +165,19 @@ describe('a code surface keeps its identity and its reveal on its position', () 
     editor.grid = new CodeGrid(new Point(0, 0), new Size(8, 18));
     return editor;
   };
-  const lower = (node: CodeSurface, frame: ElementFrame) =>
-    lowerVisualNode(node as never, {
-      textPrimary: photonTheme.textPrimary,
-      componentContext: { theme: photonTheme, typeScale: 1 },
-      frame,
-    } as LoweringContext);
+  /** Lowers `node` in a pass of `roots`, as a page renders: the root's owner keeps its positions from
+   * one render to the next. */
+  const lower = (node: CodeSurface, roots: ElementRoots) => {
+    enterPass(roots, null, true);
+    try {
+      return lowerVisualNode(node as never, {
+        textPrimary: photonTheme.textPrimary,
+        componentContext: { theme: photonTheme, typeScale: 1 },
+      } as LoweringContext);
+    } finally {
+      exitPass();
+    }
+  };
   /** The caret the reveal scrolls into view, found as the reveal finds it: by the surface's id. */
   const aCaretFor = (id: string) => {
     const host = document.createElement('div');
@@ -192,30 +199,23 @@ describe('a code surface keeps its identity and its reveal on its position', () 
   afterEach(() => vi.useRealTimers());
 
   it("carries its position's id, the same while the position keeps it", () => {
-    const owner = specOwner();
+    const roots = new ElementRoots(null);
     const editor = anEditor();
-    const first = surface('a', editor);
-    const firstFrame = frameOf(column(first), owner);
-    const id = lower(first, firstFrame).attributes['data-eq-code'];
-    expect(id).toBe(String(firstFrame.elementAt(first)!.id));
+    const id = lower(surface('a', editor), roots).attributes['data-eq-code'];
+    expect(Number(id)).toBeGreaterThan(0);
 
-    const again = surface('a', editor);
-    expect(lower(again, frameOf(column(again), owner)).attributes['data-eq-code']).toBe(id);
-
-    const other = surface('b', editor);
-    expect(lower(other, frameOf(column(other), owner)).attributes['data-eq-code']).not.toBe(id);
+    expect(lower(surface('a', editor), roots).attributes['data-eq-code']).toBe(id);
+    expect(lower(surface('b', editor), roots).attributes['data-eq-code']).not.toBe(id);
   });
 
   it('reveals a caret the model moved on the position that drew it, and none on one that took its place', () => {
-    const owner = specOwner();
+    const roots = new ElementRoots(null);
     const editor = anEditor();
-    const first = surface('a', editor);
-    const id = lower(first, frameOf(column(first), owner)).attributes['data-eq-code']!;
+    const id = lower(surface('a', editor), roots).attributes['data-eq-code']!;
 
     // Kept: the model moves its caret, and the next render brings it into view.
     editor.select(new CodeRange(new CodePosition(2, 1)), false);
-    const kept = surface('a', editor);
-    lower(kept, frameOf(column(kept), owner));
+    lower(surface('a', editor), roots);
     const keptCaret = aCaretFor(id);
     vi.advanceTimersByTime(100);
     expect(keptCaret).toHaveBeenCalled();
@@ -225,8 +225,7 @@ describe('a code surface keeps its identity and its reveal on its position', () 
     const other = anEditor();
     other.select(new CodeRange(new CodePosition(1, 1)), false);
     other.select(new CodeRange(new CodePosition(2, 2)), false);
-    const replacing = surface('b', other);
-    const replacedId = lower(replacing, frameOf(column(replacing), owner)).attributes['data-eq-code']!;
+    const replacedId = lower(surface('b', other), roots).attributes['data-eq-code']!;
     const replacedCaret = aCaretFor(replacedId);
     vi.advanceTimersByTime(100);
 
@@ -249,7 +248,7 @@ describe('the trees of a document count their ids together', () => {
   it('never gives two positions the same id when their owners share one count', () => {
     const ids = new ElementIds();
     const owner = () =>
-      BuildOwner.structural((component, built) => component.build(built) as unknown as VisualNode, ids);
+      BuildOwner.structural((component, built) => component.build(built) as unknown as VisualNode, false, ids);
     const context = photonComponentContext() as unknown as RenderContext;
     const all: number[] = [];
     const collect = (position: Element) => {

@@ -1,18 +1,20 @@
 import { $eq, BuildContext, ComponentElement, Element, ElementIds, NodeElement, StatefulComponent, UiComponent, VisualNode, WindowSizeClassValue } from "../runtime-exports";
 
 export class BuildOwner {
-    constructor(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode = undefined!, ids: ElementIds | null = undefined!, live: boolean = undefined!) {
-        if (arguments.length >= 1 && arguments.length <= 2) {
-            let $c0: any, $c1: any, $c2: any;
+    constructor(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode = undefined!, holdsEveryArm: boolean = undefined!, ids: ElementIds | null = undefined!, live: boolean = undefined!) {
+        if (arguments.length >= 1 && arguments.length <= 3) {
+            let $c0: any, $c1: any, $c2: any, $c3: any;
             {
-                let buildComponent: any = arguments[0], ids: any = arguments[1] === undefined ? null : arguments[1];
+                let buildComponent: any = arguments[0], holdsEveryArm: any = arguments[1] === undefined ? false : arguments[1], ids: any = arguments[2] === undefined ? null : arguments[2];
                 $c0 = buildComponent;
-                $c1 = ids;
-                $c2 = true;
+                $c1 = holdsEveryArm;
+                $c2 = ids;
+                $c3 = true;
             }
             buildComponent = $c0;
-            ids = $c1;
-            live = $c2;
+            holdsEveryArm = $c1;
+            ids = $c2;
+            live = $c3;
         }
         this._dirty = [];
         this._dirtyNextFrame = [];
@@ -21,23 +23,30 @@ export class BuildOwner {
         this._mounting = [];
         this._unmounting = [];
         this._deferred = [];
+        this._frameReaders = [];
         this._context = null;
         this._building = 0;
+        this._inFrameBuild = false;
+        this._dirtyCursor = -1;
         this._stamp = 0;
         this._ids = null!;
         this._buildComponent = null!;
+        this.building = null;
         this.buildRequested = null;
         this.root = null;
         this.frame = 0;
         this.rebuildingAll = false;
         this.marks = 0;
         this.live = false;
+        this.holdsEveryArm = false;
         this.sizeClass = 'compact';
+        this.navigationRequested = null;
         this.keyScratch = $eq.collections.dictionary();
         $eq.guard.throwIfNull(buildComponent, 'buildComponent');
         this._buildComponent = buildComponent;
         this._ids = ids ?? new ElementIds();
         this.live = live;
+        this.holdsEveryArm = holdsEveryArm;
     }
 
     _dirty!: ComponentElement[];
@@ -47,18 +56,24 @@ export class BuildOwner {
     _mounting!: ComponentElement[];
     _unmounting!: StatefulComponent[];
     _deferred!: NodeElement[];
+    _frameReaders!: ComponentElement[];
     _context!: BuildContext | null;
     _building!: number;
+    _inFrameBuild!: boolean;
+    _dirtyCursor!: number;
     _stamp!: number;
     _ids!: ElementIds;
     _buildComponent!: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode;
+    building!: ComponentElement | null;
     buildRequested!: (() => void) | null;
     root!: Element | null;
     frame!: number;
     rebuildingAll!: boolean;
     marks!: number;
     live!: boolean;
+    holdsEveryArm!: boolean;
     sizeClass!: WindowSizeClassValue;
+    navigationRequested!: ((string: string) => void) | null;
     keyScratch!: any;
 
     get hasDirty(): boolean {
@@ -95,12 +110,18 @@ export class BuildOwner {
         BuildOwner.$init().byDepth = value;
     }
 
-    static structural(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode, ids: ElementIds | null = null) {
-        return new BuildOwner(buildComponent, ids, false);
+    static structural(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode, holdsEveryArm: boolean = false, ids: ElementIds | null = null) {
+        return new BuildOwner(buildComponent, holdsEveryArm, ids, false);
     }
 
-    buildComponent(component: UiComponent, context: BuildContext, depth: number) {
-        return this._buildComponent(component, context, depth);
+    buildComponent(position: ComponentElement) {
+        let outer = this.building;
+        this.building = position;
+        try {
+            return this._buildComponent(position.component, position.context, position.componentDepth);
+        } finally {
+            this.building = outer;
+        }
     }
 
     countMark() {
@@ -108,24 +129,52 @@ export class BuildOwner {
     }
 
     build(root: VisualNode, context: BuildContext, sizeClass: WindowSizeClassValue, rebuildAll: boolean) {
+        let previous = this._context;
         this._context = context;
         this.sizeClass = sizeClass;
         this.frame++;
         this.rebuildingAll = rebuildAll;
         this.enterBuild();
+        this._inFrameBuild = true;
         try {
+            if (!(previous == null) && BuildOwner.frameValuesDiffer(previous, context)) this.markFrameReaders();
             if (this.root == null || !Element.canUpdate(this.root.configuration, root)) {
                 if (!(this.root == null)) this.deactivate(this.root);
                 this.root = Element.create(root);
-                this.root.mount(this, null);
+                this.root.mount(this, null, 0);
             } else if (rebuildAll || !(this.root.configuration === root)) {
                 this.root.update(root, rebuildAll);
             }
             this.buildDirty();
         } finally {
+            this._inFrameBuild = false;
             this.exitBuild();
         }
         return this.root;
+    }
+
+    static frameValuesDiffer(before: BuildContext, now: BuildContext) {
+        return !(before.theme === now.theme) || before.density !== now.density || before.typeScale !== now.typeScale;
+    }
+
+    readFrame(reader: ComponentElement) {
+        if (reader.frameReaderIndex >= 0) return;
+        reader.frameReaderIndex = this._frameReaders.length;
+        this._frameReaders.push(reader);
+    }
+
+    forgetFrameReader(reader: ComponentElement) {
+        let index = reader.frameReaderIndex;
+        if (index < 0) return;
+        let last = this._frameReaders[this._frameReaders.length - 1];
+        this._frameReaders[index] = last;
+        last.frameReaderIndex = index;
+        $eq.collections.listRemoveAt(this._frameReaders, this._frameReaders.length - 1);
+        reader.frameReaderIndex = -1;
+    }
+
+    markFrameReaders() {
+        for (const reader of this._frameReaders) reader.dependencyChanged();
     }
 
     endFrame() {
@@ -195,6 +244,20 @@ export class BuildOwner {
         return this._deferred.push(element);
     }
 
+    scheduleDependent(element: ComponentElement) {
+        if (!this._inFrameBuild) {
+            this.schedule(element);
+            return;
+        }
+        if (this._dirtyCursor < 0) {
+            this._dirty.push(element);
+            return;
+        }
+        let at = this._dirty.length;
+        while (at > this._dirtyCursor + 1 && this._dirty[at - 1].depth > element.depth) at--;
+        $eq.collections.listInsert(this._dirty, at, element);
+    }
+
     schedule(element: ComponentElement) {
         if (this._building > 0) {
             this._dirtyNextFrame.push(element);
@@ -208,6 +271,7 @@ export class BuildOwner {
         if (this._dirty.length === 0) return;
         $eq.collections.listSortBy(this._dirty, BuildOwner.byDepth, 'System.Comparison`1[eQuantic.UI.Primitives.ComponentElement]');
         for (let i = 0; i < this._dirty.length; i++) {
+            this._dirtyCursor = i;
             let element = this._dirty[i];
             if (!this.waitsToBuild(element)) continue;
             if (!(BuildOwner.deferredHolderOf(element) == null)) {
@@ -216,6 +280,7 @@ export class BuildOwner {
             }
             element.rebuild(false);
         }
+        this._dirtyCursor = -1;
         this._dirty.splice(0);
     }
 

@@ -17,6 +17,7 @@ import { Box, BoxStyle, Pressable, TableViewCell, TableViewport, Text } from './
 import { TableView } from './components/TableView';
 import fixture from './component-parity.fixture.json';
 import type { HtmlNode } from '../core/types';
+import { rendersOfOnePage } from './test-positions';
 
 const context = { textPrimary: photonTheme.textPrimary } as LoweringContext;
 
@@ -139,7 +140,8 @@ describe('TableViewport on the web', () => {
     expect((lowered as { attributes: Record<string, string> }).attributes['role']).toBe('group');
     expect(effectiveStyle(lowered)).toContain('touch-action: none');
     expect(effectiveStyle(lowered)).toContain('overflow: hidden');
-    expect(view.children).toHaveLength(10);
+    // The eight bands and two scrollbars, and last the box that owns the cells in reading order (#1331).
+    expect(view.children).toHaveLength(11);
     // The body's first cell sits at the band's corner; a pinned row cell keeps its own top.
     const body = lowered.children[0] as HtmlNode;
     const bodyCell = ((body.children[0] as HtmlNode).children[0] as HtmlNode);
@@ -596,11 +598,24 @@ describe('A table and a grid on the web (#1081)', () => {
     const group = lowered();
     expect(group.attributes['role']).toBe('group');
     expect(group.attributes['aria-rowcount']).toBeUndefined();
-    expect(group.children).toHaveLength(10);
+    expect(group.children).toHaveLength(11);
     const cell = cellAt(group, 3, 2);
     expect(cell.attributes['role']).toBeUndefined();
     expect(cell.attributes['aria-colindex']).toBeUndefined();
-    expect(cell.attributes['id']).toBeUndefined();
+  });
+
+  it('reads a group row by row, whichever band draws a cell, as Photon does (#1331)', () => {
+    const group = lowered();
+    const cell = cellAt(group, 3, 2);
+    const owner = group.children[group.children.length - 1] as HtmlNode;
+    expect(owner.attributes['role']).toBeUndefined();
+    const owned = owner.attributes['aria-owns']!.split(' ');
+    // The pinned row's cells first, column by column, then row 1's, never band by band.
+    expect(owned.indexOf(cell.attributes['id']!)).toBeGreaterThan(owned.indexOf(cellAt(group, 3, 0).attributes['id']!));
+    expect(owned.indexOf(cellAt(group, 1, 0).attributes['id']!)).toBeGreaterThan(owned.indexOf(cellAt(group, 0, 3).attributes['id']!));
+    const ids = owned.map((id) => id.split('-').slice(-2).map(Number));
+    const rowMajor = ids.slice().sort((a, b) => a[0]! - b[0]! || a[1]! - b[1]!);
+    expect(ids).toEqual(rowMajor);
   });
 });
 
@@ -644,6 +659,8 @@ describe('A gliding mark on the web, glided by the after-pass (#984)', () => {
     const rows = new UniformTableSpans(200, 28);
     const columns = new UniformTableSpans(40, 96);
     let view: HTMLElement | null = null;
+    // One page's passes: the viewport keeps its position, and the id the first pass stamped.
+    const render = rendersOfOnePage();
     const mark = () => view!.children[4].firstElementChild!.firstElementChild as HTMLElement;
     const pass = (row: number, column: number, options: { columns?: number; glide?: typeof glide | null } = {}) => {
       const node = new TableViewport(rows, columns, scroll, { pinnedRows: 1, pinnedColumns: 1 });
@@ -652,7 +669,7 @@ describe('A gliding mark on the web, glided by the after-pass (#984)', () => {
       cursor.columns = options.columns ?? 1;
       cursor.glide = options.glide === undefined ? glide : options.glide;
       node.add(cursor);
-      const lowered = lowerVisualNode(node as never, context);
+      const lowered = render(() => lowerVisualNode(node as never, context));
       if (!view) {
         view = toDom(lowered) as HTMLElement;
         Object.defineProperty(view, 'clientWidth', { value: 900, configurable: true });

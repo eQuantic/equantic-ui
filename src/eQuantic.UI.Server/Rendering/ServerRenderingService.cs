@@ -136,17 +136,19 @@ public class ServerRenderingService : IServerRenderingService
             // Where a component in the MIDDLE of the tree finds a capability — the REQUEST's
             // container, so a scoped one resolves and a page's own registrations win.
             Primitives.CapabilityScope.Current = context.RequestServices.GetService;
-            // And the density the browser reported (#623), for the whole request: every write-once
+            // And the density the browser reported (#623), for every render of the request: each write-once
             // bridge is built at it, the drawing's and the navigation's discovery walk alike, or a page
             // that composes by its density answers a navigation from a tree the browser never builds.
-            Web.VisualNodeComponent.AmbientDensity = DensityCookie.Resolve(context);
+            var density = DensityCookie.Resolve(context);
             // Every in-app href picks up THIS request's language prefix. The culture is the one
             // UseRequestLocalization negotiated — from the path segment first — so a page served
-            // at /pt-BR/pricing links to /pt-BR/about without any page saying so.
+            // at /pt-BR/pricing links to /pt-BR/about without any page saying so. Both travel with
+            // each render's channels (#1404), never through the request's flow.
+            Func<string, string>? linkPolicy = null;
             if (_options.CultureRoutes is { } cultureRoutes)
             {
                 var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
-                RenderContext.SetLinkPolicy(path => cultureRoutes.PathFor(culture, path));
+                linkPolicy = path => cultureRoutes.PathFor(culture, path);
             }
 
             try
@@ -177,11 +179,10 @@ public class ServerRenderingService : IServerRenderingService
                 if (metadataSource is not Primitives.UiComponent && metadataSource is Primitives.IServerPrefetch root)
                 {
                     coreRoot = root;
-                    // ITS KEY JOINS THE ASKED SET, or the page ships no payload at all: `asked` is
-                    // what decides whether a response carries state, so a Core root loading on the
-                    // server and then hydrating from its defaults was the one page shape that never
-                    // needed this walk and was the only one left reverting. Its ordinal is 0 by
-                    // construction — the root is the first component either side names.
+                    // ITS KEY IS RESERVED and joins the asked set, so the walk below neither hands
+                    // it to another component nor asks it again. Its state travels with the payload
+                    // below, read off the root itself. Its ordinal is 0 by construction: the root is
+                    // the first component either side names.
                     coreRootKey = Web.ComponentIdentity.Key(metadataSource.GetType(), 0);
                     asked.Add(coreRootKey);
                     await coreRoot.PrefetchAsync(context.RequestServices, context.RequestAborted);
@@ -205,29 +206,24 @@ public class ServerRenderingService : IServerRenderingService
                 string? vectorDefs = null;
                 if (draw)
                 {
-                    // The loop repeats because the SET of components can depend on the data: what a
-                    // page composes after loading a list is not knowable before loading it. It ends
-                    // the moment a round finds no component it has not already asked, which for a
-                    // page with no prefetch at all is the first one.
-                    for (var round = 0; round < MaxPrefetchRounds; round++)
+                    // A WRITE-ONCE PAGE is drawn through an element tree the request owns
+                    // (docs/ELEMENT-TREE-PLAN.md, E4): each round is a frame of ONE tree, a component
+                    // that loaded has its position marked, and only that subtree builds again, with the
+                    // instance that loaded. Nothing is written back onto a fresh instance, because none
+                    // is drawn. An escape-hatch page makes its write-once bridges anew on every render,
+                    // so they have no position to keep an owner at: each is a tree drawn once, and what
+                    // loaded is put back by its name.
+                    var page = component as Web.VisualNodeComponent;
+                    var host = page is null ? null : Web.MarkupHost.ForPage(Theme, 1f, density);
+
+                    // ONE ROUND, the same for both paths: the page drawn with channels of its own, whose
+                    // expansion scope names what it reaches. It answers that scope.
+                    Web.ComponentExpansionScope DrawRound()
                     {
                         assets = new AssetCollection();
                         vectorDefs = null;
                         CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
 
-                        // Render with an AMBIENT style sink armed (STYLE-SEMANTICS-PLAN §2): every
-                        // write-once bridge in the tree — top-level page or composed inside a Core
-                        // component — collects its atomic rules into this one per-page set.
-                        var styles = new Web.StyleSink();
-                        Web.StyleSink.Ambient = styles;
-                        // The same shape, for the same reason, one layer over: every gradient the page
-                        // paints with, declared ONCE for the document instead of once per drawing.
-                        var gradients = new Web.GradientSink();
-                        Web.GradientSink.Ambient = gradients;
-                        // And the families with files the page's text names (#1056), declared in its
-                        // head beside what the theme's stylesheet declares, as Photon registers them.
-                        var faces = new Web.FaceSink();
-                        Web.FaceSink.Ambient = faces;
                         // Armed the same way and for the same reason: a component that throws is
                         // contained to its own subtree instead of turning this request into a 500.
                         // Development quotes the exception in the panel; production says only that a
@@ -241,19 +237,33 @@ public class ServerRenderingService : IServerRenderingService
                         renderScope = new Web.ComponentExpansionScope
                         {
                             Restore = prefetched,
-                            Reserved = coreRootKey,
                         };
-                        Web.ComponentExpansionScope.Ambient = renderScope;
+                        // THE RENDER'S CHANNELS (#1404): every write-once bridge in the tree, top-level
+                        // page or composed inside a Core component, collects its atomic rules, the
+                        // gradients the page paints with and the families its text names into this one
+                        // set, and names each component it expands into the scope.
+                        var channels = new Web.RenderChannels(renderScope, density, linkPolicy);
+                        var styles = channels.Styles;
+                        var gradients = channels.Gradients;
+                        var faces = channels.Faces;
                         try
                         {
-                            html = RenderComponent(component);
+                            if (host is not null)
+                            {
+                                host.Build(page!.Node);
+                                html = HtmlRenderer.RenderToString(host.Lower(channels));
+                                host.EndFrame();
+                            }
+                            else
+                            {
+                                // An escape-hatch page reaches its bridges through Render(), which takes no
+                                // parameter: the one place the channels are found in an ambient.
+                                using (Web.RenderChannels.BridgeWith(channels))
+                                    html = RenderComponent(component);
+                            }
                         }
                         finally
                         {
-                            Web.ComponentExpansionScope.Ambient = null;
-                            Web.StyleSink.Ambient = null;
-                            Web.GradientSink.Ambient = null;
-                            Web.FaceSink.Ambient = null;
                             Primitives.ComponentBoundary.Report = null;
                         }
 
@@ -275,60 +285,89 @@ public class ServerRenderingService : IServerRenderingService
                         // The page's own paint servers, rendered the same way the page was.
                         if (!gradients.IsEmpty) vectorDefs = RenderComponent(gradients.Container());
 
-                        // ASKED ONCE, except where the key now names a DIFFERENT component: a page
-                        // whose own data chooses what it composes can put another row at the same
-                        // key, and what loaded there belongs to the row that is gone. The scope
-                        // refuses that restore, so the new one is asked for its own data rather
-                        // than drawing someone else's.
-                        var pending = renderScope.Expanded
-                            .Where(pair => pair.Value is Primitives.IServerPrefetch
-                                && (asked.Add(pair.Key) || renderScope.Replaced.Contains(pair.Key)))
-                            .ToList();
+                        return renderScope;
+                    }
 
-                        // THE MARKUP THIS ROUND PRODUCED IS THE ANSWER when nothing new asked for
-                        // data — which is every page that declares none, on its first pass.
-                        if (pending.Count == 0) break;
-
-                        // NOT THIS ROUND, because nothing would draw what it loads. The loop renders
-                        // at the TOP, so awaiting on the last allowed pass would store values the
-                        // markup never shows and the payload would disagree with the page beside it.
-                        // Stopping here serves the defaults in BOTH, which is a visibly incomplete
-                        // page rather than a page whose words and state contradict each other.
-                        if (round == MaxPrefetchRounds - 1)
+                    if (host is not null)
+                    {
+                        var data = new Web.ServerDataRounds(host);
+                        var settled = await data.RunAsync(DrawRound,
+                            loader => loader.PrefetchAsync(context.RequestServices, context.RequestAborted),
+                            MaxPrefetchRounds);
+                        if (!settled)
                         {
                             _logger.LogWarning(
                                 "[SSR Prefetch] Stopped at {Rounds} rounds with {Count} component(s) still "
-                                + "asking for data ({Replaced} of them replaced rather than new); they "
-                                + "render their defaults. A chain this deep usually means a component "
-                                + "loads what another one had to load first — or, when components keep "
-                                + "being replaced, that one of them differs every time it is built.",
-                                MaxPrefetchRounds, pending.Count,
-                                pending.Count(p => renderScope.Replaced.Contains(p.Key)));
-                            break;
+                                + "asking for data; they render their defaults. A chain this deep usually "
+                                + "means a component loads what another one had to load first.",
+                                MaxPrefetchRounds, data.Pending.Count);
                         }
-
-                        // ONE AT A TIME. They were started together at first, which is faster and
-                        // wrong: every prefetch is handed the REQUEST's service provider, so two
-                        // components resolving the same scoped dependency — an EF DbContext being
-                        // the ordinary case — would use one instance concurrently, which EF refuses
-                        // by design. A page that worked would fail for a reason its author could not
-                        // see. Parallelism here is worth having only behind a contract that says
-                        // prefetch dependencies are safe for concurrent use, and there is no such
-                        // contract today.
-                        foreach (var pair in pending)
+                    }
+                    else
+                    {
+                        // The loop repeats because the SET of components can depend on the data: what a
+                        // page composes after loading a list is not knowable before loading it. It ends
+                        // the moment a round finds no component it has not already asked, which for a
+                        // page with no prefetch at all is the first one.
+                        for (var round = 0; round < MaxPrefetchRounds; round++)
                         {
-                            // BEFORE and after, because what travels is the DELTA. Writing every
-                            // field back onto the next round's instance overwrote what its own
-                            // constructor had just been given.
-                            var asBuilt = Web.ComponentExpansionScope.Capture(pair.Value);
-                            await ((Primitives.IServerPrefetch)pair.Value).PrefetchAsync(
-                                context.RequestServices, context.RequestAborted);
-                            // THE CLR VALUES, not the wire ones: this is restored onto the fresh
-                            // instances the next expansion creates, and the payload's normalization
-                            // (enums to strings, backing fields to property names) would make every
-                            // one of those unassignable.
-                            prefetched[pair.Key] =
-                                Web.ComponentExpansionScope.WhatLoaded(pair.Value, asBuilt);
+                            var drawn = DrawRound();
+
+                            // ASKED ONCE, except where the key now names a DIFFERENT component: a page
+                            // whose own data chooses what it composes can put another row at the same
+                            // key, and what loaded there belongs to the row that is gone. The scope
+                            // refuses that restore, so the new one is asked for its own data rather
+                            // than drawing someone else's.
+                            var pending = drawn.Expanded
+                                .Where(pair => pair.Value is Primitives.IServerPrefetch
+                                    && (asked.Add(pair.Key) || drawn.Replaced.Contains(pair.Key)))
+                                .ToList();
+
+                            // THE MARKUP THIS ROUND PRODUCED IS THE ANSWER when nothing new asked for
+                            // data — which is every page that declares none, on its first pass.
+                            if (pending.Count == 0) break;
+
+                            // NOT THIS ROUND, because nothing would draw what it loads. The loop renders
+                            // at the TOP, so awaiting on the last allowed pass would store values the
+                            // markup never shows and the payload would disagree with the page beside it.
+                            // Stopping here serves the defaults in BOTH, which is a visibly incomplete
+                            // page rather than a page whose words and state contradict each other.
+                            if (round == MaxPrefetchRounds - 1)
+                            {
+                                _logger.LogWarning(
+                                    "[SSR Prefetch] Stopped at {Rounds} rounds with {Count} component(s) still "
+                                    + "asking for data ({Replaced} of them replaced rather than new); they "
+                                    + "render their defaults. A chain this deep usually means a component "
+                                    + "loads what another one had to load first — or, when components keep "
+                                    + "being replaced, that one of them differs every time it is built.",
+                                    MaxPrefetchRounds, pending.Count,
+                                    pending.Count(p => drawn.Replaced.Contains(p.Key)));
+                                break;
+                            }
+
+                            // ONE AT A TIME. They were started together at first, which is faster and
+                            // wrong: every prefetch is handed the REQUEST's service provider, so two
+                            // components resolving the same scoped dependency — an EF DbContext being
+                            // the ordinary case — would use one instance concurrently, which EF refuses
+                            // by design. A page that worked would fail for a reason its author could not
+                            // see. Parallelism here is worth having only behind a contract that says
+                            // prefetch dependencies are safe for concurrent use, and there is no such
+                            // contract today.
+                            foreach (var pair in pending)
+                            {
+                                // BEFORE and after, because what travels is the DELTA. Writing every
+                                // field back onto the next round's instance overwrote what its own
+                                // constructor had just been given.
+                                var asBuilt = Web.ComponentExpansionScope.Capture(pair.Value);
+                                await ((Primitives.IServerPrefetch)pair.Value).PrefetchAsync(
+                                    context.RequestServices, context.RequestAborted);
+                                // THE CLR VALUES, not the wire ones: this is restored onto the fresh
+                                // instances the next expansion creates, and the payload's normalization
+                                // (enums to strings, backing fields to property names) would make every
+                                // one of those unassignable.
+                                prefetched[pair.Key] =
+                                    Web.ComponentExpansionScope.WhatLoaded(pair.Value, asBuilt);
+                            }
                         }
                     }
                 }
@@ -344,8 +383,9 @@ public class ServerRenderingService : IServerRenderingService
                     // navigation: the reader saw the number, clicked away, came back, and the second
                     // visit showed the default. The root's own kind decides how the ROOT is asked —
                     // directly, above — and says nothing about what it composes.
-                    navigationPayload = await PrefetchTreeAsync(
-                        component, prefetched, asked, context, coreRootKey);
+                    navigationPayload = component is Web.VisualNodeComponent navigated
+                        ? await PrefetchPageAsync(navigated, context, density)
+                        : await PrefetchTreeAsync(component, prefetched, asked, context, density);
                 }
 
                 // THEN metadata, and the order is the whole point. ConfigureMetadata used to run first,
@@ -388,9 +428,11 @@ public class ServerRenderingService : IServerRenderingService
                     // OFF THE INSTANCE THAT DREW, or not at all. A component discovered in an earlier
                     // round but absent from the final tree has nothing on the page for its state to
                     // belong to, and shipping it would hand the client a key its own walk never reaches.
+                    // Every component that loads data was asked by the time the last round drew it, or
+                    // reached past the bound and drew its defaults, which then travel with it.
                     foreach (var (key, drew) in renderScope.Expanded)
                     {
-                        if (asked.Contains(key) || CarriesProjection(drew)) payload[key] = Snapshot(drew);
+                        if (drew is Primitives.IServerPrefetch || CarriesProjection(drew)) payload[key] = Snapshot(drew);
                     }
                 }
                 else if (navigationPayload is not null)
@@ -420,10 +462,8 @@ public class ServerRenderingService : IServerRenderingService
             }
             finally
             {
-                RenderContext.SetLinkPolicy(null);
                 Primitives.RouteValues.ClearCurrent();
                 Primitives.CapabilityScope.Current = null;
-                Web.VisualNodeComponent.AmbientDensity = null;
             }
         }
         catch (Exception ex)
@@ -451,6 +491,10 @@ public class ServerRenderingService : IServerRenderingService
     /// </summary>
     private const int MaxPrefetchRounds = 5;
 
+
+    /// <summary>The theme every write-once page and bridge builds with: the app's, or the SDK's.</summary>
+    private IAppTheme Theme => _options.Theme ?? Primitives.PhotonTheme.Instance;
+
     /// <summary>
     /// Loads the server data for EVERY <see cref="Primitives.IServerPrefetch"/> the page expands,
     /// and returns it keyed by component so the render below — and the client after it — can hand
@@ -476,7 +520,7 @@ public class ServerRenderingService : IServerRenderingService
         Dictionary<string, Web.LoadedComponentState> loaded,
         HashSet<string> asked,
         HttpContext context,
-        string? reserved)
+        Density density)
     {
         var wire = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
 
@@ -485,9 +529,9 @@ public class ServerRenderingService : IServerRenderingService
 
         for (var round = 0; round < MaxPrefetchRounds; round++)
         {
-            var scope = new Web.ComponentExpansionScope { Restore = loaded, Reserved = reserved };
+            var scope = new Web.ComponentExpansionScope { Restore = loaded };
             settled = scope;
-            Expand(component, scope);
+            Expand(component, scope, density);
 
             var pending = scope.Expanded
                 .Where(pair => pair.Value is Primitives.IServerPrefetch
@@ -548,29 +592,79 @@ public class ServerRenderingService : IServerRenderingService
     }
 
     /// <summary>
-    /// One discovery expansion: builds the tree and throws the result away, with its own style, gradient
-    /// and face sinks so nothing it collects reaches the page the request actually serves.
+    /// A NAVIGATION'S DISCOVERY of a write-once page, through an element tree the request owns, as
+    /// the drawing's: each round is a frame of one tree, only the positions that loaded build again,
+    /// and the instance that loaded is the one the next round reaches. Nothing is drawn, so the wire
+    /// form of each component is kept as it loads, and shaped as <see cref="PrefetchTreeAsync"/> shapes
+    /// it: what the last round no longer reaches goes, and a component holding a value from the
+    /// container joins.
     /// </summary>
-    private static void Expand(IComponent component, Web.ComponentExpansionScope scope)
+    private async Task<Dictionary<string, IReadOnlyDictionary<string, object?>>> PrefetchPageAsync(
+        Web.VisualNodeComponent page, HttpContext context, Density density)
     {
-        var styles = Web.StyleSink.Ambient;
-        var gradients = Web.GradientSink.Ambient;
-        var faces = Web.FaceSink.Ambient;
-        Web.StyleSink.Ambient = new Web.StyleSink();
-        Web.GradientSink.Ambient = new Web.GradientSink();
-        Web.FaceSink.Ambient = new Web.FaceSink();
-        Web.ComponentExpansionScope.Ambient = scope;
-        try
+        var wire = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
+        var host = Web.MarkupHost.ForPage(Theme, 1f, density);
+        var data = new Web.ServerDataRounds(host);
+        var settled = new Web.ComponentExpansionScope();
+
+        Web.ComponentExpansionScope Round()
         {
+            settled = new Web.ComponentExpansionScope();
+            Discover(host, page.Node, settled, density);
+            return settled;
+        }
+
+        async Task Load(Primitives.IServerPrefetch loader)
+        {
+            await loader.PrefetchAsync(context.RequestServices, context.RequestAborted);
+            // Under the name this round gave it, the one the browser's walk reaches it by.
+            foreach (var (key, named) in settled.Expanded)
+            {
+                if (!ReferenceEquals(named, loader)) continue;
+                wire[key] = Snapshot(loader);
+                break;
+            }
+        }
+
+        if (!await data.RunAsync(Round, Load, MaxPrefetchRounds))
+        {
+            _logger.LogWarning(
+                "[SSR Prefetch] Stopped at {Rounds} rounds with {Count} component(s) still asking "
+                + "for data; the navigation carries their defaults.", MaxPrefetchRounds, data.Pending.Count);
+        }
+
+        foreach (var stale in wire.Keys.Where(key => !settled.Expanded.ContainsKey(key)).ToList())
+        {
+            wire.Remove(stale);
+        }
+
+        foreach (var (key, instance) in settled.Expanded)
+        {
+            if (!wire.ContainsKey(key) && CarriesProjection(instance)) wire[key] = Snapshot(instance);
+        }
+
+        return wire;
+    }
+
+    /// <summary>A frame of <paramref name="host"/>'s tree built and lowered with <paramref name="scope"/>
+    /// naming its components, the markup thrown away: <see cref="Expand"/>, for a tree the request owns.</summary>
+    private static void Discover(Web.MarkupHost host, VisualNode page, Web.ComponentExpansionScope scope, Density density)
+    {
+        // Channels of its own, so nothing the discovery collects reaches the page the request serves:
+        // only the scope it names components into is read.
+        host.Build(page);
+        host.Lower(new Web.RenderChannels(scope, density));
+        host.EndFrame();
+    }
+
+    /// <summary>
+    /// One discovery expansion of an escape-hatch page: builds the tree and throws the result away, with
+    /// channels of its own so nothing it collects reaches the page the request actually serves.
+    /// </summary>
+    private static void Expand(IComponent component, Web.ComponentExpansionScope scope, Density density)
+    {
+        using (Web.RenderChannels.BridgeWith(new Web.RenderChannels(scope, density)))
             component.Render();
-        }
-        finally
-        {
-            Web.ComponentExpansionScope.Ambient = null;
-            Web.StyleSink.Ambient = styles;
-            Web.GradientSink.Ambient = gradients;
-            Web.FaceSink.Ambient = faces;
-        }
     }
 
     public string RenderComponent(IComponent component)
@@ -660,7 +754,7 @@ public class ServerRenderingService : IServerRenderingService
         // hydrates directly (v1 fence: no server-driven initial state — field defaults render).
         if (instance is Primitives.UiComponent visual)
         {
-            return new Web.VisualNodeComponent(visual, _options.Theme);
+            return new Web.VisualNodeComponent(visual, Theme);
         }
 
         throw new InvalidOperationException($"Cannot create instance of component type: {componentType.Name}");

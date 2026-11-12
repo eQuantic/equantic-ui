@@ -221,7 +221,7 @@ internal sealed partial class WebLoweringVisitor
         // came out unpainted on the layout it was meant for. With a sink armed the runs go to the
         // page's one container instead; without one — a drawing realized alone, a unit test — they
         // stay inline, because there is no document to put a container in.
-        if (GradientSink.Ambient is { } sink)
+        if (_channels?.Gradients is { } sink)
         {
             foreach (var gradient in WebRealizer.Gradients(drawing.Artwork))
                 sink.Add(gradient.Key, gradient.Value);

@@ -24,7 +24,9 @@ public class GenericRecordClosureConformanceTests
         public static class Seen { public static bool Equal; }
         public record Copied<T>(T Value) { protected Copied(Copied<T> original) { Value = original.Value; Seen.Equal = Equals((object)new Copied<double>(1)); } }
         public record Patched<T>(T Value) { private int _step; public int Step { get => _step; init { _step = value; Seen.Equal = Equals((object)new Patched<double>(1)); } } }
-        public static class Make { public static Box<T> Boxed<T>(T value) => new Box<T>(value); }
+        public static class Make { public static Box<T> Boxed<T>(T value) => new Box<T>(value); public static Box<T> None<T>() => null; }
+        public class Maker<T> { public Box<T> Box(T value) => new Box<T>(value); }
+        public class Holds { public Pair<int> P; }
         """;
 
     public static TheoryData<string, string, bool> Cases()
@@ -40,6 +42,13 @@ public class GenericRecordClosureConformanceTests
             ("tuple element names, which the runtime type erases", "return new Box<(int A, int B)>((1, 2)).Equals((object)new Box<(int, int)>((1, 2)));"),
             ("dynamic, which the runtime type takes as object", "return new Box<dynamic>(1).Equals((object)new Box<object>(1));"),
             ("a box built in generic code, against its own type", "return Make.Boxed(1).Equals((object)new Box<int>(1));"),
+            ("a box built in generic code, against another type", "return Make.Boxed(1).Equals((object)new Box<double>(1));"),
+            ("a box built in a generic class, against another type", "return new Maker<int>().Box(1).Equals((object)new Box<double>(1));"),
+            ("a box that a generic method may not have built", "return Make.None<int>() == null;"),
+            ("a struct's zero, against another type", "return default(Pair<int>).Equals((object)new Pair<double>(0));"),
+            ("a struct's zero, against its own type", "return default(Pair<int>).Equals((object)new Pair<int>(0));"),
+            ("a field's zero, against another type", "return new Holds().P.Equals((object)new Pair<double>(0));"),
+            ("an array's zero, against another type", "var pairs = new Pair<int>[1]; return pairs[0].Equals((object)new Pair<double>(0));"),
             ("a generic struct copied before a write", "var pair = new Pair<int>(1); var copy = pair; copy.A = 2; return copy.Equals((object)new Pair<double>(2));"),
             ("a generic struct copied before a write, against its own type", "var pair = new Pair<int>(1); var copy = pair; copy.A = 2; return copy.Equals((object)new Pair<int>(2));"),
             ("a generic struct copied into a box", "var pair = new Pair<double>(1); object boxed = pair; return new Pair<int>(1).Equals(boxed);"),

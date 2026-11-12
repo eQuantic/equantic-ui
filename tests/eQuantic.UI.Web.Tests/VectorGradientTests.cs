@@ -34,34 +34,22 @@ public class VectorGradientTests
     [Fact]
     public void TheSameRunTwice_IsDeclaredOnceForTheDocument()
     {
-        var sink = new GradientSink();
-        GradientSink.Ambient = sink;
-        try
-        {
-            var page = new Column(gap: 0);
-            page.Add(new Drawing(Sky(), 100, 100));
-            page.Add(new Drawing(Sky(), 100, 100));
-            var rendered = Render(page);
+        var channels = new RenderChannels();
+        var page = new Column(gap: 0);
+        page.Add(new Drawing(Sky(), 100, 100));
+        page.Add(new Drawing(Sky(), 100, 100));
+        var rendered = MarkupHost.DrawOnce(page, Theme, 1f, channels).Render();
 
-            Walk(rendered).Where(node => node.Tag == "defs").Should().BeEmpty(
-                "a drawing no longer carries the document's paint servers");
+        Walk(rendered).Where(node => node.Tag == "defs").Should().BeEmpty(
+            "a drawing no longer carries the document's paint servers");
 
-            var container = WebRealizer.Lower(new Box(), Theme) is not null
-                ? sink.Container().Render()
-                : throw new InvalidOperationException();
+        var declared = Walk(channels.Gradients.Container().Render())
+            .Where(node => node.Tag is "linearGradient" or "radialGradient")
+            .Select(node => node.Attributes["id"])
+            .ToList();
 
-            var declared = Walk(container)
-                .Where(node => node.Tag is "linearGradient" or "radialGradient")
-                .Select(node => node.Attributes["id"])
-                .ToList();
-
-            declared.Should().OnlyHaveUniqueItems("the id IS the content, so a repeat is the same def");
-            declared.Should().HaveCount(2, "the artwork has two runs, and it was drawn twice");
-        }
-        finally
-        {
-            GradientSink.Ambient = null;
-        }
+        declared.Should().OnlyHaveUniqueItems("the id IS the content, so a repeat is the same def");
+        declared.Should().HaveCount(2, "the artwork has two runs, and it was drawn twice");
     }
 
     /// <summary>

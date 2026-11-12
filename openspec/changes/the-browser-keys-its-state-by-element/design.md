@@ -56,8 +56,10 @@ keeps `Element.Id`'s promise that an id is never given to another.
   has no after-pass, as before. Its DOM element is the reconciler's to match.
 - The table's DOM-bound expandos (its listeners, its animation frame, the pointer and Tab state) stay on
   the DOM element. They act for whichever position drives it now (`__eqTableState`).
-- The child-path threading the lowering still passes after E3b-1 retained instances. With the stamps
-  moved, nothing reads it, so it goes.
+- The path the lowering threads. With the stamps moved, one reader is left: a table's and a grid's
+  cell ids are scoped by the table's place in the tree, which the server writes the same way
+  (`pathScope`, C# `LoweringPath.Scope`, #1419), so hydration finds the ids it wrote. That is an
+  identity crossing a seam, the kind plan 3.8 keeps as a string, and it stays.
 
 ## Risks
 

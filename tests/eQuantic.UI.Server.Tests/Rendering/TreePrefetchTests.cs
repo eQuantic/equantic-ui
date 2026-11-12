@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Server.Rendering;
@@ -124,7 +125,7 @@ public class TreePrefetchTests
         // KEYED BY COMPONENT. A flat map could not say which component a field belongs to, and two
         // components holding a field of the same name would overwrite each other in whichever order
         // reflection returned them.
-        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out var header)
+        PayloadKeys.TryGet(payload.RootElement, typeof(StatsHeader), out var header)
             .Should().BeTrue($"the payload names each component; it carried: {result.SerializedState}");
         // AS A STRING, and that is the wire contract rather than a quirk: EqJson writes Int64 as
         // text so a value beyond 2^53 survives into the client's BigInt-backed `long`. Asserting a
@@ -355,7 +356,7 @@ public class TreePrefetchTests
         result.SerializedState.Should().NotBeNull();
 
         using var payload = JsonDocument.Parse(result.SerializedState!);
-        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(AwkwardShapes), 0), out var fields)
+        PayloadKeys.TryGet(payload.RootElement, typeof(AwkwardShapes), out var fields)
             .Should().BeTrue($"payload was: {result.SerializedState}");
         fields.TryGetProperty("_cleared", out var cleared).Should().BeTrue(
             "the field the prefetch CLEARED has to travel; payload was: " + result.SerializedState);
@@ -447,7 +448,7 @@ public class TreePrefetchTests
         if (result.SerializedState is null) return;
 
         using var payload = JsonDocument.Parse(result.SerializedState);
-        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out _).Should().BeFalse(
+        PayloadKeys.TryGet(payload.RootElement, typeof(StatsHeader), out _).Should().BeFalse(
             "the header is not on the page the navigation answers with; payload was: "
             + result.SerializedState);
     }
@@ -483,7 +484,7 @@ public class TreePrefetchTests
         result.SerializedState.Should().NotBeNull();
 
         using var payload = JsonDocument.Parse(result.SerializedState!);
-        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out var fields)
+        PayloadKeys.TryGet(payload.RootElement, typeof(StatsHeader), out var fields)
             .Should().BeTrue($"payload was: {result.SerializedState}");
         fields.GetProperty("_downloads").GetString().Should().Be("675617");
     }
@@ -695,7 +696,7 @@ public class TreePrefetchTests
 
         result.SerializedState.Should().NotBeNull();
         using var payload = JsonDocument.Parse(result.SerializedState!);
-        payload.RootElement.GetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(Row), 0)).GetProperty("_value").GetString()
+        PayloadKeys.Get(payload.RootElement, typeof(Row)).GetProperty("_value").GetString()
             .Should().Be("b-loaded", "the payload is read off the instance that drew, so it says "
                 + "what the markup beside it says");
     }
@@ -818,7 +819,10 @@ public class TreePrefetchTests
         foreach (var entry in payload.RootElement.EnumerateObject())
         {
             if (!entry.Value.TryGetProperty("_value", out var value)) continue;
-            var depth = entry.Name.Split('#')[1];
+            // Named by where it stands (#1477): each link stands two slots below the one before it (its
+            // column's second child), so its depth is half the slots below the page.
+            var slots = entry.Name[(entry.Name.IndexOf('@') + 1)..];
+            var depth = slots.Length == 0 ? 0 : slots.Split('.').Length / 2;
             var says = value.GetString();
             result.Html.Should().Contain($"link{depth}:{says}",
                 $"the payload says {entry.Name} is '{says}', so the markup beside it must say the "
@@ -934,7 +938,7 @@ public class TreePrefetchTests
             $"a navigation answers with state or the page rebuilds from defaults; payload was: "
             + navigated.SerializedState);
         using var payload = JsonDocument.Parse(navigated.SerializedState!);
-        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out var fields)
+        PayloadKeys.TryGet(payload.RootElement, typeof(StatsHeader), out var fields)
             .Should().BeTrue($"payload was: {navigated.SerializedState}");
         fields.GetProperty("_downloads").GetString().Should().Be("675617");
     }
@@ -984,5 +988,122 @@ public class TreePrefetchTests
         // in the hydration payload. None of it is state the client rebuilds from a payload.
         fields.EnumerateObject().Select(field => field.Name).Should().Equal(["_downloads"],
             $"a component ships what it DECLARES; payload was: {result.SerializedState}");
+    }
+
+    /// <summary>A component that loads, and draws whether the instance drawing it is the one that
+    /// loaded: a field put back onto a fresh instance carries the other one's identity.</summary>
+    private sealed class SaysWhoLoaded : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private int _loadedBy;
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _loadedBy = RuntimeHelpers.GetHashCode(this);
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) => new Text(
+            _loadedBy == 0 ? "nothing loaded"
+            : _loadedBy == RuntimeHelpers.GetHashCode(this) ? "drawn by the instance that loaded"
+            : "drawn by another instance", TypeRole.BodyM);
+    }
+
+    [Page("/tree-prefetch-kept")]
+    private sealed class PageWhoseLoaderIsKept : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2);
+            column.Add(new Text("title", TypeRole.Heading));
+            column.Add(new SaysWhoLoaded());
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// A PREFETCH ROUND KEEPS THE INSTANCE (docs/ELEMENT-TREE-PLAN.md, E4). A write-once page is drawn
+    /// through an element tree the request owns: the component that loaded has its position marked,
+    /// and only that position builds again, with the same instance, so what it loaded is drawn by the
+    /// instance that loaded it. Before, every round built the whole page anew and wrote the loaded
+    /// fields onto the fresh instance, which works for a field and loses anything that is not one.
+    /// </summary>
+    [Fact]
+    public async Task APrefetchRound_DrawsTheInstanceThatLoaded()
+    {
+        var context = RequestWith(out _);
+
+        var result = await CreateService().RenderPageAsync(typeof(PageWhoseLoaderIsKept), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("drawn by the instance that loaded")
+            .And.NotContain("drawn by another instance");
+    }
+
+    /// <summary>A component whose prefetch loads something that is not a value: a delegate, which no
+    /// round could put back on a fresh instance, and what it builds depends on it.</summary>
+    private sealed class LoadsAGreeting : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private Func<string>? _greeting;
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _greeting = static () => "hello";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) =>
+            _greeting is { } greeting ? new Greeted(greeting()) : new Text("waiting", TypeRole.BodyM);
+    }
+
+    /// <summary>What the greeting brings, which loads data of its own.</summary>
+    private sealed class Greeted(string greeting) : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private string _said = greeting;
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _said = $"{_said}, loaded";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) => new Text(_said, TypeRole.BodyM);
+    }
+
+    [Page("/tree-prefetch-greeting")]
+    private sealed class PageLoadingAGreeting : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2);
+            column.Add(new LoadsAGreeting());
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// WHAT A ROUND COULD NOT PUT BACK reaches the next round, on a full load and on a navigation alike,
+    /// because the next round reaches the instance that loaded. Putting the loaded fields back onto a
+    /// fresh instance by name skipped a delegate on purpose, so a component that composes by one drew
+    /// "waiting", and what it would have composed was never asked for its data.
+    /// </summary>
+    [Fact]
+    public async Task WhatAComponentLoaded_ThatIsNotAValue_ComposesTheNextRound_OnALoadAndANavigation()
+    {
+        var drawn = await CreateService().RenderPageAsync(typeof(PageLoadingAGreeting), RequestWith(out _));
+
+        drawn.Success.Should().BeTrue(drawn.Error);
+        drawn.Html.Should().Contain("hello, loaded").And.NotContain("waiting");
+
+        var navigated = await CreateService().PreparePageAsync(typeof(PageLoadingAGreeting), RequestWith(out _));
+
+        navigated.Success.Should().BeTrue(navigated.Error);
+        navigated.SerializedState.Should().NotBeNull();
+        using var payload = JsonDocument.Parse(navigated.SerializedState!);
+        PayloadKeys.TryGet(payload.RootElement, typeof(Greeted), out var greeted)
+            .Should().BeTrue($"the navigation reaches what the greeting composed; payload was: {navigated.SerializedState}");
+        greeted.GetProperty("_said").GetString().Should().Be("hello, loaded");
     }
 }

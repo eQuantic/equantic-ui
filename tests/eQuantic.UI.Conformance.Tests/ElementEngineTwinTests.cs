@@ -120,6 +120,17 @@ public class ElementEngineTwinTests
         }
     }
 
+    private sealed class ReadsDensity(List<string> seen, string name) : StatefulComponent
+    {
+        protected override void OnDependenciesChanged() => seen.Add($"{name}:changed");
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            seen.Add($"{name}:{(context.Density == Density.Compact ? "compact" : "comfortable")}");
+            return new Text("x", TypeRole.BodyM);
+        }
+    }
+
     // ---- the same components, on the transpiled engine ---------------------------------------------
 
     /// <summary>The twins of the components above, over the runtime's classes, and the frame helper.</summary>
@@ -181,6 +192,11 @@ public class ElementEngineTwinTests
           constructor(seen, name) { super(); this._seen = seen; this._name = name; }
           touch() { this.setState(() => {}); }
           build(context) { this._seen.push(this._name + ':' + (context.inFlow ? 'in' : 'out')); return new Text('x', 'bodyM'); }
+        }
+        class ReadsDensity extends StatefulComponent {
+          constructor(seen, name) { super(); this._seen = seen; this._name = name; }
+          onDependenciesChanged() { this._seen.push(this._name + ':changed'); }
+          build(context) { this._seen.push(this._name + ':' + context.density); return new Text('x', 'bodyM'); }
         }
         const placed = (first, second) => { const column = new Column(); column.children.push(first, second); return column; };
         """;
@@ -277,6 +293,38 @@ public class ElementEngineTwinTests
             trace.push('first-is-b:' + (componentAt(root.childAt(0).childAt(0)) === b ? 'True' : 'False'),
               'second-is-a:' + (componentAt(root.childAt(0).childAt(1)) === a ? 'True' : 'False'),
               'counts:' + a.count + ',' + b.count);
+            """).Should().Equal(trace);
+    }
+
+    [SkippableFact]
+    public void KeyedRowsMove_EachPositionTakesItsNewSlot_AndItsPathReadsTheSlotsDown()
+    {
+        SkipUnlessBun();
+        var trace = new List<string>();
+        var owner = ComponentBoundary.Owner();
+        var page = new Page(["a", "b", "c"]) { Keyed = true };
+        var root = Frame(owner, page);
+        page.Show("c", "a", "b");
+        Frame(owner, page, rebuildAll: false);
+        var column = root.ChildAt(0)!;
+        for (var slot = 0; slot < 3; slot++)
+        {
+            var at = column.ChildAt(slot)!;
+            trace.Add($"{ComponentAt<Counter>(at).Label}:{at.Slot}:{at.SlotsBelow(0)}");
+        }
+
+        // Spelled out as well as compared: a kept position takes the slot its move put it at (#1477).
+        trace.Should().Equal("c:0:0.0", "a:1:0.1", "b:2:0.2");
+        OnTheWeb("""
+            const page = new Page(['a', 'b', 'c'], null, true);
+            const root = frame(page);
+            page.show('c', 'a', 'b');
+            frame(page, false);
+            const column = root.childAt(0);
+            for (let slot = 0; slot < 3; slot++) {
+              const at = column.childAt(slot);
+              trace.push(componentAt(at).label + ':' + at.slot + ':' + at.slotsBelow(0));
+            }
             """).Should().Equal(trace);
     }
 
@@ -458,6 +506,27 @@ public class ElementEngineTwinTests
             componentAt(root.childAt(0).childAt(0)).touch();
             frame(column, false);
             trace.push('after:' + (InFlow.current ? 'in' : 'out'));
+            """).Should().Equal(seen);
+    }
+
+    [SkippableFact]
+    public void AFrameWithAnotherDensity_BuildsWhatReadIt_AndNothingElse()
+    {
+        SkipUnlessBun();
+        var seen = new List<string>();
+        var root = Placed(new ReadsDensity(seen, "reader"), new ReadsInFlow(seen, "other"));
+        var owner = ComponentBoundary.Owner();
+        Frame(owner, root);
+        owner.Build(root, new ComponentContext(PhotonTheme.Instance, density: Density.Compact), WindowSizeClass.Compact, rebuildAll: false);
+        owner.EndFrame();
+
+        // Spelled out as well as compared, so the two sides cannot agree on building nothing.
+        seen.Should().Equal("reader:comfortable", "other:out", "reader:changed", "reader:compact");
+        OnTheWeb("""
+            const root = placed(new ReadsDensity(trace, 'reader'), new ReadsInFlow(trace, 'other'));
+            frame(root);
+            owner.build(root, new ComponentContext(null, 1, 'compact'), 'compact', false);
+            owner.endFrame();
             """).Should().Equal(seen);
     }
 }

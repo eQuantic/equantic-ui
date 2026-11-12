@@ -51,6 +51,16 @@ public class PositionConformanceTests
     [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } var ok = int.TryParse(\"7\", out Get()[^1]); return ok + \"|\" + string.Join(\",\", arr) + \"|\" + calls;")] // True|1,7|1
     [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } var ok = int.TryParse(\"x\", out Get()[^2]); return ok + \"|\" + string.Join(\",\", arr) + \"|\" + calls;")] // False|0,2|1
     [InlineData("int[] arr = { 1, 2 }; void Twice(ref int v) { v *= 2; } Twice(ref arr[^1]); return string.Join(\",\", arr);")] // 1,4
+    // A ref argument reads and writes back through one receiver, evaluated once (#1190).
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } void Twice(ref int v) { v *= 2; } Twice(ref Get()[^1]); return string.Join(\",\", arr) + \"|\" + calls;")] // 1,4|1
+    [InlineData("var calls = 0; int[] arr = { 1, 2, 3 }; int[] Get() { calls++; return arr; } int Swap(ref int a, ref int b) { var t = a; a = b; b = t; return a; } var r = Swap(ref Get()[^1], ref Get()[0]); return string.Join(\",\", arr) + \"|\" + r + \"|\" + calls;")] // 3,2,1|1|2
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } int Add(ref int v, int n) { v += n; return v; } var sum = Add(ref Get()[^1], 5) + Add(ref Get()[^2], 1); return string.Join(\",\", arr) + \"|\" + sum + \"|\" + calls;")] // 2,7|9|2
+    // Two counted from the end in one call: the first, held before the call, runs no code ahead of the second.
+    [InlineData("var calls = 0; int[] arr = { 1, 2, 3 }; int[] Get() { calls++; return arr; } int Swap(ref int a, ref int b) { var t = a; a = b; b = t; return a; } var r = Swap(ref Get()[^1], ref Get()[^3]); return string.Join(\",\", arr) + \"|\" + r + \"|\" + calls;")] // 3,2,1|1|2
+    // Counted from the start too, where the receiver or the position runs code.
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } void Twice(ref int v) { v *= 2; } Twice(ref Get()[0]); return string.Join(\",\", arr) + \"|\" + calls;")] // 2,2|1
+    [InlineData("var i = 0; int[] arr = { 1, 2, 3 }; void Twice(ref int v) { v *= 2; } Twice(ref arr[i++]); return string.Join(\",\", arr) + \"|\" + i;")] // 2,2,3|1
+    [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } void Set(out int v) { v = 9; } Set(out Get()[1]); return string.Join(\",\", arr) + \"|\" + calls;")] // 1,9|1
     // An await stays in the async function around the access, never in an arrow of the writer's.
     [InlineData("int[] arr = { 1, 2, 3 }; int[] Get() => arr; async Task<int> Offset() { await Task.Yield(); return 2; } return Get()[^(await Offset())].ToString();")] // 2
     [InlineData("var calls = 0; int[] arr = { 1, 2 }; int[] Get() { calls++; return arr; } async Task<int> F() { await Task.Yield(); return 9; } Get()[^1] = await F(); return string.Join(\",\", arr) + \"|\" + calls;")] // 1,9|1

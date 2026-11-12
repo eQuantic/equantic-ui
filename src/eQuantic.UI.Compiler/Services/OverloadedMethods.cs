@@ -42,7 +42,8 @@ namespace eQuantic.UI.Compiler.Services;
 /// With a model, the bases declared in the source are walked, the runtime's own being EQ2011's to
 /// hold, and an override is the method it overrides rather than a second one. A method that HIDES an
 /// inherited member holds a name of its own on the twin (<see cref="TwinMethodName"/>, #563), so it
-/// takes no other's: what is compared is the name each one holds there.
+/// takes no other's: what is compared is the name each one holds there. Every other kind of member
+/// takes its key along the chain as well (<see cref="CheckInheritedKeys"/>, #1173).
 /// </para>
 ///
 /// <para>
@@ -76,6 +77,7 @@ internal static class OverloadedMethods
         if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckInterfaceIndexers(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInheritedFields(type, sourcePath, model, errors);
+        if (errors.Count == 0 && model is not null) CheckInheritedKeys(type, sourcePath, model, errors);
         return errors;
     }
 
@@ -152,7 +154,7 @@ internal static class OverloadedMethods
                 Signature(method), method.Identifier, Bearer.Method);
 
         var taken = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var indexer in type.Members.OfType<IndexerDeclarationSyntax>())
+        foreach (var indexer in type.TwinMembers().OfType<IndexerDeclarationSyntax>())
         {
             var (get, set) = Indexer.NamesOf(indexer, model);
             var bearer = indexer.ExplicitInterfaceSpecifier is null ? Bearer.Indexer : Bearer.ExplicitIndexer;
@@ -319,7 +321,7 @@ internal static class OverloadedMethods
         foreach (var parameter in type.ParameterList?.Parameters ?? default)
             if (MembersOnOneName.Holds(type, parameter, isComponent, model))
                 yield return (parameter.Identifier.ValueText, $"{type.Identifier.ValueText}({parameter.Identifier.ValueText})", parameter.Identifier);
-        foreach (var member in type.Members)
+        foreach (var member in type.TwinMembers())
         {
             if (member.Modifiers.Any(SyntaxKind.StaticKeyword) || member.Modifiers.Any(SyntaxKind.ConstKeyword)) continue;
             switch (member)
@@ -565,8 +567,7 @@ internal static class OverloadedMethods
                 Code = "EQ1007",
                 Message =
                     $"'{type.Identifier.ValueText}.{Signature(method)}' lowers to `{(isStatic ? "static " : "")}{name}()`, "
-                    + $"and so does '{inherited.ContainingType.Name}.{inherited.Name}("
-                    + $"{string.Join(", ", inherited.Parameters.Select(p => p.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)))})', "
+                    + $"and so does '{inherited.ContainingType.Name}.{Displayed(inherited)}', "
                     + $"which it inherits{at}. A JavaScript class chain has one member per name, so the derived "
                     + "one would answer every call on both. Give each its own name.",
                 SourcePath = sourcePath,
@@ -614,6 +615,108 @@ internal static class OverloadedMethods
             return;
         }
     }
+
+    /// <summary>
+    /// A member on the key a member of a base the source declares holds on its twin, where one of the two
+    /// is not a method (#1173), <see cref="CheckInherited"/> judging two methods: the twins of a class chain
+    /// hold one member per key, as one twin does (<see cref="MembersOnOneName"/>, #1146), and one of the two
+    /// answered every access to the other. <c>Base.Size =&gt; 3</c> beneath a derived <c>size()</c> made
+    /// <c>new Derived().Size</c> a function, and a value held on each instance hid a getter of its name. A
+    /// key is the lowered name and whether the member is static, a class inheriting its base's statics
+    /// through its constructor (<c>Derived.size</c> reaches <c>Base.size</c> unless <c>Derived</c> holds one).
+    /// An override is the member it overrides, a method that hides one holds a name of its own
+    /// (<see cref="TwinMethodName"/>, #563), a static that hides a base's static of its own C# name is
+    /// reached through its own class, as the base's is through the base, and a field that moves is in a slot of its own
+    /// (<see cref="FieldSlotExtensions"/>, #396, #1175), so none of them is refused. An indexer is not judged
+    /// along the chain yet, an explicit implementation is <see cref="CheckExplicitImplementations"/>', and a
+    /// field of a base another project declares is <see cref="CheckInheritedFields"/>'.
+    /// </summary>
+    private static void CheckInheritedKeys(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
+        List<CompilationError> errors)
+    {
+        if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared) return;
+        var own = declared.GetMembers()
+            .Where(member => HoldsAKey(member)
+                && member.Locations.Any(at => at.SourceTree == type.SyntaxTree && type.Span.Contains(at.SourceSpan)))
+            .OrderBy(member => member.Locations[0].SourceSpan.Start);
+        foreach (var member in own)
+        {
+            var key = KeyOf(member);
+            if (InheritedKey(declared, member, key) is not { } inherited) continue;
+            var where = inherited.Locations.FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
+            var at = where is { } span ? $" ({Path.GetFileName(span.Path)} line {span.StartLinePosition.Line + 1})" : "";
+            var kind = member.IsStatic ? "static " : "";
+            Refuse(errors, sourcePath, member, type,
+                $"'{declared.Name}.{Displayed(member)}' lowers to `{kind}{key}`, and so does "
+                + $"'{inherited.ContainingType.Name}.{Displayed(inherited)}', which it inherits{at}. A JavaScript class "
+                + $"chain holds one {kind}member per name, so one of them would answer every access to the other. Give "
+                + "each its own name.");
+            return;
+        }
+    }
+
+    /// <summary>A member the twin holds under a key: a field, a property, an event or a method, none the
+    /// compiler declares, none kept on the server, none implementing an interface explicitly, and no
+    /// defining half of a partial method that has no implementation.</summary>
+    private static bool HoldsAKey(ISymbol member) =>
+        !member.IsImplicitlyDeclared && !ExplicitImplementations.StaysOnTheServer(member) && member switch
+        {
+            IFieldSymbol => true,
+            IPropertySymbol { IsIndexer: false, ExplicitInterfaceImplementations.Length: 0 } => true,
+            IEventSymbol { ExplicitInterfaceImplementations.Length: 0 } => true,
+            IMethodSymbol { MethodKind: MethodKind.Ordinary } method =>
+                !(method.IsPartialDefinition && method.PartialImplementationPart is null),
+            _ => false,
+        };
+
+    /// <summary>The name <paramref name="member"/> holds on its twin: a method's own
+    /// (<see cref="TwinMethodName"/>), a field's slot, and any other member's lowered name.</summary>
+    private static string KeyOf(ISymbol member) =>
+        member is IMethodSymbol method ? TwinMethodName.Of(method) : member.MemberTwinName();
+
+    /// <summary>The member of a base the source declares on <paramref name="member"/>'s key, or null: one
+    /// it does not override, of which one at least is not a method.</summary>
+    private static ISymbol? InheritedKey(INamedTypeSymbol declared, ISymbol member, string key)
+    {
+        var seen = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+        for (var current = declared.BaseType;
+             current is { DeclaringSyntaxReferences.Length: > 0 } && seen.Add(current);
+             current = current.BaseType)
+        {
+            foreach (var candidate in current.GetMembers())
+            {
+                if (candidate.IsStatic != member.IsStatic || !HoldsAKey(candidate) || KeyOf(candidate) != key) continue;
+                if (member is IMethodSymbol && candidate is IMethodSymbol) continue;
+                if (OverridesMember(member, candidate)) continue;
+                // A static that hides a base's static of its own name is reached through its own class, and
+                // C# binds the base's through the base: `Derived.Default` and `Base.Default` are two statics.
+                if (member.IsStatic && member.Name == candidate.Name) continue;
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Whether <paramref name="member"/> overrides <paramref name="candidate"/>, a property or an
+    /// event along its chain of overrides.</summary>
+    private static bool OverridesMember(ISymbol member, ISymbol candidate)
+    {
+        for (var overridden = Overridden(member); overridden is not null; overridden = Overridden(overridden))
+            if (SymbolEqualityComparer.Default.Equals(overridden.OriginalDefinition, candidate.OriginalDefinition)) return true;
+        return false;
+
+        static ISymbol? Overridden(ISymbol symbol) => symbol switch
+        {
+            IPropertySymbol property => property.OverriddenProperty,
+            IEventSymbol handler => handler.OverriddenEvent,
+            _ => null,
+        };
+    }
+
+    /// <summary>How a message names a member: a method with its parameters' types.</summary>
+    private static string Displayed(ISymbol member) => member is IMethodSymbol method
+        ? $"{method.Name}({string.Join(", ", method.Parameters.Select(p => p.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)))})"
+        : member.Name;
 
     /// <summary>The inherited method <paramref name="method"/> would take over, or null: one that holds
     /// the name it holds on the twin (<see cref="TwinMethodName"/>) and that it does not override. A base

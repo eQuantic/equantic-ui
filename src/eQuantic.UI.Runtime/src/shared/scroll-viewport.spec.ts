@@ -12,11 +12,17 @@ import { commitScrollViewports, declareScrollViewport, scheduleScrollViewportCom
 import { photonTheme } from './design-system.generated';
 import { effectiveStyle } from './style-atomizer';
 import type { HtmlNode } from '../core/types';
-import { positionsOf } from './test-positions';
-import { Text } from './vocabulary';
+import { positionsOf, rendersOfOnePage } from './test-positions';
+import { AdaptiveNode, Text } from './vocabulary';
 
 function context(): LoweringContext {
   return { textPrimary: photonTheme.textPrimary } as LoweringContext;
+}
+
+/** A render after a render of one page: see `rendersOfOnePage`. */
+function keptRenders(): (node: ScrollViewNode) => HtmlNode {
+  const render = rendersOfOnePage();
+  return (node) => render(() => lowerVisualNode(node, context()));
 }
 
 function scrollNode(overrides: Partial<ScrollViewNode>): ScrollViewNode {
@@ -48,11 +54,10 @@ describe('ScrollView web out-channels', () => {
   });
 
   it('reports the measured viewport after the pass, only when it changes', () => {
+    const render = keptRenders();
     const seen: number[] = [];
-    const lowered = lowerVisualNode(
-      scrollNode({ onViewportChanged: (h) => seen.push(h) }),
-      context(),
-    );
+    const lowered = render(
+      scrollNode({ onViewportChanged: (h) => seen.push(h) }));
     const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
     expect(path).toBeDefined();
 
@@ -65,12 +70,12 @@ describe('ScrollView web out-channels', () => {
     expect(seen).toEqual([400]);
 
     // The next pass re-declares; an unchanged viewport stays silent.
-    lowerVisualNode(scrollNode({ onViewportChanged: (h) => seen.push(h) }), context());
+    render(scrollNode({ onViewportChanged: (h) => seen.push(h) }));
     commitScrollViewports();
     expect(seen).toEqual([400]);
 
     // A real change (the window resized) reports again.
-    lowerVisualNode(scrollNode({ onViewportChanged: (h) => seen.push(h) }), context());
+    render(scrollNode({ onViewportChanged: (h) => seen.push(h) }));
     Object.defineProperty(el, 'clientHeight', { value: 300, configurable: true });
     commitScrollViewports();
     expect(seen).toEqual([400, 300]);
@@ -166,7 +171,8 @@ describe('ScrollView web out-channels', () => {
      * the offset: its observer was left watching, told of every resize for nobody.
      */
     it('stops watching a scroll view that keeps its offset and stops asking', () => {
-      const lowered = lowerVisualNode(scrollNode({ offset: 10, onViewportChanged: () => {} }), context());
+    const render = keptRenders();
+      const lowered = render(scrollNode({ offset: 10, onViewportChanged: () => {} }));
       const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
       const el = document.createElement('div');
       el.setAttribute('data-eq-scroll', path);
@@ -175,7 +181,7 @@ describe('ScrollView web out-channels', () => {
       commitScrollViewports();
       expect(observers[0].target).toBe(el);
 
-      lowerVisualNode(scrollNode({ offset: 10 }), context());
+      render(scrollNode({ offset: 10 }));
       commitScrollViewports();
 
       expect(observers[0].target).toBeUndefined();
@@ -348,8 +354,9 @@ describe('ScrollView web out-channels', () => {
    * offset alone was read on adoption and never after, so no component could scroll its view again.
    */
   it('goes where a request asks, once per version', () => {
+    const render = keptRenders();
     const declare = (request?: { version: number; offset: number }) =>
-      (lowerVisualNode(scrollNode({ request }), context()) as { attributes: Record<string, string> })
+      (render(scrollNode({ request })) as { attributes: Record<string, string> })
         .attributes['data-eq-scroll'];
     // A view with nothing asked of it carries no marker.
     expect(declare()).toBeUndefined();
@@ -451,7 +458,8 @@ describe('a scroll view that fills its viewport', () => {
 
   it("grows each arm of an adaptive child, since the gates are display: contents", () => {
     const fill = { width: { kind: 'fill', value: 0 } };
-    const adaptive = { nodeKind: 'adaptive', compact: box(fill), expanded: box(fill) } as never;
+    // As transpiled code makes one: the element engine asks the node for the arm it holds.
+    const adaptive = new AdaptiveNode(box(fill) as never, null, box(fill) as never) as never;
     const lowered = lowerVisualNode(
       scrollNode({ child: adaptive, height: { kind: 'fixed', value: 100 }, fillViewport: true }),
       context(),

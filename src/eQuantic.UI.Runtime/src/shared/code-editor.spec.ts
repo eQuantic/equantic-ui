@@ -26,8 +26,9 @@ import { CodeDocument } from './components/CodeDocument';
 import { CodeLocation } from './components/CodeLocation';
 import type { HtmlNode } from '../core/types';
 import { Reconciler } from '../dom/reconciler';
-import { activeShortcuts, commitShortcuts, resetShortcuts } from '../dom/shortcuts';
+import { activeShortcuts, resetShortcuts } from '../dom/shortcuts';
 import { commitFocusTraps, resetFocusTraps } from '../dom/focus-trap';
+import { rendersOfOnePage } from './test-positions';
 
 setPhotonTheme(photonTheme);
 
@@ -131,11 +132,16 @@ describe('code surface (web)', () => {
     const editor = new CodeEditorController('count = count + count;\nx', CodeLanguages.for('csharp'));
     editor.grid = new CodeGrid(new Point(12, 12), new Size(COLUMN, LINE));
     editor.selection = new CodeRange(new CodePosition(0, 2));
+    // Rendered as a page renders it, one pass after another: the surface keeps its position, and its
+    // input the key its position's id gives it.
+    const render = rendersOfOnePage();
     const lower = (notes: VisualNode[]) =>
-      lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor, { notes }) as never, {
-        textPrimary: photonTheme.textPrimary,
-        componentContext: { theme: photonTheme, typeScale: 1 },
-      });
+      render(() =>
+        lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor, { notes }) as never, {
+          textPrimary: photonTheme.textPrimary,
+          componentContext: { theme: photonTheme, typeScale: 1 },
+        }),
+      );
     const parent = document.createElement('div');
     document.body.appendChild(parent);
     const reconciler = new Reconciler();
@@ -1445,11 +1451,11 @@ describe('the find bar', () => {
     const editor = new CodeEditor('var needle = 1;', 'csharp');
 
     resetShortcuts();
-    const before = idOf(lowerVisualNode(editor.build(context as never) as never, context as never));
-    commitShortcuts();
+    // A pass commits the shortcuts it declared as it ends, as a page's render does.
+    const render = rendersOfOnePage();
+    const before = idOf(render(() => lowerVisualNode(editor.build(context as never) as never, context as never)));
     activeShortcuts().find((binding) => binding.chord === 'command+f')!.handler();
-    const after = idOf(lowerVisualNode(editor.build(context as never) as never, context as never));
-    commitShortcuts();
+    const after = idOf(render(() => lowerVisualNode(editor.build(context as never) as never, context as never)));
 
     expect(after).toBe(before);
     expect(activeShortcuts().some((binding) => binding.chord === 'escape')).toBe(true);
@@ -1463,7 +1469,7 @@ describe('the find bar', () => {
     const { materializeTheme } = await import('./theme-bridge');
     const photonData = (await import('./theme-bridge.photon.json')).default;
     const { CodeEditor } = await import('./components/CodeEditor');
-    const { ComponentInstanceStore, enterPass, exitPass } = await import('./instance-store');
+    const { ElementRoots, enterPass, exitPass } = await import('./element-roots');
     const theme = materializeTheme(photonData as never);
     setPhotonTheme(theme);
     const context = {
@@ -1479,7 +1485,7 @@ describe('the find bar', () => {
     // One tree in ONE pass, as a page renders: each editor's scope is named by its own path, and a
     // component inside an editor joins the pass instead of committing the bindings declared before it.
     const render = () => {
-      enterPass(new ComponentInstanceStore(), null);
+      enterPass(new ElementRoots(null), null, true);
       try {
         const page = { nodeKind: 'column', children: editors.map((editor) => editor.build(context as never)) };
         const dialog = { nodeKind: 'shortcut', child: page, chord: { key: 'Escape' }, onPressed: () => dialogClosed++ };

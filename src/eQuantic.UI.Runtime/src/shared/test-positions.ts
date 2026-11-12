@@ -7,6 +7,7 @@
 import type { RenderContext } from '../core/types';
 import { BuildOwner } from './components/BuildOwner';
 import { ElementFrame } from './element-frame';
+import { ElementRoots, enterPass, exitPass } from './element-roots';
 import { photonComponentContext } from './photon-context';
 import type { Element } from './runtime-exports';
 import { Column, type VisualNode } from './vocabulary';
@@ -33,4 +34,22 @@ export function positionsOf(...nodes: VisualNode[]): Element[] {
     if (!position) throw new Error('The owner mounted no position for a node handed to it.');
     return position;
   });
+}
+
+/**
+ * Renders as a page does, one pass after another of the same roots, so what is lowered again stands
+ * at the position it stood at and keeps its id and its state (#1454). A lowering outside a pass is a
+ * tree drawn once, whose every node is new each time: a spec that models a render after a render
+ * lowers through this.
+ */
+export function rendersOfOnePage(): <T>(render: () => T) => T {
+  const roots = new ElementRoots(null);
+  return (render) => {
+    enterPass(roots, null, true);
+    try {
+      return render();
+    } finally {
+      exitPass();
+    }
+  };
 }

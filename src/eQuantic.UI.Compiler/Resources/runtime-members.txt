@@ -33,13 +33,11 @@ StatelessComponent	serviceProvider
 StatefulComponent	_alsoMountedAt
 StatefulComponent	_instances
 StatefulComponent	_invalidate
-StatefulComponent	_invalidationHook
 StatefulComponent	_lifecycleMounted
 StatefulComponent	_mounted
 StatefulComponent	_renderManager
 StatefulComponent	_renderScheduled
 StatefulComponent	_scheduleRender
-StatefulComponent	_sharedStateful
 StatefulComponent	adoptConfig
 StatefulComponent	alignSelf
 StatefulComponent	bookmark
@@ -58,8 +56,10 @@ StatefulComponent	mount
 StatefulComponent	mountReconcile
 StatefulComponent	mountedAt
 StatefulComponent	nodeKind
+StatefulComponent	notifyDependenciesChanged
 StatefulComponent	notifyMounted
 StatefulComponent	notifyUnmounted
+StatefulComponent	onDependenciesChanged
 StatefulComponent	onMount
 StatefulComponent	onUnmount
 StatefulComponent	render

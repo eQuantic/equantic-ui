@@ -39,7 +39,7 @@ A component, or the state of a node, is found by a string, and each target spell
 | Where | The string | Formed by |
 |---|---|---|
 | Photon | a path, `r/0/2/[key]`, and a component's identity `"{path}#{type}#{key}"` | `LayoutEngine.ChildPath`, `LaidOutChildren.PathOf`, `ComponentInstanceStore.Reconcile` |
-| Server (SSR) | `Type#ordinal`, the ordinal counted per type in depth-first order | `ComponentExpansionScope.Enter`, `ComponentIdentity.Key` |
+| Server (SSR) | `Type#ordinal`, the ordinal counted per type in depth-first order (until #1477, which names a composed component by its position) | `ComponentExpansionScope.Enter`, `ComponentIdentity.Key` |
 | Browser | `path#type#key` again, with a new root (`r0`, `r1`…) at every stateless boundary | `ComponentInstanceStore` in `instance-store.ts`, `lowerVisualNode` |
 | DOM | `(tag, key, child index)` among siblings | the reconciler |
 
@@ -293,9 +293,14 @@ because a test draws one frame after another and drives input the way a browser 
 Some identities cross a boundary, and a boundary needs a string. They stay, computed from the
 element when crossing and never used as an address inside a tree:
 
-- the hydration payload's key, `Type#ordinal`, which the server and the browser already agree on;
+- the hydration payload's key, which was `Type#ordinal` while both sides counted in the order their
+  lowering met a component. Once the browser builds through the engine it has to hand the data over
+  before a component builds, and the build order and the lowering order part at an adaptive node's arms
+  and at a deferred layer, so a component the page composes is named by its position (#1477):
+  `r{tree}/{type}@{slots}`, the slots read off the element (`Element.SlotsBelow`), the same chain the
+  capture below keys by. A page's own component keeps `Type#0`;
 - hot reload's capture, which can now carry every stateful element's fields instead of the page
-  root's alone. Not under `Type#ordinal`: the hydration key holds because the server and the browser
+  root's alone. Not under the hydration key: its bare slots hold because the server and the browser
   render the same tree, and an edit is exactly what changes the tree between a capture and its
   replay, so an inserted component or two keyed siblings that swapped would hand one component
   another's fields. The capture keys each element by its position as a chain from the root, every
@@ -559,14 +564,19 @@ the parity rows it closes flip.
    Then **the engine runs in the browser**
    (`openspec/changes/archive/2026-11-11-the-element-engine-runs-in-the-browser`), which closes E3a. The
    engine leaves `[ServerOnly]`, its modules are pinned beside the other engines' and accepted by the
-   runtime's `tsc`, and eleven of `ElementTreeTests`' cases run on .NET and on the transpiled engine with
+   runtime's `tsc`, and twelve of `ElementTreeTests`' cases run on .NET and on the transpiled engine with
    equal traces. They found what the browser's components lacked: C#'s empty `AdoptConfig` default, and
    the position a stateful instance is mounted at, whose `Place` and `Leave` became `EnterPosition` and
    `LeavePosition` because a JavaScript class has one namespace and two library components already had a
    private `Place`. A library module that extends a sibling now imports the base from its module, since
    the runtime's aggregator defines a re-export only once the barrel has loaded. eqc met one more
    emission defect on the way (#1396, a downcast to a type whose member is inherited), fixed by the bug
-   sweep. The served runtime grows by the engine's modules, recorded in its budget.
+   sweep. The inherited value (#1412) landed first, so its position crosses with the rest, and the
+   runtime's context gained what C#'s did there: a context made for a position reads the theme, density
+   and type scale from its owner's frame and registers the position as their reader, and answers InFlow
+   from the tree. The twelfth case holds it: a frame with another density builds what read it and nothing
+   else. A construction of the context met #1475 in eqc's imports, fixed by the bug sweep. The served
+   runtime grows by the engine's modules, recorded in its budget.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.
@@ -586,8 +596,41 @@ the parity rows it closes flip.
      this section's rule. Rebuilding everything instead loses a stateless component's data, and a
      test fails on it.
 
-   What remains E4's: the owner per request, the channels moving onto it, and the mark's
-   attribution.
+   What remained E4's: the owner per request, the channels moving onto it, and the mark's
+   attribution. It is split in two, E4a (#1403) and E4b (#1404).
+
+   **E4a, the server draws a write-once page through an owner for the request**
+   (`openspec/changes/the-server-draws-a-page-through-an-owner-for-the-request`):
+   - The server keeps a structural `MarkupHost` for the request, and each prefetch round is a frame
+     of one tree: a component that loaded has its position marked, only that subtree builds again,
+     and the instance that loaded is the one drawn. The rounds are `ServerDataRounds`, which the
+     component tester runs too, so the two cannot drift.
+   - `MarkupHost` replaces the provisional `WebRealizer.LowerFrame`. Its components build through
+     the boundary with a fontless measurer that notes which build asked
+     (`ComponentBoundary.BuildAtDepth` is public for it), so a frame writes hydration's unmeasured
+     mark on the elements a tree drawn once does, and the parity fixture compares the first frame
+     whole.
+   - A client navigation's discovery runs the same rounds through the same kind of host, so E5b
+     can take the route off the async flow without leaving a navigation behind it.
+   - An escape-hatch page makes its write-once bridges anew on every render, so they have no
+     position to keep an owner at, and stay trees drawn once with what loaded put back by name.
+     E5b owes them a route of their own (noted on #1395).
+   - The server cannot see the window, so its tree resolves an adaptive node for `Expanded`: the
+     markup is the same for every class, and the class decides only which arm keeps its instances
+     between rounds.
+
+   **E4b, a request's render channels live on its owner** (#1404,
+   `openspec/changes/a-requests-render-channels-live-on-its-owner`):
+   - The web's five channels and the reported density are one `RenderChannels` a render is handed:
+     the server makes one for each prefetch round and each discovery, and `MarkupHost.Lower` hands it
+     to the lowering visitor. The six `AsyncLocal`s go.
+   - The escape hatch's bridge is the one reader of an ambient: an `HtmlElement`'s `Render()` takes
+     no parameter, so the server arms the round's channels around such a page
+     (`RenderChannels.BridgeWith`) and the bridge reads them there.
+   - `AmbientChannelsTests` names every `AsyncLocal` the source keeps with its reason, and the list
+     may only shrink.
+
+   The error boundary's report and tally move onto the owner in E4c (#1452).
 5. **E5, inherited components.** `InheritedComponent`, `DependOn`, `Find`,
    `OnDependenciesChanged`, dependency-driven rebuild, `Theme`, the route and `InFlow` as inherited
    components, `Navigator.Of`. Proof: a change rebuilds its dependents and nothing else, on both

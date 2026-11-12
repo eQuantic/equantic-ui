@@ -21,28 +21,25 @@ public class FaceSinkTests
     [Fact]
     public void AFamilyATextNames_IsCollected_OnceHoweverOftenItIsNamed()
     {
-        var sink = new FaceSink();
-        FaceSink.Ambient = sink;
-        try
-        {
-            WebRealizer.Lower(Named(Probe), Theme).Render();
-            WebRealizer.Lower(Named(new FontFamily("Probe Sans", Probe.Files[0])), Theme).Render();
-            WebRealizer.Lower(Named(new FontFamily("Georgia")), Theme).Render();
-        }
-        finally
-        {
-            FaceSink.Ambient = null;
-        }
+        var channels = new RenderChannels();
+        MarkupHost.DrawOnce(Named(Probe), Theme, 1f, channels).Render();
+        MarkupHost.DrawOnce(Named(new FontFamily("Probe Sans", Probe.Files[0])), Theme, 1f, channels).Render();
+        MarkupHost.DrawOnce(Named(new FontFamily("Georgia")), Theme, 1f, channels).Render();
 
-        sink.Families.Should().Equal([Probe], "an equal family is the same family, and one with no files is the platform's");
+        channels.Faces.Families.Should().Equal([Probe], "an equal family is the same family, and one with no files is the platform's");
     }
 
     [Fact]
-    public void OutsideARender_NothingIsCollected()
+    public void ARender_CollectsNothingIntoAnother()
     {
-        var act = () => WebRealizer.Lower(Named(Probe), Theme).Render();
+        var mine = new RenderChannels();
+        var theirs = new RenderChannels();
 
-        act.Should().NotThrow();
-        FaceSink.Ambient.Should().BeNull();
+        MarkupHost.DrawOnce(Named(Probe), Theme, 1f, mine).Render();
+        var alone = () => WebRealizer.Lower(Named(Probe), Theme).Render();
+
+        alone.Should().NotThrow("a lowering outside a render has nowhere to collect into, and needs nowhere");
+        mine.Faces.Families.Should().Equal([Probe]);
+        theirs.Faces.IsEmpty.Should().BeTrue("one render's faces are its own");
     }
 }

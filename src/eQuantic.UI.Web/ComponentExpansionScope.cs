@@ -16,13 +16,13 @@ namespace eQuantic.UI.Web;
 /// </para>
 ///
 /// <para>
-/// THE NAME IS <c>Type#ordinal</c> in depth-first expansion order, and the alternative is worth
-/// stating because it was the first design. <c>lowering.ts</c> already carries a structural
-/// <c>path</c> (<c>r/0/0</c>) for Photon's retained store, and the matching key would have been
-/// that path — except the C# web realizer has no path at all, and threading one through every visit
-/// is a large mechanical change across a file family whose output is pinned byte for byte. The
-/// ordinal is the same guarantee for less: both sides expand the same tree in the same order, so
-/// both count the same.
+/// THE NAME IS WHERE THE COMPONENT STANDS (#1477): the tree of the render, the component's type, and
+/// the slots from the tree's root down to its position (<see cref="ElementFrame.KeyOf"/>). It was
+/// <c>Type#ordinal</c> in expansion order until the browser built through the element engine: the
+/// server names as its lowering reaches a component, the browser has to hand the data over before a
+/// component builds, and the two orders part at the arms of an adaptive node and at a deferred layer,
+/// so two components of one type swapped their data. A position is read the same on both sides
+/// whatever order either built in.
 /// </para>
 ///
 /// <para>
@@ -35,30 +35,15 @@ namespace eQuantic.UI.Web;
 /// <para>
 /// The type is the FULL identity, <see cref="ComponentIdentity.Of"/> — the CLR full name of the
 /// definition — and eqc writes the same string onto each twin as <c>static $typeId</c>, so two
-/// components called <c>Row</c> from different namespaces are two types to that refusal and two
-/// counts, as they are to the compiler. It was the simple name until #278, which left the refusal
+/// components called <c>Row</c> from different namespaces are two types to that refusal, as they are
+/// to the compiler. It was the simple name until #278, which left the refusal
 /// blind to exactly the collision it exists for.
 /// </para>
 /// </summary>
 public sealed class ComponentExpansionScope
 {
-    private static readonly System.Threading.AsyncLocal<ComponentExpansionScope?> Current = new();
-
-    private readonly Dictionary<string, int> _ordinals = new(StringComparer.Ordinal);
     private readonly Dictionary<string, UiComponent> _expanded = new(StringComparer.Ordinal);
     private readonly HashSet<string> _replaced = new(StringComparer.Ordinal);
-
-    /// <summary>
-    /// The render-scoped ambient scope, armed by the SSR pipeline around an expansion and null
-    /// everywhere else — the same shape <see cref="StyleSink.Ambient"/> uses, and for the same
-    /// reason: a component deep in the tree contributes to one per-page collection without every
-    /// visit signature growing a parameter.
-    /// </summary>
-    public static ComponentExpansionScope? Ambient
-    {
-        get => Current.Value;
-        set => Current.Value = value;
-    }
 
     /// <summary>What each key LOADED in an earlier round, to be put back as that component is
     /// reached again. The server's discovery loop fills this, because a rebuild constructs new
@@ -75,20 +60,6 @@ public sealed class ComponentExpansionScope
     /// new component for its own data instead of drawing another one's.
     /// </summary>
     public IReadOnlySet<string> Replaced => _replaced;
-
-    /// <summary>
-    /// A key taken OUTSIDE this walk, which the walk must not hand out again.
-    ///
-    /// <para>
-    /// An escape-hatch root is asked directly — it never passes through the realizer's component
-    /// visit — so its key is built by hand while this count starts empty. A component sharing the
-    /// root's type then claimed the same one, and the pipeline's asked set read it as
-    /// already handled: that component's prefetch never ran and its state never shipped, with the
-    /// payload under that name belonging to the root. The two sides agree on the wrong thing, so
-    /// the type check has nothing to refuse.
-    /// </para>
-    /// </summary>
-    public string? Reserved { get; init; }
 
     /// <summary>
     /// A component's fields AS THEY ARE — raw CLR values under raw field names, nulls included.
@@ -123,46 +94,35 @@ public sealed class ComponentExpansionScope
         return captured;
     }
 
+    /// <summary>Names <paramref name="component"/> by <paramref name="key"/>: the instance a frame lowered
+    /// at that position, which the payload is read off and the next round asks for its data.</summary>
+    public void Name(UiComponent component, string key) => _expanded[key] = component;
+
     /// <summary>
-    /// Names a component the realizer is about to expand and restores anything already loaded for
-    /// it — BEFORE its <c>Build</c> runs, which is the whole point of hooking the expansion rather
-    /// than the render.
+    /// Puts back what an earlier round loaded under <paramref name="key"/> onto
+    /// <paramref name="component"/>, a fresh instance at that position, BEFORE its <c>Build</c> runs:
+    /// a tree drawn anew each round (an escape-hatch page's bridge) builds new instances, and the values
+    /// a prefetch loaded live on the old ones.
     /// </summary>
-    public string Enter(UiComponent component)
+    public void PutBack(UiComponent component, string key)
     {
-        var typeName = ComponentIdentity.Of(component.GetType());
-        var ordinal = _ordinals.TryGetValue(typeName, out var seen) ? seen : 0;
-        var key = $"{typeName}#{ordinal}";
+        if (!Restore.TryGetValue(key, out var loaded)) return;
 
-        // Taken before the walk began — step past it rather than hand it out twice. Only the first
-        // component of a type can reach this, since the reserved key is always that type's #0.
-        if (key == Reserved)
-        {
-            ordinal++;
-            key = $"{typeName}#{ordinal}";
-        }
-
-        _ordinals[typeName] = ordinal + 1;
-        _expanded[key] = component;
-
-        if (!Restore.TryGetValue(key, out var loaded)) return key;
-
-        // THE VERY INSTANCE that loaded. A page root is the same object every round — it already
-        // holds what it loaded, and writing the values back would undo anything it has done since.
-        // Recognising it by reference is also what stops it being read as a replacement below: its
-        // fields no longer match how it was built, because its own prefetch changed them.
-        if (ReferenceEquals(loaded.Loaded, component)) return key;
+        // THE VERY INSTANCE that loaded: it already holds what it loaded, and writing the values back
+        // would undo anything it has done since. Recognising it by reference is also what stops it
+        // being read as a replacement below: its fields no longer match how it was built, because its
+        // own prefetch changed them.
+        if (ReferenceEquals(loaded.Loaded, component)) return;
 
         // A DIFFERENT COMPONENT ON THE SAME KEY. What loaded belongs to the one that is gone, so
         // none of it is written here; the caller asks this one for its own data instead.
         if (!IsAsBuilt(loaded.AsBuilt, component))
         {
             _replaced.Add(key);
-            return key;
+            return;
         }
 
         Apply(component, loaded.Fields);
-        return key;
     }
 
     /// <summary>
