@@ -130,6 +130,11 @@ public sealed class PhotonTester : IDisposable
     /// <summary>Whether a <c>SetState</c> asked for a frame that has not been drawn yet.</summary>
     public bool HasScheduledFrame => _host?.NeedsRender ?? false;
 
+    /// <summary>The error boundary every tree this tester draws builds through (#1452): what a component
+    /// that threw was contained as is named in its <see cref="ComponentBoundary.Contained"/>, which a test
+    /// reads to say a screen drew whole.</summary>
+    public ComponentBoundary Boundary { get; } = new();
+
     /// <summary>Mounts <paramref name="root"/> and draws its first frame. A second call starts over:
     /// the tree drawn before is taken down, and every <c>OnUnmount</c> in it runs.</summary>
     public void Pump(VisualNode root)
@@ -138,7 +143,7 @@ public sealed class PhotonTester : IDisposable
         ThrowIfDisposed();
         Unmount();
         Mount();
-        _host = new PhotonHost(root, Theme, Mode, Width, Height, ApproximateTextMeasurer.Instance, TypeScale)
+        _host = new PhotonHost(root, Theme, Mode, Width, Height, ApproximateTextMeasurer.Instance, TypeScale, Boundary)
         {
             Density = Density,
             // As every production shell runs it: each frame's layout nodes are handed to the next.

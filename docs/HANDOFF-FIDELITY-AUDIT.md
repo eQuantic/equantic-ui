@@ -125,7 +125,7 @@ the pill's 40 down.
               (float)insets.Left, (float)insets.Top, (float)insets.Right, (float)insets.Bottom);
   
           if (bounds.Width == _lastWidth && bounds.Height == _lastHeight) return;
-  PhotonHost.cs:241  public EdgeInsets SafeAreaInsets { get; set; }
+  PhotonHost.cs:243  public EdgeInsets SafeAreaInsets { get; set; }
   ```
 
 ### A5 SafeArea · missing-feature · **unverified**
@@ -147,7 +147,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2733-2744  _pan = null;
+  PhotonHost.cs:2734-2745  _pan = null;
           if (_drag is null)
           {
               var scrollRegions = _lastFrame.ScrollRegions;
@@ -1185,7 +1185,7 @@ the pill's 40 down.
 
   ```
   Tokens.cs:214  public const float PressCancelSlop = 12;
-  PhotonHost.cs:2174  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+  PhotonHost.cs:2186  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
   ```
 
 ### A6 ScrollView · missing-feature · **unverified**
@@ -1231,8 +1231,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2270  public bool ScrollBy(float x, float y, float delta)
-  PhotonHost.cs:1721-1724  case "Home" or "ArrowUp":
+  PhotonHost.cs:2282  public bool ScrollBy(float x, float y, float delta)
+  PhotonHost.cs:1730-1733  case "Home" or "ArrowUp":
                   MoveCaret(0, selecting);
                   return true;
               case "End" or "ArrowDown":
@@ -2311,7 +2311,7 @@ the pill's 40 down.
 
   ```
   lowering.ts:4434-4451  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3411  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3423  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -2337,7 +2337,7 @@ the pill's 40 down.
 
   ```
   lowering.ts:4434-4451  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3411  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3423  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2888,8 +2888,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:378  _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
-  PhotonHost.cs:2191  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
+  PhotonHost.cs:380  _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
+  PhotonHost.cs:2203  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
                       NeedsRender = true;
   ```
 

@@ -446,4 +446,22 @@ public class ComponentTesterTests
 
         tester.Html.Should().Contain("<linearGradient", "the fill's paint server is declared beside the frame");
     }
+
+    private sealed class Throws : UiComponent
+    {
+        public override VisualNode Build(ComponentContext context) => throw new InvalidOperationException("no data");
+    }
+
+    /// <summary>What a component contained is the tester's to read (#1452), so a test can say it drew whole.</summary>
+    [Fact]
+    public void WhatAComponentContained_IsNamedInTheTestersBoundary()
+    {
+        using var tester = new ComponentTester();
+        var column = new Column(gap: 0);
+        column.Add(new Throws());
+
+        tester.Pump(column);
+
+        tester.Boundary.Contained.Should().Equal(["Throws"]);
+    }
 }

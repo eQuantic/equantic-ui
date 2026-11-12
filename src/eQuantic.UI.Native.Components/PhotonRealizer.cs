@@ -359,7 +359,7 @@ public static class PhotonRealizer
         // dropdown panel hug its options while the page behind it still fills the viewport.
         //
         // The tree BUILDS first, and the layout measures what it built (docs/ELEMENT-TREE-PLAN.md, 3.2).
-        var builds = owner ?? ComponentBoundary.StructuralOwner();
+        var builds = owner ?? new ComponentBoundary().StructuralOwner();
         var rootElement = builds.Build(root, context.Components, context.SizeClass, rebuildAll);
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context,
             rootStretch: StretchKind.Block, rootElement: rootElement);

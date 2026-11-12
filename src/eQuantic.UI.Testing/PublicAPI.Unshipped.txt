@@ -1,1 +1,2 @@
 #nullable enable
+eQuantic.UI.Testing.ComponentTester.Boundary.get -> eQuantic.UI.Primitives.ComponentBoundary!

@@ -28,7 +28,7 @@ namespace eQuantic.UI.Web;
 /// </summary>
 public sealed class MarkupHost
 {
-    private readonly FontlessMeasurer _measurer = new();
+    private readonly FontlessMeasurer _measurer;
     private readonly ComponentContext _context;
 
     /// <summary>A live host: its owner calls the lifecycle hooks, and a <c>SetState</c> marks a
@@ -36,15 +36,20 @@ public sealed class MarkupHost
     /// <param name="theme">The theme every component of the tree builds and lowers with.</param>
     /// <param name="typeScale">The text scale the tree builds and lowers at.</param>
     /// <param name="density">The density the tree builds and lowers at.</param>
-    public MarkupHost(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable)
-        : this(theme, typeScale, density, live: true)
+    /// <param name="boundary">The tree's error boundary, which a host arms with its report; a silent one
+    /// when null.</param>
+    public MarkupHost(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable,
+        ComponentBoundary? boundary = null)
+        : this(theme, typeScale, density, boundary, live: true)
     {
     }
 
-    private MarkupHost(IAppTheme theme, float typeScale, Density density, bool live)
+    private MarkupHost(IAppTheme theme, float typeScale, Density density, ComponentBoundary? boundary, bool live)
     {
         ArgumentNullException.ThrowIfNull(theme);
         Theme = theme;
+        Boundary = boundary ?? new ComponentBoundary();
+        _measurer = new FontlessMeasurer(Boundary);
         _context = new ComponentContext(theme, typeScale, density, _measurer.Measure);
         Owner = live ? new BuildOwner(_measurer.Build) : BuildOwner.Structural(_measurer.Build);
     }
@@ -54,8 +59,15 @@ public sealed class MarkupHost
     /// <param name="theme">The theme every component of the tree builds and lowers with.</param>
     /// <param name="typeScale">The text scale the tree builds and lowers at.</param>
     /// <param name="density">The density the tree builds and lowers at.</param>
-    public static MarkupHost Structural(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable) =>
-        new(theme, typeScale, density, live: false);
+    /// <param name="boundary">The tree's error boundary, which a host arms with its report; a silent one
+    /// when null.</param>
+    public static MarkupHost Structural(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable,
+        ComponentBoundary? boundary = null) =>
+        new(theme, typeScale, density, boundary, live: false);
+
+    /// <summary>The tree's error boundary (#1452): what its components build through, and where a failure
+    /// of one is reported, described and counted.</summary>
+    public ComponentBoundary Boundary { get; }
 
     /// <summary>The theme the tree builds and lowers with.</summary>
     public IAppTheme Theme { get; }

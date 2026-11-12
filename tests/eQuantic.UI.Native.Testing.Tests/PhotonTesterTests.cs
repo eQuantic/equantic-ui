@@ -260,4 +260,22 @@ public class PhotonTesterTests
 
     private static MeasuredNode Find(MeasuredNode root, string content) =>
         Descendants(root).Single(each => each.Node is Text text && text.Content == content);
+
+    private sealed class Throws : UiComponent
+    {
+        public override VisualNode Build(ComponentContext context) => throw new InvalidOperationException("no data");
+    }
+
+    /// <summary>What a screen contained is the tester's to read (#1452), so a test can say it drew whole.</summary>
+    [Fact]
+    public void WhatAScreenContained_IsNamedInTheTestersBoundary()
+    {
+        using var tester = new PhotonTester();
+        var column = new Column(gap: 0);
+        column.Add(new Throws());
+
+        tester.Pump(column);
+
+        Assert.Equal(["Throws"], tester.Boundary.Contained);
+    }
 }

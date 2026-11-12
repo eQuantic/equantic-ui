@@ -134,14 +134,17 @@ if (OperatingSystem.IsMacOS())
     catch (EntryPointNotFoundException) { }
 }
 
-// A DEVELOPER is watching, by definition: the boundary names the component and quotes the throw
-// instead of the production panel's guarded sentence, and every contained failure also lands on
+// A DEVELOPER is watching, by definition: the window's boundary names the component and quotes the
+// throw instead of the production panel's guarded sentence, and every contained failure also lands on
 // stderr — where the design host turns it into words the panel can show.
-eQuantic.UI.Primitives.ComponentBoundary.Diagnostics = true;
-eQuantic.UI.Primitives.ComponentBoundary.Report = (component, error) =>
-    Console.Error.WriteLine($"eqphoton: {component.GetType().Name} threw {error.GetType().Name}: {error.Message}");
+var boundary = new eQuantic.UI.Primitives.ComponentBoundary
+{
+    Diagnostics = true,
+    Report = (component, error) =>
+        Console.Error.WriteLine($"eqphoton: {component.GetType().Name} threw {error.GetType().Name}: {error.Message}"),
+};
 
-var host = new PhotonHost(root, PhotonTheme.Instance, mode, width, height, measurer)
+var host = new PhotonHost(root, PhotonTheme.Instance, mode, width, height, measurer, boundary: boundary)
 {
     TextRasterizer = measurer as ITextRasterizer,
     Density = density,

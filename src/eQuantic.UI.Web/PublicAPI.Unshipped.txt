@@ -3,7 +3,6 @@
 eQuantic.UI.Web.MarkupHost
 eQuantic.UI.Web.MarkupHost.Build(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.WindowSizeClass sizeClass, bool rebuildAll = false) -> eQuantic.UI.Primitives.Element!
 eQuantic.UI.Web.MarkupHost.EndFrame() -> void
-eQuantic.UI.Web.MarkupHost.MarkupHost(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> void
 eQuantic.UI.Web.MarkupHost.Owner.get -> eQuantic.UI.Primitives.BuildOwner!
 eQuantic.UI.Web.MarkupHost.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
 eQuantic.UI.Web.ServerDataRounds
@@ -12,7 +11,6 @@ eQuantic.UI.Web.ServerDataRounds.Next(eQuantic.UI.Web.ComponentExpansionScope! s
 eQuantic.UI.Web.ServerDataRounds.Pending.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.IServerPrefetch!>!
 eQuantic.UI.Web.ServerDataRounds.ReachedNew.get -> bool
 eQuantic.UI.Web.ServerDataRounds.ServerDataRounds(eQuantic.UI.Web.MarkupHost! host) -> void
-static eQuantic.UI.Web.MarkupHost.Structural(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> eQuantic.UI.Web.MarkupHost!
 eQuantic.UI.Web.ServerDataRounds.RunAsync(System.Func<eQuantic.UI.Web.ComponentExpansionScope!>! frame, System.Func<eQuantic.UI.Primitives.IServerPrefetch!, System.Threading.Tasks.Task!>! load, int maxRounds) -> System.Threading.Tasks.Task<bool>!
 *REMOVED*static eQuantic.UI.Web.ComponentExpansionScope.Ambient.get -> eQuantic.UI.Web.ComponentExpansionScope?
 *REMOVED*static eQuantic.UI.Web.ComponentExpansionScope.Ambient.set -> void
@@ -29,7 +27,6 @@ eQuantic.UI.Web.ServerDataRounds.RunAsync(System.Func<eQuantic.UI.Web.ComponentE
 *REMOVED*static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.set -> void
 eQuantic.UI.Web.MarkupHost.Lower(eQuantic.UI.Web.RenderChannels? channels = null) -> eQuantic.UI.Web.HtmlElement!
 eQuantic.UI.Web.RenderChannels
-eQuantic.UI.Web.RenderChannels.RenderChannels(eQuantic.UI.Web.ComponentExpansionScope? expansion = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, System.Func<string!, string!>? linkPolicy = null) -> void
 eQuantic.UI.Web.RenderChannels.Styles.get -> eQuantic.UI.Web.StyleSink!
 eQuantic.UI.Web.RenderChannels.Gradients.get -> eQuantic.UI.Web.GradientSink!
 eQuantic.UI.Web.RenderChannels.Faces.get -> eQuantic.UI.Web.FaceSink!
@@ -38,3 +35,8 @@ eQuantic.UI.Web.RenderChannels.Density.get -> eQuantic.UI.Primitives.Density
 eQuantic.UI.Web.RenderChannels.LinkPolicy.get -> System.Func<string!, string!>?
 eQuantic.UI.Web.RenderChannels.ResolveDestination(string! destination) -> string?
 static eQuantic.UI.Web.RenderChannels.BridgeWith(eQuantic.UI.Web.RenderChannels! channels) -> System.IDisposable!
+eQuantic.UI.Web.MarkupHost.Boundary.get -> eQuantic.UI.Primitives.ComponentBoundary!
+eQuantic.UI.Web.MarkupHost.MarkupHost(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> void
+eQuantic.UI.Web.RenderChannels.Boundary.get -> eQuantic.UI.Primitives.ComponentBoundary!
+eQuantic.UI.Web.RenderChannels.RenderChannels(eQuantic.UI.Web.ComponentExpansionScope? expansion = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, System.Func<string!, string!>? linkPolicy = null, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> void
+static eQuantic.UI.Web.MarkupHost.Structural(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> eQuantic.UI.Web.MarkupHost!

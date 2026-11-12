@@ -148,7 +148,7 @@ public class NodeStateTests
     [Fact]
     public void AViewThatLeavesWhileItGlides_StopsAskingForFrames()
     {
-        var owner = ComponentBoundary.StructuralOwner();
+        var owner = new ComponentBoundary().StructuralOwner();
         var context = new ComponentContext(PhotonTheme.Instance);
         var view = owner.Build(new Box(new BoxStyle(), List()), context, WindowSizeClass.Compact, rebuildAll: true)
             .ChildAt(0)!;

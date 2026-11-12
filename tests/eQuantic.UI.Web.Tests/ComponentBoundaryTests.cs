@@ -23,7 +23,12 @@ public class ComponentBoundaryTests
             throw new InvalidOperationException("Sequence contains no elements");
     }
 
-    private static string Rendered(VisualNode node) => Flatten(WebRealizer.Lower(node, Theme).Render());
+    private static string Rendered(VisualNode node, ComponentBoundary? boundary = null) =>
+        Flatten(Lowered(node, boundary ?? new ComponentBoundary()).Render());
+
+    /// <summary>A tree lowered through <paramref name="boundary"/>, as a render's tree is (#1452).</summary>
+    private static HtmlElement Lowered(VisualNode node, ComponentBoundary boundary) =>
+        WebRealizer.Lower(node, Theme, 1f, new RenderChannels(boundary: boundary));
 
     private static string Flatten(HtmlNode node)
     {
@@ -57,9 +62,7 @@ public class ComponentBoundaryTests
     [Fact]
     public void Production_keeps_the_exception_to_itself()
     {
-        ComponentBoundary.Diagnostics = false;
-
-        var rendered = Rendered(new BrokenCard());
+        var rendered = Rendered(new BrokenCard(), new ComponentBoundary { Diagnostics = false });
 
         rendered.Should().Contain("This section could not be displayed.");
         // An exception message is written for whoever wrote the code — it can name an id, a path or
@@ -70,33 +73,21 @@ public class ComponentBoundaryTests
     [Fact]
     public void Development_names_the_component_and_quotes_the_throw()
     {
-        ComponentBoundary.Diagnostics = true;
-        try
-        {
-            var rendered = Rendered(new BrokenCard());
+        var rendered = Rendered(new BrokenCard(), new ComponentBoundary { Diagnostics = true });
 
-            rendered.Should().Contain("BrokenCard failed to render");
-            rendered.Should().Contain("InvalidOperationException: Sequence contains no elements");
-        }
-        finally
-        {
-            ComponentBoundary.Diagnostics = false;
-        }
+        rendered.Should().Contain("BrokenCard failed to render");
+        rendered.Should().Contain("InvalidOperationException: Sequence contains no elements");
     }
 
     [Fact]
     public void The_failure_is_reported_rather_than_swallowed()
     {
         var reported = new List<string>();
-        ComponentBoundary.Report = (component, error) => reported.Add($"{component.GetType().Name}: {error.Message}");
-        try
+        var boundary = new ComponentBoundary
         {
-            WebRealizer.Lower(new BrokenCard(), Theme);
-        }
-        finally
-        {
-            ComponentBoundary.Report = null;
-        }
+            Report = (component, error) => reported.Add($"{component.GetType().Name}: {error.Message}"),
+        };
+        Lowered(new BrokenCard(), boundary);
 
         // A boundary that only swallows trades a loud crash for a silent one: nobody is paged and
         // the bug lives forever behind a small red box.
@@ -185,20 +176,14 @@ public class ComponentBoundaryTests
         // realizer: a host that refuses to exit zero while the tally is non-empty catches a cycle
         // the same way it catches a throw, and the logger hears about it either way.
         var reported = new List<string>();
-        ComponentBoundary.ClearContained();
-        ComponentBoundary.Report = (component, error) => reported.Add($"{component.GetType().Name}: {error.GetType().Name}");
-        try
+        var boundary = new ComponentBoundary
         {
-            WebRealizer.Lower(new OuroborosCard(), Theme);
-        }
-        finally
-        {
-            ComponentBoundary.Report = null;
-        }
+            Report = (component, error) => reported.Add($"{component.GetType().Name}: {error.GetType().Name}"),
+        };
+        Lowered(new OuroborosCard(), boundary);
 
         reported.Should().ContainSingle().Which.Should().Be("OuroborosCard: InvalidOperationException");
-        ComponentBoundary.Contained.Should().ContainSingle().Which.Should().Be("OuroborosCard");
-        ComponentBoundary.ClearContained();
+        boundary.Contained.Should().ContainSingle().Which.Should().Be("OuroborosCard");
     }
 
     [Fact]

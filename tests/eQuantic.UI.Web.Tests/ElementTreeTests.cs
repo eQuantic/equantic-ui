@@ -88,7 +88,7 @@ public class ElementTreeTests
     [Fact]
     public void AParentRebuilds_TheChildKeepsItsStateAndTakesItsNewLabel()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["first"]);
         var root = Frame(owner, page);
         var counter = CounterAt(root, 0);
@@ -108,7 +108,7 @@ public class ElementTreeTests
     [Fact]
     public void KeyedRowsSwap_EachKeepsItsOwnState()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["a", "b"]) { Keyed = true };
         var root = Frame(owner, page);
         var a = CounterAt(root, 0);
@@ -128,7 +128,7 @@ public class ElementTreeTests
     [Fact]
     public void UnkeyedRowsSwap_TheStateStaysAtItsIndex()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["a", "b"]);
         var root = Frame(owner, page);
         CounterAt(root, 0).Press();
@@ -153,7 +153,7 @@ public class ElementTreeTests
     [Fact]
     public void ATypeChangesAtAPosition_TheStateStartsAgain()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var swapping = new Swapping();
         var root = Frame(owner, swapping);
         var first = (Counter)((ComponentElement)root.ChildAt(0)!).Component;
@@ -173,7 +173,7 @@ public class ElementTreeTests
     public void TwoMarkedPositions_TheAncestorBuildsFirst_AndEachBuildsOnce()
     {
         var builds = new List<string>();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["row"], builds);
         var root = Frame(owner, page);
         var counter = CounterAt(root, 0);
@@ -190,7 +190,7 @@ public class ElementTreeTests
     [Fact]
     public void AFrameNothingMarked_BuildsNothing()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["a", "b"]);
         var root = Frame(owner, page);
         var (a, b) = (CounterAt(root, 0), CounterAt(root, 1));
@@ -205,7 +205,7 @@ public class ElementTreeTests
     [Fact]
     public void OneComponentChanges_OnlyItBuilds()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["a", "b"]);
         var root = Frame(owner, page);
         var (a, b) = (CounterAt(root, 0), CounterAt(root, 1));
@@ -221,7 +221,7 @@ public class ElementTreeTests
     [Fact]
     public void RebuildingAll_BuildsEveryComponentOnce()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["a", "b"]);
         var root = Frame(owner, page);
         var (a, b) = (CounterAt(root, 0), CounterAt(root, 1));
@@ -237,7 +237,7 @@ public class ElementTreeTests
     [Fact]
     public void ASetState_AsksForOneFrame()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var requests = 0;
         owner.BuildRequested += () => requests++;
         var root = Frame(owner, new Page(["a"]));
@@ -252,7 +252,7 @@ public class ElementTreeTests
     [Fact]
     public void EverySetState_IsCounted_EvenOnAPositionAlreadyWaiting()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var root = Frame(owner, new Page(["a"]));
         var before = owner.Marks;
 
@@ -282,7 +282,7 @@ public class ElementTreeTests
     [Fact]
     public void ASetStateWhileBuilding_WaitsForTheNextFrame()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var requests = 0;
         owner.BuildRequested += () => requests++;
         var component = new SettingWhileBuilding();
@@ -308,8 +308,8 @@ public class ElementTreeTests
     [Fact]
     public void AComponentThatBuildsItself_IsContainedAtTheBound()
     {
-        ComponentBoundary.ClearContained();
-        var root = Frame(ComponentBoundary.StructuralOwner(), new BuildsItself());
+        var boundary = new ComponentBoundary();
+        var root = Frame(boundary.StructuralOwner(), new BuildsItself());
 
         var components = 0;
         Element position = root;
@@ -321,8 +321,7 @@ public class ElementTreeTests
 
         components.Should().Be(65);
         position.Configuration.Should().BeOfType<Box>("what takes its place is the boundary's surface");
-        ComponentBoundary.Contained.Should().Contain(nameof(BuildsItself));
-        ComponentBoundary.ClearContained();
+        boundary.Contained.Should().Contain(nameof(BuildsItself));
     }
 
     private sealed class Tracked(List<string> log) : StatefulComponent
@@ -338,7 +337,7 @@ public class ElementTreeTests
     public void ADeferredSlot_BuildsWhenShown_AndLeavesWhenNot()
     {
         var log = new List<string>();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var overlay = new Overlay(new Tracked(log));
         var column = new Column();
         column.Add(overlay);
@@ -396,7 +395,7 @@ public class ElementTreeTests
     {
         var log = new List<string>();
         var parent = new TwinKeys(log);
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var column = Frame(owner, parent).ChildAt(0)!;
         var second = (Logged)((ComponentElement)column.ChildAt(1)!).Component;
         ((ComponentElement)column.ChildAt(0)!).Component.Should().NotBeSameAs(second);
@@ -425,7 +424,7 @@ public class ElementTreeTests
         var both = new Column();
         both.Add(shared);
         both.Add(shared);
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var root = Frame(owner, both);
 
         shared.Press();
@@ -443,7 +442,7 @@ public class ElementTreeTests
     {
         var log = new List<string>();
         var shared = new Tracked(log);
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, Placed(shared, shared));
 
         Frame(owner, leavesFirst == 0 ? Placed(new Text("gone", TypeRole.BodyM), shared)
@@ -512,7 +511,7 @@ public class ElementTreeTests
     [Fact]
     public void AMarkedChildItsMarkedParentRebuilds_BuildsOnceAFrame()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var parent = new Holding("first");
         Frame(owner, parent);
         var child = parent.First!;
@@ -534,7 +533,7 @@ public class ElementTreeTests
     [Fact]
     public void AStructuralTree_AsksForNoFrame()
     {
-        var owner = ComponentBoundary.StructuralOwner();
+        var owner = new ComponentBoundary().StructuralOwner();
         var requests = 0;
         owner.BuildRequested += () => requests++;
         var root = Frame(owner, new Page(["a"]));
@@ -569,7 +568,7 @@ public class ElementTreeTests
         var column = new Column();
         column.Add(new InFlow(reader));
         column.Add(new ReadsInFlow(outside));
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var root = Frame(owner, column);
 
         ((ReadsInFlow)((ComponentElement)root.ChildAt(0)!.ChildAt(0)!).Component).Touch();
@@ -594,7 +593,7 @@ public class ElementTreeTests
     public void ANodesState_StaysWhileItsPositionDoes()
     {
         var log = new List<string>();
-        var owner = ComponentBoundary.StructuralOwner();
+        var owner = new ComponentBoundary().StructuralOwner();
         var position = (NodeElement)Frame(owner, Keyed("a"));
         var kept = new Kept(log, "a");
         position.State = kept;
@@ -609,7 +608,7 @@ public class ElementTreeTests
     public void ANodesState_IsReleasedOnce_WhenAnotherKeyOrTypeTakesItsPlace()
     {
         var log = new List<string>();
-        var owner = ComponentBoundary.StructuralOwner();
+        var owner = new ComponentBoundary().StructuralOwner();
         var first = (NodeElement)Frame(owner, Keyed("a"));
         first.State = new Kept(log, "a");
 
@@ -627,7 +626,7 @@ public class ElementTreeTests
     public void ASubtreesStates_AreReleasedChildrenFirst()
     {
         var log = new List<string>();
-        var owner = ComponentBoundary.StructuralOwner();
+        var owner = new ComponentBoundary().StructuralOwner();
         var column = new Column();
         column.Add(new Box(new BoxStyle(), new Box(new BoxStyle())));
         var root = (NodeElement)Frame(owner, column);
@@ -647,7 +646,7 @@ public class ElementTreeTests
     public void ANodesState_IsReleased_WhenItsLayerIsNotShown_OrTheTreeComesDown()
     {
         var log = new List<string>();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var overlay = new Overlay(new Box(new BoxStyle()));
         var column = new Column();
         column.Add(overlay);
@@ -680,7 +679,7 @@ public class ElementTreeTests
     [Fact]
     public void EveryPosition_HasAnIdOfItsOwn()
     {
-        var root = Frame(ComponentBoundary.StructuralOwner(), new Page(["a", "b", "c"]));
+        var root = Frame(new ComponentBoundary().StructuralOwner(), new Page(["a", "b", "c"]));
 
         var ids = Everything(root).Select(element => element.Id).ToList();
         ids.Should().HaveCount(8, "the page, its column, three counters and their three texts");
@@ -690,7 +689,7 @@ public class ElementTreeTests
     [Fact]
     public void APosition_KeepsItsId_WhileItHoldsItsNode()
     {
-        var owner = ComponentBoundary.StructuralOwner();
+        var owner = new ComponentBoundary().StructuralOwner();
         var page = new Page(["a", "b"]) { Keyed = true };
         var root = Frame(owner, page);
         var b = root.ChildAt(0)!.ChildAt(1)!;
@@ -706,7 +705,7 @@ public class ElementTreeTests
     [Fact]
     public void ANodeAtAnothersPlace_TakesANewId()
     {
-        var owner = ComponentBoundary.StructuralOwner();
+        var owner = new ComponentBoundary().StructuralOwner();
         var first = Frame(owner, Keyed("a"));
         var second = Frame(owner, Keyed("b"));
         var third = Frame(owner, new Text("c", TypeRole.BodyM));
@@ -719,7 +718,7 @@ public class ElementTreeTests
     [Fact]
     public void APart_KeepsItsId_WhileItsPositionLives()
     {
-        var owner = ComponentBoundary.StructuralOwner();
+        var owner = new ComponentBoundary().StructuralOwner();
         var paragraph = (NodeElement)Frame(owner, Keyed("a"));
         var second = paragraph.PartId(1);
         var first = paragraph.PartId(0);

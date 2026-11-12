@@ -29,9 +29,6 @@ public class AmbientChannelsTests
             + "the channel for server actions, which run outside any tree",
         ["RouteValues.Scoped"] = "the page's route; it becomes an inherited route at the page root",
         ["InFlow.Scoped"] = "the interaction wrapper's intent; it becomes an inherited value its element sets",
-        ["ComponentBoundary._diagnostics"] = "the error boundary's, which moves to the owner with E4c (#1452)",
-        ["ComponentBoundary._report"] = "the error boundary's, which moves to the owner with E4c (#1452)",
-        ["ComponentBoundary._contained"] = "the error boundary's, which moves to the owner with E4c (#1452)",
         ["FaceResolution._unresolved"] = "stays: the text services' diagnostic, outside the tree",
         ["RenderChannels.Bridging"] =
             "stays: the escape hatch's bridge, inside an HtmlElement's Render(), which takes no parameter, "

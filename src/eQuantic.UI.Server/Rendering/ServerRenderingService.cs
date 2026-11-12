@@ -214,7 +214,17 @@ public class ServerRenderingService : IServerRenderingService
                     // so they have no position to keep an owner at: each is a tree drawn once, and what
                     // loaded is put back by its name.
                     var page = component as Web.VisualNodeComponent;
-                    var host = page is null ? null : Web.MarkupHost.Structural(Theme, 1f, density);
+                    // THE PAGE'S ERROR BOUNDARY (#1452), the request's tree's: a component that throws is
+                    // contained to its own subtree instead of turning this request into a 500.
+                    // Development quotes the exception in the panel; production says only that a section
+                    // is missing, and either way the failure reaches the log.
+                    var boundary = new Primitives.ComponentBoundary
+                    {
+                        Diagnostics = IsDevelopment(context),
+                        Report = (failed, error) => _logger.LogError(error,
+                            "Component {Component} failed to render and was contained", failed.GetType().Name),
+                    };
+                    var host = page is null ? null : Web.MarkupHost.Structural(Theme, 1f, density, boundary);
 
                     // ONE ROUND, the same for both paths: the page drawn with channels of its own, whose
                     // expansion scope names what it reaches. It answers that scope.
@@ -224,13 +234,6 @@ public class ServerRenderingService : IServerRenderingService
                         vectorDefs = null;
                         CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
 
-                        // Armed the same way and for the same reason: a component that throws is
-                        // contained to its own subtree instead of turning this request into a 500.
-                        // Development quotes the exception in the panel; production says only that a
-                        // section is missing, and either way the failure reaches the log.
-                        Primitives.ComponentBoundary.Diagnostics = IsDevelopment(context);
-                        Primitives.ComponentBoundary.Report = (failed, error) => _logger.LogError(error,
-                            "Component {Component} failed to render and was contained", failed.GetType().Name);
                         // NAMES every component as the realizer expands it, and hands back what an
                         // earlier round loaded for it — before its Build runs, or the build reads the
                         // defaults again and the round was wasted.
@@ -243,29 +246,22 @@ public class ServerRenderingService : IServerRenderingService
                         // page or composed inside a Core component, collects its atomic rules, the
                         // gradients the page paints with and the families its text names into this one
                         // set, and names each component it expands into the scope.
-                        var channels = new Web.RenderChannels(renderScope, density, linkPolicy);
+                        var channels = new Web.RenderChannels(renderScope, density, linkPolicy, boundary);
                         var styles = channels.Styles;
                         var gradients = channels.Gradients;
                         var faces = channels.Faces;
-                        try
+                        if (host is not null)
                         {
-                            if (host is not null)
-                            {
-                                host.Build(page!.Node, ServerSizeClass);
-                                html = HtmlRenderer.RenderToString(host.Lower(channels));
-                                host.EndFrame();
-                            }
-                            else
-                            {
-                                // An escape-hatch page reaches its bridges through Render(), which takes no
-                                // parameter: the one place the channels are found in an ambient.
-                                using (Web.RenderChannels.BridgeWith(channels))
-                                    html = RenderComponent(component);
-                            }
+                            host.Build(page!.Node, ServerSizeClass);
+                            html = HtmlRenderer.RenderToString(host.Lower(channels));
+                            host.EndFrame();
                         }
-                        finally
+                        else
                         {
-                            Primitives.ComponentBoundary.Report = null;
+                            // An escape-hatch page reaches its bridges through Render(), which takes no
+                            // parameter: the one place the channels are found in an ambient.
+                            using (Web.RenderChannels.BridgeWith(channels))
+                                html = RenderComponent(component);
                         }
 
                         // The faces of the families the page named that the theme's stylesheet does not

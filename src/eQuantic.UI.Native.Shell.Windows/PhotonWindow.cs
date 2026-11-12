@@ -65,6 +65,9 @@ public sealed unsafe class PhotonWindow
 
     private PhotonHost? _host;
     private IAppTheme? _theme;
+
+    /// <summary>The window's error boundary (#1452), handed to its host when the window is created.</summary>
+    private eQuantic.UI.Primitives.ComponentBoundary? _boundary;
     private IPresenter? _presenter;
     private string? _presenterName;
     private double _presentTotalMs;
@@ -128,7 +131,7 @@ public sealed unsafe class PhotonWindow
     /// </summary>
     public void Run(VisualNode root, IAppTheme theme, ThemeMode mode, int maxFrames = 0,
         PhotonThemeController? themeController = null, PhotonCultureController? cultureController = null,
-        bool followSystemTheme = false)
+        bool followSystemTheme = false, eQuantic.UI.Primitives.ComponentBoundary? boundary = null)
     {
         if (_current is not null)
             throw new InvalidOperationException("One Photon window per process on this head; the other is still open.");
@@ -136,6 +139,7 @@ public sealed unsafe class PhotonWindow
         _theme = theme;
         _themeController = themeController;
         _followSystemTheme = followSystemTheme;
+        _boundary = boundary;
         try
         {
             RunCore(root, theme, mode, maxFrames, themeController, cultureController);
@@ -204,7 +208,8 @@ public sealed unsafe class PhotonWindow
         var textService = new DirectWriteTextService();
         var iconRasterizer = new Direct2DIconRasterizer();
         var imageLoader = new WicImageLoader();
-        _host = new PhotonHost(root, theme, mode, _clientWidth / _scale, _clientHeight / _scale, textService)
+        _host = new PhotonHost(root, theme, mode, _clientWidth / _scale, _clientHeight / _scale, textService,
+            boundary: _boundary)
         {
             // Production owns its frames: nothing retains a RealizeResult past the next render.
             RecycleFrames = true,

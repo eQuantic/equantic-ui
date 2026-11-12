@@ -11,7 +11,12 @@ namespace eQuantic.UI.Native.Shell.iOS;
 /// </summary>
 public sealed class IosPhotonRunner : IPhotonRunner
 {
-    public void Run(PhotonApplication app) =>
+    public void Run(PhotonApplication app)
+    {
+        // The screen's error boundary (#1452), armed with the app's report.
+        var boundary = new eQuantic.UI.Primitives.ComponentBoundary();
+        app.ArmBoundary(boundary);
         PhotonApp.Run(app.Args, app.Root, app.Theme, app.Options.Mode, app.Options.MaxFrames,
-            app.Options.SmoothScroll);
+            app.Options.SmoothScroll, boundary);
+    }
 }

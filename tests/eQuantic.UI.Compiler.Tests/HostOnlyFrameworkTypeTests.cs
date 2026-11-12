@@ -95,11 +95,14 @@ public class HostOnlyFrameworkTypeTests
             "that remedy is for a type nobody decided about; this one was decided");
     }
 
-    [Fact]
-    public void TheBoundaryTally_IsFencedTheSameWay()
+    /// <summary>The boundary is a tree's own since #1452, so a client reaches its tally through an
+    /// instance: the call and the read are refused all the same.</summary>
+    [Theory]
+    [InlineData("new ComponentBoundary().ClearContained();")]
+    [InlineData("var contained = new ComponentBoundary().Contained;")]
+    public void TheBoundaryTally_IsFencedTheSameWay(string statement)
     {
-        Diagnostics("ComponentBoundary.ClearContained();")
-            .Should().Contain(d => d.Code == "EQ2010");
+        Diagnostics(statement).Should().Contain(d => d.Code == "EQ2010");
     }
 
     /// <summary>
@@ -111,7 +114,6 @@ public class HostOnlyFrameworkTypeTests
     /// </summary>
     [Theory]
     [InlineData("var seen = FaceResolution.Unresolved;")]
-    [InlineData("var contained = ComponentBoundary.Contained;")]
     public void AStaticPropertyRead_IsNamingItJustAsMuch(string statement)
     {
         Diagnostics(statement).Should().Contain(d => d.Code == "EQ2010");
