@@ -3,8 +3,8 @@
  * no target in it.
  *
  * It has to exist HERE because it exists there: every type in the Primitives namespace is routed by
- * eqc to `@equantic/runtime` implicitly (the shared vocabulary), so a page naming it
- * (`RouteValues route = context.Route;`) emits an import of this name. Without the export the page
+ * eqc to `@equantic/runtime` implicitly (the shared vocabulary), so a page naming it in a member's
+ * signature (`VisualNode Slug(RouteValues route)`) emits an import of this name. Without the export the page
  * dies at hydration on an unresolvable import while SSR keeps answering 200 with correct markup —
  * a failure that looks like nothing is wrong right up until the page is blank.
  *
