@@ -136,7 +136,8 @@ public class SemanticHardeningTests
     {
         // `Array.Reverse(xs)` bound to the APP's own Array class must stay a static call on that
         // class — the old TEXTUAL gate matched the name alone and emitted `xs.reverse()`, silently
-        // running the BCL translation against a user type.
+        // running the BCL translation against a user type. The class's twin is `Array$`, the name a type
+        // named like a global the output reads takes (#890).
         var source = """
             using eQuantic.UI.Primitives;
 
@@ -158,7 +159,7 @@ public class SemanticHardeningTests
         var probe = Compile(source, withProjectCompilation: true, component: "Probe");
 
         Assert.True(probe.Success, string.Join("\n", probe.Errors.Select(e => e.Message)));
-        Assert.Contains("Array.reverse('ab')", probe.TypeScript);
+        Assert.Contains("Array$.reverse('ab')", probe.TypeScript);
         Assert.DoesNotContain("'ab'.reverse", probe.TypeScript);
     }
 

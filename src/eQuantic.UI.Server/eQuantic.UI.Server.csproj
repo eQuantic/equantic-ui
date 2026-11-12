@@ -155,6 +155,7 @@
     <!-- The name a twin gives a member, shared with eqc and the generator: the server writes each value
          of the hydration manifest under it, so the twin adopts it into the member that reads it. -->
     <Compile Include="../Shared/TwinName.cs" Link="Shared/TwinName.cs" />
+    <Compile Include="../Shared/JsNames.cs" Link="Shared/JsNames.cs" />
   </ItemGroup>
 
 </Project>

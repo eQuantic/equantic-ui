@@ -28,7 +28,7 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         // member of the owner's.
         if (context.SemanticHelper.GetSymbol(node) is INamedTypeSymbol keptOut && keptOut.ReportIfKeptOut(node, context))
             return JsExpr.Identifier("undefined");
-        if (context.SemanticHelper.GetSymbol(node) is INamedTypeSymbol nested && nested.NestedTwinName() is { } twin)
+        if (context.SemanticHelper.GetSymbol(node) is INamedTypeSymbol nested && nested.RenamedTwin() is { } twin)
         {
             nested.RegisterIntroduced(context);
             return JsExpr.Identifier(twin);
@@ -49,7 +49,7 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         if (symbol is IPropertySymbol && symbol.ExtensionBlockHome() is { } extensionHome)
         {
             extensionHome.RegisterIntroduced(context);
-            var home = JsExpr.Member(JsExpr.Identifier(extensionHome.Name), name.ToCamelCase());
+            var home = JsExpr.Member(JsExpr.Identifier(extensionHome.TwinReference()), name.ToCamelCase());
             return symbol.IsStatic ? JsExpr.Call(home) : JsExpr.Call(home, receiver);
         }
 
@@ -144,7 +144,7 @@ public class MemberAccessStrategy : IExpressionIrStrategy
                 // it named a member the receiver never had, and making the delegate threw.
                 if (InvocationStrategy.ExtensionHome(method, node, context) is { } extension)
                 {
-                    var homeClass = JsExpr.Identifier(extension.Home.Name);
+                    var homeClass = JsExpr.Identifier(extension.Home.TwinReference());
                     var bind = JsExpr.Member(JsExpr.Member(homeClass, name), "bind");
                     return extension.TakesReceiver ? JsExpr.Call(bind, homeClass, receiver) : JsExpr.Call(bind, homeClass);
                 }
