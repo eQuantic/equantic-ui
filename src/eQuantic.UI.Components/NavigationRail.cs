@@ -98,11 +98,11 @@ public sealed class NavigationRail : StatelessComponent
                 Height = 30,
                 Background = isActive ? primary.Subtle : null,
                 CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-                // The press shows on the pill, where the handoff puts it ("Press-down shows the pill"),
-                // never on the whole column. The selected destination's
-                // pill already shows, and a press never trades it for another fill: that read as the
-                // selection going away for as long as the finger stayed down.
-                Pressed = isActive ? null : new StyleDiff { Background = theme.SurfaceSubtle },
+                // C16 speaks B4's selection vocabulary: the press shows the selection's own pill at
+                // 40%, never SurfaceSubtle, which B4 gives the hover, and stays on the pill. The
+                // selected destination's pill already shows, and a press never trades it for another
+                // fill: that would read as the selection going away.
+                Pressed = isActive ? null : new StyleDiff { Background = primary.Subtle.WithOpacity(0.4f) },
             }, iconNode.Centered());
 
             // The cell is 80×56 and the HIT is the whole cell, so the pressable wraps the cell and

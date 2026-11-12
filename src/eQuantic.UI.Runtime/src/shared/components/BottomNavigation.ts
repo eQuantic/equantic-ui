@@ -42,7 +42,7 @@ export class BottomNavigation extends StatelessComponent {
             let icon = new Icon(IconGlyph.fromIcons(glyph), 24, tint);
             let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;
             let pillContent = VisualNodeExtensions.centered(iconNode);
-            let pill = new Box(new BoxStyle({ width: 56, height: 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), pillContent);
+            let pill = new Box(new BoxStyle({ width: 56, height: 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: primary.subtle.withOpacity(Math.fround(0.4)) }) }), pillContent);
             let column = new Column(2, 'start', 'stretch', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
             column.add(pill);
             column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(11, 14, 'bold', Math.fround(0.1), Math.fround(1.3)) }));
