@@ -30,8 +30,9 @@ public class SwitchExpressionStrategy : IConversionStrategy
         var governingExpr = context.Converter.ConvertExpression(switchExpr.GoverningExpression);
 
         // The arms are ONE pattern-matching operation: a Deconstruct the app wrote is called once for the
-        // value, however many arms read its parts, and held where the arrow declares it (MatchParts),
-        // fresh each time the switch runs, an initializer's included.
+        // value, however many arms read its parts, a member whose getter is the app's is read once, and both
+        // are held where the arrow declares them (MatchParts), fresh each time the switch runs, an
+        // initializer's included.
         var (arms, held) = context.MatchParts.In(switchExpr.SpanStart, () =>
         {
             var built = new StringBuilder();
