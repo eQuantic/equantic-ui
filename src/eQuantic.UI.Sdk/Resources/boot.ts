@@ -3,13 +3,8 @@
 
 export * from '../../eQuantic.UI.Runtime/src/index';
 
-import { errorOverlay, installErrorOverlay } from '../../eQuantic.UI.Runtime/src/dev/error-overlay';
-import {
-  capturePageState,
-  replayPageState,
-  restorePageState,
-  type PageState,
-} from '../../eQuantic.UI.Runtime/src/dev/hot-reload-state';
+// A type, which no byte of the bundle carries: the dev loop's code is the dev runtime's alone (DevLoop).
+import type { PageState } from '../../eQuantic.UI.Runtime/src/dev/hot-reload-state';
 import {
   getReconciler,
   Router,
@@ -87,6 +82,29 @@ function hotReloads(): boolean {
   return typeof window !== 'undefined' && window.__EQ_CONFIG?.hotReload === true;
 }
 
+/**
+ * What only a development page runs: the error overlay, and the capture and replay of a page's fields
+ * around a hot reload. The runtime the server serves to every page carries none of it; the one it serves
+ * in Development or under hot reload (`runtime.dev.js`, whose entry is `boot.dev.ts`) installs it before
+ * the boot runs, and the server decides which runtime a page imports (#1359). Every production page used
+ * to download the overlay and the hot-reload client, about 30 KB it never ran.
+ */
+export interface DevLoop {
+  installErrorOverlay(): void;
+  showBuildErrors(errors: string[]): void;
+  capturePageState(page: object): PageState;
+  restorePageState(page: object, saved: PageState): Set<string>;
+  replayPageState(page: object, saved: PageState, key: string): void;
+}
+
+/** The dev loop, when the runtime that carries it installed it. */
+let devLoop: DevLoop | null = null;
+
+/** Installs the dev loop: the dev runtime's entry calls it as it loads, before any boot. */
+export function installDevLoop(loop: DevLoop): void {
+  devLoop = loop;
+}
+
 // --- Initialization ---
 let initialized = false;
 
@@ -154,7 +172,7 @@ export async function boot(): Promise<void> {
 
   // The Next.js-style error modal, in the only language the developer wrote: an uncaught error's
   // JS stack walks back through the two source maps to the C# file and line, code frame included.
-  if (isDev()) installErrorOverlay();
+  if (isDev()) devLoop?.installErrorOverlay();
 
   // What a BROWSER can do, under the same names the C# interfaces have — the web's answer to the
   // native shells' IPhotonCapabilities.
@@ -408,6 +426,17 @@ async function loadAndMountPage(
   const component = asPage(new ComponentClass());
   const hydrates =
     hasSSRContent && config.ssr !== false && !!component.getVirtualNode && servedMarkupAgrees;
+  // In Development the boot says why it draws over what the server sent, as it says that it hydrates:
+  // a save that drew over could not be told apart from one whose server lacked the edit (#1373).
+  if (!hydrates && isDev()) {
+    const why = [
+      !hasSSRContent && 'the server sent no markup',
+      config.ssr === false && 'the server did not render the page',
+      !component.getVirtualNode && 'the page has no tree to hydrate',
+      !servedMarkupAgrees && "the rebuild said the server's markup lacks the edit",
+    ].filter(Boolean);
+    console.log(`Drawing over: ${pageName} (${why.join('; ')})`);
+  }
 
   // A hot reload's replay hands the page the fields it held before the refresh. The server-data door
   // above takes only what the hydration manifest lists, and a write-once page's own state is in none
@@ -424,10 +453,10 @@ async function loadAndMountPage(
       // carried are a change made since, which the next render draws. Restored before it, they built
       // a tree the server's markup did not hold (#1275).
       replay = () => {
-        restorePageState(page, saved);
+        devLoop?.restorePageState(page, saved);
         (component as unknown as { _scheduleRender?: () => void })._scheduleRender?.();
       };
-    } else if (saved) replayPageState(page, saved, key);
+    } else if (saved) devLoop?.replayPageState(page, saved, key);
   }
 
   // Hydration: attach events to existing SSR HTML. Prefer the component's own hydrate() so its render
@@ -677,7 +706,7 @@ function initHotReload(): void {
     );
     source.addEventListener('failed', (event) => {
       try {
-        errorOverlay.showBuildErrors(JSON.parse((event as MessageEvent<string>).data) as string[]);
+        devLoop?.showBuildErrors(JSON.parse((event as MessageEvent<string>).data) as string[]);
       } catch {
         /* the errors are in the terminal that runs the server as well */
       }
@@ -709,7 +738,7 @@ function reloadForEdit(hydrate: boolean): void {
   const pageRoot: object | null =
     currentComponent instanceof EscapeHatchPage ? currentComponent.page : currentComponent;
   try {
-    if (pageRoot) data = capturePageState(pageRoot);
+    if (pageRoot && devLoop) data = devLoop.capturePageState(pageRoot);
   } catch {
     /* reload without state rather than not at all */
   }
