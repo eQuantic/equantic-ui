@@ -605,6 +605,15 @@ public class TypeScriptEmitter
                         .Where(p => !p.IsStatic && IsAutoProperty(p)
                                     && (p.DefaultValueNode != null || ImplicitDefault(p) != null))
                         .ToList();
+                    // The stores the properties that guard their own with `field` keep, each started as C#
+                    // starts it (GuardedStoreStart): declared alone, a store read undefined until a
+                    // configuration or a hydration wrote it, and `"" + Level` rendered the word (#1183).
+                    var guardedStores = component.Properties
+                        .Where(p => !p.IsStatic && p.Node is { } declared
+                                    && Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(declared))
+                        .Select(p => (Slot: Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p.Node!), Value: GuardedStoreStart(p)))
+                        .Where(store => store.Value is not null)
+                        .ToList();
                     // EITHER form of body counts: a block, or the arrow a one-line constructor is
                     // written with. Only the block was read, so `public Chart(x) => _x = x;` emitted a
                     // constructor that assigned nothing and left the field undefined.
@@ -613,7 +622,7 @@ public class TypeScriptEmitter
                     // a constructor to start it in (TypeInitializer.StartedIn) whether or not C# wrote one:
                     // without, `new Dial()` ran the static constructor never.
                     var startsOnConstruction = orderedStatics && TypeInitializer.HasStaticConstructor(component.ClassSyntax!);
-                    if (ctorParams.Count > 0 || autoDefaults.Count > 0 || hasCtorBody || startsOnConstruction)
+                    if (ctorParams.Count > 0 || autoDefaults.Count > 0 || guardedStores.Count > 0 || hasCtorBody || startsOnConstruction)
                     {
                         // C# optional parameters keep their defaults as JS default parameters
                         // (`variant: any = 'primary'`) — without them `new Button("x")` would run the
@@ -718,6 +727,10 @@ public class TypeScriptEmitter
                                     : ImplicitDefault(p)!;
                                 statements.Add(DefaultIfUndefined(cn, def));
                             }
+                            // Written to the store itself, never through the setter: C# initializes the
+                            // backing field, so `{ set => field = value + 1; } = 5` holds 5.
+                            foreach (var (slot, value) in guardedStores)
+                                statements.Add(Assign(JsExpr.ThisMember(slot), JsExpr.Opaque(value!)));
                             var bodyLine = statements.Count + 1;
                             if (ctorDef?.BodyNode is { } ctorBlock) statements.Add(Contents(ctorBlock));
                             else if (ctorDef?.ExpressionBodyNode is { } ctorExpression)
@@ -1249,6 +1262,27 @@ public class TypeScriptEmitter
         // alone: writing it would only emit `if (this.width === undefined) this.width = undefined`.
         var value = _converter.DefaultAt(type, node.Type);
         return value is "null" or "undefined" ? null : value;
+    }
+
+    /// <summary>
+    /// What a store a property guards with <c>field</c> starts as, on a component's instance: the
+    /// property's initializer, or its type's zero, a reference's null included, which reads as C#'s does
+    /// where an undefined one wrote "undefined" into a text. Null for a struct whose twin cannot build its
+    /// zero, whose store is left as the undefined it reads as its own default (<see cref="DefaultValue"/>).
+    /// </summary>
+    private string? GuardedStoreStart(PropertyDefinition property)
+    {
+        if (property.DefaultValueNode is { } given)
+            return Initializer(given, _converter.ConvertExpression(given, property.Type));
+        if (property.Node is not { } node) return null;
+        return DefaultOf(node.Type) switch
+        {
+            "undefined" => null,
+            // Said to be null where TypeScript reads the store as never null, as a member that starts at
+            // null is (TwinConstructor.StartOf).
+            "null" => TypeAnnotations ? "null!" : "null",
+            var zero => zero,
+        };
     }
 
     private static string? ImplicitValueTypeDefault(string csharpType) => csharpType switch
@@ -2411,9 +2445,13 @@ public class TypeScriptEmitter
         // maps to `NavigableMove[]` before this runs, and the enum is one level further in than a
         // single pass over TypeArguments can see. Walking only the top level left that emitting the
         // C# spelling with no import — the exact defect this block exists to end, one nesting down.
-        if (!echoed && resolved is INamedTypeSymbol { TypeArguments.Length: > 0 } generic)
+        // And inside an array, echoed or not, since the mapper keeps an array's element as C# spells it:
+        // `CodeCommand[]` named an enum no module exports, and the runtime's tsc refused the twin (#1064).
+        if (resolved is IArrayTypeSymbol || !echoed && resolved is INamedTypeSymbol { TypeArguments.Length: > 0 })
         {
-            foreach (var argument in generic.TypeArguments.SelectMany(Nested))
+            var inside = resolved is IArrayTypeSymbol array ? Nested(array.ElementType)
+                : ((INamedTypeSymbol)resolved).TypeArguments.SelectMany(Nested);
+            foreach (var argument in inside)
             {
                 // An exception and a delegate are the same defect two kinds along (TsStandIn):
                 // `Action<Exception>` named an `Exception` no module defines.
@@ -2547,6 +2585,12 @@ public class TypeScriptEmitter
     /// </summary>
     private static IEnumerable<ITypeSymbol> Nested(ITypeSymbol type)
     {
+        // An array's element is one level further in, as a generic's argument is (#1064).
+        if (type is IArrayTypeSymbol array)
+        {
+            foreach (var inner in Nested(array.ElementType)) yield return inner;
+            yield break;
+        }
         yield return type;
         if (type is not INamedTypeSymbol { TypeArguments.Length: > 0 } generic) yield break;
         foreach (var argument in generic.TypeArguments)

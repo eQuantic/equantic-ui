@@ -389,7 +389,7 @@ public class ComponentCompiler
     /// </summary>
     public IReadOnlyList<CompilationError> GetLanguageErrors(string sourceCode, string sourcePath = "")
     {
-        var tree = CSharpSyntaxTree.ParseText(sourceCode, _semanticModelProvider.JoinOptions, path: sourcePath);
+        var tree = CSharpSyntaxTree.ParseText(sourceCode, _semanticModelProvider.OptionsFor(sourcePath), path: sourcePath);
         return _semanticModelProvider.GetLanguageDiagnostics(tree)
             .Select(diagnostic =>
             {

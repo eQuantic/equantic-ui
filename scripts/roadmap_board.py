@@ -67,7 +67,7 @@ ITEMS = """query($owner: String!, $number: Int!, $cursor: String) { organization
         ... on IssueFieldSingleSelectValue { name field { ... on IssueFieldSingleSelect { name } } } } }
       timelineItems(first: 30, itemTypes: [PROJECT_V2_ITEM_STATUS_CHANGED_EVENT]) { nodes {
         ... on ProjectV2ItemStatusChangedEvent { createdAt status project { number } } } }
-      closedByPullRequestsReferences(first: 25, includeClosedPrs: true) { nodes { number createdAt mergedAt
+      closedByPullRequestsReferences(first: 25, includeClosedPrs: true) { nodes { number state createdAt mergedAt
         closingIssuesReferences { totalCount } commits(first: 1) { nodes { commit { authoredDate } } } } } } } } } } } }"""
 
 
@@ -100,7 +100,8 @@ def load():
             for pr in content["closedByPullRequestsReferences"]["nodes"]:
                 first = [c["commit"]["authoredDate"] for c in pr["commits"]["nodes"]]
                 pulls.append(PullRequest(pr["number"], min(day(d) for d in [pr["createdAt"]] + first),
-                                         day(pr["mergedAt"]), pr["closingIssuesReferences"]["totalCount"]))
+                                         day(pr["mergedAt"]), pr["closingIssuesReferences"]["totalCount"],
+                                         open=pr["state"] == "OPEN"))
             issues[content["number"]] = Issue(
                 number=content["number"], title=content["title"],
                 type=(content["issueType"] or {}).get("name") or "Task", typed=bool(content["issueType"]),

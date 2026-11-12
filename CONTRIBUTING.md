@@ -13,31 +13,58 @@ This page says where.
 - **[docs/ARCHITECTURE-AUDIT.md](docs/ARCHITECTURE-AUDIT.md)** ends with an *order of attack*: every
   open structural item, measured and sized, with the Flutter answer it follows. If you want to take
   one, say so on its issue or open one, so two people do not take the same step.
+- **Take an issue by assigning it to yourself**, and move it to *In progress* on the
+  [board](https://github.com/orgs/eQuantic/projects/11), before you branch. Every issue starts
+  assigned to the owner's account, which the owner's agent sessions work as, so an issue assigned to
+  anyone else is that person's: no session starts it or pushes to its branch, and the same holds for
+  every issue labelled `good first issue`, which is kept for a person. An issue already *In progress*
+  is someone's, whoever it is assigned to.
 - Correctness of the transpiler, layout parity between the web and Photon realizers, the Photon
   engine and its shells, accessibility bridges, and the write-once contract on more host and target
   combinations are the areas where help matters most.
 
 ## Building
 
-You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and nothing else — no Node.js, no
-npm. The TypeScript runtime is built by an embedded Bun the build unpacks itself, and the Photon
-shaders are committed (only framework developers changing a shader run `scripts/generate-shaders.sh`).
-The one exception is outside the build: the change workflow runs the OpenSpec CLI, which needs
-Node >= 20.19, and `./scripts/openspec.sh` installs the pinned version from its lockfile on first
-use. CI validates your change either way.
+You need the [.NET 10 SDK](https://dotnet.microsoft.com/download), and, to build the whole solution,
+the two phone workloads below. No Node.js, no npm. The TypeScript runtime is built by an embedded
+Bun the build unpacks itself, and the Photon shaders are committed (only framework developers
+changing a shader run `scripts/generate-shaders.sh`). The one exception is outside the build: the
+change workflow runs the OpenSpec CLI, which needs Node >= 20.19, and `./scripts/openspec.sh`
+installs the pinned version from its lockfile on first use. CI validates your change either way.
 
 ```bash
 git clone https://github.com/eQuantic/equantic-ui.git
 cd equantic-ui
+dotnet workload install ios android        # once: the phone shells (macOS, with Xcode for iOS)
 dotnet build                               # the whole solution
 dotnet test                                # every test project
 dotnet build samples/DefaultUIDashboard    # a web app against the source tree
-dotnet build samples/PhotonDesktop         # a Photon app (macOS)
+dotnet build samples/PhotonDesktop         # a Photon app (macOS or Windows)
 ```
 
+The solution holds the two phone shells, `net10.0-ios` and `net10.0-android`, which is why the whole
+solution needs their workloads; CI installs the same two. GitHub's macOS runners also carry Xcode,
+the Android SDK and a JDK; on a machine without the last two, the Android workload's
+`InstallAndroidDependencies` target installs them. The iOS shell builds on macOS only, so on Linux
+and Windows build and test the projects you change rather than the solution, as CI's jobs do:
+
+```bash
+dotnet build src/eQuantic.UI.Compiler
+dotnet test tests/eQuantic.UI.Compiler.Tests
+dotnet workload install android            # if you change the Android shell
+```
+
+On Linux the whole test suite runs, as it does in CI, where every test project runs on Ubuntu: a case
+only a Mac can answer is skipped with its reason, never filtered out. `scripts/test-groups.sh
+--projects conformance|web|rest` lists the projects of each of CI's test jobs. What Linux cannot do
+is open a Photon window, since Photon has no Linux shell: a change to what Photon draws is seen on the
+Android emulator (the Android shell builds on Linux, with the workload and the Android SDK) and held
+by the tests, and a change to the web is seen in a browser, with `samples/DefaultUIDashboard`.
+
 The samples build against the framework's **projects**, never against packages — see the wiki's
-[Build Flow](https://github.com/eQuantic/equantic-ui/wiki/BuildFlow). CI does not build them, so a
-change that touches the SDK, the compiler or a realizer is proved by building them locally.
+[Build Flow](https://github.com/eQuantic/equantic-ui/wiki/BuildFlow). CI's `samples` job builds them
+on macOS; on another host, a change that touches the SDK, the compiler or a realizer is proved by
+building them locally.
 
 **The build has no warnings, and fails on one.** `TreatWarningsAsErrors` is set in
 `Directory.Build.props`, so a warning is a broken build rather than a line nobody reads — which is
@@ -65,7 +92,11 @@ dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
 
 ## The bar
 
-Three rules decide most reviews here; they are in [CLAUDE.md](CLAUDE.md) at length.
+Three rules decide most reviews here; they are in [CLAUDE.md](CLAUDE.md) at length. Every rule, with
+the case it came from, is in [docs/PRINCIPLES.md](docs/PRINCIPLES.md), and how a change is proved
+(an A/B both ways, .NET as the oracle, both targets driven) in [docs/PROVING.md](docs/PROVING.md).
+Copilot's review reads the same rules, from `.github/copilot-instructions.md`, so a pull request
+meets them there before anyone else reads it.
 
 1. **A developer using the SDK never writes a platform artifact.** No Swift, no plist, no manifest, no
    CSS. If a feature works but makes someone learn one, it is not done.
@@ -118,10 +149,10 @@ workflow whose `if:` expression did not parse failed before it created a single 
 notice, and for an hour seven pull requests merged on local runs alone. Two pull requests that each
 passed alone also broke `main` together (#453).
 
-Once the ruleset merges through GitHub's merge queue (#1308), a reviewed, green pull request enters
-it with `gh pr merge <n>`, and the queue runs CI on it together with every pull request ahead of it
-and squash-merges it when that run is green: nobody merges `main` into a pull request only to bring
-it up to date. Until then, one that `main` moved past has to take `main` and run again.
+The ruleset merges through GitHub's merge queue (#1308): a reviewed, green pull request enters it
+with `gh pr merge <n>`, and the queue runs CI on it together with every pull request ahead of it and
+squash-merges it when that run is green. Nobody merges `main` into a pull request only to bring it up
+to date; a pull request takes `main` to resolve a conflict, and for nothing else.
 
 ```bash
 scripts/ci-doctor.sh
@@ -131,8 +162,17 @@ It answers the two questions the pull-request page cannot: does GitHub still cal
 (it falls back to the file's path when it cannot read it), and did the run for this branch create
 any jobs at all.
 
+**CI runs what your change can affect.** A pull request that changes only documents runs the test
+groups that read documents and the guards, and skips the build, the conformance suite, the Mac jobs
+and the samples; one that changes only the VS Code extension builds the extension; anything else runs
+everything. `scripts/ci-changes.sh` decides, and the `changes` job prints what it read and what it
+decided. A skipped job's check still reports success, so the pull request can merge.
+
 - **Start from an issue.** Every change has one on the board; if none exists, create it as a
-  sub-issue of the epic or feature it belongs to, with the right type.
+  sub-issue of the epic or feature it belongs to, with the right type and its points, with
+  `python3 scripts/new-issue.py` (`--help` says how), which refuses an issue that lacks one of them.
+  In the browser, fill the same: the type, the parent, the Estimate on the board and, for an epic,
+  its Priority, which decides how much of the plan's pace the epic gets.
 - **Branch first**, from `main`, named `<type>/<slug>` (`feat/`, `fix/`, `chore/`, `refactor/`,
   `docs/`, `test/`, `ci/`, `perf/`, `build/`). Never commit onto `main` locally either.
 - **Commit messages** are `emoji type: description`, in English, emoji first:
