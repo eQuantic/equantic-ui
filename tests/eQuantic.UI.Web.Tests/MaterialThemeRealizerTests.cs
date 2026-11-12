@@ -27,8 +27,10 @@ public class MaterialThemeRealizerTests
         box.Attributes["style"].Should().Contain(
             $"background-color: {TokenCss.Value(Material.Colors(Variant.Primary).Base)}");
         box.Attributes["style"].Should().Contain("light-dark(#6750a4, #d0bcff)");
-        // The Photon Button uses Medium shape → M3 medium is 12dp (Photon's was 10).
-        box.Attributes["style"].Should().Contain("border-radius: 12px");
+        // M3's common button is fully rounded, with 24dp of padding: Material's Button slot (#1241),
+        // where the theme's medium shape (12dp) was all a theme could say before.
+        box.Attributes["style"].Should().Contain("border-radius: 999px");
+        box.Attributes["style"].Should().Contain("padding: 0 24px 0 24px");
     }
 
     [Fact]
@@ -72,6 +74,6 @@ public class MaterialThemeRealizerTests
         var materialButton = Render(new Button("X"), Material).Children[0];
 
         photonButton.Attributes["style"].Should().Contain("border-radius: 10px"); // Photon medium
-        materialButton.Attributes["style"].Should().Contain("border-radius: 12px"); // M3 medium
+        materialButton.Attributes["style"].Should().Contain("border-radius: 999px"); // M3's button slot: full
     }
 }
