@@ -16,7 +16,7 @@ public class S3BackdropBlurNativeTests
     private static DisplayList Realize(VisualNode root)
     {
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(root, 400, 300, PhotonTheme.Instance, ThemeMode.Light, builder);
+        PhotonRealizer.Realize(root, 400, 300, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder);
         return builder.Build();
     }
 

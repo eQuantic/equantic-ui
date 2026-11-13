@@ -7,6 +7,11 @@ namespace eQuantic.UI.Primitives;
 /// which HandoffTokenPinTests compares against every value below; WCAG ratios verified by
 /// <c>DesignTokenTests</c>). Brand anchors: eQuantic blue #0050A0 (Primary), eQuantic green #80B85C
 /// (Success, darkened to clear AA in light mode).
+/// <para>
+/// A token's fourth and fifth arguments are its legs at <see cref="ContrastLevel.More"/>, from
+/// tokens.json's <c>color.more</c>: one APCA level up, never below the WCAG 2 targets, each keeping its
+/// OKLCH hue. A token without them paints its Standard pair at More.
+/// </para>
 /// </summary>
 public sealed class PhotonTheme : IAppTheme
 {
@@ -17,13 +22,13 @@ public sealed class PhotonTheme : IAppTheme
     public ColorToken Surface { get; } = Token(0xFFFFFF, 0x14181E);
     public ColorToken SurfaceSubtle { get; } = Token(0xEFF1F4, 0x1C232B);
     public ColorToken SurfaceHighlight { get; } = new(Rgba(0xFFFFFF, 140), Rgba(0xFFFFFF, 18)); // 55% / 7%
-    public ColorToken Border { get; } = Token(0xE2E5EA, 0x2A323D);
-    public ColorToken BorderStrong { get; } = Token(0xC9CED6, 0x4C5664);
+    public ColorToken Border { get; } = Token(0xE2E5EA, 0x2A323D, 0x8C8F94, 0x5C6571);
+    public ColorToken BorderStrong { get; } = Token(0xC9CED6, 0x4C5664, 0x6D7178, 0x768190);
 
     // ---- Text tiers (§01) ------------------------------------------------------------------------
     public ColorToken TextPrimary { get; } = Token(0x171B21, 0xF2F4F7);
-    public ColorToken TextSecondary { get; } = Token(0x4B5563, 0xC7D1DC);
-    public ColorToken TextMuted { get; } = Token(0x5F6B7A, 0xACB7C5);
+    public ColorToken TextSecondary { get; } = Token(0x4B5563, 0xC7D1DC, 0x2B3441, 0xDEE9F4);
+    public ColorToken TextMuted { get; } = Token(0x5F6B7A, 0xACB7C5, 0x475261, 0xC5D1DF);
     public ColorToken TextInverse { get; } = Token(0xFFFFFF, 0x171B21);
 
     // ---- Interaction chrome (§01) ----------------------------------------------------------------
@@ -35,11 +40,11 @@ public sealed class PhotonTheme : IAppTheme
 
     // ---- Variants (§01 interactive table) --------------------------------------------------------
     private static readonly VariantColors PrimaryColors = new(
-        Base: Token(0x0050A0, 0x76BAFF),
+        Base: Token(0x0050A0, 0x76BAFF, 0x0050A0, 0xAED5FE),
         OnBase: Token(0xFFFFFF, 0x06263F),
-        Pressed: Token(0x00427F, 0x9BCDFF),
+        Pressed: Token(0x00427F, 0x9BCDFF, 0x00427F, 0xD0E7FE),
         Subtle: Token(0xE8F1FA, 0x0F2740),
-        OnSubtle: Token(0x003E7E, 0xA8CDF2));
+        OnSubtle: Token(0x003E7E, 0xA8CDF2, 0x003E7E, 0xB0D5FA));
 
     private static readonly VariantColors SecondaryColors = new(
         Base: Token(0xE9EDF2, 0x242C36),
@@ -49,30 +54,30 @@ public sealed class PhotonTheme : IAppTheme
         OnSubtle: Token(0x3A4350, 0xD7DDE5));   // = OnBase
 
     private static readonly VariantColors DestructiveColors = new(
-        Base: Token(0xB42318, 0xFF958C),
+        Base: Token(0xB42318, 0xFF958C, 0xAE1C12, 0xFEC0B9),
         OnBase: Token(0xFFFFFF, 0x3B0704),
-        Pressed: Token(0x8F1D1D, 0xFEC0BB),
+        Pressed: Token(0x8F1D1D, 0xFEC0BB, 0x891618, 0xFEE7E5),
         Subtle: Token(0xFCEBEA, 0x3A1210),
-        OnSubtle: Token(0x8F1D1D, 0xF4A9A4));
+        OnSubtle: Token(0x8F1D1D, 0xF4A9A4, 0x8F1D1D, 0xFEC0BC));
 
     private static readonly VariantColors SuccessColors = new(
-        Base: Token(0x3B7A22, 0x89C562),
+        Base: Token(0x3B7A22, 0x89C562, 0x276605, 0xA3E17D),
         OnBase: Token(0xFFFFFF, 0x12290A),
-        Pressed: Token(0x2C5E17, 0x9FD279),
+        Pressed: Token(0x2C5E17, 0x9FD279, 0x1B4B02, 0xBAEE94),
         Subtle: Token(0xEDF6E6, 0x16290C),
-        OnSubtle: Token(0x2C5E17, 0xB5DB97));
+        OnSubtle: Token(0x2C5E17, 0xB5DB97, 0x2B5D16, 0xB6DC98));
 
     private static readonly VariantColors WarningColors = new(
-        Base: Token(0x8A5A00, 0xE8B04B),
+        Base: Token(0x8A5A00, 0xE8B04B, 0x7B5004, 0xFEC561),
         OnBase: Token(0xFFFFFF, 0x2E1B02),
-        Pressed: Token(0x6E4700, 0xF0C06B),
+        Pressed: Token(0x6E4700, 0xF0C06B, 0x5F3E03, 0xFFD794),
         Subtle: Token(0xFBF3DF, 0x2E2008),
-        OnSubtle: Token(0x7A5200, 0xEECF8F));
+        OnSubtle: Token(0x7A5200, 0xEECF8F, 0x714B01, 0xEECF8F));
 
     private static readonly VariantColors InfoColors = new(
-        Base: Token(0x0C6C86, 0x4DC4DF),
+        Base: Token(0x0C6C86, 0x4DC4DF, 0x01617A, 0x6DE1FC),
         OnBase: Token(0xFFFFFF, 0x062B33),
-        Pressed: Token(0x0A5468, 0x6FD1E7),
+        Pressed: Token(0x0A5468, 0x6FD1E7, 0x024A5C, 0x9BECFF),
         Subtle: Token(0xE4F3F8, 0x0A2A32),
         OnSubtle: Token(0x0A5468, 0x9FDCEB));
 
@@ -387,6 +392,9 @@ public sealed class PhotonTheme : IAppTheme
 
     // ---- helpers ----------------------------------------------------------------------------------
     private static ColorToken Token(uint lightRgb, uint darkRgb) => new(Rgb(lightRgb), Rgb(darkRgb));
+
+    private static ColorToken Token(uint lightRgb, uint darkRgb, uint moreLightRgb, uint moreDarkRgb) =>
+        new ColorToken(Rgb(lightRgb), Rgb(darkRgb)).WithMore(Rgb(moreLightRgb), Rgb(moreDarkRgb));
 
     private static Color Rgb(uint rgb) =>
         Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
