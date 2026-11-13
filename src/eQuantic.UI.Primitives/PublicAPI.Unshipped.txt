@@ -975,6 +975,14 @@ virtual eQuantic.UI.Primitives.StatefulComponent.OnDependenciesChanged() -> void
 eQuantic.UI.Primitives.ComponentContext.DependOn<T>() -> T?
 eQuantic.UI.Primitives.ComponentContext.Find<T>() -> T?
 static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.ComponentContext! context, int depth) -> eQuantic.UI.Primitives.VisualNode!
+*REMOVED*eQuantic.UI.Primitives.BuildOwner.BuildOwner(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent) -> void
+*REMOVED*static eQuantic.UI.Primitives.BuildOwner.Structural(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent) -> eQuantic.UI.Primitives.BuildOwner!
+eQuantic.UI.Primitives.BuildOwner.HoldsEveryArm.get -> bool
+eQuantic.UI.Primitives.BuildOwner.BuildOwner(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent, bool holdsEveryArm = false) -> void
+static eQuantic.UI.Primitives.BuildOwner.Structural(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent, bool holdsEveryArm = false) -> eQuantic.UI.Primitives.BuildOwner!
+eQuantic.UI.Primitives.BuildOwner.Building.get -> eQuantic.UI.Primitives.ComponentElement?
+eQuantic.UI.Primitives.Element.Slot.get -> int
+eQuantic.UI.Primitives.Element.SlotsBelow(int depth) -> string!
 static eQuantic.UI.Primitives.ButtonTheme.Merge(eQuantic.UI.Primitives.ButtonTheme? under, eQuantic.UI.Primitives.ButtonTheme? over) -> eQuantic.UI.Primitives.ButtonTheme?
 static eQuantic.UI.Primitives.ControlsTheme.Merge(eQuantic.UI.Primitives.ControlsTheme? under, eQuantic.UI.Primitives.ControlsTheme? over) -> eQuantic.UI.Primitives.ControlsTheme?
 static eQuantic.UI.Primitives.DensityLadder.Merge(eQuantic.UI.Primitives.DensityLadder? under, eQuantic.UI.Primitives.DensityLadder? over) -> eQuantic.UI.Primitives.DensityLadder?

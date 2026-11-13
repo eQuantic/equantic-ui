@@ -12,12 +12,7 @@ import { hydrateValue } from '../utils/hydrate-value';
 import { hydrate, type HydrationSpec } from '../utils/hydrate';
 import { adoptMember } from '../utils/adopt-member';
 import { getCurrentRoute } from '../router/current-route';
-import {
-  ComponentInstanceStore,
-  enterPass,
-  exitPass,
-  reconcileBuildRoot,
-} from '../shared/instance-store';
+import { ElementRoots, enterPass, exitPass, lowerRoot } from '../shared/element-roots';
 import {
   getPhotonDensity,
   getInFlow,
@@ -36,7 +31,8 @@ import { scheduleRenderFlush } from './render-scheduler';
 /**
  * SERVER DATA (the C# `IServerPrefetch` twin): the fields the server's prefetch filled arrive as
  * `window.__INITIAL_STATE__` — one field map PER COMPONENT, under the name the server's realizer
- * gave it (`Type#ordinal`), each landing BEFORE that component builds, so the client's first tree is
+ * gave it (a page's own component `Type#0`, every other one where it stands, `r{tree}/{type}@{slots}`,
+ * read off its position in `lowering.ts`), each landing BEFORE that component builds, so the client's first tree is
  * the one the server already wrote as HTML and hydration matches instead of flashing the field
  * defaults. Inside a component's entry the keys are the field names it declares.
  *
@@ -50,7 +46,9 @@ import { scheduleRenderFlush } from './render-scheduler';
 const componentOrdinals = new Map<string, number>();
 
 /**
- * The name the server gave this component: `Type#ordinal` in depth-first expansion order.
+ * The name the server gave a component a walk names by count: `Type#ordinal` in depth-first expansion
+ * order, which leaves a page's own component `Type#0`. Every component a page composes is named by its
+ * position instead (#1477), since the order the browser builds in is not the server's.
  *
  * BOTH SIDES COUNT, and that is the whole identity mechanism. The client does not receive
  * components — it re-runs `build()` and constructs fresh ones — so the payload has to say which
@@ -74,6 +72,19 @@ export { componentIdentity };
 /** Starts a fresh count — one render is one walk, and the numbering restarts with it. */
 export function resetComponentKeys(): void {
   componentOrdinals.clear();
+  treesLowered = 0;
+}
+
+/**
+ * How many trees of the vocabulary the walk in flight has lowered: a page's own tree, or each bridge
+ * of an escape-hatch page in the order the page renders them. The server counts its trees per render
+ * the same way, and a component's server data key starts with its tree (`r0`, `r1`, …, #1477).
+ */
+let treesLowered = 0;
+
+/** The next tree of the walk in flight, as its server data keys name it. */
+export function nextTree(): string {
+  return `r${treesLowered++}`;
 }
 
 /**
@@ -87,11 +98,23 @@ export function resetComponentKeys(): void {
  */
 const alreadyAdopted = new WeakSet<object>();
 
+/**
+ * Whether the server may still hold data for `target`: the document carries some, and this instance
+ * has not taken its share. Asked before a key is formed, because naming a position walks it to the
+ * root, and most builds (every one on a page the server loaded nothing for, every later build of a
+ * kept instance) have nothing to adopt.
+ */
+export function awaitsServerState(target: object): boolean {
+  if (typeof window === 'undefined' || alreadyAdopted.has(target)) return false;
+  const payload = (window as unknown as { __INITIAL_STATE__?: Record<string, unknown> }).__INITIAL_STATE__;
+  return payload !== undefined && payload !== null && Object.keys(payload).length > 0;
+}
+
 export function adoptServerStateFor(target: object, key: string): boolean {
   if (typeof window === 'undefined') return false;
 
   // ONCE PER INSTANCE, and the payload staying is exactly why this is needed. The lowering resolves
-  // a stateful child against the instance store and gets the SAME object back on every pass, so
+  // a stateful child to the instance its position keeps, the SAME object on every render, so
   // every re-render of anything above it wrote the server's original fields over whatever the
   // reader had changed — a filter that reset itself each time the page redrew. A fresh instance is
   // a different object and still restores. The root has said this since the first version, as
@@ -257,9 +280,77 @@ export abstract class UiComponent extends Component {
   adoptConfig(_next: UiComponent): void {}
 }
 
+/**
+ * The context a page builds with: the services, the route and the SAME density and scale the lowering
+ * hands every component it builds. Without these two a page and its own subtree render at different
+ * sizes: the page's context defaulted to comfortable while everything the lowering expanded took the
+ * ambient (compact on a pointer device), so a code editor drew 19dp lines and placed its caret on a
+ * 17dp grid — a caret that drifts a line and a half down a screenful of code, for no reason anyone
+ * can see.
+ */
+function pageContext(serviceProvider: ServiceProvider): RenderContext {
+  return {
+    getService: <T>(key: import('./types').ServiceKey<T>) => serviceProvider.getService<T>(key),
+    serviceProvider,
+    route: getCurrentRoute(),
+    inFlow: getInFlow(),
+    theme: getPhotonTheme(),
+    density: getPhotonDensity(),
+    typeScale: getPhotonTypeScale(),
+    measureText: measurePhotonText,
+    monoAdvance: photonMonoAdvance,
+  };
+}
+
+/**
+ * One render of a PAGE, the same for both bases: inside the server-data walk the page is named in,
+ * and inside the pass its element trees are built in (`ElementRoots`).
+ *
+ * A render the page's owners asked for (a nested component's `setState` marked its own position)
+ * lowers the tree the page built LAST, so every root hands its owner the node it handed it before and
+ * the owner builds the marked positions and nothing else; building the page again would hand every
+ * position a fresh configuration, and the engine rebuilds a component whose configuration changed.
+ * Any other render builds the page and rebuilds every position.
+ *
+ * What the page's build returned is lowered as a vocabulary tree when it is one, a component included,
+ * so a component returned AS THE ROOT is held at the root of an owner like any other and keeps its
+ * state across the render its own `setState` asks for. A Core tree renders itself, and the bridges in
+ * it lower their own roots through the same pass.
+ */
+function renderPage(
+  root: object,
+  mounted: boolean,
+  roots: ElementRoots,
+  invalidate: () => void,
+  build: () => Component | VisualNodeValue,
+): HtmlNode {
+  const reuse = roots.takeReuse();
+  // AROUND THE WHOLE RENDER, because what `build()` returns is rendered through this same walk:
+  // outside it that child would restart the count and claim `#0` for itself, which for a component
+  // that builds another of its own type gave every level of a recursive tree the ROOT's data.
+  return runComponentWalk(root, !mounted, () => {
+    enterPass(roots, invalidate, !reuse);
+    try {
+      const built = reuse ? (roots.last as Component | VisualNodeValue) : build();
+      roots.remember(built);
+      return (built as { nodeKind?: string }).nodeKind === undefined
+        ? (built as Component).render()
+        : lowerRoot(built as VisualNodeValue);
+    } catch (error) {
+      // A PAGE has no parent to contain it. Its own throw used to leave the root unwritten, which
+      // is the white screen the boundary exists to end. Nothing is kept: the next render builds.
+      roots.remember(undefined);
+      return renderComponentFailure(root.constructor.name, error);
+    } finally {
+      exitPass();
+    }
+  });
+}
+
 export abstract class StatelessComponent extends UiComponent {
   private _renderManager: RenderManager = new RenderManager();
-  private _instances = new ComponentInstanceStore();
+  /** The element trees this page builds through, which keep the stateful components it composes. */
+  private _instances = new ElementRoots(() => this._scheduleRender(true));
   /** The page's own invalidator, ONE for its life: what a measure in a shipped face holds on to, weakly,
    *  to rebuild the page should the face be taken back (#1056). A function made per pass is a new one
    *  every render, so nothing could hold it without holding every render. */
@@ -277,55 +368,31 @@ export abstract class StatelessComponent extends UiComponent {
   abstract build(context: RenderContext): Component | VisualNodeValue;
 
   render(): HtmlNode {
-    const context: RenderContext = {
-      getService: <T>(key: import('./types').ServiceKey<T>) =>
-        this.serviceProvider.getService<T>(key),
-      serviceProvider: this.serviceProvider,
-      route: getCurrentRoute(),
-      inFlow: getInFlow(),
-      theme: getPhotonTheme(),
-      // The SAME density and scale the lowering hands every component it expands. Without these two
-      // a page and its own subtree render at different sizes: the page's context defaulted to
-      // comfortable while everything the lowering expanded took the ambient (compact on a pointer
-      // device), so a code editor drew 19dp lines and placed its caret on a 17dp grid — a caret
-      // that drifts a line and a half down a screenful of code, for no reason anyone can see.
-      density: getPhotonDensity(),
-      typeScale: getPhotonTypeScale(),
-      measureText: measurePhotonText,
-      monoAdvance: photonMonoAdvance,
-    };
-    // AROUND THE WHOLE RENDER, because what `build()` returns is rendered through this same method:
-    // outside the walk that child would restart the count and claim `#0` for itself, which for a
-    // component that builds another of its own type gave every level of a recursive tree the ROOT's
-    // data.
-    const root = walkRoots.get(this) ?? this;
-    return runComponentWalk(root, !this._mounted, () => {
-      // Reconciler pass (W6): a stateless page IS re-renderable — build is pure and the instance
-      // store retains nested shared stateful across passes — so those children invalidate by
-      // re-rendering this page, exactly like a stateful host. (The old "no invalidator" fence made
-      // every stateful child of a stateless page render-once: the site's mega menu opened its state
-      // and nothing on screen ever changed.)
-      enterPass(this._instances, this._invalidate);
-      try {
-        const component = reconcileBuildRoot(this.build(context)) as Component;
-        return component.render();
-      } catch (error) {
-        // A PAGE has no parent to contain it. Its own throw used to leave the root unwritten, which
-        // is the white screen the boundary exists to end.
-        return renderComponentFailure(root.constructor.name, error);
-      } finally {
-        exitPass();
-      }
-    });
+    // A stateless page IS re-renderable: build is pure and its element trees keep the nested stateful
+    // components across renders, so a nested `setState` renders this page again, exactly like a
+    // stateful host. (The old "no invalidator" fence made every stateful child of a stateless page
+    // render-once: the site's mega menu opened its state and nothing on screen ever changed.)
+    const context = pageContext(this.serviceProvider);
+    return renderPage(walkRoots.get(this) ?? this, this._mounted, this._instances, this._invalidate, () =>
+      this.build(context),
+    );
   }
 
-  _scheduleRender(): void {
+  /**
+   * Asks for a render. `onlyMarked` says the page's owners asked, because a nested component marked
+   * its position: that render lowers the page's last tree again. Anything else (the page's own
+   * invalidator, a theme, a culture) builds the page.
+   */
+  _scheduleRender(onlyMarked = false): void {
+    if (!onlyMarked) this._instances.requestPageBuild();
     if (this._renderScheduled) return;
     this._renderScheduled = true;
 
     scheduleRenderFlush(() => {
       this._renderScheduled = false;
-      if (this._mounted) this._renderManager.update(this.render());
+      if (!this._mounted) return;
+      this._instances.beginScheduledRender();
+      this._renderManager.update(this.render());
     });
   }
 
@@ -371,10 +438,10 @@ export abstract class StatelessComponent extends UiComponent {
   }
 
   /**
-   * A stateless page has no lifecycle of its own. It does own a STORE, and that changed what this
-   * method owes: since the reconciler pass (W6) a stateless page retains the nested stateful
-   * components it built, so what it holds on navigation away is a set of components that each have
-   * an `onMount` that ran and an `onUnmount` that is owed.
+   * A stateless page has no lifecycle of its own. It does own ELEMENT TREES, and that changed what
+   * this method owes: a stateless page keeps the nested stateful components it built, so what it
+   * holds on navigation away is a set of components that each have an `onMount` that ran and an
+   * `onUnmount` that is owed.
    *
    * Left unsaid, the page went and its components stayed: a section subscribed to a device kept
    * its subscription, and every `setState` from that dead component drew it back into the page the
@@ -437,21 +504,13 @@ export abstract class StatefulComponent extends UiComponent {
   private _renderManager: RenderManager = new RenderManager();
   private _mounted = false;
   private _renderScheduled = false;
-  private _instances = new ComponentInstanceStore();
+  /** The element trees this component builds through as a PAGE, which keep the stateful components
+   *  it composes. A component nested in another page builds in that page's trees instead. */
+  private _instances = new ElementRoots(() => this._scheduleRender(true));
   /** The page's own invalidator, ONE for its life: what a measure in a shipped face holds on to, weakly,
    *  to rebuild the page should the face be taken back (#1056). A function made per pass is a new one
    *  every render, so nothing could hold it without holding every render. */
   private readonly _invalidate = (): void => this._scheduleRender();
-
-  /** Duck-type marker the instance store keys on (avoids an import cycle with shared/). */
-  readonly _sharedStateful = true;
-
-  /**
-   * Set by the instance store when this instance is retained NESTED inside a host page (W6 slice 2):
-   * setState then re-renders the HOST (which reconciles back onto this same retained instance)
-   * instead of this component's own — never mounted — render manager.
-   */
-  _invalidationHook: (() => void) | null = null;
 
   protected get serviceProvider(): ServiceProvider {
     return getRootServiceProvider();
@@ -465,8 +524,7 @@ export abstract class StatefulComponent extends UiComponent {
   /**
    * The position the element engine mounted this instance at (the C# `StatefulComponent.MountedAt`):
    * the first one, while a second position that holds the same instance waits in `_alsoMountedAt`.
-   * Null while no engine holds it, which is every instance the browser builds today (E3b moves the
-   * browser onto the engine).
+   * Null while no live owner holds it: a page root, or a component laid out once.
    */
   mountedAt: ComponentElement | null = null;
 
@@ -498,13 +556,21 @@ export abstract class StatefulComponent extends UiComponent {
     return true;
   }
 
-  /** The C# `SetState(mutate)` contract: run the mutation, mark the positions that hold this
-   * instance for the engine's next build, then schedule a rebuild. */
+  /**
+   * The C# `SetState(mutate)` contract: run the mutation, then ask for this instance to build again.
+   * Held by an element tree, it marks the positions that hold it, and their owner asks its page for a
+   * render that builds those positions and no other. A page root, which no position holds, renders
+   * itself.
+   */
   protected setState(fn: () => void): void {
     fn();
-    this.mountedAt?.markNeedsBuild();
-    for (const at of this._alsoMountedAt ?? []) at.markNeedsBuild();
-    this._scheduleRender();
+    const at = this.mountedAt;
+    if (at === null) {
+      this._scheduleRender();
+      return;
+    }
+    at.markNeedsBuild();
+    for (const also of this._alsoMountedAt ?? []) also.markNeedsBuild();
   }
 
   /**
@@ -530,7 +596,7 @@ export abstract class StatefulComponent extends UiComponent {
     this.onDependenciesChanged();
   }
 
-  /** Called by the HOST — the instance store, or `mount`/`hydrate` for a page root. Idempotent. */
+  /** Called by the HOST — the element engine's owner, or `mount`/`hydrate` for a page root. Idempotent. */
   notifyMounted(): void {
     if (this._lifecycleMounted) return;
     this._lifecycleMounted = true;
@@ -540,15 +606,9 @@ export abstract class StatefulComponent extends UiComponent {
   /**
    * The pair — also idempotent, and a no-op for an instance that never entered the tree.
    *
-   * Everything this component RETAINED leaves with it. On Photon one store belongs to the host, so
-   * a pass that drops a subtree unmounts every instance in it whatever its depth; on the web each
-   * component keeps its own store, and without this line the teardown reached only the direct
-   * children. A component two levels down never heard that it left: whatever it subscribed to in
-   * `onMount` went on running, and its `setState` drew it back into the page the visitor had
-   * navigated to. One timer per visit, kept alive by the subscription that outlived its component.
-   *
-   * The component's own `onUnmount` runs FIRST, which is the order a single store produces too:
-   * parents are resolved before their children in a pass, so they leave in that order as well.
+   * What this component built leaves with its position: the engine takes a position out children
+   * first and tells each component below, whatever its depth, that it left, before this one hears it
+   * (Flutter's order: a component lets go of what it holds before the one that built it does).
    */
   notifyUnmounted(): void {
     if (!this._lifecycleMounted) return;
@@ -561,37 +621,10 @@ export abstract class StatefulComponent extends UiComponent {
   private _lifecycleMounted = false;
 
   render(): HtmlNode {
-    const context: RenderContext = {
-      getService: <T>(key: import('./types').ServiceKey<T>) =>
-        this.serviceProvider.getService<T>(key),
-      serviceProvider: this.serviceProvider,
-      route: getCurrentRoute(),
-      inFlow: getInFlow(),
-      theme: getPhotonTheme(),
-      // The SAME density and scale the lowering hands every component it expands. Without these two
-      // a page and its own subtree render at different sizes: the page's context defaulted to
-      // comfortable while everything the lowering expanded took the ambient (compact on a pointer
-      // device), so a code editor drew 19dp lines and placed its caret on a 17dp grid — a caret
-      // that drifts a line and a half down a screenful of code, for no reason anyone can see.
-      density: getPhotonDensity(),
-      typeScale: getPhotonTypeScale(),
-      measureText: measurePhotonText,
-      monoAdvance: photonMonoAdvance,
-    };
-    // AROUND THE WHOLE RENDER, for the reason the stateless root states.
-    return runComponentWalk(this, !this._mounted, () => {
-      // Reconciler pass (W6 slice 2): as a page root this component persists by itself; its store
-      // retains the nested shared stateful its build creates. When hosted inside another page's
-      // render this JOINS the outer pass instead (the host page owns retention).
-      enterPass(this._instances, this._invalidate);
-      try {
-        return (reconcileBuildRoot(this.build(context)) as Component).render();
-      } catch (error) {
-        return renderComponentFailure(this.constructor.name, error);
-      } finally {
-        exitPass();
-      }
-    });
+    // As a page root this component keeps its own element trees; rendered inside another page's
+    // render (a Core tree composing it), it JOINS that page's pass and builds into its trees.
+    const context = pageContext(this.serviceProvider);
+    return renderPage(this, this._mounted, this._instances, this._invalidate, () => this.build(context));
   }
 
   mount(container: HTMLElement): void {
@@ -631,26 +664,26 @@ export abstract class StatefulComponent extends UiComponent {
   disposeQuietly(): void {
     this._mounted = false;
     // Navigating away is this page leaving the tree — whatever onMount subscribed to unsubscribes
-    // here, and its nested components leave with the store that held them.
+    // here, and its nested components leave with the element trees that held them.
     this.notifyUnmounted();
     this._instances.unmountAll();
   }
 
-  _scheduleRender(): void {
-    // Retained-nested path: bubble the invalidation to the host page; the host's re-render
-    // reconciles this position back onto this same instance (state intact, config re-adopted).
-    if (this._invalidationHook) {
-      this._invalidationHook();
-      return;
-    }
+  /**
+   * Asks for a render. `onlyMarked` says the page's owners asked, because a nested component marked
+   * its position: that render lowers the page's last tree again. Anything else (the page's own
+   * `setState`, a theme, a culture) builds the page.
+   */
+  _scheduleRender(onlyMarked = false): void {
+    if (!onlyMarked) this._instances.requestPageBuild();
     if (this._renderScheduled) return;
     this._renderScheduled = true;
     // Frame-or-timer (see scheduleRenderFlush): a hidden tab must still repaint on setState.
     scheduleRenderFlush(() => {
       this._renderScheduled = false;
-      if (this._mounted) {
-        this._renderManager.update(this.render());
-      }
+      if (!this._mounted) return;
+      this._instances.beginScheduledRender();
+      this._renderManager.update(this.render());
     });
   }
 
