@@ -18,6 +18,6 @@
 
 ## 4. Proof and documentation
 
-- [ ] 4.1 The SSR fixtures and the hydration contract pass unchanged
-- [ ] 4.2 The suites, through the lock for Compiler and Conformance, and the e2e suite in a real browser before and after
-- [ ] 4.3 The wiki's examples in five languages and the Upgrading page; `docs/ELEMENT-TREE-PLAN.md` 3.5's rows; one ledger entry citing #1395
+- [x] 4.1 The SSR fixtures and the hydration contract pass unchanged
+- [x] 4.2 The suites, through the lock for Compiler and Conformance, and the e2e suite in a real browser before and after
+- [x] 4.3 The wiki's examples in five languages and the Upgrading page; `docs/ELEMENT-TREE-PLAN.md` 3.5's rows; one ledger entry citing #1395
