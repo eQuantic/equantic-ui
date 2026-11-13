@@ -14,6 +14,8 @@
  * the same server response.
  */
 
+import { Boxed } from './box';
+import { text as enumText } from './enums';
 import { double, single } from './real-text';
 import { exception } from './exceptions';
 import {
@@ -143,7 +145,9 @@ export class FormatNumber {
 export function asNumber(
   value: number | null | undefined,
   kind: NumberKind,
-): FormatNumber | null | undefined {
+): FormatNumber | Boxed | null | undefined {
+  // A boxed float carries its own kind, which the formatter reads from the box.
+  if ((value as unknown) instanceof Boxed) return value as unknown as Boxed;
   return value == null ? value : new FormatNumber(value, kind);
 }
 
@@ -166,6 +170,12 @@ export function format(
 ): string {
   if (value instanceof FormatNumber) {
     kind = value.kind;
+    value = value.value;
+  }
+  // A boxed enum member writes its name, or the format its enum takes; a boxed float its own digits (#768).
+  if (value instanceof Boxed) {
+    if (value.shape !== undefined) return pad(enumText(value.value, value.shape, format), alignment);
+    kind = 'single';
     value = value.value;
   }
   // Null writes nothing, and nothing is still aligned: `$"[{n,4}]"` is "[    ]" for a null n.
@@ -1488,6 +1498,7 @@ export function stringFormatInvariant(template: string, ...args: unknown[]): str
 function general(value: unknown, kind: NumberKind = 'unknown'): string {
   if (value === null || value === undefined) return '';
   if (value instanceof FormatNumber) return shortest(value.value, value.kind);
+  if (value instanceof Boxed) return value.shape !== undefined ? enumText(value.value, value.shape) : shortest(value.value as number, 'single');
   if (typeof value === 'number') return shortest(value, kind);
   if (typeof value === 'bigint' || value instanceof Decimal) return plainDigits(value);
   if (typeof value === 'boolean') return value ? 'True' : 'False';

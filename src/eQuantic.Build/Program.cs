@@ -60,16 +60,19 @@ return hadErrors ? 1 : 0;
 
 // SERVED (#1276): the server of an app in development starts eqc once, with the response file the
 // build wrote, and writes `compile` on its standard input for each save, where it used to start a new
-// MSBuild and a new eqc for every one. Each compile loads the project's compilation again, since the
-// save changed its sources, and answers in ONE line of standard output, `@eqc ` and a JSON object
+// MSBuild and a new eqc for every one. Each compile starts from the compilation the one before it
+// loaded, with the files the save changed replaced in it, and loads it cold when anything else a load
+// reads changed (#1278). It answers in ONE line of standard output, `@eqc ` and a JSON object
 // that says whether it compiled and holds its error lines, whatever it wrote before that line. The
 // end of the input is the server gone, and the process goes with it: nothing outlives its owner.
 static int Serve(AppBuildOptions options)
 {
     Console.WriteLine($"👀 eQuantic.UI: serving compiles of {options.SourceDirectories.Count} directories, one for each `compile` read");
-    // Loaded once before the first request and thrown away, so the first save does not pay for
-    // loading the compiler itself: what each compile loads again is the project.
-    new AppBuild(options, TextWriter.Null, TextWriter.Null).Load();
+    // Loaded before the first request, so the first save pays for loading neither the compiler nor the
+    // project: each compile starts from the compilation the one before it loaded, and replaces only the
+    // files a save changed (#1278).
+    AppBuild? last = new AppBuild(options, TextWriter.Null, TextWriter.Null);
+    if (!last.Load()) last = null;
     string? request;
     while ((request = Console.In.ReadLine()) is not null)
     {
@@ -77,8 +80,9 @@ static int Serve(AppBuildOptions options)
         var started = DateTimeOffset.UtcNow;
         var errors = new StringWriter();
         var build = new AppBuild(options, Console.Out, errors);
-        var compiled = build.Load();
+        var compiled = (last is not null && build.LoadFrom(last)) || build.Load();
         var loaded = DateTimeOffset.UtcNow;
+        if (compiled) last = build;
         if (compiled) compiled = !build.CompileAndBundle();
         WriteTimings(started, loaded, build);
         var said = errors.ToString();
