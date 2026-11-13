@@ -43,9 +43,10 @@ public class VariantMatrixTests(ITestOutputHelper output)
         public override string ToString() => Property is null ? $"parameter {Parameter}" : Property.Name;
     }
 
-    /// <summary>One control, how it is built, and the axes it accepts; or why it cannot be built.</summary>
+    /// <summary>One control, how it is built, and the axes it accepts, with why an axis it seems to have
+    /// is not one; or why it cannot be built.</summary>
     private sealed record Control(Type Type, ConstructorInfo? Constructor, object?[] Arguments,
-        Func<VisualNode>? Override, Axis? Variant, Axis? Size, string? Unbuilt)
+        Func<VisualNode>? Override, Axis? Variant, Axis? Size, string? VariantWhy, string? SizeWhy, string? Unbuilt)
     {
         public string Name => Type.FullName!.StartsWith("eQuantic.UI.", StringComparison.Ordinal)
             ? Type.FullName["eQuantic.UI.".Length..]
@@ -74,8 +75,10 @@ public class VariantMatrixTests(ITestOutputHelper output)
                 found.Add($"{control.Name}: not built ({control.Unbuilt})");
                 continue;
             }
-            if (control.Variant is null) found.Add($"{control.Name}: no Variant");
-            if (control.Size is null) found.Add($"{control.Name}: no SizeVariant");
+            // An axis the control seems to have but cannot be drawn along says why, and the control is still
+            // drawn at the values it was built with.
+            if (control.Variant is null) found.Add(Without(control.Name, nameof(Variant), control.VariantWhy));
+            if (control.Size is null) found.Add(Without(control.Name, nameof(SizeVariant), control.SizeWhy));
 
             var pin = new StringBuilder();
             var failures = new List<(Cell Cell, string Failure)>();
@@ -104,6 +107,9 @@ public class VariantMatrixTests(ITestOutputHelper output)
             "a cell that cannot exist is written by hand into variant-matrix.baseline.txt, with its reason, "
             + $"and the baseline may only shrink ({UpdateVariable}=1 drops what no longer occurs)");
     }
+
+    private static string Without(string name, string axis, string? why) =>
+        why is null ? $"{name}: no {axis}" : $"{name}: no {axis} ({why})";
 
     /// <summary>
     /// The cells a control cannot draw, each said once at the widest scope it holds: a failure every cell
@@ -142,14 +148,17 @@ public class VariantMatrixTests(ITestOutputHelper output)
             ComponentCatalog.Overrides.TryGetValue(type, out var build);
             if (!built && build is null)
             {
-                yield return new(type, null, [], null, null, null, why);
+                yield return new(type, null, [], null, null, null, null, null, why);
                 continue;
             }
 
             var parameters = built ? constructor!.GetParameters() : [];
-            var variant = AxisOf<Variant>(type, parameters, build is not null, out var variantWhy);
-            var size = AxisOf<SizeVariant>(type, parameters, build is not null, out var sizeWhy);
-            yield return new(type, constructor, arguments, build, variant, size, variantWhy ?? sizeWhy);
+            // An override that shows the control inside a page (a dialog over the page it opens on) returns
+            // the page, where a property of the control cannot be set.
+            var wrapped = build is not null && !type.IsInstanceOfType(InTheCulture(build));
+            var variant = AxisOf<Variant>(type, parameters, build is not null, wrapped, out var variantWhy);
+            var size = AxisOf<SizeVariant>(type, parameters, build is not null, wrapped, out var sizeWhy);
+            yield return new(type, constructor, arguments, build, variant, size, variantWhy, sizeWhy, null);
         }
     }
 
@@ -157,9 +166,9 @@ public class VariantMatrixTests(ITestOutputHelper output)
     /// How a control takes <typeparamref name="T"/>: the one constructor parameter of that type, or else
     /// the one public property of that type with a public setter. Two of either is a control whose axis is
     /// not one thing, named rather than guessed. A control built by an override takes it by its property,
-    /// since the override chooses its own arguments.
+    /// since the override chooses its own arguments, unless the override wraps it in a page.
     /// </summary>
-    private static Axis? AxisOf<T>(Type type, ParameterInfo[] parameters, bool overridden, out string? why)
+    private static Axis? AxisOf<T>(Type type, ParameterInfo[] parameters, bool overridden, bool wrapped, out string? why)
     {
         why = null;
         var byParameter = parameters.Where(parameter => Unwrap(parameter.ParameterType) == typeof(T)).ToList();
@@ -175,6 +184,11 @@ public class VariantMatrixTests(ITestOutputHelper output)
         if (byProperty.Count > 1)
         {
             why = $"{byProperty.Count} settable {typeof(T).Name} properties";
+            return null;
+        }
+        if (byProperty.Count == 1 && wrapped)
+        {
+            why = $"its override shows it inside a page, where its {typeof(T).Name} cannot be set";
             return null;
         }
         if (byProperty.Count == 1) return new(-1, byProperty[0]);

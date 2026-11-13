@@ -71,10 +71,12 @@ public class ComponentTesterTests
         using var tester = new ComponentTester();
         tester.Pump(Button("Pay"));
 
-        // The atomic classes, a hash each; a class a theme's stylesheet defines (eq-type-label) is not one.
+        // The atomic classes: every class the markup names that the theme's own stylesheet does not define
+        // (eq-type-label, eq-pressable), which the server writes apart from the atomic one.
+        var themeSheet = eQuantic.UI.Web.ThemeStylesheet.Generate(PhotonTheme.Instance);
         var classes = System.Text.RegularExpressions.Regex.Matches(tester.Html, "class=\"([^\"]*)\"")
             .SelectMany(match => match.Groups[1].Value.Split(' '))
-            .Where(name => System.Text.RegularExpressions.Regex.IsMatch(name, "^eq-[0-9a-z]+$"))
+            .Where(name => name.Length > 0 && !themeSheet.Contains("." + name, StringComparison.Ordinal))
             .Distinct().ToList();
         classes.Should().NotBeEmpty();
         classes.Should().OnlyContain(name => tester.Css.Contains("." + name, StringComparison.Ordinal),
