@@ -182,7 +182,7 @@ public class InlinedConstantStrategy : IConversionStrategy
         // reference. Metadata is not empty here — the IL of a field initializer and of a property
         // getter are both in it — but this strategy converts a syntax node, and
         // DeclaringSyntaxReferences has nothing to give for a type that arrived compiled.
-        var declaration = member.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
+        var declaration = member.ReadDeclarations().FirstOrDefault()?.GetSyntax();
         var value = declaration switch
         {
             VariableDeclaratorSyntax { Initializer.Value: { } initialized } => initialized,

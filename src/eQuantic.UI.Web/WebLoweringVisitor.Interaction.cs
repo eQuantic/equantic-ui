@@ -267,6 +267,32 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
+    /// A LABELLED GROUP (TS twin: lowerGroup): one <c>role="group"</c> host a reader names by its
+    /// <c>aria-label</c> and then walks into — inside a listbox, the APG's grouped options. No label,
+    /// no <c>aria-label</c>, the <see cref="LowerLiveRegion"/> rule. The host takes the child's fill
+    /// and cap with it, as every role-bearing wrapper's does: the box a reader outlines is the box it
+    /// names.
+    /// </summary>
+    private HtmlElement LowerGroup(Group group)
+    {
+        var fills = Fills(group.Child);
+        var cap = CapsAt(group.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : "fit-content",
+                MaxWidth = Size(cap),
+                Height = fills.Height ? "100%" : null,
+            },
+            RawAttributes = new Dictionary<string, string> { ["role"] = "group" },
+        };
+        if (group.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
+        if (Lower(group.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
     /// What the host ANNOUNCES itself as — DERIVED from the role and the value together rather than
     /// copied from <see cref="Adjustable.Role"/>, because the pairing is ARIA's rule and this is the
     /// one place in the SDK that speaks ARIA.
@@ -427,6 +453,7 @@ internal sealed partial class WebLoweringVisitor
         Adjustable adjustable => CapsAt(adjustable.Child),
         Progress progress => CapsAt(progress.Child),
         LiveRegion live => CapsAt(live.Child),
+        Group group => CapsAt(group.Child),
         Flexible flexible => CapsAt(flexible.Child),
         LoopMotion motion => CapsAt(motion.Child),
         Link link => CapsAt(link.Child),

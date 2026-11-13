@@ -413,6 +413,8 @@ export interface TextNode extends VisualNodeValue {
   content: string;
   /** Where this text sits in the document's OUTLINE — 1..6, 0 for text that is not a heading. */
   headingLevel?: number;
+  /** Drawn and never read: a reader passes over it (C# `Text.ExcludeFromSemantics`). */
+  excludeFromSemantics?: boolean;
   /** `TypeRole` as a camelCase member string ('display' | 'heading' | … | 'bodyL' | 'caption'). */
   role: string;
   color?: ColorTokenValue | null;
@@ -841,6 +843,14 @@ export interface LiveRegionNode extends VisualNodeValue {
 }
 
 export type { LiveRegionUrgencyValue } from './enums.generated';
+
+/** A labelled group (C# twin: Group) — a reader names it by its label and then walks into it. */
+export interface GroupNode extends VisualNodeValue {
+  nodeKind: 'group';
+  child: VisualNodeValue;
+  /** The group's name; none is announced when absent or empty. */
+  label?: string;
+}
 
 /**
  * Wire shape of the C# `RangeValue`: the trio ARIA calls now/min/max. One object rather than three

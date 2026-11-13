@@ -101,6 +101,7 @@ import { Avatar } from './components/Avatar';
 import { Button } from './components/Button';
 import { ProgressBar } from './components/ProgressBar';
 import { Select } from './components/Select';
+import { OptionGroup } from './components/OptionGroup';
 import { Switch } from './components/Switch';
 import { Calendar } from './components/Calendar';
 import { Markdown } from './components/Markdown';
@@ -503,6 +504,10 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       ]),
     ),
     'select-opens': { node: new Select(['alpha', 'beta', 'gamma'], 0), presses: [0] },
+    'select-grouped-opens': {
+      node: new Select(['Lisboa'], 0, null, null, [new OptionGroup('A seguir', ['Braga', 'Faro'])]),
+      presses: [0],
+    },
     'accordion-switches': {
       node: new Accordion(
         [

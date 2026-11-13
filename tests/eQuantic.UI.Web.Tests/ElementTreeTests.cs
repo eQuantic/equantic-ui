@@ -124,6 +124,56 @@ public class ElementTreeTests
         b.Count.Should().Be(0);
     }
 
+    /// <summary>
+    /// A key the old list does not hold is a member of its own: it takes no other key's position, so
+    /// the key that stayed keeps its state wherever it moved, and the new one starts from nothing, as
+    /// Flutter's <c>updateChildren</c> inflates a keyed child with no old match (#1505).
+    /// </summary>
+    [Fact]
+    public void AKeyInsertedAtTheFront_TakesNoOtherKeysPosition()
+    {
+        var owner = ComponentBoundary.Owner();
+        var page = new Page(["a", "b"]) { Keyed = true };
+        var root = Frame(owner, page);
+        var a = CounterAt(root, 0);
+        var b = CounterAt(root, 1);
+        a.Press();
+        b.Press();
+        b.Press();
+
+        page.Show("c", "a");
+        Frame(owner, page, rebuildAll: false);
+
+        var c = CounterAt(root, 0);
+        c.Should().NotBeSameAs(a).And.NotBeSameAs(b, "a key the old list did not hold takes no other key's member");
+        c.Count.Should().Be(0);
+        c.Label.Should().Be("c");
+        CounterAt(root, 1).Should().BeSameAs(a, "the key that stayed kept its member as it moved");
+        a.Count.Should().Be(1);
+    }
+
+    /// <summary>Every key replaced, as a table window that moves a page replaces its cells': every
+    /// member is new, and none carries the state of the one that stood at its index.</summary>
+    [Fact]
+    public void EveryKeyReplaced_EveryMemberStartsAgain()
+    {
+        var owner = ComponentBoundary.Owner();
+        var page = new Page(["a", "b"]) { Keyed = true };
+        var root = Frame(owner, page);
+        var a = CounterAt(root, 0);
+        var b = CounterAt(root, 1);
+        a.Press();
+        b.Press();
+
+        page.Show("c", "d");
+        Frame(owner, page, rebuildAll: false);
+
+        CounterAt(root, 0).Should().NotBeSameAs(a).And.NotBeSameAs(b);
+        CounterAt(root, 1).Should().NotBeSameAs(a).And.NotBeSameAs(b);
+        CounterAt(root, 0).Count.Should().Be(0);
+        CounterAt(root, 1).Count.Should().Be(0);
+    }
+
     /// <summary>The unkeyed rule, which is the index's: the state stays where it was, whatever moved.</summary>
     [Fact]
     public void UnkeyedRowsSwap_TheStateStaysAtItsIndex()
