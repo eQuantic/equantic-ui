@@ -328,6 +328,12 @@ export function createApp<T extends import('./core/component').StatefulComponent
  */
 export interface EqConfig {
   page?: string | null;
+  /**
+   * The module of the app's layout (C# `UseLayout<TLayout>()`), when it declared one: every write-once
+   * page is shown inside it, and it stays mounted across client navigations (`core/layout-host.ts`).
+   * Absent for an app without one.
+   */
+  layout?: string | null;
   version?: string;
   /** The SDK's version, in Development alone: what the error overlay's report names (#1108). */
   sdkVersion?: string | null;

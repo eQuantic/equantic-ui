@@ -691,8 +691,8 @@ suite compares, and CI reports the page modules' on every pull request):
    its sources are named inside the project, and a publish never takes one (#352). `boot.ts` imports
    the page's module dynamically on navigation, so per-route lazy loading falls out of the module
    graph. eqc runs bun with `--splitting`, so what two or more modules share is a chunk named after
-   one of them with a hash: `NotFoundScreen-<hash>.js` in the dashboard sample is its console
-   shell, not a second type of that name. There is no `pages/` folder
+   one of them with a hash: `ChartsScreen-<hash>.js` in the dashboard sample holds the clock its
+   two time screens share, not a second type of that name. There is no `pages/` folder
 3. **strings/`<culture>`.json** — the culture catalogs, when the app has `.resx`
 4. **icons/** — the app icon sizes, the tab's `favicon.ico` (answered at `/favicon.ico` too) and the web manifest, when an `AppIcon` is declared
 

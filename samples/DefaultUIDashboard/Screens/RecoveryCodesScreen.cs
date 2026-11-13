@@ -21,7 +21,6 @@ public sealed class RecoveryCodesScreen : StatefulComponent
     private readonly IFileSaver? _saver;
     private readonly ITextClipboard? _clipboard;
     private string _said = "";
-    private bool _navOpen;
 
     public RecoveryCodesScreen(IFileSaver? saver = null, ITextClipboard? clipboard = null)
     {
@@ -48,29 +47,27 @@ public sealed class RecoveryCodesScreen : StatefulComponent
         var theme = context.Theme;
         var codes = Column(gap: Space.S2, children: [.. Codes.Select(code => (VisualNode)Text(code, TypeRole.BodyL, theme.TextPrimary))]);
 
-        return ConsoleShell.Frame(theme, "/recovery-codes", "Recovery codes",
-            Box(new BoxStyle
-            {
-                Width = SizeValue.Fill,
-                Height = SizeValue.Fill,
-                Background = theme.Background,
-                Padding = EdgeInsets.All(Space.S6),
-            },
-            Column(gap: Space.S4, children: [
-                Text("Your recovery codes", TypeRole.Heading, theme.TextPrimary),
-                Text("Each code signs you in once if you lose your device. They are shown only now.",
-                    TypeRole.BodyM, theme.TextSecondary),
-                codes,
-                Row(gap: Space.S3, children: [
-                    new Button("Download .txt", onPressed: () => _ = Download()) { Disabled = _saver is not { IsAvailable: true } },
-                    new Button("Copy all", Variant.Outline, onPressed: () => SetState(() =>
-                    {
-                        _clipboard?.Write(AllCodes());
-                        _said = "Copied.";
-                    })) { Disabled = _clipboard is null },
-                ]),
-                Text(_said, TypeRole.BodyM, theme.TextSecondary),
-            ])),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
+        return Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Background = theme.Background,
+            Padding = EdgeInsets.All(Space.S6),
+        },
+        Column(gap: Space.S4, children: [
+            Text("Your recovery codes", TypeRole.Heading, theme.TextPrimary),
+            Text("Each code signs you in once if you lose your device. They are shown only now.",
+                TypeRole.BodyM, theme.TextSecondary),
+            codes,
+            Row(gap: Space.S3, children: [
+                new Button("Download .txt", onPressed: () => _ = Download()) { Disabled = _saver is not { IsAvailable: true } },
+                new Button("Copy all", Variant.Outline, onPressed: () => SetState(() =>
+                {
+                    _clipboard?.Write(AllCodes());
+                    _said = "Copied.";
+                })) { Disabled = _clipboard is null },
+            ]),
+            Text(_said, TypeRole.BodyM, theme.TextSecondary),
+        ]));
     }
 }

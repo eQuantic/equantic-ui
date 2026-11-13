@@ -21,19 +21,33 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public sealed class RouteValues
 {
-    /// <summary>The route nothing matched — every lookup answers null.</summary>
-    public static readonly RouteValues Empty = new(null, null);
+    /// <summary>The route nothing matched — every lookup answers null, and its path is the root.</summary>
+    public static readonly RouteValues Empty = new(null, null, "/");
 
     private readonly IReadOnlyDictionary<string, string>? _params;
     private readonly IReadOnlyDictionary<string, string>? _query;
 
+    /// <param name="parameters">The matched route parameters, by name.</param>
+    /// <param name="query">The query string's values, by name.</param>
+    /// <param name="path">The path the route was matched on (<see cref="Path"/>).</param>
     public RouteValues(
         IReadOnlyDictionary<string, string>? parameters,
-        IReadOnlyDictionary<string, string>? query)
+        IReadOnlyDictionary<string, string>? query,
+        string path)
     {
+        ArgumentNullException.ThrowIfNull(path);
         _params = parameters;
         _query = query;
+        Path = path;
     }
+
+    /// <summary>
+    /// The path the route was matched on, as the app writes it: <c>/docs/getting-started</c>, with no
+    /// query, no fragment and no language segment (a page served at <c>/pt-BR/docs</c> is at
+    /// <c>/docs</c>, the path its in-app links name). What <see cref="Navigator.Location"/> answers, so
+    /// a layout can mark the destination of the page it shows.
+    /// </summary>
+    public string Path { get; }
 
     /// <summary>A matched route parameter — the <c>slug</c> of <c>/docs/{slug}</c>.</summary>
     public string? Param(string name) =>

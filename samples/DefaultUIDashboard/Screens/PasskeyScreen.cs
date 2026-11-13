@@ -35,7 +35,6 @@ public sealed class PasskeyScreen : StatefulComponent
     private DateTime _issued;
     private string _said = "";
     private bool _busy;
-    private bool _navOpen;
 
     public PasskeyScreen(IPasskeys? passkeys = null, IClock? clock = null)
     {
@@ -166,11 +165,7 @@ public sealed class PasskeyScreen : StatefulComponent
         _ => "The browser refused the ceremony.",
     };
 
-    public override VisualNode Build(ComponentContext context) =>
-        ConsoleShell.Frame(context.Theme, "/identity", "Passkeys", Content(context),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
-
-    private VisualNode Content(ComponentContext context)
+    public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var available = _passkeys is { IsAvailable: true };

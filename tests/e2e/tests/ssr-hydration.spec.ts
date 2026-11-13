@@ -175,8 +175,8 @@ test.describe('Write-once SSR + hydration', () => {
   });
 
   test('Link navigation is SPA (no full reload)', async ({ page }) => {
-    // The console shell's sidebar renders real <a href> Links; the showroom '/' is the one screen
-    // that carries it. Every destination it advertises is a screen this sample declares — a link
+    // The console's layout draws a sidebar of real <a href> Links around every screen, the showroom
+    // '/' among them. Every destination it advertises is a screen this sample declares — a link
     // to a route with no page is a legitimate SERVER round-trip (the 404 needs a real status), so
     // pointing this test at one would assert the opposite of what it is named for.
     await page.goto('/');

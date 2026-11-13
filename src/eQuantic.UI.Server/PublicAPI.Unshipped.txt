@@ -5,3 +5,4 @@ eQuantic.UI.Server.ServerEventsOptions.MaxConnectionLifetime.set -> void
 eQuantic.UI.Server.ServerEventsOptions.MaxConnections.get -> int
 eQuantic.UI.Server.ServerEventsOptions.MaxConnections.set -> void
 const eQuantic.UI.Server.ConsentCookie.SecureName = "__Host-eq-consent" -> string!
+eQuantic.UI.Server.UIOptions.UseLayout<TLayout>() -> eQuantic.UI.Server.UIOptions!

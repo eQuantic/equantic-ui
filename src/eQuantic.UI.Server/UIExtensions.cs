@@ -1157,6 +1157,10 @@ public static class UIExtensions
             // The page's MODULE, which the build names after the type and the types it is nested in
             // (TwinName.OfType, #584), so a page declared inside a class loads the module eqc wrote.
             Page: page is null ? null : TwinName.OfType(page),
+            // The layout's module, named as a page's is, on every document of an app that declared
+            // one: the browser shows each write-once page inside it, the one it hydrates and every one
+            // it navigates to, and a page written as DOM without it, as the server renders them.
+            Layout: options.Layout is { } layout ? TwinName.OfType(layout) : null,
             Version: BuildId,
             Ssr: ssrEnabled,
             // Whether this server streams rebuilds, so the page listens exactly when there is a stream.

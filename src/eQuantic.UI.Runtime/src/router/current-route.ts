@@ -1,5 +1,6 @@
 import type { RouteMatch } from './route-table';
 import { RouteValues } from '../shared/route-values';
+import { splitCulturePath } from '../utils/culture-routes';
 
 /**
  * The ROUTER's route: what it last matched, seeded by boot from the initial URL and set before a page
@@ -21,7 +22,7 @@ export function getCurrentRoute(): RouteValues {
   return current;
 }
 
-/** Sets the current route from a router match + URL (params from the pattern, query from the URL). */
+/** Sets the current route from a router match + URL (params from the pattern, query and path from the URL). */
 export function setCurrentRouteFrom(match: RouteMatch, url: URL): void {
-  current = RouteValues.from(match.params, url.searchParams);
+  current = RouteValues.from(match.params, url.searchParams, splitCulturePath(url.pathname)[1]);
 }

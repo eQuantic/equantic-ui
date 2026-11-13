@@ -27,12 +27,14 @@ public class OneAmbientAtTheWebSeamTests
     {
         var handed = new RouteValues(
             new Dictionary<string, string> { ["slug"] = "getting-started" },
-            new Dictionary<string, string> { ["page"] = "2" });
+            new Dictionary<string, string> { ["page"] = "2" },
+            "/docs/getting-started");
 
         new RenderContext(handed).Route.Should().BeSameAs(handed,
             "the web seam reads the route it was handed rather than a copy of it");
         new RenderContext(handed).Route.Param("slug").Should().Be("getting-started");
         new RenderContext(handed).Route.Query("page").Should().Be("2");
+        new RenderContext(handed).Route.Path.Should().Be("/docs/getting-started");
     }
 
     /// <summary>The half an identity check forgets: with nothing handed, a page still gets a route it

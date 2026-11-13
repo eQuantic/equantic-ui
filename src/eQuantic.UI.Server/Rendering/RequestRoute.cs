@@ -12,13 +12,14 @@ namespace eQuantic.UI.Server.Rendering;
 /// </summary>
 internal static class RequestRoute
 {
-    /// <summary>Registers the request's route, read from the request ASP.NET is serving.</summary>
+    /// <summary>Registers the request's route, read from the request ASP.NET is serving, its path
+    /// without the culture prefix when the app routes by culture.</summary>
     internal static IServiceCollection AddRequestRoute(this IServiceCollection services)
     {
         services.AddHttpContextAccessor();
         services.TryAddScoped(provider =>
             provider.GetRequiredService<IHttpContextAccessor>().HttpContext is { } request
-                ? ServerRenderingService.BuildRouteValues(request)
+                ? ServerRenderingService.BuildRouteValues(request, provider.GetService<UIOptions>()?.CultureRoutes)
                 : Primitives.RouteValues.Empty);
         return services;
     }
