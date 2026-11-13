@@ -1,4 +1,7 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Primitives.AdaptiveNode.Resolve(eQuantic.UI.Primitives.WindowSizeClass sizeClass) -> eQuantic.UI.Primitives.VisualNode!
+*REMOVED*eQuantic.UI.Primitives.BuildOwner.Build(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.ComponentContext! context, eQuantic.UI.Primitives.WindowSizeClass sizeClass, bool rebuildAll) -> eQuantic.UI.Primitives.Element!
+eQuantic.UI.Primitives.BuildOwner.Build(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.ComponentContext! context, float windowWidth, bool rebuildAll) -> eQuantic.UI.Primitives.Element!
 *REMOVED*eQuantic.UI.Primitives.ColorToken.Resolve(eQuantic.UI.Primitives.ThemeMode mode) -> eQuantic.UI.Primitives.Color
 eQuantic.UI.Primitives.ColorToken.MoreLight.get -> eQuantic.UI.Primitives.Color
 eQuantic.UI.Primitives.ColorToken.MoreDark.get -> eQuantic.UI.Primitives.Color

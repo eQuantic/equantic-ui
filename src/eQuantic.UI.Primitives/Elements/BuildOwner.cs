@@ -137,15 +137,17 @@ public sealed class BuildOwner
 
     /// <summary>
     /// Whether an adaptive node's position holds EVERY arm the node declares, compact at slot 0, medium
-    /// at 1 and expanded at 2, rather than the one arm the frame's size class resolves. A realizer that
+    /// at 1 and expanded at 2, rather than the one arm the frame's width resolves. A realizer that
     /// draws every arm behind a gate of its own, as the web does with its media rules, needs each arm
     /// it draws to be a position, or the arm on screen at some width would be one no element holds and
     /// its stateful components would start again on every build. Photon draws one arm, and resolves it.
     /// </summary>
     public bool HoldsEveryArm { get; }
 
-    /// <summary>The window size class this frame resolves an adaptive node's arm against.</summary>
-    internal WindowSizeClass SizeClass { get; private set; }
+    /// <summary>How wide the window is this frame, in dp: what an adaptive node's arm is resolved against, at
+    /// the node's own thresholds (<see cref="AdaptiveNode.ResolveWidth"/>), as the web's gates and Photon's
+    /// layout resolve it (#1465).</summary>
+    internal float WindowWidth { get; private set; }
 
     /// <summary>The context this frame was handed: the theme, density, type scale and measurer every
     /// position's own context reads (<see cref="ComponentElement.Context"/>).</summary>
@@ -169,11 +171,11 @@ public sealed class BuildOwner
     /// positions build, shallowest first, and a frame nothing marked builds nothing.
     /// </summary>
     /// <returns>The root's position, for the layout to measure against.</returns>
-    public Element Build(VisualNode root, ComponentContext context, WindowSizeClass sizeClass, bool rebuildAll)
+    public Element Build(VisualNode root, ComponentContext context, float windowWidth, bool rebuildAll)
     {
         var previous = _context;
         _context = context;
-        SizeClass = sizeClass;
+        WindowWidth = windowWidth;
         Frame++;
         RebuildingAll = rebuildAll;
         EnterBuild();

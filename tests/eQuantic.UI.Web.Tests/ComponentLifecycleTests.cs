@@ -37,7 +37,7 @@ public class ComponentLifecycleTests
     /// <summary>One frame of a live tree: the build, then the frame's end, where the hooks run.</summary>
     private static void Frame(BuildOwner owner, VisualNode root)
     {
-        owner.Build(root, Context, WindowSizeClass.Compact, rebuildAll: true);
+        owner.Build(root, Context, 400f, rebuildAll: true);
         owner.EndFrame();
     }
 
@@ -63,7 +63,7 @@ public class ComponentLifecycleTests
         var owner = ComponentBoundary.Owner();
         var component = new Tracked();
 
-        owner.Build(Holding(component), Context, WindowSizeClass.Compact, rebuildAll: true);
+        owner.Build(Holding(component), Context, 400f, rebuildAll: true);
 
         component.Mounts.Should().Be(0, "the tree it belongs to is not finished yet");
     }

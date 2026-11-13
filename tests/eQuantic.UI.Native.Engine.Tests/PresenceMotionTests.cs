@@ -32,11 +32,11 @@ public class PresenceMotionTests
         {
             var page = new Column(gap: 0);
             page.Add(new Presence(new Box(new BoxStyle { Width = 10, Height = 10 })));
-            return _owner.Build(page, Context, WindowSizeClass.Compact, rebuildAll: true).ChildAt(0)!;
+            return _owner.Build(page, Context, 400f, rebuildAll: true).ChildAt(0)!;
         }
 
         /// <summary>Builds a frame without it: its position leaves the tree.</summary>
-        public void Gone() => _owner.Build(new Column(gap: 0), Context, WindowSizeClass.Compact, rebuildAll: true);
+        public void Gone() => _owner.Build(new Column(gap: 0), Context, 400f, rebuildAll: true);
     }
 
     [Fact]

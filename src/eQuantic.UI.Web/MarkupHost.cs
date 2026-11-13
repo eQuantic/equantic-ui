@@ -125,10 +125,10 @@ public sealed class MarkupHost
     /// <param name="root">The tree's root node.</param>
     /// <param name="rebuildAll">Whether every component builds, not only the marked ones.</param>
     /// <returns>The root's position.</returns>
-    /// <remarks>No window size class is asked for: the owner holds every arm of an adaptive node, as the
-    /// web draws them all behind their gates, so no arm is resolved. The one handed on is never read.</remarks>
+    /// <remarks>No window width is asked for: the owner holds every arm of an adaptive node, as the web
+    /// draws them all behind their gates, so no arm is resolved. The width handed on is never read.</remarks>
     public Element Build(VisualNode root, bool rebuildAll = false) =>
-        Owner.Build(root, _context, WindowSizeClass.Expanded, rebuildAll);
+        Owner.Build(root, _context, float.PositiveInfinity, rebuildAll);
 
     /// <summary>
     /// Lowers the frame <see cref="Build"/> just built. With a render's <paramref name="channels"/>, every

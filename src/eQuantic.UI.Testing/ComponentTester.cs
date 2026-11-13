@@ -48,8 +48,8 @@ public sealed class ComponentTester : IDisposable
     /// <c>AddUI</c> serves without <c>UseTheme</c>.</param>
     /// <param name="culture">The culture a component formats with and reads its own labels in; the
     /// invariant one when null, so a test reads the same on every machine.</param>
-    /// <param name="width">The viewport's width in dp, which decides which arm of an adaptive node
-    /// shows; a desktop's by default.</param>
+    /// <param name="width">The viewport's width in dp, which decides which arm of an adaptive node shows, at
+    /// the node's own thresholds; a desktop's by default.</param>
     /// <param name="density">The density the target asks for.</param>
     /// <param name="services">What a page's prefetch resolves its dependencies from.</param>
     public ComponentTester(IAppTheme? theme = null, CultureInfo? culture = null, float width = 1280f,

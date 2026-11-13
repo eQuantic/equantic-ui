@@ -10,7 +10,7 @@
 
 import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
-import type { TableCellRoleValue, TableRoleValue, WindowSizeClassValue } from './enums.generated';
+import type { TableCellRoleValue, TableRoleValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import { iconPaths } from './icons.generated';
 import type {
@@ -463,7 +463,7 @@ interface AdaptiveConfig {
   key?: string | null;
 }
 
-/** Mirror of the C# `AdaptiveNode` (spec S6): up to three size-class variants. */
+/** Mirror of the C# `AdaptiveNode` (spec S6): up to three variants, switched at the node's own thresholds. */
 export class AdaptiveNode extends VisualNode {
   readonly nodeKind = 'adaptive';
   mediumFrom = 600;
@@ -479,13 +479,11 @@ export class AdaptiveNode extends VisualNode {
     if (config) Object.assign(this, config);
   }
 
-  /**
-   * The arm a window of this size class shows (the C# `Resolve`): the widest declared arm at or below
-   * it, the compact one at the least. The element engine builds this arm alone, as Photon lays it out.
-   */
-  resolve(sizeClass: WindowSizeClassValue): VisualNode {
-    if (sizeClass === 'expanded') return this.expanded ?? this.medium ?? this.compact;
-    if (sizeClass === 'medium') return this.medium ?? this.compact;
+  /** The variant for a window `widthDp` wide, at this node's thresholds: the one every target holds and
+   * draws, the gates showing it at the same widths (C# twin: `ResolveWidth`, #1465). */
+  resolveWidth(widthDp: number): VisualNode {
+    if (this.expanded && widthDp >= this.expandedFrom) return this.expanded;
+    if (this.medium && widthDp >= this.mediumFrom) return this.medium;
     return this.compact;
   }
 }

@@ -102,12 +102,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/SafeArea.cs`
 - **Handoff**: Consumption: a SafeArea zeroes the inset for its subtree — nested SafeAreas never double-pad.
-- **Code**: Nothing consumes the inset. Native: MeasureSafeArea reads ctx.SafeAreaInsets and passes the SAME ctx to the child, and LayoutContext.SafeAreaInsets is init-only (LayoutEngine.cs:128 SafeAreaInsets) so it cannot be zeroed for the subtree. Web/TS: every SafeArea emits its own env(safe-area-inset-*) padding, and env() is not scoped, so a nested pair pads twice. A screen SafeArea wrapping a bar that also uses one gets 2x the notch.
+- **Code**: Nothing consumes the inset. Native: MeasureSafeArea reads ctx.SafeAreaInsets and passes the SAME ctx to the child, and LayoutContext.SafeAreaInsets is init-only (LayoutEngine.cs:122 SafeAreaInsets) so it cannot be zeroed for the subtree. Web/TS: every SafeArea emits its own env(safe-area-inset-*) padding, and env() is not scoped, so a nested pair pads twice. A screen SafeArea wrapping a bar that also uses one gets 2x the notch.
 - **Evidence**:
 
   ```
   MeasureVisitor.Containers.cs:18  var host = ctx.SafeAreaInsets;
-  LayoutEngine.cs:128  public EdgeInsets SafeAreaInsets { get; init; }
+  LayoutEngine.cs:125  public EdgeInsets SafeAreaInsets { get; init; }
   WebLoweringVisitor.Containers.cs:510  var env = $"env(safe-area-inset-{name}, 0px)";
   lowering.ts:5063  const env = `env(safe-area-inset-${name}, 0px)`;
   ```
@@ -2925,13 +2925,13 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Image.cs`
 - **Handoff**: "Layout: Needs bounded size from parent or explicit dims; intrinsic aspect ratio used when one axis is known." (the block's own signature omits dims: `new Image(source, fit: ImageFit.Cover, radius: Radius.Md, alt: "…")`)
-- **Code**: Width AND height are required positional parameters — a parent-bounded image, or one axis plus intrinsic aspect ratio, cannot be expressed. The layout engine hard-codes the slot from those two numbers. The class doc names and justifies the deviation: "an EXPLICITLY sized slot (layout can never infer extent from an undecoded source)" (Image.cs:15-16), echoed at LayoutEngine.cs:255.
+- **Code**: Width AND height are required positional parameters — a parent-bounded image, or one axis plus intrinsic aspect ratio, cannot be expressed. The layout engine hard-codes the slot from those two numbers. The class doc names and justifies the deviation: "an EXPLICITLY sized slot (layout can never infer extent from an undecoded source)" (Image.cs:15-16), echoed at LayoutEngine.cs:249.
 - **Evidence**:
 
   ```
   public Image(string source, float width, float height, ImageFit fit = ImageFit.Cover, string alt = "")   // Image.cs:25
   // Images are an explicitly sized slot - layout can't infer extent from undecoded sources (A11).
-  Image image => ctx.Node(image, new Rect(0, 0, image.Width, image.Height)),                                // LayoutEngine.cs:255-256
+  Image image => ctx.Node(image, new Rect(0, 0, image.Width, image.Height)),                                // LayoutEngine.cs:249-250
   ```
 
 ### A11 Image · documented-deviation · **CONFIRMED**

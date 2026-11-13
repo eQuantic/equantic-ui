@@ -46,12 +46,12 @@ describe('the frame of a built tree', () => {
   it('answers the instance a position keeps, not the fresh one the latest build holds', () => {
     const tree = owner();
     const first = new Counter('a');
-    tree.build(column(first as unknown as VisualNode), context, 'compact', true);
+    tree.build(column(first as unknown as VisualNode), context, 400, true);
     tree.endFrame();
     first.count = 3;
 
     const fresh = new Counter('b');
-    const root = tree.build(column(fresh as unknown as VisualNode), context, 'compact', true);
+    const root = tree.build(column(fresh as unknown as VisualNode), context, 400, true);
     const position = new ElementFrame(root).at(fresh);
 
     expect(position.kept).toBe(first);
@@ -60,7 +60,7 @@ describe('the frame of a built tree', () => {
 
   it('looks up the element a node stands at, with the id the engine gave it at mount', () => {
     const text = new Text('plain', 'bodyM');
-    const root = owner().build(column(text), context, 'compact', true);
+    const root = owner().build(column(text), context, 400, true);
     const frame = new ElementFrame(root);
 
     expect(frame.elementAt(text)).toBe(root.childAt(0));
@@ -69,7 +69,7 @@ describe('the frame of a built tree', () => {
   });
 
   it('refuses a component it did not build', () => {
-    const frame = new ElementFrame(owner().build(column(), context, 'compact', true));
+    const frame = new ElementFrame(owner().build(column(), context, 400, true));
 
     expect(() => frame.at(new Counter('stray'))).toThrow(/did not build/);
   });
@@ -78,7 +78,7 @@ describe('the frame of a built tree', () => {
     const compact = new Text('compact', 'bodyM');
     const expanded = new Text('expanded', 'bodyM');
     const adaptive = new AdaptiveNode(compact, null, expanded);
-    const frame = new ElementFrame(owner().build(adaptive, context, 'compact', true));
+    const frame = new ElementFrame(owner().build(adaptive, context, 400, true));
 
     // The web draws every arm behind its own gate, so each one the node declares is a position.
     expect(frame.elementAt(compact)?.slot).toBe(0);
@@ -89,7 +89,7 @@ describe('the frame of a built tree', () => {
     const layer = new Counter('layer');
     const overlay = new Overlay(layer as unknown as VisualNode);
     const tree = owner();
-    const frame = new ElementFrame(tree.build(overlay, context, 'compact', true));
+    const frame = new ElementFrame(tree.build(overlay, context, 400, true));
 
     // The build phase leaves a layer to the realizer: nothing in it has a position yet.
     expect(frame.elementAt(layer)).toBeNull();

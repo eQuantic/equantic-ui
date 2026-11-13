@@ -141,7 +141,7 @@ public class ElementEngineTwinTests
         // C# components read through theirs (InFlow, above all).
         const context = new ComponentContext(null);
         const owner = new BuildOwner((component, context, depth) => component.build(context));
-        const frame = (root, rebuildAll = true) => { const element = owner.build(root, context, 'compact', rebuildAll); owner.endFrame(); return element; };
+        const frame = (root, rebuildAll = true) => { const element = owner.build(root, context, 400, rebuildAll); owner.endFrame(); return element; };
         const componentAt = (element) => element.component;
         class Counter extends StatefulComponent {
           constructor(label, builds = null) { super(); this.label = label; this.count = 0; this.builds = 0; this._log = builds; }
@@ -203,7 +203,7 @@ public class ElementEngineTwinTests
 
     private static Element Frame(BuildOwner owner, VisualNode root, bool rebuildAll = true)
     {
-        var element = owner.Build(root, Context, WindowSizeClass.Compact, rebuildAll);
+        var element = owner.Build(root, Context, 400f, rebuildAll);
         owner.EndFrame();
         return element;
     }
@@ -423,9 +423,9 @@ public class ElementEngineTwinTests
             const measure = (n) => {
               const first = keyed('a', n, false), second = keyed(keysKept ? 'a' : 'b', n, keysKept);
               const owner = new BuildOwner((component, context, depth) => component.build(context));
-              let t = performance.now(); owner.build(first, context, 'compact', true); owner.endFrame();
+              let t = performance.now(); owner.build(first, context, 400, true); owner.endFrame();
               const build = performance.now() - t;
-              t = performance.now(); owner.build(second, context, 'compact', true); owner.endFrame();
+              t = performance.now(); owner.build(second, context, 400, true); owner.endFrame();
               return [build, performance.now() - t]; };
             measure(200);
             let best = [Infinity, Infinity];
@@ -626,7 +626,7 @@ public class ElementEngineTwinTests
         var root = Placed(new ReadsDensity(seen, "reader"), new ReadsInFlow(seen, "other"));
         var owner = ComponentBoundary.Owner();
         Frame(owner, root);
-        owner.Build(root, new ComponentContext(PhotonTheme.Instance, density: Density.Compact), WindowSizeClass.Compact, rebuildAll: false);
+        owner.Build(root, new ComponentContext(PhotonTheme.Instance, density: Density.Compact), 400f, rebuildAll: false);
         owner.EndFrame();
 
         // Spelled out as well as compared, so the two sides cannot agree on building nothing.
@@ -634,7 +634,7 @@ public class ElementEngineTwinTests
         OnTheWeb("""
             const root = placed(new ReadsDensity(trace, 'reader'), new ReadsInFlow(trace, 'other'));
             frame(root);
-            owner.build(root, new ComponentContext(null, 1, 'compact'), 'compact', false);
+            owner.build(root, new ComponentContext(null, 1, 'compact'), 400, false);
             owner.endFrame();
             """).Should().Equal(seen);
     }

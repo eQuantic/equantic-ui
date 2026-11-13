@@ -20,7 +20,7 @@ export function specOwner(): BuildOwner {
 /** Builds `root` through `owner` (a new structural one when none is handed) and answers its frame. */
 export function frameOf(root: VisualNode, owner: BuildOwner = specOwner()): ElementFrame {
   return new ElementFrame(
-    owner.build(root, photonComponentContext() as unknown as RenderContext, 'compact', true),
+    owner.build(root, photonComponentContext() as unknown as RenderContext, 400, true),
   );
 }
 

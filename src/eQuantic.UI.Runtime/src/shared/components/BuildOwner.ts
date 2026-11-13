@@ -1,4 +1,4 @@
-import { $eq, BuildContext, ComponentElement, Element, ElementIds, NodeElement, StatefulComponent, UiComponent, VisualNode, WindowSizeClassValue } from "../runtime-exports";
+import { $eq, BuildContext, ComponentElement, Element, ElementIds, NodeElement, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
 
 export class BuildOwner {
     constructor(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode = undefined!, holdsEveryArm: boolean = undefined!, ids: ElementIds | null = undefined!, live: boolean = undefined!) {
@@ -41,7 +41,7 @@ export class BuildOwner {
         this.marks = 0;
         this.live = false;
         this.holdsEveryArm = false;
-        this.sizeClass = 'compact';
+        this.windowWidth = 0;
         this.navigationRequested = null;
         this.keyScratch = $eq.collections.dictionary();
         $eq.guard.throwIfNull(buildComponent, 'buildComponent');
@@ -76,7 +76,7 @@ export class BuildOwner {
     marks!: number;
     live!: boolean;
     holdsEveryArm!: boolean;
-    sizeClass!: WindowSizeClassValue;
+    windowWidth!: number;
     navigationRequested!: ((string: string) => void) | null;
     keyScratch!: any;
 
@@ -132,10 +132,10 @@ export class BuildOwner {
         return this.marks++;
     }
 
-    build(root: VisualNode, context: BuildContext, sizeClass: WindowSizeClassValue, rebuildAll: boolean) {
+    build(root: VisualNode, context: BuildContext, windowWidth: number, rebuildAll: boolean) {
         let previous = this._context;
         this._context = context;
-        this.sizeClass = sizeClass;
+        this.windowWidth = windowWidth;
         this.frame++;
         this.rebuildingAll = rebuildAll;
         this.enterBuild();

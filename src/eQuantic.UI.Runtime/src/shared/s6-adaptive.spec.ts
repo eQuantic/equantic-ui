@@ -381,3 +381,27 @@ describe('S6 which arm is on screen', () => {
     expect(adaptiveGateOpen('eq-something-else')).toBe(true);
   });
 });
+
+/**
+ * The twin of the C# `AdaptiveNode.ResolveWidth` (#1465): the arm for a window's width at the node's own
+ * thresholds, which the element tree the browser builds holds, missing arms falling back toward compact.
+ */
+describe('resolveWidth', () => {
+  const compact = new Box();
+  const medium = new Box();
+  const expanded = new Box();
+
+  it('picks the arm at the node own thresholds', () => {
+    const node = new AdaptiveNode(compact, medium, expanded, { mediumFrom: 720, expandedFrom: 1100 });
+    expect(node.resolveWidth(650)).toBe(compact);
+    expect(node.resolveWidth(720)).toBe(medium);
+    expect(node.resolveWidth(1099)).toBe(medium);
+    expect(node.resolveWidth(1100)).toBe(expanded);
+  });
+
+  it('falls back toward compact where an arm is missing', () => {
+    const node = new AdaptiveNode(compact, null, expanded, { expandedFrom: 1024 });
+    expect(node.resolveWidth(900)).toBe(compact);
+    expect(node.resolveWidth(1024)).toBe(expanded);
+  });
+});

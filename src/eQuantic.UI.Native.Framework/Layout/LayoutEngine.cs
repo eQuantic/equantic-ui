@@ -110,15 +110,12 @@ public sealed class LayoutContext
 
     public IAppTheme Theme { get; }
 
-    /// <summary>Spec S6: the window size class layout resolves AdaptiveNodes against — derived from
-    /// the viewport width by the realizer (re-layout happens naturally when a resize crosses a
-    /// threshold, because the class is a pure function of the width).</summary>
-    public WindowSizeClass SizeClass { get; init; }
-
     /// <summary>The arm an AdaptiveNode is on this window — the one place layout decides it, read
     /// by the node's own measurement and by the containers that lay the arm out in the node's place
-    /// (<see cref="LaidOutChildren"/>).</summary>
-    internal VisualNode ArmOf(AdaptiveNode adaptive) => adaptive.Resolve(SizeClass);
+    /// (<see cref="LaidOutChildren"/>): the one the node answers for the window's width at its own
+    /// thresholds, as the web's gates show it and the element tree holds it (#735, #1465). A size class
+    /// read the spec's thresholds, and a node that switches elsewhere showed another arm here.</summary>
+    internal VisualNode ArmOf(AdaptiveNode adaptive) => adaptive.ResolveWidth(WindowWidth);
 
     /// <summary>
     /// The margins the SYSTEM owns — notch, status bar, home indicator. The HOST reports them; a
@@ -387,7 +384,7 @@ public static class LayoutEngine
     public static LayoutNode Layout(VisualNode root, float viewportWidth, float viewportHeight, LayoutContext context,
         StretchKind rootStretch = StretchKind.None, Element? rootElement = null)
     {
-        rootElement ??= ComponentBoundary.StructuralOwner().Build(root, context.Components, context.SizeClass, rebuildAll: true);
+        rootElement ??= ComponentBoundary.StructuralOwner().Build(root, context.Components, viewportWidth, rebuildAll: true);
         context.WindowWidth = viewportWidth;
         context.WindowHeight = viewportHeight;
         // ONE visitor per CONTEXT, which is what lets the context be a field on it and only the

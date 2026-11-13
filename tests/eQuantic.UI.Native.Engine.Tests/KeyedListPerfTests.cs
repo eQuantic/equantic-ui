@@ -74,7 +74,7 @@ public class KeyedListPerfTests
 
     private static void Frame(BuildOwner owner, VisualNode root)
     {
-        owner.Build(root, Context, WindowSizeClass.Compact, rebuildAll: true);
+        owner.Build(root, Context, 400f, rebuildAll: true);
         owner.EndFrame();
     }
 }
