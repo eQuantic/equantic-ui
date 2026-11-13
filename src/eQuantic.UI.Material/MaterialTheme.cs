@@ -328,6 +328,100 @@ public sealed class MaterialTheme : IAppTheme
         return new DensityLadder { Comfortable = rungs, Compact = rungs };
     }
 
+    // The slots below hold only what M3 specifies for the component; a member it says nothing about
+    // stays null, so the component keeps its own value (a toast's status dot, a skeleton, the cookie
+    // consent). A colour M3 names by one of the theme's roles stays null too, as in PhotonTheme: the
+    // component reads the role (inverse-on-surface is TextInverse), so a theme that changes the role
+    // reaches it. The ones that carry a colour of their own read this theme's scheme, so they are
+    // built per instance.
+
+    /// <summary>
+    /// M3's dialog (Dialogs, Specs): extra-large corners, elevation level 3, 24dp of padding, 16dp from
+    /// the headline to the supporting text, 24dp to the actions and 8dp between them, at most 560dp
+    /// wide. Its bottom sheet: extra-large top corners, level 1, a 32 by 4dp drag handle in
+    /// on-surface-variant at 40%. Its modal navigation drawer: level 1, 12dp of padding.
+    /// </summary>
+    public ModalTheme? Modal => field ??= new()
+    {
+        DialogMaxWidth = 560,
+        DialogShape = ShapeScale.ExtraLarge,
+        DialogElevation = 3,
+        DialogPadding = EdgeInsets.All(24),
+        DialogGap = 24,
+        DialogTextGap = 16,
+        DialogActionGap = 8,
+        BottomSheetShape = ShapeScale.ExtraLarge,
+        BottomSheetElevation = 1,
+        HandleWidth = 32,
+        HandleHeight = 4,
+        HandleColor = _colors.TextSecondary.WithOpacity(0.4f),
+        DrawerElevation = 1,
+        DrawerPadding = EdgeInsets.All(12),
+    };
+
+    /// <summary>
+    /// M3's menu (Menus, Specs): extra-small corners, no outline, elevation level 2, at least 112dp wide,
+    /// 8dp above and below its items, 12dp at an item's sides and between its icon and its words. Its
+    /// plain tooltip: extra-small corners, 8 by 4dp of padding, inverse-on-surface on inverse-surface.
+    /// </summary>
+    public MenuTheme? Menu => field ??= new()
+    {
+        PanelShape = ShapeScale.ExtraSmall,
+        PanelBorderWidth = 0,
+        PanelElevation = 2,
+        MenuMinWidth = 112,
+        MenuPadding = EdgeInsets.Symmetric(0, 8),
+        ItemPadding = EdgeInsets.Symmetric(12, 0),
+        ItemGap = 12,
+        TooltipShape = ShapeScale.ExtraSmall,
+        TooltipPadding = EdgeInsets.Symmetric(8, 4),
+        TooltipFill = _colors.InverseSurface,
+    };
+
+    /// <summary>
+    /// M3's snackbar (Snackbar, Specs): inverse-on-surface on inverse-surface, extra-small corners,
+    /// elevation level 3, 16dp at the sides and 14dp above and below. Its banner's words: title small
+    /// over body medium (14 over 20, medium then regular), 16dp after the leading icon.
+    /// </summary>
+    public NoticeTheme? Notice => field ??= new()
+    {
+        ToastFill = _colors.InverseSurface,
+        ToastShape = ShapeScale.ExtraSmall,
+        ToastElevation = 3,
+        ToastPadding = EdgeInsets.Symmetric(16, 14),
+        BannerIconGap = 16,
+        BannerTextSize = 14,
+        BannerLineHeight = 20,
+        BannerTitleWeight = FontWeight.Medium,
+        BannerBodyWeight = FontWeight.Regular,
+    };
+
+    /// <summary>
+    /// M3's linear progress indicator (Progress indicators, Specs): a 4dp track, 8dp when it is the
+    /// thick one, fully rounded, on secondary-container.
+    /// </summary>
+    public ProgressTheme? Progress => field ??= new()
+    {
+        BarHeight = 4,
+        ProminentBarHeight = 8,
+        BarShape = ShapeScale.Full,
+        TrackColor = _colors.Secondary.Subtle,
+    };
+
+    /// <summary>
+    /// M3's cards (Cards, Specs): medium corners, a 1dp outline-variant border on the outlined one,
+    /// elevation level 1 and no border on the elevated one in either mode, surface-container-highest
+    /// under the filled one.
+    /// </summary>
+    public CardTheme? Card => field ??= new()
+    {
+        Shape = ShapeScale.Medium,
+        BorderWidth = 1,
+        Elevation = 1,
+        FilledColor = _colors.SurfaceContainerHighest,
+        ElevatedBorderColor = new ColorToken(Color.Transparent),
+    };
+
     // ---- Elevation — the M3 levels (seed-independent) --------------------------------------------
     public ShadowSpec Elevation(int level) => level switch
     {

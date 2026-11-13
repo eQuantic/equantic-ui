@@ -291,7 +291,8 @@ describe('theme bridge: the navigation and collection slots and the document\'s 
     const navigation = new NavigationTheme({ tabHeight: 60 });
     const markdown = new MarkdownTheme({ blockGap: 30 });
     const replaced = AppThemeExtensions.with(
-      theme, null, null, null, null, null, null, null, navigation, null, null, null, null, markdown,
+      theme, null, null, null, null, null, null, null, null, null, null, null, null, navigation, null, null, null,
+      null, markdown,
     );
     expect(replaced.navigation?.tabHeight).toBe(60);
     expect(replaced.navigation?.barHeight).toBe(theme.navigation?.barHeight);

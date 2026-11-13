@@ -28,6 +28,8 @@ public sealed class BottomSheet : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The surfaces' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
+        var slot = theme.Modal;
 
         var scrim = new Pressable(new Box(new BoxStyle
         {
@@ -40,26 +42,26 @@ public sealed class BottomSheet : StatelessComponent
             Label = SdkStrings.Dismiss,
         };
 
-        var body = new Column(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Stretch };
+        var body = new Column(gap: slot?.BottomSheetGap ?? Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Stretch };
         // The drag handle — an affordance today, the drag-to-dismiss grip when gestures land.
         var handleRow = new Row(gap: 0) { Width = SizeValue.Fill, Main = MainAlign.Center };
         handleRow.Add(new Box(new BoxStyle
         {
-            Width = 32, Height = 4,
-            Background = theme.BorderStrong,
+            Width = slot?.HandleWidth ?? 32, Height = slot?.HandleHeight ?? 4,
+            Background = slot?.HandleColor ?? theme.BorderStrong,
             CornerRadius = new CornerRadii(Radius.Full),
         }));
         body.Add(handleRow);
         body.Add(Content);
 
-        var radius = theme.Shape(ShapeScale.ExtraLarge);
+        var radius = theme.Shape(slot?.BottomSheetShape ?? ShapeScale.ExtraLarge);
         var sheet = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Background = theme.Surface,
             CornerRadius = new CornerRadii(radius, radius, 0, 0),
-            Elevation = 4,
-            Padding = new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
+            Elevation = slot?.BottomSheetElevation ?? 4,
+            Padding = slot?.BottomSheetPadding ?? new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
         }, body);
 
         // ASKED TO DRAW IN THE FLOW: the sheet is the sheet; the scrim, the viewport-tall anchor

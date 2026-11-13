@@ -148,6 +148,26 @@ public interface IAppTheme
     /// </summary>
     ButtonTheme? Button => null;
 
+    /// <summary>The slot of the Dialog, the BottomSheet and the Drawer (<see cref="ModalTheme"/>), NULL by default, which each reads as its own
+    /// defaults. Plural, since <see cref="Surface"/> is the colour they are filled with.</summary>
+    ModalTheme? Modal => null;
+
+    /// <summary>The slot of the Popover, the Menu and the Tooltip (<see cref="MenuTheme"/>), NULL by default, which each reads as its own
+    /// defaults.</summary>
+    MenuTheme? Menu => null;
+
+    /// <summary>The slot of the Toast, the Banner and the CookieConsent (<see cref="NoticeTheme"/>), NULL by default, which each reads as its own
+    /// defaults.</summary>
+    NoticeTheme? Notice => null;
+
+    /// <summary>The slot of the ProgressBar, the PullToRefresh and the Skeleton (<see cref="ProgressTheme"/>), NULL by default, which each reads as its own
+    /// defaults.</summary>
+    ProgressTheme? Progress => null;
+
+    /// <summary>The slot of the Card (<see cref="CardTheme"/>), NULL by default, which each reads as its own
+    /// defaults.</summary>
+    CardTheme? Card => null;
+
     /// <summary>
     /// The navigation family's slot (<see cref="NavigationTheme"/>): Tabs, BottomNavigation, NavigationRail,
     /// AppBar, Breadcrumb, Pagination and PageIndicator, NULL by default, which each reads as its own

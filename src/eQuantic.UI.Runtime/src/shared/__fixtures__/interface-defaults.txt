@@ -1,6 +1,7 @@
 IAppTheme.badge
 IAppTheme.button
 IAppTheme.calendar
+IAppTheme.card
 IAppTheme.chip
 IAppTheme.code
 IAppTheme.controls
@@ -9,10 +10,14 @@ IAppTheme.iconButton
 IAppTheme.input
 IAppTheme.list
 IAppTheme.markdown
+IAppTheme.menu
+IAppTheme.modal
 IAppTheme.monoFamily
 IAppTheme.navigation
+IAppTheme.notice
 IAppTheme.onSelection
 IAppTheme.placeholder
+IAppTheme.progress
 IAppTheme.scrollbarThumb
 IAppTheme.scrollbarTrack
 IAppTheme.segmented

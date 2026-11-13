@@ -17,13 +17,18 @@ import type {
   BadgeTheme,
   ButtonTheme,
   CalendarTheme,
+  CardTheme,
   ChipTheme,
   ControlsTheme,
   IconButtonTheme,
   InputTheme,
   ListTheme,
   MarkdownTheme,
+  MenuTheme,
+  ModalTheme,
   NavigationTheme,
+  NoticeTheme,
+  ProgressTheme,
   SegmentedTheme,
   SelectionControlsTheme,
   TableTheme,
@@ -66,6 +71,16 @@ export const IAppTheme = {
   segmented: (_theme: AppTheme): SegmentedTheme | null => null,
   /** `ChipTheme? Chip => null;` — the chip's own defaults. */
   chip: (_theme: AppTheme): ChipTheme | null => null,
+  /** `ModalTheme? Modal => null;` — the Dialog's, the BottomSheet's and the Drawer's own defaults. */
+  modal: (_theme: AppTheme): ModalTheme | null => null,
+  /** `MenuTheme? Menu => null;` — the Popover's, the Menu's and the Tooltip's own defaults. */
+  menu: (_theme: AppTheme): MenuTheme | null => null,
+  /** `NoticeTheme? Notice => null;` — the Toast's, the Banner's and the consent card's own defaults. */
+  notice: (_theme: AppTheme): NoticeTheme | null => null,
+  /** `ProgressTheme? Progress => null;` — the ProgressBar's, PullToRefresh's and the Skeleton's own defaults. */
+  progress: (_theme: AppTheme): ProgressTheme | null => null,
+  /** `CardTheme? Card => null;` — the Card's own defaults. */
+  card: (_theme: AppTheme): CardTheme | null => null,
   /** `NavigationTheme? Navigation => null;` — each component's own defaults. */
   navigation: (_theme: AppTheme): NavigationTheme | null => null,
   /** `ListTheme? List => null;` — each component's own defaults. */
