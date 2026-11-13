@@ -193,8 +193,10 @@ def normalise(state, now):
     }
 
 
-_CACHE = {}
+_FILES = {}  # (reader, path) -> (stamp, value, poll that last read it)
+_TIMED = {}  # (compute, key) -> (moment, value)
 _LOCK = threading.Lock()
+_POLL = [0]
 
 
 def stamped(read, path):
@@ -206,25 +208,36 @@ def stamped(read, path):
         return read(path)
     stamp, key = (info.st_mtime_ns, info.st_size), (read.__name__, path)
     with _LOCK:
-        hit = _CACHE.get(key)
-    if hit is not None and hit[0] == stamp:
-        return hit[1]
+        hit = _FILES.get(key)
+        if hit is not None and hit[0] == stamp:
+            _FILES[key] = (stamp, hit[1], _POLL[0])
+            return hit[1]
     value = read(path)
     with _LOCK:
-        _CACHE[key] = (stamp, value)
+        _FILES[key] = (stamp, value, _POLL[0])
     return value
+
+
+def forget(seconds=600.0):
+    """Ends a poll (`board` starts one by moving `_POLL`): a file it did not read leaves the cache, and so does a value older than
+    `seconds`, so a board left running for days holds what one poll reads, not the history."""
+    with _LOCK:
+        for key in [k for k, v in _FILES.items() if v[2] != _POLL[0]]:
+            del _FILES[key]
+        for key in [k for k, v in _TIMED.items() if time.monotonic() - v[0] > seconds]:
+            del _TIMED[key]
 
 
 def recent(compute, root, seconds=5.0):
     """`compute(root)`, kept a few seconds: the worktrees and the remote rarely move between polls."""
     key = (compute.__name__, root)
     with _LOCK:
-        hit = _CACHE.get(key)
+        hit = _TIMED.get(key)
     if hit is not None and time.monotonic() - hit[0] < seconds:
         return hit[1]
     value = compute(root)
     with _LOCK:
-        _CACHE[key] = (time.monotonic(), value)
+        _TIMED[key] = (time.monotonic(), value)
     return value
 
 
@@ -299,6 +312,11 @@ def ps_start(pid):
         return None
 
 
+def ps_started(session):
+    """`ps_start` of a (pid, session start), the key `recent` keeps it under."""
+    return ps_start(session[0])
+
+
 def same_process(began, started_at):
     """A pid is reused, so it is the session's only when its process began within a minute of the
     session's `startedAt` (milliseconds); measured on Linux, the two are 2 s apart."""
@@ -320,7 +338,8 @@ def alive(pid, record):
         return False
     except PermissionError:
         pass
-    return same_process(ps_start(pid), record.get("startedAt"))
+    # one `ps` per session a minute, not per poll: a pid reused within that minute is seen at the next
+    return same_process(recent(ps_started, (pid, record.get("startedAt")), 60.0), record.get("startedAt"))
 
 
 def registry(config):
@@ -521,6 +540,8 @@ def origin(root):
 def board(root, config, now=None):
     """Everything `/api/pipelines` answers."""
     now = time.time() if now is None else now
+    with _LOCK:
+        _POLL[0] += 1
     index, sessions = agents(config), registry(config)
     shown = []
     for key, (tree, folder) in deliveries(root).items():
@@ -553,6 +574,7 @@ def board(root, config, now=None):
         shown.append(item)
     order = {"running": 0, "failed": 1, "shipping": 2, "done": 3, "broken": 4}
     shown.sort(key=lambda d: (order.get(d["status"], 5), -(moment(d.get("started")) or 0), d["key"]))
+    forget()
     return {"now": now, "repo": recent(origin, root), "registry": sessions is not None, "deliveries": shown}
 
 
@@ -783,6 +805,9 @@ def _fixture_and_cases(scratch, check):
            {"pid": child.pid, "sessionId": "dead", "procStart": "1"})
     live, dead = (os.path.join(config, "projects", "p", s, "subagents") for s in ("live", "dead"))
 
+    def agent_path(folder, agent_id):
+        return os.path.join(folder, f"agent-{agent_id}.jsonl")
+
     def agent(folder, agent_id, meta, records):
         _write(os.path.join(folder, f"agent-{agent_id}.meta.json"), meta)
         _jsonl(os.path.join(folder, f"agent-{agent_id}.jsonl"), records)
@@ -836,7 +861,10 @@ def _fixture_and_cases(scratch, check):
         began = ps_start(os.getpid())
         check("ps gives this process's start", began is not None and abs(began - now) < 600)
 
+    tail(wide)
     data = board(repo, config, now)
+    check("a poll forgets a file it did not read",
+          ("read_tail", wide) not in _FILES and ("read_tail", agent_path(live, B)) in _FILES)
     by = {d["key"]: d for d in data["deliveries"]}
     check("every worktree's deliveries are listed",
           sorted(by) == ["1-flat", "2-nested", "3-running", "4-failed", "5-broken", "6-odd", "7-notes"])

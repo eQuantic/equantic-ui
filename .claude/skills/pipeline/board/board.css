@@ -76,6 +76,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--utility-focus-r
 .layout { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
 @media (max-width: 960px) { .layout { grid-template-columns: minmax(0, 1fr); } }
 .detail { display: grid; gap: 20px; min-width: 0; }
+#detail-reports:empty { display: none; }
 
 .list { padding: 8px; display: grid; gap: 4px; }
 .list .empty { padding: 16px; color: var(--text-muted); }

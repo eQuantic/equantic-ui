@@ -129,6 +129,7 @@ function select(key) {
 // A poll rebuilds the list and the detail: the control that had the focus gets it back by its
 // `data-focus` name, so the page stays usable from the keyboard while it polls.
 function render() {
+  if (!view.data) return; // a tab clicked before the first answer: the answer renders it
   const active = document.activeElement;
   const focused = active && active.dataset ? active.dataset.focus : undefined;
   const deliveries = shown();
@@ -146,10 +147,14 @@ function render() {
 
 function renderKpis(deliveries) {
   const all = view.data.deliveries;
-  const agents = all.reduce((n, d) => n + ((d.agents && d.agents.length) || 0), 0);
+  const working = all.flatMap((d) => d.agents || []);
+  const live = working.filter((a) => a.live === true).length;
+  const unknown = working.length - live;
   const tiles = [
     ["Deliveries running", number(all.filter((d) => d.status === "running").length), `${all.length} on disk`],
-    ["Agents working now", number(agents), view.data.registry ? "live sessions only" : "liveness unknown: no session registry"],
+    view.data.registry
+      ? ["Agents working now", number(live), unknown ? `in live sessions; ${unknown} more of unknown liveness` : "in live sessions"]
+      : ["Agents working now", number(working.length), "liveness unknown: no session registry"],
     ["Tokens", number(deliveries.reduce((n, d) => n + (d.tokens || 0), 0)), view.tab === "running" ? "of the running deliveries" : "of every delivery"],
     ["Wall time", duration(deliveries.reduce((n, d) => n + (d.seconds || 0), 0)), "summed over the deliveries shown"],
   ];
