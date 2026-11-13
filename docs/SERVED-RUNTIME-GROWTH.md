@@ -115,15 +115,28 @@ surface uses. #1501 took the bundle 507 bytes over #1433's ceiling and recorded 
 ## Since the record of #1501
 
 #1501 recorded 341,447 bytes, and its merge (621f63310) measures exactly that. From that merge, the
-bundle was measured as above at every first-parent commit of `main` that touched a source of it, and
-#1458 over `main` at 1b41cdc80.
+bundle was measured as above at every first-parent commit of `main` that touched a source of it, up to
+#1500's record.
 
 | Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
 |---|---|---:|---:|---:|---:|---|---|
 | #1495 | 1b41cdc80 | 341,447 | 342,575 | +1,128 | +3,922 | the browser keeps a node's state on its position | yes |
-| #1458 | | 342,575 | 343,344 | +769 | +2,595 | a table takes what is left of its scroller, measured on both targets | yes |
-| **all** | | **341,447** | **343,344** | **+1,897** | **+6,517** | | |
+| #1515 | 72ec4a5d9 | 342,575 | 343,496 | +921 | +2,984 | an app's layout stays mounted across client navigations | yes |
+| #1500 | ac5a0975c | 343,496 | 346,041 | +2,545 | +9,518 | a dirty element in the browser lowers its own subtree | yes |
+| **all** | | **341,447** | **346,041** | **+4,594** | **+16,424** | | |
 
-#1458 stays inside #1501's ceiling, floor(341,447 × 1.01) = 344,861, 1,517 bytes under it, and records
-nothing. Its 769 bytes are the table's fit, the same 2,595 raw bytes it added over 1973005e6 above, which gzip packs a little
+#1500 took the bundle over #1501's ceiling, floor(341,447 × 1.01) = 344,861, and recorded the budget
+again.
+
+## Since the record of #1500
+
+#1500 recorded 345,013 bytes before it merged; its merge (ac5a0975c) measures 346,041, under that
+record's ceiling, floor(345,013 × 1.01) = 348,463. #1458 was measured over `main` at ac5a0975c.
+
+| Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
+|---|---|---:|---:|---:|---:|---|---|
+| #1458 | | 346,041 | 346,847 | +806 | +2,595 | a table takes what is left of its scroller, measured on both targets | yes |
+
+#1458 stays inside #1500's ceiling, 1,616 bytes under it, and records nothing. Its 806 bytes are the
+table's fit, the same 2,595 raw bytes it added over 1973005e6 above, which gzip packs a little
 differently beside different neighbours.

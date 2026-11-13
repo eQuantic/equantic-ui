@@ -1,0 +1,74 @@
+## Comfortable
+### web
+<button role="checkbox" aria-checked="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1iu691c eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-iuiqgs eq-kqfmnh eq-s01o67 eq-z2pkxm">
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1imlfss{cursor:pointer}
+.eq-1iu691c{gap:12px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-iuiqgs{height:22px}
+.eq-kngwsg{pointer-events:none}
+.eq-kqfmnh{border:2px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-p7nbpw{text-align:start}
+.eq-s01o67{width:22px}
+.eq-z2pkxm{border-radius:4px}
+### semantics
+Checkbox "" (checked Off)
+### photon
+Checkbox 0 0 22x22
+  Pressable 0 0 22x22
+    Row 0 0 22x22
+      Box 0 0 22x22
+
+## Compact
+### web
+<button role="checkbox" aria-checked="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1iu691c eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-1eb13m5 eq-96qelu eq-bo3n4y eq-g7fowl eq-i95eb9 eq-kqfmnh eq-z2pkxm">
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1imlfss{cursor:pointer}
+.eq-1iu691c{gap:12px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-96qelu{height:20px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-kqfmnh{border:2px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-p7nbpw{text-align:start}
+.eq-z2pkxm{border-radius:4px}
+### semantics
+Checkbox "" (checked Off)
+### photon
+Checkbox 0 0 20x20
+  Pressable 0 0 20x20
+    Row 0 0 20x20
+      Box 0 0 20x20
+

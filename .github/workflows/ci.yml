@@ -158,6 +158,13 @@ jobs:
       - name: The session hook still tells a branch's creation apart
         run: python3 .claude/hooks/a-branch-is-named-for-its-change.py --self-test
 
+      # The pipelines board (#1524) reads every delivery's state and Claude Code's own files, and
+      # serves them on the loopback only: its reading rule (a string of digits counts, a boolean
+      # never), who is working (a live session, not a missing `finished`) and its refusals (a path,
+      # a link out, another Host) hold over a fixture on disk and through the real server.
+      - name: The pipelines board still reads, attributes and refuses
+        run: python3 .claude/skills/pipeline/board/board.py --self-test
+
   # The SessionStart hook acts only in a cloud container, a path no laptop takes, so nothing else
   # would notice the day it stopped working. This runs it the way a fresh container would (a hostile
   # global git config, no dotnet on PATH) and asserts every promise, with two controls: a commit
@@ -907,12 +914,14 @@ jobs:
       # Edit, then publish: the most ordinary sequence there is, and it failed (#361). What two
       # pages share is a chunk named by its content's hash, so changing it renames the chunk, and
       # the old name, registered while the project evaluated, failed the publish's compression. The
-      # step changes the dashboard's console shell and publishes without building first. A chunk of
-      # the last build has to be gone from this one, or the step proved nothing; the publish has to
-      # hold exactly the chunks this build wrote; and each module it holds has to be served
-      # compressed, from THIS build's file, in both formats a browser negotiates: the same order
-      # once compressed the previous build's modules, and a compression that ran before the assets
-      # were defined would drop every module to its raw size, neither failing anything.
+      # step changes the clock two of the dashboard's screens share (the Pulse of /clock and /ticker:
+      # the frame they all shared is the app's layout now, a module of its own) and publishes
+      # without building first. A chunk of the last build has to be gone from this one, or the step
+      # proved nothing; the publish has to hold exactly the chunks this build wrote; and each module
+      # it holds has to be served compressed, from THIS build's file, in both formats a browser
+      # negotiates: the same order once compressed the previous build's modules, and a compression
+      # that ran before the assets were defined would drop every module to its raw size, neither
+      # failing anything.
       # scripts/check-compressed-assets.cs reads the bytes of both with .NET's own streams. Then
       # the source goes back and a --no-build publish runs, which must carry what the last build
       # wrote: the output folder is defined by a build target, and one that compiled here would
@@ -921,14 +930,14 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
-          shell=samples/DefaultUIDashboard/Screens/ConsoleShell.cs
+          shared=samples/DefaultUIDashboard/Screens/ClockScreen.cs
           dir=samples/DefaultUIDashboard/wwwroot/_equantic
           chunks() { [ -d "$1" ] && ls "$1" | grep -E -- '-[a-z0-9]{8}\.js$' | sort; }
           before=$(chunks "$dir")
-          perl -0pi -e 's/(class ConsoleShell[^{]*\{)/$1\n    public const string CiMark = "the shared chunk changed";/' "$shell"
+          perl -0pi -e 's/(class Pulse[^{]*\{)/$1\n    public const string CiMark = "the shared chunk changed";/' "$shared"
           status=0
           dotnet publish samples/DefaultUIDashboard -c Release -o republished || status=1
-          git checkout -- "$shell"
+          git checkout -- "$shared"
           after=$(chunks "$dir")
           published=$(chunks republished/wwwroot/_equantic)
           gone=$(comm -23 <(echo "$before") <(echo "$after"))

@@ -28,9 +28,6 @@ public sealed class LiveScreen : StatefulComponent
     private string? _lastEventId;
     private bool _refused;
 
-    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
-    private bool _navOpen;
-
     public LiveScreen(IServerEvents events)
     {
         _events = events;
@@ -58,11 +55,7 @@ public sealed class LiveScreen : StatefulComponent
         _connection?.Dispose();
     }
 
-    public override VisualNode Build(ComponentContext context) =>
-        ConsoleShell.Frame(context.Theme, "/live", "Live", Content(context),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
-
-    private VisualNode Content(ComponentContext context)
+    public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var quote = _last is null

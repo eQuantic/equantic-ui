@@ -983,6 +983,10 @@ static eQuantic.UI.Primitives.BuildOwner.Structural(System.Func<eQuantic.UI.Prim
 eQuantic.UI.Primitives.BuildOwner.Building.get -> eQuantic.UI.Primitives.ComponentElement?
 eQuantic.UI.Primitives.Element.Slot.get -> int
 eQuantic.UI.Primitives.Element.SlotsBelow(int depth) -> string!
+eQuantic.UI.Primitives.Navigator.Location.get -> string!
+eQuantic.UI.Primitives.RouteValues.Path.get -> string!
+eQuantic.UI.Primitives.RouteValues.RouteValues(System.Collections.Generic.IReadOnlyDictionary<string!, string!>? parameters, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? query, string! path) -> void
+*REMOVED*eQuantic.UI.Primitives.RouteValues.RouteValues(System.Collections.Generic.IReadOnlyDictionary<string!, string!>? parameters, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? query) -> void
 eQuantic.UI.Primitives.ElementIds
 eQuantic.UI.Primitives.ElementIds.ElementIds() -> void
 eQuantic.UI.Primitives.ElementIds.Next() -> int

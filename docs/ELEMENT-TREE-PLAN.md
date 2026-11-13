@@ -277,15 +277,15 @@ because a test draws one frame after another and drives input the way a browser 
   the path attributes become element state and element ids.
 
   A client navigation changes the page's type, and by the rule of 3.1 that replaces the page's
-  element with everything the page built. The samples build their frame inside each page today
-  (`ConsoleShell.Frame(…)` in every screen's `Build`, the sidebar's open state a field of each page),
-  so for them a navigation stays what it is now: the DOM is patched position by position, and no
-  instance survives. What survives a navigation is what sits ABOVE the page. *How does Flutter solve
-  it?* go_router's `ShellRoute`: the shell is a route of its own, and the pages are its child. Here the
-  app declares its shell once, in `Program.cs`, as a component with a slot the router fills with the
-  page; the shell's element and its instance stay mounted across navigations, the page's element is
-  replaced under it, and the old page unmounts before the new one mounts. E3 moves the dashboard
-  sample's frame there, which is its proof.
+  element with everything the page built. The dashboard built its frame inside each page until E3
+  (every screen's `Build` called the frame, and the sidebar's open state was a field of each page),
+  so a navigation patched its DOM position by position, and no instance survived. What survives a
+  navigation is what sits ABOVE the page. *How does Flutter solve it?* go_router's `ShellRoute`: the
+  shell is a route of its own, and the pages are its child. Here the app declares its shell once, in
+  `Program.cs`, as a component with a slot the router fills with the page; the shell's element and its
+  instance stay mounted across navigations, the page's element is replaced under it, and the old page
+  unmounts before the new one mounts. E3 moved the dashboard sample's frame there, `ConsoleLayout`
+  (#1129), which is its proof.
 - **Email.** A message mounts a tree once, structurally, lowers it and discards it.
 
 ### 3.8 The strings that stay, at the seams
@@ -614,6 +614,21 @@ the parity rows it closes flip.
    grid, which cross to the server as a string (3.8). eqc met one more emission defect on the way (#1464,
    an interface tested as a null check), fixed by the bug sweep. The served runtime stays inside its
    budget.
+
+   **E3b-3, a dirty element in the browser lowers its own subtree** (#1455,
+   `openspec/changes/archive/2026-11-13-a-dirty-element-relowers-its-own-subtree`). After E3b-1 a nested
+   `SetState` built its own element alone, but the page then lowered all of itself and the reconciler
+   read the whole page. Now each component's position keeps what it lowered to and what it lowered with
+   (`lowered-records.ts`): its root as its own lowering left it, the same root as the page drew it, its
+   inputs and the record above it. A render the page's owners asked for builds the marked positions,
+   lowers each component that built alone, does again what its parents did to its root, and patches only
+   the DOM that root drew (`RenderManager.patch`). What a parent did is read off the two roots and
+   replayed only where the replay gives back the drawn root exactly. A component a parent read or walked
+   into (a shortcut's marker, a box sized from its child, an anchored menu's numbered rows) is lowered with
+   the nearest record above it that nothing reached into, the page in the end, which lowers whole as
+   before. The shortcuts a patch lowered again give way to the ones they declare now, and every other
+   binding stays. The DOM a patch leaves is the DOM a whole lowering leaves, which every spec of the slice
+   compares. The served runtime grows by the records and the replay, recorded in its budget.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.

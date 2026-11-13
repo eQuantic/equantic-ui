@@ -219,7 +219,7 @@ internal sealed class NamedSourceTypes
 
     /// <summary>The type's CLR name, as <see cref="Parser.ComponentParser.ClrIdentity"/> reads it
     /// off the declaration: the two are compared to find the declaration a symbol is.</summary>
-    private static string ClrName(INamedTypeSymbol definition)
+    internal static string ClrName(INamedTypeSymbol definition)
     {
         var name = definition.MetadataName;
         for (var owner = definition.ContainingType; owner is not null; owner = owner.ContainingType)
