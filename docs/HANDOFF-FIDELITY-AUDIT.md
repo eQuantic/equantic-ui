@@ -95,7 +95,7 @@ the pill's 40 down.
   src/eQuantic.UI.Primitives/Nodes/SafeArea.cs  /// <summary>Added to whatever the host reports — a bar's own padding on top of the inset.</summary>
       public EdgeInsets Extra { get; init; }
   MeasureVisitor.Containers.cs:19  var top = (safeArea.Edges.HasFlag(SafeEdges.Top) ? host.Top : 0) + safeArea.Extra.Top;
-  WebLoweringVisitor.Containers.cs:514  return extra == 0 ? env : $"calc({env} + {TokenCss.Px(extra)})";
+  WebLoweringVisitor.Containers.cs:516  return extra == 0 ? env : $"calc({env} + {TokenCss.Px(extra)})";
   ```
 
 ### A5 SafeArea · missing-feature · **unverified**
@@ -108,8 +108,8 @@ the pill's 40 down.
   ```
   MeasureVisitor.Containers.cs:18  var host = ctx.SafeAreaInsets;
   LayoutEngine.cs:128  public EdgeInsets SafeAreaInsets { get; init; }
-  WebLoweringVisitor.Containers.cs:512  var env = $"env(safe-area-inset-{name}, 0px)";
-  lowering.ts:4937  const env = `env(safe-area-inset-${name}, 0px)`;
+  WebLoweringVisitor.Containers.cs:514  var env = $"env(safe-area-inset-{name}, 0px)";
+  lowering.ts:4958  const env = `env(safe-area-inset-${name}, 0px)`;
   ```
 
 ### A5 SafeArea · behaviour · **unverified**
@@ -231,7 +231,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:82  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:556  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:4113  if (disabled && !wrapping) node.attributes['disabled'] = '';
+  Button.cs:82  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:556  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:4119  if (disabled && !wrapping) node.attributes['disabled'] = '';
   ```
 
 ### A13 IconButton · semantics · **CONFIRMED**
@@ -625,7 +625,7 @@ the pill's 40 down.
 
   ```
   Drawer.cs:76  var overlay = new Overlay(layer);
-  lowering.ts:1501  if (node.label) layer.attributes['aria-label'] = node.label;
+  lowering.ts:1507  if (node.label) layer.attributes['aria-label'] = node.label;
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -716,7 +716,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:4558-4561  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
+  lowering.ts:4564-4567  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
   WebLoweringVisitor.Interaction.cs:130  var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
   WebLoweringVisitor.Interaction.cs:319-321  AdjustableRole.Tablist => "tablist", AdjustableRole.Radiogroup => "radiogroup", _ => value is null ? "group" : "slider",
   Slider.cs:163-172              : new Adjustable(box, direction =>
@@ -1307,7 +1307,7 @@ the pill's 40 down.
   src/eQuantic.UI.Web/WebLoweringVisitor.Graphics.cs:341-344 —
           svg.RawAttributes["role"] = "img";
           svg.RawAttributes["aria-label"] = label;
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2807  attributes['role'] = 'img';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2813  attributes['role'] = 'img';
   ```
 
 ### A11 Image · missing-feature · **REFUTED**
@@ -1605,7 +1605,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:4077-4079  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:4083-4085  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
   ```
 
 ### B5 Tabs · missing-feature · **unverified**
@@ -3272,7 +3272,7 @@ the pill's 40 down.
   ```
   Switch.cs:12 — `/// Fence: the slide/crossfade motion between the two ends joins the animation system.`
   WebLoweringVisitor.Interaction.cs:862  var glide = $"translate {Motion.BaseMs}ms";
-  lowering.ts:1440  const glide = `translate ${Motion.baseMs}ms`;
+  lowering.ts:1446  const glide = `translate ${Motion.baseMs}ms`;
   draggable.ts:166  function handBack(surface: HTMLElement): void {
   ```
 
