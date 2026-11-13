@@ -8,7 +8,7 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, ButtonTheme? button,
     IconButtonTheme? iconButton, InputTheme? input, SelectionControlsTheme? selectionControls, SegmentedTheme? segmented,
-    ChipTheme? chip) : IAppTheme
+    ChipTheme? chip, ModalTheme? modal, MenuTheme? menu, NoticeTheme? notice, ProgressTheme? progress, CardTheme? card) : IAppTheme
 {
     public ColorToken Background => inner.Background;
     public ColorToken Surface => inner.Surface;
@@ -40,6 +40,11 @@ internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, 
     // A slot it was given is laid over the wrapped theme's, member by member, once.
     public ControlsTheme? Controls => field ??= ControlsTheme.Merge(inner.Controls, controls);
     public ButtonTheme? Button => field ??= ButtonTheme.Merge(inner.Button, button);
+    public ModalTheme? Modal => field ??= ModalTheme.Merge(inner.Modal, modal);
+    public MenuTheme? Menu => field ??= MenuTheme.Merge(inner.Menu, menu);
+    public NoticeTheme? Notice => field ??= NoticeTheme.Merge(inner.Notice, notice);
+    public ProgressTheme? Progress => field ??= ProgressTheme.Merge(inner.Progress, progress);
+    public CardTheme? Card => field ??= CardTheme.Merge(inner.Card, card);
     public ColorToken Code(CodeTokenKind kind) => inner.Code(kind);
     public IconButtonTheme? IconButton => field ??= IconButtonTheme.Merge(inner.IconButton, iconButton);
     public InputTheme? Input => field ??= InputTheme.Merge(inner.Input, input);

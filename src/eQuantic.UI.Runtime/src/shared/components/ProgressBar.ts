@@ -48,16 +48,19 @@ export class ProgressBar extends StatefulComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let height = this.prominent ? 8 : 4;
+        let slot = theme.progress;
+        let height = this.prominent ? slot?.prominentBarHeight ?? 8 : slot?.barHeight ?? 4;
+        let ends = new CornerRadii(theme.shape(slot?.barShape ?? 'full'));
+        let trackColor = slot?.trackColor ?? theme.surfaceSubtle;
         let value: any; 
         if ((value = this.value) != null) {
             let animate = !this._snapNext;
             this._snapNext = false;
             let clamped = Math.min(Math.max(value, 0), 1);
             let filledWeight = $eq.num.saturate($eq.math.roundSingle(Math.fround(clamped * 1000)));
-            let track = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: height, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')) });
+            let track = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: height, background: trackColor, cornerRadius: ends });
             if (filledWeight > 0) {
-                track.add(new Flexible(new Box(new BoxStyle({ height: height, background: theme.colors(this.variant).base, cornerRadius: new CornerRadii(theme.shape('full')) })), filledWeight, 0, 1, { animateChanges: animate }));
+                track.add(new Flexible(new Box(new BoxStyle({ height: height, background: theme.colors(this.variant).base, cornerRadius: ends })), filledWeight, 0, 1, { animateChanges: animate }));
             }
             if (filledWeight < 1000) {
                 track.add(new Spacer(1000 - filledWeight, { animateChanges: animate }));
@@ -65,9 +68,9 @@ export class ProgressBar extends StatefulComponent {
             return new Progress(track, { label: this.label, value: new RangeValue(Math.fround(Math.fround(filledWeight) / 1000), 0, 1), valueText: this.valueText });
         }
         let segment = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: height });
-        segment.add(new Flexible(new Box(new BoxStyle({ height: height, background: theme.colors(this.variant).base, cornerRadius: new CornerRadii(theme.shape('full')) })), 300));
+        segment.add(new Flexible(new Box(new BoxStyle({ height: height, background: theme.colors(this.variant).base, cornerRadius: ends })), 300));
         segment.add(new Spacer(700));
-        return new Progress(new Box(new BoxStyle({ width: SizeValue.fill, height: height, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')), clip: true }), new LoopMotion(segment, 'slideX', ProgressBar.sweepFromX, ProgressBar.sweepToX, ProgressBar.sweepDurationMs)), { label: this.label, valueText: this.valueText });
+        return new Progress(new Box(new BoxStyle({ width: SizeValue.fill, height: height, background: trackColor, cornerRadius: ends, clip: true }), new LoopMotion(segment, 'slideX', ProgressBar.sweepFromX, ProgressBar.sweepToX, ProgressBar.sweepDurationMs)), { label: this.label, valueText: this.valueText });
     }
 
     adoptConfig(next: UiComponent) {

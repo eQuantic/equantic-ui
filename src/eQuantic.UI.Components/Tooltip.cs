@@ -30,13 +30,15 @@ public sealed class Tooltip : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The menus' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
+        var slot = theme.Menu;
 
         var pill = new Box(new BoxStyle
         {
-            Background = theme.TextPrimary,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Small)),
-            Padding = EdgeInsets.Symmetric(Space.S2, Space.S1),
-        }, new Text(Text, TypeRole.Caption, theme.TextInverse, maxLines: 1));
+            Background = slot?.TooltipFill ?? theme.TextPrimary,
+            CornerRadius = new CornerRadii(theme.Shape(slot?.TooltipShape ?? ShapeScale.Small)),
+            Padding = slot?.TooltipPadding ?? EdgeInsets.Symmetric(Space.S2, Space.S1),
+        }, new Text(Text, TypeRole.Caption, slot?.TooltipText ?? theme.TextInverse, maxLines: 1));
 
         return new Anchored(Child, pill)
         {

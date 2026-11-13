@@ -331,6 +331,16 @@ internal static class NullConditionalAssignment
             return Guard(parameter, t, JsExprWriter.Write(place.Write(context.Converter.ConvertIr(assignment.Right))), receiver);
         }
 
+        // `s?.Fired += h`: the subscription a plain `+=` on the event is, read off the guarded value (#1445).
+        if (assignment.Left is MemberBindingExpressionSyntax subscribed
+            && !assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)
+            && context.SemanticHelper.GetSymbol(subscribed) is IEventSymbol handled)
+        {
+            var subscription = EventSubscriptionStrategy.Subscription(handled, assignment,
+                $"{t}.{subscribed.Name.MemberSlot(context)}", () => t, context);
+            return Guard(parameter, t, $"({subscription})", receiver);
+        }
+
         var target = assignment.Left switch
         {
             MemberBindingExpressionSyntax binding => $"{t}.{binding.Name.MemberSlot(context)}",
