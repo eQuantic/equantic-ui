@@ -181,6 +181,19 @@ public class AppKitAccessibilityTests
             "AppKit's own description of the pair, the measurement the Dialog row records: what says dialog is the SUBROLE");
     }
 
+    /// <summary>A labelled <see cref="Group"/> (#677) reaches AppKit as an AXGroup named by its label,
+    /// before what it holds — the stop a grouped Select's heading is announced as.</summary>
+    [MacFact]
+    public void ALabelledGroupReachesAppKitAsANamedGroup()
+    {
+        var column = new Column(gap: Space.S2);
+        column.Add(new Text("Braga", TypeRole.BodyM));
+        var said = ReadBack(new Group(column) { Label = "A seguir" });
+
+        var group = said.First();
+        (group.Role, group.Label).Should().Be(("AXGroup", "A seguir"));
+    }
+
     /// <summary>A dialog that does not interrupt carries the other subrole, the one Core-AAM gives
     /// role="dialog".</summary>
     /// <summary>A rectangle's location and length, as AppKit answers for a range (an index range).</summary>

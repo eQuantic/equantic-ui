@@ -44,6 +44,8 @@ describe('a role-bearing host has the bounds of what it names', () => {
     // A live region's box is what a reader outlines when it announces the change inside it, so the
     // same rule applies for the same reason.
     ['liveRegion', (child: unknown) => ({ nodeKind: 'liveRegion', child, label: 'Upload status' })],
+    // A labelled group's box is what a reader outlines when it names the group (#677).
+    ['group', (child: unknown) => ({ nodeKind: 'group', child, label: 'Shipping' })],
     // A sheet surface was the fourth until it stopped bearing a role (#1081): the table it holds is the
     // grid a reader walks.
   ] as const) {

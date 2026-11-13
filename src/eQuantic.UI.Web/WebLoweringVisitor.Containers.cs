@@ -423,6 +423,7 @@ internal sealed partial class WebLoweringVisitor
         Box box => box.Child is { } child ? TextContentOf(child) : "",
         FlexNode flex => string.Concat(flex.Children.Select(TextContentOf)),
         Pressable pressable => TextContentOf(pressable.Child),
+        Group group => TextContentOf(group.Child),
         _ => "",
     };
 

@@ -72,6 +72,9 @@ static int Serve(AppBuildOptions options)
     // project: each compile starts from the compilation the one before it loaded, and replaces only the
     // files a save changed (#1278).
     AppBuild? last = new AppBuild(options, TextWriter.Null, TextWriter.Null);
+    // One bun for every save, started by the first bundle and stopped with the server (#1280): each
+    // save paid for starting bun again, which cost more than bun's own work.
+    using var bundler = options.BunPath is { Length: > 0 } bun ? new ModuleBundler(bun, options.SourceDirectories[0]) : null;
     if (!last.Load()) last = null;
     string? request;
     while ((request = Console.In.ReadLine()) is not null)
@@ -79,7 +82,7 @@ static int Serve(AppBuildOptions options)
         if (request.Trim() != "compile") continue;
         var started = DateTimeOffset.UtcNow;
         var errors = new StringWriter();
-        var build = new AppBuild(options, Console.Out, errors);
+        var build = new AppBuild(options, Console.Out, errors, bundler);
         var compiled = (last is not null && build.LoadFrom(last)) || build.Load();
         var loaded = DateTimeOffset.UtcNow;
         if (compiled) last = build;
