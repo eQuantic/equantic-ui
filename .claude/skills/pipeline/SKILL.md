@@ -49,18 +49,26 @@ One folder per delivery, `.claude/pipelines/<issue>-<slug>/`, which git ignores:
 - `state.json`: the issue, the branch, the pipeline and whether it is high-effort with the reason,
   the OpenSpec change's name, the pull request, the STAGES COPIED from the registry (name, agent,
   status `pending|in_progress|completed|failed|not_applicable`, the agent's id for a resume, the
-  report's path), the gate's round, Copilot's round, the last CI run and the commit it saw.
+  report's path), the gate's round, Copilot's round, the last CI run and the commit it saw, and
+  `session`: this session's id, `${CLAUDE_SESSION_ID}`, written again by a session that resumes the
+  delivery, which links the delivery to its agents before the first agent's id is written.
 - in the same file, what the pilot MEASURES, written as it happens and never reconstructed: when
   each stage started and ended, the tokens each agent's answer reports, how many times the session
   was compacted, every defect found after the pull request opened (the round, or the queue's exit,
-  that found it), and for a macOS run asked for on the branch, whether it caught something and
-  whether the queue's own run would have caught it too.
+  that found it), for a macOS run asked for on the branch, whether it caught something and
+  whether the queue's own run would have caught it too, and `merged`, the moment the pull request
+  merged (section 7, step 6).
 - `<stage>.md`: each stage's report, written by its agent.
 
 Write the state before the first stage and at every transition. It exists so a compacted or a new
 session resumes without rereading anything: read it first when one is there. It is a convenience of
 one checkout. The truth is what was pushed: the issue and the board, the commits, the checkboxes of
 the OpenSpec change's `tasks.md`, the pull request.
+
+`python3 .claude/skills/pipeline/board/board.py` serves a read-only board of every delivery of every
+worktree on `127.0.0.1:8765` (`--port` for another): its stages, the agents working now and what
+each is doing, the tokens and the time of every step. It reads this state and Claude Code's own
+files and writes nothing.
 
 ## 3. Intake, by you
 
@@ -170,8 +178,8 @@ The steps are the Workflow's "Pull requests"; this is their order here.
 4. Archive the OpenSpec change after the last round, so a scenario a round changed is edited once.
 5. Queue the pull request. Wait for CI and for the merge in the background, never by polling in
    your own turns.
-6. Only once the pull request is MERGED: merge the wiki branch into the wiki's master, move the
-   issue to Done, run the `roadmap` skill. Being queued is not being merged: a queue discards.
+6. Only once the pull request is MERGED: record the moment in `merged` under the state's measures,
+   merge the wiki branch into the wiki's master, move the issue to Done, run the `roadmap` skill. Being queued is not being merged: a queue discards.
 
 ## 8. Stop and ask
 
