@@ -76,6 +76,189 @@ override eQuantic.UI.Primitives.SizeLadder.ToString() -> string!
 static eQuantic.UI.Primitives.SizeLadder.operator !=(eQuantic.UI.Primitives.SizeLadder? left, eQuantic.UI.Primitives.SizeLadder? right) -> bool
 static eQuantic.UI.Primitives.SizeLadder.operator ==(eQuantic.UI.Primitives.SizeLadder? left, eQuantic.UI.Primitives.SizeLadder? right) -> bool
 eQuantic.UI.Primitives.AppThemeExtensions
+eQuantic.UI.Primitives.CardTheme
+eQuantic.UI.Primitives.CardTheme.<Clone>$() -> eQuantic.UI.Primitives.CardTheme!
+eQuantic.UI.Primitives.CardTheme.BorderWidth.get -> float?
+eQuantic.UI.Primitives.CardTheme.BorderWidth.init -> void
+eQuantic.UI.Primitives.CardTheme.CardTheme() -> void
+eQuantic.UI.Primitives.CardTheme.ElevatedBorderColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.CardTheme.ElevatedBorderColor.init -> void
+eQuantic.UI.Primitives.CardTheme.Elevation.get -> int?
+eQuantic.UI.Primitives.CardTheme.Elevation.init -> void
+eQuantic.UI.Primitives.CardTheme.Equals(eQuantic.UI.Primitives.CardTheme? other) -> bool
+eQuantic.UI.Primitives.CardTheme.FilledColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.CardTheme.FilledColor.init -> void
+eQuantic.UI.Primitives.CardTheme.Shape.get -> eQuantic.UI.Primitives.ShapeScale?
+eQuantic.UI.Primitives.CardTheme.Shape.init -> void
+eQuantic.UI.Primitives.IAppTheme.Card.get -> eQuantic.UI.Primitives.CardTheme?
+eQuantic.UI.Primitives.IAppTheme.Menu.get -> eQuantic.UI.Primitives.MenuTheme?
+eQuantic.UI.Primitives.IAppTheme.Notice.get -> eQuantic.UI.Primitives.NoticeTheme?
+eQuantic.UI.Primitives.IAppTheme.Progress.get -> eQuantic.UI.Primitives.ProgressTheme?
+eQuantic.UI.Primitives.IAppTheme.Modal.get -> eQuantic.UI.Primitives.ModalTheme?
+eQuantic.UI.Primitives.MenuTheme
+eQuantic.UI.Primitives.MenuTheme.<Clone>$() -> eQuantic.UI.Primitives.MenuTheme!
+eQuantic.UI.Primitives.MenuTheme.Equals(eQuantic.UI.Primitives.MenuTheme? other) -> bool
+eQuantic.UI.Primitives.MenuTheme.ItemGap.get -> float?
+eQuantic.UI.Primitives.MenuTheme.ItemGap.init -> void
+eQuantic.UI.Primitives.MenuTheme.ItemPadding.get -> eQuantic.UI.Primitives.EdgeInsets?
+eQuantic.UI.Primitives.MenuTheme.ItemPadding.init -> void
+eQuantic.UI.Primitives.MenuTheme.MenuMinWidth.get -> float?
+eQuantic.UI.Primitives.MenuTheme.MenuMinWidth.init -> void
+eQuantic.UI.Primitives.MenuTheme.MenuPadding.get -> eQuantic.UI.Primitives.EdgeInsets?
+eQuantic.UI.Primitives.MenuTheme.MenuPadding.init -> void
+eQuantic.UI.Primitives.MenuTheme.MenuTheme() -> void
+eQuantic.UI.Primitives.MenuTheme.PanelBorderWidth.get -> float?
+eQuantic.UI.Primitives.MenuTheme.PanelBorderWidth.init -> void
+eQuantic.UI.Primitives.MenuTheme.PanelElevation.get -> int?
+eQuantic.UI.Primitives.MenuTheme.PanelElevation.init -> void
+eQuantic.UI.Primitives.MenuTheme.PanelShape.get -> eQuantic.UI.Primitives.ShapeScale?
+eQuantic.UI.Primitives.MenuTheme.PanelShape.init -> void
+eQuantic.UI.Primitives.MenuTheme.PopoverPadding.get -> eQuantic.UI.Primitives.EdgeInsets?
+eQuantic.UI.Primitives.MenuTheme.PopoverPadding.init -> void
+eQuantic.UI.Primitives.MenuTheme.TooltipFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.MenuTheme.TooltipFill.init -> void
+eQuantic.UI.Primitives.MenuTheme.TooltipPadding.get -> eQuantic.UI.Primitives.EdgeInsets?
+eQuantic.UI.Primitives.MenuTheme.TooltipPadding.init -> void
+eQuantic.UI.Primitives.MenuTheme.TooltipShape.get -> eQuantic.UI.Primitives.ShapeScale?
+eQuantic.UI.Primitives.MenuTheme.TooltipShape.init -> void
+eQuantic.UI.Primitives.MenuTheme.TooltipText.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.MenuTheme.TooltipText.init -> void
+eQuantic.UI.Primitives.NoticeTheme
+eQuantic.UI.Primitives.NoticeTheme.<Clone>$() -> eQuantic.UI.Primitives.NoticeTheme!
+eQuantic.UI.Primitives.NoticeTheme.BannerGap.get -> float?
+eQuantic.UI.Primitives.NoticeTheme.BannerGap.init -> void
+eQuantic.UI.Primitives.NoticeTheme.BannerIconGap.get -> float?
+eQuantic.UI.Primitives.NoticeTheme.BannerIconGap.init -> void
+eQuantic.UI.Primitives.NoticeTheme.BannerPadding.get -> eQuantic.UI.Primitives.EdgeInsets?
+eQuantic.UI.Primitives.NoticeTheme.BannerPadding.init -> void
+eQuantic.UI.Primitives.NoticeTheme.BannerShape.get -> eQuantic.UI.Primitives.ShapeScale?
+eQuantic.UI.Primitives.NoticeTheme.BannerShape.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ConsentBorderWidth.get -> float?
+eQuantic.UI.Primitives.NoticeTheme.ConsentBorderWidth.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ConsentElevation.get -> int?
+eQuantic.UI.Primitives.NoticeTheme.ConsentElevation.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ConsentPadding.get -> eQuantic.UI.Primitives.EdgeInsets?
+eQuantic.UI.Primitives.NoticeTheme.ConsentPadding.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ConsentShape.get -> eQuantic.UI.Primitives.ShapeScale?
+eQuantic.UI.Primitives.NoticeTheme.ConsentShape.init -> void
+eQuantic.UI.Primitives.NoticeTheme.Equals(eQuantic.UI.Primitives.NoticeTheme? other) -> bool
+eQuantic.UI.Primitives.NoticeTheme.NoticeTheme() -> void
+eQuantic.UI.Primitives.NoticeTheme.ToastDot.get -> float?
+eQuantic.UI.Primitives.NoticeTheme.ToastDot.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ToastElevation.get -> int?
+eQuantic.UI.Primitives.NoticeTheme.ToastElevation.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ToastFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.NoticeTheme.ToastFill.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ToastGap.get -> float?
+eQuantic.UI.Primitives.NoticeTheme.ToastGap.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ToastMargin.get -> eQuantic.UI.Primitives.EdgeInsets?
+eQuantic.UI.Primitives.NoticeTheme.ToastMargin.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ToastMaxWidth.get -> float?
+eQuantic.UI.Primitives.NoticeTheme.ToastMaxWidth.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ToastPadding.get -> eQuantic.UI.Primitives.EdgeInsets?
+eQuantic.UI.Primitives.NoticeTheme.ToastPadding.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ToastShape.get -> eQuantic.UI.Primitives.ShapeScale?
+eQuantic.UI.Primitives.NoticeTheme.ToastShape.init -> void
+eQuantic.UI.Primitives.NoticeTheme.ToastText.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.NoticeTheme.ToastText.init -> void
+eQuantic.UI.Primitives.PhotonTheme.Card.get -> eQuantic.UI.Primitives.CardTheme?
+eQuantic.UI.Primitives.PhotonTheme.Menu.get -> eQuantic.UI.Primitives.MenuTheme?
+eQuantic.UI.Primitives.PhotonTheme.Notice.get -> eQuantic.UI.Primitives.NoticeTheme?
+eQuantic.UI.Primitives.PhotonTheme.Progress.get -> eQuantic.UI.Primitives.ProgressTheme?
+eQuantic.UI.Primitives.PhotonTheme.Modal.get -> eQuantic.UI.Primitives.ModalTheme?
+eQuantic.UI.Primitives.ProgressTheme
+eQuantic.UI.Primitives.ProgressTheme.<Clone>$() -> eQuantic.UI.Primitives.ProgressTheme!
+eQuantic.UI.Primitives.ProgressTheme.BarHeight.get -> float?
+eQuantic.UI.Primitives.ProgressTheme.BarHeight.init -> void
+eQuantic.UI.Primitives.ProgressTheme.BarShape.get -> eQuantic.UI.Primitives.ShapeScale?
+eQuantic.UI.Primitives.ProgressTheme.BarShape.init -> void
+eQuantic.UI.Primitives.ProgressTheme.Equals(eQuantic.UI.Primitives.ProgressTheme? other) -> bool
+eQuantic.UI.Primitives.ProgressTheme.ProgressTheme() -> void
+eQuantic.UI.Primitives.ProgressTheme.ProminentBarHeight.get -> float?
+eQuantic.UI.Primitives.ProgressTheme.ProminentBarHeight.init -> void
+eQuantic.UI.Primitives.ProgressTheme.RefreshSpinner.get -> float?
+eQuantic.UI.Primitives.ProgressTheme.RefreshSpinner.init -> void
+eQuantic.UI.Primitives.ProgressTheme.SkeletonFill.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ProgressTheme.SkeletonFill.init -> void
+eQuantic.UI.Primitives.ProgressTheme.SkeletonHighlight.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ProgressTheme.SkeletonHighlight.init -> void
+eQuantic.UI.Primitives.ProgressTheme.SkeletonLineHeight.get -> float?
+eQuantic.UI.Primitives.ProgressTheme.SkeletonLineHeight.init -> void
+eQuantic.UI.Primitives.ProgressTheme.SkeletonShape.get -> eQuantic.UI.Primitives.ShapeScale?
+eQuantic.UI.Primitives.ProgressTheme.SkeletonShape.init -> void
+eQuantic.UI.Primitives.ProgressTheme.TrackColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ProgressTheme.TrackColor.init -> void
+eQuantic.UI.Primitives.ModalTheme
+eQuantic.UI.Primitives.ModalTheme.<Clone>$() -> eQuantic.UI.Primitives.ModalTheme!
+eQuantic.UI.Primitives.ModalTheme.BottomSheetElevation.get -> int?
+eQuantic.UI.Primitives.ModalTheme.BottomSheetElevation.init -> void
+eQuantic.UI.Primitives.ModalTheme.BottomSheetGap.get -> float?
+eQuantic.UI.Primitives.ModalTheme.BottomSheetGap.init -> void
+eQuantic.UI.Primitives.ModalTheme.BottomSheetPadding.get -> eQuantic.UI.Primitives.EdgeInsets?
+eQuantic.UI.Primitives.ModalTheme.BottomSheetPadding.init -> void
+eQuantic.UI.Primitives.ModalTheme.BottomSheetShape.get -> eQuantic.UI.Primitives.ShapeScale?
+eQuantic.UI.Primitives.ModalTheme.BottomSheetShape.init -> void
+eQuantic.UI.Primitives.ModalTheme.DialogActionGap.get -> float?
+eQuantic.UI.Primitives.ModalTheme.DialogActionGap.init -> void
+eQuantic.UI.Primitives.ModalTheme.DialogElevation.get -> int?
+eQuantic.UI.Primitives.ModalTheme.DialogElevation.init -> void
+eQuantic.UI.Primitives.ModalTheme.DialogGap.get -> float?
+eQuantic.UI.Primitives.ModalTheme.DialogGap.init -> void
+eQuantic.UI.Primitives.ModalTheme.DialogGutter.get -> float?
+eQuantic.UI.Primitives.ModalTheme.DialogGutter.init -> void
+eQuantic.UI.Primitives.ModalTheme.DialogMaxWidth.get -> float?
+eQuantic.UI.Primitives.ModalTheme.DialogMaxWidth.init -> void
+eQuantic.UI.Primitives.ModalTheme.DialogPadding.get -> eQuantic.UI.Primitives.EdgeInsets?
+eQuantic.UI.Primitives.ModalTheme.DialogPadding.init -> void
+eQuantic.UI.Primitives.ModalTheme.DialogShape.get -> eQuantic.UI.Primitives.ShapeScale?
+eQuantic.UI.Primitives.ModalTheme.DialogShape.init -> void
+eQuantic.UI.Primitives.ModalTheme.DialogTextGap.get -> float?
+eQuantic.UI.Primitives.ModalTheme.DialogTextGap.init -> void
+eQuantic.UI.Primitives.ModalTheme.DrawerElevation.get -> int?
+eQuantic.UI.Primitives.ModalTheme.DrawerElevation.init -> void
+eQuantic.UI.Primitives.ModalTheme.DrawerPadding.get -> eQuantic.UI.Primitives.EdgeInsets?
+eQuantic.UI.Primitives.ModalTheme.DrawerPadding.init -> void
+eQuantic.UI.Primitives.ModalTheme.Equals(eQuantic.UI.Primitives.ModalTheme? other) -> bool
+eQuantic.UI.Primitives.ModalTheme.HandleColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.ModalTheme.HandleColor.init -> void
+eQuantic.UI.Primitives.ModalTheme.HandleHeight.get -> float?
+eQuantic.UI.Primitives.ModalTheme.HandleHeight.init -> void
+eQuantic.UI.Primitives.ModalTheme.HandleWidth.get -> float?
+eQuantic.UI.Primitives.ModalTheme.HandleWidth.init -> void
+eQuantic.UI.Primitives.ModalTheme.ModalTheme() -> void
+override eQuantic.UI.Primitives.CardTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.CardTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.CardTheme.ToString() -> string!
+override eQuantic.UI.Primitives.MenuTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.MenuTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.MenuTheme.ToString() -> string!
+override eQuantic.UI.Primitives.NoticeTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.NoticeTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.NoticeTheme.ToString() -> string!
+override eQuantic.UI.Primitives.ProgressTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.ProgressTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.ProgressTheme.ToString() -> string!
+override eQuantic.UI.Primitives.ModalTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.ModalTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.ModalTheme.ToString() -> string!
+static eQuantic.UI.Primitives.CardTheme.operator !=(eQuantic.UI.Primitives.CardTheme? left, eQuantic.UI.Primitives.CardTheme? right) -> bool
+static eQuantic.UI.Primitives.CardTheme.operator ==(eQuantic.UI.Primitives.CardTheme? left, eQuantic.UI.Primitives.CardTheme? right) -> bool
+static eQuantic.UI.Primitives.MenuTheme.operator !=(eQuantic.UI.Primitives.MenuTheme? left, eQuantic.UI.Primitives.MenuTheme? right) -> bool
+static eQuantic.UI.Primitives.MenuTheme.operator ==(eQuantic.UI.Primitives.MenuTheme? left, eQuantic.UI.Primitives.MenuTheme? right) -> bool
+static eQuantic.UI.Primitives.NoticeTheme.operator !=(eQuantic.UI.Primitives.NoticeTheme? left, eQuantic.UI.Primitives.NoticeTheme? right) -> bool
+static eQuantic.UI.Primitives.NoticeTheme.operator ==(eQuantic.UI.Primitives.NoticeTheme? left, eQuantic.UI.Primitives.NoticeTheme? right) -> bool
+static eQuantic.UI.Primitives.ProgressTheme.operator !=(eQuantic.UI.Primitives.ProgressTheme? left, eQuantic.UI.Primitives.ProgressTheme? right) -> bool
+static eQuantic.UI.Primitives.ProgressTheme.operator ==(eQuantic.UI.Primitives.ProgressTheme? left, eQuantic.UI.Primitives.ProgressTheme? right) -> bool
+static eQuantic.UI.Primitives.ModalTheme.operator !=(eQuantic.UI.Primitives.ModalTheme? left, eQuantic.UI.Primitives.ModalTheme? right) -> bool
+static eQuantic.UI.Primitives.ModalTheme.operator ==(eQuantic.UI.Primitives.ModalTheme? left, eQuantic.UI.Primitives.ModalTheme? right) -> bool
+eQuantic.UI.Primitives.NoticeTheme.BannerTextSize.get -> float?
+eQuantic.UI.Primitives.NoticeTheme.BannerTextSize.init -> void
+eQuantic.UI.Primitives.NoticeTheme.BannerLineHeight.get -> float?
+eQuantic.UI.Primitives.NoticeTheme.BannerLineHeight.init -> void
+eQuantic.UI.Primitives.NoticeTheme.BannerTitleWeight.get -> eQuantic.UI.Primitives.FontWeight?
+eQuantic.UI.Primitives.NoticeTheme.BannerTitleWeight.init -> void
+eQuantic.UI.Primitives.NoticeTheme.BannerBodyWeight.get -> eQuantic.UI.Primitives.FontWeight?
+eQuantic.UI.Primitives.NoticeTheme.BannerBodyWeight.init -> void
 eQuantic.UI.Primitives.ChipTheme
 eQuantic.UI.Primitives.ChipTheme.<Clone>$() -> eQuantic.UI.Primitives.ChipTheme!
 eQuantic.UI.Primitives.ChipTheme.ChipTheme() -> void
@@ -259,7 +442,6 @@ override eQuantic.UI.Primitives.SegmentedTheme.ToString() -> string!
 override eQuantic.UI.Primitives.SelectionControlsTheme.Equals(object? obj) -> bool
 override eQuantic.UI.Primitives.SelectionControlsTheme.GetHashCode() -> int
 override eQuantic.UI.Primitives.SelectionControlsTheme.ToString() -> string!
-static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null, eQuantic.UI.Primitives.IconButtonTheme? iconButton = null, eQuantic.UI.Primitives.InputTheme? input = null, eQuantic.UI.Primitives.SelectionControlsTheme? selectionControls = null, eQuantic.UI.Primitives.SegmentedTheme? segmented = null, eQuantic.UI.Primitives.ChipTheme? chip = null) -> eQuantic.UI.Primitives.IAppTheme!
 static eQuantic.UI.Primitives.ChipTheme.operator !=(eQuantic.UI.Primitives.ChipTheme? left, eQuantic.UI.Primitives.ChipTheme? right) -> bool
 static eQuantic.UI.Primitives.ChipTheme.operator ==(eQuantic.UI.Primitives.ChipTheme? left, eQuantic.UI.Primitives.ChipTheme? right) -> bool
 static eQuantic.UI.Primitives.DensityPair.operator !=(eQuantic.UI.Primitives.DensityPair? left, eQuantic.UI.Primitives.DensityPair? right) -> bool
@@ -367,6 +549,11 @@ static eQuantic.UI.Primitives.ButtonTheme.Merge(eQuantic.UI.Primitives.ButtonThe
 static eQuantic.UI.Primitives.ControlsTheme.Merge(eQuantic.UI.Primitives.ControlsTheme? under, eQuantic.UI.Primitives.ControlsTheme? over) -> eQuantic.UI.Primitives.ControlsTheme?
 static eQuantic.UI.Primitives.DensityLadder.Merge(eQuantic.UI.Primitives.DensityLadder? under, eQuantic.UI.Primitives.DensityLadder? over) -> eQuantic.UI.Primitives.DensityLadder?
 static eQuantic.UI.Primitives.SizeLadder.Merge(eQuantic.UI.Primitives.SizeLadder? under, eQuantic.UI.Primitives.SizeLadder? over) -> eQuantic.UI.Primitives.SizeLadder?
+static eQuantic.UI.Primitives.CardTheme.Merge(eQuantic.UI.Primitives.CardTheme? under, eQuantic.UI.Primitives.CardTheme? over) -> eQuantic.UI.Primitives.CardTheme?
+static eQuantic.UI.Primitives.MenuTheme.Merge(eQuantic.UI.Primitives.MenuTheme? under, eQuantic.UI.Primitives.MenuTheme? over) -> eQuantic.UI.Primitives.MenuTheme?
+static eQuantic.UI.Primitives.ModalTheme.Merge(eQuantic.UI.Primitives.ModalTheme? under, eQuantic.UI.Primitives.ModalTheme? over) -> eQuantic.UI.Primitives.ModalTheme?
+static eQuantic.UI.Primitives.NoticeTheme.Merge(eQuantic.UI.Primitives.NoticeTheme? under, eQuantic.UI.Primitives.NoticeTheme? over) -> eQuantic.UI.Primitives.NoticeTheme?
+static eQuantic.UI.Primitives.ProgressTheme.Merge(eQuantic.UI.Primitives.ProgressTheme? under, eQuantic.UI.Primitives.ProgressTheme? over) -> eQuantic.UI.Primitives.ProgressTheme?
 static eQuantic.UI.Primitives.ChipTheme.Merge(eQuantic.UI.Primitives.ChipTheme? under, eQuantic.UI.Primitives.ChipTheme? over) -> eQuantic.UI.Primitives.ChipTheme?
 static eQuantic.UI.Primitives.DensityPair.Merge(eQuantic.UI.Primitives.DensityPair? under, eQuantic.UI.Primitives.DensityPair? over) -> eQuantic.UI.Primitives.DensityPair?
 static eQuantic.UI.Primitives.IconButtonTheme.Merge(eQuantic.UI.Primitives.IconButtonTheme? under, eQuantic.UI.Primitives.IconButtonTheme? over) -> eQuantic.UI.Primitives.IconButtonTheme?
@@ -377,3 +564,4 @@ eQuantic.UI.Primitives.ChipTheme.OutlineColor.get -> eQuantic.UI.Primitives.Colo
 eQuantic.UI.Primitives.ChipTheme.OutlineColor.init -> void
 eQuantic.UI.Primitives.ChipTheme.OutlineWidth.get -> float?
 eQuantic.UI.Primitives.ChipTheme.OutlineWidth.init -> void
+static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null, eQuantic.UI.Primitives.IconButtonTheme? iconButton = null, eQuantic.UI.Primitives.InputTheme? input = null, eQuantic.UI.Primitives.SelectionControlsTheme? selectionControls = null, eQuantic.UI.Primitives.SegmentedTheme? segmented = null, eQuantic.UI.Primitives.ChipTheme? chip = null, eQuantic.UI.Primitives.ModalTheme? modal = null, eQuantic.UI.Primitives.MenuTheme? menu = null, eQuantic.UI.Primitives.NoticeTheme? notice = null, eQuantic.UI.Primitives.ProgressTheme? progress = null, eQuantic.UI.Primitives.CardTheme? card = null) -> eQuantic.UI.Primitives.IAppTheme!

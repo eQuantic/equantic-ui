@@ -10,7 +10,7 @@ import { hashesByValue } from '../utils/hash';
 import { ColorToken, EdgeInsets, TypeStyle, type AppTheme } from './value-types';
 import type { ColorValue } from './nodes';
 import { SheetTheme } from './sheet-theme';
-import type { TypeRoleValue } from './enums.generated';
+import type { FontWeightValue, ShapeScaleValue, TypeRoleValue } from './enums.generated';
 
 /** A value per size, each optional (`small` · `medium` · `large` · `xLarge`). */
 export class SizeLadder {
@@ -267,6 +267,135 @@ export class ChipTheme {
   }
 }
 
+/** The modal surfaces' slot: Dialog, BottomSheet and Drawer (E6c, #1243). */
+export class ModalTheme {
+  dialogMaxWidth: number | null = null;
+  dialogShape: ShapeScaleValue | null = null;
+  dialogElevation: number | null = null;
+  dialogPadding: EdgeInsets | null = null;
+  dialogGap: number | null = null;
+  dialogTextGap: number | null = null;
+  dialogActionGap: number | null = null;
+  dialogGutter: number | null = null;
+  bottomSheetShape: ShapeScaleValue | null = null;
+  bottomSheetElevation: number | null = null;
+  bottomSheetPadding: EdgeInsets | null = null;
+  bottomSheetGap: number | null = null;
+  handleWidth: number | null = null;
+  handleHeight: number | null = null;
+  handleColor: ColorToken | null = null;
+  drawerElevation: number | null = null;
+  drawerPadding: EdgeInsets | null = null;
+
+  constructor(config?: Partial<ModalTheme>) {
+    if (config) Object.assign(this, config);
+  }
+
+  /** C# `ModalTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: ModalTheme | null, over: ModalTheme | null): ModalTheme | null {
+    return mergeSlot(under, over);
+  }
+}
+
+/** The menus' slot: Popover, Menu and Tooltip (E6c, #1243). */
+export class MenuTheme {
+  panelShape: ShapeScaleValue | null = null;
+  panelBorderWidth: number | null = null;
+  panelElevation: number | null = null;
+  popoverPadding: EdgeInsets | null = null;
+  menuMinWidth: number | null = null;
+  menuPadding: EdgeInsets | null = null;
+  itemPadding: EdgeInsets | null = null;
+  itemGap: number | null = null;
+  tooltipShape: ShapeScaleValue | null = null;
+  tooltipPadding: EdgeInsets | null = null;
+  tooltipFill: ColorToken | null = null;
+  tooltipText: ColorToken | null = null;
+
+  constructor(config?: Partial<MenuTheme>) {
+    if (config) Object.assign(this, config);
+  }
+
+  /** C# `MenuTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: MenuTheme | null, over: MenuTheme | null): MenuTheme | null {
+    return mergeSlot(under, over);
+  }
+}
+
+/** The notices' slot: Toast, Banner and CookieConsent (E6c, #1243). */
+export class NoticeTheme {
+  toastFill: ColorToken | null = null;
+  toastText: ColorToken | null = null;
+  toastShape: ShapeScaleValue | null = null;
+  toastElevation: number | null = null;
+  toastPadding: EdgeInsets | null = null;
+  toastMaxWidth: number | null = null;
+  toastDot: number | null = null;
+  toastGap: number | null = null;
+  toastMargin: EdgeInsets | null = null;
+  bannerShape: ShapeScaleValue | null = null;
+  bannerPadding: EdgeInsets | null = null;
+  bannerIconGap: number | null = null;
+  bannerGap: number | null = null;
+  bannerTextSize: number | null = null;
+  bannerLineHeight: number | null = null;
+  bannerTitleWeight: FontWeightValue | null = null;
+  bannerBodyWeight: FontWeightValue | null = null;
+  consentShape: ShapeScaleValue | null = null;
+  consentElevation: number | null = null;
+  consentBorderWidth: number | null = null;
+  consentPadding: EdgeInsets | null = null;
+
+  constructor(config?: Partial<NoticeTheme>) {
+    if (config) Object.assign(this, config);
+  }
+
+  /** C# `NoticeTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: NoticeTheme | null, over: NoticeTheme | null): NoticeTheme | null {
+    return mergeSlot(under, over);
+  }
+}
+
+/** The Card's slot (E6c, #1243). */
+export class CardTheme {
+  shape: ShapeScaleValue | null = null;
+  borderWidth: number | null = null;
+  elevation: number | null = null;
+  filledColor: ColorToken | null = null;
+  elevatedBorderColor: ColorToken | null = null;
+
+  constructor(config?: Partial<CardTheme>) {
+    if (config) Object.assign(this, config);
+  }
+
+  /** C# `CardTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: CardTheme | null, over: CardTheme | null): CardTheme | null {
+    return mergeSlot(under, over);
+  }
+}
+
+/** The progress slot: ProgressBar, PullToRefresh and Skeleton (E6c, #1243). */
+export class ProgressTheme {
+  barHeight: number | null = null;
+  prominentBarHeight: number | null = null;
+  barShape: ShapeScaleValue | null = null;
+  trackColor: ColorToken | null = null;
+  refreshSpinner: number | null = null;
+  skeletonLineHeight: number | null = null;
+  skeletonShape: ShapeScaleValue | null = null;
+  skeletonFill: ColorToken | null = null;
+  skeletonHighlight: ColorToken | null = null;
+
+  constructor(config?: Partial<ProgressTheme>) {
+    if (config) Object.assign(this, config);
+  }
+
+  /** C# `ProgressTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: ProgressTheme | null, over: ProgressTheme | null): ProgressTheme | null {
+    return mergeSlot(under, over);
+  }
+}
+
 // Records: each hashes by its members, as `equals` compares it (`ValueTwinHashTests` holds this to the C#).
 hashesByValue(SizeLadder);
 hashesByValue(DensityLadder);
@@ -278,6 +407,11 @@ hashesByValue(InputTheme);
 hashesByValue(SelectionControlsTheme);
 hashesByValue(SegmentedTheme);
 hashesByValue(ChipTheme);
+hashesByValue(ModalTheme);
+hashesByValue(MenuTheme);
+hashesByValue(NoticeTheme);
+hashesByValue(CardTheme);
+hashesByValue(ProgressTheme);
 
 // ---- from the bridge's JSON (C# `ThemeBridge.SlotJson`) ------------------------------------------
 // The bridge writes every slot by one rule: a member under its camel-cased name, a number as itself, an
@@ -469,6 +603,100 @@ export function chipTheme(data: SlotData): ChipTheme {
   });
 }
 
+/** The ModalTheme the bridge wrote. */
+export function modalTheme(data: SlotData): ModalTheme {
+  return new ModalTheme({
+    dialogMaxWidth: slotValue<number>(data.dialogMaxWidth),
+    dialogShape: slotValue<ShapeScaleValue>(data.dialogShape),
+    dialogElevation: slotValue<number>(data.dialogElevation),
+    dialogPadding: slotInsets(data.dialogPadding),
+    dialogGap: slotValue<number>(data.dialogGap),
+    dialogTextGap: slotValue<number>(data.dialogTextGap),
+    dialogActionGap: slotValue<number>(data.dialogActionGap),
+    dialogGutter: slotValue<number>(data.dialogGutter),
+    bottomSheetShape: slotValue<ShapeScaleValue>(data.bottomSheetShape),
+    bottomSheetElevation: slotValue<number>(data.bottomSheetElevation),
+    bottomSheetPadding: slotInsets(data.bottomSheetPadding),
+    bottomSheetGap: slotValue<number>(data.bottomSheetGap),
+    handleWidth: slotValue<number>(data.handleWidth),
+    handleHeight: slotValue<number>(data.handleHeight),
+    handleColor: slotToken(data.handleColor),
+    drawerElevation: slotValue<number>(data.drawerElevation),
+    drawerPadding: slotInsets(data.drawerPadding),
+  });
+}
+
+/** The MenuTheme the bridge wrote. */
+export function menuTheme(data: SlotData): MenuTheme {
+  return new MenuTheme({
+    panelShape: slotValue<ShapeScaleValue>(data.panelShape),
+    panelBorderWidth: slotValue<number>(data.panelBorderWidth),
+    panelElevation: slotValue<number>(data.panelElevation),
+    popoverPadding: slotInsets(data.popoverPadding),
+    menuMinWidth: slotValue<number>(data.menuMinWidth),
+    menuPadding: slotInsets(data.menuPadding),
+    itemPadding: slotInsets(data.itemPadding),
+    itemGap: slotValue<number>(data.itemGap),
+    tooltipShape: slotValue<ShapeScaleValue>(data.tooltipShape),
+    tooltipPadding: slotInsets(data.tooltipPadding),
+    tooltipFill: slotToken(data.tooltipFill),
+    tooltipText: slotToken(data.tooltipText),
+  });
+}
+
+/** The NoticeTheme the bridge wrote. */
+export function noticeTheme(data: SlotData): NoticeTheme {
+  return new NoticeTheme({
+    toastFill: slotToken(data.toastFill),
+    toastText: slotToken(data.toastText),
+    toastShape: slotValue<ShapeScaleValue>(data.toastShape),
+    toastElevation: slotValue<number>(data.toastElevation),
+    toastPadding: slotInsets(data.toastPadding),
+    toastMaxWidth: slotValue<number>(data.toastMaxWidth),
+    toastDot: slotValue<number>(data.toastDot),
+    toastGap: slotValue<number>(data.toastGap),
+    toastMargin: slotInsets(data.toastMargin),
+    bannerShape: slotValue<ShapeScaleValue>(data.bannerShape),
+    bannerPadding: slotInsets(data.bannerPadding),
+    bannerIconGap: slotValue<number>(data.bannerIconGap),
+    bannerGap: slotValue<number>(data.bannerGap),
+    bannerTextSize: slotValue<number>(data.bannerTextSize),
+    bannerLineHeight: slotValue<number>(data.bannerLineHeight),
+    bannerTitleWeight: slotValue<FontWeightValue>(data.bannerTitleWeight),
+    bannerBodyWeight: slotValue<FontWeightValue>(data.bannerBodyWeight),
+    consentShape: slotValue<ShapeScaleValue>(data.consentShape),
+    consentElevation: slotValue<number>(data.consentElevation),
+    consentBorderWidth: slotValue<number>(data.consentBorderWidth),
+    consentPadding: slotInsets(data.consentPadding),
+  });
+}
+
+/** The CardTheme the bridge wrote. */
+export function cardTheme(data: SlotData): CardTheme {
+  return new CardTheme({
+    shape: slotValue<ShapeScaleValue>(data.shape),
+    borderWidth: slotValue<number>(data.borderWidth),
+    elevation: slotValue<number>(data.elevation),
+    filledColor: slotToken(data.filledColor),
+    elevatedBorderColor: slotToken(data.elevatedBorderColor),
+  });
+}
+
+/** The ProgressTheme the bridge wrote. */
+export function progressTheme(data: SlotData): ProgressTheme {
+  return new ProgressTheme({
+    barHeight: slotValue<number>(data.barHeight),
+    prominentBarHeight: slotValue<number>(data.prominentBarHeight),
+    barShape: slotValue<ShapeScaleValue>(data.barShape),
+    trackColor: slotToken(data.trackColor),
+    refreshSpinner: slotValue<number>(data.refreshSpinner),
+    skeletonLineHeight: slotValue<number>(data.skeletonLineHeight),
+    skeletonShape: slotValue<ShapeScaleValue>(data.skeletonShape),
+    skeletonFill: slotToken(data.skeletonFill),
+    skeletonHighlight: slotToken(data.skeletonHighlight),
+  });
+}
+
 /**
  * Every slot the browser's theme carries, by the name the bridge writes it under and the builder that
  * reads it. `materializeTheme` walks this, so a family adds its slot here and nowhere in the bridge.
@@ -482,6 +710,11 @@ export const slotBuilders: Record<string, (data: SlotData) => unknown> = {
   selectionControls: selectionControlsTheme,
   segmented: segmentedTheme,
   chip: chipTheme,
+  modal: modalTheme,
+  menu: menuTheme,
+  notice: noticeTheme,
+  progress: progressTheme,
+  card: cardTheme,
 };
 
 /**
@@ -500,6 +733,11 @@ export class AppThemeExtensions {
     selectionControls: SelectionControlsTheme | null = null,
     segmented: SegmentedTheme | null = null,
     chip: ChipTheme | null = null,
+    modal: ModalTheme | null = null,
+    menu: MenuTheme | null = null,
+    notice: NoticeTheme | null = null,
+    progress: ProgressTheme | null = null,
+    card: CardTheme | null = null,
   ): AppTheme {
     // A map, so a slot's name is never confused with a member every object inherits; each merge once.
     const given = new Map<PropertyKey, object | null>([
@@ -510,6 +748,11 @@ export class AppThemeExtensions {
       ['selectionControls', selectionControls],
       ['segmented', segmented],
       ['chip', chip],
+      ['modal', modal],
+      ['menu', menu],
+      ['notice', notice],
+      ['progress', progress],
+      ['card', card],
     ]);
     const merged = new Map<PropertyKey, unknown>();
     return new Proxy(theme, {
