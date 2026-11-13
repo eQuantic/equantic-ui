@@ -331,15 +331,42 @@ async Task<(Process, Cdp)> OpenBrowser()
 
 // ---- the desktop -----------------------------------------------------------------------------
 
+// How far an edit the window did not draw got: what dotnet watch said after the save, and what the app
+// said of it, the edit arriving and the windows it woke. A failure named none of them, so an edit that
+// never reached the app could not be told apart from one a window never drew (#1473).
+string WhyItWasNotDrawn(double saved)
+{
+    var watchSaid = lines.Where(l => l.At > saved && l.Text.Contains("dotnet watch", StringComparison.Ordinal))
+        .Select(l => l.Text.Trim()).TakeLast(12).ToList();
+    var appSaid = lines.Where(l => l.At > saved && l.Text.Contains("[eQuantic.HotReload]", StringComparison.Ordinal))
+        .Select(l => l.Text.Trim()).TakeLast(6).ToList();
+    var running = watch switch
+    {
+        null => "not started",
+        { HasExited: false } => "running",
+        _ => $"gone (exit code {watch.ExitCode})",
+    };
+    return $"dotnet watch said: {(watchSaid.Count > 0 ? string.Join(" | ", watchSaid) : "nothing")}; "
+        + $"the app said: {(appSaid.Count > 0 ? string.Join(" | ", appSaid) : "nothing, so no edit reached it")}; "
+        + $"dotnet watch is {running}.";
+}
+
 async Task<Dictionary<string, double>> MeasureDesktop(double saved)
 {
     var drew = new Regex(@"\[eQuantic\.HotReload\] drew the edit (\d+)ms after it was applied");
     (double At, string? Text) line = default;
-    await Until(() =>
+    try
     {
-        line = lines.FirstOrDefault(l => l.At > saved && drew.IsMatch(l.Text));
-        return Task.FromResult(line.Text is not null);
-    }, TimeSpan.FromMinutes(5), "the window did not draw the edit");
+        await Until(() =>
+        {
+            line = lines.FirstOrDefault(l => l.At > saved && drew.IsMatch(l.Text));
+            return Task.FromResult(line.Text is not null);
+        }, TimeSpan.FromMinutes(5), "the window did not draw the edit");
+    }
+    catch (TimeoutException timedOut)
+    {
+        throw new TimeoutException($"{timedOut.Message}. {WhyItWasNotDrawn(saved)}");
+    }
     var frame = double.Parse(drew.Match(line.Text!).Groups[1].Value, CultureInfo.InvariantCulture);
     return new Dictionary<string, double>
     {
