@@ -55,9 +55,19 @@ public sealed class Select : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The theme's Input slot, then its control ladder, then the component's own (§3.10): the field
+        // and each row of its panel share the padding and the gap, and a row is the field's height
+        // unless the slot names its own.
+        var slot = theme.Input;
+        var height = ControlMetrics.Height(context, SizeVariant.Medium, slot?.Controls);
+        var paddingX = slot?.PickerPaddingX ?? Space.S3;
+        var gap = slot?.PickerGap ?? Space.S2;
+        var radius = slot?.Radius ?? theme.Shape(ShapeScale.Medium);
+        var borderWidth = slot?.BorderWidth ?? 1;
+        var rowHeight = slot?.PanelRowHeight ?? height;
         var hasValue = SelectedIndex >= 0 && SelectedIndex < Options.Count;
 
-        var fieldRow = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
+        var fieldRow = new Row(gap: gap) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
         fieldRow.Add(new Text(hasValue ? Options[SelectedIndex] : Placeholder ?? "Select…",
             TypeRole.BodyM, hasValue ? theme.TextPrimary : theme.TextMuted, maxLines: 1));
         fieldRow.Add(new Flexible(new Spacer()));
@@ -65,13 +75,13 @@ public sealed class Select : StatefulComponent
 
         var field = new Box(new BoxStyle
         {
-            Height = ControlMetrics.Height(context, SizeVariant.Medium),
+            Height = height,
             Width = SizeValue.Fill,
-            Padding = EdgeInsets.Symmetric(Space.S3, 0),
-            Background = theme.Surface,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
-            BorderWidth = 1,
-            BorderColor = theme.BorderStrong,
+            Padding = EdgeInsets.Symmetric(paddingX, 0),
+            Background = slot?.Fill ?? theme.Surface,
+            CornerRadius = new CornerRadii(radius),
+            BorderWidth = borderWidth,
+            BorderColor = slot?.BorderColor ?? theme.BorderStrong,
             Opacity = Disabled ? theme.DisabledOpacity : null,
             Hover = Disabled ? null : new StyleDiff { BorderColor = theme.Colors(Variant.Primary).Base },
         }, fieldRow);
@@ -82,7 +92,7 @@ public sealed class Select : StatefulComponent
             var index = i;
             var selected = i == SelectedIndex;
 
-            var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
+            var row = new Row(gap: gap) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
             row.Add(new Text(Options[i], TypeRole.BodyM,
                 selected ? theme.Colors(Variant.Primary).OnSubtle : theme.TextPrimary, maxLines: 1));
             if (selected)
@@ -94,8 +104,8 @@ public sealed class Select : StatefulComponent
             var highlighted = _open && i == _highlight;
             list.Add(new Pressable(new Box(new BoxStyle
             {
-                Height = ControlMetrics.Height(context, SizeVariant.Medium),
-                Padding = EdgeInsets.Symmetric(Space.S3, 0),
+                Height = rowHeight,
+                Padding = EdgeInsets.Symmetric(paddingX, 0),
                 Width = SizeValue.Fill,
                 // The keyboard's row wears the hover coat: one visual language for "you are here",
                 // whichever hand is steering.
@@ -114,10 +124,10 @@ public sealed class Select : StatefulComponent
         var panel = new Box(new BoxStyle
         {
             Background = theme.Surface,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
-            BorderWidth = 1,
-            BorderColor = theme.Border,
-            Elevation = 2,
+            CornerRadius = new CornerRadii(radius),
+            BorderWidth = borderWidth,
+            BorderColor = slot?.PanelBorderColor ?? theme.Border,
+            Elevation = slot?.PanelElevation ?? 2,
             Padding = EdgeInsets.Symmetric(0, Space.S1),
             Clip = true,
         }, list);

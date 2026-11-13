@@ -106,9 +106,12 @@ public sealed class Skeleton : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The progress slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
+        var slot = theme.Progress;
+        var highlight = slot?.SkeletonHighlight ?? theme.SurfaceHighlight;
         var height = Shape switch
         {
-            SkeletonShape.Line => 12f,
+            SkeletonShape.Line => slot?.SkeletonLineHeight ?? 12f,
             SkeletonShape.Circle => Width,
             _ => Height > 0 ? Height : Width,
         };
@@ -116,7 +119,7 @@ public sealed class Skeleton : StatelessComponent
         {
             SkeletonShape.Line => theme.Shape(ShapeScale.Full),
             SkeletonShape.Circle => theme.Shape(ShapeScale.Full),
-            _ => theme.Shape(ShapeScale.Medium),
+            _ => theme.Shape(slot?.SkeletonShape ?? ShapeScale.Medium),
         };
 
         // The glint: two mirrored 2-stop gradients make the symmetric highlight band inside the
@@ -126,19 +129,19 @@ public sealed class Skeleton : StatelessComponent
         glint.Add(new Flexible(new Box(new BoxStyle
         {
             Height = height,
-            Gradient = new LinearGradient(new ColorToken(Color.Transparent), theme.SurfaceHighlight),
+            Gradient = new LinearGradient(new ColorToken(Color.Transparent), highlight),
         }), 1));
         glint.Add(new Flexible(new Box(new BoxStyle
         {
             Height = height,
-            Gradient = new LinearGradient(theme.SurfaceHighlight, new ColorToken(Color.Transparent)),
+            Gradient = new LinearGradient(highlight, new ColorToken(Color.Transparent)),
         }), 1));
 
         return new Box(new BoxStyle
         {
             Width = Width,
             Height = height,
-            Background = theme.SurfaceSubtle,
+            Background = slot?.SkeletonFill ?? theme.SurfaceSubtle,
             CornerRadius = new CornerRadii(radius),
             Clip = true,
         }, new LoopMotion(glint, LoopEffect.SlideX, -1f, 1f, ShimmerDurationMs) { HideAtRest = true });

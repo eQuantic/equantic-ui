@@ -31,15 +31,17 @@ public sealed class Popover : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The menus' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
+        var slot = theme.Menu;
 
         var panel = new Box(new BoxStyle
         {
             Background = theme.Surface,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
-            BorderWidth = 1,
+            CornerRadius = new CornerRadii(theme.Shape(slot?.PanelShape ?? ShapeScale.Medium)),
+            BorderWidth = slot?.PanelBorderWidth ?? 1,
             BorderColor = theme.Border,
-            Elevation = 2,
-            Padding = EdgeInsets.All(Space.S3),
+            Elevation = slot?.PanelElevation ?? 2,
+            Padding = slot?.PopoverPadding ?? EdgeInsets.All(Space.S3),
         }, Content);
 
         // ASKED TO DRAW IN THE FLOW: the panel is the popover; the ANCHORING to a trigger — and

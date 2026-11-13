@@ -36,6 +36,13 @@ public sealed class RadioGroup : StatelessComponent
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
+        // The theme's Selection slot, then the component's own (§3.10); the ring and its dot vary by
+        // density alone.
+        var slot = theme.SelectionControls;
+        var side = ControlMetrics.AtDensity(slot?.RadioSize, context.Density)
+            ?? ControlMetrics.AtDensity(slot?.Box, context.Density)
+            ?? Sizing.SelectionBox(context.Density);
+        var dot = ControlMetrics.AtDensity(slot?.RadioDot, context.Density) ?? Sizing.RadioDot(context.Density);
 
         var options = new Column(gap: Space.S1) { Width = SizeValue.Fill };
         for (var i = 0; i < Options.Count; i++)
@@ -46,8 +53,8 @@ public sealed class RadioGroup : StatelessComponent
             var circleContent = isSelected
                 ? new Box(new BoxStyle
                 {
-                    Width = Sizing.RadioDot(context.Density),
-                    Height = Sizing.RadioDot(context.Density),
+                    Width = dot,
+                    Height = dot,
                     Background = primary.Base,
                     CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
                 }).Centered()
@@ -55,14 +62,19 @@ public sealed class RadioGroup : StatelessComponent
 
             var circle = new Box(new BoxStyle
             {
-                Width = Sizing.SelectionBox(context.Density),
-                Height = Sizing.SelectionBox(context.Density),
+                Width = side,
+                Height = side,
                 CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-                BorderWidth = 2f,
-                BorderColor = isSelected ? primary.Base : theme.BorderStrong,
+                BorderWidth = slot?.BorderWidth ?? 2f,
+                BorderColor = isSelected ? primary.Base : slot?.BorderColor ?? theme.BorderStrong,
             }, circleContent);
 
-            var row = new Row(gap: Space.S3) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = 44 };
+            var row = new Row(gap: slot?.LabelGap ?? Space.S3)
+            {
+                Cross = CrossAlign.Center,
+                Width = SizeValue.Fill,
+                Height = slot?.RadioRowHeight ?? 44,
+            };
             row.Add(circle);
             row.Add(new Text(Options[i], TypeRole.BodyM,
                 Disabled ? theme.TextMuted : theme.TextPrimary, maxLines: 1));

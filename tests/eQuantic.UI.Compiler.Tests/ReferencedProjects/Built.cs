@@ -25,6 +25,9 @@ internal sealed class Built
         _outputDirectory = outputDirectory;
     }
 
+    /// <summary>The build itself, which a later one may start from.</summary>
+    public AppBuild AppBuild => _build;
+
     /// <summary>Where the bundle and the string catalogs were written.</summary>
     public string OutputDirectory => _outputDirectory;
 
