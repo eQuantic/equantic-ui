@@ -22,7 +22,7 @@
 import type { BuildOwner } from './components/BuildOwner';
 import type { HtmlNode } from '../core/types';
 import type { VisualNodeValue } from './nodes';
-import { commitShortcuts, type ShortcutBinding } from '../dom/shortcuts';
+import { commitShortcuts, type ShortcutDeclarer } from '../dom/shortcuts';
 import { commitFocusTraps } from '../dom/focus-trap';
 import { installHoverRevealSuppression } from '../dom/hover-reveal';
 import { attachCameraStreams } from './devices/camera';
@@ -174,7 +174,7 @@ export function enterPass(
   setPassInvalidator(invalidator);
 }
 
-export function exitPass(replacingShortcuts?: (binding: ShortcutBinding) => boolean): void {
+export function exitPass(shortcutsDeclaredBy?: ShortcutDeclarer): void {
   if (!activePass) return;
   activePass.depth--;
   if (activePass.depth > 0) return;
@@ -182,7 +182,7 @@ export function exitPass(replacingShortcuts?: (binding: ShortcutBinding) => bool
   // Spec S8: the pass's Shortcut declarations become the live set — bindings whose subtree was not
   // re-lowered drop out, which is how unmounting unsubscribes. A pass that lowered some components
   // alone replaces only the bindings they declared (#1455).
-  commitShortcuts(replacingShortcuts);
+  commitShortcuts(shortcutsDeclaredBy);
   // §10: the same moment reconciles the modal focus traps against the DOM the pass just produced —
   // a layer that appeared takes focus (recording its invoker), one that vanished gives it back.
   commitFocusTraps();
@@ -242,11 +242,11 @@ export interface SubtreePatch {
   readonly next: HtmlNode | null;
 }
 
-/** A render answered by what the page's owners built (#1455): what to patch, and which of the live
- *  shortcuts the components lowered again had declared. */
+/** A render answered by what the page's owners built (#1455): what to patch, and which of the
+ *  components lowered again declared a shortcut, if one did. */
 export interface Relowered {
   readonly patches: readonly SubtreePatch[];
-  readonly declaredBy: (binding: ShortcutBinding) => boolean;
+  readonly declaredBy: ShortcutDeclarer;
 }
 
 /**

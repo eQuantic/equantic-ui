@@ -374,7 +374,7 @@ function patchPage(root: object, roots: ElementRoots, invalidate: () => void, ma
       // The bindings the components lowered again declared give way to the ones they declared now;
       // a render that falls back replaces them all in the whole render that follows.
       const relowered = answer as Relowered | null;
-      exitPass(relowered ? relowered.declaredBy : () => false);
+      exitPass(relowered ? relowered.declaredBy : () => undefined);
     }
   });
   const relowered = answer as Relowered | null;

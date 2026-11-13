@@ -106,6 +106,7 @@ async function pressAndCompare(page: Page, container: HTMLElement, label: string
 beforeEach(() => {
   document.body.innerHTML = '';
   for (const label of Object.keys(kept)) delete kept[label];
+  for (const label of Object.keys(bound)) delete bound[label];
 });
 
 /** A component holding a counter of its own, both with a state that shows. */
@@ -122,6 +123,38 @@ class Holder extends StatefulComponent {
   }
 }
 let holder: Holder | null = null;
+
+/** The instance each label's position keeps, for a component that declares a shortcut on its own key. */
+const bound: Record<string, Bound> = {};
+
+/** A component that declares a shortcut on the key its label names, from the start or only once bumped. */
+class Bound extends StatefulComponent {
+  label: string;
+  late: boolean;
+  count = 0;
+
+  constructor(label: string, late = false) {
+    super();
+    this.label = label;
+    this.late = late;
+    bound[label] ??= this;
+  }
+
+  bump(): void {
+    this.setState(() => this.count++);
+  }
+
+  adoptConfig(next: Bound): void {
+    this.label = next.label;
+    this.late = next.late;
+  }
+
+  build(): VisualNodeValue {
+    const body = new Text(`${this.label}: ${this.count}`, 'label');
+    if (this.late && this.count === 0) return body as unknown as VisualNodeValue;
+    return new Shortcut(body, { key: this.label, modifiers: 4 } as never, () => {}) as unknown as VisualNodeValue;
+  }
+}
 
 describe('a dirty element lowers its own subtree', () => {
   it('lowers the component that built and patches its DOM, and the DOM is the whole lowering’s', async () => {
@@ -214,6 +247,53 @@ describe('a dirty element lowers its own subtree', () => {
 
     expect(componentLowerings() - before).toBe(1);
     expect(activeShortcuts().map((binding) => binding.chord)).toEqual(['command+s']);
+  });
+
+  it('lists the shortcuts of two components it lowered where a whole lowering lists them, around one between', async () => {
+    // The later binding answers first, so the order decides which of two on one chord a keystroke reaches.
+    const page = new Page(() =>
+      column(
+        new Bound('a'),
+        new Shortcut(new Text('between', 'label'), { key: 'x', modifiers: 4 } as never, () => {}),
+        new Bound('b'),
+      ),
+    );
+    mount(page);
+    const before = componentLowerings();
+
+    bound.a.bump();
+    bound.b.bump();
+    await nextFrame();
+
+    expect(componentLowerings() - before, 'the two components, each alone').toBe(2);
+    const listed = activeShortcuts().map((binding) => binding.chord);
+    page.rebuild();
+    await nextFrame();
+    expect(listed).toEqual(activeShortcuts().map((binding) => binding.chord));
+    expect(listed).toEqual(['command+a', 'command+x', 'command+b']);
+  });
+
+  it('lowers the page whole when one of two components it lowered starts declaring a shortcut', async () => {
+    const page = new Page(() =>
+      column(
+        new Bound('a'),
+        new Shortcut(new Text('between', 'label'), { key: 'x', modifiers: 4 } as never, () => {}),
+        new Bound('b', true),
+      ),
+    );
+    mount(page);
+    const before = componentLowerings();
+
+    bound.a.bump();
+    bound.b.bump();
+    await nextFrame();
+
+    expect(componentLowerings() - before, 'lowered alone, then the page whole, to list the new binding in its place').toBe(4);
+    const listed = activeShortcuts().map((binding) => binding.chord);
+    page.rebuild();
+    await nextFrame();
+    expect(listed).toEqual(activeShortcuts().map((binding) => binding.chord));
+    expect(listed).toEqual(['command+a', 'command+x', 'command+b']);
   });
 
   it('lowers the page whole when the component starts declaring a shortcut it had no place for', async () => {

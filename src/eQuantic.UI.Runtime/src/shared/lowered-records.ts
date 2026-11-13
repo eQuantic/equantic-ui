@@ -85,10 +85,18 @@ export function openRecord(): LoweredRecord | null {
   return open;
 }
 
-/** Whether `record` is `ancestor` or stands below it. */
-export function within(record: unknown, ancestor: LoweredRecord): boolean {
-  for (let at = record as LoweredRecord | null | undefined; at; at = at.parent) if (at === ancestor) return true;
-  return false;
+/**
+ * The position of the one of `records` that `record` is, or stands below: what declared a shortcut
+ * whose binding names `record`. Matched by POSITION, since a component lowered again records itself
+ * anew there: a binding declared before names the old record, one declared now names the new one,
+ * and both belong to the same component. Undefined when `record` stands under none of them.
+ */
+export function declarerAmong(records: readonly LoweredRecord[], record: unknown): Position | undefined {
+  for (let at = record as LoweredRecord | null | undefined; at; at = at.parent) {
+    const position = at.position;
+    if (records.some((candidate) => candidate.position === position)) return position;
+  }
+  return undefined;
 }
 
 /** The record of `position`, from the last render that lowered it, or null. */

@@ -146,7 +146,7 @@ import { StyleChannels } from './value-types';
 import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
 import { DISPOSABLE, nodeStateFor, positionOf, type NodeState } from './node-states';
-import { collectBuilds, lowerRecorded, patchableAt, reachedInto, replay, within, type LoweredRecord } from './lowered-records';
+import { collectBuilds, declarerAmong, lowerRecorded, patchableAt, reachedInto, replay, type LoweredRecord } from './lowered-records';
 
 /** The C# `Anchored.MotionLiftDp` twin — the open/close nudge toward the anchor. */
 const ANCHOR_MOTION_LIFT = 8;
@@ -379,7 +379,7 @@ export function relowerBuilt(node: VisualNodeValue, context: LoweringContext): R
       if (next === undefined) return null;
       patches.push({ drawn, next });
     }
-    return { patches, declaredBy: (binding) => topmost.some((record) => within(binding.within, record)) };
+    return { patches, declaredBy: (binding) => declarerAmong(topmost, binding.within) };
   });
 }
 
