@@ -1,0 +1,3 @@
+import { $eq } from "../runtime-exports";
+
+export class OptionGroup { declare label: string; declare options: string[]; constructor(label: any = null, options: any = null) {this.label = label;this.options = options;} equals(o: unknown) { return o instanceof OptionGroup && o.constructor === this.constructor && $eq.equals(this.label, o.label) && $eq.collections.sameItem(this.options, o.options); } with(patch: any): OptionGroup { return $eq.withPatch(this, patch); } static $record = true; getHashCode(): number { return $eq.hash.combine(this.label, this.options); } toString() { return $eq.text.record(this, 'OptionGroup', ['Label', 'Options']); } }

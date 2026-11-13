@@ -66,6 +66,7 @@ public class LayoutTransparencyTests
         new InView(c, _ => { }),
         new Link("#", c),
         new LiveRegion(c),
+        new Group(c),
         new LoopMotion(c, LoopEffect.SlideX, 0, 1, 100),
         new Overlay(c),
         new Pinned(c),
@@ -196,18 +197,19 @@ public class LayoutTransparencyTests
     /// to argue the defect did not exist.
     /// </para>
     /// <para>
-    /// THESE FIVE AND NOT THE VOCABULARY, which is measured rather than assumed: the other
+    /// THESE SIX AND NOT THE VOCABULARY, which is measured rather than assumed: the other
     /// transparent wrappers all answer 600 here, and that is not the same defect. They emit no host
     /// of their own — the child's element is what reaches the parent, so the child IS the box and
     /// the stretch is its to take — or they have geometry of their own on purpose (`SafeArea` pads,
-    /// `Pinned` sticks, `Flexible` is a flex item). The five below put an ELEMENT between parent and
+    /// `Pinned` sticks, `Flexible` is a flex item). The six below put an ELEMENT between parent and
     /// child and give it a width, so what crosses them is theirs to answer for.
     /// </para>
     /// <para>
     /// <see cref="LiveRegion"/> is the fifth, and it was added to this list one review LATE:
     /// `MeasureVisitor.Visit(LiveRegion)` cited this test by name and this test did not know about
     /// the node, so removing its `Constraints.Inline()` left 63 tests green. A comment naming its
-    /// own guard is worth nothing until the guard is asked.
+    /// own guard is worth nothing until the guard is asked. <see cref="Group"/> is the sixth, added
+    /// with the node.
     /// </para>
     /// </summary>
     [Fact]
@@ -227,6 +229,7 @@ public class LayoutTransparencyTests
             new Adjustable(HuggingRow(), _ => { }),
             new Progress(HuggingRow()),
             new LiveRegion(HuggingRow()),
+            new Group(HuggingRow()) { Label = "Shipping" },
         ];
 
         var crossed = new List<string>();

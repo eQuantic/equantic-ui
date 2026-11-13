@@ -227,6 +227,9 @@ public class ComponentParityFixtureTests
         // that. Opening a Select and switching an Accordion's open section are the two smallest
         // changes of state that rewrite a subtree.
         ("select-opens", new Select(["alpha", "beta", "gamma"], 0), [0]),
+        // A grouped Select opened (#677): the listbox holds the ungrouped option, then the labelled
+        // group with its heading and its options, numbered across the group on both producers.
+        ("select-grouped-opens", new Select(["Lisboa"], 0, groups: [new OptionGroup("A seguir", ["Braga", "Faro"])]), [0]),
         ("accordion-switches", new Accordion([
             new AccordionItem("One") { Content = new Text("body one", TypeRole.BodyM, Theme.TextPrimary) },
             new AccordionItem("Two") { Content = new Text("body two", TypeRole.BodyM, Theme.TextPrimary) },
