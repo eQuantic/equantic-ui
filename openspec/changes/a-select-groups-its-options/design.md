@@ -50,7 +50,8 @@ on can say the group to a reader, so the vocabulary says it once and both realiz
 - A choice whose value is the app's (`SelectOption(id, name)`, a generic `Select<T>`): a separate
   capability, left open below.
 - Typeahead, disabled options, multi-select, Home/End, dividers between groups, sections in `Menu`.
-- An `ExcludeSemantics` (still a GAP row in `docs/FLUTTER-PARITY.md`).
+- An `ExcludeSemantics` node (still a GAP row in `docs/FLUTTER-PARITY.md`). This change takes only
+  Flutter's `excludeFromSemantics` property, on `Text` (decision 6).
 
 ## Decisions
 
@@ -70,9 +71,14 @@ constructor with the `Label` tail (`UiFactoryConformanceTests`, `EveryVocabulary
   this word exist if the web did not?". `Section` was weighed and refused: SwiftUI's `Section` draws a
   header and lays out content, and this node draws nothing.
 - Why not `optgroup`'s shape on the node: the node is the general one; the Select is its first user.
-- Web: `<div role="group" aria-label="{Label}">`, no `aria-label` when the label is empty (the
-  `LowerLiveRegion` rule). Photon: `AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
-  node.Label, null, false))`. Email: walks into the child; the medium has no reader stop to give.
+- Web: `<div role="group" aria-label="{Label}">`. Photon: `AnnounceGroup(new(SemanticRole.Group,
+  IdOf(laidOut), laidOut.Bounds, node.Label, null, false))`. Email: walks into the child (both the HTML
+  and the text alternative), since the medium has no reader stop to give.
+- AN EMPTY LABEL IS NO GROUP, settled at the node and not inside the Select (gate round 1, H2): every
+  realizer lets the child stand in its place. The web lowers no host, Photon announces nothing for
+  it and measures it as a plain wrapper (no inlined constraints, because no host exists on the web).
+  A nameless group is noise to every reader, and a required label would throw on a page whose
+  culture's string came back empty.
 - The interface member `IVisualNodeVisitor.Visit(Group, TState)` makes each visitor that does not
   name it fail the build (CS0535), which is the instrument that fails.
 
@@ -133,21 +139,25 @@ Group(label) ── Column ── heading Box(Text(label, TypeRole.Caption, them
                        └─ the group's option rows, unchanged
 ```
 
-- Heading: `Caption` in `TextMuted`, padded like a row (`PickerPaddingX`), the RadioGroup's group label
-  style (the sibling imitated). The handoff (`docs/design/`) draws no grouped Select; it owes the
+- Heading: `Caption` in `TextMuted`, padded like a row (`PickerPaddingX`) across and `Space.S1` down,
+  the RadioGroup's group label style (the sibling imitated). The `Space.S1` vertical padding is the
+  engineer's choice until the handoff draws a grouped Select. The handoff (`docs/design/`) draws no grouped Select; it owes the
   drawing, and `Overline` ("the eyebrow over a group or a section") is the alternative it may choose.
-- Web: inside `role="listbox"`, a `role="group" aria-label="A seguir"` holding the heading's plain text
-  element and the `role="option"` rows: WAI-ARIA APG's grouped listbox, named by `aria-label` instead
-  of `aria-labelledby` because the label is a string the node already has.
-- Photon: a section heading in the menu; the reader meets `Group "A seguir"`, then the heading's static
-  text, then the options. The web's reading (`AnnouncedTree`) is the same three, so the semantics
-  parity suite compares them equal with no baseline entry.
-- The heading is read twice in a reader's walk mode (as the group's name and as text), on both targets,
-  as in the APG pattern and as `RadioGroup`'s label is today. Removing it needs `ExcludeSemantics`, a
-  GAP row, which is not this change.
-- A group whose label is empty draws no heading and wraps no `Group`: its options read as ungrouped. A
-  group with no name is noise to every reader, and a throw would take down a page whose culture's
-  string came back empty.
+- THE HEADING IS READ ONCE, as the group's name (gate round 1, D2). It is drawn as a `Text` with
+  `ExcludeFromSemantics = true`, a new `Text` property and Flutter's own word
+  (`Image.excludeFromSemantics`). The web writes `aria-hidden="true"` on it, and Photon's semantics walk
+  passes over it. The group carries the same words as its `Label`.
+- Web: inside `role="listbox"`, a `role="group" aria-label="A seguir"` holding the hidden heading and
+  the `role="option"` rows. This is WAI-ARIA APG's grouped listbox, named by `aria-label` instead of
+  `aria-labelledby` because the label is a string the node already has.
+- Photon: a section heading in the menu; the reader meets `Group "A seguir"`, then the options. The
+  web's reading (`AnnouncedTree`) is the same. `GroupSemanticsTests` (web) and
+  `ComboBoxAndDialogSemanticsTests` (Photon) hold the reading.
+- `SemanticsParityTests` gets NO curated grouped case (gate round 1, D1). Every opened Select already
+  differs between the targets in the combobox's name (#1328, baselined for `case select opened`), so a
+  grouped case could only pass by growing a baseline that may only shrink.
+- A group whose label is empty draws no heading, and its options read as ungrouped (the node's rule
+  above).
 - The panel id the C# realizer hashes from the panel's text (`TextContentOf`) gains a `Group` arm, so
   a grouped panel's options are part of its id as a flat one's are. The TS twin hashes the path and
   needs nothing.
@@ -173,6 +183,8 @@ eQuantic.UI.Components.OptionGroup … (the record's lines, the shape `MenuItem`
 The exact lines are what `./scripts/public-api.sh update` writes; the list above is what to read the
 diff against. `tests/eQuantic.UI.Web.Tests/developer-surface.baseline.txt` does not move.
 
+Added in gate round 1: `eQuantic.UI.Primitives.Text.ExcludeFromSemantics.get -> bool` and `.init -> void`.
+
 ### 8. `docs/FLUTTER-PARITY.md` gets no row
 
 The table compares the framework's mechanisms, and no component of the catalogue (`DropdownMenu`,
@@ -188,8 +200,9 @@ here, a labelled semantics container, is row 154/155's, whose verdicts this chan
   a budget move is regenerated with `EQ_UPDATE_RUNTIME_BUDGET` and a sentence on what the bytes bought.
 - [Ungrouped options cannot follow the groups] → accepted (design A); an app puts a trailing choice in
   a group of its own, as the issue's "Outro concelho" is.
-- [The heading is read twice in walk mode] → the same on both targets and in the APG pattern; closes
-  with `ExcludeSemantics`, not here.
+- [`Text` grows a property] → `ExcludeFromSemantics` is init-only and false by default, so no existing
+  text changes. The C# realizer and the TS twin write the same `aria-hidden`, and the parity fixture pins
+  it.
 
 ## Migration Plan
 
@@ -199,7 +212,9 @@ page records the two `*REMOVED*` signatures with that line.
 
 ## Open Questions
 
-For the engineer to settle while implementing; none changes the design.
+Settled while implementing (implement.md says how): `options ?? []` transpiles as written; the two
+`NumberItemRows` recurse alike; `EmailWalk` walks a child as `InheritedComponent` does; the wrapper
+suites list their wrappers, and `Group` joined each. Below, as first written:
 
 - UNMEASURED: whether eqc transpiles `options ?? []` (a target-typed empty collection expression for
   `IReadOnlyList<string>`) as JavaScript `[]`. If the twin's pin shows otherwise, write

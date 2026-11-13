@@ -413,6 +413,8 @@ export interface TextNode extends VisualNodeValue {
   content: string;
   /** Where this text sits in the document's OUTLINE — 1..6, 0 for text that is not a heading. */
   headingLevel?: number;
+  /** Drawn and never read: a reader passes over it (C# `Text.ExcludeFromSemantics`). */
+  excludeFromSemantics?: boolean;
   /** `TypeRole` as a camelCase member string ('display' | 'heading' | … | 'bodyL' | 'caption'). */
   role: string;
   color?: ColorTokenValue | null;

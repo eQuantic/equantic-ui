@@ -5,7 +5,8 @@
 A `Select` given `groups` SHALL draw its ungrouped `options` first and then, for each `OptionGroup`
 whose label is not empty, a heading showing the label followed by that group's options. On the web the
 open `role="listbox"` SHALL hold, per such group, one `role="group"` element whose `aria-label` is the
-label and which contains the heading and the group's `role="option"` rows; the server's producer and the
+label and which contains the heading, hidden from readers since the group's name already says it, and
+the group's `role="option"` rows; the server's producer and the
 client's SHALL write the same tree. On Photon the menu SHALL draw the same heading over the same rows. A
 group whose label is empty SHALL draw no heading and wrap no group, its options read as ungrouped.
 

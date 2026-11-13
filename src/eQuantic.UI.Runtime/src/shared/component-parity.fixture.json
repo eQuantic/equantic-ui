@@ -46688,6 +46688,7 @@
                                 {
                                   "tag": "span",
                                   "attrs": {
+                                    "aria-hidden": "true",
                                     "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
                                   },
                                   "events": [],

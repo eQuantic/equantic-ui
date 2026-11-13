@@ -15,12 +15,12 @@ runs once the solution compiles.
 
 ## 2. The web realizer and its TypeScript twin (one engineer)
 
-- [x] 2.1 `WebLoweringVisitor.cs`: `Visit(Group, …) => LowerGroup(group)`; `WebLoweringVisitor.Interaction.cs`: `LowerGroup` (a `div`, `role="group"`, `aria-label` when the label is not empty, the `fills`/`capsAt` host rule `LowerLiveRegion` uses), and `Group` arms in `Fills` and `CapsAt`
+- [x] 2.1 `WebLoweringVisitor.cs`: `Visit(Group, …) => LowerGroup(group)`; `WebLoweringVisitor.Interaction.cs`: `LowerGroup` (a `div`, `role="group"`, `aria-label`, no host at all when the label is empty, the `fills`/`capsAt` host rule `LowerLiveRegion` uses), and `Group` arms in `Fills` and `CapsAt`
 - [x] 2.2 `WebLoweringVisitor.Containers.cs`: `TextContentOf` gains `Group group => TextContentOf(group.Child)`, so a grouped panel's id hashes its options
 - [x] 2.3 TS twin, same commit: `shared/vocabulary.ts` (`class Group`), `shared/nodes.ts` (`GroupNode`), `shared/lowering.ts` (`lowerGroup`, and the `group` case in `lowerNode`, `capsAt` and `fills`, each `switch` still ending in `assertNever`)
 - [x] 2.4 Regenerate the transpiled twins (`Select.ts`, `OptionGroup.ts`, `UI.ts`, `ChildSlots.ts` and their maps) with `EQ_UPDATE_TRANSPILED=1 dotnet test tests/eQuantic.UI.Web.Tests --filter FullyQualifiedName~SharedComponentTranspilationTests`; settle design.md's open question on `options ?? []` from the pin
 - [x] 2.5 Parity fixture: add `("select-grouped-opens", new Select(["Lisboa"], 0, groups: [new OptionGroup("A seguir", ["Braga", "Faro"])]), [0])` to `ComponentParityFixtureTests` and its twin in `component-parity.spec.ts`; regenerate with `EQ_UPDATE_PARITY_FIXTURE=1`
-- [x] 2.6 Vitest, driven as the browser drives it (`shared/anchored.spec.ts`): open a grouped Select, `keydown` ArrowDown with its flags from the last option of the first group, assert `aria-activedescendant` names `Braga` and that its parent is the `role="group"` labelled `Next`, then Enter and assert `onChanged(2)`; prove it fails with the group's options left out of the numbering (the plausible wrong one)
+- [x] 2.6 Vitest, driven as the browser drives it (`shared/select-groups.spec.ts`): open a grouped Select, `keydown` ArrowDown with its flags from the last option of the first group, assert `aria-activedescendant` names `Braga` and that its parent is the `role="group"` labelled `Next`, then Enter and assert `onChanged(2)`; prove it fails with the group's options left out of the numbering (the plausible wrong one)
 - [x] 2.7 Web tests: the announced reading of the opened grouped Select through `ComponentTester` (design.md, decision 6), and the empty-label case; `Group` in the role-bearing host and wrapper transparency suites if they list wrappers (design.md, open question)
 - [x] 2.8 Check: `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` passes; `dotnet test tests/eQuantic.UI.Web.Tests tests/eQuantic.UI.Server.Tests` passes, `ServedRuntimeBudgetTests` included (regenerated only with `EQ_UPDATE_RUNTIME_BUDGET` and a sentence on what the bytes bought)
 
@@ -29,10 +29,18 @@ runs once the solution compiles.
 - [x] 3.1 `Native.Framework/Layout/MeasureVisitor.cs`: `Visit(Group, …) => MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At)`, with the comment `LiveRegion`'s carries (the web host is `fit-content` unless the child fills)
 - [x] 3.2 `Native.Components/EmitVisitor.cs`: `Group` paints nothing and wraps its child
 - [x] 3.3 `Native.Components/SemanticsVisitor.Interaction.cs`: `Visit(Group, …) => AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false))`; update the class summary's tally of words
-- [x] 3.4 `src/eQuantic.UI.Email/EmailWalk.Interaction.cs`: `Group` walks into its child (or `Refuse`, per design.md's open question)
+- [x] 3.4 `src/eQuantic.UI.Email/EmailWalk.cs`: `Group` walks into its child, beside `InheritedComponent` (`EmailRealizerTests.AGroupReachesAMessageAsTheChildItHolds`; `Group` is carried in `EmailRefusalParityTests`)
 - [x] 3.5 Native tests: `KeyboardTests` drives the grouped Select (ArrowDown across the boundary, Enter, `chosen` holds `2`, panel closed); `ComboBoxAndDialogSemanticsTests` reads the opened grouped Select's nodes in order; `LayoutTransparencyTests` holds `Group`'s bounds equal to its child's
-- [x] 3.6 `SemanticsParityTests`: curated `case grouped select opened`, with NO baseline entry
+- [x] 3.6 `SemanticsParityTests`: NO curated grouped case. Every opened Select differs in the combobox's name (#1328), so the case could pass only by growing the baseline; `GroupSemanticsTests` and `ComboBoxAndDialogSemanticsTests` hold the reading (design.md, decision 6)
 - [ ] 3.7 Check: `dotnet test tests/eQuantic.UI.Native.Engine.Tests` passes; on macOS, `AppKitAccessibilityTests` gains the grouped case (the group is `AXGroup` named `A seguir`), run by the macOS jobs with `gh workflow run ci.yml --ref <branch>` before the pull request enters the queue
+
+## 3b. Gate round 1
+
+- [x] 3b.1 D2: the heading is read once. `Text.ExcludeFromSemantics` (aria-hidden on the web, passed over by Photon's walk) on the Select's heading; the readings in `GroupSemanticsTests` and `ComboBoxAndDialogSemanticsTests` lose the `StaticText`
+- [x] 3b.2 D1: `semantics-parity.baseline.txt` ends with no line this branch added; the curated case is dropped (3.6)
+- [x] 3b.3 H2: an empty label is no group on every realizer (web, TS twin, Photon semantics and measure)
+- [x] 3b.4 H3/H4: `Select` keeps its flat list in `_choices` (constructor, `AdoptConfig`) and clamps the highlight when the list shrinks while open (`KeyboardTests.TheHighlightStaysOnAnOptionThatExists_WhenTheOptionsShrinkWhileOpen`)
+- [x] 3b.5 H1: `role-host-bounds.spec.ts` gets a `group` row
 
 ## 4. Documentation
 

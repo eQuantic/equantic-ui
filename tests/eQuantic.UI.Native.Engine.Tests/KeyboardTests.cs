@@ -970,6 +970,41 @@ public class DropdownKeyboardTests
         host.Semantics().Should().NotContain(node => node.Role == SemanticRole.Option, "Enter closed the panel");
     }
 
+    /// <summary>The options shrink under an open panel, as a parent's rebuild may hand a Select fewer
+    /// of them: the keyboard stays on an option that exists, so Enter still chooses one.</summary>
+    [Fact]
+    public void TheHighlightStaysOnAnOptionThatExists_WhenTheOptionsShrinkWhileOpen()
+    {
+        var chosen = new List<int>();
+        var parent = new ShrinkingOptions(chosen);
+        var host = new PhotonHost(parent, PhotonTheme.Instance, ThemeMode.Light, 300, 400);
+        host.RenderFrame(new DisplayListBuilder());
+        var trigger = host.RenderFrame(new DisplayListBuilder()).HitRegions[0].Bounds;
+        host.PressDown(trigger.Center.X, trigger.Center.Y);
+        host.PressUp(trigger.Center.X, trigger.Center.Y);
+        host.RenderFrame(new DisplayListBuilder());
+
+        parent.Shrink();
+        host.RenderFrame(new DisplayListBuilder());
+        Press(host, "Enter");
+
+        chosen.Should().Equal([0], "the highlight was on the third option, and only one is left");
+    }
+
+    private sealed class ShrinkingOptions(List<int> chosen) : StatefulComponent
+    {
+        private IReadOnlyList<string> _options = ["Lisboa", "Porto", "Braga"];
+
+        public void Shrink() => SetState(() => _options = ["Lisboa"]);
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: 0) { Width = 300 };
+            column.Add(new Select(_options, 2, chosen.Add));
+            return column;
+        }
+    }
+
     [Fact]
     public void TheHighlightStartsOnTheValue_SoEnterAloneRecommits()
     {

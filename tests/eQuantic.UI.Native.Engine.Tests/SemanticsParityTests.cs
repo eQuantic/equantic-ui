@@ -141,8 +141,6 @@ public class SemanticsParityTests(ITestOutputHelper output)
         yield return new("case segmented-control", () => new SegmentedControl(["All", "Income"], 0, _ => { }));
         yield return new("case select", () => new Select(["Lisbon", "Porto"], 0, _ => { }));
         yield return new("case select opened", () => new Select(["Lisbon", "Porto"], 0, _ => { }), Open: true);
-        yield return new("case grouped select opened", () => new Select(["Lisboa"], 0, _ => { },
-            groups: [new OptionGroup("A seguir", ["Braga"])]), Open: true);
         yield return new("case time-picker", () => new TimePicker(new TimeOnly(9, 30), _ => { }, label: "Arrival"));
         yield return new("case disabled select", () => new Select(["Lisbon", "Porto"], 0, _ => { }) { Disabled = true });
         yield return new("case disabled time-picker",

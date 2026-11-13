@@ -3844,6 +3844,8 @@ function lowerText(text: TextNode): HtmlNode {
   const heading = typeof level === 'number' && Number.isInteger(level) && level >= 1 && level <= 6;
   const node = element(heading ? `h${level}` : 'span', style, children);
   prependClass(node, `eq-type-${text.role.toLowerCase()}`);
+  // Drawn and never read (C# twin): its words reached the reader another way.
+  if (text.excludeFromSemantics === true) node.attributes['aria-hidden'] = 'true';
   return node;
 }
 
@@ -4494,10 +4496,12 @@ function lowerLiveRegion(node: LiveRegionNode, context: LoweringContext, path: s
 
 /**
  * A LABELLED GROUP (C# twin: LowerGroup) — one `role="group"` host a reader names by its
- * `aria-label` and then walks into. No label, no `aria-label`: a nameless group says nothing. The
+ * `aria-label` and then walks into. No label, no host: a nameless group says nothing. The
  * host takes the child's fill and cap, as every role-bearing wrapper's does.
  */
-function lowerGroup(node: GroupNode, context: LoweringContext, path: string): HtmlNode {
+function lowerGroup(node: GroupNode, context: LoweringContext, path: string): HtmlNode | null {
+  // A group with no name is no group to a reader: the child lowers in its place (C# twin).
+  if (!node.label) return lowerNode(node.child, context, null, path + '/0');
   const fill = fills(node.child);
   const cap = capsAt(node.child);
   const host = element('div', {
@@ -4506,7 +4510,7 @@ function lowerGroup(node: GroupNode, context: LoweringContext, path: string): Ht
     height: fill.height ? '100%' : undefined,
   });
   host.attributes['role'] = 'group';
-  if (node.label) host.attributes['aria-label'] = node.label;
+  host.attributes['aria-label'] = node.label;
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;

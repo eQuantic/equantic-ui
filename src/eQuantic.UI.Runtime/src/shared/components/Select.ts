@@ -4,6 +4,7 @@ export class Select extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Select';
     _open: boolean = false;
     _highlight: number = 0;
+    _choices: string[];
     _disabled: boolean = false;
     declare options: string[];
     declare groups: OptionGroup[];
@@ -19,10 +20,6 @@ export class Select extends StatefulComponent {
         this._disabled = value;
     }
 
-    get choices() {
-        return [...this.options, ...this.groups.flatMap((group) => group.options)];
-    }
-
     constructor(options: any = null, selectedIndex: any = -1, onChanged: any = null, placeholder: any = null, groups: any = null, props?: any) {
         super();
         if (options !== undefined) this.options = options;
@@ -36,6 +33,7 @@ export class Select extends StatefulComponent {
         this.onChanged = onChanged;
         this.placeholder = placeholder;
         this.groups = groups ?? [];
+        this._choices = Select.flatten(this.options, this.groups);
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
@@ -48,7 +46,7 @@ export class Select extends StatefulComponent {
         let radius = slot?.radius ?? theme.shape('medium');
         let borderWidth = slot?.borderWidth ?? 1;
         let rowHeight = slot?.panelRowHeight ?? height;
-        let choices = this.choices;
+        let choices = this._choices;
         let hasValue = this.selectedIndex >= 0 && this.selectedIndex < $eq.collections.count(choices);
         let fieldRow = new Row(gap, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
         fieldRow.add(new Text(hasValue ? $eq.collections.item(choices, this.selectedIndex) : this.placeholder ?? 'Select…', 'bodyM', hasValue ? theme.textPrimary : theme.textMuted, 1));
@@ -62,7 +60,7 @@ export class Select extends StatefulComponent {
             let rows = list;
             if (group.label.length > 0) {
                 rows = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-                rows.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(paddingX, 4), width: SizeValue.fill }), new Text(group.label, 'caption', theme.textMuted, 1)));
+                rows.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(paddingX, 4), width: SizeValue.fill }), new Text(group.label, 'caption', theme.textMuted, 1, 'start', false, false, null, 0, { excludeFromSemantics: true })));
                 list.add(new Group(rows, { label: group.label }));
             }
             for (const option of group.options) rows.add(this.optionRow(theme, option, index++, gap, paddingX, rowHeight));
@@ -85,7 +83,13 @@ export class Select extends StatefulComponent {
         this.onChanged = fresh.onChanged;
         this.placeholder = fresh.placeholder;
         this.groups = fresh.groups;
+        this._choices = fresh._choices;
+        this._highlight = Math.max(0, Math.min(this._highlight, $eq.collections.count(this._choices) - 1));
         this._disabled = fresh.disabled;
+    }
+
+    static flatten(options: string[], groups: OptionGroup[]) {
+        return [...options, ...groups.flatMap((group) => group.options)];
     }
 
     optionRow(theme: any, option: string, index: number, gap: number, paddingX: number, rowHeight: number) {
@@ -103,12 +107,12 @@ export class Select extends StatefulComponent {
     toggle() {
         return this.setState(() => {
             this._open = !this._open;
-            if (this._open) this._highlight = this.selectedIndex >= 0 && this.selectedIndex < $eq.collections.count(this.choices) ? this.selectedIndex : 0;
+            if (this._open) this._highlight = this.selectedIndex >= 0 && this.selectedIndex < $eq.collections.count(this._choices) ? this.selectedIndex : 0;
         });
     }
 
     choose(index: number) {
-        if (index < 0 || index >= $eq.collections.count(this.choices)) return;
+        if (index < 0 || index >= $eq.collections.count(this._choices)) return;
         this.onChanged?.(index);
         this.setState(() => this._open = false);
     }

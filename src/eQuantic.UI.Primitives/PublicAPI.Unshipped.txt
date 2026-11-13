@@ -372,3 +372,5 @@ eQuantic.UI.Primitives.Group.Label.get -> string!
 eQuantic.UI.Primitives.Group.Label.init -> void
 override sealed eQuantic.UI.Primitives.Group.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Group! node, TState state) -> TResult
+eQuantic.UI.Primitives.Text.ExcludeFromSemantics.get -> bool
+eQuantic.UI.Primitives.Text.ExcludeFromSemantics.init -> void

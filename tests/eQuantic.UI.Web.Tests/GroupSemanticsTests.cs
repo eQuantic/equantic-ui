@@ -39,8 +39,8 @@ public class GroupSemanticsTests
 
         reading.SkipWhile(stop => stop.Role != SemanticRole.Option).Select(stop => (stop.Role, stop.Name))
             .Should().Equal(
-                (SemanticRole.Option, "Lisboa"), (SemanticRole.Group, "A seguir"),
-                (SemanticRole.StaticText, "A seguir"), (SemanticRole.Option, "Braga"));
+                [(SemanticRole.Option, "Lisboa"), (SemanticRole.Group, "A seguir"), (SemanticRole.Option, "Braga")],
+                "the heading is the group's name, read once: as the group, never again as text");
         reading.Where(stop => stop.Role == SemanticRole.Option).Select(stop => stop.Selected)
             .Should().Equal(true, false);
     }
@@ -92,14 +92,14 @@ public class GroupSemanticsTests
     }
 
     [Fact]
-    public void AGroupHostSaysGroupAndItsLabel_AndNoLabelWhenItHasNone()
+    public void AGroupHostSaysGroupAndItsLabel_AndIsNoHostWithoutOne()
     {
         var named = WebRealizer.Lower(new Group(new Text("Delivery", TypeRole.BodyM)) { Label = "Shipping" }, Theme).Render();
         named.Attributes["role"].Should().Be("group");
         named.Attributes["aria-label"].Should().Be("Shipping");
 
         var nameless = WebRealizer.Lower(new Group(new Text("Delivery", TypeRole.BodyM)), Theme).Render();
-        nameless.Attributes["role"].Should().Be("group");
-        nameless.Attributes.Should().NotContainKey("aria-label");
+        nameless.Attributes.Should().NotContainKey("role", "a group with no name is no group: the child stands in its place");
+        nameless.Tag.Should().Be("span");
     }
 }

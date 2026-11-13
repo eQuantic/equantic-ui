@@ -659,6 +659,8 @@ interface TextConfig {
   italic?: boolean;
   /** Tabular figures (tnum) — a changing number must not shift its row. */
   tabular?: boolean;
+  /** Drawn and never read (C# `Text.ExcludeFromSemantics`). */
+  excludeFromSemantics?: boolean;
   spans?: import('./nodes').TextRunValue[] | null;
   /** Fills the glyphs with a gradient instead of `color` (background-clip: text). */
   gradient?: LinearGradient | null;
@@ -682,6 +684,8 @@ export class Text extends VisualNode {
   /** The SLANTED cut for the whole paragraph (C# `Text.Italic`). */
   italic = false;
   tabular = false;
+  /** Drawn and never read (C# `Text.ExcludeFromSemantics`). */
+  excludeFromSemantics = false;
   spans: import('./nodes').TextRunValue[] | null = null;
   /** Spec S6: animates color changes (the design's transition-colors). */
   transition: TransitionSpec | null = null;

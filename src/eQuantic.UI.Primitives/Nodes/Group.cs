@@ -30,9 +30,9 @@ public sealed class Group : SingleChildNode
     }
 
     /// <summary>
-    /// The group's name, what a reader hears on arriving at it. Left empty the group is announced
-    /// with no name, which is noise to every reader: a component that has no name for a group wraps
-    /// none.
+    /// The group's name, what a reader hears on arriving at it. Left empty there is NO group: every
+    /// realizer lets the child stand in its place, since a nameless group is noise to every reader
+    /// and a throw would take down a page whose culture's string came back empty.
     /// </summary>
     public string Label { get; init; } = "";
 

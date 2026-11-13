@@ -66,8 +66,8 @@ public class ComboBoxAndDialogSemanticsTests
     }
 
     /// <summary>A grouped Select's open list names each group and then walks into it (#677): the
-    /// group, the heading a person sees, then its options; the web's <c>role="group"</c> reads the
-    /// same three.</summary>
+    /// group, named by the heading a person sees, then its options; the web's <c>role="group"</c>
+    /// reads the same.</summary>
     [Fact]
     public void AGroupedSelectsListNamesEachGroupBeforeItsOptions()
     {
@@ -77,8 +77,8 @@ public class ComboBoxAndDialogSemanticsTests
 
         host.Semantics().Select(node => (node.Role, node.Label)).Should().Equal(
             [(SemanticRole.ComboBox, "Lisboa"), (SemanticRole.Button, "Dismiss"),
-             (SemanticRole.Option, "Lisboa"), (SemanticRole.Group, "A seguir"),
-             (SemanticRole.StaticText, "A seguir"), (SemanticRole.Option, "Braga")]);
+             (SemanticRole.Option, "Lisboa"), (SemanticRole.Group, "A seguir"), (SemanticRole.Option, "Braga")],
+            "the heading is the group's name, read once: as the group, never again as text");
         host.Semantics().Where(node => node.Role == SemanticRole.Option).Select(option => option.Selected)
             .Should().Equal([true, false]);
     }
@@ -110,6 +110,11 @@ public class ComboBoxAndDialogSemanticsTests
             [SemanticRole.Group, SemanticRole.StaticText, SemanticRole.Checkbox]);
         semantics[0].Label.Should().Be("Shipping");
         semantics[1].Label.Should().Be("Delivery");
+
+        var nameless = new Column(gap: 8);
+        nameless.Add(new Text("Delivery", TypeRole.BodyM));
+        Render(new Group(nameless)).Semantics().Select(node => node.Role).Should().Equal(
+            [SemanticRole.StaticText], "a group with no name is no group: its child stands in its place");
     }
 
     [Fact]

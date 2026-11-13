@@ -275,8 +275,9 @@ internal sealed partial class SemanticsVisitor
 
     /// <summary>A labelled group: one stop named by its label, then what it holds, as the web's
     /// <c>role="group"</c> is read.</summary>
-    public bool Visit(Group node, LayoutNode laidOut) =>
-        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+    public bool Visit(Group node, LayoutNode laidOut) => node.Label.Length == 0
+        ? Wraps
+        : AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
 
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(DragDismiss node, LayoutNode laidOut) => Wraps;

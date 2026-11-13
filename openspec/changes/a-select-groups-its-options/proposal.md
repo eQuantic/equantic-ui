@@ -80,7 +80,7 @@ Parts reached, in the order of the work:
 - **Photon**: `Native.Framework/Layout/MeasureVisitor.cs`, `Native.Components/EmitVisitor.cs`,
   `Native.Components/SemanticsVisitor.Interaction.cs`. No shell changes: `SemanticRole.Group` is bridged
   on every platform already.
-- **Email realizer**: `EmailWalk.Interaction.cs` walks into a `Group`.
+- **Email realizer**: `EmailWalk.cs` walks into a `Group`.
 - **SDKs, templates, eqc, `appsettings`**: nothing. `developer-surface.baseline.txt` does not move.
 - **Docs**: the wiki's component page for Select in every language it is written in, the Upgrading
   page (the binary break), one ledger entry under `docs/ledger/`. `docs/FLUTTER-PARITY.md` gains no

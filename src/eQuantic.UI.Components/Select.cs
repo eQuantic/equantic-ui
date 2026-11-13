@@ -32,6 +32,10 @@ public sealed class Select : StatefulComponent
     /// which is the app's committed value: arrowing around commits nothing until Enter.</summary>
     private int _highlight;
 
+    /// <summary>Every option in reading order, the one list an index counts in: settled when the
+    /// options arrive, in the constructor and in <see cref="AdoptConfig"/>.</summary>
+    private IReadOnlyList<string> _choices;
+
     public Select(IReadOnlyList<string>? options = null, int selectedIndex = -1,
         Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null)
     {
@@ -40,6 +44,7 @@ public sealed class Select : StatefulComponent
         OnChanged = onChanged;
         Placeholder = placeholder;
         Groups = groups ?? [];
+        _choices = Flatten(Options, Groups);
     }
 
     /// <summary>The options outside every group, which lead the list.</summary>
@@ -62,6 +67,9 @@ public sealed class Select : StatefulComponent
         OnChanged = fresh.OnChanged;
         Placeholder = fresh.Placeholder;
         Groups = fresh.Groups;
+        _choices = fresh._choices;
+        // The list can shrink under an open panel: the keyboard stays on an option that exists.
+        _highlight = Math.Max(0, Math.Min(_highlight, _choices.Count - 1));
         _disabled = fresh.Disabled;
     }
 
@@ -78,7 +86,7 @@ public sealed class Select : StatefulComponent
         var radius = slot?.Radius ?? theme.Shape(ShapeScale.Medium);
         var borderWidth = slot?.BorderWidth ?? 1;
         var rowHeight = slot?.PanelRowHeight ?? height;
-        var choices = Choices;
+        var choices = _choices;
         var hasValue = SelectedIndex >= 0 && SelectedIndex < choices.Count;
 
         var fieldRow = new Row(gap: gap) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
@@ -111,8 +119,9 @@ public sealed class Select : StatefulComponent
             if (group.Label.Length > 0)
             {
                 rows = new Column(gap: 0) { Width = SizeValue.Fill };
+                // The heading is the group's name, which the Group announces: drawn, and read once.
                 rows.Add(new Box(new BoxStyle { Padding = EdgeInsets.Symmetric(paddingX, Space.S1), Width = SizeValue.Fill },
-                    new Text(group.Label, TypeRole.Caption, theme.TextMuted, maxLines: 1)));
+                    new Text(group.Label, TypeRole.Caption, theme.TextMuted, maxLines: 1) { ExcludeFromSemantics = true }));
                 list.Add(new Group(rows) { Label = group.Label });
             }
             foreach (var option in group.Options)
@@ -159,8 +168,8 @@ public sealed class Select : StatefulComponent
         return select;
     }
 
-    /// <summary>Every option in reading order, the one list an index counts in.</summary>
-    private IReadOnlyList<string> Choices => [.. Options, .. Groups.SelectMany(group => group.Options)];
+    private static IReadOnlyList<string> Flatten(IReadOnlyList<string> options, IReadOnlyList<OptionGroup> groups) =>
+        [.. options, .. groups.SelectMany(group => group.Options)];
 
     private Pressable OptionRow(IAppTheme theme, string option, int index, float gap, float paddingX, float rowHeight)
     {
@@ -200,12 +209,12 @@ public sealed class Select : StatefulComponent
         _open = !_open;
         // The keyboard starts where the VALUE is — Enter straight away re-commits the current
         // choice, which is the no-surprise default the platforms share.
-        if (_open) _highlight = SelectedIndex >= 0 && SelectedIndex < Choices.Count ? SelectedIndex : 0;
+        if (_open) _highlight = SelectedIndex >= 0 && SelectedIndex < _choices.Count ? SelectedIndex : 0;
     });
 
     private void Choose(int index)
     {
-        if (index < 0 || index >= Choices.Count) return;
+        if (index < 0 || index >= _choices.Count) return;
         OnChanged?.Invoke(index);
         SetState(() => _open = false);
     }
