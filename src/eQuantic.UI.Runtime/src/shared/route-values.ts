@@ -38,13 +38,20 @@ export class RouteValues {
   private readonly parameters: Readonly<Record<string, string>>;
   private readonly queries: Readonly<Record<string, string>>;
 
+  /**
+   * The path the route was matched on, as the address names it (C# `RouteValues.Path`): no query, no
+   * fragment. What `Navigator.of(context).location` answers on the server's side of the seam.
+   */
+  readonly path: string;
+
   /** Each side a dictionary when transpiled C# builds one, as its C# type says, or a plain object. */
-  constructor(parameters?: Bag<string> | null, query?: Bag<string> | null) {
+  constructor(parameters?: Bag<string> | null, query?: Bag<string> | null, path = '/') {
     // COPIED into prototype-less records rather than held: what a caller hands over may itself have
     // lost a key to the trap above, and holding it would also let a later mutation of the caller's
     // object change a route already handed to a page.
     this.parameters = ownProperties(parameters);
     this.queries = ownProperties(query);
+    this.path = path;
   }
 
   /**
@@ -58,6 +65,7 @@ export class RouteValues {
   static from(
     parameters: Record<string, string>,
     query: URLSearchParams | Record<string, string>,
+    path = '/',
   ): RouteValues {
     const pairs: Record<string, string> = Object.create(null);
     if (query instanceof URLSearchParams) {
@@ -67,7 +75,7 @@ export class RouteValues {
     } else {
       for (const key of Object.keys(query ?? {})) pairs[key] = (query as Record<string, string>)[key];
     }
-    return new RouteValues(parameters, pairs);
+    return new RouteValues(parameters, pairs, path);
   }
 
   /** A matched route parameter — the `slug` of `/docs/{slug}`. Null when nothing matched it. */
@@ -88,7 +96,7 @@ export class RouteValues {
     return this.parameters;
   }
 
-  /** The route nothing matched — every lookup answers null (C# `RouteValues.Empty`). */
+  /** The route nothing matched — every lookup answers null and its path is the root (C# `RouteValues.Empty`). */
   static readonly empty = new RouteValues();
 
   private static active: RouteValues = RouteValues.empty;

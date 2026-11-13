@@ -11,20 +11,13 @@ namespace eQuantic.Console;
 /// console's scrolling page and fills it, which a table takes as the visible height of that page.
 /// </summary>
 [Page("/table", Title = "Table — eQuantic Console")]
-public sealed class TableScreen : StatefulComponent
+public sealed class TableScreen : StatelessComponent
 {
     // Excel's sheet, plus the header row and the column of row numbers in front of it.
     private static readonly TableSpans Rows = new UniformTableSpans(1_048_576 + 1, 28);
     private static readonly TableSpans Columns = new UniformTableSpans(16_384 + 1, 96);
 
-    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
-    private bool _navOpen;
-
-    public override VisualNode Build(ComponentContext context) =>
-        ConsoleShell.Frame(context.Theme, "/table", "Table", Content(context),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
-
-    private static VisualNode Content(ComponentContext context)
+    public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var table = new TableView(Rows, Columns, (row, column) => Cell(theme, row, column))

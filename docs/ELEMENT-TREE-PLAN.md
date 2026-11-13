@@ -277,15 +277,15 @@ because a test draws one frame after another and drives input the way a browser 
   the path attributes become element state and element ids.
 
   A client navigation changes the page's type, and by the rule of 3.1 that replaces the page's
-  element with everything the page built. The samples build their frame inside each page today
-  (`ConsoleShell.Frame(…)` in every screen's `Build`, the sidebar's open state a field of each page),
-  so for them a navigation stays what it is now: the DOM is patched position by position, and no
-  instance survives. What survives a navigation is what sits ABOVE the page. *How does Flutter solve
-  it?* go_router's `ShellRoute`: the shell is a route of its own, and the pages are its child. Here the
-  app declares its shell once, in `Program.cs`, as a component with a slot the router fills with the
-  page; the shell's element and its instance stay mounted across navigations, the page's element is
-  replaced under it, and the old page unmounts before the new one mounts. E3 moves the dashboard
-  sample's frame there, which is its proof.
+  element with everything the page built. The dashboard built its frame inside each page until E3
+  (every screen's `Build` called the frame, and the sidebar's open state was a field of each page),
+  so a navigation patched its DOM position by position, and no instance survived. What survives a
+  navigation is what sits ABOVE the page. *How does Flutter solve it?* go_router's `ShellRoute`: the
+  shell is a route of its own, and the pages are its child. Here the app declares its shell once, in
+  `Program.cs`, as a component with a slot the router fills with the page; the shell's element and its
+  instance stay mounted across navigations, the page's element is replaced under it, and the old page
+  unmounts before the new one mounts. E3 moved the dashboard sample's frame there, `ConsoleLayout`
+  (#1129), which is its proof.
 - **Email.** A message mounts a tree once, structurally, lowers it and discards it.
 
 ### 3.8 The strings that stay, at the seams

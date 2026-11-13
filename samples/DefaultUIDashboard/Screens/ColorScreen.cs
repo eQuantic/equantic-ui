@@ -9,18 +9,11 @@ namespace eQuantic.Console;
 /// value threw here after hydration while the server's page looked right (#494).
 /// </summary>
 [Page("/colors", Title = "Colors — eQuantic Console")]
-public sealed class ColorScreen : StatefulComponent
+public sealed class ColorScreen : StatelessComponent
 {
     private static readonly Color Brand = Color.FromRgb(0xF8, 0x71, 0x71);
 
-    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
-    private bool _navOpen;
-
-    public override VisualNode Build(ComponentContext context) =>
-        ConsoleShell.Frame(context.Theme, "/colors", "Colors", Content(context),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
-
-    private static VisualNode Content(ComponentContext context)
+    public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var faded = Brand.WithOpacity(0.8f);

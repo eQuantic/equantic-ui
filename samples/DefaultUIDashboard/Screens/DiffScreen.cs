@@ -14,9 +14,6 @@ namespace DefaultUIDashboard.Screens;
 [Page("/diff", Title = "Code diff — eQuantic Console")]
 public sealed class DiffScreen : StatefulComponent
 {
-    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
-    private bool _navOpen;
-
     private string _status = "";
 
     /// <summary>Parsed once and kept: a diff opens its patch again when it is handed a new one.</summary>
@@ -102,11 +99,7 @@ public sealed class DiffScreen : StatefulComponent
          }
         """;
 
-    public override VisualNode Build(ComponentContext context) =>
-        ConsoleShell.Frame(context.Theme, "/diff", "Code diff", Content(context),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
-
-    private VisualNode Content(ComponentContext context)
+    public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var page = new Column(gap: Space.S3) { Width = SizeValue.Fill };

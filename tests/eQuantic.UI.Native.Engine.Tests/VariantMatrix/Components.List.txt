@@ -1,0 +1,36 @@
+## Comfortable
+### web
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-5ew4ww{min-width:0}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+List 0 0 480x0
+  Column 0 0 480x0
+
+## Compact
+### web
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-5ew4ww{min-width:0}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+List 0 0 480x0
+  Column 0 0 480x0
+

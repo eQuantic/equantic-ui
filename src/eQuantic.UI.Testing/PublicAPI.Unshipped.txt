@@ -1,1 +1,2 @@
 #nullable enable
+eQuantic.UI.Testing.ComponentTester.Css.get -> string!

@@ -262,6 +262,44 @@ public class UIOptions
     }
 
     /// <summary>
+    /// The app's layout: the component every page is shown inside, on the server and in the browser,
+    /// <c>ui.UseLayout&lt;ConsoleLayout&gt;()</c>. It takes the page through its one constructor parameter,
+    /// <c>public ConsoleLayout(VisualNode body)</c>, and places it where the page belongs: the frame
+    /// around it (a sidebar, a toolbar) is written once, here, instead of in every page.
+    /// <para>
+    /// In the browser the layout STAYS MOUNTED across client navigations: a navigation hands it the new
+    /// page, its instance and its state are kept (a sidebar left open stays open), and only the page is
+    /// replaced. A layout reads the page being shown with <c>Navigator.Of(context).Location</c>. Without a
+    /// layout every page is shown as it builds, as before.
+    /// </para>
+    /// <para>
+    /// The word is .NET's: Blazor's layout, which takes the page as its <c>Body</c>. A page written as
+    /// DOM (<c>MapPage</c> over an <c>HtmlElement</c>) is not a node a layout can place, and is shown
+    /// without it.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="TLayout">A component with a public constructor whose one parameter is the page.</typeparam>
+    /// <exception cref="InvalidOperationException"><typeparamref name="TLayout"/> has no public constructor
+    /// taking one <see cref="VisualNode"/>, or is abstract.</exception>
+    public UIOptions UseLayout<TLayout>() where TLayout : UiComponent
+    {
+        var layout = typeof(TLayout);
+        if (layout.IsAbstract || layout.GetConstructor([typeof(VisualNode)]) is not { IsPublic: true })
+        {
+            throw new InvalidOperationException(
+                $"{layout.FullName} cannot be the app's layout: a layout is built around every page, so it "
+                + $"needs a public constructor that takes the page, public {layout.Name}(VisualNode body), "
+                + "on a class that is not abstract.");
+        }
+
+        Layout = layout;
+        return this;
+    }
+
+    /// <summary>The app's layout (<see cref="UseLayout{TLayout}"/>), or null when it declared none.</summary>
+    internal Type? Layout { get; private set; }
+
+    /// <summary>
     /// Registers an asset provider for a specific component type.
     /// The provider will supply additional or overriding assets for the component.
     /// </summary>

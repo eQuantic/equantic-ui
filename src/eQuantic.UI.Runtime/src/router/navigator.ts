@@ -8,6 +8,9 @@
  * falls back to a full document load, which is the honest behavior for a plain multi-page site.
  */
 
+import { RouteValues } from '../shared/route-values';
+import { splitCulturePath } from '../utils/culture-routes';
+
 type NavigationHandler = (destination: string) => void;
 
 let handler: NavigationHandler | null = null;
@@ -20,6 +23,14 @@ export function setNavigationHandler(next: NavigationHandler | null): void {
 /** What `Navigator.of(context)` answers: the C# `Navigator` instance a component navigates through. */
 export interface ContextNavigator {
   go(destination: string): void;
+  /**
+   * The path of the page being shown (C# `Navigator.Location`), as the app writes it: the address's
+   * without the language segment (`/pt-BR/charts` is `/charts`), so a layout compares it with the
+   * href it wrote. The router updates the address (`pushState`) before anything builds for a
+   * navigation, so a layout building around the new page reads the new path. With no document, the
+   * route's.
+   */
+  readonly location: string;
 }
 
 export const Navigator = {
@@ -45,4 +56,9 @@ export const Navigator = {
   },
 };
 
-const contextNavigator: ContextNavigator = { go: (destination: string) => Navigator.go(destination) };
+const contextNavigator: ContextNavigator = {
+  go: (destination: string) => Navigator.go(destination),
+  get location(): string {
+    return typeof window !== 'undefined' ? splitCulturePath(window.location.pathname)[1] : RouteValues.current.path;
+  },
+};

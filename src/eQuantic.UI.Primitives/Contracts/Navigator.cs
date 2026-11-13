@@ -18,14 +18,28 @@ public sealed class Navigator
 {
     private readonly Action<string>? _go;
 
-    private Navigator(Action<string>? go) => _go = go;
+    private Navigator(Action<string>? go, string location)
+    {
+        _go = go;
+        Location = location;
+    }
 
     /// <summary>The navigator of the tree <paramref name="context"/>'s component is in.</summary>
     public static Navigator Of(ComponentContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return new Navigator(context.Navigation);
+        return new Navigator(context.Navigation, context.Route.Path);
     }
+
+    /// <summary>
+    /// The path of the page being shown, as the app writes it: <c>/charts</c>, with no query, no
+    /// fragment and no language segment, so a page served at <c>/pt-BR/charts</c> is at <c>/charts</c>,
+    /// the href its own links name (<c>UseCultureRoutes</c> adds the segment as a link is drawn). An
+    /// app's layout builds around every page, and marks the destination it shows with this (the entry of
+    /// a sidebar whose destination equals it). The server answers the path of the request it renders,
+    /// the browser the path in the address, which a navigation updates before anything builds for it.
+    /// </summary>
+    public string Location { get; }
 
     /// <summary>
     /// Navigates to <paramref name="destination"/>.

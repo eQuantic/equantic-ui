@@ -860,7 +860,7 @@ Bun and the JS bundling chain, the TypeScript runtime.
   the `#app` frame is now EXACT viewport height (app pages scroll internally, document pages
   overflow and body-scroll as before — one CSS rule, both worlds); a web `ScrollView` without
   explicit Height defaults to 100% (a scroll view IS the window its parent gives it — native
-  parity; the console shell's fixed-toolbar design started working on web the moment this landed);
+  parity; the console's fixed-toolbar design started working on web the moment this landed);
   hydration adopts `data-eq-*` framework markers (SSR cannot know client identities). Proof: 6
   `ListViewTests` (window materializes, commands independent of Count — 100 vs 10 000 emit
   IDENTICAL command counts —, MaxOffset sees the whole list, scroll moves the window, sub-row
