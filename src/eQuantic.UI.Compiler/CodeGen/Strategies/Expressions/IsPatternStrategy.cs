@@ -97,7 +97,13 @@ public class IsPatternStrategy : IConversionStrategy
             var subject = $"$v{binary.SpanStart}";
             string tested;
             if (context.SemanticHelper.GetOperation(binary) is IIsPatternOperation { Pattern: IConstantPatternOperation constant })
-                tested = PatternConverter.ConstantTest(subject, ConstantOf(constant.Value, binary.Right, context), constant.Value, context);
+            {
+                // Over a value held as object, the member or the float it names is boxed to be compared (Boxing).
+                var compared = ConstantOf(constant.Value, binary.Right, context);
+                if (Boxing.BoxedConstant(constant.Value) is { } boxed)
+                    compared = JsExprWriter.Write(Boxing.Box(boxed, JsExpr.Literal(compared), context));
+                tested = PatternConverter.ConstantTest(subject, compared, constant.Value, context);
+            }
             else if (binary.Right is TypeSyntax typeSyntax)
                 tested = PatternConverter.TypeCheck(typeSyntax, subject, context);
             else

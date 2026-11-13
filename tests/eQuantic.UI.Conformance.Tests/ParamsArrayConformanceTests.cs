@@ -64,4 +64,32 @@ public class ParamsArrayConformanceTests
     [InlineData("var f = (params int[] xs) => xs.Length; return f() + \"|\" + f(1, 2) + \"|\" + f(new[] { 1 });")]
     public void AParamsParameter_IsTheArrayItIs(string statements) =>
         ModuleGraph.AssertSameAsDotNet(Source, false, ("case", statements));
+
+    /// <summary>A constructor's <c>params</c> parameter, which stayed a rest parameter: an array handed whole was
+    /// spread into the call, past an engine's argument cap, and the constructor got a copy where .NET hands it the
+    /// caller's array (#1192). Its overloads, a chain through <c>: this</c>, a base's through <c>: base</c>, a
+    /// record's primary constructor and a named argument, each executed on both sides.</summary>
+    private const string Constructors = """
+        public class Pack { public int[] Items; public Pack(params int[] items) { Items = items; } public int Count => Items.Length; }
+        public class Named { public string First; public string[] Rest; public Named(string first, params string[] rest) { First = first; Rest = rest; } }
+        public class Many { public int Kind = -1; public int[] Xs = new int[0]; public Many() { Kind = 0; } public Many(int kind, params int[] xs) { Kind = kind; Xs = xs; } }
+        public class Chained { public int[] Xs; public Chained(params int[] xs) { Xs = xs; } public Chained(string s, int n) : this(1, 2, n) { } }
+        public class BaseP { public int[] Xs; public BaseP(params int[] xs) { Xs = xs; } }
+        public class DerivedP : BaseP { public DerivedP() : base(4, 5) { } public DerivedP(int[] all) : base(all) { } }
+        public record RecP(params int[] Xs);
+        """;
+
+    [SkippableTheory]
+    [InlineData("var big = new int[1000000]; return new Pack(big).Count.ToString();")]                                            // 1000000
+    [InlineData("var a = new[] { 1, 2 }; var p = new Pack(a); a[0] = 9; return p.Items[0] + \"|\" + object.ReferenceEquals(a, p.Items);")] // 9|True
+    [InlineData("return new Pack().Count + \"|\" + new Pack(1).Count + \"|\" + new Pack(1, 2, 3).Count;")]                        // 0|1|3
+    [InlineData("var n = new Named(\"a\", \"b\", \"c\"); var e = new Named(\"z\"); return n.First + \"|\" + string.Join(\",\", n.Rest) + \"|\" + e.Rest.Length;")] // a|b,c|0
+    [InlineData("var n = new Named(first: \"x\", rest: new[] { \"y\" }); return n.First + \"|\" + string.Join(\",\", n.Rest);")] // x|y
+    [InlineData("var n = new Named(first: \"x\"); var m = new Named(\"y\", rest: \"z\"); return n.Rest.Length + \"|\" + string.Join(\",\", m.Rest);")] // 0|z
+    [InlineData("var m = new Many(); var m2 = new Many(7); var m3 = new Many(7, 1, 2); return m.Kind + \"|\" + m2.Kind + \"|\" + m2.Xs.Length + \"|\" + m3.Xs.Length;")] // 0|7|0|2
+    [InlineData("var c = new Chained(\"s\", 7); return c.Xs.Length + \"|\" + c.Xs[2] + \"|\" + new Chained(5, 6).Xs.Length;")]                // 3|7|2
+    [InlineData("var all = new[] { 1, 2, 3 }; var d = new DerivedP(all); return new DerivedP().Xs.Length + \"|\" + d.Xs.Length + \"|\" + object.ReferenceEquals(all, d.Xs);")] // 2|3|True
+    [InlineData("var a = new[] { 5 }; var r = new RecP(1, 2); var s = new RecP(a); return r.Xs.Length + \"|\" + object.ReferenceEquals(a, s.Xs);")] // 2|True
+    public void AConstructorsParamsParameter_IsTheArrayItIs(string statements) =>
+        ModuleGraph.AssertSameAsDotNet(Constructors, false, ("case", statements));
 }

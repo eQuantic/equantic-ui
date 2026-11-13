@@ -73,6 +73,12 @@ public class WithExpressionStrategy : IConversionStrategy
         {
             return $"{receiver}.with({{ {entries} }})";
         }
+        // A copy of an anonymous object is one too, its mark kept where a spread drops it (#742).
+        if (type is { IsAnonymousType: true })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.Anonymous}({{ ...{receiver}, {entries} }})";
+        }
         return $"{{ ...{receiver}, {entries} }}";
     }
 
