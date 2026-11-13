@@ -46,7 +46,7 @@ public class FrameLoweringTests
 
     private static HtmlNode Frame(MarkupHost host, VisualNode root, bool rebuildAll = false)
     {
-        host.Build(root, WindowSizeClass.Expanded, rebuildAll);
+        host.Build(root, rebuildAll);
         var lowered = host.Lower().Render();
         host.EndFrame();
         return lowered;
@@ -150,7 +150,7 @@ public class FrameLoweringTests
 
         var scope = new ComponentExpansionScope();
         // Every component builds again, so the page hands the position a FRESH counter.
-        host.Build(page, WindowSizeClass.Expanded, rebuildAll: true);
+        host.Build(page, rebuildAll: true);
         host.Lower(new RenderChannels(scope));
         host.EndFrame();
         scope.Expanded.Values.OfType<Counter>().Should().ContainSingle().Which.Should().BeSameAs(kept);
@@ -160,8 +160,7 @@ public class FrameLoweringTests
     public void AComponentTheFrameDidNotBuild_IsRefused_RatherThanDrawnAtItsDefaults()
     {
         var host = Host();
-        var frame = new ElementFrame(host.Build(new Page(() => new Text("only text", TypeRole.BodyM)),
-            WindowSizeClass.Expanded));
+        var frame = new ElementFrame(host.Build(new Page(() => new Text("only text", TypeRole.BodyM))));
 
         var stranger = new Counter();
         var lowering = () => frame.At(stranger);

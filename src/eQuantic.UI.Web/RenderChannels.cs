@@ -45,6 +45,12 @@ public sealed class RenderChannels
     /// round loaded for it; null when the render loads nothing.</summary>
     public ComponentExpansionScope? Expansion { get; }
 
+    private int _trees;
+
+    /// <summary>The next tree of the render, in the order its bridges draw: what their components'
+    /// server data keys start with, as the browser counts the roots its render lowers.</summary>
+    internal int NextTree() => _trees++;
+
     /// <summary>The density the browser reported, which every bridge of the render is built at.</summary>
     public Density Density { get; }
 

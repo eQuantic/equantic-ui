@@ -85,7 +85,7 @@ public sealed class NodeElement : Element
         Owner.EnterLayer(this);
         try
         {
-            var shown = UpdateChild(ChildAt(_deferred), configuration, Owner.RebuildingAll)!;
+            var shown = UpdateChild(ChildAt(_deferred), configuration, _deferred, Owner.RebuildingAll)!;
             _children[_deferred] = shown;
             _shownInFrame = Owner.Frame;
             // What a SetState marked under the slot builds now, with the configuration the layer
@@ -131,7 +131,7 @@ public sealed class NodeElement : Element
 
     private void UpdateChildren(bool force)
     {
-        var slots = ChildSlots.Of(Configuration, Owner.SizeClass);
+        var slots = ChildSlots.Of(Configuration, Owner.SizeClass, Owner.HoldsEveryArm);
         _deferred = slots.Deferred;
         if (slots.IsList && AnyKey(slots))
         {
@@ -145,7 +145,7 @@ public sealed class NodeElement : Element
         {
             // Left as it is: the realizer builds it when it shows it (see ShowDeferred).
             if (slot == _deferred) continue;
-            _children[slot] = UpdateChild(_children[slot], slots[slot], force);
+            _children[slot] = UpdateChild(_children[slot], slots[slot], slot, force);
         }
 
         for (var slot = _children.Count - 1; slot >= count; slot--)
@@ -223,8 +223,12 @@ public sealed class NodeElement : Element
         for (var i = 0; i < count; i++)
         {
             var node = slots[i]!;
-            if (_children[i] is { } kept) kept.Update(node, force);
-            else _children[i] = Inflate(node);
+            if (_children[i] is { } kept)
+            {
+                kept.Slot = i;
+                kept.Update(node, force);
+            }
+            else _children[i] = Inflate(node, i);
         }
     }
 

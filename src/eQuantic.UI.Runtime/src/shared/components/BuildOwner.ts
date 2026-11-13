@@ -1,16 +1,18 @@
 import { $eq, BuildContext, ComponentElement, Element, NodeElement, StatefulComponent, UiComponent, VisualNode, WindowSizeClassValue } from "../runtime-exports";
 
 export class BuildOwner {
-    constructor(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode = undefined!, live: boolean = undefined!) {
-        if (arguments.length === 1) {
-            let $c0: any, $c1: any;
+    constructor(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode = undefined!, live: boolean = undefined!, holdsEveryArm: boolean = undefined!) {
+        if (arguments.length >= 1 && arguments.length <= 2) {
+            let $c0: any, $c1: any, $c2: any;
             {
-                let buildComponent: any = arguments[0];
+                let buildComponent: any = arguments[0], holdsEveryArm: any = arguments[1] === undefined ? false : arguments[1];
                 $c0 = buildComponent;
                 $c1 = true;
+                $c2 = holdsEveryArm;
             }
             buildComponent = $c0;
             live = $c1;
+            holdsEveryArm = $c2;
         }
         this._dirty = [];
         this._dirtyNextFrame = [];
@@ -29,18 +31,21 @@ export class BuildOwner {
         this._stamp = 0;
         this._ids = 0;
         this._buildComponent = null!;
+        this.building = null;
         this.buildRequested = null;
         this.root = null;
         this.frame = 0;
         this.rebuildingAll = false;
         this.marks = 0;
         this.live = false;
+        this.holdsEveryArm = false;
         this.sizeClass = 'compact';
         this.navigationRequested = null;
         this.keyScratch = $eq.collections.dictionary();
         $eq.guard.throwIfNull(buildComponent, 'buildComponent');
         this._buildComponent = buildComponent;
         this.live = live;
+        this.holdsEveryArm = holdsEveryArm;
     }
 
     _dirty!: ComponentElement[];
@@ -60,12 +65,14 @@ export class BuildOwner {
     _stamp!: number;
     _ids!: number;
     _buildComponent!: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode;
+    building!: ComponentElement | null;
     buildRequested!: (() => void) | null;
     root!: Element | null;
     frame!: number;
     rebuildingAll!: boolean;
     marks!: number;
     live!: boolean;
+    holdsEveryArm!: boolean;
     sizeClass!: WindowSizeClassValue;
     navigationRequested!: ((string: string) => void) | null;
     keyScratch!: any;
@@ -104,12 +111,18 @@ export class BuildOwner {
         BuildOwner.$init().byDepth = value;
     }
 
-    static structural(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode) {
-        return new BuildOwner(buildComponent, false);
+    static structural(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode, holdsEveryArm: boolean = false) {
+        return new BuildOwner(buildComponent, false, holdsEveryArm);
     }
 
-    buildComponent(component: UiComponent, context: BuildContext, depth: number) {
-        return this._buildComponent(component, context, depth);
+    buildComponent(position: ComponentElement) {
+        let outer = this.building;
+        this.building = position;
+        try {
+            return this._buildComponent(position.component, position.context, position.componentDepth);
+        } finally {
+            this.building = outer;
+        }
     }
 
     countMark() {
@@ -129,7 +142,7 @@ export class BuildOwner {
             if (this.root == null || !Element.canUpdate(this.root.configuration, root)) {
                 if (!(this.root == null)) this.deactivate(this.root);
                 this.root = Element.create(root);
-                this.root.mount(this, null);
+                this.root.mount(this, null, 0);
             } else if (rebuildAll || !(this.root.configuration === root)) {
                 this.root.update(root, rebuildAll);
             }

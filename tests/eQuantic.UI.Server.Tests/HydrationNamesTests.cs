@@ -136,7 +136,7 @@ public class HydrationNamesTests
     public async Task ACapturedParameter_CrossesUnderItsName_WithTheValueThePrefetchLeft()
     {
         var state = await PayloadOf("/hydration-names");
-        var quote = state.GetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(Quote), 0));
+        var quote = PayloadKeys.Get(state, typeof(Quote));
 
         Names(quote).Should().Equal(["symbol"]);
         quote.GetProperty("symbol").GetString().Should().Be("ACME");

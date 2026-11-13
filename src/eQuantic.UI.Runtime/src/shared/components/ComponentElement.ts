@@ -96,11 +96,11 @@ export class ComponentElement extends Element {
             if ((($0) => ($0 instanceof StatefulComponent && (stateful = $0, true)))(this.component)) stateful.notifyDependenciesChanged();
         }
         let built = this.buildContained();
-        this._child = this.updateChild(this._child, built, force);
+        this._child = this.updateChild(this._child, built, 0, force);
     }
 
     buildContained() {
-        return this.owner.buildComponent(this.component, this.context, this.componentDepth);
+        return this.owner.buildComponent(this);
     }
 
     markNeedsBuild() {

@@ -36,10 +36,13 @@ public sealed class VisualNodeComponent : HtmlElement
     /// PAGE, shared by every bridge the page composes.</summary>
     public StyleSink Styles { get; } = new();
 
-    public override HtmlNode Render() =>
+    public override HtmlNode Render()
+    {
         // An escape-hatch page renders this from inside an HtmlElement's Render(), which takes no
         // parameter, so the render's channels are found where the server armed them (#1404).
-        RenderChannels.Bridge is { } channels
-            ? WebRealizer.Lower(Node, _theme, _typeScale, channels).Render()
-            : WebRealizer.Lower(Node, _theme, _typeScale, Styles).Render();
+        if (RenderChannels.Bridge is not { } channels)
+            return WebRealizer.Lower(Node, _theme, _typeScale, Styles).Render();
+
+        return MarkupHost.DrawOnce(Node, _theme, _typeScale, channels).Render();
+    }
 }

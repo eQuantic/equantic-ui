@@ -347,9 +347,9 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
 
   it('names every component of a page that mixes them with and without state, as the server does', async () => {
     // A component with no state is a node of kind `component` too (C# `UiComponent : VisualNode`), so
-    // the lowering names it in the same arm as one with state, where it used to name itself in its own
-    // render(). Both sides count `Type#ordinal` per TYPE in depth-first order, so the move shifts no
-    // ordinal of either kind: each instance below adopts the entry the server wrote for it alone.
+    // it has a position as one with state does. Both sides name a component by where it stands, the
+    // tree, its type and the slots down to it (#1477): each instance below adopts the entry the server
+    // wrote for it alone.
     const { StatefulComponent, StatelessComponent } = await import('./component');
     const { Column } = await import('../shared/vocabulary');
     const column = (children: unknown[]) => {
@@ -377,11 +377,11 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
       }
     }
     win.__INITIAL_STATE__ = {
-      'App.Section#0': { _title: 'first section' },
-      'App.Counter#0': { _count: 1 },
-      'App.Counter#1': { _count: 2 },
-      'App.Section#1': { _title: 'second section' },
-      'App.Counter#2': { _count: 3 },
+      'r0/App.Section@0': { _title: 'first section' },
+      'r0/App.Counter@0.0.0': { _count: 1 },
+      'r0/App.Counter@1': { _count: 2 },
+      'r0/App.Section@2': { _title: 'second section' },
+      'r0/App.Counter@2.0.0': { _count: 3 },
     };
     const inFirst = new Counter();
     const between = new Counter();
