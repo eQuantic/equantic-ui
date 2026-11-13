@@ -161,6 +161,25 @@ describe('the route in the browser', () => {
     expect(builds, 'the route has readers of its own').toEqual({ route: 1 });
   });
 
+  it('builds no reader of the route when a new frame hands the same route', () => {
+    // A page lowers with a new context every render, carrying the router's route, which is the same
+    // instance until a navigation.
+    const route = new RouteValues({ slug: 'same' }, null);
+    const sameRoute = () => new ComponentContext(photonTheme, 1, 'comfortable', undefined, route);
+    const owner = new BuildOwner((component, context) => component.build(context) as unknown as VisualNode);
+    const column = new Column(0);
+    column.add(new RouteReader() as never);
+    column.add(new Bystander() as never);
+    owner.build(column as unknown as VisualNode, sameRoute() as never, 'compact', true);
+    owner.endFrame();
+
+    builds = {};
+    owner.build(column as unknown as VisualNode, sameRoute() as never, 'compact', false);
+    owner.endFrame();
+
+    expect(builds, 'the frame is new and its route is not').toEqual({});
+  });
+
   it("lowers a page's components with the router's route, as the server draws them with the request's", () => {
     setCurrentRoute(new RouteValues({ slug: 'intro' }, null));
     try {

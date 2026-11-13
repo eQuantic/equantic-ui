@@ -340,6 +340,25 @@ public class InheritedComponentTests
         log.Entries.Should().Equal(["slug second"], "the route has readers of its own");
     }
 
+    /// <summary>
+    /// A frame is a new context every time a host draws, and the route it hands is the one the host
+    /// holds until a navigation: a new frame with the same route builds none of the route's readers.
+    /// </summary>
+    [Fact]
+    public void ANewFrameWithTheSameRoute_BuildsNoReaderOfTheRoute()
+    {
+        var log = new Log();
+        var root = new Column { new RouteReader(log), new Bystander(log) };
+        var route = new RouteValues(new Dictionary<string, string> { ["slug"] = "same" }, null);
+        var owner = ComponentBoundary.Owner();
+        Frame(owner, root, rebuildAll: true, context: new ComponentContext(PhotonTheme.Instance, route: route));
+
+        log.Entries.Clear();
+        Frame(owner, root, context: new ComponentContext(PhotonTheme.Instance, route: route));
+
+        log.Entries.Should().BeEmpty("the frame is new and its route is not");
+    }
+
     /// <summary>A frame's context answers the route it was handed, and an empty one when none was.</summary>
     [Fact]
     public void AFramesContext_AnswersTheRouteItWasHanded()
