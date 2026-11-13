@@ -1,0 +1,66 @@
+## Comfortable
+### web
+<div class="eq-11kg7e8 eq-12ve49g eq-1aoicmy eq-1eb13m5 eq-5ew4ww eq-60rbl8 eq-akjizx eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp eq-zfhnbg">
+<div aria-hidden="true" class="eq-168ghzj">
+</div>
+</div>
+</div>
+### css
+.eq-11kg7e8{height:26px}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-168ghzj{flex:1 1 0%}
+.eq-1aoicmy{border:1px solid var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-5ew4ww{min-width:0}
+.eq-60rbl8{padding:4px 8px 4px 8px}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-zfhnbg{gap:16px}
+### semantics
+### photon
+StatusBar 0 0 480x26
+  Box 0 0 480x26
+    Row 9 5 462x16
+      Spacer 9 13 0x0
+
+## Compact
+### web
+<div class="eq-11kg7e8 eq-12ve49g eq-1aoicmy eq-1eb13m5 eq-5ew4ww eq-60rbl8 eq-akjizx eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp eq-zfhnbg">
+<div aria-hidden="true" class="eq-168ghzj">
+</div>
+</div>
+</div>
+### css
+.eq-11kg7e8{height:26px}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-168ghzj{flex:1 1 0%}
+.eq-1aoicmy{border:1px solid var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-5ew4ww{min-width:0}
+.eq-60rbl8{padding:4px 8px 4px 8px}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-zfhnbg{gap:16px}
+### semantics
+### photon
+StatusBar 0 0 480x26
+  Box 0 0 480x26
+    Row 9 5 462x16
+      Spacer 9 13 0x0
+

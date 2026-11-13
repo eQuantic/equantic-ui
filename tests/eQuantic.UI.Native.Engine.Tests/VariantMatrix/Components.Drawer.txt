@@ -1,0 +1,24 @@
+## Comfortable
+### web
+<div class="eq-1eb13m5 eq-kngwsg">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-kngwsg{pointer-events:none}
+### semantics
+### photon
+Drawer 0 0 480x0
+  Box 0 0 480x0
+
+## Compact
+### web
+<div class="eq-1eb13m5 eq-kngwsg">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-kngwsg{pointer-events:none}
+### semantics
+### photon
+Drawer 0 0 480x0
+  Box 0 0 480x0
+

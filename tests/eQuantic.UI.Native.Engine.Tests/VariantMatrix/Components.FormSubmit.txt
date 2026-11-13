@@ -1,0 +1,4360 @@
+## Primary · Small · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1mlc16r eq-r1g8kw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-r1g8kw:not(:where(.eq-pressable:not(:active) .eq-r1g8kw)){background-color:var(--eq-color-primary-pressed, light-dark(#00427f, #9bcdff))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Primary · Small · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-1mlc16r eq-r1g8kw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1yf2q3w{padding:0 8px 0 8px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-eo53tp{line-height:14.5px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-quo2cj{font-size:11.5px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-r1g8kw:not(:where(.eq-pressable:not(:active) .eq-r1g8kw)){background-color:var(--eq-color-primary-pressed, light-dark(#00427f, #9bcdff))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x26
+  Button 0 0 64x26
+    Pressable 0 0 64x26
+      Box 0 0 64x26
+        Row 8 0 48x26
+          Text 28.96 5.75 6.08x14.5 1 line(s)
+
+## Primary · Medium · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1mlc16r eq-r1g8kw">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1dakdsg eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1cb9own{line-height:19px}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-r1g8kw:not(:where(.eq-pressable:not(:active) .eq-r1g8kw)){background-color:var(--eq-color-primary-pressed, light-dark(#00427f, #9bcdff))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.05 10.5 7.9x19 1 line(s)
+
+## Primary · Medium · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1mlc16r eq-r1g8kw">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-r1g8kw:not(:where(.eq-pressable:not(:active) .eq-r1g8kw)){background-color:var(--eq-color-primary-pressed, light-dark(#00427f, #9bcdff))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Primary · Large · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1mlc16r eq-r1g8kw">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o5c7c3{font-size:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-r1g8kw:not(:where(.eq-pressable:not(:active) .eq-r1g8kw)){background-color:var(--eq-color-primary-pressed, light-dark(#00427f, #9bcdff))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.79 14 8.42x20 1 line(s)
+
+## Primary · Large · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1mlc16r eq-r1g8kw">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15cxjk8{font-size:14.5px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-r1g8kw:not(:where(.eq-pressable:not(:active) .eq-r1g8kw)){background-color:var(--eq-color-primary-pressed, light-dark(#00427f, #9bcdff))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.18 11 7.64x18 1 line(s)
+
+## Primary · XLarge · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1k117pa eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-1mlc16r eq-r1g8kw">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-16x7aca{display:block}
+.eq-18qb60o{padding:0 24px 0 24px}
+.eq-196dx6e{gap:10px}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fdhaeb{height:56px}
+.eq-1gudvpj{min-height:0}
+.eq-1hme0ng{line-height:21px}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
+}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-r1g8kw:not(:where(.eq-pressable:not(:active) .eq-r1g8kw)){background-color:var(--eq-color-primary-pressed, light-dark(#00427f, #9bcdff))}
+.eq-tgoca0{font-size:17px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x56
+  Button 0 0 64x56
+    Pressable 0 0 64x56
+      Box 0 0 64x56
+        Row 24 0 16x56
+          Text 27.53 17.5 8.94x21 1 line(s)
+
+## Primary · XLarge · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1k117pa eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1mlc16r eq-r1g8kw">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
+}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1w14u2f{font-size:15.5px}
+.eq-6gdbvu{justify-content:center}
+.eq-79lkgi{line-height:19.5px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-r1g8kw:not(:where(.eq-pressable:not(:active) .eq-r1g8kw)){background-color:var(--eq-color-primary-pressed, light-dark(#00427f, #9bcdff))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.92 14.25 8.16x19.5 1 line(s)
+
+## Secondary · Small · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-ymfs57 eq-14pw683 eq-iinzcj">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-p7nbpw{text-align:start}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Secondary · Small · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-ymfs57 eq-14pw683 eq-iinzcj">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-quo2cj eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1yf2q3w{padding:0 8px 0 8px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-eo53tp{line-height:14.5px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-p7nbpw{text-align:start}
+.eq-quo2cj{font-size:11.5px}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x26
+  Button 0 0 64x26
+    Pressable 0 0 64x26
+      Box 0 0 64x26
+        Row 8 0 48x26
+          Text 28.96 5.75 6.08x14.5 1 line(s)
+
+## Secondary · Medium · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-ymfs57 eq-14pw683 eq-iinzcj">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1cb9own{line-height:19px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-p7nbpw{text-align:start}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.05 10.5 7.9x19 1 line(s)
+
+## Secondary · Medium · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-ymfs57 eq-14pw683 eq-iinzcj">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-p7nbpw{text-align:start}
+.eq-y9mhin{font-weight:600}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Secondary · Large · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-ymfs57 eq-14pw683 eq-iinzcj">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
+.eq-1566de{white-space:pre}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o5c7c3{font-size:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-y9mhin{font-weight:600}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.79 14 8.42x20 1 line(s)
+
+## Secondary · Large · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-ymfs57 eq-14pw683 eq-iinzcj">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
+.eq-1566de{white-space:pre}
+.eq-15cxjk8{font-size:14.5px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-p7nbpw{text-align:start}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.18 11 7.64x18 1 line(s)
+
+## Secondary · XLarge · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-ymfs57 eq-14pw683 eq-iinzcj">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-tgoca0 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-16x7aca{display:block}
+.eq-18qb60o{padding:0 24px 0 24px}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fdhaeb{height:56px}
+.eq-1gudvpj{min-height:0}
+.eq-1hme0ng{line-height:21px}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-p7nbpw{text-align:start}
+.eq-tgoca0{font-size:17px}
+.eq-y9mhin{font-weight:600}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x56
+  Button 0 0 64x56
+    Pressable 0 0 64x56
+      Box 0 0 64x56
+        Row 24 0 16x56
+          Text 27.53 17.5 8.94x21 1 line(s)
+
+## Secondary · XLarge · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-ymfs57 eq-14pw683 eq-iinzcj">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1w14u2f{font-size:15.5px}
+.eq-6gdbvu{justify-content:center}
+.eq-79lkgi{line-height:19.5px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-y9mhin{font-weight:600}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.92 14.25 8.16x19.5 1 line(s)
+
+## Destructive · Small · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-hw1jqi eq-exbzmz eq-htvfjr">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-d0pl63{background-color:var(--eq-color-destructive-base, light-dark(#b42318, #ff958c))}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
+.eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-r94c75{color:var(--eq-color-destructive-on, light-dark(#ffffff, #3b0704))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Destructive · Small · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-d0pl63 eq-g7fowl eq-exbzmz eq-htvfjr">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-r94c75 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1yf2q3w{padding:0 8px 0 8px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-d0pl63{background-color:var(--eq-color-destructive-base, light-dark(#b42318, #ff958c))}
+.eq-eo53tp{line-height:14.5px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
+.eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-quo2cj{font-size:11.5px}
+.eq-r94c75{color:var(--eq-color-destructive-on, light-dark(#ffffff, #3b0704))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x26
+  Button 0 0 64x26
+    Pressable 0 0 64x26
+      Box 0 0 64x26
+        Row 8 0 48x26
+          Text 28.96 5.75 6.08x14.5 1 line(s)
+
+## Destructive · Medium · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-d0pl63 eq-g7fowl eq-xhcqoy eq-exbzmz eq-htvfjr">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1cb9own{line-height:19px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-d0pl63{background-color:var(--eq-color-destructive-base, light-dark(#b42318, #ff958c))}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
+.eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-r94c75{color:var(--eq-color-destructive-on, light-dark(#ffffff, #3b0704))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.05 10.5 7.9x19 1 line(s)
+
+## Destructive · Medium · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-hw1jqi eq-exbzmz eq-htvfjr">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-d0pl63{background-color:var(--eq-color-destructive-base, light-dark(#b42318, #ff958c))}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
+.eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-r94c75{color:var(--eq-color-destructive-on, light-dark(#ffffff, #3b0704))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Destructive · Large · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-pz6kj4 eq-exbzmz eq-htvfjr">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o5c7c3{font-size:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-d0pl63{background-color:var(--eq-color-destructive-base, light-dark(#b42318, #ff958c))}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
+.eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-r94c75{color:var(--eq-color-destructive-on, light-dark(#ffffff, #3b0704))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.79 14 8.42x20 1 line(s)
+
+## Destructive · Large · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-d0pl63 eq-g7fowl eq-xhcqoy eq-exbzmz eq-htvfjr">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15cxjk8{font-size:14.5px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-d0pl63{background-color:var(--eq-color-destructive-base, light-dark(#b42318, #ff958c))}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-r94c75{color:var(--eq-color-destructive-on, light-dark(#ffffff, #3b0704))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.18 11 7.64x18 1 line(s)
+
+## Destructive · XLarge · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-exbzmz eq-htvfjr">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-r94c75 eq-tgoca0 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-16x7aca{display:block}
+.eq-18qb60o{padding:0 24px 0 24px}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fdhaeb{height:56px}
+.eq-1gudvpj{min-height:0}
+.eq-1hme0ng{line-height:21px}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-d0pl63{background-color:var(--eq-color-destructive-base, light-dark(#b42318, #ff958c))}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
+.eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-r94c75{color:var(--eq-color-destructive-on, light-dark(#ffffff, #3b0704))}
+.eq-tgoca0{font-size:17px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x56
+  Button 0 0 64x56
+    Pressable 0 0 64x56
+      Box 0 0 64x56
+        Row 24 0 16x56
+          Text 27.53 17.5 8.94x21 1 line(s)
+
+## Destructive · XLarge · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-pz6kj4 eq-exbzmz eq-htvfjr">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1w14u2f{font-size:15.5px}
+.eq-6gdbvu{justify-content:center}
+.eq-79lkgi{line-height:19.5px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-d0pl63{background-color:var(--eq-color-destructive-base, light-dark(#b42318, #ff958c))}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
+.eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-r94c75{color:var(--eq-color-destructive-on, light-dark(#ffffff, #3b0704))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.92 14.25 8.16x19.5 1 line(s)
+
+## Outline · Small · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-a51p1u eq-teoc5m">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 13 1 38x30
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Outline · Small · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-7gvrt4 eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-11kg7e8{height:26px}
+.eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1yf2q3w{padding:0 8px 0 8px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-eo53tp{line-height:14.5px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-quo2cj{font-size:11.5px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x26
+  Button 0 0 64x26
+    Pressable 0 0 64x26
+      Box 0 0 64x26
+        Row 9 1 46x24
+          Text 28.96 5.75 6.08x14.5 1 line(s)
+
+## Outline · Medium · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-a51p1u eq-teoc5m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1cb9own{line-height:19px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 17 1 30x38
+          Text 28.05 10.5 7.9x19 1 line(s)
+
+## Outline · Medium · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-a51p1u eq-teoc5m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 13 1 38x30
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Outline · Large · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-a51p1u eq-teoc5m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-7gvrt4 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o5c7c3{font-size:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 21 1 22x46
+          Text 27.79 14 8.42x20 1 line(s)
+
+## Outline · Large · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-a51p1u eq-teoc5m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15cxjk8{font-size:14.5px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 17 1 30x38
+          Text 28.18 11 7.64x18 1 line(s)
+
+## Outline · XLarge · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-16x7aca{display:block}
+.eq-18qb60o{padding:0 24px 0 24px}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fdhaeb{height:56px}
+.eq-1gudvpj{min-height:0}
+.eq-1hme0ng{line-height:21px}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-tgoca0{font-size:17px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x56
+  Button 0 0 64x56
+    Pressable 0 0 64x56
+      Box 0 0 64x56
+        Row 25 1 14x54
+          Text 27.53 17.5 8.94x21 1 line(s)
+
+## Outline · XLarge · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-a51p1u eq-teoc5m">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1w14u2f{font-size:15.5px}
+.eq-6gdbvu{justify-content:center}
+.eq-79lkgi{line-height:19.5px}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 21 1 22x46
+          Text 27.92 14.25 8.16x19.5 1 line(s)
+
+## Ghost · Small · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-a51p1u eq-teoc5m">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Ghost · Small · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-7gvrt4 eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1yf2q3w{padding:0 8px 0 8px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-eo53tp{line-height:14.5px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-quo2cj{font-size:11.5px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x26
+  Button 0 0 64x26
+    Pressable 0 0 64x26
+      Box 0 0 64x26
+        Row 8 0 48x26
+          Text 28.96 5.75 6.08x14.5 1 line(s)
+
+## Ghost · Medium · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-a51p1u eq-teoc5m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1cb9own{line-height:19px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.05 10.5 7.9x19 1 line(s)
+
+## Ghost · Medium · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-a51p1u eq-teoc5m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Ghost · Large · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-a51p1u eq-teoc5m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-7gvrt4 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o5c7c3{font-size:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.79 14 8.42x20 1 line(s)
+
+## Ghost · Large · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-a51p1u eq-teoc5m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15cxjk8{font-size:14.5px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.18 11 7.64x18 1 line(s)
+
+## Ghost · XLarge · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-16x7aca{display:block}
+.eq-18qb60o{padding:0 24px 0 24px}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fdhaeb{height:56px}
+.eq-1gudvpj{min-height:0}
+.eq-1hme0ng{line-height:21px}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-tgoca0{font-size:17px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x56
+  Button 0 0 64x56
+    Pressable 0 0 64x56
+      Box 0 0 64x56
+        Row 24 0 16x56
+          Text 27.53 17.5 8.94x21 1 line(s)
+
+## Ghost · XLarge · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-a51p1u eq-teoc5m">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1w14u2f{font-size:15.5px}
+.eq-6gdbvu{justify-content:center}
+.eq-79lkgi{line-height:19.5px}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a51p1u:not(:where(.eq-pressable:not(:active) .eq-a51p1u)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.92 14.25 8.16x19.5 1 line(s)
+
+## Link · Small · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-i29sta eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-30o80s{padding:0 6px 0 6px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 6 0 52x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Link · Small · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-i29sta eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-30o80s{padding:0 6px 0 6px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-eo53tp{line-height:14.5px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-quo2cj{font-size:11.5px}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x26
+  Button 0 0 64x26
+    Pressable 0 0 64x26
+      Box 0 0 64x26
+        Row 6 0 52x26
+          Text 28.96 5.75 6.08x14.5 1 line(s)
+
+## Link · Medium · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-cl6mtg eq-g7fowl">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-i29sta eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1cb9own{line-height:19px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-30o80s{padding:0 6px 0 6px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 6 0 52x40
+          Text 28.05 10.5 7.9x19 1 line(s)
+
+## Link · Medium · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-i29sta eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-30o80s{padding:0 6px 0 6px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 6 0 52x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Link · Large · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-i29sta eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o5c7c3{font-size:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-30o80s{padding:0 6px 0 6px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 6 0 52x48
+          Text 27.79 14 8.42x20 1 line(s)
+
+## Link · Large · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-cl6mtg eq-g7fowl">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-i29sta eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15cxjk8{font-size:14.5px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-30o80s{padding:0 6px 0 6px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 6 0 52x40
+          Text 28.18 11 7.64x18 1 line(s)
+
+## Link · XLarge · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-i29sta eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fdhaeb{height:56px}
+.eq-1gudvpj{min-height:0}
+.eq-1hme0ng{line-height:21px}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-30o80s{padding:0 6px 0 6px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-tgoca0{font-size:17px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x56
+  Button 0 0 64x56
+    Pressable 0 0 64x56
+      Box 0 0 64x56
+        Row 6 0 52x56
+          Text 27.53 17.5 8.94x21 1 line(s)
+
+## Link · XLarge · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-i29sta eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1w14u2f{font-size:15.5px}
+.eq-30o80s{padding:0 6px 0 6px}
+.eq-6gdbvu{justify-content:center}
+.eq-79lkgi{line-height:19.5px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 6 0 52x48
+          Text 27.92 14.25 8.16x19.5 1 line(s)
+
+## Success · Small · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1l6gvdn eq-a0zn9g">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-32r373{background-color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a0zn9g:not(:where(.eq-pressable:not(:active) .eq-a0zn9g)){background-color:var(--eq-color-success-pressed, light-dark(#2c5e17, #9fd279))}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-r1c0xf{color:var(--eq-color-success-on, light-dark(#ffffff, #12290a))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Success · Small · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-32r373 eq-bo3n4y eq-g7fowl eq-1l6gvdn eq-a0zn9g">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-r1c0xf eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1yf2q3w{padding:0 8px 0 8px}
+.eq-32r373{background-color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a0zn9g:not(:where(.eq-pressable:not(:active) .eq-a0zn9g)){background-color:var(--eq-color-success-pressed, light-dark(#2c5e17, #9fd279))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-eo53tp{line-height:14.5px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-quo2cj{font-size:11.5px}
+.eq-r1c0xf{color:var(--eq-color-success-on, light-dark(#ffffff, #12290a))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x26
+  Button 0 0 64x26
+    Pressable 0 0 64x26
+      Box 0 0 64x26
+        Row 8 0 48x26
+          Text 28.96 5.75 6.08x14.5 1 line(s)
+
+## Success · Medium · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1l6gvdn eq-a0zn9g">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1cb9own{line-height:19px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-32r373{background-color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a0zn9g:not(:where(.eq-pressable:not(:active) .eq-a0zn9g)){background-color:var(--eq-color-success-pressed, light-dark(#2c5e17, #9fd279))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-r1c0xf{color:var(--eq-color-success-on, light-dark(#ffffff, #12290a))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.05 10.5 7.9x19 1 line(s)
+
+## Success · Medium · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1l6gvdn eq-a0zn9g">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-32r373{background-color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a0zn9g:not(:where(.eq-pressable:not(:active) .eq-a0zn9g)){background-color:var(--eq-color-success-pressed, light-dark(#2c5e17, #9fd279))}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-r1c0xf{color:var(--eq-color-success-on, light-dark(#ffffff, #12290a))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Success · Large · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1l6gvdn eq-a0zn9g">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o5c7c3{font-size:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-32r373{background-color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a0zn9g:not(:where(.eq-pressable:not(:active) .eq-a0zn9g)){background-color:var(--eq-color-success-pressed, light-dark(#2c5e17, #9fd279))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-r1c0xf{color:var(--eq-color-success-on, light-dark(#ffffff, #12290a))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.79 14 8.42x20 1 line(s)
+
+## Success · Large · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1l6gvdn eq-a0zn9g">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15cxjk8{font-size:14.5px}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-32r373{background-color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a0zn9g:not(:where(.eq-pressable:not(:active) .eq-a0zn9g)){background-color:var(--eq-color-success-pressed, light-dark(#2c5e17, #9fd279))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-r1c0xf{color:var(--eq-color-success-on, light-dark(#ffffff, #12290a))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.18 11 7.64x18 1 line(s)
+
+## Success · XLarge · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-1l6gvdn eq-a0zn9g">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-r1c0xf eq-tgoca0 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-16x7aca{display:block}
+.eq-18qb60o{padding:0 24px 0 24px}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fdhaeb{height:56px}
+.eq-1gudvpj{min-height:0}
+.eq-1hme0ng{line-height:21px}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-32r373{background-color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-6gdbvu{justify-content:center}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a0zn9g:not(:where(.eq-pressable:not(:active) .eq-a0zn9g)){background-color:var(--eq-color-success-pressed, light-dark(#2c5e17, #9fd279))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-r1c0xf{color:var(--eq-color-success-on, light-dark(#ffffff, #12290a))}
+.eq-tgoca0{font-size:17px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x56
+  Button 0 0 64x56
+    Pressable 0 0 64x56
+      Box 0 0 64x56
+        Row 24 0 16x56
+          Text 27.53 17.5 8.94x21 1 line(s)
+
+## Success · XLarge · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1l6gvdn eq-a0zn9g">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1w14u2f{font-size:15.5px}
+.eq-32r373{background-color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-6gdbvu{justify-content:center}
+.eq-79lkgi{line-height:19.5px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a0zn9g:not(:where(.eq-pressable:not(:active) .eq-a0zn9g)){background-color:var(--eq-color-success-pressed, light-dark(#2c5e17, #9fd279))}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-r1c0xf{color:var(--eq-color-success-on, light-dark(#ffffff, #12290a))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.92 14.25 8.16x19.5 1 line(s)
+
+## Warning · Small · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-sws4m eq-16s8lzy eq-18nlty2">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1tsjeg9 eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
+.eq-16x7aca{display:block}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1tsjeg9{color:var(--eq-color-warning-on, light-dark(#ffffff, #2e1b02))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Warning · Small · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-sws4m eq-16s8lzy eq-18nlty2">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1tsjeg9 eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
+.eq-16x7aca{display:block}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1tsjeg9{color:var(--eq-color-warning-on, light-dark(#ffffff, #2e1b02))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1yf2q3w{padding:0 8px 0 8px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-eo53tp{line-height:14.5px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-quo2cj{font-size:11.5px}
+.eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x26
+  Button 0 0 64x26
+    Pressable 0 0 64x26
+      Box 0 0 64x26
+        Row 8 0 48x26
+          Text 28.96 5.75 6.08x14.5 1 line(s)
+
+## Warning · Medium · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-sws4m eq-xhcqoy eq-16s8lzy eq-18nlty2">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-1tsjeg9 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
+.eq-16x7aca{display:block}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
+.eq-19dgm5h{gap:8px}
+.eq-1cb9own{line-height:19px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1tsjeg9{color:var(--eq-color-warning-on, light-dark(#ffffff, #2e1b02))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.05 10.5 7.9x19 1 line(s)
+
+## Warning · Medium · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-sws4m eq-16s8lzy eq-18nlty2">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1tsjeg9 eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
+.eq-16x7aca{display:block}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1tsjeg9{color:var(--eq-color-warning-on, light-dark(#ffffff, #2e1b02))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Warning · Large · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-sws4m eq-16s8lzy eq-18nlty2">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-1tsjeg9 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15qobfw{height:48px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
+.eq-16x7aca{display:block}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o5c7c3{font-size:16px}
+.eq-1tsjeg9{color:var(--eq-color-warning-on, light-dark(#ffffff, #2e1b02))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.79 14 8.42x20 1 line(s)
+
+## Warning · Large · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-sws4m eq-xhcqoy eq-16s8lzy eq-18nlty2">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-1tsjeg9 eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15cxjk8{font-size:14.5px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
+.eq-16x7aca{display:block}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
+.eq-19dgm5h{gap:8px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1tsjeg9{color:var(--eq-color-warning-on, light-dark(#ffffff, #2e1b02))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.18 11 7.64x18 1 line(s)
+
+## Warning · XLarge · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-sws4m eq-16s8lzy eq-18nlty2">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-1tsjeg9 eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
+.eq-16x7aca{display:block}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
+.eq-18qb60o{padding:0 24px 0 24px}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fdhaeb{height:56px}
+.eq-1gudvpj{min-height:0}
+.eq-1hme0ng{line-height:21px}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1tsjeg9{color:var(--eq-color-warning-on, light-dark(#ffffff, #2e1b02))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
+.eq-tgoca0{font-size:17px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x56
+  Button 0 0 64x56
+    Pressable 0 0 64x56
+      Box 0 0 64x56
+        Row 24 0 16x56
+          Text 27.53 17.5 8.94x21 1 line(s)
+
+## Warning · XLarge · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-sws4m eq-16s8lzy eq-18nlty2">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1tsjeg9 eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-15qobfw{height:48px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
+.eq-16x7aca{display:block}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1tsjeg9{color:var(--eq-color-warning-on, light-dark(#ffffff, #2e1b02))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1w14u2f{font-size:15.5px}
+.eq-6gdbvu{justify-content:center}
+.eq-79lkgi{line-height:19.5px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.92 14.25 8.16x19.5 1 line(s)
+
+## Info · Small · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1gyb634 eq-v2sn1m">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Info · Small · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-1gyb634 eq-v2sn1m">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1yf2q3w{padding:0 8px 0 8px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-eo53tp{line-height:14.5px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-quo2cj{font-size:11.5px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x26
+  Button 0 0 64x26
+    Pressable 0 0 64x26
+      Box 0 0 64x26
+        Row 8 0 48x26
+          Text 28.96 5.75 6.08x14.5 1 line(s)
+
+## Info · Medium · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1gyb634 eq-v2sn1m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19dgm5h{gap:8px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1cb9own{line-height:19px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.05 10.5 7.9x19 1 line(s)
+
+## Info · Medium · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1gyb634 eq-v2sn1m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19dgm5h{gap:8px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Info · Large · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1gyb634 eq-v2sn1m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19dgm5h{gap:8px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o5c7c3{font-size:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.79 14 8.42x20 1 line(s)
+
+## Info · Large · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1gyb634 eq-v2sn1m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15cxjk8{font-size:14.5px}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19dgm5h{gap:8px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.18 11 7.64x18 1 line(s)
+
+## Info · XLarge · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-17wyma7 eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-1gyb634 eq-v2sn1m">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-18qb60o{padding:0 24px 0 24px}
+.eq-196dx6e{gap:10px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fdhaeb{height:56px}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hme0ng{line-height:21px}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-tgoca0{font-size:17px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x56
+  Button 0 0 64x56
+    Pressable 0 0 64x56
+      Box 0 0 64x56
+        Row 24 0 16x56
+          Text 27.53 17.5 8.94x21 1 line(s)
+
+## Info · XLarge · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1gyb634 eq-v2sn1m">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-196dx6e{gap:10px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1w14u2f{font-size:15.5px}
+.eq-6gdbvu{justify-content:center}
+.eq-79lkgi{line-height:19.5px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.92 14.25 8.16x19.5 1 line(s)
+
+## Tertiary · Small · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1gyb634 eq-v2sn1m">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Tertiary · Small · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-1gyb634 eq-v2sn1m">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1yf2q3w{padding:0 8px 0 8px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-eo53tp{line-height:14.5px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-quo2cj{font-size:11.5px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-v9un6z{gap:6px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x26
+  Button 0 0 64x26
+    Pressable 0 0 64x26
+      Box 0 0 64x26
+        Row 8 0 48x26
+          Text 28.96 5.75 6.08x14.5 1 line(s)
+
+## Tertiary · Medium · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1gyb634 eq-v2sn1m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19dgm5h{gap:8px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1cb9own{line-height:19px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.05 10.5 7.9x19 1 line(s)
+
+## Tertiary · Medium · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1gyb634 eq-v2sn1m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19dgm5h{gap:8px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1x60j26{line-height:16px}
+.eq-6gdbvu{justify-content:center}
+.eq-a53ok4{font-size:13px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x32
+  Button 0 0 64x32
+    Pressable 0 0 64x32
+      Box 0 0 64x32
+        Row 12 0 40x32
+          Text 28.57 8 6.86x16 1 line(s)
+
+## Tertiary · Large · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1gyb634 eq-v2sn1m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19dgm5h{gap:8px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1o5c7c3{font-size:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.79 14 8.42x20 1 line(s)
+
+## Tertiary · Large · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1gyb634 eq-v2sn1m">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15cxjk8{font-size:14.5px}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19dgm5h{gap:8px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-xhcqoy{padding:0 16px 0 16px}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x40
+  Button 0 0 64x40
+    Pressable 0 0 64x40
+      Box 0 0 64x40
+        Row 16 0 32x40
+          Text 28.18 11 7.64x18 1 line(s)
+
+## Tertiary · XLarge · Comfortable
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-17wyma7 eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-1gyb634 eq-v2sn1m">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-18qb60o{padding:0 24px 0 24px}
+.eq-196dx6e{gap:10px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1fdhaeb{height:56px}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hme0ng{line-height:21px}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-6gdbvu{justify-content:center}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-tgoca0{font-size:17px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x56
+  Button 0 0 64x56
+    Pressable 0 0 64x56
+      Box 0 0 64x56
+        Row 24 0 16x56
+          Text 27.53 17.5 8.94x21 1 line(s)
+
+## Tertiary · XLarge · Compact
+### web
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1gyb634 eq-v2sn1m">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
+<span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
+</div>
+</div>
+</button>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15bwtfr{border-radius:14px}
+.eq-15qobfw{height:48px}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-196dx6e{gap:10px}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
+.eq-1hwu9wq{letter-spacing:0.1px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-1vzw3dm{min-width:64px}
+.eq-1w14u2f{font-size:15.5px}
+.eq-6gdbvu{justify-content:center}
+.eq-79lkgi{line-height:19.5px}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-p7nbpw{text-align:start}
+.eq-pz6kj4{padding:0 20px 0 20px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-v2sn1m:not(:where(.eq-pressable:not(:active) .eq-v2sn1m)){background-color:var(--eq-color-info-pressed, light-dark(#0a5468, #6fd1e7))}
+.eq-y9mhin{font-weight:600}
+### semantics
+Button "x"
+### photon
+FormSubmit 0 0 64x48
+  Button 0 0 64x48
+    Pressable 0 0 64x48
+      Box 0 0 64x48
+        Row 20 0 24x48
+          Text 27.92 14.25 8.16x19.5 1 line(s)
+

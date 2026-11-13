@@ -1,0 +1,1680 @@
+## Primary · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1k117pa eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-1dakdsg eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-1dakdsg eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Primary · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1k117pa eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-1dakdsg eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-1dakdsg eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Secondary · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl eq-ymfs57">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-nzrmhs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-mbtjfn eq-nzrmhs">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-p7nbpw{text-align:start}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Secondary · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl eq-ymfs57">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-nzrmhs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-mbtjfn eq-nzrmhs">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-p7nbpw{text-align:start}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Destructive · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-d0pl63 eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-r94c75" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-mbtjfn eq-r94c75">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-d0pl63{background-color:var(--eq-color-destructive-base, light-dark(#b42318, #ff958c))}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-r94c75{color:var(--eq-color-destructive-on, light-dark(#ffffff, #3b0704))}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Destructive · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-d0pl63 eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-r94c75" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-mbtjfn eq-r94c75">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-d0pl63{background-color:var(--eq-color-destructive-base, light-dark(#b42318, #ff958c))}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-r94c75{color:var(--eq-color-destructive-on, light-dark(#ffffff, #3b0704))}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Outline · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15b7nbg eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15b7nbg{background-color:#00000000}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Outline · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15b7nbg eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15b7nbg{background-color:#00000000}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Ghost · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15b7nbg eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15b7nbg{background-color:#00000000}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Ghost · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15b7nbg eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-15b7nbg{background-color:#00000000}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Link · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1fh5had eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-96qelu eq-i29sta eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-i29sta eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1fh5had{background-color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Link · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1fh5had eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-96qelu eq-i29sta eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-i29sta eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1fh5had{background-color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Success · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-32r373 eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-r1c0xf" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-mbtjfn eq-r1c0xf">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-32r373{background-color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-r1c0xf{color:var(--eq-color-success-on, light-dark(#ffffff, #12290a))}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Success · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-32r373 eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-r1c0xf" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-mbtjfn eq-r1c0xf">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-32r373{background-color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-r1c0xf{color:var(--eq-color-success-on, light-dark(#ffffff, #12290a))}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Warning · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl eq-sws4m">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-1tsjeg9 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-1tsjeg9 eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1tsjeg9{color:var(--eq-color-warning-on, light-dark(#ffffff, #2e1b02))}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Warning · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl eq-sws4m">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-1tsjeg9 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-1tsjeg9 eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1tsjeg9{color:var(--eq-color-warning-on, light-dark(#ffffff, #2e1b02))}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Info · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-19p6vwl eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-19p6vwl eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Info · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-19p6vwl eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-19p6vwl eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Tertiary · Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-19p6vwl eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-19p6vwl eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
+## Tertiary · Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div class="eq-1avhl7d eq-1eviv88">
+<div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-19p6vwl eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<span class="eq-type-caption eq-1566de eq-16x7aca eq-19p6vwl eq-epaxs4 eq-mbtjfn">x</span>
+</div>
+</div>
+</button>
+</div>
+<div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
+<div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-16x7aca{display:block}
+.eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
+.eq-19p6vwl{color:var(--eq-color-info-on, light-dark(#ffffff, #062b33))}
+.eq-19zfii6{grid-area:1 / 1}
+.eq-1afasck{transition:translate 200ms}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1eviv88{position:relative}
+.eq-1gudvpj{min-height:0}
+.eq-1gwdd6k{gap:3px}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1p2uoqo{z-index:2}
+.eq-1pwthtl{z-index:1}
+.eq-1uykvw{padding:0}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1xlbso6{top:0}
+.eq-1yxcnfo{width:96px}
+.eq-4xxlvk{bottom:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-6gdbvu{justify-content:center}
+.eq-96qelu{height:20px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-mfc69x{position:absolute}
+.eq-p7nbpw{text-align:start}
+.eq-z6eb5z{right:0}
+### semantics
+Button "x"
+StaticText "x"
+### photon
+SwipeableRow 0 0 480x24
+  Box 0 0 480x24
+    Stack 0 0 480x24
+      Positioned 384 0 96x24
+        Pressable 384 0 96x24
+          Box 384 0 96x24
+            Column 384 0 96x24
+              Icon 422 0 20x20
+              Text 428.78 23 6.44x16 1 line(s)
+      Draggable 0 0 480x24
+        Box 0 0 480x24
+          Text 0 0 480x24 1 line(s)
+
