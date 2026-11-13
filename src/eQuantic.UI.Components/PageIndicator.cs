@@ -36,10 +36,12 @@ public sealed class PageIndicator : StatelessComponent
         var theme = context.Theme;
         var active = theme.Colors(Variant).Base;
         var label = $"Page {CurrentIndex + 1} of {Count}";
+        // The theme's Navigation slot, then the component's own (§3.10).
+        var slot = theme.Navigation;
 
         if (Count > MaxDots)
         {
-            return new Text(label, TypeRole.Caption, theme.TextSecondary, maxLines: 1)
+            return new Text(label, TypeRole.Caption, slot?.PageColor ?? theme.TextSecondary, maxLines: 1)
             {
                 Tabular = true,
             };
@@ -47,7 +49,8 @@ public sealed class PageIndicator : StatelessComponent
 
         // Non-interactive dots are a DECORATIVE echo of the pager's own state — the accessible
         // name lives on each dot only when the dots take taps and become real controls.
-        var row = new Row(gap: Space.S1) { Cross = CrossAlign.Center };
+        var dotSize = slot?.DotSize ?? 6;
+        var row = new Row(gap: slot?.DotGap ?? Space.S1) { Cross = CrossAlign.Center };
         for (var i = 0; i < Count; i++)
         {
             var index = i;
@@ -55,10 +58,10 @@ public sealed class PageIndicator : StatelessComponent
 
             var dot = new Box(new BoxStyle
             {
-                Width = current ? 18 : 6,
-                Height = 6,
-                Background = current ? active : theme.BorderStrong,
-                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
+                Width = current ? slot?.CurrentDotWidth ?? 18 : dotSize,
+                Height = dotSize,
+                Background = current ? active : slot?.DotColor ?? theme.BorderStrong,
+                CornerRadius = new CornerRadii(slot?.DotRadius ?? theme.Shape(ShapeScale.Full)),
                 Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Size, Motion.State),
             });
 
