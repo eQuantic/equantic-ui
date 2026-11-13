@@ -124,6 +124,7 @@
   "Grid",
   "GridPattern",
   "GridTrack",
+  "Group",
   "Hoverable",
   "Icon",
   "IconButtonTheme",
