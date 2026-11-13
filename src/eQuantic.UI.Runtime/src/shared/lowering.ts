@@ -3844,7 +3844,6 @@ function lowerText(text: TextNode): HtmlNode {
   const heading = typeof level === 'number' && Number.isInteger(level) && level >= 1 && level <= 6;
   const node = element(heading ? `h${level}` : 'span', style, children);
   prependClass(node, `eq-type-${text.role.toLowerCase()}`);
-  // Drawn and never read (C# twin): its words reached the reader another way.
   // Drawn and never read, unless a run of it links somewhere (C# twin).
   if (text.excludeFromSemantics && !text.spans?.some((run) => run.destination))
     node.attributes['aria-hidden'] = 'true';
@@ -4206,6 +4205,8 @@ function visualTextOf(node: VisualNodeValue): string {
       return ((node as unknown as FlexNodeValue).children ?? []).map(visualTextOf).join('');
     case 'pressable':
       return visualTextOf((node as PressableNode).child);
+    case 'group':
+      return visualTextOf((node as unknown as GroupNode).child as VisualNodeValue);
     default:
       return '';
   }

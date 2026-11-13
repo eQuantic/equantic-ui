@@ -117,6 +117,8 @@ public sealed class Select : StatefulComponent
         {
             var rows = list;
             // A group needs a name: one whose label is blank draws no heading and wraps no Group.
+            // One with no options has nothing to head, and is skipped like it.
+            if (group.Options.Count == 0) continue;
             if (!string.IsNullOrWhiteSpace(group.Label))
             {
                 rows = new Column(gap: 0) { Width = SizeValue.Fill };

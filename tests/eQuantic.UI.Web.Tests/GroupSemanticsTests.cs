@@ -129,6 +129,15 @@ public class GroupSemanticsTests
         reading.Where(stop => stop.Role == SemanticRole.Option).Select(stop => stop.Name).Should().Equal("Braga");
     }
 
+    /// <summary>A group with no options has nothing to head: no heading and no Group.</summary>
+    [Fact]
+    public void ASelectWrapsNoGroupWithNoOptions()
+    {
+        var reading = OpenedReading(new Select(["Lisboa"], 0, _ => { }, groups: [new OptionGroup("Empty", [])]));
+        reading.Should().NotContain(stop => stop.Role == SemanticRole.Group);
+        reading.Should().NotContain(stop => stop.Name == "Empty");
+    }
+
     [Fact]
     public void AGroupHostSaysGroupAndItsLabel_AndNoLabelWhenItHasNone()
     {

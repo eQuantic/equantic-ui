@@ -6,6 +6,12 @@ namespace eQuantic.UI.Native.Components;
 /// <summary>Text and the editable surfaces — four words, and all four announce.</summary>
 internal sealed partial class SemanticsVisitor
 {
+    /// <summary>A text a reader passes over: marked <see cref="Text.ExcludeFromSemantics"/>, unless a run
+    /// of it links somewhere, since a link hidden from a reader that a keyboard still reaches is a trap.
+    /// The web's <c>LowerText</c> reads the same.</summary>
+    private static bool HiddenFromReaders(Text text) =>
+        text.ExcludeFromSemantics && !(text.Spans?.Any(run => run.Destination is { Length: > 0 }) ?? false);
+
     /// <summary>
     /// PLAIN content, never Content: a paragraph with runs carries an EMPTY Content — the words live
     /// in the spans — so reading the field dropped the whole node and a styled paragraph reached a
@@ -13,12 +19,6 @@ internal sealed partial class SemanticsVisitor
     /// reads; this is the caller that was not doing it.
     /// <para>Text with nothing to say keeps walking rather than announcing an empty stop.</para>
     /// </summary>
-    /// <summary>A text a reader passes over: marked <see cref="Text.ExcludeFromSemantics"/>, unless a run
-    /// of it links somewhere, since a link hidden from a reader that a keyboard still reaches is a trap.
-    /// The web's <c>LowerText</c> reads the same.</summary>
-    private static bool HiddenFromReaders(Text text) =>
-        text.ExcludeFromSemantics && !(text.Spans?.Any(run => run.Destination is { Length: > 0 }) ?? false);
-
     public bool Visit(Text node, LayoutNode laidOut)
     {
         // Drawn and never read: its words reached the reader another way.

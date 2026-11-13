@@ -58,6 +58,7 @@ export class Select extends StatefulComponent {
         for (const option of this.options) list.add(this.optionRow(theme, option, index++, gap, paddingX, rowHeight));
         for (const group of this.groups) {
             let rows = list;
+            if ($eq.collections.count(group.options) === 0) continue;
             if (!(!$eq.text.hasNonWhiteSpace(group.label))) {
                 rows = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
                 rows.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(paddingX, 4), width: SizeValue.fill }), new Text(group.label, 'caption', theme.textMuted, 1, 'start', false, false, null, 0, { excludeFromSemantics: true })));
