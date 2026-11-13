@@ -14,7 +14,7 @@
 ## 3. Proof
 
 - [x] 3.1 A spec per scenario of this change (`node-states.spec.ts`) and the C# count test
-- [ ] 3.2 The runtime's suites, with the specs that read a path attribute reading the position's id
+- [x] 3.2 The runtime's suites, with the specs that read a path attribute reading the position's id
 - [x] 3.3 The e2e suite in a real browser: 16 of 16 on the dashboard sample
 - [x] 3.4 The served runtime's budget: inside it, nothing re-recorded
-- [ ] 3.5 `docs/ELEMENT-TREE-PLAN.md` and one ledger entry citing #1454
+- [x] 3.5 `docs/ELEMENT-TREE-PLAN.md` and one ledger entry citing #1454
