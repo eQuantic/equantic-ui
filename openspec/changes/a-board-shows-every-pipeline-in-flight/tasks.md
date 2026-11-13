@@ -24,7 +24,7 @@ there).
 
 - [x] 3.1 `index.html`, `board.css`, `board.js`: the KPI tiles, Running and All, the list, the graph, the agents working now, the steps of the selected stage, the notes, the reports
 - [x] 3.2 `textContent` only; links only from integers and the `origin` remote parsed as a GitHub URL; a poll every 3 s, paused while hidden; no spinner under `prefers-reduced-motion`; every status in text
-- [ ] 3.3 Check: the page in Chrome over this host's real states, dark and light, at a phone's width with no horizontal scroll and no console error; a throwaway background agent started in another session appears with its tool and leaves the panel when it finishes
+- [x] 3.3 Check: the page in Chrome over this host's real states, dark and light, at a phone's width with no horizontal scroll and no console error; a throwaway background agent started in another session appears with its tool and leaves the panel when it finishes
 
 ## 4. The skill
 
@@ -39,7 +39,7 @@ there).
 
 ## 6. Documentation
 
-- [ ] 6.1 `.claude/skills/pipeline/board/README.md`: how to run it, what it reads, what it never does
-- [ ] 6.2 One sentence in `CLAUDE.md`, "Pipelines (a pilot, #1493)", naming the board (outside the Workflow section, so `AGENTS.md` does not move)
-- [ ] 6.3 The ledger entry, `docs/ledger/a-board-shows-every-pipeline-in-flight.md`, citing #1524; no wiki page describes the pipeline skill, so no wiki branch
-- [ ] 6.4 Check: `dotnet test tests/eQuantic.UI.Web.Tests --filter "FullyQualifiedName~LedgerTests|FullyQualifiedName~DocsIndexTests|FullyQualifiedName~WorkflowSectionTests"`
+- [x] 6.1 `.claude/skills/pipeline/board/README.md`: how to run it, what it reads, what it never does
+- [x] 6.2 One sentence in `CLAUDE.md`, "Pipelines (a pilot, #1493)", naming the board (outside the Workflow section, so `AGENTS.md` does not move)
+- [x] 6.3 The ledger entry, `docs/ledger/a-board-shows-every-pipeline-in-flight.md`, citing #1524; no wiki page describes the pipeline skill, so no wiki branch
+- [x] 6.4 Check: `dotnet test tests/eQuantic.UI.Web.Tests --filter "FullyQualifiedName~LedgerTests|FullyQualifiedName~DocsIndexTests|FullyQualifiedName~WorkflowSectionTests"`
