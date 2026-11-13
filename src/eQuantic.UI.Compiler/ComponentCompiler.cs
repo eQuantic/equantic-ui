@@ -273,6 +273,16 @@ public class ComponentCompiler
 
     private ResourceCatalogIds? _resourceIds;
 
+    /// <summary>What the app registered in its container, which a resolution in the browser repeats:
+    /// see <see cref="ServiceRegistrations"/> (#1335).</summary>
+    internal void SetServiceRegistrations(ServiceRegistrations registrations)
+    {
+        _services = registrations;
+        _tsEmitter.AppServices = registrations;
+    }
+
+    private ServiceRegistrations _services = ServiceRegistrations.None;
+
     /// <summary>
     /// Compile a single source file
     /// </summary>
@@ -427,7 +437,7 @@ public class ComponentCompiler
     /// </summary>
     public IReadOnlyList<CompilationError> GetLanguageErrors(string sourceCode, string sourcePath = "")
     {
-        var tree = CSharpSyntaxTree.ParseText(sourceCode, _semanticModelProvider.JoinOptions, path: sourcePath);
+        var tree = CSharpSyntaxTree.ParseText(sourceCode, _semanticModelProvider.OptionsFor(sourcePath), path: sourcePath);
         return _semanticModelProvider.GetLanguageDiagnostics(tree)
             .Select(diagnostic =>
             {
@@ -511,7 +521,7 @@ public class ComponentCompiler
         var asComponent = !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper && !component.IsUnionType;
         return new ReferencedNames(_referencedModules, NamedSourceTypes.Of(declarations,
             node => ReferenceEquals(node.SyntaxTree, model.SyntaxTree) ? model : model.Compilation.ModelOf(node.SyntaxTree),
-            asComponent));
+            asComponent, _services));
     }
 
     private CompilationResult CompileModule(ComponentDefinition component, ReferencedNames referenced)
@@ -588,6 +598,7 @@ public class ComponentCompiler
                     SymbolsAreAuthoritative = authoritative,
                     ProjectCompilation = _semanticModelProvider.ProjectCompilation,
                     ResourceIds = _resourceIds,
+                    AppServices = _services,
                 };
                 SemanticModel? recordModel = null;
                 if (component.SyntaxTree != null)

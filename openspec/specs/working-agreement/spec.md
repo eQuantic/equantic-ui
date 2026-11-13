@@ -269,7 +269,11 @@ three `build-platform-runtimes`, `build-packages`, `commit-messages`, `openspec`
 lands on: on its own head kept up to date with main, or, once the ruleset merges through GitHub's merge
 queue, on the queue's run of it together with every pull request ahead of it. The CI SHALL run every
 one of those jobs on a merge group, and no job that publishes. Every job in a dependency chain SHALL be
-required, since GitHub counts a job skipped for a failed dependency as passed.
+required, since GitHub counts a job skipped for a failed dependency as passed. The four jobs that run on
+macOS (`test (macos-latest)`, `samples`, `build-packages` and the macOS `build-platform-runtimes`) SHALL
+run on a merge group, a push to main, a tag and a run by hand, and SHALL be skipped by their own
+condition on a pull request's run, where each reports as skipped under the name its required check
+names.
 
 #### Scenario: main moved after the CI ran
 
@@ -290,7 +294,13 @@ required, since GitHub counts a job skipped for a failed dependency as passed.
 #### Scenario: A red fact only a Mac answers
 
 - **WHEN** a pull request turns a `[MacFact]` red
-- **THEN** `test (macos-latest)` fails and the pull request cannot merge
+- **THEN** `test (macos-latest)` fails in the merge queue's run and the pull request does not merge
+
+#### Scenario: A pull request's own run
+
+- **WHEN** a push to a pull request runs the CI
+- **THEN** the four macOS jobs report as skipped under their check names, the required checks are
+  satisfied, and no macOS runner is taken
 
 #### Scenario: A red test in one group
 
@@ -584,19 +594,38 @@ past it).
 ### Requirement: The board's Roadmap shows real dates and a measured forecast
 
 `scripts/roadmap.py` SHALL measure the pace as the points delivered over the last 28 calendar days,
-never divided by fewer than seven, and plan the open work with one lane per epic, each working at the
-share of the pace it had, a lane that runs out of work handing its place to the next one waiting. With
+never divided by fewer than seven, and plan the open work with one lane per epic. A lane SHALL rank by
+the issue it works next: first by the milestone that issue's work belongs to, the earliest due date
+first, then by its epic's Priority (Urgent, High, Medium, Low, and an epic with none after Low). Each
+day the lanes that rank first SHALL take the whole pace and share it equally. What a lane leaves of
+its part, because it ran out of work or because its next issue ranks lower, SHALL go to the lanes that
+rank next the same day. Inside a lane the work that carries the earliest milestone SHALL come before
+work begun outside it. With
 `--apply` it SHALL write on every epic and feature the Start date its work really began, the Target
 date it really ended once delivered, and the plan's dates otherwise, and SHALL show In progress a
 parent whose sub-issues show it under way and Done a closed issue. It SHALL never close an issue, and
 its report SHALL give each open milestone the plan's date, a range from repeated runs, and the date it
-would land with all the pace.
+would land with all the pace. It SHALL list the open issues the plan cannot count as they are, each
+with what it lacks.
+
+#### Scenario: The highest priority takes the pace
+
+- **WHEN** an Urgent epic and a Medium epic both have work, and the Medium one delivered more in the
+  window
+- **THEN** the Urgent epic's work is planned first with the whole pace, and the Medium epic waits
 
 #### Scenario: A finished lane hands its place on
 
-- **WHEN** an epic that delivered in the window runs out of work, and another epic that did not deliver
-  has work waiting
-- **THEN** the waiting epic starts the next day, at the share the finished one had
+- **WHEN** the epics that rank first run out of work partway through a day, and another epic ranks
+  next
+- **THEN** that epic starts the same day, with what the day has left
+
+#### Scenario: A milestone's work goes ahead of a higher priority
+
+- **WHEN** a Medium epic holds an issue of the earliest milestone, and an Urgent epic holds work in no
+  milestone
+- **THEN** the milestone's issue is planned first, and the Medium epic ranks below the Urgent one once
+  its milestone work is done
 
 #### Scenario: A parent's sub-issues are all closed
 
@@ -614,10 +643,12 @@ would land with all the pace.
 `scripts/roadmap.py` SHALL keep the board's Iteration field as sprints of two weeks on the grid of its
 first iteration, named Sprint N in order of start, adding sprints before them until the first holds the
 repository's first day and after them until the last holds the end of the plan. With `--apply` it SHALL
-put every delivered issue with no sub-issue in the sprint holding the day it closed, and every open
-issue with no open sub-issue in the sprint holding the day the plan ends it. It SHALL take an issue
-out of its sprint when the plan no longer reaches it, and SHALL leave an open issue's sprint as it is
-when no pace was measured.
+put every delivered issue with no sub-issue in the sprint holding the day it closed, every open issue
+with no open sub-issue shown In progress or In review in the sprint holding today, and every other
+open issue with no open sub-issue in the sprint holding the day the plan ends it. It SHALL take an
+issue out of its sprint when the plan no longer reaches it, and SHALL leave an open issue's sprint as
+it is when no pace was measured. Its report SHALL list the issues shown under way for a week or more
+with no pull request.
 
 #### Scenario: The plan reaches past the last sprint
 
@@ -635,6 +666,12 @@ when no pace was measured.
 
 - **WHEN** a feature is open and one of its sub-issues is open
 - **THEN** the sub-issue is put in a sprint and the feature in none
+
+#### Scenario: Work under way is this sprint's
+
+- **WHEN** an issue is shown In review and the plan, which ranks its epic low, ends it three sprints
+  from now
+- **THEN** it is put in the sprint holding today
 
 #### Scenario: The board already shows the sprints
 
@@ -775,3 +812,194 @@ publish time.
 - **WHEN** an `ext-v*` tag runs `publish-extension`
 - **THEN** it installs the extension's `package-lock.json` with `npm ci` and publishes the verified
   archive with the vsce that install put in `node_modules/.bin`
+
+### Requirement: The extension is published with no stored credential
+
+The extension's Marketplace publish SHALL authenticate through the Marketplace's trusted publishing,
+with `vsce publish --oidc` and the job's own OIDC token, and the job that publishes SHALL read no
+secret and SHALL run no package's install script, since any of its steps can ask for that token. A
+check run on every pull request SHALL fail a workflow that breaks any of these.
+
+#### Scenario: A stored token comes back
+
+- **WHEN** a change makes `publish-extension` read `secrets.VSCE_PAT`
+- **THEN** `scripts/check-publish-packages.sh` fails, saying the job reads a stored credential
+
+#### Scenario: The install runs the tree's scripts
+
+- **WHEN** `publish-extension` installs with `npm ci` and no `--ignore-scripts`
+- **THEN** the check fails, saying the job runs install scripts beside its token
+
+#### Scenario: The job loses its token
+
+- **WHEN** `publish-extension` is not granted `id-token: write`
+- **THEN** the check fails, saying so
+
+### Requirement: No page holds a conflict a merge left
+
+The docs guards SHALL fail when a page of the wiki, in any of its languages, or a Markdown file git tracks in
+this repository holds a git conflict marker, naming the file and the line: `<<<<<<<`, `|||||||`, `=======` or
+`>>>>>>>`, alone on its line or followed by a space. A line of seven `=` SHALL count as a marker only inside a
+conflict another marker opened, under a blank line or at the start of a page, so a title's Setext underline
+never fails.
+
+#### Scenario: A conflict committed into a wiki page
+
+- **WHEN** the guards read the wiki at the commit before d7728c2, whose `Upgrading.md` holds a conflict
+- **THEN** they fail naming `Upgrading.md` and its markers' lines, where every docs guard passed
+
+#### Scenario: A title's underline
+
+- **WHEN** a page underlines a title with `=======` on the line under it
+- **THEN** the guards pass
+
+### Requirement: An issue is created whole
+
+An issue SHALL be created with what the plan counts it by. Every issue needs a type. An epic needs its
+Priority and nothing above it. Every other issue needs an open parent under an epic, and points, one
+of 1, 2, 3, 5, 8 or 13, except a feature or a story created to be split, which carries none of its own. `scripts/new-issue.py` SHALL refuse, before any request, an issue that lacks
+one of them, naming what it lacks. It SHALL create the issue with its type, parent, milestone,
+assignee and priority, put it on the board with its points and status, read it back, and fail naming
+whatever did not land. A session's `PreToolUse` hook SHALL refuse the other ways a session creates an
+issue (`gh issue create`, the GraphQL `createIssue`, a REST `POST` to `/issues` and an MCP tool that
+creates one), naming the script, and SHALL let a read, a comment, an edit and a phrase quoted in an
+argument pass. It SHALL read the file of a script the command runs, and the scripts that file runs one
+level down, and refuse the command when one of them creates an issue (`gh issue create` as a line or
+as an argument list, or the GraphQL `createIssue`); `scripts/new-issue.py` and the hook itself SHALL
+pass.
+
+#### Scenario: A task with no points
+
+- **WHEN** `scripts/new-issue.py --type Task --parent 160 --title … --body-file …` is run
+- **THEN** it exits 2 naming the points, and no issue is created
+
+#### Scenario: An epic with no priority
+
+- **WHEN** an epic is to be created without `--priority`
+- **THEN** the script exits 2 naming the priority
+
+#### Scenario: A session runs gh issue create
+
+- **WHEN** a session's Bash command is `gh issue create --title x`
+- **THEN** the hook exits 2, the command does not run, and the session is told to use the script
+
+#### Scenario: A commit message names the command
+
+- **WHEN** a session commits with a message that says "gh issue create"
+- **THEN** the hook lets the commit run
+
+#### Scenario: A script creates an issue inside itself
+
+- **WHEN** a session runs `python3 file-subissues.py 1128 task …`, whose file calls
+  `["gh", "issue", "create", …]` from a `subprocess`
+- **THEN** the hook exits 2 and the script does not run
+
+#### Scenario: A script only reads issues
+
+- **WHEN** a session runs a script whose file lists or comments on issues and creates none
+- **THEN** the hook lets it run
+
+### Requirement: An issue a person took is left to them
+
+An issue SHALL be taken by assigning it. Every issue starts assigned to the owner's account, which
+every agent session works as; an issue assigned to anyone else SHALL be that person's, and so SHALL
+one labelled `good first issue`, which is kept for a person's first step. No session SHALL start such
+an issue or push to a branch of its. A contributor SHALL take an issue by assigning it to themselves
+and moving it to In progress, and an issue already In progress SHALL be someone's, whoever it is
+assigned to. `CONTRIBUTING.md` and the Workflow section of `CLAUDE.md` and `AGENTS.md` SHALL say so.
+
+#### Scenario: A session looks for its next issue
+
+- **WHEN** a session picks the next issue from the board, and an open issue in Backlog is assigned to
+  a contributor rather than to the owner's account
+- **THEN** the session passes over it, as it does an issue labelled `good first issue`
+
+#### Scenario: A contributor takes an issue
+
+- **WHEN** a contributor assigns an issue in Backlog to themselves and moves it to In progress
+- **THEN** the issue is theirs, and no session starts it or pushes to a branch of its
+
+### Requirement: The pipeline runs what a change can affect
+
+CI SHALL classify a pull request's or a merge group's change by the paths it touches, with
+`scripts/ci-changes.sh`, whose self-test it runs first. A change whose every path is a document SHALL
+run the test groups that read documents and the guards every change runs, and skip the build, the
+conformance suite, the runtime's tests, the Mac jobs, the samples and the extension; a change whose
+every path is the VS Code extension's SHALL build the extension and run no .NET test; any other change,
+and any change the classifier cannot read, SHALL run everything. A push, a tag and a manual run SHALL
+run everything. The required checks SHALL report under their names whatever runs, and a push to main
+SHALL cancel the run of the push it replaces.
+
+#### Scenario: A pull request that changes only documents
+
+- **WHEN** a pull request changes only Markdown outside the packed and compiled folders, docs/ or openspec/
+- **THEN** its run tests the `web` and `rest` groups on both systems, skips the build, conformance, the
+  Mac jobs and the samples, and every required check reports success
+
+#### Scenario: A pull request that changes code
+
+- **WHEN** a pull request changes any path the classifier does not know as a document or the extension's
+- **THEN** its run is the whole pipeline, as before
+
+#### Scenario: Two merges land in a row
+
+- **WHEN** a second push reaches main while the run of the first is still going
+- **THEN** the first run is cancelled and the second runs whole
+
+### Requirement: A merge group the queue discarded does not keep its run
+
+The CI SHALL cancel the run of every merge group the queue discarded, which it tells by the group's ref being deleted while its commit is not on main. Every merge group's run, every push to main and a run by hand SHALL sweep the workflow's unfinished merge-group runs, the sweeping run's own included and cancelled last. A run whose ref still exists, or whose commit is on main, SHALL NOT be cancelled. A lookup that fails any other way than a 404 SHALL cancel nothing and SHALL fail the sweep's step, which SHALL NOT fail its run. The sweep SHALL NOT be a required check.
+
+#### Scenario: An entry ahead fails
+
+- **WHEN** a group is discarded and the queue builds a new group behind the failed entry
+- **THEN** the new group's run cancels the discarded group's run, and every live group's run goes on
+
+#### Scenario: A lookup fails
+
+- **WHEN** the lookup of a group's ref answers 500
+- **THEN** that run is left as it is, and the sweep fails, naming it
+
+### Requirement: A branch named outside the convention is refused when it is created
+
+A session's command that creates a branch of this repository named outside `<type>/<slug>` SHALL be
+refused before it runs, by a `PreToolUse` hook, with the convention as the reason. A name that
+already exists in the repository or on origin, a command aimed at another repository, and a command
+the hook cannot read SHALL pass. The hook's self-test SHALL run the hook in a repository made for
+it, and CI SHALL run that self-test.
+
+#### Scenario: A tool's own prefix
+
+- **WHEN** a session runs `git switch -c claude/fix-the-thing` in this repository
+- **THEN** the command is refused, and the session is told the types and the shape of the slug
+
+#### Scenario: Reached through another directory
+
+- **WHEN** a session in another directory runs `cd` into this repository and then `git checkout -b wip`, or names it with `git -C`
+- **THEN** the command is refused
+
+#### Scenario: A message that names the command
+
+- **WHEN** a session commits with a message, quoted or in a here-document, that contains `git switch -c claude/x`
+- **THEN** the commit passes
+
+#### Scenario: A branch that is already someone's
+
+- **WHEN** a session checks out a pull request's branch under its own name, or resets `main` from origin with `git checkout -B main origin/main`
+- **THEN** the command passes: the name exists, and is not this session's to choose
+
+#### Scenario: The wiki's clone
+
+- **WHEN** a session runs `git -C ../equantic-ui.wiki switch -c anything`
+- **THEN** the command passes
+
+### Requirement: An account outside the organization can create an issue
+
+`scripts/new-issue.py` SHALL read the issue types from the repository, which answers them to any
+account that can open an issue there, and SHALL NOT depend on what the organization answers only to
+its members.
+
+#### Scenario: A contributor creates a task
+
+- **WHEN** an account that is not a member of the organization runs the script with a type, a parent and points
+- **THEN** the issue is created with its type, on the board, as it is for a member

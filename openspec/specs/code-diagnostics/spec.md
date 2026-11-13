@@ -70,7 +70,8 @@ listener hears the change: a position before the edit SHALL stay; one after it S
 edit removed and inserted; a range's start inside the replaced text SHALL go to the start of the
 replacement and its end to the end of the replacement, so a problem whose text was rewritten covers the
 rewrite. A problem SHALL NOT grow at its edges: text inserted where it starts or where it ends is not in
-it. Undo and redo SHALL carry problems as any edit does. A problem reported at any moment SHALL describe
+it. A problem of no width SHALL stay with the text after it, except in front of inserted text that begins
+with a line break, where it SHALL stay where it was. Undo and redo SHALL carry problems as any edit does. A problem reported at any moment SHALL describe
 the text as it stands then, and SHALL NOT be carried through an edit that text already holds. A document
 replaced whole SHALL drop every problem.
 
@@ -105,6 +106,12 @@ replaced whole SHALL drop every problem.
 - **WHEN** an editor holding problems is given a new document
 - **THEN** it holds none
 
+#### Scenario: A problem of no width at a line's end, a line written after it
+
+- **WHEN** a problem of no width stands at the end of the document's last line and the line above is moved
+  past it, or Enter is typed at it
+- **THEN** the problem stays at the end of that line
+
 ### Requirement: Providers are asked once typing pauses
 
 When the document changes and the diagnostics have providers, they SHALL wait `Delay` after the last
@@ -134,7 +141,9 @@ and the other providers' answers SHALL still show.
 The editor SHALL draw an error, a warning and an information as a wavy line under their range, in the
 destructive, the warning and the info colour, and a hint as three dots under its first characters in
 the muted ink. A problem whose range is empty SHALL be drawn one cell wide where it stands: under the
-character there, or the cell after the line's end, an empty line's included. The gutter SHALL mark each line with a problem as an error or
+character there, or the cell after the line's end, an empty line's included. A problem whose range
+takes no width to draw, on a server that measures no column or over characters that take no cell,
+SHALL draw no wave, and the code around it SHALL still render. The gutter SHALL mark each line with a problem as an error or
 a warning, the worst problem of the line deciding, behind a marker the app put on that line itself.
 
 #### Scenario: An error and a warning on two lines
@@ -142,6 +151,12 @@ a warning, the worst problem of the line deciding, behind a marker the app put o
 - **WHEN** an editor holds an error on line 1 and a warning on line 2
 - **THEN** a wave in the destructive colour is drawn under the error's range, a wave in the warning
   colour under the warning's, and the gutter marks line 1 as an error and line 2 as a warning
+
+#### Scenario: A problem the server cannot measure
+
+- **WHEN** the server renders a code block holding an error, with no font to measure its columns
+- **THEN** the block renders with its code and no wave, marked for the browser, which draws it
+  again with the wave
 
 ### Requirement: F8 walks the problems
 

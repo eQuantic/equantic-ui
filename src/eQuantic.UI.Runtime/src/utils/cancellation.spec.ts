@@ -6,8 +6,41 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CancellationToken, CancellationTokenSource } from './cancellation';
+import { CancellationToken, CancellationTokenSource, fromCanceled, fromException } from './cancellation';
 import { is } from './exceptions';
+
+describe('a task already ended', () => {
+  it('carries its exception to whoever awaits it', async () => {
+    const error = new Error('boom');
+    await expect(fromException(error)).rejects.toBe(error);
+  });
+
+  it('throws a TaskCanceledException for a token that was cancelled', async () => {
+    const source = new CancellationTokenSource();
+    source.cancel();
+    const caught = await fromCanceled(source.token).catch((error: unknown) => error);
+    expect(is(caught, 'System.Threading.Tasks.TaskCanceledException')).toBe(true);
+  });
+
+  it('refuses a null exception and a token not cancelled, in the words of .NET', () => {
+    expect(() => fromException(null)).toThrow("Value cannot be null. (Parameter 'exception')");
+    expect(() => fromCanceled(CancellationToken.none)).toThrow(
+      "Specified argument was out of the range of valid values. (Parameter 'cancellationToken')",
+    );
+  });
+
+  it('reports nothing when nobody awaits it', async () => {
+    const reported = vi.fn();
+    process.on('unhandledRejection', reported);
+    try {
+      fromException(new Error('unread'));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(reported).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', reported);
+    }
+  });
+});
 
 describe('CancellationTokenSource and CancellationToken', () => {
   afterEach(() => vi.useRealTimers());

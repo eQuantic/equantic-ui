@@ -71,6 +71,68 @@ public class AWarmBuildTests
         warmModules["Tag"].Should().NotBe(before["Tag"]);
     }
 
+    private const string Greeting =
+        """
+        namespace Shop;
+
+        public interface IGreeting
+        {
+            string Text { get; }
+        }
+
+        public sealed class Greeting : IGreeting
+        {
+            public string Text => "Hello";
+        }
+        """;
+
+    /// <summary>A component that takes the app's own service through its constructor (#1335).</summary>
+    private const string Welcome =
+        """
+        using eQuantic.UI.Primitives;
+
+        namespace Shop;
+
+        public sealed class Welcome(IGreeting greeting) : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context) => Text(greeting.Text, TypeRole.BodyM);
+        }
+        """;
+
+    /// <summary>The registration, as an app writes it: a top-level statement in Program.cs.</summary>
+    private const string Registrations =
+        """
+        using Microsoft.Extensions.DependencyInjection;
+        using Shop;
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IGreeting, Greeting>();
+        """;
+
+    [Fact]
+    public void ASaveToTheFileThatRegistersAService_ReachesTheWarmBuild()
+    {
+        using var solution = new Solution().App("Shop", globalUsings: SharedLibrary.Factories, files:
+        [
+            ("Program.cs", Registrations),
+            ("Greeting.cs", Greeting),
+            ("Components/Welcome.cs", Welcome),
+        ]);
+        var cold = solution.Build();
+        CompilerErrors(cold).Should().BeEmpty();
+        cold.Module("Welcome").Should().Contain("$eq.services.provide('IGreeting', () => new Greeting(), 'singleton')");
+
+        solution.Write("Shop", "Program.cs", Registrations.Replace("AddSingleton", "AddScoped"));
+        var (warm, wasWarm) = solution.Rebuild(cold);
+
+        wasWarm.Should().BeTrue("only a file's text changed, and the compilation before it is kept");
+        CompilerErrors(warm).Should().BeEmpty();
+        warm.Module("Welcome").Should().Contain("$eq.services.provide('IGreeting', () => new Greeting(), 'scoped')",
+            "the registrations are read from the compilation the warm build kept, with the saved file in it");
+        ModulesOf(warm).Should().Equal(ModulesOf(solution.Build()),
+            "a warm build writes what a cold build writes after the same edit");
+    }
+
     [Fact]
     public void AFileAddedSinceTheLastBuild_LoadsCold()
     {
@@ -165,5 +227,57 @@ public class AWarmBuildTests
         var (_, wasWarm) = solution.Rebuild(cold);
 
         wasWarm.Should().BeFalse("an assembly the compilation read changed on disk");
+    }
+
+    /// <summary>
+    /// A file a save changed is parsed with the symbols its build compiled it with (#1401), as a cold
+    /// load parses it: parsed with none, the warm build took the branch the build did not, and wrote what
+    /// no cold build writes.
+    /// </summary>
+    [Fact]
+    public void AChangedFile_IsParsedWithTheSymbolsItsBuildCompiledItWith()
+    {
+        const string edition =
+            """
+            namespace Shop;
+
+            public static class Edition
+            {
+                public static string Name()
+                {
+            #if DEBUG
+                    return "debug";
+            #else
+                    return "release";
+            #endif
+                }
+            }
+            """;
+        const string badge =
+            """
+            using eQuantic.UI.Primitives;
+
+            namespace Shop;
+
+            public sealed class Badge : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => Text(Edition.Name(), TypeRole.BodyM);
+            }
+            """;
+        using var solution = new Solution()
+            .App("Shop", globalUsings: SharedLibrary.Factories, files: [("Edition.cs", edition), ("Components/Badge.cs", badge)])
+            .Defines("Shop", "DEBUG;TRACE");
+        var cold = solution.Build();
+        CompilerErrors(cold).Should().BeEmpty();
+        cold.Module("Edition").Should().Contain("'debug'");
+
+        solution.Write("Shop", "Edition.cs", edition.Replace("\"debug\"", "\"debugging\""));
+        var (warm, wasWarm) = solution.Rebuild(cold);
+
+        wasWarm.Should().BeTrue("only a file's text changed");
+        CompilerErrors(warm).Should().BeEmpty();
+        warm.Module("Edition").Should().Contain("'debugging'", "the project defines DEBUG, and the build compiled that branch")
+            .And.NotContain("'release'");
+        ModulesOf(warm).Should().Equal(ModulesOf(solution.Build()), "a warm build writes what a cold build writes");
     }
 }

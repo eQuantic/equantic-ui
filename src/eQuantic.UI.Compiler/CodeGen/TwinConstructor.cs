@@ -149,7 +149,7 @@ internal sealed class TwinConstructor
                 // that starts at it is (StartOf), where `name: string = null` was refused (#1347).
                 if (defaulted is "null" && _annotations && !Nullable(type)) defaulted += "!";
                 return _lowering.ParamWithDefault(ParameterName(parameter, single.Primary), type, defaulted,
-                    parameter.Modifiers.Any(SyntaxKind.ParamsKeyword));
+                    IsRest(parameter));
             }));
             foreach (var alternate in constructors.Alternates)
                 if (Mapped(alternate, arrived, selected: null) is { } mapped)
@@ -245,12 +245,12 @@ internal sealed class TwinConstructor
 
         var roots = new List<Root>();
         if (type.ParameterList is { } primary)
-            roots.Add(new Root(primary.Parameters.ToList(), true, null, Arity.Of(primary.Parameters.ToList())));
+            roots.Add(new Root(primary.Parameters.ToList(), true, null, Arity.Of(primary.Parameters.ToList(), IsRest)));
         else
         {
             foreach (var constructor in declared.Where(constructor => !Chains(constructor)))
             {
-                var arity = Arity.Of(constructor.ParameterList.Parameters.ToList());
+                var arity = Arity.Of(constructor.ParameterList.Parameters.ToList(), IsRest);
                 if (Clash(roots.Select(root => (Signature(type, root), root.Arity)), arity) is { } clash)
                 {
                     Refuse(type, constructor, arity, clash);
@@ -274,7 +274,7 @@ internal sealed class TwinConstructor
                     + "others by how many arguments arrive, so each must chain to one that does its own work.");
                 continue;
             }
-            var arity = Arity.Of(constructor.ParameterList.Parameters.ToList());
+            var arity = Arity.Of(constructor.ParameterList.Parameters.ToList(), IsRest);
             var taken = roots.Select(root => (Signature(type, root), root.Arity))
                 .Concat(alternates.Select(alternate => ($"'{type.Identifier.ValueText}{alternate.Constructor.ParameterList}'", alternate.Arity)));
             if (Clash(taken, arity) is { } clash)
@@ -395,13 +395,22 @@ internal sealed class TwinConstructor
             : target.IsImplicitlyDeclared);
     }
 
+    /// <summary>
+    /// Whether a constructor's <c>params</c> parameter is a rest parameter on the twin: one of the SDK's own,
+    /// which a hand-written twin may spell, or one no model can say whose it is. Any other is the array it is,
+    /// which a call packs the elements it lists into and hands an array whole as it is, so it meets no
+    /// argument cap and the constructor holds the caller's array, as a method's does (#1159, #1192).
+    /// </summary>
+    private bool IsRest(ParameterSyntax parameter) => BoundArguments.IsRest(parameter, _modelFor(parameter)?.Compilation);
+
     /// <summary>The argument counts a constructor accepts: from its required parameters to all of
-    /// them, with no upper end for a <c>params</c> one.</summary>
+    /// them, with no upper end for a <c>params</c> one that is a rest parameter. One that is the array it
+    /// is takes one argument, always passed, which a call packs its elements into (#1192).</summary>
     private readonly record struct Arity(int Low, int High)
     {
-        public static Arity Of(IReadOnlyList<ParameterSyntax> parameters) => new(
-            parameters.Count(parameter => parameter.Default is null && !parameter.Modifiers.Any(SyntaxKind.ParamsKeyword)),
-            parameters.Any(parameter => parameter.Modifiers.Any(SyntaxKind.ParamsKeyword)) ? int.MaxValue : parameters.Count);
+        public static Arity Of(IReadOnlyList<ParameterSyntax> parameters, Func<ParameterSyntax, bool> isRest) => new(
+            parameters.Count(parameter => parameter.Default is null && !isRest(parameter)),
+            parameters.Any(isRest) ? int.MaxValue : parameters.Count);
 
         public bool Overlaps(Arity other) => Low <= other.High && other.Low <= High;
 
@@ -464,7 +473,9 @@ internal sealed class TwinConstructor
             ? _converter.ConvertExpression(given.Value, parameters[i].Type?.ValueText())
             : DefaultOf(parameters[i].Type!));
         string Name(int i) => ParameterName(parameters[i], root.Primary);
-        bool IsRest(int i) => parameters[i].Modifiers.Any(SyntaxKind.ParamsKeyword);
+        // A params parameter takes the array C# passes, the elements a chain lists gathered into one, whether the
+        // twin holds it as a rest parameter or as the array it is (IsRest decides only how a call arrives).
+        bool IsParams(int i) => parameters[i].Modifiers.Any(SyntaxKind.ParamsKeyword);
         JsExpr Temporary(int index) => JsExpr.Identifier($"$c{index}");
 
         if (BoundArguments.Of(_modelFor(chain)?.GetOperation(chain), argument => JsExpr.Opaque(_converter.ConvertExpression(argument)))
@@ -472,9 +483,9 @@ internal sealed class TwinConstructor
         {
             var landed = parameters.Select((_, i) => (Parameter: Name(i), Value: bound.ByParameter[i] switch
             {
-                null => IsRest(i) ? JsExpr.Array([]) : Default(i),
+                null => IsParams(i) ? JsExpr.Array([]) : Default(i),
                 [{ Spread: true } whole] => Temporary(whole.Written),
-                var slots when IsRest(i) => JsExpr.Array(slots.Select(slot => Temporary(slot.Written)).ToList()),
+                var slots when IsParams(i) => JsExpr.Array(slots.Select(slot => Temporary(slot.Written)).ToList()),
                 [var one, ..] => Temporary(one.Written),
                 _ => Default(i),
             })).ToList();
@@ -484,7 +495,7 @@ internal sealed class TwinConstructor
         // No model: the arguments in the order they are written, each in the parameter it names or the
         // one in its position.
         var values = new JsExpr?[parameters.Count];
-        var rest = parameters.Count > 0 && IsRest(parameters.Count - 1) ? parameters.Count - 1 : -1;
+        var rest = parameters.Count > 0 && IsParams(parameters.Count - 1) ? parameters.Count - 1 : -1;
         var arguments = chain.ArgumentList.Arguments;
         var gathered = new List<JsExpr>();
         for (var i = 0; i < arguments.Count; i++)
@@ -540,7 +551,7 @@ internal sealed class TwinConstructor
         {
             var name = ParameterName(parameter, primary: false);
             var argument = JsExpr.Index(JsExpr.Identifier(arrived), JsExpr.Literal(i.ToString()));
-            if (parameter.Modifiers.Any(SyntaxKind.ParamsKeyword))
+            if (IsRest(parameter))
                 return (name, JsExpr.Call(JsExpr.Member(JsExpr.Member(JsExpr.Member(JsExpr.Identifier("Array"), "prototype"), "slice"), "call"),
                     JsExpr.Identifier(arrived), JsExpr.Literal(i.ToString())));
             return parameter.Default is { } given

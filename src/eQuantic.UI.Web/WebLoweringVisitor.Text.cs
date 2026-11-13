@@ -18,7 +18,7 @@ internal sealed partial class WebLoweringVisitor
     /// outline and ::placeholder mechanics live in the generated stylesheet (.eq-entry). The
     /// composing component owns the container chrome. Handlers attach on the client (lowering.ts —
     /// SSR emits no events; hydration wires them). The entry lowers inside a STABLE
-    /// .eq-field shell that always carries the sr-only description twin (.eq-desc) — presence
+    /// .eq-field shell that always carries the hidden description twin (.eq-desc) — presence
     /// flipping with the description would REPLACE the input and drop focus mid-edit.
     /// </summary>
     private HtmlElement LowerTextEntry(TextEntry entry)
@@ -66,14 +66,17 @@ internal sealed partial class WebLoweringVisitor
         if (entry.Autofocus) element.RawAttributes["autofocus"] = "";
         if (entry.Invalid) element.RawAttributes["aria-invalid"] = "true";
 
-        // The description twin: sr-only, and a polite live region — present (empty) from the first
-        // paint so a later error swap ANNOUNCES instead of merely recoloring. The id is the
-        // content's FNV hash, the atomizer's identity rule — deterministic across SSR and client,
-        // no per-render counter (identical captions share one id; the referenced text is the same).
+        // The description twin: HIDDEN, and the field's description through aria-describedby, which
+        // reads an element it names however hidden. It is no live region and no line of the page:
+        // the component that draws the message draws it in a LiveRegion of its own, so the message
+        // is announced once and read once (#1332). Present (empty) from the first paint all the
+        // same, so the shape never flips and a description that appears changes attributes rather
+        // than replacing the input. The id is the content's FNV hash, the atomizer's identity rule —
+        // deterministic across SSR and client, no per-render counter.
         var description = new RealizedElement("span")
         {
             ClassName = "eq-desc",
-            RawAttributes = new Dictionary<string, string> { ["aria-live"] = "polite" },
+            RawAttributes = new Dictionary<string, string> { ["hidden"] = "" },
         };
         if (entry.Description is { Length: > 0 } caption)
         {
@@ -140,7 +143,7 @@ internal sealed partial class WebLoweringVisitor
         // The inherited axis travels THROUGH, as it does in the client twin: a Spacer inside a
         // sheet inside a Row needs to know which way the row runs, and `null` makes it lower to
         // nothing on the server while the browser renders it. Found in review.
-        if (Lower(sheet.Child, horizontalAxis) is { } child) element.Children.Add(child);
+        if (Lower(sheet.Child, horizontalAxis, LoweringPath.Child) is { } child) element.Children.Add(child);
 
         // The entry's carets, in the cell text's ink, hidden by the generated sheet until the surface
         // holds the keyboard; a server never draws a cell being edited, so there are none in practice.
@@ -162,10 +165,12 @@ internal sealed partial class WebLoweringVisitor
             ["aria-multiline"] = "true",
         };
         if (sheet.Label is { Length: > 0 } named) door["aria-label"] = named;
+        // Its value is what the grid says now (#1333, TS twin: lowerSheetSurface), as Photon gives the field.
         var input = new RealizedElement("textarea")
         {
             ClassName = "eq-code-input",
             RawAttributes = door,
+            InnerHtml = sheet.Announcement,
         };
         // The door's text and composition, declared as the pointer is. Its keydown, its clipboard trio and
         // its focus are the client-only handlers of every entry the parity net leaves to the browser.
@@ -249,12 +254,15 @@ internal sealed partial class WebLoweringVisitor
         // The child lowers with no inherited axis, as the client lowers it, and keeps its layers
         // (the code's mark layer among them) in a stacking context of its own, so a layer it raised
         // stays under the caret written after it.
-        if (Lower(surface.Child, null) is { } child)
+        // Its text is the door's value (#1333, TS twin: lowerCodeSurface), so what it draws is out of the
+        // reading order: a reader heard an empty field and then the code as lines of their own.
+        if (Lower(surface.Child, null, LoweringPath.Child) is { } child)
         {
             if (child is RealizedElement realized)
             {
                 realized.Style ??= new HtmlStyle();
                 realized.Style.Isolation = "isolate";
+                realized.AriaHidden = true;
             }
             element.Children.Add(child);
         }
@@ -286,7 +294,7 @@ internal sealed partial class WebLoweringVisitor
         // (it opens as someone types), so its id hashes its text, as LowerAnchored's does, and need not
         // match the client's spelling.
         RealizedElement? list = null;
-        if (surface.Options is { } options && Lower(options, null) is { } offered)
+        if (surface.Options is { } options && Lower(options, null, LoweringPath.Second) is { } offered)
         {
             var listId = $"eq-options-{StyleAtomizer.Hash(TextContentOf(options))}";
             list = new RealizedElement("div")
@@ -309,10 +317,13 @@ internal sealed partial class WebLoweringVisitor
             if (surface.HighlightedOption >= 0) input["aria-activedescendant"] = $"{listId}-{surface.HighlightedOption}";
         }
 
+        // The door holds what a reader hears the surface hold (#1333): the field and its text are one thing.
+        // The runtime keeps the value and the selection in step with the model after each render.
         var door = new RealizedElement("textarea")
         {
             ClassName = "eq-code-input",
             RawAttributes = input,
+            InnerHtml = surface.Model.Reading.Text,
         };
         foreach (var text in (ReadOnlySpan<string>)["beforeinput", "compositionupdate", "compositionend"])
             door.CustomEvents[text] = ClientDispatches;
@@ -321,9 +332,10 @@ internal sealed partial class WebLoweringVisitor
         // at its start and top in the surface's coordinates. A card shows as a pointer rests or a key
         // asks, so a page rarely carries one from the server; written when it does, as the list is. Its
         // prose wraps, as the list's does: the surface's `pre` is for the code's token runs.
-        foreach (var note in surface.Notes)
+        for (var at = 0; at < surface.Notes.Count; at++)
         {
-            if (Lower(note.Child, null) is not { } explained) continue;
+            var note = surface.Notes[at];
+            if (Lower(note.Child, null, LoweringPath.Note(at)) is not { } explained) continue;
             var wrapper = new RealizedElement("div")
             {
                 ClassName = "eq-code-note",
@@ -358,7 +370,7 @@ internal sealed partial class WebLoweringVisitor
         var face = FaceName.Usable(text.StyleOverride?.Family?.Name);
         // A family that ships files is declared in the head of the page the server renders (#1056), as
         // Photon registers it the first time text asks: the server leaves out what the theme declares.
-        if (face is not null && text.StyleOverride?.Family is { Files.Count: > 0 } shipped) FaceSink.Ambient?.Add(shipped);
+        if (face is not null && text.StyleOverride?.Family is { Files.Count: > 0 } shipped) _channels?.Faces.Add(shipped);
         // The OUTLINE, not the type scale: `h1`–`h6` when the author placed this text in the
         // document's structure, and a span when they did not. The heading's own UA margin and
         // size are cancelled in the token sheet (`.eq-type-*` owns the size), so choosing a level
@@ -379,7 +391,9 @@ internal sealed partial class WebLoweringVisitor
                 // its alignment and its gradient read across that width. The multi-line clamp
                 // below replaces it with the box the clamp needs.
                 Display = Display.Block,
-                Color = TokenCss.Value(text.Color ?? _context.Theme.TextPrimary),
+                // A text with no colour of its own writes none and inherits the foreground of the box
+                // above it, or the document's TextPrimary, as an icon already did (#614).
+                Color = text.Color is { } own ? TokenCss.Value(own) : null,
                 // Line alignment inside the paragraph: wrapped lines of a centered headline must
                 // center too — container alignment only places the block.
                 TextAlign = text.Align switch
@@ -436,7 +450,7 @@ internal sealed partial class WebLoweringVisitor
                     // warms on hover, as a Link's does. It took the destination as written, so on
                     // /pt-BR/login a run to /terms led to the English page (#505).
                     // One whose scheme an href never carries is no href, and the run stays a run (#1286).
-                    if (RenderContext.ResolveDestination(written) is { } destination)
+                    if (RenderChannels.Resolve(written, _channels?.LinkPolicy) is { } destination)
                     {
                         runElement.RawAttributes = new Dictionary<string, string> { ["href"] = destination };
                         if (WarmsOnHover(destination)) runElement.RawAttributes["data-prefetch"] = "";

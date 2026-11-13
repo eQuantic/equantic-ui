@@ -75,7 +75,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             {
                 context.UsedHelpers.Add(Eq.Import);
                 return JsExpr.Call(JsExpr.Identifier(Eq.EnumUnbox), operandIr,
-                    JsExpr.Literal(Types.EnumShape.Of(enumTarget)), JsExpr.Literal(JsStringLiteral.Quote(enumTarget.Name)));
+                    JsExpr.Literal(Types.EnumShape.Of(enumTarget)), JsExpr.Literal(JsStringLiteral.Quote(Boxing.NameOf(enumTarget))));
             }
             // A value that is not null converts on its own; a nullable one kept nullable lets null pass.
             var from = unwraps ? operandType : context.SemanticHelper.GetType(cast.Expression);
@@ -130,7 +130,8 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     /// only the target has was "Property does not exist on type" (#1303): in TypeScript the cast
     /// keeps its type as an assertion, the target named by its twin and imported as any reference to
     /// it is. A generic target is left as it was, as a list's generic item is left to inference, and
-    /// so is a type with no twin to name, one the build keeps on the server included. JavaScript has
+    /// so is a type with no twin to name, one the build keeps on the server included, whichever class
+    /// declares the member the cast reaches. JavaScript has
     /// no assertion and gets the value alone, and the bundler drops an import used only as a type, so
     /// a base that casts to its own subclass meets no import cycle. The assertion does not CHECK: a
     /// wrong downcast reads what the object holds instead of throwing .NET's InvalidCastException,
@@ -143,10 +144,26 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         if (!conversion.IsReference || conversion.IsImplicit) return value;
         if (operation.Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } target) return value;
         if (!target.Locations.Any(location => location.IsInSource) && !target.IsRuntimeProvided()) return value;
-        // A type the build writes no module for has no twin to name, and a cast to it still writes
-        // nothing, as it did: the value passes as it is, and the fence stays where the code reads it.
-        if (target.IsKeptOut()) return value;
+        // A type with no twin to name writes the value alone, as it did, and the fence stays where the code
+        // reads it. Which type has none is asked of its kind: an app's type the build writes no module for,
+        // its base kept on the server included (IsKeptOut), and a type of the runtime that is itself the
+        // server's. A runtime type over a base the server keeps (`Pressable : SingleChildNode`, `Row :
+        // FlexNode`) has a twin of its own, and read as kept out, its cast was dropped, so a member it
+        // inherits was read off the static type, which tsc refused (#1396).
+        if (target.IsRuntimeProvided() ? StaysOnTheServer(target) : target.IsKeptOut()) return value;
         return JsExpr.Template("({0} as " + target.IntroduceTwin(context) + ")", value);
+    }
+
+    /// <summary>Whether a type of the runtime is the server's own: marked <c>[ServerOnly]</c> itself, or
+    /// declared inside a type that is, which the runtime carries no twin of either, by the attribute or by its
+    /// name where the attribute binds to an error type. Its base is no part of the question: the runtime's
+    /// twin of a node stands without the server's base.</summary>
+    private static bool StaysOnTheServer(INamedTypeSymbol type)
+    {
+        for (INamedTypeSymbol? current = type; current is not null; current = current.ContainingType)
+            if (current.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly"))
+                return true;
+        return false;
     }
 
     /// <summary>The integer part of a value only spelled, never bound — Math.trunc as text.</summary>

@@ -45,4 +45,17 @@ public class SsrConsentTests
         consent.Deny();
         consent.State.Should().Be(ConsentState.Unknown);
     }
+
+    /// <summary>#1294: over HTTPS only the cookie the page's own host can write answers.</summary>
+    [Theory]
+    [InlineData("eq-consent=granted", ConsentState.Unknown)]
+    [InlineData("__Host-eq-consent=granted", ConsentState.Granted)]
+    [InlineData("eq-consent=granted; __Host-eq-consent=denied", ConsentState.Denied)]
+    public void OverHttps_OnlyTheSecureCookieAnswers(string cookie, ConsentState expected)
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Scheme = "https";
+        context.Request.Headers.Cookie = cookie;
+        new SsrConsent(new HttpContextAccessor { HttpContext = context }).State.Should().Be(expected);
+    }
 }

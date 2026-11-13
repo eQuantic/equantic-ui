@@ -59,8 +59,9 @@ public sealed class Drawer : StatelessComponent
             // hugs its content — a panel stretching a documentation section is not the panel.
             Height = context.InFlow ? default : SizeValue.Fill,
             Background = theme.Surface,
-            Elevation = 3,
-            Padding = EdgeInsets.All(Space.S4),
+            // The surfaces' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
+            Elevation = theme.Modal?.DrawerElevation ?? 3,
+            Padding = theme.Modal?.DrawerPadding ?? EdgeInsets.All(Space.S4),
         }, Content);
 
         if (context.InFlow) return panel;

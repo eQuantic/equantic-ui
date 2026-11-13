@@ -24,7 +24,8 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// while a record/struct uses its <c>Deconstruct</c> element names (<c>.x</c>, <c>.y</c>) — a record is a
 /// plain object at runtime, so index access would read <c>undefined</c> — and a <c>Deconstruct</c> the app
 /// wrote is called (<see cref="PositionalPart"/>). A property subpattern reads its member as a member
-/// access of it reads it, through the same strategies (<see cref="Read"/>).
+/// access of it reads it, through the same strategies, and once for the operation where reading it runs
+/// the app's code (<see cref="Read"/>).
 /// </summary>
 public static class PatternConverter
 {
@@ -128,6 +129,9 @@ public static class PatternConverter
         var text = DecimalConstant(label, context) is { } exact
             ? ConstantLiteral.Write(exact, null, context)!
             : context.Converter.ConvertExpression(constant);
+        // Compared with a value held as object, the member or the float is boxed as that value is (Boxing).
+        if (Strategies.Boxing.BoxedConstant(value) is { } boxed)
+            text = JsExprWriter.Write(Strategies.Boxing.Box(boxed, JsExpr.Literal(text), context));
         return ConstantTest(access, text, value, context);
     }
 
@@ -156,8 +160,10 @@ public static class PatternConverter
                 bindings.Add((v.Identifier.ValueText.ToJsIdentifier(), access));
                 break;
 
-            case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d }:
-                bindings.Add((d.Identifier.ValueText.ToJsIdentifier(), access));
+            // A box's value is what binds, where the test met a value boxed into object (Boxing).
+            case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d } declaration:
+                bindings.Add((d.Identifier.ValueText.ToJsIdentifier(),
+                    Strategies.Boxing.TestsABox(declaration.Type, context) ? $"{access}.value" : access));
                 break;
 
             case RecursivePatternSyntax recursive:
@@ -357,6 +363,12 @@ public static class PatternConverter
         // A type the platform represents by a value of its own, read off the SYMBOL: the spelling
         // missed `Int32` and `System.Int64`, and asked a long, which is a BigInt here, whether it was
         // a number, so `o is long` was false for every long.
+        // An enum or a float tested over a value held as object is asked of its box (Boxing): its key was a string
+        // and its number a double, so `o is Tone` was any value and `o is string` a member (#552, #954). A package's
+        // enum is not: the package's fence below refuses its test (EQ2004), as it refuses every other type of a
+        // package, since a value of it the server hands over arrives with no box to ask.
+        if (context.SemanticHelper.GetSymbol(typeSyntax) is not ITypeSymbol { } tested || !tested.IsPackages())
+            if (Strategies.Boxing.TestsABox(typeSyntax, context)) return Strategies.Boxing.IsBox(typeSyntax, access, context);
         if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol known && ScalarCheck(known, access, context) is { } scalar)
             return scalar;
         switch (typeSyntax.ValueText())
@@ -367,6 +379,7 @@ public static class PatternConverter
             case "long": return $"typeof {access} === 'bigint'";
             case "bool" or "boolean": return $"typeof {access} === 'boolean'";
         }
+
 
         // A class that lowers to a REAL JS class supports `instanceof`. That is the whole VOCABULARY
         // — every `VisualNode` is an `export class` in the runtime, components included (UiComponent
@@ -416,6 +429,12 @@ public static class PatternConverter
             return "false";
         }
 
+        // An INTERFACE: what the value's class declares it implements, or a refusal where the browser cannot say
+        // (#1464). It fell through to the null-check below, so any value passed. A package's interface is EQ2004's
+        // above, which names its assembly.
+        if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol { TypeKind: TypeKind.Interface } contract)
+            return InterfaceTests.Test(contract, access, typeSyntax, context);
+
         return $"{access} != null";
     }
 
@@ -437,6 +456,12 @@ public static class PatternConverter
                 context.UsedHelpers.Add(Eq.Import);
                 return $"{Eq.Equals}({access}, {constant})";
             }
+        }
+        // A member or a float compared with a value held as object is a box compared with a box (Boxing).
+        if (Strategies.Boxing.BoxedConstant(value) is not null)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.Equals}({access}, {constant})";
         }
         return $"{access} === {constant}";
     }
@@ -601,6 +626,10 @@ public static class PatternConverter
     /// receiver type, as an array's <c>length</c>; and a .NET member no browser value carries was named
     /// with no diagnostic (#920). Each answered false where .NET answered true.
     /// </para>
+    /// <para>
+    /// A member whose read runs the app's code is read once for the pattern-matching operation, however
+    /// many of its tests and bindings read it (<see cref="ReadRunsTheAppsCode"/>, <see cref="MatchParts"/>).
+    /// </para>
     /// </summary>
     private static string Read(string at, ITypeSymbol? receiver, SimpleNameSyntax name, ExpressionSyntax read,
         ConversionContext context)
@@ -612,14 +641,42 @@ public static class PatternConverter
         context.SemanticHelper.MapType(placeholder, receiver.UnwrapNullable());
         context.SemanticHelper.MapSynthetic(access, read);
         context.SemanticHelper.MapSynthetic(access.Name, name);
+        var member = context.SemanticHelper.GetSymbol(name);
         // The model types a name before a colon as nothing: the member's own type is the read's.
-        context.SemanticHelper.MapType(access, context.SemanticHelper.GetSymbol(name) switch
+        context.SemanticHelper.MapType(access, member switch
         {
             IPropertySymbol property => property.Type,
             IFieldSymbol field => field.Type,
             _ => null,
         });
         // Spliced as it is, the receiver of the next member of a path among other places: written as one.
-        return JsExprWriter.WriteIn(context.Converter.ConvertIr(access), JsPrecedence.Call);
+        var written = JsExprWriter.WriteIn(context.Converter.ConvertIr(access), JsPrecedence.Call);
+        if (member is null || !ReadRunsTheAppsCode(member, receiver.UnwrapNullable())) return written;
+        // Read once for the operation, by the first test that reaches it, as .NET's decision graph reads it
+        // (MatchParts, #1150). A member may answer null, so what is held is a box around its value, which
+        // never is: held as it is, `$p ?? ($p = …)` read a null member again at the next mention.
+        var held = context.MatchParts.Held(at, member);
+        return $"({held} ?? ({held} = [{written}]))[0]";
     }
+
+    /// <summary>
+    /// Whether reading <paramref name="member"/> off a value of type <paramref name="receiver"/> can run the
+    /// app's code, so the operation holds what it answers instead of reading it at every mention: a property
+    /// the app declares with an accessor of its own, and one an override or an implementation may answer for
+    /// (abstract, virtual, an override, an interface's) where the property or the value's type is the app's.
+    /// A field, an auto-property the twin keeps under its own name (<see cref="PropertyStore.IsKeptUnderItsName"/>)
+    /// and a property of the platform's read off a value of the platform's (a list's <c>Count</c>, a string's
+    /// <c>Length</c>) run none of it, and are written where the pattern reads them.
+    /// </summary>
+    private static bool ReadRunsTheAppsCode(ISymbol member, ITypeSymbol? receiver) => member switch
+    {
+        IPropertySymbol property when property.IsAbstract || property.IsVirtual || property.IsOverride =>
+            DeclaredInSource(property) || DeclaredInSource(receiver),
+        IPropertySymbol property => property.OriginalDefinition.DeclaringSyntaxReferences.Any(reference =>
+            reference.GetSyntax() is PropertyDeclarationSyntax declared && !PropertyStore.IsKeptUnderItsName(declared)),
+        _ => false,
+    };
+
+    private static bool DeclaredInSource(ISymbol? symbol) =>
+        symbol?.OriginalDefinition.Locations.Any(location => location.IsInSource) == true;
 }

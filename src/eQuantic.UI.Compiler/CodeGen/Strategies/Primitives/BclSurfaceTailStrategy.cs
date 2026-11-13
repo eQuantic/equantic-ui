@@ -7,13 +7,11 @@ using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
 /// <summary>
-/// The INSTANCE-member tail of the audited BCL surface: <c>Equals</c> on the exactly-comparable
-/// primitives, the string members the dedicated strategy never grew, and the Dictionary/List
-/// quality-of-life members (capacity hints are honest no-ops — the same policy that drops a
-/// collection expression's <c>with(capacity:)</c>). Symbol-first, table-driven, single-evaluation
-/// only — the WRITER binds a reused receiver, the templates just name it. Deliberately absent, and therefore still
-/// visible in the audit baseline: <c>double.Equals</c> (NaN.Equals(NaN) is true — <c>===</c>
-/// would lie) and <c>decimal.Equals</c> (Decimal objects).
+/// The INSTANCE-member tail of the audited BCL surface: <c>Equals</c> on a Guid, the string members the
+/// dedicated strategy never grew, and the Dictionary/List quality-of-life members (capacity hints are
+/// honest no-ops — the same policy that drops a collection expression's <c>with(capacity:)</c>).
+/// Symbol-first, table-driven, single-evaluation only — the WRITER binds a reused receiver, the
+/// templates just name it. A primitive's <c>Equals</c> is <see cref="PrimitiveEqualsStrategy"/>'s.
 /// </summary>
 public class BclSurfaceTailStrategy : IExpressionIrStrategy
 {
@@ -34,6 +32,8 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
         invocation.TryGetInstanceCall(out var receiverSyntax, out var name);
 
         var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
+        if (name.Identifier.ValueText == "ContainsValue" && method.ContainingType is { TypeArguments: [_, var valueType] })
+            ElementEquality.Refuses(valueType, true, invocation, context);
         var receiver = context.Converter.ConvertIr(receiverSyntax);
         var args = invocation.ArgumentList.Arguments
             .Select(a => context.Converter.ConvertIr(a.Expression))
@@ -41,6 +41,7 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
 
         // Templates say what they compute; the writer decides what to evaluate once.
         var template = Template(method, name.Identifier.ValueText, args.Length)!;
+        if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray());
     }
 
@@ -49,17 +50,13 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
     {
         var home = method.ContainingType;
 
-        // Equals on the primitives whose JS representation compares EXACTLY with === : booleans,
-        // chars (one-char strings), int32 (number) and int64 (BigInt — 3n === 3 is false, which is
-        // also C#'s answer for a boxed cross-type compare). Guids ride as strings.
-        if (name is "Equals" && argCount == 1
-            && (home.SpecialType is SpecialType.System_Boolean or SpecialType.System_Char
-                    or SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_IntPtr
-                    or SpecialType.System_UInt64 or SpecialType.System_UIntPtr
-                || home is { Name: "Guid", ContainingNamespace.Name: "System" }))
-        {
+        // A delegate is one function for its target and method (`$eq.delegates`), compared by identity.
+        if (name is "Equals" && argCount == 1 && home.ContainingNamespace?.Name == "System" && home.Name is "Delegate" or "MulticastDelegate")
+            return $"{Eq.EqualsInstance}({{0}}, {{1}})";
+
+        // Guids ride as strings, which compare exactly with ===.
+        if (name is "Equals" && argCount == 1 && home is { Name: "Guid", ContainingNamespace.Name: "System" })
             return "({0} === {1})";
-        }
 
         // Dispose through the INTERFACE — the runtime's disposable contract is a `dispose()`
         // method on every twin that hands one out (subscriptions, tickers), and the `using`

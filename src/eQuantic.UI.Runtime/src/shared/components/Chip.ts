@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, Sizing, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "../runtime-exports";
 
 export class Chip extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Chip';
@@ -31,20 +31,22 @@ export class Chip extends StatelessComponent {
         let theme = context.theme;
         let primary = theme.colors('primary');
         let tint = theme.colors(this.variant);
-        let fill = (() => { const $s = this.kind; if (($s === 'filter') && (this.selected)) return primary.subtle; if ($s === 'filter') return theme.surfaceSubtle; if ($s === 'tag') return tint.subtle; return theme.surfaceSubtle; })();
-        let textColor = (() => { const $s = this.kind; if (($s === 'filter') && (this.selected)) return primary.onSubtle; if ($s === 'tag') return tint.onSubtle; return theme.textSecondary; })();
-        let label = new Text(this.label, 'caption', textColor, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(13, 16, 'semiBold', 0, Math.fround(1.3)) });
-        let content = new Row(6, 'start', 'center', false, null, null, { main: 'center', height: SizeValue.fill });
+        let slot = theme.chip;
+        let quietFill = slot?.fill ?? theme.surfaceSubtle;
+        let fill = (() => { const $s = this.kind; if (($s === 'filter') && (this.selected)) return primary.subtle; if ($s === 'filter') return null; if ($s === 'tag') return tint.subtle; return quietFill; })();
+        let textColor = (() => { const $s = this.kind; if (($s === 'filter') && (this.selected)) return primary.onSubtle; if ($s === 'tag') return tint.onSubtle; return theme.textPrimary; })();
+        let label = new Text(this.label, 'caption', textColor, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(slot?.labelSize ?? 13, slot?.labelLineHeight ?? 16, slot?.labelWeight ?? 'semiBold', slot?.labelTracking ?? 0, Math.fround(1.3)) });
+        let content = new Row(slot?.gap ?? 6, 'start', 'center', false, null, null, { main: 'center', height: SizeValue.fill });
         if (this.kind === 'filter' && this.selected) {
-            content.add(new Icon(IconGlyph.fromIcons('check'), 16, textColor));
+            content.add(new Icon(IconGlyph.fromIcons('check'), slot?.iconSize ?? 16, textColor));
         }
         content.add(label);
         if (this.kind === 'input' && this.onRemove != null) {
-            content.add(new Pressable(new Icon(IconGlyph.fromIcons('close'), 20, textColor), this.onRemove, { label: SdkStrings.remove }));
+            content.add(new Pressable(new Icon(IconGlyph.fromIcons('close'), slot?.removeIconSize ?? 20, theme.textMuted), this.onRemove, { label: SdkStrings.remove }));
         }
-        let hoverFill = this.kind === 'filter' && this.onPressed != null ? this.selected ? primary.subtle.midpointWith(primary.base) : theme.surfaceSubtle.midpointWith(theme.border) : null;
-        let pressedFill = this.kind === 'filter' && this.onPressed != null ? this.selected ? primary.pressed.withOpacity(Math.fround(0.24)) : theme.surfaceSubtle : null;
-        let box = new Box(new BoxStyle({ height: Sizing.height('small', context.density), padding: EdgeInsets.symmetric(12, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'filter' && this.selected ? 1 : 0, borderColor: primary.base, hover: hoverFill == null ? null : new StyleDiff({ background: hoverFill }), pressed: pressedFill == null ? null : new StyleDiff({ background: pressedFill }) }), content);
+        let hoverFill = this.kind === 'filter' && this.onPressed != null ? this.selected ? primary.subtle.midpointWith(primary.base) : quietFill : null;
+        let pressedFill = this.kind === 'filter' && this.onPressed != null ? this.selected ? primary.pressed.withOpacity(slot?.pressOpacity ?? Math.fround(0.24)) : quietFill : null;
+        let box = new Box(new BoxStyle({ height: ControlMetrics.height(context, 'small', (slot?.controls ?? null)), padding: EdgeInsets.symmetric(slot?.paddingX ?? 12, 0), background: fill, cornerRadius: new CornerRadii(slot?.radius ?? theme.shape('full')), borderWidth: this.kind === 'filter' ? this.selected ? slot?.selectedBorderWidth ?? 1 : slot?.outlineWidth ?? 1 : 0, borderColor: this.selected ? primary.base : slot?.outlineColor ?? theme.borderStrong, hover: hoverFill == null ? null : new StyleDiff({ background: hoverFill }), pressed: pressedFill == null ? null : new StyleDiff({ background: pressedFill }) }), content);
         return this.kind === 'filter' && this.onPressed != null ? new Pressable(box, this.onPressed, { label: this.label, selected: this.selected }) : box;
     }
 }

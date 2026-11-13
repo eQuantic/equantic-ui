@@ -14,8 +14,9 @@ export type * from './enums.generated';
 export { $eq } from '../eq';
 export type { ICanvasPainter } from './nodes';
 export { Component, HtmlElement } from '../core/types';
-// The C# `UiComponent` base as it surfaces in transpiled signatures (AdoptConfig, composition).
-export { Component as UiComponent } from '../core/types';
+// The C# `UiComponent` base as it surfaces in transpiled signatures (AdoptConfig, composition): the
+// component that IS a node, between the web `Component` and the two kinds, as in C#.
+export { UiComponent } from '../core/component';
 export type { RenderContext as BuildContext } from '../core/types';
 export { StatelessComponent, StatefulComponent } from '../core/component';
 export {
@@ -99,6 +100,24 @@ export {
 export { ComponentContext } from './photon-context';
 export { DataPalette, DivergingScale, StatusScale } from './data-palette';
 export { SheetTheme } from './sheet-theme';
+export {
+  SizeLadder,
+  DensityLadder,
+  ControlsTheme,
+  ButtonTheme,
+  AppThemeExtensions,
+  DensityPair,
+  IconButtonTheme,
+  InputTheme,
+  SelectionControlsTheme,
+  SegmentedTheme,
+  ChipTheme,
+  ModalTheme,
+  MenuTheme,
+  NoticeTheme,
+  ProgressTheme,
+  CardTheme,
+} from './theme-slots';
 // Primitives types route to @equantic/runtime implicitly, so a page reading its route needs this
 // name to resolve here or it dies at hydration on an unresolvable import.
 export { RouteValues } from './route-values';
@@ -113,11 +132,12 @@ export {
   TableOffset,
   TableRange,
   TableScrollRequest,
+  TextReading,
   Transform2D,
 } from './value-types';
 // A page placing a WebFrame names this to say WHICH form its content is; same implicit promise.
 export { WebContent } from './value-types';
-export { GridPattern, InFlow, InView, RadialGradient, Simulated } from './vocabulary';
+export { GridPattern, InFlow, InheritedComponent, InView, RadialGradient, Simulated } from './vocabulary';
 export { VisualNodeExtensions } from './visual-node-extensions';
 // The Primitives VALUE types a page can name — same implicit promise, see primitive-values.ts.
 export {

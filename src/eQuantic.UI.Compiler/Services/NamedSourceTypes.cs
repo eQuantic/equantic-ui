@@ -35,6 +35,8 @@ namespace eQuantic.UI.Compiler.Services;
 internal sealed class NamedSourceTypes
 {
     private readonly Dictionary<string, HashSet<ReferencedType>> _declarations = new(StringComparer.Ordinal);
+    private ServiceRegistrations _services = ServiceRegistrations.None;
+    private readonly HashSet<INamedTypeSymbol> _built = new(SymbolEqualityComparer.Default);
 
     /// <summary>The declarations of the types whose twin is <paramref name="name"/>, as the
     /// declaration's symbols name them: each type with a file that declares it. None when no symbol
@@ -57,10 +59,16 @@ internal sealed class NamedSourceTypes
     /// <c>Order</c> had the Domain's reached: compiled for the browser, where its server code is
     /// refused, and in collision with the app's (found in review of #827).
     /// </param>
+    /// <param name="services">
+    /// What the app registered in its container. A module that resolves an app's service in the browser
+    /// constructs the class its registration names (<see cref="CodeGen.BrowserServices"/>), which no
+    /// syntax of the module names: the interface brings that class with it, as a reduced extension call
+    /// brings the static class that declares it.
+    /// </param>
     public static NamedSourceTypes Of(IEnumerable<SyntaxNode> declarations, Func<SyntaxNode, SemanticModel?> modelFor,
-        bool asComponent)
+        bool asComponent, ServiceRegistrations? services = null)
     {
-        var named = new NamedSourceTypes();
+        var named = new NamedSourceTypes { _services = services ?? ServiceRegistrations.None };
         foreach (var declaration in declarations)
             if (modelFor(declaration) is { } model)
                 named.Read(declaration, model, asComponent);
@@ -175,6 +183,7 @@ internal sealed class NamedSourceTypes
                 return;
             case INamedTypeSymbol named:
                 foreach (var argument in named.TypeArguments) Type(argument);
+                Built(named);
                 // A nested type is named with its owners, and each of them is a type the code names.
                 Type(named.ContainingType);
                 var definition = named.OriginalDefinition;
@@ -189,6 +198,23 @@ internal sealed class NamedSourceTypes
                 }
                 return;
         }
+    }
+
+    /// <summary>
+    /// The class an app's service is built as in the browser, and what its constructor takes in turn,
+    /// as <see cref="CodeGen.BrowserServices"/> writes the construction: an interface of the app that
+    /// a registration names brings its implementation, and a class registered under itself
+    /// (<c>AddSingleton&lt;LedgerOptions&gt;()</c>) brings what its own constructor takes.
+    /// </summary>
+    private void Built(INamedTypeSymbol type)
+    {
+        if (type.TypeKind is not (TypeKind.Interface or TypeKind.Class)
+            || _services.Find(type.Name) is not { Implementation: { } implementation }
+            || !_built.Add(implementation))
+            return;
+        Type(implementation);
+        foreach (var parameter in ServiceRegistrations.ConstructorOf(implementation)?.Parameters ?? [])
+            Type(parameter.Type);
     }
 
     /// <summary>The type's CLR name, as <see cref="Parser.ComponentParser.ClrIdentity"/> reads it

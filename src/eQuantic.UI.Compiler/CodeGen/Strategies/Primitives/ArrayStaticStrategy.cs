@@ -200,7 +200,7 @@ public class ArrayStaticStrategy : IConversionStrategy
             {
                 context.UsedHelpers.Add(Eq.Import);
                 var helper = name == "IndexOf" ? Eq.ArrayIndexOf : Eq.ArrayLastIndexOf;
-                var equality = ElementEquality.Of(element);
+                var equality = ElementEquality.Of(element, invocation, context);
                 var range = string.Concat(Enumerable.Range(2, count - 2).Select(slot => ", {" + slot + "}"));
                 var equalityArgument = equality is null && count == 2 ? "" : $", {equality ?? "false"}";
                 return ParameterTemplate.Call($"{helper}({{0}}, {{1}}{equalityArgument}{range})", null, invocation, method, context);

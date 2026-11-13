@@ -82,20 +82,21 @@ public class ClosedHierarchyTests
         .Where(type => typeof(VisualNode).IsAssignableFrom(type) && type != typeof(VisualNode));
 
     /// <summary>
-    /// The only node an app declares is a COMPONENT. Everything else in the vocabulary is the
-    /// vocabulary's, which is the sentence the visitor rests on.
+    /// The only nodes an app declares are a COMPONENT and a value for a subtree (an
+    /// <see cref="InheritedComponent"/>, #1095), each of which the visitor answers once. Everything
+    /// else in the vocabulary is the vocabulary's, which is the sentence the visitor rests on.
     /// </summary>
     [Fact]
-    public void ANodeDeclaredOutsideTheVocabulary_IsAComponent()
+    public void ANodeDeclaredOutsideTheVocabulary_IsAComponentOrAnInheritedValue()
     {
         var strangers = EveryNodeType()
             .Where(type => type.Assembly != typeof(VisualNode).Assembly)
-            .Where(type => !typeof(UiComponent).IsAssignableFrom(type))
+            .Where(type => !typeof(UiComponent).IsAssignableFrom(type) && !typeof(InheritedComponent).IsAssignableFrom(type))
             .Select(type => $"{type.FullName} ({type.Assembly.GetName().Name})")
             .ToList();
 
         strangers.Should().BeEmpty(
-            "a node outside Primitives that is not a UiComponent is a node IVisualNodeVisitor "
+            "a node outside Primitives that is not a UiComponent or an InheritedComponent is a node IVisualNodeVisitor "
             + "cannot name, so an exhaustive pass over the vocabulary silently is not one: "
             + string.Join(", ", strangers));
     }
@@ -107,7 +108,8 @@ public class ClosedHierarchyTests
     [Fact]
     public void AnAbstractNode_CanOnlyBeExtendedInsideTheVocabulary()
     {
-        var seams = new[] { typeof(UiComponent), typeof(StatelessComponent), typeof(StatefulComponent) };
+        // The seams an app subclasses, each answered once by the visitor.
+        var seams = new[] { typeof(UiComponent), typeof(StatelessComponent), typeof(StatefulComponent), typeof(InheritedComponent) };
 
         foreach (var type in EveryNodeType()
                      .Where(t => t.IsAbstract && t.Assembly == typeof(VisualNode).Assembly)

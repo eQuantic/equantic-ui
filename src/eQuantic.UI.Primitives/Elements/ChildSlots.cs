@@ -22,7 +22,6 @@ namespace eQuantic.UI.Primitives;
 /// here, the arm the window resolves, exactly as Photon lays it out: the other arms are never built.
 /// </para>
 /// </summary>
-[ServerOnly]
 internal static class ChildSlots
 {
     internal static NodeSlots Of(VisualNode node, WindowSizeClass sizeClass) => node.NodeKind switch
@@ -49,6 +48,8 @@ internal static class ChildSlots
         "icon" => NodeSlots.None,
         "image" => NodeSlots.None,
         "inFlow" => NodeSlots.One(((InFlow)node).Child),
+        // A value for a subtree holds its one child through an element of its own; that never asks this.
+        "inherited" => NodeSlots.None,
         "inView" => NodeSlots.One(((InView)node).Child),
         "link" => NodeSlots.One(((Link)node).Child),
         "loopMotion" => NodeSlots.One(((LoopMotion)node).Child),

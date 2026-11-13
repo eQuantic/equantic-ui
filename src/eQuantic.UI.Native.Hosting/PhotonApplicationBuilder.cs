@@ -24,8 +24,7 @@ public sealed class PhotonApplicationBuilder
         // The real host builder does the work: appsettings.json, appsettings.{Environment}.json,
         // user secrets in Development, environment variables and the command line, in that order.
         _host = Host.CreateApplicationBuilder(args);
-        // Binds every PhotonOptions member EXCEPT Theme — see the NoWarn for SYSLIB1100/1101 in
-        // this project's csproj, and the note on the property itself.
+        // Binds every PhotonOptions member: the theme is not one (UseTheme carries it, #1398).
         _host.Services.AddOptions<PhotonOptions>()
             .Bind(_host.Configuration.GetSection(PhotonOptions.SectionName));
     }
@@ -54,8 +53,18 @@ public sealed class PhotonApplicationBuilder
         return this;
     }
 
-    /// <summary>The theme the whole tree resolves against — the one setting no app can skip.</summary>
-    public PhotonApplicationBuilder UseTheme(IAppTheme theme) => Configure(options => options.Theme = theme);
+    /// <summary>
+    /// The theme the whole tree resolves against: Photon's own until an app chooses another. Chosen in
+    /// C#, never in a settings file, so the configuration binder never walks it (#1398).
+    /// </summary>
+    public PhotonApplicationBuilder UseTheme(IAppTheme theme)
+    {
+        ArgumentNullException.ThrowIfNull(theme);
+        _theme = theme;
+        return this;
+    }
+
+    private IAppTheme _theme = PhotonTheme.Instance;
 
     /// <summary>
     /// What this app asks of the device — the camera, the photo library, the sensors. Stated here
@@ -118,6 +127,6 @@ public sealed class PhotonApplicationBuilder
         // besides. TryAdd, like every capability: an app that registered its own policy has decided.
         _host.Services.TryAddSingleton(Workspace.Declared.Allowing(Bundle.UrlSchemes));
         PhotonApplication.RegisterCapabilities(_host.Services);
-        return new PhotonApplication(_host.Build(), Args);
+        return new PhotonApplication(_host.Build(), Args, _theme);
     }
 }

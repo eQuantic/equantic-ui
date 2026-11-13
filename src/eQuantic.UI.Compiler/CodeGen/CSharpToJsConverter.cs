@@ -46,6 +46,9 @@ public class CSharpToJsConverter
     /// <summary>The model in force, for an emitter that must ASK what a default refers to.</summary>
     internal SemanticModel? Model => _semanticModel;
 
+    /// <summary>The build being written, where one is known.</summary>
+    internal Compilation? Compilation => _context.SemanticModel?.Compilation ?? _context.ProjectCompilation;
+
     /// <summary>See <see cref="ConversionContext.SymbolsAreAuthoritative"/> — set true by hosts
     /// that hand over the project's COMPLETE compilation (SDK build, design session, test
     /// harnesses that compile their snippets). Survives <see cref="Reset"/>: it describes the
@@ -70,6 +73,17 @@ public class CSharpToJsConverter
         get => _context.ResourceIds;
         set => _context.ResourceIds = value;
     }
+
+    /// <summary>See <see cref="ConversionContext.AppServices"/>.</summary>
+    internal Services.ServiceRegistrations AppServices
+    {
+        get => _context.AppServices;
+        set => _context.AppServices = value;
+    }
+
+    /// <summary>The key a resolution in the browser names — see <see cref="BrowserServices.Key"/>.</summary>
+    internal string ServiceKey(string key, ITypeSymbol? service, string? requiredBy, SyntaxNode at) =>
+        BrowserServices.Key(key, service, requiredBy, at, _context);
 
     public void SetSemanticModel(SemanticModel? semanticModel)
     {
@@ -339,6 +353,8 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<PrimitiveStaticStrategy>(); // .NET 7+ statics on the primitives themselves
         _strategyRegistry.Register<TextElementStrategy>();     // StringInfo: grapheme clusters, from the platform
         _strategyRegistry.Register<UnicodeCategoryStrategy>(); // a character's general category, from the platform
+        _strategyRegistry.Register<CollectionIsReadOnlyStrategy>(); // ICollection<T>.IsReadOnly, of what it holds
+        _strategyRegistry.Register<PrimitiveEqualsStrategy>(); // a primitive's Equals, by the other value's type
         _strategyRegistry.Register<BclSurfaceTailStrategy>();  // instance tail: Equals/String/Dictionary/List QoL
         _strategyRegistry.Register<ReverseStrategy>();
         _strategyRegistry.Register<LinqTableStrategy>(); // the LINQ surface as a table of shapes

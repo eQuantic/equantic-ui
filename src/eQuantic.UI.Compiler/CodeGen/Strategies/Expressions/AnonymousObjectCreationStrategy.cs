@@ -32,7 +32,10 @@ public class AnonymousObjectCreationStrategy : IExpressionIrStrategy
             members.Add(new JsProperty(name?.ToCamelCase() ?? JsExprWriter.Write(expression), expression));
         }
 
-        return JsExpr.Object(members);
+        // Marked as anonymous where it is made, which is all that tells it from a value held as data of the same
+        // members (`utils/marks.ts`, #742): a `Color` equalled one with its members.
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(Eq.Anonymous), JsExpr.Object(members));
     }
 
     public int Priority => 10;

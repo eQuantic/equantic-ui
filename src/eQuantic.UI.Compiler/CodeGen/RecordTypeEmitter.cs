@@ -418,11 +418,21 @@ public class RecordTypeEmitter
             // reload carries a value's twin as its data while it leaves a class's object to its
             // initializer (dev/hot-reload-state.ts).
             sb.Append("static $record = true; ");
+            // A value from the wire is built through its primary constructor where it holds what the wire does not
+            // carry, a private field above all: its initializer may read the parameters, and equality compares it
+            // (hydrate.ts, #590).
+            if (type is RecordDeclarationSyntax { ParameterList.Parameters: { Count: > 0 } primary }
+                && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol held && HoldsAField(held))
+                sb.Append($"static $primary = [{string.Join(", ", primary.Select(parameter => $"'{parameter.Identifier.ValueText.ToCamelCase()}'"))}]; ");
             // Each interface typed Equals the type answers, to the method answering it: what a call through the
             // interface, a collection of the type and generic code ask, by the contract.
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol equatable
                 && ElementEquality.ContractMap(equatable) is { } contracts)
                 sb.Append($"static $equatable = {contracts}; ");
+            // The interfaces a type test can ask of its values, which JavaScript cannot (#1464).
+            if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol implementing
+                && InterfaceTests.DeclaredBy(implementing) is { } interfaces)
+                sb.Append($"static $interfaces = {JsExprWriter.Write(interfaces)}; ");
 
             // The zero C# gives a struct: `default(S)`, an array's slot, an OrDefault, and `new S()`
             // where S declares no parameterless constructor. Every struct twin carries it, built
@@ -493,10 +503,15 @@ public class RecordTypeEmitter
             // property's name, read through the property, as System.Text.Json writes the property:
             // JSON.stringify writes an object's own properties, so a server action received `$name`
             // and bound nothing. A derived record inherits it.
-            if (members.Any(member => member.Store != member.Js))
+            // And it writes only what the serializer writes, where it holds more (JsonContract, #745).
+            var written = ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol contract ? JsonContract.Members(contract) : null;
+            if (written is not null || members.Any(member => member.Store != member.Js))
+            {
+                var json = written is null ? $"{Eq.Json}(this)" : $"{Eq.Json}(this, {written})";
                 sb.Append(tsTypeDeclarations
-                    ? $"toJSON(): Record<string, unknown> {{ return {Eq.Json}(this); }} "
-                    : $"toJSON() {{ return {Eq.Json}(this); }} ");
+                    ? $"toJSON(): Record<string, unknown> {{ return {json}; }} "
+                    : $"toJSON() {{ return {json}; }} ");
+            }
         }
 
         // User-declared methods — a STATIC one keeps its modifier: a record's factory
@@ -521,11 +536,16 @@ public class RecordTypeEmitter
 
         // An INSTANCE INDEXER, as the methods every element access bound to it calls (#427). It was
         // written into no twin, and `new Grid()[3]` read a property named "3" that nothing had.
-        foreach (var indexer in type.Members.OfType<IndexerDeclarationSyntax>())
+        foreach (var indexer in type.TwinMembers().OfType<IndexerDeclarationSyntax>())
         {
             _converter.SetCurrentClass(name);
             foreach (var member in _lowering.Indexer(indexer, TsTypeOf)) sb.Append(Written(member));
         }
+
+        // An event declared with accessors, as the methods every subscription to it calls (#1445).
+        _converter.SetCurrentClass(name);
+        foreach (var e in type.TwinMembers().OfType<EventDeclarationSyntax>())
+            foreach (var member in _lowering.EventAccessors(e, TsTypeOf, asStatic: false)) sb.Append(Written(member));
 
         // OPERATOR overloads. JavaScript cannot overload `+`, so the operator becomes a static
         // method and the call site is rewritten to call it — dropping it silently made `a + b` on
@@ -584,28 +604,28 @@ public class RecordTypeEmitter
         // read NaN. A constant is its value wherever it stands, and never initializes.
         var ordered = TypeInitializer.Orders(type, ModelFor);
         _converter.SetCurrentClass(name);
-        foreach (var member in type.Members)
+        foreach (var member in type.TwinMembers())
         {
             if (member is FieldDeclarationSyntax constant && constant.Modifiers.Any(SyntaxKind.ConstKeyword))
                 foreach (var variable in constant.Declaration.Variables)
-                    sb.Append($"static {variable.Identifier.ValueText.ToCamelCase()} = "
+                    sb.Append($"static {variable.SlotOf(ModelFor(variable))} = "
                         + $"{(variable.Initializer is { } init ? StaticValue(init, constant.Declaration.Type) : DefaultOf(constant.Declaration.Type))}; ");
             else if (!ordered)
-                foreach (var store in TypeInitializer.StoresOf(member))
+                foreach (var store in TypeInitializer.StoresOf(member, ModelFor))
                 {
                     var value = store.Initializer is { } init ? StaticValue(init, store.Type) : DefaultOf(store.Type);
                     sb.Append($"static {store.Name}{NullStartAnnotation(value, store.Type)} = {value}; ");
                 }
         }
         if (ordered)
-            foreach (var member in TypeInitializer.Members(type, name, TypeInitializer.Collect(type, TsTypeOf, typeSyntax => DefaultOf(typeSyntax), StaticValue),
+            foreach (var member in TypeInitializer.Members(type, name, TypeInitializer.Collect(type, ModelFor, TsTypeOf, typeSyntax => DefaultOf(typeSyntax), StaticValue),
                          _converter, _lowering, _annotations, JsLayout.Compact))
                 sb.Append(Written(member));
 
         // PROPERTIES with a body — computed, on the instance (`Start => Anchor <= Focus ? … : …`)
         // or static (`static Foo Empty => …`, the factory idiom). A record is a value with
         // BEHAVIOUR; emitting only its positional members threw the behaviour away.
-        foreach (var property in type.Members.OfType<PropertyDeclarationSyntax>())
+        foreach (var property in type.TwinMembers().OfType<PropertyDeclarationSyntax>())
         {
             // An enumerator's explicit IEnumerator.Current beside its generic one holds its name (#612), and
             // so does a member an explicit property hands off to (#1139).
@@ -718,7 +738,7 @@ public class RecordTypeEmitter
         }
         foreach (var member in type.ValueMembers(null))
             if (type is RecordDeclarationSyntax && member.Declaration is ParameterSyntax) yield return (member.Display, null);
-        foreach (var member in type.Members)
+        foreach (var member in type.TwinMembers())
         {
             switch (member)
             {
@@ -738,6 +758,14 @@ public class RecordTypeEmitter
     }
 
     /// <summary>A struct, or a record struct, whose declaration is a record's.</summary>
+    /// <summary>Whether a value of <paramref name="type"/> holds a field, its own or a base record's.</summary>
+    private static bool HoldsAField(INamedTypeSymbol type)
+    {
+        for (var at = type; at is not null && at.Locations.Any(location => location.IsInSource); at = at.BaseType)
+            if (at.GetMembers().OfType<IFieldSymbol>().Any(field => field is { IsStatic: false, IsImplicitlyDeclared: false })) return true;
+        return false;
+    }
+
     internal static bool IsStruct(TypeDeclarationSyntax type) =>
         type is StructDeclarationSyntax
         || type is RecordDeclarationSyntax record && record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword);

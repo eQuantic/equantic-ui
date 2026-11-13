@@ -5,22 +5,51 @@ namespace eQuantic.UI.Primitives;
 /// Dynamic Type factor. Deliberately MODE-FREE — components author with <see cref="ColorToken"/>s,
 /// never resolved colors, so one built tree realizes in light or dark (realizers resolve). Services
 /// and route data join here as the shared model grows toward the web `RenderContext`.
+/// <para>
+/// Where a tree is built with an element per position (Photon, the component tester), each component
+/// position has ONE context of its own for as long as it lives (docs/ELEMENT-TREE-PLAN.md, 3.3): it
+/// reads the frame's theme, density and type scale from the position's owner, and registers the
+/// position as one that builds again when they change; it answers <see cref="InFlow"/> from the tree;
+/// and <see cref="DependOn{T}"/> and <see cref="Find{T}"/> find the inherited values above it. A
+/// context made with the public constructor is a frame's, with no position: what the web and the
+/// server build with until #1395, where those two answer null.
+/// </para>
 /// </summary>
 public sealed class ComponentContext
 {
     public ComponentContext(IAppTheme theme, float typeScale = 1f,
         Density density = Density.Comfortable, Func<string, TypeStyle, float>? measureText = null)
     {
-        Theme = theme;
-        TypeScale = typeScale;
-        Density = density;
+        _theme = theme;
+        _typeScale = typeScale;
+        _density = density;
         _measureText = measureText;
     }
 
+    /// <summary>The context of a position: its frame's values come from the position's owner.</summary>
+    internal ComponentContext(ComponentElement position)
+    {
+        _position = position;
+        _theme = null!;
+    }
+
+    private readonly ComponentElement? _position;
+    private readonly IAppTheme _theme;
+    private readonly float _typeScale;
+    private readonly Density _density;
     private readonly Func<string, TypeStyle, float>? _measureText;
 
-    public IAppTheme Theme { get; }
-    public float TypeScale { get; }
+    /// <summary>The frame this position builds in, with the position registered as one that read it.</summary>
+    private ComponentContext ReadFrame(ComponentElement position)
+    {
+        // A position that left the tree (a handler that kept its context) reads, and registers nothing.
+        if (position.IsActive) position.Owner.ReadFrame(position);
+        return position.Owner.Context;
+    }
+
+    public IAppTheme Theme => _position is { } at ? ReadFrame(at).Theme : _theme;
+
+    public float TypeScale => _position is { } at ? ReadFrame(at).TypeScale : _typeScale;
 
     /// <summary>
     /// What the ROUTE said — <c>context.Route.Param("slug")</c>, <c>context.Route.Query("page")</c>.
@@ -39,7 +68,24 @@ public sealed class ComponentContext
     /// <see cref="Primitives.InFlow"/>. Only the overlays answer it; every other component builds
     /// the same either way, which is why it is a question rather than an instruction.
     /// </summary>
-    public bool InFlow => Primitives.InFlow.Current;
+    public bool InFlow => _position?.UnderInFlow ?? Primitives.InFlow.Current;
+
+    /// <summary>
+    /// The nearest <typeparamref name="T"/> above this component, and a registration: the component
+    /// builds again when that value changes (<see cref="InheritedComponent.UpdateShouldNotify"/>), and a
+    /// stateful one hears it first (<see cref="StatefulComponent.OnDependenciesChanged"/>). Null when
+    /// none is above it, and on a context with no position (the web and the server until #1395).
+    /// </summary>
+    public T? DependOn<T>() where T : InheritedComponent =>
+        _position?.DependOn(static inherited => inherited is T) as T;
+
+    /// <summary>The nearest <typeparamref name="T"/> above this component, read once: the component does
+    /// not build again when it changes. Null as for <see cref="DependOn{T}"/>.</summary>
+    public T? Find<T>() where T : InheritedComponent =>
+        _position?.Find(static inherited => inherited is T) as T;
+
+    /// <summary>Where the tree this context's position is in sends a destination; null with no position.</summary>
+    internal Action<string>? Navigation => _position?.Owner.NavigationRequested;
 
     /// <summary>
     /// A capability, for a component in the MIDDLE of a tree — <c>context.GetService&lt;ITextClipboard&gt;()</c>.
@@ -59,7 +105,7 @@ public sealed class ComponentContext
     /// How tight this TARGET wants its controls — the same reason a Mac's toolbar is not a
     /// phone's. A component reads it where it reads the theme, and never asks which target it is.
     /// </summary>
-    public Density Density { get; }
+    public Density Density => _position is { } at ? ReadFrame(at).Density : _density;
 
     /// <summary>
     /// How WIDE this text would be in this style, in dp.
@@ -76,8 +122,12 @@ public sealed class ComponentContext
     /// a monospaced face is all it ever needs: one advance times a column.
     /// </para>
     /// </summary>
-    public float MeasureText(string text, TypeStyle style) =>
-        _measureText is null || text.Length == 0 ? 0 : _measureText(text, style);
+    public float MeasureText(string text, TypeStyle style)
+    {
+        // A position measures with its owner's measurer: the frame's, as every build of it does.
+        if (_position is { } at) return at.Owner.Context.MeasureText(text, style);
+        return _measureText is null || text.Length == 0 ? 0 : _measureText(text, style);
+    }
 
     /// <summary>
     /// The advance of ONE character in a monospaced style — the number a code editor turns every
@@ -198,7 +248,7 @@ public abstract class StatefulComponent : UiComponent
 
     /// <summary>Takes a position in a live tree; true when it is the instance's first, which is when
     /// it mounts.</summary>
-    internal bool Place(ComponentElement at)
+    internal bool EnterPosition(ComponentElement at)
     {
         if (MountedAt is null)
         {
@@ -212,7 +262,7 @@ public abstract class StatefulComponent : UiComponent
 
     /// <summary>Leaves a position; true when it was the last the instance held, which is when it
     /// unmounts.</summary>
-    internal bool Leave(ComponentElement at)
+    internal bool LeavePosition(ComponentElement at)
     {
         if (!ReferenceEquals(MountedAt, at))
         {
@@ -281,6 +331,18 @@ public abstract class StatefulComponent : UiComponent
     protected virtual void OnMount()
     {
     }
+
+    /// <summary>
+    /// Runs before this instance builds again because a value it read through
+    /// <see cref="ComponentContext.DependOn{T}"/> changed: Flutter's <c>didChangeDependencies</c>. The
+    /// place to redo what was derived from that value (a formatter for the new culture, a request for
+    /// the new route) once, rather than in every build.
+    /// </summary>
+    protected virtual void OnDependenciesChanged()
+    {
+    }
+
+    internal void NotifyDependenciesChanged() => OnDependenciesChanged();
 
     /// <summary>
     /// Runs when this instance's position LEAVES the tree — unsubscribe here whatever

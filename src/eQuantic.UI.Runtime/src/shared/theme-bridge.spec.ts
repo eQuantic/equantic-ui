@@ -90,6 +90,17 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
     expect(materializeTheme(base).type('display').fluid).toBeNull();
   });
 
+  it("answers Code from the theme's own palette, which crosses with the rest (#936)", () => {
+    const data = photonData as unknown as ThemeData;
+    const ink = data.surfaces.background;
+    const themed = materializeTheme({ ...data, code: { ...data.code, keyword: ink } } as unknown as ThemeData);
+
+    expect(themed.code('keyword')).toEqual(materializeTheme(data).background);
+    expect(Object.keys(data.code ?? {})).toContain('keyword');
+    for (const kind of Object.keys(data.code ?? {}))
+      expect(materializeTheme(data).code(kind)).toEqual(photonTheme.code(kind));
+  });
+
   it("carries the theme's code face, and omits it when there is none", () => {
     const base = photonData as unknown as ThemeData;
     const branded = materializeTheme({ ...base, monoFamily: 'JetBrains Mono' } as ThemeData);
@@ -168,5 +179,75 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
     expect(typeof t.elevation).toBe('function');
     expect(typeof t.shape).toBe('function');
     expect(t.surface.light).toBeDefined();
+  });
+});
+
+describe('theme bridge: the slots and the code palette cross (E6a, #1241; #936)', () => {
+  const theme = materializeTheme(photonData as unknown as ThemeData);
+
+  it('carries the control ladder and the Button slot as the generated Photon theme holds them', () => {
+    expect(theme.controls).toEqual(photonTheme.controls);
+    expect(theme.button).toEqual(photonTheme.button);
+    expect(theme.controls?.height?.compact?.medium).toBe(32);
+    expect(theme.button?.minWidth).toBe(64);
+  });
+
+  it('answers code(kind) from the palette the server wrote', () => {
+    const custom = materializeTheme({
+      ...(photonData as unknown as ThemeData),
+      code: { keyword: [[1, 2, 3, 255], [4, 5, 6, 255]] },
+    });
+    expect(custom.code('keyword').light).toEqual({ r: 1, g: 2, b: 3, a: 255 });
+    // A kind the payload does not carry derives as before.
+    expect(custom.code('comment')).toEqual(photonTheme.code('comment'));
+  });
+
+  it('leaves a slot the theme does not answer null', () => {
+    const bare = materializeTheme({ ...(photonData as unknown as ThemeData), controls: undefined, button: undefined });
+    expect(bare.controls).toBeNull();
+    expect(bare.button).toBeNull();
+  });
+});
+
+describe('theme bridge: the form control slots cross (E6b, #1242)', () => {
+  const theme = materializeTheme(photonData as unknown as ThemeData);
+
+  it('carries the five slots as the generated Photon theme holds them', () => {
+    expect(theme.iconButton).toEqual(photonTheme.iconButton);
+    expect(theme.input).toEqual(photonTheme.input);
+    expect(theme.selectionControls).toEqual(photonTheme.selectionControls);
+    expect(theme.segmented).toEqual(photonTheme.segmented);
+    expect(theme.chip).toEqual(photonTheme.chip);
+  });
+
+  it('carries each kind of member: a number, a ladder, a value by density, a colour and an enum', () => {
+    expect(theme.chip?.paddingX).toBe(12);
+    expect(theme.iconButton?.iconSize?.small).toBe(16);
+    expect(theme.selectionControls?.box?.compact).toBe(20);
+    expect(theme.input?.labelRole).toBe('label');
+    expect(theme.chip?.labelWeight).toBe('semiBold');
+  });
+
+  // Photon leaves a colour that is one of its roles null, so the control reads the role itself and a
+  // theme that changes the role recolours it; a colour crosses when a theme names one of its own.
+  it('carries a colour a theme names in a slot, and leaves a role Photon reads itself null', () => {
+    expect(theme.input?.borderColor).toBeNull();
+    const green: [number[], number[]] = [
+      [0, 128, 0, 255],
+      [0, 160, 0, 255],
+    ];
+    const custom = materializeTheme({
+      ...(photonData as unknown as ThemeData),
+      input: { borderColor: green },
+    } as unknown as ThemeData);
+    expect(custom.input?.borderColor?.light).toEqual({ r: 0, g: 128, b: 0, a: 255 });
+    expect(custom.input?.borderColor?.dark).toEqual({ r: 0, g: 160, b: 0, a: 255 });
+  });
+
+  it("answers a member the server's theme names, and leaves a slot it does not answer null", () => {
+    const custom = materializeTheme({ ...(photonData as unknown as ThemeData), chip: { paddingX: 20 }, input: undefined });
+    expect(custom.chip?.paddingX).toBe(20);
+    expect(custom.chip?.gap).toBeNull();
+    expect(custom.input).toBeNull();
   });
 });

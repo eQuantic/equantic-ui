@@ -80,7 +80,8 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         };
         var style = styled ?? default;
         var opacityNow = style.Opacity ?? 1f;
-        var transformNow = style.Transform ?? IdentityTransform;
+        // A fraction is of the box as laid out: units from here on, the glide included (#614).
+        var transformNow = (style.Transform ?? IdentityTransform).Resolved(node.Bounds.Width, node.Bounds.Height);
         if (styled is not null && style.Transition is { } glide && s.Motion.Transitions is { } store)
         {
             if ((glide.Channels & StyleChannels.Opacity) != 0)
@@ -158,17 +159,23 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         var outerSimulated = press.Simulated;
         var outerDisabled = press.InDisabledControl;
         var outerInControl = press.InControl;
+        var outerHovered = press.ControlHovered;
         if (enabledControl)
         {
             press.InPressedControl = pressedHere;
             press.InFocusedControl = focusedHere;
-            if (press.InControl) press.Simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
+            // The hover is the control's too (#614): its own place in the host's hover chain.
+            press.ControlHovered = press.IsHovered(node, node.Source);
+            if (press.InControl)
+                press.Simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused | SimulatedState.Hovered);
             press.InControl = true;
         }
         if (disabledControl)
         {
             press.Simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
             press.InDisabledControl = true;
+            // A disabled control's boxes keep their own hover, as before.
+            press.ControlHovered = null;
         }
         node.Source.Accept(this, s);
         press.InPressedControl = outerPressed;
@@ -176,6 +183,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         press.Simulated = outerSimulated;
         press.InDisabledControl = outerDisabled;
         press.InControl = outerInControl;
+        press.ControlHovered = outerHovered;
     }
 
     /// <summary>Paint the children where they were laid out. The default arm of the old dispatch,
@@ -192,8 +200,12 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     /// says so. Two halves of one decision that used to sit four hundred lines apart.</summary>
     public Nothing Visit(Box node, EmitState s)
     {
-        EmitBoxChrome(node, s);
-        if (node.Style.Clip) EmitClippedBox(node, s); else Descend(s);
+        var style = EffectiveStyle(node, s);
+        EmitStyledChrome(style, node, s);
+        // The foreground descends to the text and icons inside that name none, in the box's state
+        // (#614); a box that states none hands down the one it was given.
+        var inner = style.Foreground is { } foreground ? s with { Foreground = foreground } : s;
+        if (node.Style.Clip) EmitClippedBox(node, inner); else Descend(inner);
         return Nothing.Value;
     }
 
@@ -203,8 +215,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     /// to is scrolled the header draws its <c>ScrolledStyle</c> under its content (#506).</summary>
     public Nothing Visit(Pinned node, EmitState s)
     {
-        if (PinnedStyle(node, s.Press.SurfaceScrolled) is { } chrome) EmitStyledChrome(chrome, box: null, s);
-        Descend(s);
+        var chrome = PinnedStyle(node, s.Press.SurfaceScrolled);
+        if (chrome is { } drawn) EmitStyledChrome(drawn, box: null, s);
+        // The scrolled diff's foreground descends like a box's, as the web writes it as `color` (#614).
+        Descend(chrome?.Foreground is { } foreground ? s with { Foreground = foreground } : s);
         return Nothing.Value;
     }
 
@@ -373,4 +387,5 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     /// </para>
     /// </summary>
     public Nothing Visit(UiComponent node, EmitState s) { Descend(s); return Nothing.Value; }
+    public Nothing Visit(InheritedComponent node, EmitState s) { Descend(s); return Nothing.Value; }
 }

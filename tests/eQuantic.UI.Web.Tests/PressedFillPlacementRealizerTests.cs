@@ -42,12 +42,14 @@ public class PressedFillPlacementRealizerTests
             IconButtonKind.Filled, onPressed: () => { }), Primary.Pressed, Place.Surface),
         new Case("selected filter chip", () => new Chip("Income", ChipKind.Filter, selected: true,
             onPressed: () => { }), Primary.Pressed.WithOpacity(0.24f), Place.Surface),
+        new Case("unselected filter chip", () => new Chip("Expenses", ChipKind.Filter,
+            onPressed: () => { }), Theme.SurfaceSubtle, Place.Surface),
         new Case("list item", () => new ListItem("Wallet", onPressed: () => { }), Theme.SurfaceSubtle, Place.Surface),
         new Case("search field's clear button", () => new SearchField("query", _ => { }), Theme.Border, Place.Surface),
         new Case("tab", () => new Tabs(["Overview", "Activity", "Settings"], 1, _ => { }), Theme.SurfaceSubtle, Place.Surface),
-        new Case("navigation bar item", () => new BottomNavigation(Items, 0, _ => { }), Theme.SurfaceSubtle,
+        new Case("navigation bar item", () => new BottomNavigation(Items, 0, _ => { }), Primary.Subtle.WithOpacity(0.4f),
             Place.Pill, 56, 26),
-        new Case("navigation rail destination", () => new NavigationRail(Items, 0, _ => { }), Theme.SurfaceSubtle,
+        new Case("navigation rail destination", () => new NavigationRail(Items, 0, _ => { }), Primary.Subtle.WithOpacity(0.4f),
             Place.Pill, 52, 30),
     };
 

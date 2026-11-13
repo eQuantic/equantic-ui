@@ -35,11 +35,11 @@ internal static class LocalFunctionName
 {
     /// <summary>
     /// The names the EMITTER puts in a member's scope, which C# never declared: the globals the output
-    /// reads (<see cref="StringExtensions.EmittedGlobals"/>), and <c>props</c>, the parameter a
+    /// reads (<see cref="eQuantic.UI.JsNames.EmittedGlobals"/>), and <c>props</c>, the parameter a
     /// component's constructor takes. A function on one of these breaks code beside it that never named
     /// it, so even a name the casing left alone yields to them.
     /// </summary>
-    private static readonly HashSet<string> EmittedNames = new(StringExtensions.EmittedGlobals.Append("props"), StringComparer.Ordinal);
+    private static readonly HashSet<string> EmittedNames = new(eQuantic.UI.JsNames.EmittedGlobals.Append("props"), StringComparer.Ordinal);
 
     /// <summary>
     /// The names every local function of a member takes, assigned once per member. A function of the

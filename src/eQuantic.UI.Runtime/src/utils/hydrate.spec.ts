@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { closing, sameClosure } from './closures';
 import { hydrate, type HydrationSpec } from './hydrate';
 import { hydrateValue } from './hydrate-value';
 import { Decimal, dec } from './decimal';
@@ -250,6 +251,82 @@ describe('typed hydration', () => {
     expect(holder.name).toBe('x');
     expect(holder.first).toBe('decimal');
     expect(holder.second).toBeNull();
+  });
+});
+
+describe('a record that holds what the wire does not carry', () => {
+  class Base {
+    static $primary = ['id'];
+    private tag: string;
+    constructor(readonly id: number) {
+      this.tag = `#${id}`;
+    }
+    label(): string {
+      return this.tag;
+    }
+  }
+  class Derived extends Base {
+    static $hydration = {};
+    extra!: number;
+  }
+  class Own extends Base {
+    static $primary = ['id', 'extra'];
+    constructor(
+      id: number,
+      readonly extra: number,
+    ) {
+      super(id + extra);
+    }
+  }
+
+  it('is built through its primary constructor', () => {
+    const read = hydrate({ id: 1 }, Base as unknown as HydrationSpec) as Base;
+    expect(read.label()).toBe('#1');
+    expect(read).toBeInstanceOf(Base);
+  });
+
+  it('hands its constructor the member it holds, which a field built from the parameter shares', () => {
+    class Item {
+      static $hydration = {};
+      constructor(readonly n = 0) {}
+    }
+    class Holder {
+      static $primary = ['item'];
+      static $hydration = { item: Item as unknown as HydrationSpec };
+      private readonly kept: Item;
+      constructor(readonly item: Item = new Item()) {
+        this.kept = item;
+      }
+      sharesIt(): boolean {
+        return this.kept === this.item;
+      }
+    }
+
+    const read = hydrate({ item: { n: 3 } }, Holder as unknown as HydrationSpec) as Holder;
+    expect(read.item).toBeInstanceOf(Item);
+    expect(read.item.n).toBe(3);
+    expect(read.sharesIt(), 'one object, as in .NET').toBe(true);
+  });
+
+  it('reads the list of its own class, never one a base holds', () => {
+    expect((hydrate({ id: 1, extra: 2 }, Own as unknown as HydrationSpec) as Own).label()).toBe('#3');
+    const derived = hydrate({ id: 1, extra: 2 }, Derived as unknown as HydrationSpec) as Derived;
+    expect(derived.extra).toBe(2);
+    expect(derived.label()).toBeUndefined();
+  });
+});
+
+describe('a constructed generic record', () => {
+  class Box {
+    static $hydration = {};
+    value!: number;
+  }
+
+  it('is of the closed type its spec names, which the wire says nothing of', () => {
+    const spec = { of: Box, members: {}, closed: 'int' } as unknown as HydrationSpec;
+    const read = hydrate({ value: 1 }, spec) as object;
+    expect(sameClosure(read, closing(new Box(), 'double'))).toBe(false);
+    expect(sameClosure(read, closing(new Box(), 'int'))).toBe(true);
   });
 });
 

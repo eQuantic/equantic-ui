@@ -132,7 +132,9 @@ public class ReadmeCapturesTests
                 "-nologo", "-v:m", "-t:WritePackageReadme",
                 "-p:Version=9.9.9-probe", $"-p:EqPackageReadme={written}");
 
-            var expected = File.ReadAllText(Path.Combine(root, "README.md")).Replace(
+            var readme = File.ReadAllText(Path.Combine(root, "README.md"));
+            var expected = (File.ReadAllText(Path.Combine(root, "assets", "package-head.md")).TrimEnd()
+                + readme[(readme.IndexOf(HeadEnds, StringComparison.Ordinal) + HeadEnds.Length)..]).Replace(
                 "](assets/readme/",
                 "](https://raw.githubusercontent.com/eQuantic/equantic-ui/v9.9.9-probe/assets/readme/");
 
@@ -145,6 +147,57 @@ public class ReadmeCapturesTests
         {
             Directory.Delete(scratch, recursive: true);
         }
+    }
+
+    /// <summary>A readme whose head cannot be found fails the pack, naming what is missing: an IndexOf of -1
+    /// cut it at its 30th character, and every package shipped half a tag (found by the review of #882).</summary>
+    [Fact]
+    public void AReadmeThatDoesNotSayWhereItsHeadEnds_FailsThePack()
+    {
+        var scratch = Directory.CreateTempSubdirectory("eq-readme-").FullName;
+        try
+        {
+            var readme = Path.Combine(scratch, "README.md");
+            File.WriteAllText(readme, "<p align=\"center\"><img src=\"assets/readme/a.png\"></p>\n\n# eQuantic.UI\n");
+            var (exitCode, output, error) = SdkProbe.Run(null, null, "msbuild",
+                Path.Combine("src", "eQuantic.UI.Primitives", "eQuantic.UI.Primitives.csproj"),
+                "-nologo", "-v:m", "-t:WritePackageReadme", "-p:Version=9.9.9-probe",
+                $"-p:EqRepositoryReadme={readme}", $"-p:EqPackageReadme={Path.Combine(scratch, "written.md")}");
+
+            exitCode.Should().NotBe(0, "a readme with no end to its head is no package's readme");
+            (output + error).Should().Contain("does not say where its head ends");
+            File.Exists(Path.Combine(scratch, "written.md")).Should().BeFalse();
+        }
+        finally
+        {
+            Directory.Delete(scratch, recursive: true);
+        }
+    }
+
+    /// <summary>What ends the head GitHub draws, which a package's readme replaces.</summary>
+    private const string HeadEnds = "<!-- end of the page's head -->";
+
+    /// <summary>
+    /// nuget.org shows a readme's HTML as text, so a package's page opened with tags (#882). Its head is
+    /// Markdown, a file of its own beside the HTML one GitHub centres, and neither may say what the other
+    /// does not: the same links, the same pictures, the same title and the same sentences.
+    /// </summary>
+    [Fact]
+    public void APackagesHead_DrawsWithNoHtml_AndSaysWhatTheReadmesHeadSays()
+    {
+        var root = SdkProbe.RepoRoot();
+        var readme = File.ReadAllText(Path.Combine(root, "README.md"));
+        var html = readme[..readme.IndexOf(HeadEnds, StringComparison.Ordinal)];
+        var markdown = File.ReadAllText(Path.Combine(root, "assets", "package-head.md"));
+
+        markdown.Should().NotContain("<", "nuget.org shows a tag as text");
+        static string[] Addresses(string text, string pattern) =>
+            [.. Regex.Matches(text, pattern).Select(match => match.Groups[1].Value).Order(StringComparer.Ordinal)];
+        Addresses(markdown, @"\]\(([^)]+)\)").Should().Equal(
+            Addresses(html, "(?:href|src)=\"([^\"]+)\""), "the two heads hold the same links and pictures");
+        static string Text(string text) => Regex.Replace(
+            Regex.Replace(text, @"!\[[^\]]*\]\([^)]*\)|<[^>]+>|\[|\]\([^)]*\)|\*\*|^# |•", " ", RegexOptions.Multiline), @"\s+", " ").Trim();
+        Text(markdown).Should().Be(Text(html), "the two heads say the same words");
     }
 
     [Fact]

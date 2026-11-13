@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeFold, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, CodeTokenKindValue, ColorToken, Column, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeFold, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, CodeTokenKindValue, ColorToken, Column, ControlMetrics, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -235,7 +235,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static metricsFor(context: BuildContext, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
-        let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
+        let style = $eq.withPatch(TypeStyle.ofSize(ControlMetrics.labelSize(context, size), 'regular'), { mono: true });
         let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText($eq.text.format(lastLineNumber, null, undefined, undefined, 'int32') + '0', style)) + 12) : 0;
         return new CodeBlock$CodeMetrics(style, $eq.math.roundSingle(Math.fround(style.lineHeight * Math.fround(1.15))), context.monoAdvance(style), gutter);
     }
@@ -491,6 +491,7 @@ export class CodeBlock extends StatelessComponent {
             let cells = cellsOf(line);
             let left = Math.fround(metrics.contentLeft + Math.fround(Math.fround(cells.cellOf(from)) * metrics.columnWidth));
             let width = point ? Math.fround(metrics.columnWidth * Math.fround(Math.max(1, cells.cellOf(Math.min(from + 1, document.line(line).length)) - cells.cellOf(from)))) : Math.fround(Math.fround(cells.cellOf(to) - cells.cellOf(from)) * metrics.columnWidth);
+            if (width <= 0 && !(decoration.kind === 'dots')) continue;
             _seq.push((() => { const $s = decoration.kind; if ($s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if ($s === 'squiggle') return new Positioned(CodeBlock.wave(width, color), Math.fround(Math.fround(top + metrics.lineHeight) - CodeBlock.waveHeight), null, null, left); if ($s === 'dots') return new Positioned(new Drawing(CodeBlock.hintDots, CodeBlock.hintDots.width, CodeBlock.hintDots.height, color), Math.fround(Math.fround(top + metrics.lineHeight) - CodeBlock.hintDots.height), null, null, left); if ($s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(top + Math.fround(metrics.lineHeight / 2)), null, null, left); if ($s === 'underline') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
         }
         return _seq;

@@ -231,7 +231,7 @@ public sealed class CodeBlock : StatelessComponent
     public static CodeMetrics MetricsFor(ComponentContext context, SizeVariant size,
         bool showLineNumbers, int lastLineNumber)
     {
-        var style = TypeStyle.OfSize(Sizing.LabelSize(size, context.Density),
+        var style = TypeStyle.OfSize(ControlMetrics.LabelSize(context, size),
             FontWeight.Regular) with { Mono = true };
         // The gutter is as wide as its widest number — measured, not guessed, because a file with
         // 1000 lines needs a column a file with 10 does not.
@@ -938,6 +938,10 @@ public sealed class CodeBlock : StatelessComponent
             var width = point
                 ? metrics.ColumnWidth * Math.Max(1, cells.CellOf(Math.Min(from + 1, document.Line(line).Length)) - cells.CellOf(from))
                 : (cells.CellOf(to) - cells.CellOf(from)) * metrics.ColumnWidth;
+            // A mark of no width draws nothing: the server, which has no font, measures every column
+            // as 0 and draws this block again in the browser anyway, and a range of characters that
+            // take no cell (a combining mark) has nowhere to be drawn. A wave refused one (#1367).
+            if (width <= 0 && decoration.Kind is not CodeDecorationKind.Dots) continue;
 
             yield return decoration.Kind switch
             {

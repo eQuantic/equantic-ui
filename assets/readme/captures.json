@@ -16,7 +16,7 @@
     "web-dashboard.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "dc202f9d4a05f8a695eaf838a503a5e7bf3e0b880ab9294037136f155ff31286",
+        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
         "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
         "samples/DefaultUIDashboard/Screens/ConsoleData.cs": "abcb0a957c3823167118ea3f6ea2f100dc9e0aab969910388f3e3d4c4c91403e",
         "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "945748db6e09ed08198d5e1c788bbd706171542a5b3ab7f79ad2af31f1631808"
@@ -25,7 +25,7 @@
     "web-charts.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "dc202f9d4a05f8a695eaf838a503a5e7bf3e0b880ab9294037136f155ff31286",
+        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
         "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
         "samples/DefaultUIDashboard/Screens/ChartsScreen.cs": "15014c0ce9765c3c665af6e924686e0416fdf04d5abab5062209a3174b8a9902"
       }
@@ -33,7 +33,7 @@
     "web-code-diff.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "dc202f9d4a05f8a695eaf838a503a5e7bf3e0b880ab9294037136f155ff31286",
+        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
         "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
         "samples/DefaultUIDashboard/Screens/DiffScreen.cs": "270ed999ea61baf467a6be6eed75d503bd964ade2cbb7796670eb82d4be5d8d6"
       }
@@ -41,7 +41,7 @@
     "web-forms.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "dc202f9d4a05f8a695eaf838a503a5e7bf3e0b880ab9294037136f155ff31286",
+        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
         "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
         "samples/DefaultUIDashboard/Screens/FormScreen.cs": "dedae4f32851e8b17cf9978c93535cdb3c68421159310e7a9c32cfec2d067f14"
       }
@@ -49,7 +49,7 @@
     "desktop-gallery.png": {
       "target": "desktop",
       "sources": {
-        "samples/PhotonDesktop/Program.cs": "da31da3e50f4af51a9350fc1a97b32143b73900183d568937fcbef389c99cfb9",
+        "samples/PhotonDesktop/Program.cs": "972c1b415b814a300974f6d32b4857d0990f8d64be15cadbad8e9a77128f1d6d",
         "samples/PhotonDesktop/Studio/StudioShell.cs": "635b42de1be5b661e72b1f7e340fbde7c74755f07b0594f2fb4bd9ec6d9fa66b",
         "samples/PhotonDesktop/Studio/Gallery.cs": "be0814e44d84566d15d54234f70eab5bd6f675da7241e40d91c965e35acc7c38"
       }
@@ -57,7 +57,7 @@
     "desktop-gallery-light.png": {
       "target": "desktop",
       "sources": {
-        "samples/PhotonDesktop/Program.cs": "da31da3e50f4af51a9350fc1a97b32143b73900183d568937fcbef389c99cfb9",
+        "samples/PhotonDesktop/Program.cs": "972c1b415b814a300974f6d32b4857d0990f8d64be15cadbad8e9a77128f1d6d",
         "samples/PhotonDesktop/Studio/StudioShell.cs": "635b42de1be5b661e72b1f7e340fbde7c74755f07b0594f2fb4bd9ec6d9fa66b",
         "samples/PhotonDesktop/Studio/Gallery.cs": "be0814e44d84566d15d54234f70eab5bd6f675da7241e40d91c965e35acc7c38"
       }
@@ -65,7 +65,7 @@
     "ios-home.png": {
       "target": "ios",
       "sources": {
-        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/Program.cs": "68c3d40bcc25d30ad8d7bc685b25212bbd0d68ed31acbce6db0f7834d207d1b7",
         "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
         "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
         "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"
@@ -74,7 +74,7 @@
     "ios-transfer.png": {
       "target": "ios",
       "sources": {
-        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/Program.cs": "68c3d40bcc25d30ad8d7bc685b25212bbd0d68ed31acbce6db0f7834d207d1b7",
         "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
         "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
         "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"
@@ -83,7 +83,7 @@
     "android-transactions.png": {
       "target": "android",
       "sources": {
-        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/Program.cs": "68c3d40bcc25d30ad8d7bc685b25212bbd0d68ed31acbce6db0f7834d207d1b7",
         "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
         "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
         "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"
@@ -92,7 +92,7 @@
     "android-cards.png": {
       "target": "android",
       "sources": {
-        "samples/WalletMobile/Program.cs": "eb4a91665d0b92cc4ab2ac613202b77fde1c6d1b82398c98ccb617fad65220e0",
+        "samples/WalletMobile/Program.cs": "68c3d40bcc25d30ad8d7bc685b25212bbd0d68ed31acbce6db0f7834d207d1b7",
         "samples/WalletMobile/WalletApp.cs": "78c430a9b29d96e4499c87c4b919940e5bb26526cb736e6282aafb4b30233b28",
         "samples/WalletMobile/WalletData.cs": "2aa75cac4f7b755ed1747b1596db4b06c417cc2c6ebb0580abdc1e1d820b5ae7",
         "samples/WalletMobile/WalletLedger.cs": "fa8929ceff492bab8e27a905fcc0d201a0c6bf0dc9b6d5cb19352507f087f6bf"

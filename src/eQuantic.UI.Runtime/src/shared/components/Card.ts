@@ -20,10 +20,11 @@ export class Card extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let background = this.kind === 'filled' ? theme.surfaceSubtle : theme.surface;
-        let borderWidth = this.kind === 'outlined' ? 1 : this.kind === 'elevated' ? 1 : 0;
-        let borderColor = this.kind === 'elevated' ? new ColorToken(Color.transparent, theme.border.dark) : theme.border;
-        return new Box(new BoxStyle({ width: this.width, padding: this.padding, background: background, cornerRadius: new CornerRadii(theme.shape('large')), borderWidth: borderWidth, borderColor: borderColor, elevation: this.kind === 'elevated' ? 1 : 0 }), this.child);
+        let slot = theme.card;
+        let background = this.kind === 'filled' ? slot?.filledColor ?? theme.surfaceSubtle : theme.surface;
+        let borderWidth = (($0) => ($0 === 'outlined' || $0 === 'elevated'))(this.kind) ? slot?.borderWidth ?? 1 : 0;
+        let borderColor = this.kind === 'elevated' ? slot?.elevatedBorderColor ?? new ColorToken(Color.transparent, theme.border.dark) : theme.border;
+        return new Box(new BoxStyle({ width: this.width, padding: this.padding, background: background, cornerRadius: new CornerRadii(theme.shape(slot?.shape ?? 'large')), borderWidth: borderWidth, borderColor: borderColor, elevation: this.kind === 'elevated' ? slot?.elevation ?? 1 : 0 }), this.child);
     }
 }
 
