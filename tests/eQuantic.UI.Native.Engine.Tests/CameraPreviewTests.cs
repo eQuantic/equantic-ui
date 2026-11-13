@@ -28,7 +28,7 @@ public class CameraPreviewTests
     private static (RealizeResult Frame, DrawCommand[] Commands) Render(VisualNode root)
     {
         var builder = new DisplayListBuilder();
-        var frame = PhotonRealizer.Realize(root, 400, 300, PhotonTheme.Instance, ThemeMode.Light, builder);
+        var frame = PhotonRealizer.Realize(root, 400, 300, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder);
         return (frame, builder.Build().Commands.ToArray());
     }
 
@@ -38,7 +38,7 @@ public class CameraPreviewTests
         var (frame, commands) = Render(new CameraPreview(null, 320, 240));
 
         frame.HasActiveMotion.Should().BeFalse("nothing is running");
-        var subtle = PhotonTheme.Instance.SurfaceSubtle.Resolve(ThemeMode.Light);
+        var subtle = PhotonTheme.Instance.SurfaceSubtle.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         commands.Should().Contain(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == subtle);
         commands.Should().NotContain(c => c.Kind == DrawCommandKind.Texture);
     }
@@ -88,7 +88,7 @@ public class CameraPreviewTests
         // which is what makes the renderer re-upload one GPU slot instead of minting a leak.
         session.FrameVersion = 2;
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(node, 400, 300, PhotonTheme.Instance, ThemeMode.Light, builder);
+        PhotonRealizer.Realize(node, 400, 300, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder);
         var textures = builder.Build().Textures;
         textures.Should().HaveCount(1);
         textures[0].Version.Should().Be(2);
@@ -115,7 +115,7 @@ public class CameraPreviewTests
             session.FrameVersion = frame;
 
             var builder = new DisplayListBuilder();
-            PhotonRealizer.Realize(node, 400, 300, PhotonTheme.Instance, ThemeMode.Light, builder);
+            PhotonRealizer.Realize(node, 400, 300, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder);
             var texture = builder.Build().Textures.Should().ContainSingle().Subject;
 
             texture.Alpha.Should().BeSameAs(session.FrameBytes, "the frame drawn is the one published");

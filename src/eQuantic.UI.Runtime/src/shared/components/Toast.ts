@@ -23,15 +23,17 @@ export class Toast extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let row = new Row(12, 'start', 'center', false, null, null, { cross: 'center' });
-        row.add(new Box(new BoxStyle({ width: 8, height: 8, background: theme.colors(this.status).base, cornerRadius: new CornerRadii(999) })));
-        row.add(new Text(this.message, 'bodyM', theme.textInverse, 2));
+        let slot = theme.notice;
+        let text = slot?.toastText ?? theme.textInverse;
+        let row = new Row(slot?.toastGap ?? 12, 'start', 'center', false, null, null, { cross: 'center' });
+        row.add(new Box(new BoxStyle({ width: slot?.toastDot ?? 8, height: slot?.toastDot ?? 8, background: theme.colors(this.status).base, cornerRadius: new CornerRadii(999) })));
+        row.add(new Text(this.message, 'bodyM', text, 2));
         let label: any; 
         if ((label = this.actionLabel) != null) {
-            row.add(new Pressable(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(8, 4) }), new Text(label, 'label', theme.textInverse)), this.onAction, { label: label }));
+            row.add(new Pressable(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(8, 4) }), new Text(label, 'label', text)), this.onAction, { label: label }));
         }
-        let pill = new Box(new BoxStyle({ background: theme.textPrimary, cornerRadius: new CornerRadii(theme.shape('full')), elevation: 3, padding: EdgeInsets.symmetric(16, 12), maxWidth: 480 }), row);
-        let anchor = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'end', cross: 'center', padding: EdgeInsets.symmetric(16, 24) });
+        let pill = new Box(new BoxStyle({ background: slot?.toastFill ?? theme.textPrimary, cornerRadius: new CornerRadii(theme.shape(slot?.toastShape ?? 'full')), elevation: slot?.toastElevation ?? 3, padding: slot?.toastPadding ?? EdgeInsets.symmetric(16, 12), maxWidth: slot?.toastMaxWidth ?? 480 }), row);
+        let anchor = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'end', cross: 'center', padding: slot?.toastMargin ?? EdgeInsets.symmetric(16, 24) });
         let announced = new LiveRegion(pill);
         anchor.add(new Presence(announced, 'slideUp'));
         return new Overlay(anchor, { modal: false });

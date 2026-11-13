@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -388,7 +389,7 @@ internal sealed class TwinConstructor
             var count = chain.ArgumentList.Arguments.Count;
             return roots.FirstOrDefault(root => root.Arity.Low <= count && count <= root.Arity.High) ?? roots[0];
         }
-        var declared = target.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
+        var declared = target.ReadDeclarations().FirstOrDefault()?.GetSyntax();
         return roots.FirstOrDefault(root => root.Explicit is { } own ? declared == own
             : root.Primary ? declared is TypeDeclarationSyntax
             : target.IsImplicitlyDeclared);

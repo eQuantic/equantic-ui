@@ -40,6 +40,11 @@ public sealed class AppBuild
     private IReadOnlyDictionary<ReferencedProject, Compilation>? _built;
     private string? _inputs;
 
+    // What each file's compile gave this build, by full path, which the next build of a served eqc takes
+    // as it is for a file the save changed nothing of (#1281), and the ones this build was handed so.
+    private readonly Dictionary<string, FileCompile> _fileCompiles = new(StringComparer.Ordinal);
+    private IReadOnlyDictionary<string, FileCompile> _reusable = new Dictionary<string, FileCompile>();
+
     /// <param name="options">What the build is handed.</param>
     /// <param name="output">Where the build narrates; the console when null.</param>
     /// <param name="errors">Where diagnostics go, in MSBuild's canonical form; the console's error
@@ -345,7 +350,7 @@ public sealed class AppBuild
         if (byPath.Any(group => group.Count() > 1)) return false;
         var trees = byPath.ToDictionary(group => group.Key, group => group.Single(), StringComparer.Ordinal);
         var compilation = warm;
-        var replaced = 0;
+        var replaced = new List<(string File, SyntaxTree Before, SyntaxTree After)>();
         foreach (var file in files)
         {
             if (!trees.TryGetValue(file, out var tree)) return false;
@@ -353,17 +358,41 @@ public sealed class AppBuild
             if (tree.GetText().ToString() == text) continue;
             // Parsed as the tree it replaces was: with the symbols and the language version csc compiled
             // the file with (#1401).
-            compilation = compilation.ReplaceSyntaxTree(tree,
-                CSharpSyntaxTree.ParseText(text, (CSharpParseOptions)tree.Options, path: file));
-            replaced++;
+            var replacement = CSharpSyntaxTree.ParseText(text, (CSharpParseOptions)tree.Options, path: file);
+            compilation = compilation.ReplaceSyntaxTree(tree, replacement);
+            replaced.Add((file, tree, replacement));
         }
 
-        _output.WriteLine($"📚 Kept the project compilation: {replaced} file(s) changed since the last compile");
+        _output.WriteLine($"📚 Kept the project compilation: {replaced.Count} file(s) changed since the last compile");
         Adopt(compilation, previous._built);
         _sourceFiles = files;
         _inputs = previous._inputs;
         ResolveDependencies(compilation);
+        _reusable = Reusable(previous._fileCompiles, replaced);
         return true;
+    }
+
+    /// <summary>
+    /// The files whose compile the last build gave this one may take as it is (#1281): when the save
+    /// changed bodies alone, every file that compiled, is not one the save changed, and read none of them.
+    /// After a save that changed anything else, none: a declaration can change what another file's code
+    /// binds to, which nothing the last build recorded can see.
+    /// </summary>
+    private IReadOnlyDictionary<string, FileCompile> Reusable(IReadOnlyDictionary<string, FileCompile> previous,
+        IReadOnlyList<(string File, SyntaxTree Before, SyntaxTree After)> replaced)
+    {
+        var none = new Dictionary<string, FileCompile>();
+        if (previous.Count == 0) return none;
+        if (replaced.FirstOrDefault(edit => !BodyOnlyEdit.Is(edit.Before, edit.After)) is { File: { } declared })
+        {
+            _output.WriteLine($"   A declaration changed in {Describe(declared)}: every file is compiled");
+            return none;
+        }
+        var changed = replaced.Select(edit => Path.GetFullPath(edit.File)).ToHashSet(StringComparer.Ordinal);
+        return previous.Values
+            .Where(compiled => compiled.Succeeded && !changed.Contains(compiled.File)
+                && !compiled.Read.Overlaps(changed))
+            .ToDictionary(compiled => compiled.File, StringComparer.Ordinal);
     }
 
     /// <summary>Whether a referenced project's compilation holds its files as they are on disk: every
@@ -530,6 +559,13 @@ public sealed class AppBuild
     public TimeSpan BundleElapsed { get; private set; }
 
     /// <summary>
+    /// The files the last <see cref="CompileAndBundle"/> compiled, in order. A served build that kept the
+    /// compilation compiles only the files a save can have changed and takes the others as the build
+    /// before it compiled them (#1281); every other build compiles every file.
+    /// </summary>
+    public IReadOnlyList<string> CompiledFiles { get; private set; } = [];
+
+    /// <summary>
     /// Compiles every module, writes the string catalogs and bundles. True when it produced an error,
     /// so the process can exit non-zero and fail the build.
     /// </summary>
@@ -634,14 +670,13 @@ public sealed class AppBuild
                 // with one pointing at a different C# file.
                 if (claim == TwinClaim.Repeat) return;
 
-                File.WriteAllText(tsPath, result.TypeScript);
-
-                if (!string.IsNullOrEmpty(result.SourceMap))
-                {
-                    var mapPath = tsPath + ".map";
-                    File.WriteAllText(mapPath, result.SourceMap);
-                    File.AppendAllText(tsPath, $"\n//# sourceMappingURL={result.ComponentName}.ts.map");
-                }
+                // Written only when its text changed (#1279): a save that changes one screen writes that
+                // screen's module and leaves the others, and their times, as they were.
+                var hasMap = !string.IsNullOrEmpty(result.SourceMap);
+                OutputFile.Write(tsPath, hasMap
+                    ? result.TypeScript + $"\n//# sourceMappingURL={result.ComponentName}.ts.map"
+                    : result.TypeScript);
+                if (hasMap) OutputFile.Write(tsPath + ".map", result.SourceMap!);
 
                 // A PAGE is always an entry point, wherever its file sits: the server loads
                 // it by name, so a page that is only transpiled is a 404 the build never
@@ -655,6 +690,8 @@ public sealed class AppBuild
                 foreach (var type in result.ReferencedTypes) reached.Enqueue(type);
             }
 
+            var compiledFiles = new List<string>();
+            var units = 0;
             foreach (var group in compileUnits)
             {
                 var dir = group.Key;
@@ -663,7 +700,21 @@ public sealed class AppBuild
                 {
                     // Try to compile - parser will return empty if not a component
                     // This removes restrictions on naming, inheritance patterns, aliases, etc.
-                    var results = _compiler.CompileFile(file);
+                    // A file the save changed nothing of is taken as the build before compiled it, and
+                    // hands the catalogs what its compile handed them (#1281).
+                    units++;
+                    var path = Path.GetFullPath(file);
+                    if (_reusable.TryGetValue(path, out var fileCompile))
+                    {
+                        _compiler.Replay(fileCompile);
+                    }
+                    else
+                    {
+                        fileCompile = _compiler.CompileRecorded(file);
+                        compiledFiles.Add(file);
+                    }
+                    _fileCompiles[path] = fileCompile;
+                    var results = fileCompile.Results;
 
                     var relativePath = Path.GetRelativePath(dir, file);
                     var isEntryCandidate = !isGenerated && dir == sourceDirs[0]
@@ -679,6 +730,10 @@ public sealed class AppBuild
                     }
                 }
             }
+
+            CompiledFiles = compiledFiles;
+            if (_reusable.Count > 0)
+                _output.WriteLine($"   Compiled {compiledFiles.Count} of {units} file(s): the others read nothing the save changed");
 
             // A type of a referenced project is a module when a written module imports it, and only
             // then (#624): the record a page builds, the static class whose member it reads, the

@@ -1,5 +1,6 @@
 #nullable enable
 eQuantic.UI.Compiler.Services.AppBuild.LoadFrom(eQuantic.UI.Compiler.Services.AppBuild! previous) -> bool
+eQuantic.UI.Compiler.Services.AppBuild.CompiledFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
 const eQuantic.UI.Compiler.CodeGen.Eq.FixedSize = "$eq.collections.fixedSize" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.CollectionIsReadOnly = "$eq.collections.isReadOnly" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { materializeTheme, type ThemeData } from './theme-bridge';
 import { photonTheme } from './design-system.generated';
 import { FontFile, type AppTheme } from './value-types';
+import { AppThemeExtensions, MarkdownTheme, NavigationTheme } from './theme-slots';
 // The SAME fixture the C# ThemeBridgeTests pins (ThemeBridge.SerializeJson(PhotonTheme.Instance)).
 // Round-tripping it back to the generated photonTheme proves the C# serializer and the TS materializer
 // agree byte-for-byte — the guarantee that a client hydrates the exact theme the server rendered.
@@ -249,5 +250,58 @@ describe('theme bridge: the form control slots cross (E6b, #1242)', () => {
     expect(custom.chip?.paddingX).toBe(20);
     expect(custom.chip?.gap).toBeNull();
     expect(custom.input).toBeNull();
+  });
+});
+
+describe('theme bridge: the navigation and collection slots and the document\'s cross (E6d, #1244)', () => {
+  const theme = materializeTheme(photonData as unknown as ThemeData);
+  const families = ['navigation', 'list', 'table', 'badge', 'calendar', 'markdown'] as const;
+
+  it('materializes each family as the generated Photon theme holds it', () => {
+    for (const family of families) expect(theme[family], family).toEqual(photonTheme[family]);
+  });
+
+  it('reads every member the server wrote, each in its kind', () => {
+    for (const family of families) {
+      const written = (photonData as unknown as Record<string, Record<string, unknown>>)[family];
+      const read = theme[family] as unknown as Record<string, unknown>;
+      for (const name of Object.keys(written)) {
+        expect(name in read, `${family}.${name} is declared by its mirror`).toBe(true);
+        expect(read[name], `${family}.${name}`).not.toBeNull();
+      }
+    }
+    expect(theme.navigation?.tabHeight).toBe(48);
+    // A colour that is one of Photon's roles stays null, so the component reads the role itself.
+    expect(theme.navigation?.inactiveColor).toBeNull();
+    expect(theme.badge?.avatarSize?.xLarge).toBe(56);
+    expect(theme.calendar?.titleRole).toBe('titleSmall');
+    expect(theme.table?.headerUppercase).toBe(true);
+  });
+
+  it('skips a member the mirror does not declare, and keeps the rest', () => {
+    const newer = materializeTheme({
+      ...(photonData as unknown as ThemeData),
+      list: { itemHeight: 60, rowSpacing: 4 },
+    });
+    expect(newer.list?.itemHeight).toBe(60);
+    expect('rowSpacing' in (newer.list as object)).toBe(false);
+  });
+
+  it('With lays each of the six slots it is given over the theme and forwards the rest', () => {
+    const navigation = new NavigationTheme({ tabHeight: 60 });
+    const markdown = new MarkdownTheme({ blockGap: 30 });
+    const replaced = AppThemeExtensions.with(
+      theme, null, null, null, null, null, null, null, null, null, null, null, null, navigation, null, null, null,
+      null, markdown,
+    );
+    expect(replaced.navigation?.tabHeight).toBe(60);
+    expect(replaced.navigation?.barHeight).toBe(theme.navigation?.barHeight);
+    expect(replaced.markdown?.blockGap).toBe(30);
+    expect(replaced.markdown?.heading1).toBe(theme.markdown?.heading1);
+    for (const family of ['list', 'table', 'badge', 'calendar'] as const) {
+      expect(replaced[family], family).toBe(theme[family]);
+    }
+    expect(replaced.button).toBe(theme.button);
+    expect(replaced.colors('primary')).toEqual(theme.colors('primary'));
   });
 });

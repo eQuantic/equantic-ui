@@ -240,6 +240,17 @@ export {
   SelectionControlsTheme,
   SegmentedTheme,
   ChipTheme,
+  ModalTheme,
+  MenuTheme,
+  NoticeTheme,
+  ProgressTheme,
+  CardTheme,
+  NavigationTheme,
+  ListTheme,
+  TableTheme,
+  BadgeTheme,
+  CalendarTheme,
+  MarkdownTheme,
 } from './shared/theme-slots';
 // The vocabulary's interface defaults, which an app's twin delegates to where eqc has the
 // interface's signature and not its body (#414).

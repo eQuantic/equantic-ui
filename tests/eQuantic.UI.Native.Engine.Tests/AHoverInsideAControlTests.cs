@@ -32,7 +32,7 @@ public class AHoverInsideAControlTests
 
     private static DrawCommand FillIn(DisplayList list, ColorToken token)
     {
-        var color = token.Resolve(ThemeMode.Light);
+        var color = token.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         foreach (var command in list.Commands)
             if (command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == color) return command;
         throw new InvalidOperationException("no fill of that colour");
@@ -98,7 +98,7 @@ public class AHoverInsideAControlTests
     public void AControlWithNothingThatHovers_TakesNoHoverRegion()
     {
         static IReadOnlyList<HoverRegion> Regions(VisualNode node) =>
-            PhotonRealizer.Realize(node, 400, 100, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder()).HoverRegions;
+            PhotonRealizer.Realize(node, 400, 100, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder()).HoverRegions;
 
         Regions(new Pressable(new Box(new BoxStyle { Width = 40, Height = 40, Background = Label }), () => { }))
             .Should().BeEmpty("nothing in it hovers");
