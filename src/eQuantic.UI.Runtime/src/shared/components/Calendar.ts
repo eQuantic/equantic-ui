@@ -38,15 +38,17 @@ export class Calendar extends StatefulComponent {
         let theme = context.theme;
         let first = CalendarNames.firstDayOfWeek;
         let monthTitle = `${$eq.collections.item(CalendarNames.monthNames, this._month.month - 1)} ${$eq.text.format(this._month.year, null, undefined, undefined, 'int32')}`;
-        let header = new Row(4, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill });
-        header.add(new Text(this.label ?? monthTitle, 'titleSmall', theme.textPrimary, 1));
+        let slot = theme.calendar;
+        let cellSize = slot?.cellSize ?? Calendar.cellSize;
+        let header = new Row(slot?.headerGap ?? 4, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill });
+        header.add(new Text(this.label ?? monthTitle, slot?.titleRole ?? 'titleSmall', slot?.titleColor ?? theme.textPrimary, 1));
         header.add(new Flexible(new Spacer()));
         header.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronLeft')), SdkStrings.previousMonth, 'standard', 'small', () => this.page(-1)));
         header.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronRight')), SdkStrings.nextMonth, 'standard', 'small', () => this.page(1)));
         let names = CalendarNames.dayNamesShort;
         let dayRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
         for (let column = 0; column < 7; column++) {
-            dayRow.add(new Box(new BoxStyle({ width: SizeValue.fixed(Calendar.cellSize), height: SizeValue.fixed(Calendar.headerHeight) }), VisualNodeExtensions.centered(new Text($eq.collections.item(names, (first + column) % 7), 'caption', theme.textMuted, 1))));
+            dayRow.add(new Box(new BoxStyle({ width: SizeValue.fixed(cellSize), height: SizeValue.fixed(slot?.weekdayHeight ?? Calendar.headerHeight) }), VisualNodeExtensions.centered(new Text($eq.collections.item(names, (first + column) % 7), slot?.weekdayRole ?? 'caption', slot?.weekdayColor ?? theme.textMuted, 1))));
         }
         let rows = [dayRow];
         let start = Calendar.gridStart(this._month, first);
@@ -55,9 +57,9 @@ export class Calendar extends StatefulComponent {
             for (let column = 0; column < 7; column++) weekRow.add(this.cell(start.addDays(week * 7 + column), context));
             rows.push(weekRow);
         }
-        let month = new Column(8);
+        let month = new Column(slot?.gap ?? 8);
         month.add(header);
-        month.add(new Navigable(this.move.bind(this), rows, { label: this.label ?? monthTitle, hasHeaderRow: true, activeCell: this.cursorCell(start), role: 'grid' }));
+        month.add(new Navigable($eq.delegates.bound(this, this.move), rows, { label: this.label ?? monthTitle, hasHeaderRow: true, activeCell: this.cursorCell(start), role: 'grid' }));
         return month;
     }
 
@@ -83,14 +85,16 @@ export class Calendar extends StatefulComponent {
 
     cell(day: DateOnly, context: BuildContext) {
         let theme = context.theme;
-        let size = SizeValue.fixed(Calendar.cellSize);
+        let slot = theme.calendar;
+        let cellSize = slot?.cellSize ?? Calendar.cellSize;
+        let size = SizeValue.fixed(cellSize);
         if (day.month !== this._month.month) return new Box(new BoxStyle({ width: size, height: size }));
         let selected = $eq.equals(this.selected, day);
         let isToday = day.equals(Calendar.today());
         let reachable = this.inRange(day);
         let primary = theme.colors('primary');
-        let numeral = new Text($eq.text.format(day.day, null, undefined, undefined, 'int32'), 'bodyM', selected ? primary.onBase : isToday ? primary.base : theme.textPrimary, 1);
-        let cell = new Box(new BoxStyle({ width: size, height: size, cornerRadius: new CornerRadii(Math.fround(Calendar.cellSize / 2)), background: selected ? primary.base : null, borderWidth: !selected && isToday ? 1.5 : 0, borderColor: primary.base, opacity: reachable ? null : theme.disabledOpacity, hover: reachable && !selected ? new StyleDiff({ background: theme.surfaceSubtle }) : null }), VisualNodeExtensions.centered(numeral));
+        let numeral = new Text($eq.text.format(day.day, null, undefined, undefined, 'int32'), slot?.dayRole ?? 'bodyM', selected ? primary.onBase : isToday ? primary.base : slot?.dayColor ?? theme.textPrimary, 1);
+        let cell = new Box(new BoxStyle({ width: size, height: size, cornerRadius: new CornerRadii(Math.fround(cellSize / 2)), background: selected ? primary.base : null, borderWidth: !selected && isToday ? slot?.todayRingWidth ?? 1.5 : 0, borderColor: primary.base, opacity: reachable ? null : theme.disabledOpacity, hover: reachable && !selected ? new StyleDiff({ background: slot?.dayHoverFill ?? theme.surfaceSubtle }) : null }), VisualNodeExtensions.centered(numeral));
         if (!reachable) return cell;
         return new Pressable(cell, () => this.choose(day), { role: 'gridCell', selected: selected, label: isToday ? `${Calendar.spoken(day)}, ${SdkStrings.today}` : Calendar.spoken(day) });
     }

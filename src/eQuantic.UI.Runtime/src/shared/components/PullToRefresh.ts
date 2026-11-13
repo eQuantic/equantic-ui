@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Draggable, Positioned, Row, SizeValue, Spinner, Stack, StatelessComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Draggable, Positioned, Row, SizeValue, Spinner, Stack, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class PullToRefresh extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.PullToRefresh';
@@ -20,11 +20,11 @@ export class PullToRefresh extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let indicator = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: PullToRefresh.threshold, main: 'center', cross: 'center' });
-        indicator.add(new Spinner(20, theme.colors('primary').base));
+        indicator.add(new Spinner(theme.progress?.refreshSpinner ?? 20, theme.colors('primary').base));
         let content = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.background }), this.child);
         let stack = new Stack();
         stack.add(new Positioned(indicator, 0, 0, null, 0));
-        stack.add(new Draggable(content, this.onReleased.bind(this), { axis: 'vertical', min: 0, max: PullToRefresh.threshold, restOffset: this.refreshing || context.inFlow ? PullToRefresh.threshold : 0 }));
+        stack.add(new Draggable(content, $eq.delegates.bound(this, this.onReleased), { axis: 'vertical', min: 0, max: PullToRefresh.threshold, restOffset: this.refreshing || context.inFlow ? PullToRefresh.threshold : 0 }));
         return new Box(new BoxStyle({ width: SizeValue.fill, clip: true }), stack);
     }
 

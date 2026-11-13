@@ -192,6 +192,8 @@ public static class UIExtensions
         services.TryAddSingleton<eQuantic.UI.Primitives.IServerEvents, AbsentCapabilities.ServerEvents>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IAnalytics, AbsentCapabilities.Analytics>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IClock, AbsentCapabilities.Clock>();
+        // What ends hot reload with the host's services, for a host disposed without being stopped (#1375).
+        services.TryAddSingleton<HotReload.HotReloadLifetime>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IFrameTicker, AbsentCapabilities.FrameTicker>();
 
         // Response compression for what every user receives alike: the runtime, the modules, the styles and
@@ -594,6 +596,9 @@ public static class UIExtensions
             // own build writes.
             endpoints.ServiceProvider.GetRequiredService<IHostApplicationLifetime>()
                 .ApplicationStopping.Register(hotReload.Dispose);
+            // And with the host's services, since disposing a host does not stop it: a host disposed
+            // unstopped kept watching its root and kept its compiler (#1375).
+            endpoints.ServiceProvider.GetRequiredService<HotReload.HotReloadLifetime>().Hold(hotReload);
             endpoints.MapGet("/_equantic/hmr", hotReload.HandleClient).AllowAnonymous();
         }
 

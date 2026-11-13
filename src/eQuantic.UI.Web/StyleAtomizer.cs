@@ -241,6 +241,12 @@ public sealed class StyleSink
         return className;
     }
 
+    /// <summary>The family of a CONTROL's hover: the diff of a box inside an enabled
+    /// <see cref="Primitives.Pressable"/> applies while that control is hovered, wherever the pointer
+    /// is on it, the arrow of a button nudging with the pointer on its label (#614). A box outside
+    /// every control keeps its own <c>:hover</c>.</summary>
+    internal const string ControlHover = "hover";
+
     /// <summary>The family of a CONTROL's focus: the box's diff applies while the
     /// <see cref="Primitives.Pressable"/> it is inside has keyboard focus (#508).</summary>
     internal const string ControlFocus = "focus";
@@ -270,6 +276,13 @@ public sealed class StyleSink
     /// </summary>
     internal static string StateSelector(string family, string className) => family switch
     {
+        // (0,2,0), the weight of the box's own :hover it stands for: the control's part rides in a
+        // :where(), which weighs nothing, and the class written twice gives the second class. A
+        // pointer over a nested control is over this one too, as :hover rises through ancestors,
+        // so only a box under a control nobody hovers is left out (#614).
+        ControlHover =>
+            $":where(.eq-pressable:hover) .{className}.{className}"
+            + $":not(:where(.eq-pressable:not(:hover) .{className}))",
         ControlFocus =>
             $".eq-pressable:focus-visible .{className}:not(:where(.eq-pressable:focus-visible .eq-pressable .{className}))",
         ControlPressed =>
@@ -301,7 +314,7 @@ public sealed class StyleSink
                     // that can actually hover. The gate wraps the RULE, never the hash: the class
                     // string is untouched and hydration compares equal.
                     var pseudo = rule.Value[..split];
-                    var gated = pseudo == ":hover";
+                    var gated = pseudo is ":hover" or ControlHover;
                     if (gated) css.Append("@media (hover: hover){");
                     css.Append(StateSelector(pseudo, rule.Key))
                        .Append('{').Append(rule.Value[(split + 1)..]).Append('}');
@@ -528,6 +541,7 @@ public sealed class ThemeVarMap
             map.Register(colors.Pressed, $"{name}-pressed");
             map.Register(colors.Subtle, $"{name}-subtle");
             map.Register(colors.OnSubtle, $"{name}-on-subtle");
+            map.Register(colors.Hover, $"{name}-hover");
         }
 
         return map;

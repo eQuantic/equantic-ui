@@ -1,4 +1,4 @@
-import { $eq, CodeCaret, CodeChange, CodeCommandValue, CodeCompletion, CodeDefinitions, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeFolding, CodeGoTo, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeJumpList, CodeKeyBinding, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineAdvances, CodeLineCells, CodeLocation, CodeMotionValue, CodePosition, CodeRange, CodeReferences, CodeRows, CodeSignatureHelpSession, CodeSnippet, CodeSnippetExpansion, CodeSnippetPlace, CodeSnippetSession, CodeSnippetStop, CodeStep, CodeSymbols, KeyboardConventionValue, KeyChord, Point, PointerPhaseValue, Rect, ScrollRequest } from "../runtime-exports";
+import { $eq, CodeCaret, CodeChange, CodeCommandValue, CodeCompletion, CodeDefinitions, CodeDiagnostics, CodeDirectionValue, CodeDocument, CodeEdit, CodeFolding, CodeGoTo, CodeGrid, CodeHighlighter, CodeHistory, CodeHoverSession, CodeJumpList, CodeKeyBinding, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineAdvances, CodeLineCells, CodeLocation, CodeMotionValue, CodePosition, CodeRange, CodeReferences, CodeRows, CodeSignatureHelpSession, CodeSnippet, CodeSnippetExpansion, CodeSnippetPlace, CodeSnippetSession, CodeSnippetStop, CodeStep, CodeSymbols, KeyboardConventionValue, KeyChord, Point, PointerPhaseValue, Rect, ScrollRequest, TextReading } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null) {
@@ -130,6 +130,7 @@ export class CodeEditorController {
     _occurrence!: string | null;
     _column!: CodeCaret | null;
     static caretWidth: number = 2;
+    static readingLines: number = 10;
 
     get document(): CodeDocument {
         return this._document;
@@ -241,6 +242,24 @@ export class CodeEditorController {
 
     get focusVersion(): number {
         return this._focusVersion;
+    }
+
+    get reading(): TextReading {
+        const offsetOf = (position: CodePosition) => {
+            if (position.line < first) return 0;
+            if (position.line > last) return text.length;
+            let offset = position.column;
+            for (let line = first; line < position.line; line++) offset += lines[line - first].length + 1;
+            return offset;
+        };
+        let anchor = this._document.clamp(this._selection.anchor);
+        let focus = this._document.clamp(this._selection.focus);
+        let first = Math.max(0, focus.line - CodeEditorController.readingLines);
+        let last = Math.min(this._document.lineCount - 1, focus.line + CodeEditorController.readingLines);
+        let lines: string[] = ($eq.collections.listCapacity(last - first + 1), []);
+        for (let line = first; line <= last; line++) lines.push(this._document.line(line));
+        let text = $eq.text.join('\n', lines);
+        return new TextReading(text, offsetOf(anchor), offsetOf(focus));
     }
 
     get composition(): CodeRange | null {
@@ -1274,7 +1293,7 @@ export class CodeEditorController {
     }
 
     insertNewLine() {
-        return this.atEveryCaret(this.newLineAtCaret.bind(this));
+        return this.atEveryCaret($eq.delegates.bound(this, this.newLineAtCaret));
     }
 
     newLineAtCaret() {
@@ -1349,7 +1368,7 @@ export class CodeEditorController {
         if (this.readOnly) return false;
         if (!this._selection.isEmpty) return this.shiftLines(true);
         for (const other of this._others) if (!other.selection.isEmpty) return this.shiftLines(true);
-        return this.atEveryCaret(this.indentAtCaret.bind(this));
+        return this.atEveryCaret($eq.delegates.bound(this, this.indentAtCaret));
     }
 
     indentAtCaret() {

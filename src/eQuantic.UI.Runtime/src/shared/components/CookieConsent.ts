@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Button, Column, CornerRadii, EdgeInsets, Link, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, Text, UiComponent } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Button, Column, CornerRadii, EdgeInsets, Link, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, Text, UiComponent } from "../runtime-exports";
 
 export class CookieConsent extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CookieConsent';
@@ -24,8 +24,8 @@ export class CookieConsent extends StatefulComponent {
         let theme = context.theme;
         let config = this._config;
         let actions = new Row(8, 'start', 'center', false, null, null, { cross: 'center', wrap: true, runGap: 8 });
-        actions.add(new Button(config.acceptLabel ?? SdkStrings.acceptCookies, 'primary', 'small', () => this.answer(consent.grant.bind(consent))));
-        actions.add(new Button(config.rejectLabel ?? SdkStrings.rejectCookies, 'secondary', 'small', () => this.answer(consent.deny.bind(consent))));
+        actions.add(new Button(config.acceptLabel ?? SdkStrings.acceptCookies, 'primary', 'small', () => this.answer($eq.delegates.bound(consent, consent.grant))));
+        actions.add(new Button(config.rejectLabel ?? SdkStrings.rejectCookies, 'secondary', 'small', () => this.answer($eq.delegates.bound(consent, consent.deny))));
         let href: any; 
         if ((($0) => (($0 != null && $0.length > 0) && (href = $0, true)))(config.policyHref)) {
             actions.add(new Link(href, new Text(config.policyLabel ?? SdkStrings.privacyPolicy, 'labelSmall', theme.colors('primary').base, 1)));
@@ -34,7 +34,7 @@ export class CookieConsent extends StatefulComponent {
         column.add(new Text(config.title ?? SdkStrings.cookieConsentTitle, 'label', theme.textPrimary, 2));
         column.add(new Text(config.body ?? SdkStrings.cookieConsentBody, 'bodyM', theme.textSecondary, 6));
         column.add(actions);
-        return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.all(16), background: theme.surface, borderWidth: 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape('large')), elevation: 2 }), column);
+        return new Box(new BoxStyle({ width: SizeValue.fill, padding: theme.notice?.consentPadding ?? EdgeInsets.all(16), background: theme.surface, borderWidth: theme.notice?.consentBorderWidth ?? 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape(theme.notice?.consentShape ?? 'large')), elevation: theme.notice?.consentElevation ?? 2 }), column);
     }
 
     adoptConfig(next: UiComponent) {

@@ -23,7 +23,6 @@ namespace eQuantic.UI.Primitives;
 /// unmounts before what arrives mounts.
 /// </para>
 /// </summary>
-[ServerOnly]
 public sealed class BuildOwner
 {
     private readonly List<ComponentElement> _dirty = new();
@@ -33,8 +32,18 @@ public sealed class BuildOwner
     private readonly List<ComponentElement> _mounting = new();
     private readonly List<StatefulComponent> _unmounting = new();
     private readonly List<NodeElement> _deferred = new();
+    // The positions that read what a frame hands every build (the theme, the density, the type scale),
+    // each knowing its index here, so one that leaves is taken out in one step.
+    private readonly List<ComponentElement> _frameReaders = new();
     private ComponentContext? _context;
     private int _building;
+    // Whether the build phase of a frame is running, and which dirty position it is building: a value a
+    // build changed marks its dependents into this frame's list, behind the one building.
+    private bool _inFrameBuild;
+    private int _dirtyCursor = -1;
+    // The layer the realizer is showing, and which of its marked positions BuildDeferred is building.
+    private NodeElement? _showing;
+    private int _deferredCursor = -1;
     private int _stamp;
     private int _ids;
     private readonly Func<UiComponent, ComponentContext, int, VisualNode> _buildComponent;
@@ -98,9 +107,17 @@ public sealed class BuildOwner
     /// <summary>The window size class this frame resolves an adaptive node's arm against.</summary>
     internal WindowSizeClass SizeClass { get; private set; }
 
-    /// <summary>The context every component of this frame builds with.</summary>
+    /// <summary>The context this frame was handed: the theme, density, type scale and measurer every
+    /// position's own context reads (<see cref="ComponentElement.Context"/>).</summary>
     internal ComponentContext Context =>
         _context ?? throw new InvalidOperationException("A component built before its owner's frame began.");
+
+    /// <summary>
+    /// Where a destination a component asks for goes: <c>Navigator.Of(context).Go(…)</c> reaches the host
+    /// of the tree the component is in, so two windows in one process each navigate their own. Null when
+    /// the host navigates nowhere, and a request is dropped.
+    /// </summary>
+    public Action<string>? NavigationRequested { get; set; }
 
     /// <summary>The table a list's keyed members are claimed through (see <see cref="NodeElement"/>),
     /// one for the whole tree because the claiming never runs inside another.</summary>
@@ -114,13 +131,19 @@ public sealed class BuildOwner
     /// <returns>The root's position, for the layout to measure against.</returns>
     public Element Build(VisualNode root, ComponentContext context, WindowSizeClass sizeClass, bool rebuildAll)
     {
+        var previous = _context;
         _context = context;
         SizeClass = sizeClass;
         Frame++;
         RebuildingAll = rebuildAll;
         EnterBuild();
+        _inFrameBuild = true;
         try
         {
+            // What a frame hands every build changed: the positions that read it build again, and only
+            // they, where a density switch used to rebuild every component (docs/ELEMENT-TREE-PLAN.md, 3.4).
+            if (previous is not null && FrameValuesDiffer(previous, context)) MarkFrameReaders();
+
             if (Root is null || !Element.CanUpdate(Root.Configuration, root))
             {
                 if (Root is not null) Deactivate(Root);
@@ -138,10 +161,39 @@ public sealed class BuildOwner
         }
         finally
         {
+            _inFrameBuild = false;
             ExitBuild();
         }
 
         return Root;
+    }
+
+    private static bool FrameValuesDiffer(ComponentContext before, ComponentContext now) =>
+        !ReferenceEquals(before.Theme, now.Theme) || before.Density != now.Density || before.TypeScale != now.TypeScale;
+
+    /// <summary>A position read what the frame hands every build, and builds again when it changes.</summary>
+    internal void ReadFrame(ComponentElement reader)
+    {
+        if (reader.FrameReaderIndex >= 0) return;
+        reader.FrameReaderIndex = _frameReaders.Count;
+        _frameReaders.Add(reader);
+    }
+
+    /// <summary>A position that read the frame left the tree: the last reader takes its place.</summary>
+    internal void ForgetFrameReader(ComponentElement reader)
+    {
+        var index = reader.FrameReaderIndex;
+        if (index < 0) return;
+        var last = _frameReaders[_frameReaders.Count - 1];
+        _frameReaders[index] = last;
+        last.FrameReaderIndex = index;
+        _frameReaders.RemoveAt(_frameReaders.Count - 1);
+        reader.FrameReaderIndex = -1;
+    }
+
+    private void MarkFrameReaders()
+    {
+        foreach (var reader in _frameReaders) reader.DependencyChanged();
     }
 
     /// <summary>
@@ -205,6 +257,21 @@ public sealed class BuildOwner
 
     internal void ExitBuild() => _building--;
 
+    /// <summary>The realizer shows <paramref name="holder"/>'s layer: a build outside the frame's build
+    /// phase, whose dependents build in its <see cref="BuildDeferred"/>. One layer at a time: both
+    /// realizers show a layer and return before they walk it, so a layer inside it is shown after.</summary>
+    internal void EnterLayer(NodeElement holder)
+    {
+        EnterBuild();
+        _showing = holder;
+    }
+
+    internal void ExitLayer()
+    {
+        _showing = null;
+        ExitBuild();
+    }
+
     internal int NextStamp() => ++_stamp;
 
     /// <summary>The next id of this tree (<see cref="Element.Id"/>, <see cref="NodeElement.PartId"/>),
@@ -218,6 +285,52 @@ public sealed class BuildOwner
     internal void QueueUnmount(StatefulComponent component) => _unmounting.Add(component);
 
     internal void TrackDeferred(NodeElement element) => _deferred.Add(element);
+
+    /// <summary>
+    /// A position whose dependency changed: built in THIS frame when the change happened in its build
+    /// phase, as Flutter's dependents are, since a value its parent's build changed is one the frame
+    /// shows. Behind the position building, by depth, so a parent still hands it its configuration
+    /// first. A change while the realizer shows a layer builds in that layer's
+    /// <see cref="BuildDeferred"/>, before the layer is laid out (#1413). Anywhere else it waits like a
+    /// <c>SetState</c>.
+    /// </summary>
+    internal void ScheduleDependent(ComponentElement element)
+    {
+        if (_showing is not null)
+        {
+            // While the layer's own marked positions build, behind the one building when it is this
+            // layer's; before that, or for a layer inside it, the list BuildDeferred reads.
+            if (_deferredCursor >= 0 && ReferenceEquals(DeferredHolderOf(element), _showing))
+                InsertBehind(_deferredScratch, _deferredCursor, element);
+            else
+                _dirtyDeferred.Add(element);
+            return;
+        }
+
+        if (!_inFrameBuild)
+        {
+            Schedule(element);
+            return;
+        }
+
+        if (_dirtyCursor < 0)
+        {
+            // The walk before the dirty list: the list is sorted when it is read.
+            _dirty.Add(element);
+            return;
+        }
+
+        InsertBehind(_dirty, _dirtyCursor, element);
+    }
+
+    /// <summary>Into a list sorted by depth that is being built, behind the position at
+    /// <paramref name="cursor"/>, in depth order.</summary>
+    private static void InsertBehind(List<ComponentElement> list, int cursor, ComponentElement element)
+    {
+        var at = list.Count;
+        while (at > cursor + 1 && list[at - 1].Depth > element.Depth) at--;
+        list.Insert(at, element);
+    }
 
     /// <summary>A position marked dirty: built in this frame's phase when it is not running yet, in
     /// the next frame's when it is.</summary>
@@ -250,6 +363,7 @@ public sealed class BuildOwner
         _dirty.Sort(ByDepth);
         for (var i = 0; i < _dirty.Count; i++)
         {
+            _dirtyCursor = i;
             var element = _dirty[i];
             if (!WaitsToBuild(element)) continue;
             if (DeferredHolderOf(element) is not null)
@@ -261,6 +375,7 @@ public sealed class BuildOwner
             element.Rebuild(force: false);
         }
 
+        _dirtyCursor = -1;
         _dirty.Clear();
     }
 
@@ -283,9 +398,18 @@ public sealed class BuildOwner
         }
 
         mine.Sort(ByDepth);
-        foreach (var element in mine)
+        try
         {
-            if (WaitsToBuild(element)) element.Rebuild(force: false);
+            // By index: a dependent a build here marks joins the list (ScheduleDependent).
+            for (var i = 0; i < mine.Count; i++)
+            {
+                _deferredCursor = i;
+                if (WaitsToBuild(mine[i])) mine[i].Rebuild(force: false);
+            }
+        }
+        finally
+        {
+            _deferredCursor = -1;
         }
 
         mine.Clear();

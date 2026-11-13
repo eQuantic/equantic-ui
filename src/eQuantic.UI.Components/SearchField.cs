@@ -31,10 +31,15 @@ public sealed class SearchField : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The theme's Input slot, then its control ladder, then the component's own (§3.10).
+        var slot = theme.Input;
+        var height = ControlMetrics.Height(context, SizeVariant.Medium, slot?.Controls);
+        var fill = slot?.SearchFill ?? theme.SurfaceSubtle;
+        var iconSize = slot?.IconSize ?? IconSize.Dense;
 
         // Fill the pill's content box so Cross=Center truly centers within the 40dp frame.
-        var row = new Row(gap: 10) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
-        row.Add(new Icon(Icons.Search, IconSize.Dense, theme.TextMuted)); // spec B10: Md-20 glyph
+        var row = new Row(gap: slot?.Gap ?? 10) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
+        row.Add(new Icon(Icons.Search, iconSize, theme.TextMuted)); // spec B10: Md-20 glyph
         row.Add(new Flexible(new TextEntry(Query, OnChanged)
         {
             Placeholder = Placeholder,
@@ -55,16 +60,15 @@ public sealed class SearchField : StatelessComponent
             // Touch.MinTarget's own doc says "the framework expands hit-slop symmetrically" and NO
             // realizer implements that — a framework-wide gap this component cannot close alone, and
             // the reason Slider and PageIndicator each size their own target by hand.
-            var side = Sizing.Height(SizeVariant.Medium, context.Density);
             row.Add(new Pressable(
                 new Box(new BoxStyle
                 {
                     Width = Touch.MinTarget,
-                    Height = side,
+                    Height = height,
                     CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-                    Hover = new StyleDiff { Background = theme.SurfaceSubtle.MidpointWith(theme.Border) },
+                    Hover = new StyleDiff { Background = fill.MidpointWith(theme.Border) },
                     Pressed = new StyleDiff { Background = theme.Border },
-                }, new Icon(Icons.Close, IconSize.Dense, theme.TextMuted).Centered()),
+                }, new Icon(Icons.Close, iconSize, theme.TextMuted).Centered()),
                 () => OnChanged?.Invoke(""))
             {
                 Label = SdkStrings.ClearSearch,
@@ -74,10 +78,10 @@ public sealed class SearchField : StatelessComponent
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Height = Sizing.Height(SizeVariant.Medium, context.Density),
-            Background = theme.SurfaceSubtle,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-            Padding = EdgeInsets.Symmetric(14, 0),
+            Height = height,
+            Background = fill,
+            CornerRadius = new CornerRadii(slot?.SearchRadius ?? theme.Shape(ShapeScale.Full)),
+            Padding = EdgeInsets.Symmetric(slot?.PaddingX ?? 14, 0),
         }, row);
     }
 }

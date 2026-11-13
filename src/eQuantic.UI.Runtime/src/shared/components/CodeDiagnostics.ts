@@ -15,7 +15,7 @@ export class CodeDiagnostics {
         this.failed = null;
         this._moved = false;
         this._editor = editor;
-        editor.changed = $eq.delegates.combine(editor.changed, this.edited.bind(this));
+        editor.changed = $eq.delegates.combine(editor.changed, $eq.delegates.bound(this, this.edited));
     }
 
     _editor!: CodeEditorController;
@@ -87,7 +87,7 @@ export class CodeDiagnostics {
     }
 
     static carried(problems: CodeDiagnostic[], edit: CodeEdit) {
-        return problems.map((problem) => $eq.withPatch(problem, { range: edit.carry(problem.range) })).slice();
+        return problems.map((problem) => $eq.withPatch(problem, { range: edit.carryProblem(problem.range) })).slice();
     }
 
     async ask(wait: boolean) {

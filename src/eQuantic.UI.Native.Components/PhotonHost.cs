@@ -57,6 +57,10 @@ public sealed class PhotonHost
 
     public ThemeMode Mode { get; set; }
 
+    /// <summary>The contrast level the system asks for, beside <see cref="Mode"/>: the shell reads it
+    /// from the operating system and sets it here, and every token resolves with both.</summary>
+    public ContrastLevel Contrast { get; set; }
+
     /// <summary>
     /// How tight this host wants its controls. A window driven by a MOUSE is Compact — the
     /// toolbars, sidebars and status rails of a desktop app; a touch screen stays Comfortable.
@@ -69,8 +73,9 @@ public sealed class PhotonHost
         {
             if (_density == value) return;
             _density = value;
-            // Every control reads it while it builds, so the next frame builds them all again.
-            RebuildAll();
+            // The next frame hands every build the new density, and its owner builds again the
+            // positions that read it, and only those (docs/ELEMENT-TREE-PLAN.md, 3.4).
+            NeedsRender = true;
         }
     }
 
@@ -294,16 +299,16 @@ public sealed class PhotonHost
     /// <summary>The NAVIGATION seam (write-once Link): a tap no pressable claims, landing on a link
     /// region, reports the destination here — the platform shell maps it to a page (the native router's
     /// future home). Null = links are inert (visuals only).
-    /// <para>Setting it also installs <see cref="Navigator"/>'s handler, so a component that
-    /// navigates PROGRAMMATICALLY (a command palette's ↵) reaches the same shell. One surface owns
-    /// the seam — the last host to take it wins, which is the desktop/mobile shape.</para></summary>
+    /// <para>It is also where a component of this host's tree that navigates PROGRAMMATICALLY (a command
+    /// palette's ↵) is sent, through <c>Navigator.Of(context)</c>: the tree's owner holds it, so each
+    /// window of a process navigates its own.</para></summary>
     public Action<string>? NavigationRequested
     {
         get => _navigationRequested;
         set
         {
             _navigationRequested = value;
-            Navigator.Handler = value;
+            _owner.NavigationRequested = value;
         }
     }
 
@@ -349,7 +354,7 @@ public sealed class PhotonHost
         var caretIndex = CaretIndex;
         var selection = Selection;
 
-        builder.Clear(Backdrop ?? _theme.Background.Resolve(Mode));
+        builder.Clear(Backdrop ?? _theme.Background.Resolve(Mode, Contrast));
         if (RenderScale != 1f) builder.PushTransform(Matrix2D.Scale(RenderScale, RenderScale));
         if (_lift != 0) builder.PushTransform(Matrix2D.Translation(0, -_lift));
         _lastTimeMs = timeMs;
@@ -374,7 +379,7 @@ public sealed class PhotonHost
         // Taken and cleared as late as possible: whatever the drain, the frame ticker or an edit
         // asked for before this point is in this frame, and anything after it is in the next.
         var rebuildAll = Interlocked.Exchange(ref _rebuildAll, 0) == 1;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedAt,
+        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, Contrast, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedAt,
             _focusVisible ? _focusedId : 0, _textAt, caretIndex, CaretVisible,
             selection.Start, selection.End, density: Density,
             markedText: _marked, composing: _composing,

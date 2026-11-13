@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Icon, IconGlyph, IconsValue, Pressable, Row, SizeValue, SizeVariantValue, Sizing, StatelessComponent, Text } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, IconGlyph, IconsValue, Pressable, Row, SizeValue, SizeVariantValue, StatelessComponent, Text } from "../runtime-exports";
 
 export class Stepper extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Stepper';
@@ -31,25 +31,28 @@ export class Stepper extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let height = Sizing.height(this.size, context.density);
+        let slot = theme.segmented;
+        let ladder = (slot?.controls ?? null);
+        let height = ControlMetrics.height(context, this.size, ladder);
+        let iconSize = slot?.iconSize ?? 20;
         let canDecrement = !this.disabled && this.value - this.step >= this.min;
         let canIncrement = !this.disabled && this.value + this.step <= this.max;
         let row = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
-        row.add(Stepper.arm(theme, 'minus', height, canDecrement, () => this.onChanged?.(this.value - this.step), this.action('Decrease')));
+        row.add(Stepper.arm(theme, 'minus', height, iconSize, canDecrement, () => this.onChanged?.(this.value - this.step), this.action('Decrease')));
         let reading = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
-        reading.add(new Text(`${$eq.text.format(this.value, null, undefined, undefined, 'int32')}${this.suffix}`, 'label', this.disabled ? theme.textMuted : theme.textPrimary, 1, 'start', false, false, null, 0, { align: 'center', tabular: true, styleOverride: theme.type('label').withSize(Sizing.labelSize(this.size, context.density)) }));
+        reading.add(new Text(`${$eq.text.format(this.value, null, undefined, undefined, 'int32')}${this.suffix}`, 'label', this.disabled ? theme.textMuted : theme.textPrimary, 1, 'start', false, false, null, 0, { align: 'center', tabular: true, styleOverride: theme.type('label').withSize(ControlMetrics.labelSize(context, this.size, ladder)) }));
         row.add(new Box(new BoxStyle({ minWidth: height, height: SizeValue.fill }), reading));
-        row.add(Stepper.arm(theme, 'plus', height, canIncrement, () => this.onChanged?.(this.value + this.step), this.action('Increase')));
-        return new Box(new BoxStyle({ width: SizeValue.hug, height: height, background: this.disabled ? theme.surfaceSubtle : theme.surface, cornerRadius: new CornerRadii(Sizing.radius(this.size)), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
+        row.add(Stepper.arm(theme, 'plus', height, iconSize, canIncrement, () => this.onChanged?.(this.value + this.step), this.action('Increase')));
+        return new Box(new BoxStyle({ width: SizeValue.hug, height: height, background: this.disabled ? theme.surfaceSubtle : theme.surface, cornerRadius: new CornerRadii(ControlMetrics.radius(context, this.size, ladder)), borderWidth: slot?.borderWidth ?? 1, borderColor: slot?.borderColor ?? theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
     }
 
     action(verb: string) {
         return this.label.length === 0 ? verb : `${verb} ${this.label}`;
     }
 
-    static arm(theme: any, glyph: IconsValue, height: number, enabled: boolean, onPressed: () => void, label: string) {
+    static arm(theme: any, glyph: IconsValue, height: number, iconSize: number, enabled: boolean, onPressed: () => void, label: string) {
         let centered = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
-        centered.add(new Icon(IconGlyph.fromIcons(glyph), 20, enabled ? theme.textPrimary : theme.textMuted));
+        centered.add(new Icon(IconGlyph.fromIcons(glyph), iconSize, enabled ? theme.textPrimary : theme.textMuted));
         let box = new Box(new BoxStyle({ width: height, height: SizeValue.fill }), centered);
         return new Pressable(box, enabled ? onPressed : null, { disabled: !enabled, label: label });
     }

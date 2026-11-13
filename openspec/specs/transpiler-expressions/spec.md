@@ -680,10 +680,11 @@ convert as it did, and a lifted conversion, to a nullable type, SHALL still answ
 ### Requirement: A params parameter takes what C# hands it
 
 eqc SHALL pass a params parameter what the bound tree says the call hands it: each element a call lists,
-as it is, after a named argument too, or a collection handed whole, spread into the rest parameter the
-parameter is on the other side, named or not. An array handed to a params parameter of another element
-type SHALL be one element where C# makes it one. A C# 13 params collection SHALL be read as an array is.
-This SHALL hold for a call, an app type's constructor and a vocabulary type's constructor alike.
+as it is, after a named argument too, or a collection handed whole, spread where the parameter is a rest
+parameter on the other side (one of the SDK's own) and passed as it is where it is the array it is, named or
+not. An array handed to a params parameter of another element type SHALL be one element where C# makes it
+one. A C# 13 params collection SHALL be read as an array is. This SHALL hold for a call, an app type's
+constructor and a vocabulary type's constructor alike.
 
 #### Scenario: A collection handed whole
 
@@ -891,6 +892,91 @@ argument, a return and a branch alike.
 - **WHEN** `(int, int) u = (1, 2); (long, long) t = u; return (t.Item1 + 1L).ToString();` runs
 - **THEN** it answers 2, as .NET does, and `t.Equals((object)(1L, 2L))` answers True
 
+### Requirement: A pattern reads each member it tests once
+
+A member a property pattern reads SHALL be read once for each value in a pattern-matching operation (an `is`, a
+switch expression, a switch statement), however many alternatives, conjuncts, bindings, arms or sections read
+it, a member of a member and a null it answers included, and SHALL be read again by each evaluation of the
+operation, as .NET's decision graph reads it: a property whose getter is the app's, an abstract one, a virtual
+one an override answers for, and an interface's alike. A member whose read runs none of the app's code (a field,
+an auto-property the twin keeps under its own name, a property of the platform's read off a value of the
+platform's) SHALL be written where the pattern reads it.
+
+#### Scenario: A getter through an or inside a property pattern
+
+- **WHEN** `var c = new Counter(); var hit = c is { Value: 2 or 1 }; return c.Reads * 10 + (hit ? 1 : 0);` runs,
+  `Value` a property whose getter counts its reads in `Reads` and answers 1
+- **THEN** it answers 11, as .NET does, where the getter ran twice and the answer was 21
+
+#### Scenario: A getter through the alternatives of a nested pattern
+
+- **WHEN** `var c = new Counter(); var hit = c is { Corner: { X: 2 } or { Y: 2 } }; return c.Reads * 10 + (hit ? 1 : 0);`
+  runs, `Corner` a getter that counts its reads and answers `new Pt(1, 2)`
+- **THEN** it answers 11, as .NET does, where the getter ran four times and the answer was 41
+
+#### Scenario: A getter through the arms of a switch expression
+
+- **WHEN** `var c = new Counter(); var r = c switch { { Value: 2 } => 2, { Value: 1 } => 1, _ => 0 }; return c.Reads * 10 + r;` runs
+- **THEN** it answers 11, as .NET does, where the answer was 21
+
+#### Scenario: A getter through the sections of a switch statement
+
+- **WHEN** `var c = new Counter(); switch (c) { case { Value: 2 }: return c.Reads * 10 + 2; case { Value: 1 }: return c.Reads * 10 + 1; default: return c.Reads * 10; }` runs
+- **THEN** it answers 11, as .NET does, where the answer was 21
+
+#### Scenario: A getter that answers null
+
+- **WHEN** `var c = new Counter(); var hit = c is { Missing: "a" or "b" }; return c.Reads * 10 + (hit ? 1 : 0);`
+  runs, `Missing` a getter that counts its reads and answers null
+- **THEN** it answers 10, as .NET does, where the answer was 20
+
+#### Scenario: Each evaluation reads it again
+
+- **WHEN** `var c = new Counter(); var hits = 0; for (var i = 0; i < 3; i++) if (c is { Value: 2 or 1 }) hits++; return c.Reads * 10 + hits;` runs
+- **THEN** it answers 33, as .NET does, where the answer was 63
+
+#### Scenario: A member nobody can observe being read
+
+- **WHEN** `var p = new Pt(1, 2); return p is { X: 1 or 2 };` is transpiled, `Pt` a positional record
+- **THEN** the test reads `p.x` where it compares it, and holds nothing
+
+### Requirement: An app's Equals is asked every time .NET asks it
+
+An `Equals` the app wrote SHALL run wherever .NET calls it, a value compared with itself included: an instance call through a base or `object`, a member compared inside a record's or a struct's twin, `EqualityComparer<T>.Default`, a collection's search (`List<T>.Contains`, `IndexOf`, `Remove`, an array's, a `HashSet<T>`'s and a `Dictionary<TKey, TValue>`'s key), `Distinct`, and a tuple's, an anonymous object's and a `KeyValuePair`'s member. Only a record's synthesized `Equals` SHALL answer a value compared with itself at its reference check, as .NET's does.
+
+#### Scenario: A value compared with itself
+
+- **WHEN** a program evaluates `object o = c; o.Equals(o)` over a class whose `Equals` counts its calls
+- **THEN** the answer is True and the count is 1, as in .NET
+
+#### Scenario: An Equals that refuses itself
+
+- **WHEN** a program evaluates `new List<Refuses> { r }.Contains(r)` over a class whose `Equals` answers false
+- **THEN** the answer is False, as in .NET
+
+### Requirement: A call through IEquatable of another type reaches the method it binds
+
+A call through `IEquatable<U>` in generic code SHALL reach the `Equals` the contract binds for the other value's type, where a class implements the interface for several types and never for its own.
+
+#### Scenario: A class that answers several types
+
+- **WHEN** a program evaluates `Same<Multi, int>(m, 1)` and `Same<Multi, string>(m, "a")` through `static bool Same<T, U>(T a, U b) where T : IEquatable<U> => a.Equals(b)`
+- **THEN** each answers what the method for its type answers, as in .NET
+
+### Requirement: Two delegates compare by target and method
+
+Two delegates SHALL be equal when they have the same target and the same method, however they were made: `==`, `!=`, `Equals`, `object.Equals`, a collection's search and a dictionary's key SHALL find them equal, and `-=` SHALL remove a handler made from the same method group again. `+` and `+=` of a delegate SHALL combine invocation lists as `Delegate.Combine` does.
+
+#### Scenario: A method group made twice
+
+- **WHEN** a program evaluates `Func<int> m1 = b.M; Func<int> m2 = b.M; m1 == m2`
+- **THEN** the answer is True, as in .NET
+
+#### Scenario: A handler removed by its method group
+
+- **WHEN** a program adds `c.OnClick` to an event, removes `c.OnClick` again and raises the event
+- **THEN** the handler does not run, as in .NET
+
 ### Requirement: A ref or out argument's element is taken once
 
 An element of an array passed as a `ref` or `out` argument SHALL have its receiver and its position evaluated once, before the call, in the order C# evaluates the arguments, and the call SHALL read it and the write-back write it through that one receiver and position, whether the element is counted from the end or, where its receiver or position runs code, from the start. An argument taken before the call SHALL NOT count as code run ahead of the arguments after it.
@@ -909,3 +995,32 @@ An element of an array passed as a `ref` or `out` argument SHALL have its receiv
 
 - **WHEN** `Swap(ref Get()[^1], ref Get()[0])` runs over `{ 1, 2, 3 }`
 - **THEN** the array holds `3,2,1` and `Get` ran twice, in order, as in .NET
+
+### Requirement: A value held as object keeps the type its answers depend on
+
+An enum member and a float boxed into `object` or `ValueType` SHALL keep their .NET type in the browser: their
+`Equals`, `GetHashCode` and `ToString`, a type pattern, a constant pattern, a `switch` over `object`, an unboxing
+cast, `Convert` and the `Enum` statics that take an `object` SHALL answer as .NET's do, and JSON SHALL write the
+value as it was written before it was boxed. A `List<T>` and a `T[]` held as `object` SHALL compare and hash by
+reference, and a value tuple by its elements. An anonymous object SHALL never equal a value of another type that
+has the same members.
+
+#### Scenario: A boxed member is not a string of its name
+
+- **WHEN** browser-side code runs `Enum.IsDefined(typeof(Status), (object)"pending")` and `(Status)(object)"pending"`
+- **THEN** the first answers false and the second throws an InvalidCastException, as in .NET; they answered true and the member
+
+#### Scenario: A boxed float and a boxed member print as .NET prints them
+
+- **WHEN** browser-side code writes `object o = 0.1f;` and `object e = Tone.Warm;` into text
+- **THEN** they print `0.1` and `Warm`, as in .NET; they printed `0.10000000149011612` and `warm`
+
+#### Scenario: Two lists held as object
+
+- **WHEN** browser-side code compares `object a = new List<int> { 1 }, b = new List<int> { 1 };` with `a.Equals(b)`
+- **THEN** it answers false, as in .NET, and `new HashSet<object> { a, b }` holds two; it answered true and one
+
+#### Scenario: A value held as data and an anonymous object
+
+- **WHEN** browser-side code runs `Color.White.Equals((object)new { R = (byte)255, G = (byte)255, B = (byte)255, A = (byte)255 })`
+- **THEN** it answers false, as in .NET; it answered true

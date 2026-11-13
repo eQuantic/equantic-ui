@@ -419,6 +419,93 @@ with the instance it keeps.
   marked, and the owner builds
 - **THEN** only that position builds, with the instance that loaded, and draws what it loaded
 
+### Requirement: A component rebuilds when a value it depends on changes, and nothing else does
+
+A component that reads an inherited value through `DependOn<T>()` SHALL build again in the same frame
+when a parent's build hands that value's position a new node whose `UpdateShouldNotify` answers true,
+and a component that read nothing of it, or read it once through `Find<T>()`, SHALL NOT. A lookup SHALL
+answer the nearest value of its type above the component, and a component whose position left the tree
+SHALL NOT build when the value changes. A value inside a layer that changes in the frame the realizer
+shows the layer SHALL build its dependents in that frame, before the layer is laid out, and SHALL NOT
+ask for a frame after it.
+
+#### Scenario: A value changes under a subtree built once
+
+- **WHEN** a stateful holder places a new value over the same child, which holds a reader, a component
+  that reads nothing and one that read the value once
+- **THEN** only the reader builds again, in that frame, with the new value
+
+#### Scenario: The value says nothing changed
+
+- **WHEN** the new node's `UpdateShouldNotify` answers false
+- **THEN** no dependent builds
+
+#### Scenario: Two values of one type
+
+- **WHEN** a reader stands under two values of its type, with a value of another type between them
+- **THEN** it reads the nearest of its type
+
+#### Scenario: A value inside a layer changes in the frame the layer is shown
+
+- **WHEN** a stateful holder builds an overlay whose layer places a new value over the same child, which
+  holds a reader and a component that reads nothing, and the realizer shows the layer
+- **THEN** the reader builds with the new value before the layer is laid out, the other does not, and no
+  position waits for the next frame
+
+#### Scenario: A value changes while a layer's marked positions build
+
+- **WHEN** a stateful holder inside a layer, out of reach of the walk that shows the layer, places a new
+  value over the same child, which holds a reader, and builds when the layer is shown
+- **THEN** the reader builds behind it in that frame, with the new value, and no position waits for the
+  next frame
+
+#### Scenario: A value changes over a layer inside the layer
+
+- **WHEN** the value inside a layer changes over a second overlay whose layer holds the reader, and the
+  realizer shows the outer layer and then the inner one
+- **THEN** the outer layer does not build the reader, and the inner one builds it with the new value in
+  that frame
+
+### Requirement: A stateful component hears a dependency change before it builds
+
+A `StatefulComponent` that depends on a value SHALL have `OnDependenciesChanged()` called before the
+build that the value's change caused.
+
+#### Scenario: The value changes
+
+- **WHEN** a stateful dependent's value changes
+- **THEN** `OnDependenciesChanged` runs, and then its build reads the new value
+
+### Requirement: A position's context reads the frame and the tree
+
+A component built through an element SHALL build with a context of its position. It SHALL read the
+frame's theme, density and type scale from its owner, and a frame that hands a different one SHALL
+build again the components that read it and no other. It SHALL answer `InFlow` from whether an `InFlow`
+is above its position. A context made with no position SHALL answer `DependOn` and `Find` with null.
+
+#### Scenario: The density changes
+
+- **WHEN** a frame hands a different density
+- **THEN** the component that read the density builds again, and a component that read nothing of the
+  frame does not
+
+#### Scenario: InFlow
+
+- **WHEN** one component stands under an `InFlow` and another beside it
+- **THEN** the first answers true, the second false, and no ambient channel is armed
+
+### Requirement: A component navigates the host of its tree
+
+`Navigator.Of(context).Go(destination)` SHALL hand a non-empty destination to the navigation handler
+of the owner of the component's tree, and SHALL do nothing for an empty destination or a context with
+no position.
+
+#### Scenario: A component navigates
+
+- **WHEN** a component of a tree whose owner has a handler navigates to `/orders`, then to an empty
+  destination, and a context with no position navigates
+- **THEN** the handler receives `/orders` once
+
 ### Requirement: A component is a node in the browser too
 
 A component, with or without state, SHALL be a node of the vocabulary in the browser as it is in C#:
@@ -440,6 +527,30 @@ declares, a type check failing when the node gains one the component lacks. The 
 
 - **WHEN** the vocabulary's node declares a member the component does not
 - **THEN** the runtime's type check fails
+
+### Requirement: The engine runs in the browser as it runs on .NET
+
+The element engine SHALL be transpiled into the runtime, its modules committed and pinned byte for byte,
+exported from the served runtime and accepted by the runtime's type check, and no hand-written
+TypeScript twin of any of it SHALL exist. Driven by the same components through the same steps, the
+transpiled engine SHALL answer every case it is held to as the C# engine does: what a position keeps,
+what a frame builds and in which order, and what mounts and unmounts.
+
+#### Scenario: A position keeps its stateful instance in the browser too
+
+- **WHEN** an owner of the transpiled engine mounts a stateful component, its state changes, and the
+  next build hands the same position a component of the same type and key with new configuration
+- **THEN** the same instance holds the new configuration and the old state, as on .NET
+
+#### Scenario: One instance at two positions
+
+- **WHEN** one stateful instance is placed at two positions and they leave one after the other
+- **THEN** it unmounts once, when the last leaves, on both engines
+
+#### Scenario: An app member takes a name the engine calls
+
+- **WHEN** an app's stateful component declares a method named `EnterPosition` or `LeavePosition`
+- **THEN** the build refuses it with EQ2011
 
 ### Requirement: The server draws a write-once page through an owner for the request
 

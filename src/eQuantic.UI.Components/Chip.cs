@@ -43,6 +43,9 @@ public sealed class Chip : StatelessComponent
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
         var tint = theme.Colors(Variant);
+        // The theme's Chip slot, then its control ladder, then the component's own (§3.10).
+        var slot = theme.Chip;
+        var quietFill = slot?.Fill ?? theme.SurfaceSubtle;
 
         // B8's frames: an unselected filter chip is OUTLINED (no fill, a BorderStrong edge), and the
         // only chip that rests on SurfaceSubtle is the removable Input chip.
@@ -51,7 +54,7 @@ public sealed class Chip : StatelessComponent
             ChipKind.Filter when Selected => primary.Subtle,
             ChipKind.Filter => null,
             ChipKind.Tag => tint.Subtle,
-            _ => theme.SurfaceSubtle,
+            _ => quietFill,
         };
         var textColor = Kind switch
         {
@@ -62,19 +65,20 @@ public sealed class Chip : StatelessComponent
 
         var label = new Text(Label, TypeRole.Caption, textColor, maxLines: 1)
         {
-            StyleOverride = new TypeStyle(13, 16, FontWeight.SemiBold, 0, 1.3f),
+            StyleOverride = new TypeStyle(slot?.LabelSize ?? 13, slot?.LabelLineHeight ?? 16,
+                slot?.LabelWeight ?? FontWeight.SemiBold, slot?.LabelTracking ?? 0, 1.3f),
         };
 
-        var content = new Row(gap: 6) { Main = MainAlign.Center, Height = SizeValue.Fill };
+        var content = new Row(gap: slot?.Gap ?? 6) { Main = MainAlign.Center, Height = SizeValue.Fill };
         if (Kind == ChipKind.Filter && Selected)
         {
-            content.Add(new Icon(Icons.Check, IconSize.Sm, textColor));
+            content.Add(new Icon(Icons.Check, slot?.IconSize ?? IconSize.Sm, textColor));
         }
         content.Add(label);
         if (Kind == ChipKind.Input && OnRemove != null)
         {
             // B8's frame draws the ✕ a tier below the label, TextMuted, so the name reads first.
-            content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, theme.TextMuted), OnRemove)
+            content.Add(new Pressable(new Icon(Icons.Close, slot?.RemoveIconSize ?? IconSize.Dense, theme.TextMuted), OnRemove)
             {
                 Label = SdkStrings.Remove,
             });
@@ -87,24 +91,26 @@ public sealed class Chip : StatelessComponent
         var hoverFill = Kind == ChipKind.Filter && OnPressed != null
             ? Selected
                 ? primary.Subtle.MidpointWith(primary.Base)
-                : theme.SurfaceSubtle
+                : quietFill
             : (ColorToken?)null;
 
         // Spec B8 pressed: "fill shift (SurfaceSubtle / Pressed-subtle)", on the chip's own surface, and
         // only for the kind that is pressed at all. The outlined chip gains SurfaceSubtle from no fill,
         // the fill its hover already shows, as an outline Button's press does (tokens.json, §10).
         var pressedFill = Kind == ChipKind.Filter && OnPressed != null
-            ? Selected ? primary.Pressed.WithOpacity(0.24f) : theme.SurfaceSubtle
+            ? Selected ? primary.Pressed.WithOpacity(slot?.PressOpacity ?? 0.24f) : quietFill
             : (ColorToken?)null;
 
         var box = new Box(new BoxStyle
         {
-            Height = Sizing.Height(SizeVariant.Small, context.Density),
-            Padding = EdgeInsets.Symmetric(Space.S3, 0),
+            Height = ControlMetrics.Height(context, SizeVariant.Small, slot?.Controls),
+            Padding = EdgeInsets.Symmetric(slot?.PaddingX ?? Space.S3, 0),
             Background = fill,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-            BorderWidth = Kind == ChipKind.Filter ? 1f : 0f,
-            BorderColor = Selected ? primary.Base : theme.BorderStrong,
+            CornerRadius = new CornerRadii(slot?.Radius ?? theme.Shape(ShapeScale.Full)),
+            BorderWidth = Kind == ChipKind.Filter
+                ? Selected ? slot?.SelectedBorderWidth ?? 1f : slot?.OutlineWidth ?? 1f
+                : 0f,
+            BorderColor = Selected ? primary.Base : slot?.OutlineColor ?? theme.BorderStrong,
             Hover = hoverFill is null ? null : new StyleDiff { Background = hoverFill },
             Pressed = pressedFill is null ? null : new StyleDiff { Background = pressedFill },
         }, content);

@@ -13,6 +13,26 @@
 import { CodeLanguageRules } from './components/CodeLanguageRules';
 import { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
+import type {
+  BadgeTheme,
+  ButtonTheme,
+  CalendarTheme,
+  CardTheme,
+  ChipTheme,
+  ControlsTheme,
+  IconButtonTheme,
+  InputTheme,
+  ListTheme,
+  MarkdownTheme,
+  MenuTheme,
+  ModalTheme,
+  NavigationTheme,
+  NoticeTheme,
+  ProgressTheme,
+  SegmentedTheme,
+  SelectionControlsTheme,
+  TableTheme,
+} from './theme-slots';
 import { codeTokenColor, type AppTheme, type ColorToken, type FontFamily } from './value-types';
 
 /** `IAppTheme`'s defaults. */
@@ -37,6 +57,42 @@ export const IAppTheme = {
   sheet: (_theme: AppTheme): SheetTheme | null => null,
   /** `ColorToken Code(CodeTokenKind kind)` — a token's colour from the theme's own roles. */
   code: (theme: AppTheme, kind: string): ColorToken => codeTokenColor(theme, kind),
+  /** `ControlsTheme? Controls => null;` — `Sizing`'s ladder. */
+  controls: (_theme: AppTheme): ControlsTheme | null => null,
+  /** `ButtonTheme? Button => null;` — the button's own defaults. */
+  button: (_theme: AppTheme): ButtonTheme | null => null,
+  /** `IconButtonTheme? IconButton => null;` — the icon button's own defaults. */
+  iconButton: (_theme: AppTheme): IconButtonTheme | null => null,
+  /** `InputTheme? Input => null;` — each field's own defaults. */
+  input: (_theme: AppTheme): InputTheme | null => null,
+  /** `SelectionControlsTheme? SelectionControls => null;` — each selection control's own defaults. */
+  selectionControls: (_theme: AppTheme): SelectionControlsTheme | null => null,
+  /** `SegmentedTheme? Segmented => null;` — each segmented control's own defaults. */
+  segmented: (_theme: AppTheme): SegmentedTheme | null => null,
+  /** `ChipTheme? Chip => null;` — the chip's own defaults. */
+  chip: (_theme: AppTheme): ChipTheme | null => null,
+  /** `ModalTheme? Modal => null;` — the Dialog's, the BottomSheet's and the Drawer's own defaults. */
+  modal: (_theme: AppTheme): ModalTheme | null => null,
+  /** `MenuTheme? Menu => null;` — the Popover's, the Menu's and the Tooltip's own defaults. */
+  menu: (_theme: AppTheme): MenuTheme | null => null,
+  /** `NoticeTheme? Notice => null;` — the Toast's, the Banner's and the consent card's own defaults. */
+  notice: (_theme: AppTheme): NoticeTheme | null => null,
+  /** `ProgressTheme? Progress => null;` — the ProgressBar's, PullToRefresh's and the Skeleton's own defaults. */
+  progress: (_theme: AppTheme): ProgressTheme | null => null,
+  /** `CardTheme? Card => null;` — the Card's own defaults. */
+  card: (_theme: AppTheme): CardTheme | null => null,
+  /** `NavigationTheme? Navigation => null;` — each component's own defaults. */
+  navigation: (_theme: AppTheme): NavigationTheme | null => null,
+  /** `ListTheme? List => null;` — each component's own defaults. */
+  list: (_theme: AppTheme): ListTheme | null => null,
+  /** `TableTheme? Table => null;` — each component's own defaults. */
+  table: (_theme: AppTheme): TableTheme | null => null,
+  /** `BadgeTheme? Badge => null;` — each component's own defaults. */
+  badge: (_theme: AppTheme): BadgeTheme | null => null,
+  /** `CalendarTheme? Calendar => null;` — each component's own defaults. */
+  calendar: (_theme: AppTheme): CalendarTheme | null => null,
+  /** `MarkdownTheme? Markdown => null;` — each component's own defaults. */
+  markdown: (_theme: AppTheme): MarkdownTheme | null => null,
 };
 
 /** `ICodeLanguage`'s defaults. */

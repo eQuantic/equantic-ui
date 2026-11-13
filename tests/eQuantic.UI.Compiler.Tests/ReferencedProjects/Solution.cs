@@ -3,6 +3,7 @@ using eQuantic.UI.Compiler.Services;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
 
 namespace eQuantic.UI.Compiler.Tests.ReferencedProjects;
@@ -44,6 +45,9 @@ internal sealed class Solution : IDisposable
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .Append(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location)
             .Append(typeof(eQuantic.UI.Components.UI).Assembly.Location)
+            // The container an app registers its services in, as ASP.NET Core's framework brings it.
+            .Append(typeof(Microsoft.Extensions.DependencyInjection.IServiceCollection).Assembly.Location)
+            .Append(typeof(Microsoft.Extensions.DependencyInjection.ServiceCollection).Assembly.Location)
             .Distinct(StringComparer.Ordinal)
             .ToArray());
 
@@ -229,23 +233,13 @@ internal sealed class Solution : IDisposable
             new[] { library.ReferenceAssembly!, ProjectFileOf(library.Name) }));
         var assetsFile = Path.Combine(DirectoryOf(app.Name), "obj", "project.assets.json");
         WriteAssets(assetsFile, app, graph);
-        // What each project compiled, the app's section first, as the SDK writes it (#828).
         var sourcesFile = Path.Combine(obj, "equantic.sources.txt");
-        File.WriteAllLines(sourcesFile, new[] { app }.Concat(libraries.Where(library => !library.IsPackage))
-            .SelectMany(project => new[]
-                {
-                    (project.IsApp ? "app: " : "project: ") + ProjectFileOf(project.Name),
-                    "symbols: " + project.Symbols,
-                }
-                // What the build generated under obj is compiled and is no source of the project's own.
-                .Concat(Compiled(project).Select(file =>
-                    file.StartsWith(Path.Combine(DirectoryOf(project.Name), "obj") + Path.DirectorySeparatorChar, StringComparison.Ordinal)
-                        ? "compiled: " + file : file))));
+        File.WriteAllLines(sourcesFile, SourcesList());
 
         var output = new StringWriter();
         var errors = new StringWriter();
         var outputDirectory = Path.Combine(DirectoryOf(app.Name), "wwwroot", "_equantic");
-        var build = new AppBuild(new AppBuildOptions
+        _options = new AppBuildOptions
         {
             SourceDirectories = [DirectoryOf(app.Name)],
             OutputDirectory = outputDirectory,
@@ -260,11 +254,55 @@ internal sealed class Solution : IDisposable
             // One reference per assembly for the whole test process (#481).
             ReferenceReader = TestReferences.Of,
             SourceMaps = SourceMapMode.None,
-        }, output, errors);
+        };
+        var build = new AppBuild(_options, output, errors);
         using var held = whileEqcRuns?.Invoke();
         // A build that cannot stand on what it was handed stops there, having said why.
         var failed = !build.Load() || build.CompileAndBundle();
         return new Built(this, build, failed, output.ToString(), errors.ToString(), outputDirectory);
+    }
+
+    /// <summary>The options the last <see cref="Build"/> handed eqc.</summary>
+    private AppBuildOptions? _options;
+
+    /// <summary>What each project compiles now, the app's section first, as the SDK writes it (#828).</summary>
+    private IEnumerable<string> SourcesList()
+    {
+        var app = _projects.Single(project => project.IsApp);
+        return new[] { app }.Concat(_projects.Where(project => !project.IsApp && !project.IsPackage))
+            .SelectMany(project => new[]
+                {
+                    (project.IsApp ? "app: " : "project: ") + ProjectFileOf(project.Name),
+                    "symbols: " + project.Symbols,
+                }
+                // What the build generated under obj is compiled and is no source of the project's own.
+                .Concat(Compiled(project).Select(file =>
+                    file.StartsWith(Path.Combine(DirectoryOf(project.Name), "obj") + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+                        ? "compiled: " + file : file)));
+    }
+
+    /// <summary>
+    /// The build after <paramref name="previous"/>, as a served eqc runs it (#1278): with the options
+    /// the last build was handed, starting from the compilation it loaded, and loading cold when it
+    /// cannot. The projects are not compiled again: a save writes a file, and nothing else. The list of
+    /// what each project compiles is written again, as the SDK writes it before every compile, and only
+    /// when it changed (<c>WriteOnlyWhenDifferent</c>): a file a save added is in it.
+    /// </summary>
+    public (Built Built, bool Warm) Rebuild(Built previous)
+    {
+        if (_options!.SourcesFile is { } sourcesFile)
+        {
+            var lines = SourcesList().ToArray();
+            if (!File.ReadAllLines(sourcesFile).SequenceEqual(lines, StringComparer.Ordinal))
+                File.WriteAllLines(sourcesFile, lines);
+        }
+
+        var output = new StringWriter();
+        var errors = new StringWriter();
+        var build = new AppBuild(_options!, output, errors);
+        var warm = build.LoadFrom(previous.AppBuild);
+        var failed = !(warm || build.Load()) || build.CompileAndBundle();
+        return (new Built(this, build, failed, output.ToString(), errors.ToString(), previous.OutputDirectory), warm);
     }
 
     /// <summary>One project compiled as MSBuild compiles it, its assembly written under its
@@ -276,12 +314,16 @@ internal sealed class Solution : IDisposable
         var options = ParseDefaults.Options.WithPreprocessorSymbols(
             project.Symbols.Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
         var trees = Compiled(project)
-            .Select(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file), options, path: file));
+            .Select(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file), options, path: file))
+            .ToList();
+        // An app written as one is, with its Program.cs in top-level statements, is an executable.
+        var kind = project.IsApp && trees.Any(tree => tree.GetRoot().ChildNodes().OfType<GlobalStatementSyntax>().Any())
+            ? OutputKind.ConsoleApplication
+            : OutputKind.DynamicallyLinkedLibrary;
         var references = Framework.Value.Select(path => TestReferences.Of(path))
             .Concat(Reached(project).Select(reference => reference.Compilation!.ToMetadataReference()));
         var compilation = CSharpCompilation.Create(project.AssemblyName, trees, references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                nullableContextOptions: NullableContextOptions.Enable));
+            new CSharpCompilationOptions(kind, nullableContextOptions: NullableContextOptions.Enable));
         compilation.GetDiagnostics().Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
             .Select(diagnostic => diagnostic.ToString())
             .Should().BeEmpty($"{project.Name} is C# that compiles");
