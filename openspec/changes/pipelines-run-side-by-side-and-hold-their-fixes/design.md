@@ -12,13 +12,15 @@ The state stays where it was, `.claude/pipelines/<issue>-<slug>/`, now inside th
 worktree, which `.gitignore` already covers. Whatever reads deliveries in flight reads that folder
 of every worktree (`git worktree list`).
 
-Every worktree sits under `../equantic-ui.wt/`, which `.claude/settings.json` adds to the session's
-directories (`permissions.additionalDirectories`, applied after the folder is trusted): reads need
+Every worktree sits under `../equantic-ui.wt/`, which `.claude/settings.json` adds to the
+directories of a session started in the clone (`permissions.additionalDirectories`, applied after the folder is trusted): reads need
 no prompt there, and edits follow the session's permission mode as they do in the clone. The wiki
 guards look for `equantic-ui.wiki` beside the tree they run in and pass in silence when none is
-there, so every command of a delivery runs with `EQ_WIKI_DIR` set, to the delivery's wiki worktree
-or to the wiki's clone beside the repository's. The state is moved into the clone's own
-`.claude/pipelines/` before the worktree is removed, so its measures outlive it.
+there, so intake makes the delivery's wiki worktree too, from a freshly fetched `origin/master`,
+and every command runs with `EQ_WIKI_DIR` set to it. The state lives in the worktree and goes with
+it, so the measures are posted on GitHub before the worktree is removed; a board of deliveries in
+flight (#1525) then never shows a finished one. The lock's file is inherited by the command it
+guards, so a killed wrapper does not free the host while its build still runs.
 
 The branch hook judges `git worktree add -b`, and it compares repositories by their common git
 directory, so a worktree of this clone is held to the convention like the clone.

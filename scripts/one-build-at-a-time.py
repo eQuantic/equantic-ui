@@ -8,10 +8,11 @@ and suite of every delivery goes through this one lock, whichever worktree it ru
     python3 scripts/one-build-at-a-time.py -- dotnet test tests/eQuantic.UI.Web.Tests
 
 It waits for the lock, saying so on stderr every minute it waits, runs the command and exits with
-its exit code (128 + N when a signal N ended it). A signal the wrapper receives is passed on to the
-command, so the lock is never free while the command it guards still runs. The lock is a file under
-the user's cache (`EQ_BUILD_LOCK` names another, made absolute), held with `flock`, so a process
-that dies releases it. A command with shell syntax is one argument to a shell:
+its exit code (128 + N when a signal N ended it). The command inherits the locked file, so the lock
+stays held while the command runs even if the wrapper is killed. SIGTERM and SIGHUP to the wrapper
+are passed on to the command; SIGINT is not, since a terminal already sends it to the whole group.
+The lock is a file under the user's cache (`EQ_BUILD_LOCK` names another, as an absolute path),
+held with `flock`. A command with shell syntax is one argument to a shell:
 
     python3 scripts/one-build-at-a-time.py -- sh -c 'EQ_UPDATE_TRANSPILED=1 dotnet test tests/X'
 
@@ -37,17 +38,32 @@ except ImportError:  # Windows
 def lock_path():
     named = os.environ.get("EQ_BUILD_LOCK")
     if named:
-        return os.path.abspath(named)
+        if not os.path.isabs(named):
+            # Resolved per cwd, two worktrees would lock two files and build at once.
+            raise SystemExit(f"one-build-at-a-time: EQ_BUILD_LOCK must be absolute, not {named!r}")
+        return named
     cache = os.environ.get("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache")
     return os.path.join(cache, "equantic-ui", "one-build-at-a-time.lock")
 
 
-def guarded(command):
-    """The command's exit code, with every signal the wrapper gets passed on to it first."""
-    child = subprocess.Popen(command)
-    forwarded = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
-    for number in forwarded:
-        signal.signal(number, lambda n, _: child.send_signal(n))
+def guarded(command, handle):
+    """The command's exit code. It inherits the locked file, so the lock outlives a killed wrapper."""
+    child = None
+    pending = []
+
+    def forward(number, _):
+        if child is None:
+            pending.append(number)
+        else:
+            child.send_signal(number)
+
+    for number in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(number, forward)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    child = subprocess.Popen(command, pass_fds=(handle.fileno(),),
+                             preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_DFL))
+    for number in pending:
+        child.send_signal(number)
     code = child.wait()
     return 128 - code if code < 0 else code
 
@@ -68,9 +84,21 @@ def run(command):
                 if waited % 60 == 0:
                     print(f"one-build-at-a-time: another build holds {path}, waiting ({waited}s)",
                           file=sys.stderr, flush=True)
-                time.sleep(1)
+                try:
+                    time.sleep(1)
+                except KeyboardInterrupt:
+                    return 128 + signal.SIGINT
                 waited += 1
-        return guarded(command)
+        return guarded(command, handle)
+
+
+def wait_for(condition, seconds=10):
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if condition():
+            return True
+        time.sleep(0.05)
+    return False
 
 
 def self_test():
@@ -103,19 +131,32 @@ def self_test():
         if code != 128 + signal.SIGTERM:
             failures.append(f"a command ended by SIGTERM came back as {code}, not {128 + signal.SIGTERM}")
         # A signal to the wrapper reaches the command: the command's trap writes, then it exits.
-        trapped = os.path.join(scratch, "trapped")
+        trapped, ready = os.path.join(scratch, "trapped"), os.path.join(scratch, "ready")
         wrapper = subprocess.Popen([sys.executable, me, "--", "sh", "-c",
-                                    f"trap 'echo got > {trapped}; exit 0' TERM; sleep 5 & wait"],
-                                   env=env)
-        time.sleep(0.5)
+                                    f"trap 'echo got > {trapped}; exit 0' TERM; touch {ready}; "
+                                    "sleep 5 & wait"], env=env)
+        if not wait_for(lambda: os.path.exists(ready)):
+            failures.append("the command never started")
         wrapper.send_signal(signal.SIGTERM)
-        wrapper.wait(timeout=5)
-        if not os.path.exists(trapped):
+        if not wait_for(lambda: wrapper.poll() is not None) or not os.path.exists(trapped):
             failures.append("a SIGTERM to the wrapper did not reach the command it runs")
-        relative = subprocess.call([sys.executable, me, "--", "true"], cwd=scratch,
-                                   env=dict(os.environ, EQ_BUILD_LOCK="relative.lock"))
-        if relative != 0 or not os.path.exists(os.path.join(scratch, "relative.lock")):
-            failures.append(f"a relative EQ_BUILD_LOCK did not lock beside the cwd (exit {relative})")
+        if wrapper.poll() is None:
+            wrapper.kill()
+        # A wrapper killed outright leaves its command holding the lock: the next one waits for it.
+        os.remove(ready)
+        held = subprocess.Popen([sys.executable, me, "--", "sh", "-c", f"touch {ready}; sleep 1.5"],
+                                env=env)
+        wait_for(lambda: os.path.exists(ready))
+        held.kill()
+        started = time.monotonic()
+        subprocess.call([sys.executable, me, "--", "true"], env=env, stderr=subprocess.DEVNULL)
+        if time.monotonic() - started < 0.8:
+            failures.append("with its wrapper killed, the command no longer held the lock")
+        relative = subprocess.run([sys.executable, me, "--", "true"], cwd=scratch, text=True,
+                                  env=dict(os.environ, EQ_BUILD_LOCK="relative.lock"),
+                                  capture_output=True)
+        if relative.returncode == 0 or "must be absolute" not in relative.stderr:
+            failures.append(f"a relative EQ_BUILD_LOCK was not refused: {relative.stderr.strip()[-80:]}")
     for failure in failures:
         print(f"FAIL: {failure}")
     print(f"one-build-at-a-time self-test: {len(failures)} failure(s)")

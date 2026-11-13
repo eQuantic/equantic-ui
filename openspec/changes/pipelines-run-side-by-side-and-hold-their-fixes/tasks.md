@@ -8,11 +8,13 @@
       every agent given its path, one build at a time per host, deliveries in parallel
 - [x] 1.4 Every agent: where it works, and nothing left running
 - [x] 1.5 CI's `roadmap` job runs the lock's self-test
-- [x] 1.6 The lock passes a signal on to its command, exits 128 + N for a signal, reports its wait
-      every minute and makes `EQ_BUILD_LOCK` absolute; check: the self-test fails without the
-      forwarding and without the mapping
-- [x] 1.7 Every command of a delivery runs with `EQ_WIKI_DIR` set; the worktrees' folder is one of the
-      session's directories; the state outlives its worktree
+- [x] 1.6 The lock passes SIGTERM and SIGHUP on to its command, leaves SIGINT to the terminal, exits
+      128 + N for a signal, reports its wait every minute, refuses a relative `EQ_BUILD_LOCK`, and
+      its command inherits the locked file; check: the self-test fails without the forwarding,
+      without the mapping, without the inheritance and without the refusal
+- [x] 1.7 Intake makes the delivery's wiki worktree from a fetched master and every command runs with
+      `EQ_WIKI_DIR` on it; the worktrees' folder is one of the session's directories; the measures
+      go to GitHub before a worktree is removed
 
 ## 2. What the pilot found
 

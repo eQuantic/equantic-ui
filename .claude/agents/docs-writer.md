@@ -38,9 +38,8 @@ server.
    `path:line Member`, with the member: a bare line number fails `DocsIndexTests`.
 3. **A new `EQ` diagnostic.** Its entry in `docs/DIAGNOSTICS.md`, and its rows on the wiki.
 4. **The wiki.** The clone beside the repository stays on master, always. Work in the wiki's
-   worktree you were given, on a branch named exactly like this delivery's branch; when none was
-   given, make it beside the delivery's, from the wiki's clone beside the REPOSITORY's clone (not
-   beside your tree): `git -C <clone>/../equantic-ui.wiki worktree add -b <branch> <dir> origin/master`. A page changes in EVERY language it
+   worktree you were given (it is the `EQ_WIKI_DIR` you run with), on the branch named exactly like
+   this delivery's; never make another. A page changes in EVERY language it
    is written in, a new page in all five (English at the root; `pt-BR`, `es`, `fr`, `de` under
    `locale/`), in one commit there. Translate the meaning; keep code, identifiers and diagnostics
    as they are. Do not push it: answer with the worktree's path.

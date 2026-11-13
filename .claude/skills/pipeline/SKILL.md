@@ -75,11 +75,14 @@ search for the issue before creating one; an issue assigned to someone else, lab
 one with `scripts/new-issue.py`; move it to In progress; `git fetch`, then the delivery's
 worktree (below); run the `roadmap` skill. Set no git identity: on a laptop it is the person's own.
 
-**Each delivery has a worktree of its own.** The branch is created with its tree, from
-`origin/main`, in a folder beside the clone named after it:
+**Each delivery has a worktree of its own, and one of the wiki.** From the clone, where the
+orchestrating session starts, the branch is created with its tree from `origin/main`, and the
+wiki's branch of the same name with its tree from the wiki's `origin/master`, fetched first:
 
 ```bash
 git worktree add -b <type>/<slug> ../equantic-ui.wt/<issue>-<slug> origin/main
+git -C ../equantic-ui.wiki fetch -q origin
+git -C ../equantic-ui.wiki worktree add -b <type>/<slug> ../equantic-ui.wt/<issue>-<slug>.wiki origin/master
 ```
 
 Everything of the delivery happens there: every agent's work, every build, the state. The clone's
@@ -91,15 +94,14 @@ reads there without a prompt and edits there under the same permission mode as i
 
 **The wiki is always named.** The wiki guards look for `equantic-ui.wiki` beside the tree they run
 in, which a delivery's worktree does not have, and when they find none they pass without reading a
-page. So every command of a delivery runs with `EQ_WIKI_DIR` set, absolute: the delivery's wiki
-worktree when it writes a page (`git -C <clone>/../equantic-ui.wiki worktree add -b <branch>
-../equantic-ui.wt/<issue>-<slug>.wiki origin/master`, on the branch of the same name), and the
-wiki's clone beside the repository's, on master, when it does not.
+page. So every command of a delivery runs with `EQ_WIKI_DIR` set to the delivery's wiki worktree,
+absolute. Until the docs stage writes a page there it reads as master does; a wiki branch with no
+commit of its own is never pushed.
 
-**After the merge.** Move the delivery's state folder into the clone's own `.claude/pipelines/<issue>-<slug>/`,
-where its measures outlive the tree, then remove both worktrees (`git worktree remove`) and delete
-the branches. Before deleting anything, look at it: a tree that holds uncommitted work is reported,
-not removed.
+**After the merge.** The delivery's measures go to GitHub first (its pull request, or the issue
+that collects them): the state folder lives in the worktree and goes with it. Then remove both
+worktrees (`git worktree remove`) and delete the branches. Before deleting anything, look at it: a
+tree that holds uncommitted work is reported, not removed.
 
 **One build at a time, for the whole host.** Every build and test suite of every delivery runs
 through the host's lock, `python3 scripts/one-build-at-a-time.py -- <command>`, which waits while
