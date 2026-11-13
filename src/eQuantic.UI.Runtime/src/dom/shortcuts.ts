@@ -7,6 +7,8 @@
  * `preventDefault()` so ⌘K never reaches the browser's own search.
  */
 
+import { openRecord } from '../shared/lowered-records';
+
 export interface ShortcutBinding {
   /** The wire chord (`command+shift+k`) — the C# WebRealizer.ChordId twin. */
   chord: string;
@@ -18,6 +20,11 @@ export interface ShortcutBinding {
    * the keypress, because a resize flips it without a render.
    */
   live?: () => boolean;
+  /**
+   * The component lowering that declared it (`lowered-records.ts`), set as it is declared: a render
+   * that lowers some components alone replaces the bindings they declared and keeps the rest (#1455).
+   */
+  within?: object | null;
 }
 
 /** Bindings declared by the pass currently being lowered. */
@@ -41,17 +48,64 @@ export function shortcutMark(): number {
 /** Called by `lowerShortcut` for each live binding, at the place it took with {@link shortcutMark}
  * (the end of the list by default). */
 export function declareShortcut(binding: ShortcutBinding, at = pending.length): void {
+  binding.within = openRecord();
   pending.splice(Math.min(at, pending.length), 0, binding);
   install();
 }
 
 /**
+ * Which of the components a pass lowered alone declared a binding: one of them, or undefined for a
+ * binding none of them declared (#1455).
+ */
+export type ShortcutDeclarer = (binding: ShortcutBinding) => object | undefined;
+
+/**
  * Promotes the pass's declarations. Called when a lowering pass finishes: bindings from subtrees
  * that were NOT re-lowered drop out, which is how unmounting unsubscribes.
  */
-export function commitShortcuts(): void {
-  active = pending;
+export function commitShortcuts(declaredBy?: ShortcutDeclarer): void {
+  if (!declaredBy) {
+    active = pending;
+    pending = [];
+    return;
+  }
+  // A pass that lowered some components alone (#1455): the bindings EACH of them declared before give
+  // way to the ones it declared now, in the place its own held, and every other binding stays. A whole
+  // pass lists a component's bindings together, where its subtree lowered, so each component is put
+  // back in its own place: two put back at the first one's place would move the bindings between them
+  // after both, and the later binding is the one a keystroke reaches first.
+  const declared = new Map<object, ShortcutBinding[]>();
+  for (const binding of pending) {
+    const declarer = declaredBy(binding);
+    if (declarer) declared.set(declarer, [...(declared.get(declarer) ?? []), binding]);
+  }
+  const listed: ShortcutBinding[] = [];
+  const placed = new Set<object>();
+  for (const binding of active) {
+    const declarer = declaredBy(binding);
+    if (!declarer) listed.push(binding);
+    else if (!placed.has(declarer)) {
+      placed.add(declarer);
+      listed.push(...(declared.get(declarer) ?? []));
+    }
+  }
+  // A component that had no binding before has no place in the list for one it declares now: only a
+  // whole pass can say where it goes, so the caller asked first (`partialCommitIsExact`) and renders
+  // whole when it cannot.
+  active = listed;
   pending = [];
+}
+
+/**
+ * Whether a partial commit (`commitShortcuts(declaredBy)`) would list the bindings where a whole pass
+ * lists them: it would, unless one of the components lowered again declares bindings now and had none
+ * before, since there is no place of its own to put them in.
+ */
+export function partialCommitIsExact(declaredBy: ShortcutDeclarer): boolean {
+  return pending.every((binding) => {
+    const declarer = declaredBy(binding);
+    return declarer !== undefined && active.some((old) => declaredBy(old) === declarer);
+  });
 }
 
 /** Test seam: the bindings a keydown would currently reach. */
