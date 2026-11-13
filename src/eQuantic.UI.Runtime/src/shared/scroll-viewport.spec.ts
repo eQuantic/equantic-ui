@@ -12,6 +12,7 @@ import { commitScrollViewports, declareScrollViewport, scheduleScrollViewportCom
 import { photonTheme } from './design-system.generated';
 import { effectiveStyle } from './style-atomizer';
 import type { HtmlNode } from '../core/types';
+import { AdaptiveNode } from './vocabulary';
 
 function context(): LoweringContext {
   return { textPrimary: photonTheme.textPrimary } as LoweringContext;
@@ -446,7 +447,8 @@ describe('a scroll view that fills its viewport', () => {
 
   it("grows each arm of an adaptive child, since the gates are display: contents", () => {
     const fill = { width: { kind: 'fill', value: 0 } };
-    const adaptive = { nodeKind: 'adaptive', compact: box(fill), expanded: box(fill) } as never;
+    // As transpiled code makes one: the element engine asks the node for the arm it holds.
+    const adaptive = new AdaptiveNode(box(fill) as never, null, box(fill) as never) as never;
     const lowered = lowerVisualNode(
       scrollNode({ child: adaptive, height: { kind: 'fixed', value: 100 }, fillViewport: true }),
       context(),

@@ -39,7 +39,7 @@ A component, or the state of a node, is found by a string, and each target spell
 | Where | The string | Formed by |
 |---|---|---|
 | Photon | a path, `r/0/2/[key]`, and a component's identity `"{path}#{type}#{key}"` | `LayoutEngine.ChildPath`, `LaidOutChildren.PathOf`, `ComponentInstanceStore.Reconcile` |
-| Server (SSR) | `Type#ordinal`, the ordinal counted per type in depth-first order | `ComponentExpansionScope.Enter`, `ComponentIdentity.Key` |
+| Server (SSR) | `Type#ordinal`, the ordinal counted per type in depth-first order (until #1477, which names a composed component by its position) | `ComponentExpansionScope.Enter`, `ComponentIdentity.Key` |
 | Browser | `path#type#key` again, with a new root (`r0`, `r1`…) at every stateless boundary | `ComponentInstanceStore` in `instance-store.ts`, `lowerVisualNode` |
 | DOM | `(tag, key, child index)` among siblings | the reconciler |
 
@@ -293,9 +293,14 @@ because a test draws one frame after another and drives input the way a browser 
 Some identities cross a boundary, and a boundary needs a string. They stay, computed from the
 element when crossing and never used as an address inside a tree:
 
-- the hydration payload's key, `Type#ordinal`, which the server and the browser already agree on;
+- the hydration payload's key, which was `Type#ordinal` while both sides counted in the order their
+  lowering met a component. Once the browser builds through the engine it has to hand the data over
+  before a component builds, and the build order and the lowering order part at an adaptive node's arms
+  and at a deferred layer, so a component the page composes is named by its position (#1477):
+  `r{tree}/{type}@{slots}`, the slots read off the element (`Element.SlotsBelow`), the same chain the
+  capture below keys by. A page's own component keeps `Type#0`;
 - hot reload's capture, which can now carry every stateful element's fields instead of the page
-  root's alone. Not under `Type#ordinal`: the hydration key holds because the server and the browser
+  root's alone. Not under the hydration key: its bare slots hold because the server and the browser
   render the same tree, and an edit is exactly what changes the tree between a capture and its
   replay, so an inserted component or two keyed siblings that swapped would hand one component
   another's fields. The capture keys each element by its position as a chain from the root, every
@@ -576,6 +581,24 @@ the parity rows it closes flip.
    from the tree. The twelfth case holds it: a frame with another density builds what read it and nothing
    else. A construction of the context met #1475 in eqc's imports, fixed by the bug sweep. The served
    runtime grows by the engine's modules, recorded in its budget.
+
+   **E3b, the browser builds through the engine (#1128), split in three.** Its first slice, **the browser
+   builds through the element engine** (#1453,
+   `openspec/changes/archive/2026-11-12-the-browser-builds-through-the-element-engine`), replaces the browser's
+   `ComponentInstanceStore` with the engine's owners, one per root a render lowers, kept by the page:
+   the lowering lowers what each position built, a nested `SetState` marks its own element and the owner
+   builds that element alone, mounting and unmounting come from each owner's `EndFrame`, and hydration
+   builds the element tree before it walks the server's DOM. It met what the plan had not foreseen
+   about server data, and took it in the same pull request (#1477): once the browser builds through the
+   engine it has to hand a component its data before it builds, so it could only count `Type#ordinal`
+   in build order while the server counted as its lowering met a component, and the two orders part at
+   an adaptive node's arms and at a deferred layer. So every arm of an adaptive node is a position on
+   the web, which draws them all behind its gates (`BuildOwner(…, holdsEveryArm)`, and no window size
+   class or width decides an arm there), and a composed component's data is keyed by where it stands,
+   `r{tree}/{type}@{slots}`, read off the element on both sides (`Element.Slot`, `SlotsBelow`,
+   `BuildOwner.Building`); 3.8 says why. eqc met one more emission defect on the way (#1483, a `for`
+   head's declared type), fixed by the bug sweep. E3b-2 (#1454) moves the path attributes and the
+   per-commit maps onto elements, and E3b-3 (#1455) relowers a dirty element's subtree alone.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.

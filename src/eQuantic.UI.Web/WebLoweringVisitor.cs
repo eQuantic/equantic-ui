@@ -240,6 +240,8 @@ internal sealed partial class WebLoweringVisitor(
 
     public HtmlElement? Visit(LiveRegion live, bool? horizontalAxis) => LowerLiveRegion(live);
 
+    public HtmlElement? Visit(Group group, bool? horizontalAxis) => LowerGroup(group);
+
     public HtmlElement? Visit(Navigable navigable, bool? horizontalAxis) => LowerNavigable(navigable);
 
     public HtmlElement? Visit(Shortcut shortcut, bool? horizontalAxis) =>
@@ -284,21 +286,17 @@ internal sealed partial class WebLoweringVisitor(
         // before this lowering began.
         if (_frame is { } frame)
         {
-            var (kept, built) = frame.At(component);
-            _channels?.Expansion?.Enter(kept);
+            var (kept, built, position) = frame.At(component);
+            _channels?.Expansion?.Name(kept, frame.KeyOf(position));
             if (built is null) return null;
             var lowered = Lower(built, horizontalAxis, LoweringPath.Built);
             if (lowered is not null && _measurer.BuiltUnmeasured(kept)) MarkUnmeasured(lowered);
             return lowered;
         }
 
-        // NAMED BEFORE IT BUILDS, and the order is the whole mechanism: ExpandContained runs
-        // Build on the next line, so anything a previous discovery round loaded for this component
-        // has to be back on it by now or the build reads the empty defaults again. Null outside an
-        // SSR expansion, which is every other caller — the web realizer is also the email one's and
-        // the design host's, and neither prefetches.
-        _channels?.Expansion?.Enter(component);
-
+        // NAMED ONLY IN A FRAME: a tree the server draws for the browser is built through a host
+        // (MarkupHost), so its components have positions and are named by them above. A lowering
+        // with no frame is the email realizer's or the design host's, and neither has server data.
         return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
             static (built, state) =>
             {

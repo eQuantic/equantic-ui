@@ -484,3 +484,65 @@ that asks answers instead of waiting on a stream nothing will close.
 
 - **WHEN** the MSBuild the server asks exits, and something it started goes on holding its output
 - **THEN** the asking ends within its limit, and the save answers that eqc could not be started
+
+### Requirement: A served eqc keeps one bun between saves, and a bundle writes what changed
+
+A served eqc SHALL hand every save's bundle to one bun process it starts with the first and keeps for
+the life of the server. A bundle SHALL bundle every entry point with splitting, and SHALL write a module,
+a chunk or a map only when its text changed, a map also when a map it composes with changed; only the
+maps it wrote SHALL be composed, and the files the bundle did not produce SHALL be removed after it has
+written. A bundle with no maps SHALL be the bytes bun's command line writes with the same flags.
+
+#### Scenario: A second bundle of what did not change
+
+- **WHEN** a kept bundler bundles two pages that share a module, and bundles them again unchanged
+- **THEN** the second bundle writes no file and removes none
+
+#### Scenario: One page changed
+
+- **WHEN** one of the two pages changes between two bundles
+- **THEN** that page's module is the one file written again, and the other page and the chunk they share
+  keep their text and their time
+
+#### Scenario: A TypeScript map changed under the same text
+
+- **WHEN** a module's TypeScript is the same text with another map between two bundles
+- **THEN** the module's map is composed again and leads to where the C# is now
+
+#### Scenario: What a publish copies
+
+- **WHEN** a bundle writes no maps
+- **THEN** every file it writes is the bytes bun's command line writes with the flags eqc handed it,
+  under the same names
+
+### Requirement: A served eqc compiles again only the files a save can have changed
+
+A build of the eqc the server keeps running SHALL compile again only the files whose text changed,
+the files whose last compile read one of them, and the files whose last compile failed, when the text
+outside every body of each changed file is the same as before the save. It SHALL compile every file
+when the text outside a body changed. Every module it writes SHALL be byte for byte what a cold build
+writes after the same edit.
+
+#### Scenario: A body of one screen changed
+
+- **WHEN** a save changes a text literal inside one component's `Build`
+- **THEN** the build compiles that file again and not the files that read nothing of it, and every
+  module is what a cold build writes
+
+#### Scenario: A body another file's compile reads changed
+
+- **WHEN** a save changes the body of a default interface member, or of a struct method another
+  file's component calls, declared in a file of its own
+- **THEN** the build compiles again the file that read that body, and its module is what a cold
+  build writes
+
+#### Scenario: A declaration changed
+
+- **WHEN** a save changes a constant, or a component's constructor that the generated factory calls
+- **THEN** the build compiles every file, and the modules that read the constant or call the factory
+  are what a cold build writes
+
+#### Scenario: A file not compiled again still reads its strings
+
+- **WHEN** a file that reads a resource string is not compiled again
+- **THEN** the culture catalogs the build writes still hold that string

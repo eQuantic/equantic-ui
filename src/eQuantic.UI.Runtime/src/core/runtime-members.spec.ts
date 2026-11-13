@@ -78,7 +78,7 @@ describe('the members a component already has', () => {
     }
 
     // PER BASE, not one union of them. The bases differ by eleven names — `setState`, `key`,
-    // `onMount`, `_sharedStateful` and the rest are a STATEFUL component's — and a union refuses
+    // `onMount`, `mountedAt` and the rest are a STATEFUL component's — and a union refuses
     // them on a stateless one, where they shadow nothing at all. `HtmlElement` is its own case
     // again: it carries the DOM surface that a component does not.
     const bases: ReadonlyArray<readonly [string, new () => object]> = [

@@ -37,7 +37,7 @@ public sealed class InheritedElement : Element
 
     private protected override void FirstBuild()
     {
-        _child = UpdateChild(null, Inherited.Child, force: false);
+        _child = UpdateChild(null, Inherited.Child, 0, force: false);
     }
 
     internal override void Update(VisualNode configuration, bool force)
@@ -53,7 +53,7 @@ public sealed class InheritedElement : Element
             if (Inherited.UpdateShouldNotify(old)) NotifyDependents();
         }
 
-        _child = UpdateChild(_child, Inherited.Child, force);
+        _child = UpdateChild(_child, Inherited.Child, 0, force);
     }
 
     /// <summary>A component position that read this one, and builds again when it changes.</summary>

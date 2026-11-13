@@ -38,7 +38,7 @@ public class VectorGradientTests
         var page = new Column(gap: 0);
         page.Add(new Drawing(Sky(), 100, 100));
         page.Add(new Drawing(Sky(), 100, 100));
-        var rendered = WebRealizer.Lower(page, Theme, 1f, channels).Render();
+        var rendered = MarkupHost.DrawOnce(page, Theme, 1f, channels).Render();
 
         Walk(rendered).Where(node => node.Tag == "defs").Should().BeEmpty(
             "a drawing no longer carries the document's paint servers");

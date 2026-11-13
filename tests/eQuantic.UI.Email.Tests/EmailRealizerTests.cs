@@ -46,6 +46,17 @@ public class EmailRealizerTests
         html.Should().Contain("<table").And.NotContain("display: flex").And.NotContain("display:flex");
     }
 
+    /// <summary>A labelled Group (#677) reaches a message as the child it holds: its contents are
+    /// written, and the group itself, a reader's stop, has nothing to become in an inbox.</summary>
+    [Fact]
+    public void AGroupReachesAMessageAsTheChildItHolds()
+    {
+        var column = new Column(gap: Space.S2);
+        column.Add(new Text("Braga", TypeRole.Label));
+
+        Html(new Group(column) { Label = "A seguir" }).Should().Be(Html(column));
+    }
+
     [Fact]
     public void ARowLaysItsChildrenOutAsCellsOnOneRow()
     {

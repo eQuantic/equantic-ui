@@ -11,12 +11,12 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
-import { adoptServerStateFor, componentIdentity, nextComponentKey, runLoweringWalk } from '../core/component';
+import { adoptServerStateFor, awaitsServerState, componentIdentity, nextTree, runLoweringWalk } from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { Dictionary, plainBag } from '../utils/dictionary';
 import { PINNED_MARKER } from './markers';
-import type { EventHandler, HtmlNode } from '../core/types';
+import type { EventHandler, HtmlNode, RenderContext } from '../core/types';
 import { CanvasPointer } from './canvas-pointer';
 import { browserPastesOn, ClipboardRefused, CodeSurfaceClipboard } from './code-surface-clipboard';
 // Leaf helpers — see css-values for why they are not defined here.
@@ -33,8 +33,19 @@ import {
   reportComponentFailure,
   setFailureRenderer,
 } from './component-boundary';
-import { getActivePass } from './instance-store';
-import { getPhotonTheme, photonComponentContext, setInFlow } from './photon-context';
+import { getActivePass, setRootLowering } from './element-roots';
+import { ElementFrame } from './element-frame';
+// The engine's types through the barrel its own modules import from, for the reason
+// `element-frame.ts` gives; its classes through the seam the barrel registers them in.
+import type { BuildOwner, Element as Position } from './runtime-exports';
+import { liveOwner as makeLiveOwner, structuralOwner as makeStructuralOwner } from './element-engine';
+import type { VisualNode } from './vocabulary';
+import {
+  ambientLoweringContext,
+  getPhotonTheme,
+  photonComponentContext,
+  setInFlow,
+} from './photon-context';
 import { declareInView } from './in-view';
 import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
 import {
@@ -59,7 +70,6 @@ import type {
   BoxNode,
   BoxStyleValue,
   ColorTokenValue,
-  ComponentNode,
   CanvasNodeValue,
   DrawingNode,
   VectorGradientValue,
@@ -75,6 +85,7 @@ import type {
   AdjustableNode,
   ProgressNode,
   LiveRegionNode,
+  GroupNode,
   NavigableNode,
   NavigableMoveValue,
   CameraPreviewNode,
@@ -143,6 +154,12 @@ export interface LoweringContext {
   textPrimary: ColorTokenValue;
   /** Passed verbatim to `component.build(...)` when expanding shared components. */
   componentContext?: unknown;
+  /**
+   * The frame of the live element tree this lowering walks, when one built it: a component is then
+   * lowered from what its position built, and a layer is shown to the owner before it lowers (the
+   * C# visitor's `ElementFrame` field). Absent for a subtree the tree does not hold.
+   */
+  frame?: ElementFrame;
 }
 
 /**
@@ -167,25 +184,166 @@ function componentContextOf(context: LoweringContext): unknown {
   return context.componentContext ?? photonComponentContext();
 }
 
-/** Lowers an abstract node tree to an HtmlNode the reconciler renders. */
+/**
+ * The frame the lowering reads positions from. Every lowering of a vocabulary tree builds one
+ * (`lowerVisualNode`), so a node that reaches here without one was handed to the lowering some other
+ * way, and nothing can say what it built.
+ */
+function frameOf(context: LoweringContext): ElementFrame {
+  const frame = context.frame;
+  if (!frame) throw new Error('A component was lowered outside a frame of the tree that built it.');
+  return frame;
+}
+
+/**
+ * Shows `layer` in the deferred slot of `holder`'s position, so the owner builds what it holds now
+ * (C# `ElementFrame.Show`). The web shows a layer whenever it lowers one: a layer kept mounted while
+ * closed, for its motion, is shown too.
+ */
+function showLayer(holder: VisualNodeValue, layer: VisualNodeValue, context: LoweringContext): VisualNodeValue {
+  return (frameOf(context).show(holder, layer as unknown as VisualNode) as unknown as VisualNodeValue);
+}
+
+/**
+ * How many components may stand inside one another before the walk is taken for one that never
+ * ends: the C# boundary's bound (`ComponentBoundary.MaxDepth`), read from the element tree's depth as
+ * it is there. A cycle is infinite, so it exceeds any bound, and sixty-four is several times the
+ * deepest thing anybody composes.
+ */
+const MAX_COMPONENT_DEPTH = 64;
+
+/**
+ * The tree each owner builds, as the walk in flight counted it (`r0`, `r1`, …, `nextTree`): the order
+ * the render lowers its trees in, which is the order the server draws them in too.
+ */
+const treeOfOwner = new WeakMap<BuildOwner, string>();
+
+/**
+ * The key the server names a component's data by (the C# `ElementFrame.KeyOf`): the tree it stands
+ * in, its type, and the slots from that tree's root down to its position (`Element.slotsBelow`). Null
+ * for an owner no lowering counted, which builds nothing the server drew.
+ */
+function serverDataKey(component: object, owner: BuildOwner): string | null {
+  const tree = treeOfOwner.get(owner);
+  const position = owner.building;
+  if (tree === undefined || position === null) return null;
+  return `${tree}/${componentIdentity(component)}@${position.slotsBelow(0)}`;
+}
+
+/**
+ * How a component builds in the browser: the callback every owner the lowering makes is handed (the
+ * C# `ComponentBoundary.BuildAtDepth` twin, with the browser's server data in front of it).
+ *
+ * THE SERVER'S DATA FIRST: what the server loaded for the component arrives keyed by where it stands
+ * (`serverDataKey`), and has to land before `build` reads the field defaults. Both sides read that key
+ * off the position, so the order either side built in does not enter it, nor which arm of an adaptive
+ * node a window resolves. Every build of a fresh instance asks, a stateless one handed anew at a kept
+ * position included; a kept instance took what it was owed when it mounted (`adoptServerStateFor`).
+ *
+ * THEN THE BOUNDARY: a component's throw costs its own subtree, which draws the failure, and nothing
+ * else. A chain of components that never reaches an ordinary node is contained the same way.
+ */
+function buildComponent(
+  component: UiComponentLike,
+  context: unknown,
+  depth: number,
+  owner: BuildOwner,
+): VisualNodeValue {
+  if (awaitsServerState(component)) {
+    const key = serverDataKey(component, owner);
+    if (key !== null) adoptServerStateFor(component, key);
+  }
+  const name = component.constructor?.name ?? 'Component';
+  try {
+    if (depth >= MAX_COMPONENT_DEPTH) {
+      throw new Error(
+        `${name} was still building components after ${MAX_COMPONENT_DEPTH} expansions, so what it ` +
+          'builds was never reached: a component that builds itself, a cycle of components, or a ' +
+          'tree nested deeper than this boundary allows.',
+      );
+    }
+    return component.build(context) as VisualNodeValue;
+  } catch (error) {
+    reportComponentFailure(name, error);
+    return describeComponentFailure(name, error, getPhotonTheme());
+  }
+}
+
+/** A component as the build callback reads it: what the engine hands it is any `UiComponent`. */
+interface UiComponentLike {
+  readonly constructor?: { readonly name?: string };
+  build(context: unknown): unknown;
+}
+
+/** An owner of a tree the browser keeps across renders: it mounts and unmounts what it holds. */
+function liveOwner(): BuildOwner {
+  return makeLiveOwner(buildComponent as never);
+}
+
+/** An owner of a tree laid out once, which nothing draws again: it calls no lifecycle hook. */
+function structuralOwner(): BuildOwner {
+  return makeStructuralOwner(buildComponent as never);
+}
+
+/**
+ * Builds `node` through `owner` for this lowering, with the context the lowering builds its components
+ * with, and answers the root of what it built. Every position builds when the page built itself, and
+ * only the marked ones in a render the page's owners asked for.
+ */
+function buildTree(owner: BuildOwner, node: VisualNodeValue, context: LoweringContext): Position {
+  return owner.build(
+    node as unknown as VisualNode,
+    componentContextOf(context) as RenderContext,
+    // Never read: the browser's owners hold every arm of an adaptive node (`liveOwner`), as the web
+    // draws them all behind their gates, so no arm is resolved for a window size class.
+    'expanded',
+    getActivePass()?.rebuildAll ?? true,
+  );
+}
+
+/**
+ * Lowers an abstract node tree to an HtmlNode the reconciler renders.
+ *
+ * THROUGH THE ELEMENT ENGINE: the tree is built by an owner first, and then lowered from what each
+ * position built (the C# `WebRealizer.LowerFrame`). Inside a page's pass the owner is the page's, kept
+ * across its renders, one per root the render lowers; outside one, nothing draws the tree again, so it
+ * is built by a structural owner that calls no lifecycle hook and is discarded, as a tree drawn once.
+ */
 export function lowerVisualNode(node: VisualNodeValue, context: LoweringContext): HtmlNode {
-  // Inside a reconciler pass each lowered root takes a unique, order-stable prefix so several
-  // bridges on one page cannot collide on identity paths; outside a pass paths are inert.
-  const rootPath = getActivePass()?.store.nextRootPath() ?? 'r';
+  const pass = getActivePass();
+  // Each root of a pass takes a unique, order-stable prefix so several bridges on one page cannot
+  // collide on identity paths, and the owner of that slot; outside a pass paths are inert.
+  const root = pass ? pass.roots.nextRoot(liveOwner) : null;
+  const rootPath = root?.path ?? 'r';
   // THE SERVER-DATA WALK, around the whole tree: inside a page render this joins the one the root
   // opened, and standing alone — a Core page's bridge to a write-once subtree reaches here with no
   // root render of its own — it opens one, so the components below are named from `#0` on every
   // render rather than counting on from the last.
-  return runLoweringWalk(
-    () =>
-      lowerNode(node, context, null, rootPath) ?? {
+  return runLoweringWalk(() => {
+    // A web component handed in as the root renders itself (the mixing seam): there is no tree of
+    // the vocabulary to build, and the engine holds none of it, as in C#.
+    // Which tree of the walk this is, counted as the server counts its trees: after the walk's
+    // restart, so a page's own tree and an escape-hatch page's first bridge are both `r0`.
+    const tree = nextTree();
+    let framed: LoweringContext = context;
+    if ((node as { nodeKind?: string }).nodeKind !== undefined) {
+      const owner = root?.owner ?? structuralOwner();
+      treeOfOwner.set(owner, tree);
+      framed = { ...context, frame: new ElementFrame(buildTree(owner, node, context)) };
+    }
+    return (
+      lowerNode(node, framed, null, rootPath) ?? {
         tag: 'span',
         attributes: {},
         events: {},
         children: [],
-      },
-  );
+      }
+    );
+  });
 }
+
+// Registered here rather than imported by the page bases: see `setRootLowering`.
+setRootLowering((node) => lowerVisualNode(node, ambientLoweringContext()));
 
 // ---- token → CSS value formatting (mirrors C# TokenCss) ------------------------------------------
 
@@ -397,7 +555,7 @@ function lowerNodeKind(
     if (foreign.nodeKind === 'adaptive') {
       placing = null;
       return lowerAdaptive(node as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
-        placeChild(arm, armPath, rule),
+        placeChild(arm, armPath, context, rule),
       );
     }
     if (!buildsItsOwnNode(node)) placing = null;
@@ -499,6 +657,8 @@ function lowerNodeKind(
       return lowerProgress(node as unknown as ProgressNode, context, path);
     case 'liveRegion':
       return lowerLiveRegion(node as unknown as LiveRegionNode, context, path);
+    case 'group':
+      return lowerGroup(node as unknown as GroupNode, context, path);
     case 'navigable':
       return lowerNavigable(node as unknown as NavigableNode, context, path);
     case 'hoverable':
@@ -520,36 +680,12 @@ function lowerNodeKind(
       // Outside a Stack there is no anchor frame — degrade to the child (parity with the realizers).
       return lowerNode((node as PositionedNode).child, context, horizontalAxis, path + '/0');
     case 'component': {
-      // W6 slice 2: resolve against the positional store BEFORE building — a retained instance
-      // (same path + type + key) keeps its state and adopts the fresh config. Mirrors the C#
-      // LayoutEngine.MeasureComponent; the build output expands one step down (path/~), a step the
-      // scope of a grid's ids reads past (pathScope), since a page mounted as a root takes none.
-      const pass = getActivePass();
-      const resolved = (
-        pass ? pass.store.reconcile(path, node, pass.invalidator) : node
-      ) as ComponentNode;
-      // SERVER DATA FOR THIS COMPONENT, before it builds — the twin of the C# realizer naming each
-      // component as it expands it. A component the page composes may declare IServerPrefetch, and
-      // what the server loaded for it arrives keyed by the same `Type#ordinal` both sides count. It
-      // has to land before `build`, or the build reads the field defaults and the value the server
-      // drew blanks in front of the reader.
-      adoptServerStateFor(
-        resolved,
-        nextComponentKey(componentIdentity(resolved as object)),
-      );
-
-      // The BOUNDARY (C# ComponentBoundary twin): a component's throw costs its own subtree and
-      // nothing else. Without this the mount threw, nothing reached the root, and the page was white.
-      let built: unknown;
-      try {
-        built = resolved.build(componentContextOf(context));
-      } catch (error) {
-        const name =
-          (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
-        reportComponentFailure(name, error);
-        built = describeComponentFailure(name, error, getPhotonTheme());
-      }
-      return lowerNode(built as VisualNodeValue, context, horizontalAxis, path + '/~');
+      // A FRAME OF A LIVE TREE built it already, through the owner's boundary and with the server's
+      // data in front of it, with the instance its position keeps (C# `Visit(UiComponent)` with a
+      // frame). What it built is lowered as it stands, one step down (path/~), a step the scope of a
+      // grid's ids reads past (pathScope).
+      const { built } = frameOf(context).at(node);
+      return built ? lowerNode(built as unknown as VisualNodeValue, context, horizontalAxis, path + '/~') : null;
     }
     // THE DOOR CLOSED. `nodeKind` is the generated NodeKind union, so this arm is unreachable for
     // every kind the vocabulary declares — and the day it declares one more, this line stops
@@ -1506,7 +1642,9 @@ function lowerOverlay(node: OverlayNode, context: LoweringContext, path: string)
         : {}),
     });
   }
-  const child = lowerNode(node.child, context, null, path + '/0');
+  // A layer of a live tree is SHOWN before it lowers, so its components build in the slot that keeps
+  // them (C# twin); a frame that lowers no layer leaves the slot to be taken out at its end.
+  const child = lowerNode(showLayer(node, node.child, context), context, null, path + '/0');
   if (child) layer.children.push(child);
   return layer;
 }
@@ -2309,7 +2447,7 @@ function lowerScrollView(
   // Content that fills the viewport is the item of the scroller's flex line, and so is each ARM of an
   // adaptive child, whose gates are `display: contents` (C# twin: Place).
   const child = node.fillViewport
-    ? placeChild(node.child, path + '/0', (arm, armPath) =>
+    ? placeChild(node.child, path + '/0', context, (arm, armPath) =>
         fillsViewport(lowerNode(arm, context, null, armPath), horizontal),
       )
     : lowerNode(node.child, context, null, path + '/0');
@@ -3043,9 +3181,9 @@ function lowerLayer(
   cellAlign: string,
 ): HtmlNode | null {
   // Through the COMPONENT to what it builds, exactly as the C# realizer does — `Positioned` is a
-  // contract with the parent, and one returned by a component was not recognised. Resolved ONCE,
-  // through the store, so the instance that builds here is the instance that stays.
-  const child = resolveStackChild(raw, context, path);
+  // contract with the parent, and one returned by a component was not recognised. Read from the
+  // frame, so what lowers here is what the instance its position keeps built.
+  const child = resolveStackChild(raw, context);
   if (!child) return null;
   // A component the stack expanded is decorated as the funnel decorates one, on the element of what
   // it built, after that node's own (C# twin, #940).
@@ -3055,7 +3193,7 @@ function lowerLayer(
     // Checked AFTER the component is resolved, because a component may build one: the arms are
     // then the layers of the stack the component stands in.
     return asComponent(
-      placeChild(child, path, (arm, armPath) =>
+      placeChild(child, path, context, (arm, armPath) =>
         lowerLayer(arm, depth, context, armPath, cellJustify, cellAlign),
       ),
     );
@@ -3558,7 +3696,7 @@ function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string):
   const item = (child: VisualNodeValue, childPath: string) =>
     lowerFlexItem(child, context, horizontal, childPath);
   for (let i = 0; i < flex.children.length; i++) {
-    const lowered = placeChild(flex.children[i], path + '/' + i, item);
+    const lowered = placeChild(flex.children[i], path + '/' + i, context, item);
     if (lowered) result.children.push(lowered);
   }
   return result;
@@ -3594,13 +3732,14 @@ let placing: PlaceRule | null = null;
 function placeChild(
   child: VisualNodeValue,
   path: string,
+  context: LoweringContext,
   rule: PlaceRule,
 ): HtmlNode | null {
   if ((child as { nodeKind?: string }).nodeKind === 'adaptive') {
     return decorate(
       child,
       lowerAdaptive(child as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
-        placeChild(arm, armPath, rule),
+        placeChild(arm, armPath, context, rule),
       ),
     );
   }
@@ -3841,6 +3980,9 @@ function lowerText(text: TextNode): HtmlNode {
   const heading = typeof level === 'number' && Number.isInteger(level) && level >= 1 && level <= 6;
   const node = element(heading ? `h${level}` : 'span', style, children);
   prependClass(node, `eq-type-${text.role.toLowerCase()}`);
+  // Drawn and never read, unless a run of it links somewhere (C# twin).
+  if (text.excludeFromSemantics && !text.spans?.some((run) => run.destination))
+    node.attributes['aria-hidden'] = 'true';
   return node;
 }
 
@@ -3867,6 +4009,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'adjustable':
     case 'progress':
     case 'liveRegion':
+    case 'group':
     case 'flexible':
     case 'loopMotion':
     case 'link':
@@ -3921,6 +4064,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as unknown as ProgressNode).child as VisualNodeValue);
     case 'liveRegion':
       return fills((node as unknown as LiveRegionNode).child as VisualNodeValue);
+    case 'group':
+      return fills((node as unknown as GroupNode).child as VisualNodeValue);
     case 'navigable':
       // A grid host has ROWS, not one child: nothing to inherit a fill from.
       return { width: false, height: false };
@@ -4196,6 +4341,8 @@ function visualTextOf(node: VisualNodeValue): string {
       return ((node as unknown as FlexNodeValue).children ?? []).map(visualTextOf).join('');
     case 'pressable':
       return visualTextOf((node as PressableNode).child);
+    case 'group':
+      return visualTextOf((node as unknown as GroupNode).child as VisualNodeValue);
     default:
       return '';
   }
@@ -4487,6 +4634,26 @@ function lowerLiveRegion(node: LiveRegionNode, context: LoweringContext, path: s
 }
 
 /**
+ * A LABELLED GROUP (C# twin: LowerGroup) — one `role="group"` host a reader names by its
+ * `aria-label` and then walks into. No label, no `aria-label` (the lowerLiveRegion rule). The
+ * host takes the child's fill and cap, as every role-bearing wrapper's does.
+ */
+function lowerGroup(node: GroupNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : 'fit-content',
+    'max-width': sizeValue(cap),
+    height: fill.height ? '100%' : undefined,
+  });
+  host.attributes['role'] = 'group';
+  if (node.label) host.attributes['aria-label'] = node.label;
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/**
  * ADJUSTMENT semantics (C# twin: the Photon host's arrow dispatch): one focusable wrapper for the
  * whole control, arrows nudge, and the inner press targets stay pointer-only — the wrapper is the
  * Tab stop, so the browser's own focus order matches the native one.
@@ -4713,14 +4880,6 @@ function lowerSimulated(
  * the scrim and the layer are already in it.
  */
 /**
- * A Stack child as the STACK sees it: a component is resolved through the store and built ONCE, so
- * a `Positioned` it returns still positions and the instance that builds is the instance that
- * stays. Anything else passes through untouched.
- *
- * The lowering of the result happens where it always did — this only decides which branch the child
- * takes, which is the decision `child.nodeKind === 'positioned'` was getting wrong.
- */
-/**
  * A component the walk can go THROUGH: one that builds its own node.
  *
  * Every `UiComponent`, with or without state, carries `nodeKind === 'component'`. The build is
@@ -4732,35 +4891,22 @@ function buildsItsOwnNode(node: unknown): boolean {
   return candidate?.nodeKind === 'component' || typeof candidate?.build === 'function';
 }
 
-function resolveStackChild(
-  child: VisualNodeValue,
-  context: LoweringContext,
-  path: string,
-): VisualNodeValue | null {
+/**
+ * A Stack child as the STACK sees it: a component is read through to what its position built, so a
+ * `Positioned` it returns still positions (the C# `ResolveForPositioning` with a frame). Anything
+ * else passes through untouched, and a component that built nothing is no layer at all.
+ *
+ * The lowering of the result happens where it always did — this only decides which branch the child
+ * takes, which is the decision `child.nodeKind === 'positioned'` was getting wrong. The frame built
+ * every component already, through the owner's boundary and its bound, so the walk ends wherever
+ * the chain of components does.
+ */
+function resolveStackChild(child: VisualNodeValue, context: LoweringContext): VisualNodeValue | null {
   let node = child;
-  // Bounded: a component whose build returns itself would otherwise spin here.
-  for (let hops = 0; hops < 8 && buildsItsOwnNode(node); hops++) {
-    const pass = getActivePass();
-    const resolved = (
-      pass ? pass.store.reconcile(path, node, pass.invalidator) : node
-    ) as ComponentNode;
-    // NAMED HERE TOO, matching the C# stack path. A stack resolves a component child itself — it
-    // has to know whether what the child builds is a `Positioned` before it can place it — so the
-    // ordinary component branch above never runs for it. Without this the client would not consume
-    // the key the server just wrote for it, and the two walks would count differently from here on.
-    adoptServerStateFor(
-      resolved,
-      nextComponentKey(componentIdentity(resolved as object)),
-    );
-
-    try {
-      node = resolved.build(componentContextOf(context)) as VisualNodeValue;
-    } catch (error) {
-      const name =
-        (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
-      reportComponentFailure(name, error);
-      return describeComponentFailure(name, error, getPhotonTheme()) as VisualNodeValue;
-    }
+  while (buildsItsOwnNode(node)) {
+    const { built } = frameOf(context).at(node);
+    if (!built) return null;
+    node = built as unknown as VisualNodeValue;
   }
   return node;
 }
@@ -4857,7 +5003,8 @@ function buildAnchorPanel(node: AnchoredNode, context: LoweringContext, path: st
   if (node.matchAnchorWidth === true) prependClass(panel, 'eq-anchor-match');
   prependClass(panel, anchorPlacementClass(node.placement));
   prependClass(panel, 'eq-anchor-panel');
-  const content = lowerNode(node.panel, context, null, path + '/1');
+  // Shown before it lowers, as an overlay's child is (C# twin).
+  const content = lowerNode(showLayer(node, node.panel, context), context, null, path + '/1');
   if (content) panel.children.push(content);
   return panel;
 }
@@ -5085,7 +5232,7 @@ function lowerGrid(grid: GridNode, context: LoweringContext, path: string): Html
   const item = (child: VisualNodeValue, childPath: string) =>
     lowerGridItem(child, context, childPath);
   for (let i = 0; i < grid.children.length; i++) {
-    const lowered = placeChild(grid.children[i], path + '/' + i, item);
+    const lowered = placeChild(grid.children[i], path + '/' + i, context, item);
     if (lowered) result.children.push(lowered);
   }
   return result;

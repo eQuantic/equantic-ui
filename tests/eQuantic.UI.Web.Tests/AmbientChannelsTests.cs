@@ -33,6 +33,9 @@ public class AmbientChannelsTests
         ["ComponentBoundary._report"] = "the error boundary's, which moves to the owner with E4c (#1452)",
         ["ComponentBoundary._contained"] = "the error boundary's, which moves to the owner with E4c (#1452)",
         ["FaceResolution._unresolved"] = "stays: the text services' diagnostic, outside the tree",
+        ["SourceReads.Open"] =
+            "stays: eqc's record of the files a compile read, outside any tree; the one accessor from a symbol "
+            + "to its syntax notes into it from wherever a strategy asks, which no parameter reaches (#1281)",
         ["RenderChannels.Bridging"] =
             "stays: the escape hatch's bridge, inside an HtmlElement's Render(), which takes no parameter, "
             + "finds its render's channels here",

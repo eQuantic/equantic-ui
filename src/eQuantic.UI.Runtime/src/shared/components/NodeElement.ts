@@ -44,7 +44,7 @@ export class NodeElement extends Element {
         if (this._deferred < 0) throw $eq.exceptions.create(['System.InvalidOperationException', 'System.SystemException', 'System.Exception'], `A '${this.configuration.nodeKind}' node has no slot the realizer shows.`);
         this.owner.enterLayer(this);
         try {
-            let shown = this.updateChild(this.childAt(this._deferred), configuration, this.owner.rebuildingAll)!;
+            let shown = this.updateChild(this.childAt(this._deferred), configuration, this._deferred, this.owner.rebuildingAll)!;
             this._children[this._deferred] = shown;
             this._shownInFrame = this.owner.frame;
             this.owner.buildDeferred(this);
@@ -77,7 +77,7 @@ export class NodeElement extends Element {
     }
 
     updateChildren(force: boolean) {
-        let slots = ChildSlots.of(this.configuration, this.owner.sizeClass);
+        let slots = ChildSlots.of(this.configuration, this.owner.sizeClass, this.owner.holdsEveryArm);
         this._deferred = slots.deferred;
         if (slots.isList && this.anyKey(slots)) {
             this.updateKeyed(slots, force);
@@ -87,7 +87,7 @@ export class NodeElement extends Element {
         while (this._children.length < count) this._children.push(null);
         for (let slot = 0; slot < count; slot++) {
             if (slot === this._deferred) continue;
-            this._children[slot] = this.updateChild(this._children[slot], slots.item(slot), force);
+            this._children[slot] = this.updateChild(this._children[slot], slots.item(slot), slot, force);
         }
         for (let slot = this._children.length - 1; slot >= count; slot--) {
             let gone: any; 
@@ -106,9 +106,10 @@ export class NodeElement extends Element {
         let stamp = this.owner.nextStamp();
         let byKey = this.owner.keyScratch;
         byKey.clear();
+        let repeated = false;
         for (const old of this._children) {
             let key: any; 
-            if ((($0) => (($0 != null && $0.length > 0) && (key = $0, true)))((old?.configuration.key ?? null))) byKey.tryAdd(key, old);
+            if ((($0) => (($0 != null && $0.length > 0) && (key = $0, true)))((old?.configuration.key ?? null)) && !byKey.tryAdd(key, old)) repeated = true;
         }
         let next = this._spare ?? (this._spare = []);
         next.splice(0);
@@ -119,7 +120,9 @@ export class NodeElement extends Element {
             let key: any; 
             if ((($0) => (($0 != null && $0.length > 0) && (key = $0, true)))(node.key)) {
                 let keyed: any; 
-                claimed = (byKey.has(key) ? ((keyed = byKey.get(key)), true) : ((keyed = null), false)) && keyed.matchStamp !== stamp && Element.canUpdate(keyed.configuration, node) ? keyed : this.nextUnclaimed(node, stamp);
+                if ((byKey.has(key) ? ((keyed = byKey.get(key)), true) : ((keyed = null), false))) {
+                    claimed = keyed.matchStamp !== stamp && Element.canUpdate(keyed.configuration, node) ? keyed : repeated ? this.nextUnclaimed(node, stamp) : null;
+                }
             } else { let indexed: any; if (i < this._children.length && (indexed = this._children[i]) != null && (($0) => !(($0 != null && $0.length > 0)))(indexed.configuration.key) && indexed.matchStamp !== stamp && Element.canUpdate(indexed.configuration, node)) {
                 claimed = indexed;
             } }
@@ -135,7 +138,10 @@ export class NodeElement extends Element {
         for (let i = 0; i < count; i++) {
             let node = slots.item(i)!;
             let kept: any; 
-            if ((kept = this._children[i]) != null) kept.update(node, force); else this._children[i] = this.inflate(node);
+            if ((kept = this._children[i]) != null) {
+                kept.slot = i;
+                kept.update(node, force);
+            } else this._children[i] = this.inflate(node, i);
         }
     }
 

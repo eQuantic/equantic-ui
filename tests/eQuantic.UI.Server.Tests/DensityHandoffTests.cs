@@ -127,10 +127,10 @@ public class DensityHandoffTests
         var state = JsonDocument.Parse(await GetAsync("eq-density=compact", "/density-branch", navigate: true))
             .RootElement.GetProperty("state");
 
-        state.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(CompactRows), 0), out var rows)
+        PayloadKeys.TryGet(state, typeof(CompactRows), out var rows)
             .Should().BeTrue("the browser builds the compact branch");
         rows.GetProperty("loaded").GetString().Should().Be("compact rows");
-        state.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(ComfortableCards), 0), out _)
+        PayloadKeys.Names(state, typeof(ComfortableCards))
             .Should().BeFalse("nothing in the browser's tree asks for it");
     }
 

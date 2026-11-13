@@ -15,6 +15,7 @@ import {
   VisualNode,
 } from './vocabulary';
 import { SizeValue } from './value-types';
+import { StatelessComponent } from '../core/component';
 
 describe('Stack (spec A3) client lowering', () => {
   it('lowers to a single-cell grid with the cross-pinned positioned anchor', () => {
@@ -152,8 +153,20 @@ describe('Stack (spec A3) client lowering', () => {
   });
 
   it('keeps the bookmark of a component it expands itself (#940, the C# twin)', () => {
-    const builds = (built: VisualNode, bookmark: string): VisualNode =>
-      ({ nodeKind: 'component', bookmark, build: () => built }) as unknown as VisualNode;
+    // A component, as transpiled code makes one, carrying a bookmark as any node does.
+    class Builds extends StatelessComponent {
+      constructor(private readonly built: VisualNode) {
+        super();
+      }
+      build(): VisualNode {
+        return this.built;
+      }
+    }
+    const builds = (built: VisualNode, bookmark: string): VisualNode => {
+      const component = new Builds(built);
+      component.bookmark = bookmark;
+      return component as unknown as VisualNode;
+    };
     const stack = new Stack();
     stack.add(builds(new Positioned(new Box(new BoxStyle({ width: 16, height: 16 })), 0, 0), 'corner'));
     stack.add(builds(new Box(new BoxStyle({ width: 16, height: 16 })), 'layer'));

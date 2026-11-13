@@ -36,7 +36,6 @@ public sealed class ComponentTester : IDisposable
     private const int MaxPrefetchRounds = 5;
 
     private readonly MarkupHost _host;
-    private readonly WindowSizeClass _sizeClass;
     private VisualNode? _root;
     private HtmlNode? _frame;
     private StyleSink? _styles;
@@ -50,8 +49,8 @@ public sealed class ComponentTester : IDisposable
     /// <c>AddUI</c> serves without <c>UseTheme</c>.</param>
     /// <param name="culture">The culture a component formats with and reads its own labels in; the
     /// invariant one when null, so a test reads the same on every machine.</param>
-    /// <param name="width">The viewport's width in dp, which decides the size class and which arm of
-    /// an adaptive node shows; a desktop's by default.</param>
+    /// <param name="width">The viewport's width in dp, which decides which arm of an adaptive node
+    /// shows; a desktop's by default.</param>
     /// <param name="density">The density the target asks for.</param>
     /// <param name="services">What a page's prefetch resolves its dependencies from.</param>
     public ComponentTester(IAppTheme? theme = null, CultureInfo? culture = null, float width = 1280f,
@@ -64,7 +63,6 @@ public sealed class ComponentTester : IDisposable
         Width = width;
         Density = density;
         Services = services ?? NoServices.Instance;
-        _sizeClass = WindowSizeClasses.FromWidth(width);
         // No font to measure with, as on the server: a component that asks is answered 0, and the
         // markup is the markup the server writes for it.
         _host = new MarkupHost(Theme, 1f, density);
@@ -225,7 +223,7 @@ public sealed class ComponentTester : IDisposable
     private void Draw(bool rebuildAll)
     {
         using var culture = new CultureScope(Culture);
-        _host.Build(_root!, _sizeClass, rebuildAll);
+        _host.Build(_root!, rebuildAll);
         // Inside a render of its own, as the server lowers: the style sink is what knows which of a
         // node's classes hide it, an adaptive arm's gate among them.
         var channels = new RenderChannels(density: Density);
@@ -246,7 +244,7 @@ public sealed class ComponentTester : IDisposable
     {
         using var culture = new CultureScope(Culture);
         var scope = new ComponentExpansionScope();
-        _host.Build(page, _sizeClass);
+        _host.Build(page);
         _host.Lower(new RenderChannels(scope, Density));
         return scope;
     }

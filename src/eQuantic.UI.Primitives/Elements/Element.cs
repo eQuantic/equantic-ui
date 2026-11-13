@@ -49,6 +49,32 @@ public abstract class Element
     /// </summary>
     public int Id { get; private set; }
 
+    /// <summary>
+    /// Which of its parent's slots this position fills, Flutter's <c>slot</c>: the index its parent asks
+    /// <see cref="ChildAt"/> with, zero at the root and under a component, and a keyed child's new index
+    /// after a move. With its ancestors' it is where the position stands in the tree, read the same on
+    /// every side that builds the same nodes, whatever order they built them in; what a host names a
+    /// position by across a boundary (the server's data for the browser) is read from that chain.
+    /// </summary>
+    public int Slot { get; internal set; }
+
+    /// <summary>
+    /// Where this position stands below the positions <paramref name="depth"/> deep and shallower: the
+    /// <see cref="Slot"/> of each position from there down to this one, joined by dots, and empty for a
+    /// position at that depth. Every side that builds the same nodes reads the same path, whatever order
+    /// it built them in and whichever arm of an adaptive node its window resolves, so a host names a
+    /// position by it across a boundary: the server's data for the browser (#1477). A host whose root
+    /// stands above the tree the other side builds from passes the root's depth below it.
+    /// </summary>
+    /// <param name="depth">The depth the path is measured from; zero measures it from the root.</param>
+    public string SlotsBelow(int depth)
+    {
+        var slots = new List<int>();
+        for (Element? at = this; at is not null && at.Depth > depth; at = at.Parent) slots.Add(at.Slot);
+        slots.Reverse();
+        return string.Join(".", slots);
+    }
+
     /// <summary>The position at <paramref name="slot"/>, or null when that slot holds nothing.</summary>
     public abstract Element? ChildAt(int slot);
 
@@ -101,10 +127,11 @@ public abstract class Element
         current.GetType() == next.GetType() && string.Equals(current.Key, next.Key, StringComparison.Ordinal);
 
     /// <summary>Takes its place under <paramref name="parent"/> and builds what is below it.</summary>
-    internal void Mount(BuildOwner owner, Element? parent)
+    internal void Mount(BuildOwner owner, Element? parent, int slot)
     {
         Owner = owner;
         Parent = parent;
+        Slot = slot;
         Id = owner.NextId();
         Depth = parent is null ? 0 : parent.Depth + 1;
         ComponentDepth = parent is null ? 0 : parent.ComponentDepth + (parent is ComponentElement ? 1 : 0);
@@ -125,11 +152,11 @@ public abstract class Element
     internal abstract void Update(VisualNode configuration, bool force);
 
     /// <summary>
-    /// The child at a slot after a build: <paramref name="child"/> kept and updated when it can take
-    /// <paramref name="configuration"/>, replaced when it cannot, and taken out when there is no
-    /// node for the slot any more.
+    /// The child at <paramref name="slot"/> after a build: <paramref name="child"/> kept and updated when
+    /// it can take <paramref name="configuration"/>, replaced when it cannot, and taken out when there is
+    /// no node for the slot any more.
     /// </summary>
-    private protected Element? UpdateChild(Element? child, VisualNode? configuration, bool force)
+    private protected Element? UpdateChild(Element? child, VisualNode? configuration, int slot, bool force)
     {
         if (configuration is null)
         {
@@ -141,6 +168,7 @@ public abstract class Element
         {
             if (CanUpdate(child.Configuration, configuration))
             {
+                child.Slot = slot;
                 child.Update(configuration, force);
                 return child;
             }
@@ -148,14 +176,14 @@ public abstract class Element
             Owner.Deactivate(child);
         }
 
-        return Inflate(configuration);
+        return Inflate(configuration, slot);
     }
 
-    /// <summary>A new position under this one, mounted and built.</summary>
-    private protected Element Inflate(VisualNode configuration)
+    /// <summary>A new position under this one, at <paramref name="slot"/>, mounted and built.</summary>
+    private protected Element Inflate(VisualNode configuration, int slot)
     {
         var created = Create(configuration);
-        created.Mount(Owner, this);
+        created.Mount(Owner, this, slot);
         return created;
     }
 

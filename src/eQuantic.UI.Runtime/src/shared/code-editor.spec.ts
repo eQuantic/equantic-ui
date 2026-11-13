@@ -1463,7 +1463,7 @@ describe('the find bar', () => {
     const { materializeTheme } = await import('./theme-bridge');
     const photonData = (await import('./theme-bridge.photon.json')).default;
     const { CodeEditor } = await import('./components/CodeEditor');
-    const { ComponentInstanceStore, enterPass, exitPass } = await import('./instance-store');
+    const { ElementRoots, enterPass, exitPass } = await import('./element-roots');
     const theme = materializeTheme(photonData as never);
     setPhotonTheme(theme);
     const context = {
@@ -1479,7 +1479,7 @@ describe('the find bar', () => {
     // One tree in ONE pass, as a page renders: each editor's scope is named by its own path, and a
     // component inside an editor joins the pass instead of committing the bindings declared before it.
     const render = () => {
-      enterPass(new ComponentInstanceStore(), null);
+      enterPass(new ElementRoots(null), null, true);
       try {
         const page = { nodeKind: 'column', children: editors.map((editor) => editor.build(context as never)) };
         const dialog = { nodeKind: 'shortcut', child: page, chord: { key: 'Escape' }, onPressed: () => dialogClosed++ };
