@@ -68,41 +68,53 @@ public sealed class ListItem : StatelessComponent
     /// </summary>
     public int SubtitleLines { get; init; } = 1;
 
-    /// <summary>The row's own minimum height — 52 / 68 / 88 for one, two and three lines.</summary>
-    internal float MinHeight => Subtitle is null ? 52 : SubtitleLines >= 2 ? 88 : 68;
+    /// <summary>The row's own minimum height — 52 / 68 / 88 for one, two and three lines, or the
+    /// theme's List slot's.</summary>
+    private float MinHeight(ListTheme? slot) => Subtitle is null
+        ? slot?.ItemHeight ?? 52
+        : SubtitleLines >= 2 ? slot?.ThreeLineItemHeight ?? 88 : slot?.TwoLineItemHeight ?? 68;
 
     /// <summary>Where this row's TEXT starts, and so where the divider under it begins: the row's own
-    /// padding, plus the leading slot and the gap after it when there is one.</summary>
-    internal float ContentInset =>
-        Leading is null ? Space.S4 : Space.S4 + SlotWidth(Leading, LeadingWidth) + Space.S3;
+    /// padding, plus the leading slot and the gap after it when there is one. Read from the theme's List
+    /// slot, as the row's own padding and gap are, so the two never disagree.</summary>
+    internal float ContentInset(IAppTheme theme)
+    {
+        var slot = theme.List;
+        var padding = slot?.ItemPaddingX ?? Space.S4;
+        return Leading is null ? padding : padding + SlotWidth(Leading, LeadingWidth, theme) + (slot?.ItemGap ?? Space.S3);
+    }
 
     /// <summary>The leading slot's width, DERIVED for the two conventional slots and taken on trust
     /// for anything else. A component that can read the number should not ask for it.</summary>
-    private static float SlotWidth(VisualNode leading, float declared) => leading switch
+    private static float SlotWidth(VisualNode leading, float declared, IAppTheme theme) => leading switch
     {
         Icon icon => icon.Size,
-        Avatar avatar => Sizing.Avatar(avatar.Size),
+        Avatar avatar => Avatar.SideOf(theme, avatar.Size),
         _ => declared,
     };
 
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The theme's List slot, then the component's own (§3.10).
+        var slot = theme.List;
+        var quietFill = slot?.QuietFill ?? theme.SurfaceSubtle;
 
-        var content = new Column(gap: 2);
-        content.Add(new Text(Title, TypeRole.BodyM, theme.TextPrimary, maxLines: 1)
+        var content = new Column(gap: slot?.TextGap ?? 2);
+        content.Add(new Text(Title, TypeRole.BodyM, slot?.TitleColor ?? theme.TextPrimary, maxLines: 1)
         {
-            StyleOverride = new TypeStyle(15, 20, FontWeight.Medium, 0, 1.3f),
+            StyleOverride = new TypeStyle(slot?.TitleSize ?? 15, slot?.TitleLineHeight ?? 20,
+                slot?.TitleWeight ?? FontWeight.Medium, 0, 1.3f),
         });
         if (Subtitle is { } subtitle)
-            content.Add(new Text(subtitle, TypeRole.Caption, theme.TextSecondary,
+            content.Add(new Text(subtitle, TypeRole.Caption, slot?.SubtitleColor ?? theme.TextSecondary,
                 maxLines: SubtitleLines >= 2 ? 2 : 1));
 
-        var row = new Row(gap: Space.S3)
+        var row = new Row(gap: slot?.ItemGap ?? Space.S3)
         {
             Width = SizeValue.Fill,
             Cross = CrossAlign.Center,
-            Padding = EdgeInsets.Symmetric(Space.S4, Space.S2),
+            Padding = EdgeInsets.Symmetric(slot?.ItemPaddingX ?? Space.S4, slot?.ItemPaddingY ?? Space.S2),
         };
         if (Leading is { } leading) row.Add(leading);
         row.Add(new Flexible(content));
@@ -111,7 +123,7 @@ public sealed class ListItem : StatelessComponent
         var body = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            MinHeight = MinHeight,
+            MinHeight = MinHeight(slot),
             Background = Selected ? theme.Colors(Variant.Primary).Subtle : null,
             // §10, pointer-only (both realizers keep it off touch): an interactive row washes under
             // the cursor. Every sibling row-like surface already did this — Menu, Table, DataTable,
@@ -121,13 +133,13 @@ public sealed class ListItem : StatelessComponent
             // erase the selection for exactly as long as the pointer sits on it.
             Hover = OnPressed is null || Selected
                 ? null
-                : new StyleDiff { Background = theme.SurfaceSubtle },
+                : new StyleDiff { Background = quietFill },
             // Pressed for the same rows and the same reason: a press that washed a selected row to
             // SurfaceSubtle erased the selection for as long as the finger stayed down (#616). A
             // disabled row shows none because its control is disabled.
             Pressed = OnPressed is null || Selected
                 ? null
-                : new StyleDiff { Background = theme.SurfaceSubtle },
+                : new StyleDiff { Background = quietFill },
         }, row);
 
         return OnPressed is null
@@ -173,7 +185,7 @@ public sealed class List : StatelessComponent
             column.Add(Items[i]);
             // The row ABOVE decides: the hairline continues that row's text edge.
             if (Dividers && i < Items.Count - 1)
-                column.Add(new Divider(DividerInset.Leading) { LeadingInset = Items[i].ContentInset });
+                column.Add(new Divider(DividerInset.Leading) { LeadingInset = Items[i].ContentInset(context.Theme) });
         }
         return column;
     }

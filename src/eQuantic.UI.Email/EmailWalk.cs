@@ -10,7 +10,8 @@ namespace eQuantic.UI.Email;
 /// (<see cref="EmailTextVisitor"/>) — built from the same tree so they cannot drift. Seven words
 /// cross into that medium: <see cref="Column"/>, <see cref="Row"/>, <see cref="Text"/>,
 /// <see cref="Box"/>, <see cref="Image"/>, <see cref="Link"/>, and the component seam. They are
-/// abstract here, because each alternative writes them differently. The other THIRTY-FOUR are
+/// abstract here, because each alternative writes them differently; a <see cref="Group"/> reaches a
+/// message as the child it holds, in both. The other THIRTY-FOUR are
 /// refused, and refused IDENTICALLY — one <see cref="Refuse"/>, inherited by both.
 /// </para>
 ///
@@ -49,6 +50,10 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
 
     /// <summary>A value for a subtree reaches a message as the child it holds.</summary>
     public Nothing Visit(InheritedComponent node, Nothing state) => node.Child.Accept(this, state);
+
+    /// <summary>A labelled group reaches a message as the child it holds: it draws nothing, and the
+    /// heading a reader sees is the child's own.</summary>
+    public Nothing Visit(Group node, Nothing state) => node.Child.Accept(this, state);
 
     /// <summary>
     /// The one refusal, loud and naming the node — the repo's rule: never a silent divergence. The

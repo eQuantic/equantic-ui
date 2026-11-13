@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 
@@ -266,7 +267,7 @@ internal static class HostOnlySymbolExtensions
     {
         if (accessor.AssociatedSymbol is not IEventSymbol handled) return false;
         var inAComponent = accessor.ContainingType.IsUiComponent();
-        if (!accessor.OriginalDefinition.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
+        if (!accessor.OriginalDefinition.ReadDeclarations().Select(reference => reference.GetSyntax())
                 .Any(declaration => Parser.ComponentParser.StaysOnTheServer(declaration, inAComponent, context.SemanticModel)))
             return false;
         var verb = accessor.MethodKind == MethodKind.EventAdd ? "add" : "remove";

@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -672,7 +673,7 @@ public static class PatternConverter
     {
         IPropertySymbol property when property.IsAbstract || property.IsVirtual || property.IsOverride =>
             DeclaredInSource(property) || DeclaredInSource(receiver),
-        IPropertySymbol property => property.OriginalDefinition.DeclaringSyntaxReferences.Any(reference =>
+        IPropertySymbol property => property.OriginalDefinition.ReadDeclarations().Any(reference =>
             reference.GetSyntax() is PropertyDeclarationSyntax declared && !PropertyStore.IsKeptUnderItsName(declared)),
         _ => false,
     };

@@ -188,7 +188,7 @@ internal sealed class NamedSourceTypes
                 Type(named.ContainingType);
                 var definition = named.OriginalDefinition;
                 if (definition.Name.Length == 0) return;
-                foreach (var reference in definition.DeclaringSyntaxReferences)
+                foreach (var reference in definition.ReadDeclarations())
                 {
                     if (string.IsNullOrEmpty(reference.SyntaxTree.FilePath)) continue;
                     var twin = definition.TwinReference();
