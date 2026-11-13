@@ -30,7 +30,7 @@ public class DensityTests
     private static LayoutNode Realize(VisualNode root, Density density)
     {
         var builder = new DisplayListBuilder();
-        return PhotonRealizer.Realize(root, 400, 200, PhotonTheme.Instance, ThemeMode.Light, builder,
+        return PhotonRealizer.Realize(root, 400, 200, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder,
             density: density).Root;
     }
 
@@ -71,7 +71,7 @@ public class DensityTests
     public void ALabelLessCheckbox_IsAtLeastItsPointersFloor(Density density, float side)
     {
         var realized = PhotonRealizer.Realize(new Checkbox(true, () => { }), 400, 200,
-            PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder(), density: density);
+            PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder(), density: density);
 
         var hit = realized.HitRegions.Should().ContainSingle().Subject.Bounds;
         hit.Width.Should().BeApproximately(side, 0.5f);
@@ -85,9 +85,9 @@ public class DensityTests
         // it must not — on a toolbar of 26dp buttons those invisible margins would overlap.
         var builder = new DisplayListBuilder();
         var comfortable = PhotonRealizer.Realize(new Button("Go", size: SizeVariant.Small), 400, 200,
-            PhotonTheme.Instance, ThemeMode.Light, builder);
+            PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder);
         var compact = PhotonRealizer.Realize(new Button("Go", size: SizeVariant.Small), 400, 200,
-            PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder(), density: Density.Compact);
+            PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder(), density: Density.Compact);
 
         comfortable.HitRegions[0].Bounds.Height.Should().BeApproximately(Touch.MinTarget, 0.5f);
         compact.HitRegions[0].Bounds.Height.Should().BeApproximately(

@@ -1,4 +1,13 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Primitives.ColorToken.Resolve(eQuantic.UI.Primitives.ThemeMode mode) -> eQuantic.UI.Primitives.Color
+eQuantic.UI.Primitives.ColorToken.MoreLight.get -> eQuantic.UI.Primitives.Color
+eQuantic.UI.Primitives.ColorToken.MoreDark.get -> eQuantic.UI.Primitives.Color
+eQuantic.UI.Primitives.ColorToken.DiffersAtMore.get -> bool
+eQuantic.UI.Primitives.ColorToken.Resolve(eQuantic.UI.Primitives.ThemeMode mode, eQuantic.UI.Primitives.ContrastLevel contrast) -> eQuantic.UI.Primitives.Color
+eQuantic.UI.Primitives.ContrastLevel
+eQuantic.UI.Primitives.ContrastLevel.Standard = 0 -> eQuantic.UI.Primitives.ContrastLevel
+eQuantic.UI.Primitives.ContrastLevel.More = 1 -> eQuantic.UI.Primitives.ContrastLevel
+eQuantic.UI.Primitives.ColorToken.WithMore(eQuantic.UI.Primitives.Color light, eQuantic.UI.Primitives.Color dark) -> eQuantic.UI.Primitives.ColorToken
 eQuantic.UI.Primitives.ButtonTheme
 eQuantic.UI.Primitives.ButtonTheme.<Clone>$() -> eQuantic.UI.Primitives.ButtonTheme!
 eQuantic.UI.Primitives.ButtonTheme.ButtonTheme() -> void

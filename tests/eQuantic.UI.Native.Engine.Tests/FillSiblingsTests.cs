@@ -27,7 +27,7 @@ public class FillSiblingsTests
         column.Add(new Box(new BoxStyle { Height = SizeValue.Fill }));
         column.Add(new Box(new BoxStyle { Height = SizeValue.Fill }));
 
-        var root = PhotonRealizer.Realize(column, 400, 300, PhotonTheme.Instance, ThemeMode.Light,
+        var root = PhotonRealizer.Realize(column, 400, 300, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder()).Root;
 
         root.Children.Should().HaveCount(2);
@@ -44,7 +44,7 @@ public class FillSiblingsTests
         row.Add(new Box(new BoxStyle { Width = SizeValue.Fill }));
         row.Add(new Box(new BoxStyle { Width = SizeValue.Fill }));
 
-        var root = PhotonRealizer.Realize(row, 400, 300, PhotonTheme.Instance, ThemeMode.Light,
+        var root = PhotonRealizer.Realize(row, 400, 300, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder()).Root;
 
         root.Children[0].Bounds.Width.Should().Be(150);
@@ -61,7 +61,7 @@ public class FillSiblingsTests
         column.Add(new Box(new BoxStyle { Height = 100 }));
         column.Add(new Box(new BoxStyle { Height = SizeValue.Fill }));
 
-        var root = PhotonRealizer.Realize(column, 400, 300, PhotonTheme.Instance, ThemeMode.Light,
+        var root = PhotonRealizer.Realize(column, 400, 300, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder()).Root;
 
         root.Children[0].Bounds.Height.Should().Be(100);
@@ -76,7 +76,7 @@ public class FillSiblingsTests
         column.Add(new Flexible(new Box(new BoxStyle()), 2));
         column.Add(new Flexible(new Box(new BoxStyle()), 1));
 
-        var root = PhotonRealizer.Realize(column, 400, 300, PhotonTheme.Instance, ThemeMode.Light,
+        var root = PhotonRealizer.Realize(column, 400, 300, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder()).Root;
 
         root.Children[0].Bounds.Height.Should().BeApproximately(200, 0.5f);

@@ -69,6 +69,16 @@ The sample's `/uploads` page sends files through `FileUpload` to the real upload
    nothing reaches the endpoint.
 3. **The server's own refusal reaches the row in its words**: a creation answered 413 shows its body.
 
+### `contrast.spec.ts`
+
+Contrast levels (#340): the browser reads the system's setting as `prefers-contrast: more`, emulated
+here with `page.emulateMedia`, and the app states nothing:
+
+1. **Muted text steps up when the system asks for more contrast**, in light and in dark: every element
+   painted in Muted paints the handoff's More leg, and steps back down with the setting.
+2. **A screen the runtime builds after a navigation reads the same level**: no muted text on it paints
+   its Standard leg.
+
 ### `content-security.spec.ts`
 
 The sample turns on the strict Content-Security-Policy with `UseContentSecurityPolicy()` and names no
@@ -106,6 +116,7 @@ tests/e2e/
 ├── playwright.config.ts    # Configuração do Playwright
 ├── tests/
 │   ├── app-layout.spec.ts     # The app's layout stays mounted (#1129)
+│   ├── contrast.spec.ts       # Contrast levels in a real browser (#340)
 │   ├── content-security.spec.ts # The strict policy in a real browser (#1270)
 │   ├── passkeys.spec.ts       # Passkeys through IPasskeys (#1017)
 │   ├── uploads.spec.ts        # Uploads through FileUpload (#1215)

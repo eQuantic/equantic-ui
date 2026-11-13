@@ -18,10 +18,22 @@ public static class TokenCss
     /// A <see cref="ColorToken"/> as a single CSS value: <c>light-dark(#light, #dark)</c> — the modern
     /// CSS color function that theme-switches with <c>color-scheme</c>, keeping lowered HTML mode-free
     /// exactly like the abstract tree. Collapses to a plain hex when both modes match.
+    /// <para>
+    /// At <see cref="ContrastLevel.Standard"/>, the value every inline style and atomic class is
+    /// written with. A theme colour's More pair reaches the page through its variable, which the
+    /// theme's stylesheet declares again under <c>prefers-contrast: more</c> (<see cref="ValueAt"/>).
+    /// </para>
     /// </summary>
-    public static string Value(ColorToken token) => token.Light == token.Dark
-        ? Hex(token.Light)
-        : $"light-dark({Hex(token.Light)}, {Hex(token.Dark)})";
+    public static string Value(ColorToken token) => ValueAt(token, ContrastLevel.Standard);
+
+    /// <summary>The token's pair at <paramref name="contrast"/>, written as <see cref="Value"/> writes
+    /// the Standard one.</summary>
+    public static string ValueAt(ColorToken token, ContrastLevel contrast)
+    {
+        var light = token.Resolve(ThemeMode.Light, contrast);
+        var dark = token.Resolve(ThemeMode.Dark, contrast);
+        return light == dark ? Hex(light) : $"light-dark({Hex(light)}, {Hex(dark)})";
+    }
 
     /// <summary>
     /// The PROPORTIONAL stack, behind <c>--eq-font-family</c>: the theme's text face
