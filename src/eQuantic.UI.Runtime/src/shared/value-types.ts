@@ -10,7 +10,20 @@ import { round as dotnetRound } from '../utils/dotnet-math';
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 import type { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
-import type { ButtonTheme, ControlsTheme } from './theme-slots';
+import type {
+  ButtonTheme,
+  CardTheme,
+  ChipTheme,
+  ControlsTheme,
+  IconButtonTheme,
+  InputTheme,
+  MenuTheme,
+  ModalTheme,
+  NoticeTheme,
+  ProgressTheme,
+  SegmentedTheme,
+  SelectionControlsTheme,
+} from './theme-slots';
 import { hashesByValue } from '../utils/hash';
 import { FontWeightNumbers, type FontWeightValue } from './enums.generated';
 
@@ -605,6 +618,26 @@ export interface AppTheme {
   controls?: ControlsTheme | null;
   /** The Button's slot (C# `IAppTheme.Button`), absent or null for its own defaults. */
   button?: ButtonTheme | null;
+  /** The IconButton's slot (C# `IAppTheme.IconButton`), absent or null for its own defaults. */
+  iconButton?: IconButtonTheme | null;
+  /** The fields' slot (C# `IAppTheme.Input`), absent or null for their own defaults. */
+  input?: InputTheme | null;
+  /** The selection controls' slot (C# `IAppTheme.SelectionControls`), absent or null for their own defaults. */
+  selectionControls?: SelectionControlsTheme | null;
+  /** The segmented controls' slot (C# `IAppTheme.Segmented`), absent or null for their own defaults. */
+  segmented?: SegmentedTheme | null;
+  /** The Chip's slot (C# `IAppTheme.Chip`), absent or null for its own defaults. */
+  chip?: ChipTheme | null;
+  /** The modal surfaces' slot: Dialog, BottomSheet and Drawer (C# `IAppTheme.Modal`). */
+  modal?: ModalTheme | null;
+  /** The menus' slot: Popover, Menu and Tooltip (C# `IAppTheme.Menu`). */
+  menu?: MenuTheme | null;
+  /** The notices' slot: Toast, Banner and CookieConsent (C# `IAppTheme.Notice`). */
+  notice?: NoticeTheme | null;
+  /** The progress slot: ProgressBar, PullToRefresh and Skeleton (C# `IAppTheme.Progress`). */
+  progress?: ProgressTheme | null;
+  /** The Card's slot (C# `IAppTheme.Card`). */
+  card?: CardTheme | null;
   disabledOpacity: number;
   /**
    * The face this theme sets CODE in (C# `IAppTheme.MonoFamily`), or undefined for the platform's

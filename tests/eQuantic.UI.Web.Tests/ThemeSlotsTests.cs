@@ -39,7 +39,41 @@ public class ThemeSlotsTests
         [nameof(IAppTheme.Code)] = "code",
         [nameof(IAppTheme.Controls)] = "controls",
         [nameof(IAppTheme.Button)] = "button",
+        [nameof(IAppTheme.IconButton)] = "iconButton",
+        [nameof(IAppTheme.Input)] = "input",
+        [nameof(IAppTheme.SelectionControls)] = "selectionControls",
+        [nameof(IAppTheme.Segmented)] = "segmented",
+        [nameof(IAppTheme.Chip)] = "chip",
+        [nameof(IAppTheme.Modal)] = "modal",
+        [nameof(IAppTheme.Menu)] = "menu",
+        [nameof(IAppTheme.Notice)] = "notice",
+        [nameof(IAppTheme.Progress)] = "progress",
+        [nameof(IAppTheme.Card)] = "card",
     };
+
+    /// <summary>
+    /// The theme's JSON names each key once. A slot crosses under its member's camel-cased name beside the
+    /// theme's own keys, so a slot named like one of them would write it twice, and the browser keeps the
+    /// last: the surfaces' slot, named <c>Surfaces</c> at first, would have shadowed the surface colours
+    /// (#1243).
+    /// </summary>
+    [Fact]
+    public void TheThemesJson_NamesEachKeyOnce()
+    {
+        var json = System.Text.Encoding.UTF8.GetBytes(ThemeBridge.SerializeJson(new EveryMemberTheme(Photon)));
+        var reader = new Utf8JsonReader(json);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var twice = new List<string>();
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.PropertyName && reader.CurrentDepth == 1
+                && !seen.Add(reader.GetString()!))
+                twice.Add(reader.GetString()!);
+        }
+
+        seen.Should().Contain(["surfaces", "modal", "controls", "button"]);
+        twice.Should().BeEmpty("a key written twice is read once by the browser, and the other value is lost");
+    }
 
     [Fact]
     public void EveryMemberOfTheTheme_CrossesToTheBrowser()
@@ -399,6 +433,16 @@ public class ThemeSlotsTests
         public SheetTheme? Sheet => new() { Gridline = new ColorToken(Color.Black) };
         public ControlsTheme? Controls => inner.Controls;
         public ButtonTheme? Button => inner.Button;
+        public IconButtonTheme? IconButton => inner.IconButton;
+        public InputTheme? Input => inner.Input;
+        public SelectionControlsTheme? SelectionControls => inner.SelectionControls;
+        public SegmentedTheme? Segmented => inner.Segmented;
+        public ChipTheme? Chip => inner.Chip;
+        public ModalTheme? Modal => inner.Modal;
+        public MenuTheme? Menu => inner.Menu;
+        public NoticeTheme? Notice => inner.Notice;
+        public ProgressTheme? Progress => inner.Progress;
+        public CardTheme? Card => inner.Card;
         public ColorToken Code(CodeTokenKind kind) => new(Color.FromRgb(0x11, 0x22, (byte)kind));
         public float DisabledOpacity => inner.DisabledOpacity;
         public VariantColors Colors(Variant variant) => inner.Colors(variant);
