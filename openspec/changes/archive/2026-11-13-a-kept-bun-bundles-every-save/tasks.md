@@ -12,5 +12,5 @@
 
 ## 3. Close
 
-- [ ] 3.1 `openspec validate --all --strict`, the Compiler and Conformance suites through the lock, the solution built with no warning, the samples built
-- [ ] 3.2 `openspec archive a-kept-bun-bundles-every-save --yes` before the merge
+- [x] 3.1 `openspec validate --all --strict`, the Compiler and Conformance suites through the lock, the solution built with no warning, the samples built
+- [x] 3.2 `openspec archive a-kept-bun-bundles-every-save --yes` before the merge
