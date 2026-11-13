@@ -96,7 +96,7 @@ worktree when it writes a page (`git -C <clone>/../equantic-ui.wiki worktree add
 ../equantic-ui.wt/<issue>-<slug>.wiki origin/master`, on the branch of the same name), and the
 wiki's clone beside the repository's, on master, when it does not.
 
-**After the merge.** Move the delivery's state folder into the clone's own `.claude/pipelines/`,
+**After the merge.** Move the delivery's state folder into the clone's own `.claude/pipelines/<issue>-<slug>/`,
 where its measures outlive the tree, then remove both worktrees (`git worktree remove`) and delete
 the branches. Before deleting anything, look at it: a tree that holds uncommitted work is reported,
 not removed.
