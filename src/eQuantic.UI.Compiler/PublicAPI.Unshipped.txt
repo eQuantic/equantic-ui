@@ -6,6 +6,7 @@ eQuantic.UI.Compiler.Services.AppBuild.AppBuild(eQuantic.UI.Compiler.Services.Ap
 eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(System.Collections.Generic.IReadOnlyCollection<string!>! entryPoints, string! outputDir, string! intermediateDir, eQuantic.UI.Compiler.SourceMapMode sourceMaps, System.Action<string!>? warn = null) -> string?
 eQuantic.UI.Compiler.Services.ModuleBundler.Dispose() -> void
 eQuantic.UI.Compiler.Services.ModuleBundler.ModuleBundler(string! bunPath, string! workingDirectory) -> void
+eQuantic.UI.Compiler.Services.AppBuild.CompiledFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
 const eQuantic.UI.Compiler.CodeGen.Eq.FixedSize = "$eq.collections.fixedSize" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.CollectionIsReadOnly = "$eq.collections.isReadOnly" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy
