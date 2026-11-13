@@ -24,7 +24,7 @@ public class AForegroundDescendsTests
 
     private static bool Paints(DisplayList list, ColorToken token)
     {
-        var color = token.Resolve(ThemeMode.Light).WithOpacity(0.30f);
+        var color = token.Resolve(ThemeMode.Light, ContrastLevel.Standard).WithOpacity(0.30f);
         foreach (var command in list.Commands)
             if (command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == color) return true;
         return false;
@@ -40,7 +40,7 @@ public class AForegroundDescendsTests
     private static DisplayList Draw(VisualNode node)
     {
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(node, 400, 100, Theme, ThemeMode.Light, builder);
+        PhotonRealizer.Realize(node, 400, 100, Theme, ThemeMode.Light, ContrastLevel.Standard, builder);
         return builder.Build();
     }
 

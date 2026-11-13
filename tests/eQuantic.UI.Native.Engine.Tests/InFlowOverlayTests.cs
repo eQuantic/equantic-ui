@@ -18,13 +18,13 @@ public class InFlowOverlayTests
     private static DisplayList Draw(VisualNode node)
     {
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(node, 400, 300, Theme, ThemeMode.Light, builder);
+        PhotonRealizer.Realize(node, 400, 300, Theme, ThemeMode.Light, ContrastLevel.Standard, builder);
         return builder.Build();
     }
 
     private static bool Paints(DisplayList list, ColorToken token)
     {
-        var color = token.Resolve(ThemeMode.Light);
+        var color = token.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         foreach (var command in list.Commands)
             if (command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == color) return true;
         return false;

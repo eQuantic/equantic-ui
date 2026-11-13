@@ -17,7 +17,7 @@ public class FractionalTranslationTests
     private static DrawCommand FillOf(VisualNode node)
     {
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(node, 400, 100, PhotonTheme.Instance, ThemeMode.Light, builder);
+        PhotonRealizer.Realize(node, 400, 100, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder);
         foreach (var command in builder.Build().Commands)
             if (command.Kind == DrawCommandKind.FillRRect) return command;
         throw new InvalidOperationException("the box painted no fill");

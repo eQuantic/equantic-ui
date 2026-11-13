@@ -61,7 +61,7 @@ public class PressedStateTests
     public void PressingActuallyPaintsThePressedToken()
     {
         var host = Host(out var resting);
-        var pressed = PhotonTheme.Instance.Colors(Variant.Primary).Pressed.Resolve(ThemeMode.Light);
+        var pressed = PhotonTheme.Instance.Colors(Variant.Primary).Pressed.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         resting.Build().Commands.ToArray().Should().NotContain(c => c.Paint.Color == pressed,
             "nothing is pressed yet");
 

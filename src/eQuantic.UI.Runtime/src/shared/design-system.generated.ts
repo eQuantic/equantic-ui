@@ -9,7 +9,7 @@ import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 import { DataPalette, DivergingScale, StatusScale } from './data-palette';
 import { MotionSpec } from './primitive-values';
-import { buttonTheme, controlsTheme } from './theme-slots';
+import { buttonTheme, cardTheme, chipTheme, controlsTheme, iconButtonTheme, inputTheme, menuTheme, modalTheme, noticeTheme, progressTheme, segmentedTheme, selectionControlsTheme } from './theme-slots';
 
 const c = (r: number, g: number, b: number, a: number): ColorValue => ({ r, g, b, a });
 const t = (light: ColorValue, dark: ColorValue): ColorToken => new ColorToken(light, dark);
@@ -356,6 +356,16 @@ export const photonTheme: AppTheme = {
   disabledOpacity: 0.38,
   controls: controlsTheme({"height":{"comfortable":{"small":32,"medium":40,"large":48,"xLarge":56},"compact":{"small":26,"medium":32,"large":40,"xLarge":48}},"paddingX":{"comfortable":{"small":12,"medium":16,"large":20,"xLarge":24},"compact":{"small":8,"medium":12,"large":16,"xLarge":20}},"labelSize":{"comfortable":{"small":13,"medium":15,"large":16,"xLarge":17},"compact":{"small":11.5,"medium":13,"large":14.5,"xLarge":15.5}},"gap":{"small":6,"medium":8,"large":8,"xLarge":10},"icon":{"small":16,"medium":20,"large":20,"xLarge":24},"radius":{"small":10,"medium":10,"large":10,"xLarge":14}}),
   button: buttonTheme({"minWidth":64,"labelWeight":"semiBold","labelTracking":0.1,"outlineWidth":1,"linkPaddingX":6,"outlineColor":[[201,206,214,255],[76,86,100,255]],"quietFill":[[239,241,244,255],[28,35,43,255]]}),
+  modal: modalTheme({"dialogMaxWidth":480,"dialogShape":"extraLarge","dialogElevation":5,"dialogPadding":[20,20,20,20],"dialogGap":20,"dialogTextGap":8,"dialogActionGap":8,"dialogGutter":24,"bottomSheetShape":"extraLarge","bottomSheetElevation":4,"bottomSheetPadding":[20,12,20,24],"bottomSheetGap":12,"handleWidth":32,"handleHeight":4,"drawerElevation":3,"drawerPadding":[16,16,16,16]}),
+  menu: menuTheme({"panelShape":"medium","panelBorderWidth":1,"panelElevation":2,"popoverPadding":[12,12,12,12],"menuMinWidth":180,"menuPadding":[0,4,0,4],"itemPadding":[12,0,12,0],"itemGap":8,"tooltipShape":"small","tooltipPadding":[8,4,8,4]}),
+  notice: noticeTheme({"toastShape":"full","toastElevation":3,"toastPadding":[16,12,16,12],"toastMaxWidth":480,"toastDot":8,"toastGap":12,"toastMargin":[16,24,16,24],"bannerShape":"large","bannerPadding":[14,12,14,12],"bannerIconGap":10,"bannerGap":4,"bannerTextSize":13,"bannerLineHeight":18,"bannerTitleWeight":"semiBold","bannerBodyWeight":"regular","consentShape":"large","consentElevation":2,"consentBorderWidth":1,"consentPadding":[16,16,16,16]}),
+  progress: progressTheme({"barHeight":4,"prominentBarHeight":8,"barShape":"full","refreshSpinner":20,"skeletonLineHeight":12,"skeletonShape":"medium"}),
+  card: cardTheme({"shape":"large","borderWidth":1,"elevation":1}),
+  iconButton: iconButtonTheme({"iconSize":{"small":16,"medium":20,"large":24,"xLarge":24},"radius":999,"outlineWidth":1,"tonalPressOpacity":0.24}),
+  input: inputTheme({"paddingX":14,"pickerPaddingX":12,"gap":10,"pickerGap":8,"borderWidth":1,"focusBorderWidth":2,"radius":10,"searchRadius":999,"iconSize":20,"labelGap":6,"captionGap":5,"labelRole":"label","captionRole":"caption","panelElevation":2}),
+  selectionControls: selectionControlsTheme({"box":{"comfortable":22,"compact":20},"borderWidth":2,"checkboxRadius":4,"radioDot":{"comfortable":10,"compact":9},"radioRowHeight":44,"labelGap":12,"switchWidth":{"comfortable":52,"compact":44},"switchHeight":{"comfortable":32,"compact":26},"switchThumb":{"comfortable":26,"compact":20},"switchInset":3,"switchThumbElevation":1,"sliderTrackHeight":4,"sliderThumbSize":24,"sliderThumbBorder":1,"sliderThumbElevation":2,"sliderMinWidth":120}),
+  segmented: segmentedTheme({"inset":3,"thumbElevation":1,"borderWidth":1,"iconSize":20}),
+  chip: chipTheme({"paddingX":12,"gap":6,"labelSize":13,"labelLineHeight":16,"labelWeight":"semiBold","labelTracking":0,"radius":999,"selectedBorderWidth":1,"outlineWidth":1,"pressOpacity":0.24,"iconSize":16,"removeIconSize":20}),
   colors(variant: string): VariantColors {
     return variantColors[variant] ?? variantColors.primary;
   },

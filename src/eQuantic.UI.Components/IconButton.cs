@@ -73,13 +73,17 @@ public sealed class IconButton : StatelessComponent
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
-        var side = ControlMetrics.Height(context, Size);
-        var iconSize = Size switch
+        // The theme's IconButton slot, then its control ladder, then the component's own (§3.10).
+        var slot = theme.IconButton;
+        var side = ControlMetrics.Height(context, Size, slot?.Controls);
+        var iconSize = ControlMetrics.AtSize(slot?.IconSize, Size) ?? Size switch
         {
             SizeVariant.Small => IconSize.Sm,
             SizeVariant.Medium => IconSize.Dense,
             _ => IconSize.Md,
         };
+        var quietFill = slot?.QuietFill ?? theme.SurfaceSubtle;
+        var tonalPress = primary.Pressed.WithOpacity(slot?.TonalPressOpacity ?? 0.24f);
 
         ColorToken? fill = Kind switch
         {
@@ -91,7 +95,7 @@ public sealed class IconButton : StatelessComponent
         {
             IconButtonKind.Filled => primary.OnBase,
             IconButtonKind.Tonal => primary.OnSubtle,
-            _ => Selected ? primary.Base : theme.TextSecondary,
+            _ => Selected ? primary.Base : slot?.GlyphColor ?? theme.TextSecondary,
         };
         if (Disabled)
         {
@@ -106,8 +110,8 @@ public sealed class IconButton : StatelessComponent
         ColorToken? pressedFill = Kind switch
         {
             IconButtonKind.Filled => primary.Pressed,
-            IconButtonKind.Tonal => primary.Pressed.WithOpacity(0.24f),
-            _ => theme.SurfaceSubtle,
+            IconButtonKind.Tonal => tonalPress,
+            _ => quietFill,
         };
 
         // Hover per kind (A13, §10): the quiet kinds sit on SurfaceSubtle; Tonal/Filled on the
@@ -115,8 +119,8 @@ public sealed class IconButton : StatelessComponent
         var hoverFill = Kind switch
         {
             IconButtonKind.Filled => primary.Hover,
-            IconButtonKind.Tonal => primary.Subtle.MidpointWith(primary.Pressed.WithOpacity(0.24f)),
-            _ => theme.SurfaceSubtle,
+            IconButtonKind.Tonal => primary.Subtle.MidpointWith(tonalPress),
+            _ => quietFill,
         };
 
         var box = new Box(new BoxStyle
@@ -124,9 +128,9 @@ public sealed class IconButton : StatelessComponent
             Width = side,
             Height = side,
             Background = fill,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-            BorderWidth = Kind == IconButtonKind.Outline ? 1f : 0f,
-            BorderColor = theme.BorderStrong,
+            CornerRadius = new CornerRadii(slot?.Radius ?? theme.Shape(ShapeScale.Full)),
+            BorderWidth = Kind == IconButtonKind.Outline ? slot?.OutlineWidth ?? 1f : 0f,
+            BorderColor = slot?.OutlineColor ?? theme.BorderStrong,
             Hover = Disabled ? null : new StyleDiff { Background = hoverFill },
             Pressed = Disabled ? null : new StyleDiff { Background = pressedFill },
         }, content);

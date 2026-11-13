@@ -33,27 +33,44 @@ public class DesignTokenTests
         return (hi + 0.05) / (lo + 0.05);
     }
 
+    /// <summary>
+    /// Every mode at every contrast level: the claims below run once per level (Foundations §01,
+    /// "Contrast levels"). At More every pair is held to the WCAG 2 targets that level promises,
+    /// measured on the strictest ground: 7:1 for every OnBase or OnSubtle pair, 12, 9 and 7 for
+    /// Primary, Secondary and Muted text, 3:1 and 4.5:1 for Border and BorderStrong.
+    /// </summary>
+    public static IEnumerable<object[]> Appearances() =>
+        from mode in new[] { ThemeMode.Light, ThemeMode.Dark }
+        from level in new[] { ContrastLevel.Standard, ContrastLevel.More }
+        select new object[] { mode, level };
+
     public static IEnumerable<object[]> FilledVariants() =>
-        new[] { Variant.Primary, Variant.Secondary, Variant.Destructive, Variant.Success, Variant.Warning, Variant.Info }
-            .SelectMany(v => new[] { new object[] { v, ThemeMode.Light }, new object[] { v, ThemeMode.Dark } });
+        from variant in new[] { Variant.Primary, Variant.Secondary, Variant.Destructive, Variant.Success, Variant.Warning, Variant.Info }
+        from appearance in Appearances()
+        select new object[] { variant, appearance[0], appearance[1] };
+
+    /// <summary>What a label on a fill or a Subtle has to clear at each level.</summary>
+    private static double PairTarget(ContrastLevel level) => level == ContrastLevel.More ? 7.0 : 4.5;
 
     [Theory]
     [MemberData(nameof(FilledVariants))]
-    public void OnBase_AgainstBase_MeetsAA(Variant variant, ThemeMode mode)
+    public void OnBase_AgainstBase_MeetsItsLevel(Variant variant, ThemeMode mode, ContrastLevel level)
     {
         var colors = Theme.Colors(variant);
-        Contrast(colors.OnBase.Resolve(mode), colors.Base.Resolve(mode)).Should().BeGreaterThanOrEqualTo(4.5,
-            $"§01 claims every OnBase/Base pair clears AA ({variant}, {mode})");
+        Contrast(colors.OnBase.Resolve(mode, level), colors.Base.Resolve(mode, level)).Should().BeGreaterThanOrEqualTo(
+            PairTarget(level), $"§01 claims every OnBase/Base pair clears its level ({variant}, {mode}, {level})");
         // Pressed keeps the same OnBase content — it must stay readable on the pressed fill too.
-        Contrast(colors.OnBase.Resolve(mode), colors.Pressed.Resolve(mode)).Should().BeGreaterThanOrEqualTo(4.5);
+        Contrast(colors.OnBase.Resolve(mode, level), colors.Pressed.Resolve(mode, level))
+            .Should().BeGreaterThanOrEqualTo(PairTarget(level));
     }
 
     [Theory]
     [MemberData(nameof(FilledVariants))]
-    public void OnSubtle_AgainstSubtle_MeetsAA(Variant variant, ThemeMode mode)
+    public void OnSubtle_AgainstSubtle_MeetsItsLevel(Variant variant, ThemeMode mode, ContrastLevel level)
     {
         var colors = Theme.Colors(variant);
-        Contrast(colors.OnSubtle.Resolve(mode), colors.Subtle.Resolve(mode)).Should().BeGreaterThanOrEqualTo(4.5);
+        Contrast(colors.OnSubtle.Resolve(mode, level), colors.Subtle.Resolve(mode, level))
+            .Should().BeGreaterThanOrEqualTo(PairTarget(level));
     }
 
     [Theory]
@@ -61,19 +78,58 @@ public class DesignTokenTests
     [InlineData(ThemeMode.Dark)]
     public void TextTiers_AgainstSurface_MeetTheirClaims(ThemeMode mode)
     {
-        var surface = Theme.Surface.Resolve(mode);
-        Contrast(Theme.TextPrimary.Resolve(mode), surface).Should().BeGreaterThanOrEqualTo(7.0, "§01 claims AAA");
-        Contrast(Theme.TextSecondary.Resolve(mode), surface).Should().BeGreaterThanOrEqualTo(7.0, "§01 claims AAA");
-        Contrast(Theme.TextMuted.Resolve(mode), surface).Should().BeGreaterThanOrEqualTo(4.5, "§01 claims AA");
+        var surface = Theme.Surface.Resolve(mode, ContrastLevel.Standard);
+        Contrast(Theme.TextPrimary.Resolve(mode, ContrastLevel.Standard), surface).Should().BeGreaterThanOrEqualTo(7.0, "§01 claims AAA");
+        Contrast(Theme.TextSecondary.Resolve(mode, ContrastLevel.Standard), surface).Should().BeGreaterThanOrEqualTo(7.0, "§01 claims AAA");
+        Contrast(Theme.TextMuted.Resolve(mode, ContrastLevel.Standard), surface).Should().BeGreaterThanOrEqualTo(4.5, "§01 claims AA");
     }
 
+    /// <summary>
+    /// At More, each text tier on the strictest of Background, Surface and SurfaceSubtle, and each
+    /// border on the strictest of the two grounds a border sits on, Background and Surface.
+    /// </summary>
     [Theory]
     [InlineData(ThemeMode.Light)]
     [InlineData(ThemeMode.Dark)]
-    public void Link_AgainstBackground_MeetsAA(ThemeMode mode)
+    public void AtMore_TextAndBorders_MeetTheTargetsOnTheStrictestGround(ThemeMode mode)
     {
-        Contrast(Theme.LinkColor.Resolve(mode), Theme.Background.Resolve(mode))
+        const ContrastLevel more = ContrastLevel.More;
+        var page = new[] { Theme.Background, Theme.Surface, Theme.SurfaceSubtle }.Select(t => t.Resolve(mode, more)).ToArray();
+        var chrome = new[] { Theme.Background, Theme.Surface }.Select(t => t.Resolve(mode, more)).ToArray();
+        double Lowest(ColorToken token, Color[] grounds) => grounds.Min(ground => Contrast(token.Resolve(mode, more), ground));
+
+        Lowest(Theme.TextPrimary, page).Should().BeGreaterThanOrEqualTo(12.0, "More claims 12:1 for Primary");
+        Lowest(Theme.TextSecondary, page).Should().BeGreaterThanOrEqualTo(9.0, "More claims 9:1 for Secondary");
+        Lowest(Theme.TextMuted, page).Should().BeGreaterThanOrEqualTo(7.0, "More claims 7:1 for Muted");
+        Lowest(Theme.Border, chrome).Should().BeGreaterThanOrEqualTo(3.0, "More claims 3:1 for Border");
+        Lowest(Theme.BorderStrong, chrome).Should().BeGreaterThanOrEqualTo(4.5, "More claims 4.5:1 for BorderStrong");
+    }
+
+    [Theory]
+    [MemberData(nameof(Appearances))]
+    public void Link_AgainstBackground_MeetsAA(ThemeMode mode, ContrastLevel level)
+    {
+        Contrast(Theme.LinkColor.Resolve(mode, level), Theme.Background.Resolve(mode, level))
             .Should().BeGreaterThanOrEqualTo(4.5, "§01 audits Link as text on Background");
+    }
+
+    /// <summary>
+    /// A token without a More pair paints its Standard one at More, and one with a pair paints it:
+    /// the resolution the realizers read, held where its two answers can be told apart.
+    /// </summary>
+    [Fact]
+    public void ATokenWithoutAMorePair_ResolvesToStandard_AtMore()
+    {
+        Theme.TextPrimary.DiffersAtMore.Should().BeFalse("the handoff leaves Primary text where it is");
+        Theme.TextPrimary.Resolve(ThemeMode.Dark, ContrastLevel.More).Should().Be(Theme.TextPrimary.Dark);
+
+        Theme.TextMuted.Resolve(ThemeMode.Light, ContrastLevel.More).Should().Be(Color.FromRgb(0x47, 0x52, 0x61));
+        Theme.TextMuted.Resolve(ThemeMode.Dark, ContrastLevel.More).Should().Be(Color.FromRgb(0xC5, 0xD1, 0xDF));
+        Theme.TextMuted.Resolve(ThemeMode.Light, ContrastLevel.Standard).Should().Be(Color.FromRgb(0x5F, 0x6B, 0x7A));
+
+        var stated = new ColorToken(Color.White, Color.Black).WithMore(Color.White, Color.Black);
+        stated.Should().Be(new ColorToken(Color.White, Color.Black),
+            "a More pair equal to the Standard one is the Standard one, so equality reads the token");
     }
 
     // ---- Value pins (transcription guards) --------------------------------------------------------

@@ -5,3 +5,4 @@
 [EQX0001]eQuantic.UI.Native.Shell.Apple.AutoreleasePool.AutoreleasePool() -> void
 [EQX0001]eQuantic.UI.Native.Shell.Apple.AutoreleasePool.Dispose() -> void
 [EQX0001]static eQuantic.UI.Native.Shell.Apple.AutoreleasePool.Push() -> eQuantic.UI.Native.Shell.Apple.AutoreleasePool
+[EQX0001]static eQuantic.UI.Native.Shell.Apple.AppleAppearance.Contrast() -> eQuantic.UI.Primitives.ContrastLevel

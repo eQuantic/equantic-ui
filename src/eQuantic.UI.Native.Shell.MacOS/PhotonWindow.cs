@@ -176,6 +176,9 @@ public sealed class PhotonWindow
         var frameBuilder = new DisplayListBuilder();
         var host = new PhotonHost(root, theme, mode, _width, _height, textService)
         {
+            // Increase Contrast, read from the system like the mode (#340): every token resolves
+            // with it, so the palette steps up where the theme says it does.
+            Contrast = Shell.Apple.AppleAppearance.Contrast(),
             // Production owns its frames: nothing retains a RealizeResult past the next render,
             // so each replaced tree feeds the next (LayoutNodePool).
             RecycleFrames = true,

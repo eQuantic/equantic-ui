@@ -123,6 +123,218 @@ public sealed class MaterialTheme : IAppTheme
         LinkPaddingX = 12,
     };
 
+    /// <summary>
+    /// M3's icon button: a fully rounded 40dp container holding a 24dp icon (Icon buttons, Specs), 20dp
+    /// at the extra-small 32dp container, and a 1dp outline.
+    /// </summary>
+    public IconButtonTheme? IconButton { get; } = new()
+    {
+        IconSize = new SizeLadder { Small = 20, Medium = 24, Large = 24, XLarge = 24 },
+        Radius = 999,
+        OutlineWidth = 1,
+    };
+
+    /// <summary>
+    /// M3's text field (Text fields, Specs): a 56dp container with an extra-small (4dp) corner, a 1dp
+    /// outline that grows to 2dp while focused, 16dp of padding and of gap to a 24dp icon, and the
+    /// supporting text 4dp below. The search field is M3's search bar, 56dp and fully rounded, and a
+    /// picker's field is the text field its menu anchors to, whose items are 48dp (Menus, Specs). M3
+    /// gives a field one height, so every rung of the ladder is 56, at either density.
+    /// </summary>
+    public InputTheme? Input { get; } = new()
+    {
+        Controls = new ControlsTheme
+        {
+            Height = OneSize(56),
+        },
+        PaddingX = 16,
+        PickerPaddingX = 16,
+        Gap = 16,
+        PickerGap = 16,
+        BorderWidth = 1,
+        FocusBorderWidth = 2,
+        Radius = 4,
+        SearchRadius = 999,
+        IconSize = 24,
+        CaptionGap = 4,
+        PanelRowHeight = 48,
+    };
+
+    /// <summary>
+    /// M3's selection controls (Checkbox, Radio button, Switch and Slider, Specs): an 18dp checkbox with
+    /// a 2dp border and a 2dp corner, a 20dp radio around a 10dp dot, each in a 48dp row; a 52 by 32
+    /// switch whose 24dp handle sits 4dp inside the track; and a slider's 4dp track under a 20dp handle
+    /// at elevation 1, with no ring. Material 3 does not shrink them for a dense layout, so the compact
+    /// side is the same.
+    /// </summary>
+    public SelectionControlsTheme? SelectionControls { get; } = new()
+    {
+        Box = new DensityPair { Comfortable = 18, Compact = 18 },
+        RadioSize = new DensityPair { Comfortable = 20, Compact = 20 },
+        BorderWidth = 2,
+        CheckboxRadius = 2,
+        RadioDot = new DensityPair { Comfortable = 10, Compact = 10 },
+        RadioRowHeight = 48,
+        SwitchWidth = new DensityPair { Comfortable = 52, Compact = 52 },
+        SwitchHeight = new DensityPair { Comfortable = 32, Compact = 32 },
+        SwitchThumb = new DensityPair { Comfortable = 24, Compact = 24 },
+        SwitchInset = 4,
+        SliderTrackHeight = 4,
+        SliderThumbSize = 20,
+        SliderThumbBorder = 0,
+        SliderThumbElevation = 1,
+    };
+
+    /// <summary>
+    /// M3's segmented button (Segmented buttons, Specs): 40dp tall, fully rounded, its label in Label
+    /// large (14), 12dp of padding, flat, with no lip around the selected segment and a 1dp outline
+    /// around the track; its 18dp icons take the §07 whitelist's next step, 20. M3 gives the control one
+    /// size, so every rung of the ladder is that size, at either density.
+    /// </summary>
+    public SegmentedTheme? Segmented { get; } = new()
+    {
+        Controls = new ControlsTheme
+        {
+            Height = OneSize(40),
+            PaddingX = OneSize(12),
+            LabelSize = OneSize(14),
+            Radius = new SizeLadder { Small = 999, Medium = 999, Large = 999, XLarge = 999 },
+        },
+        Inset = 0,
+        ThumbElevation = 0,
+        TrackBorderWidth = 1,
+        IconSize = IconSize.Dense,
+    };
+
+    /// <summary>
+    /// M3's chip (Chips, Specs): 32dp tall with a small (8dp) corner, 16dp of padding and 8dp between
+    /// its icons and its label in Label large; an unselected filter chip has a 1dp outline, and a
+    /// selected one is filled rather than outlined.
+    /// M3 draws the icons at 18dp, which is not on the §07 whitelist an icon is held to, so they take
+    /// its next step, 20. M3 gives a chip one height, at either density.
+    /// </summary>
+    public ChipTheme? Chip { get; } = new()
+    {
+        Controls = new ControlsTheme
+        {
+            Height = OneSize(32),
+        },
+        PaddingX = 16,
+        Gap = 8,
+        LabelSize = 14,
+        LabelLineHeight = 20,
+        LabelWeight = FontWeight.Medium,
+        LabelTracking = 0.1f,
+        Radius = 8,
+        SelectedBorderWidth = 0,
+        OutlineWidth = 1,
+        IconSize = IconSize.Dense,
+        RemoveIconSize = IconSize.Dense,
+    };
+
+    /// <summary>A ladder whose every rung, at either density, is <paramref name="value"/>: Material 3
+    /// specifies one size for a field, a segmented button and a chip, and does not shrink it for a
+    /// dense layout.</summary>
+    private static DensityLadder OneSize(float value)
+    {
+        var rungs = new SizeLadder { Small = value, Medium = value, Large = value, XLarge = value };
+        return new DensityLadder { Comfortable = rungs, Compact = rungs };
+    }
+
+    // The slots below hold only what M3 specifies for the component; a member it says nothing about
+    // stays null, so the component keeps its own value (a toast's status dot, a skeleton, the cookie
+    // consent). A colour M3 names by one of the theme's roles stays null too, as in PhotonTheme: the
+    // component reads the role (inverse-on-surface is TextInverse), so a theme that changes the role
+    // reaches it. The ones that carry a colour of their own read this theme's scheme, so they are
+    // built per instance.
+
+    /// <summary>
+    /// M3's dialog (Dialogs, Specs): extra-large corners, elevation level 3, 24dp of padding, 16dp from
+    /// the headline to the supporting text, 24dp to the actions and 8dp between them, at most 560dp
+    /// wide. Its bottom sheet: extra-large top corners, level 1, a 32 by 4dp drag handle in
+    /// on-surface-variant at 40%. Its modal navigation drawer: level 1, 12dp of padding.
+    /// </summary>
+    public ModalTheme? Modal => field ??= new()
+    {
+        DialogMaxWidth = 560,
+        DialogShape = ShapeScale.ExtraLarge,
+        DialogElevation = 3,
+        DialogPadding = EdgeInsets.All(24),
+        DialogGap = 24,
+        DialogTextGap = 16,
+        DialogActionGap = 8,
+        BottomSheetShape = ShapeScale.ExtraLarge,
+        BottomSheetElevation = 1,
+        HandleWidth = 32,
+        HandleHeight = 4,
+        HandleColor = _colors.TextSecondary.WithOpacity(0.4f),
+        DrawerElevation = 1,
+        DrawerPadding = EdgeInsets.All(12),
+    };
+
+    /// <summary>
+    /// M3's menu (Menus, Specs): extra-small corners, no outline, elevation level 2, at least 112dp wide,
+    /// 8dp above and below its items, 12dp at an item's sides and between its icon and its words. Its
+    /// plain tooltip: extra-small corners, 8 by 4dp of padding, inverse-on-surface on inverse-surface.
+    /// </summary>
+    public MenuTheme? Menu => field ??= new()
+    {
+        PanelShape = ShapeScale.ExtraSmall,
+        PanelBorderWidth = 0,
+        PanelElevation = 2,
+        MenuMinWidth = 112,
+        MenuPadding = EdgeInsets.Symmetric(0, 8),
+        ItemPadding = EdgeInsets.Symmetric(12, 0),
+        ItemGap = 12,
+        TooltipShape = ShapeScale.ExtraSmall,
+        TooltipPadding = EdgeInsets.Symmetric(8, 4),
+        TooltipFill = _colors.InverseSurface,
+    };
+
+    /// <summary>
+    /// M3's snackbar (Snackbar, Specs): inverse-on-surface on inverse-surface, extra-small corners,
+    /// elevation level 3, 16dp at the sides and 14dp above and below. Its banner's words: title small
+    /// over body medium (14 over 20, medium then regular), 16dp after the leading icon.
+    /// </summary>
+    public NoticeTheme? Notice => field ??= new()
+    {
+        ToastFill = _colors.InverseSurface,
+        ToastShape = ShapeScale.ExtraSmall,
+        ToastElevation = 3,
+        ToastPadding = EdgeInsets.Symmetric(16, 14),
+        BannerIconGap = 16,
+        BannerTextSize = 14,
+        BannerLineHeight = 20,
+        BannerTitleWeight = FontWeight.Medium,
+        BannerBodyWeight = FontWeight.Regular,
+    };
+
+    /// <summary>
+    /// M3's linear progress indicator (Progress indicators, Specs): a 4dp track, 8dp when it is the
+    /// thick one, fully rounded, on secondary-container.
+    /// </summary>
+    public ProgressTheme? Progress => field ??= new()
+    {
+        BarHeight = 4,
+        ProminentBarHeight = 8,
+        BarShape = ShapeScale.Full,
+        TrackColor = _colors.Secondary.Subtle,
+    };
+
+    /// <summary>
+    /// M3's cards (Cards, Specs): medium corners, a 1dp outline-variant border on the outlined one,
+    /// elevation level 1 and no border on the elevated one in either mode, surface-container-highest
+    /// under the filled one.
+    /// </summary>
+    public CardTheme? Card => field ??= new()
+    {
+        Shape = ShapeScale.Medium,
+        BorderWidth = 1,
+        Elevation = 1,
+        FilledColor = _colors.SurfaceContainerHighest,
+        ElevatedBorderColor = new ColorToken(Color.Transparent),
+    };
+
     // ---- Elevation — the M3 levels (seed-independent) --------------------------------------------
     public ShadowSpec Elevation(int level) => level switch
     {
