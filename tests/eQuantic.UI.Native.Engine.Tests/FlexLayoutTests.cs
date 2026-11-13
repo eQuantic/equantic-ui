@@ -387,7 +387,7 @@ public class FlexLayoutTests
         var builder = new DisplayListBuilder();
         var pressable = new Pressable(FixedBox(20, 20));
         var result = eQuantic.UI.Native.Components.PhotonRealizer.Realize(
-            pressable, 200, 200, PhotonTheme.Instance, ThemeMode.Light, builder);
+            pressable, 200, 200, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder);
 
         result.HitRegions.Should().HaveCount(1);
         var hit = result.HitRegions[0].Bounds;

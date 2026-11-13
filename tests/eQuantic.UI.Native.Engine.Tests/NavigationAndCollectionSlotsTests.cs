@@ -93,7 +93,7 @@ public class NavigationAndCollectionSlotsTests
 
     private static float TopOf(string content, VisualNode node, IAppTheme theme)
     {
-        var result = PhotonRealizer.Realize(node, 400, 800, theme, ThemeMode.Light, new DisplayListBuilder());
+        var result = PhotonRealizer.Realize(node, 400, 800, theme, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder());
         return Find(result.Root, n => n.Source is Text { Content: var text } && text == content)!.Bounds.Y;
     }
 
@@ -107,7 +107,7 @@ public class NavigationAndCollectionSlotsTests
 
     private static List<Rect> Boxes(VisualNode node, IAppTheme theme)
     {
-        var result = PhotonRealizer.Realize(node, 400, 800, theme, ThemeMode.Light, new DisplayListBuilder());
+        var result = PhotonRealizer.Realize(node, 400, 800, theme, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder());
         var found = new List<Rect>();
         Walk(result.Root, found);
         return found;

@@ -21,7 +21,7 @@ public class SpinnerTests
         float timeMs = 0, bool reducedMotion = false)
     {
         var builder = new DisplayListBuilder();
-        var frame = PhotonRealizer.Realize(root, 64, 64, Theme, ThemeMode.Light, builder,
+        var frame = PhotonRealizer.Realize(root, 64, 64, Theme, ThemeMode.Light, ContrastLevel.Standard, builder,
             timeMs: timeMs, reducedMotion: reducedMotion);
         return (frame, builder.Build().Commands.ToArray());
     }

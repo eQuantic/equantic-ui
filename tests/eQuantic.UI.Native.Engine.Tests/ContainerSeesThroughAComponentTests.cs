@@ -22,7 +22,7 @@ public class ContainerSeesThroughAComponentTests
     private static Box Tall(float height) => new(new BoxStyle { Width = 40, Height = height });
 
     private static Framework.LayoutNode Laid(VisualNode root, float width = 400) =>
-        PhotonRealizer.Realize(root, width, 300, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder()).Root;
+        PhotonRealizer.Realize(root, width, 300, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder()).Root;
 
     /// <summary>The issue's numbers: a box 10 tall, a Spacer of 24, and the second box at 34.</summary>
     [Fact]
