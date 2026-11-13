@@ -25,10 +25,10 @@ survives to keep an old shape alive"), each break listed in the release's notes 
 Upgrading page. The next milestone is **1.0, the web SDK stable with the native track experimental**
 ([#898](https://github.com/eQuantic/equantic-ui/issues/898)): a contract, not features. An app
 written against it keeps compiling and answering the same through the 1.x line. The exit criteria
-are in the epic's body, what is still open is its sub-issues on the board, and when it is likely to land is the board's Roadmap
-view, which `scripts/roadmap.py` forecasts ([docs/ROADMAP-FORECAST.md](docs/ROADMAP-FORECAST.md)).
+are in the epic's body, what is still open is its sub-issues on the board, and when it is
+likely to land is the board's Roadmap view, which `scripts/roadmap.py` forecasts ([docs/ROADMAP-FORECAST.md](docs/ROADMAP-FORECAST.md)).
 
-What exists, each held by a suite that fails rather than warns:
+What exists (the Security bullet is a review and a setting, not a suite):
 
 - **Write-once components**: a screen is authored once against the vocabulary
   (`eQuantic.UI.Primitives`) and realized as DOM and atomic CSS on the web, and as GPU pixels by
@@ -43,8 +43,7 @@ What exists, each held by a suite that fails rather than warns:
   architecture, so no Node or npm.
 - **Styling**: one first-party engine, typed C# lowered to atomic classes. No other engine ships.
 - **Security**: the written review is [docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md), and an
-  app turns on a Content-Security-Policy in C# (`UseContentSecurityPolicy`), and a real
-  browser runs the dashboard under the strict policy, a violation failing the build (#1270).
+  app turns on a Content-Security-Policy in C# (`UseContentSecurityPolicy`).
 - **Testing without a browser**: `eQuantic.UI.Testing` renders a component with a theme and a
   culture and says what the web lowers and what the semantics announce.
 - **The release contract**: every shipping assembly names its class (contract, tool or
@@ -52,6 +51,10 @@ What exists, each held by a suite that fails rather than warns:
   surface by `tests/eQuantic.UI.Web.Tests/developer-surface.baseline.txt` (#322), and the rules of
   a stable line follow the version (#323). Every native assembly is `[Experimental("EQX0001")]`
   (#324).
+
+Not run by CI: a Playwright suite, `tests/e2e/tests/content-security.spec.ts`, runs the dashboard
+under the strict policy in a real browser and fails on a violation when someone runs it (#1270).
+No workflow or script starts it.
 
 What is not there yet, each with its issue:
 
@@ -106,8 +109,8 @@ once. Still missing: hydration-time benchmarks and tree-shaking verification.
 ### 3. Flutter-like DX
 The `Build(context)` model is genuinely Flutter-like, and hot reload keeps state on the web and on
 the desktop (Phase 3; the simulators and emulators are W7's). Missing the rest of the productivity
-multipliers: edit-to-view under a second on the web (#900, measured by `scripts/measure-edit-to-view.cs`), module hot-swap without a page reload on
-the web, richer/more predictable layout components, and layout/diagnostic tooling.
+multipliers: edit-to-view under a second on the web (#900, measured by
+`scripts/measure-edit-to-view.cs`), module hot-swap without a page reload on the web, richer/more predictable layout components, and layout/diagnostic tooling.
 
 ### 4. shadcn-like components
 The catalog (the wiki's Components page is its index) is a respectable start, but shadcn's value is **polish + accessibility + variants**.
