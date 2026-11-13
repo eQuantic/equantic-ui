@@ -214,7 +214,7 @@ public sealed class ComponentTester : IDisposable
     private void Draw(bool rebuildAll)
     {
         using var culture = new CultureScope(Culture);
-        _host.Build(_root!, Width, rebuildAll);
+        _host.Build(_root!, rebuildAll);
         // Inside a render of its own, as the server lowers: the style sink is what knows which of a
         // node's classes hide it, an adaptive arm's gate among them.
         var channels = new RenderChannels(density: Density);
@@ -234,7 +234,7 @@ public sealed class ComponentTester : IDisposable
     {
         using var culture = new CultureScope(Culture);
         var scope = new ComponentExpansionScope();
-        _host.Build(page, Width);
+        _host.Build(page);
         _host.Lower(new RenderChannels(scope, Density));
         return scope;
     }

@@ -214,7 +214,7 @@ public class ServerRenderingService : IServerRenderingService
                     // so they have no position to keep an owner at: each is a tree drawn once, and what
                     // loaded is put back by its name.
                     var page = component as Web.VisualNodeComponent;
-                    var host = page is null ? null : Web.MarkupHost.Structural(Theme, 1f, density);
+                    var host = page is null ? null : Web.MarkupHost.ForPage(Theme, 1f, density);
 
                     // ONE ROUND, the same for both paths: the page drawn with channels of its own, whose
                     // expansion scope names what it reaches. It answers that scope.
@@ -237,7 +237,6 @@ public class ServerRenderingService : IServerRenderingService
                         renderScope = new Web.ComponentExpansionScope
                         {
                             Restore = prefetched,
-                            Reserved = coreRootKey,
                         };
                         // THE RENDER'S CHANNELS (#1404): every write-once bridge in the tree, top-level
                         // page or composed inside a Core component, collects its atomic rules, the
@@ -251,7 +250,7 @@ public class ServerRenderingService : IServerRenderingService
                         {
                             if (host is not null)
                             {
-                                host.Build(page!.Node, ServerWindowWidth);
+                                host.Build(page!.Node);
                                 html = HtmlRenderer.RenderToString(host.Lower(channels));
                                 host.EndFrame();
                             }
@@ -386,7 +385,7 @@ public class ServerRenderingService : IServerRenderingService
                     // directly, above — and says nothing about what it composes.
                     navigationPayload = component is Web.VisualNodeComponent navigated
                         ? await PrefetchPageAsync(navigated, context, density)
-                        : await PrefetchTreeAsync(component, prefetched, asked, context, coreRootKey, density);
+                        : await PrefetchTreeAsync(component, prefetched, asked, context, density);
                 }
 
                 // THEN metadata, and the order is the whole point. ConfigureMetadata used to run first,
@@ -492,14 +491,6 @@ public class ServerRenderingService : IServerRenderingService
     /// </summary>
     private const int MaxPrefetchRounds = 5;
 
-    /// <summary>
-    /// The window width a page's tree resolves an adaptive node's arm for: the widest, so every node holds
-    /// its largest arm, as the expanded size class held before (#1465). The server cannot see the window,
-    /// and the markup is the same for every width, since every arm lowers behind its own media gate: it
-    /// decides only which arm's components keep their instances from one prefetch round to the next, while
-    /// the others are drawn once per round.
-    /// </summary>
-    private const float ServerWindowWidth = float.PositiveInfinity;
 
     /// <summary>The theme every write-once page and bridge builds with: the app's, or the SDK's.</summary>
     private IAppTheme Theme => _options.Theme ?? Primitives.PhotonTheme.Instance;
@@ -529,7 +520,6 @@ public class ServerRenderingService : IServerRenderingService
         Dictionary<string, Web.LoadedComponentState> loaded,
         HashSet<string> asked,
         HttpContext context,
-        string? reserved,
         Density density)
     {
         var wire = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
@@ -539,7 +529,7 @@ public class ServerRenderingService : IServerRenderingService
 
         for (var round = 0; round < MaxPrefetchRounds; round++)
         {
-            var scope = new Web.ComponentExpansionScope { Restore = loaded, Reserved = reserved };
+            var scope = new Web.ComponentExpansionScope { Restore = loaded };
             settled = scope;
             Expand(component, scope, density);
 
@@ -613,7 +603,7 @@ public class ServerRenderingService : IServerRenderingService
         Web.VisualNodeComponent page, HttpContext context, Density density)
     {
         var wire = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
-        var host = Web.MarkupHost.Structural(Theme, 1f, density);
+        var host = Web.MarkupHost.ForPage(Theme, 1f, density);
         var data = new Web.ServerDataRounds(host);
         var settled = new Web.ComponentExpansionScope();
 
@@ -662,7 +652,7 @@ public class ServerRenderingService : IServerRenderingService
     {
         // Channels of its own, so nothing the discovery collects reaches the page the request serves:
         // only the scope it names components into is read.
-        host.Build(page, ServerWindowWidth);
+        host.Build(page);
         host.Lower(new Web.RenderChannels(scope, density));
         host.EndFrame();
     }

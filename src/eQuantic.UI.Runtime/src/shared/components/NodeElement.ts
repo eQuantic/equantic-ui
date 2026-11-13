@@ -44,7 +44,7 @@ export class NodeElement extends Element {
         if (this._deferred < 0) throw $eq.exceptions.create(['System.InvalidOperationException', 'System.SystemException', 'System.Exception'], `A '${this.configuration.nodeKind}' node has no slot the realizer shows.`);
         this.owner.enterLayer(this);
         try {
-            let shown = this.updateChild(this.childAt(this._deferred), configuration, this.owner.rebuildingAll)!;
+            let shown = this.updateChild(this.childAt(this._deferred), configuration, this._deferred, this.owner.rebuildingAll)!;
             this._children[this._deferred] = shown;
             this._shownInFrame = this.owner.frame;
             this.owner.buildDeferred(this);
@@ -77,7 +77,7 @@ export class NodeElement extends Element {
     }
 
     updateChildren(force: boolean) {
-        let slots = ChildSlots.of(this.configuration, this.owner.windowWidth);
+        let slots = ChildSlots.of(this.configuration, this.owner.windowWidth, this.owner.holdsEveryArm);
         this._deferred = slots.deferred;
         if (slots.isList && this.anyKey(slots)) {
             this.updateKeyed(slots, force);
@@ -87,7 +87,7 @@ export class NodeElement extends Element {
         while (this._children.length < count) this._children.push(null);
         for (let slot = 0; slot < count; slot++) {
             if (slot === this._deferred) continue;
-            this._children[slot] = this.updateChild(this._children[slot], slots.item(slot), force);
+            this._children[slot] = this.updateChild(this._children[slot], slots.item(slot), slot, force);
         }
         for (let slot = this._children.length - 1; slot >= count; slot--) {
             let gone: any; 
@@ -138,7 +138,10 @@ export class NodeElement extends Element {
         for (let i = 0; i < count; i++) {
             let node = slots.item(i)!;
             let kept: any; 
-            if ((kept = this._children[i]) != null) kept.update(node, force); else this._children[i] = this.inflate(node);
+            if ((kept = this._children[i]) != null) {
+                kept.slot = i;
+                kept.update(node, force);
+            } else this._children[i] = this.inflate(node, i);
         }
     }
 

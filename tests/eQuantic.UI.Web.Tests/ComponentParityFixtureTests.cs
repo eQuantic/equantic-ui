@@ -577,11 +577,8 @@ public class ComponentParityFixtureTests
     /// or on none, fails here.
     /// </para>
     /// </summary>
-    [Theory]
-    [InlineData(400f)]
-    [InlineData(700f)]
-    [InlineData(1200f)]
-    public void TheFirstFrameOfALiveTree_LowersTheMarkupTheServerWrites(float windowWidth)
+    [Fact]
+    public void TheFirstFrameOfALiveTree_LowersTheMarkupTheServerWrites()
     {
         var previousCulture = CultureInfo.CurrentCulture;
         var previousUiCulture = CultureInfo.CurrentUICulture;
@@ -594,11 +591,11 @@ public class ComponentParityFixtureTests
             // and the frame must start from instances nobody built.
             foreach (var ((name, drawnOnce, _), (_, framed, _)) in Cases().Zip(Cases()))
             {
-                // Both inside a render of their own, as the server lowers either.
-                var once = HtmlRenderer.RenderNode(WebRealizer.Lower(drawnOnce, Theme, 1f, new RenderChannels()).Render());
+                // Both atomized, as the server lowers either: the one drawn once with no frame at all.
+                var once = HtmlRenderer.RenderNode(WebRealizer.Lower(drawnOnce, Theme, 1f, new StyleSink()).Render());
 
                 var host = new MarkupHost(Theme);
-                host.Build(framed, windowWidth);
+                host.Build(framed);
                 var frame = HtmlRenderer.RenderNode(host.Lower(new RenderChannels()).Render());
                 host.EndFrame();
                 host.Owner.UnmountAll();
@@ -628,7 +625,7 @@ public class ComponentParityFixtureTests
         {
             if (linkPolicy is null) return WebRealizer.Lower(node, Theme, 1f, new StyleSink());
             var channels = new RenderChannels(linkPolicy: linkPolicy);
-            var lowered = WebRealizer.Lower(node, Theme, 1f, channels);
+            var lowered = MarkupHost.DrawOnce(node, Theme, 1f, channels);
             // A render declares its paint servers beside the page, where the twin writes them inline:
             // a case in a language compares its links, so it paints with none.
             channels.Gradients.IsEmpty.Should().BeTrue("a case lowered in a language paints with no gradient");

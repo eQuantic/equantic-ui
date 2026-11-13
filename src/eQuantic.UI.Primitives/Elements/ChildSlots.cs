@@ -18,17 +18,21 @@ namespace eQuantic.UI.Primitives;
 /// <para>
 /// The slots are the ones the layout measures (a wrapper's child at 0, a code surface's options at 1, a
 /// list's members by index), which is what lets the layout read the position of a child from the slot
-/// it measures. The size class is the frame's, because an <see cref="AdaptiveNode"/> holds ONE child
-/// here, the arm the window resolves, exactly as Photon lays it out: the other arms are never built.
+/// it measures. The window's width is the frame's, because an <see cref="AdaptiveNode"/> holds ONE child
+/// here, the arm that width resolves at the node's own thresholds, exactly as Photon lays it out: the
+/// other arms are never built. An owner that holds every arm (<see cref="BuildOwner.HoldsEveryArm"/>),
+/// as the web's does, gives each arm a slot of its own instead.
 /// </para>
 /// </summary>
 internal static class ChildSlots
 {
-    internal static NodeSlots Of(VisualNode node, float windowWidth) => node.NodeKind switch
+    internal static NodeSlots Of(VisualNode node, float windowWidth, bool everyArm) => node.NodeKind switch
     {
         // A component builds its one child; its element never asks this.
         "component" => NodeSlots.None,
-        "adaptive" => NodeSlots.One(((AdaptiveNode)node).ResolveWidth(windowWidth)),
+        // Every arm at a slot of its own where the realizer draws them all (BuildOwner.HoldsEveryArm),
+        // the one the window's width resolves, at the node's own thresholds, where it draws one.
+        "adaptive" => everyArm ? EveryArm((AdaptiveNode)node) : NodeSlots.One(((AdaptiveNode)node).ResolveWidth(windowWidth)),
         "adjustable" => NodeSlots.One(((Adjustable)node).Child),
         // The panel is not a child of the anchor: the realizer shows it in a layer of its own, made when
         // the anchored node is painted and only while it is open, so that slot is built when it is shown.
@@ -82,6 +86,10 @@ internal static class ChildSlots
         _ => throw new InvalidOperationException(
             $"The element engine knows no child slots for a '{node.NodeKind}' node: ChildSlots needs an arm for its kind."),
     };
+
+    // Each arm at its own slot whether or not the node declares the ones before it, so an arm keeps its
+    // slot, and its position, when a build declares another.
+    private static NodeSlots EveryArm(AdaptiveNode node) => NodeSlots.Three(node.Compact, node.Medium, node.Expanded);
 
     // The code, what it offers at its caret when it offers anything, then each note it explains with:
     // the order the layout measures them in.
