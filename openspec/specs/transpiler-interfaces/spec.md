@@ -168,8 +168,8 @@ type's own it hands off to SHALL keep its name. A component's explicit implement
 its name SHALL be written with it. eqc SHALL refuse with EQ1007, naming both members and the interfaces,
 what else its twin would hold on the name of an explicit implementation it writes: another one the type
 writes under that name (two interfaces' members of one name, or one interface over two type arguments,
-static ones too), a property, an event, a static field or an override the type declares on that name, a
-member a base
+static ones too), a property, an event or an override the type declares on that name (a static field
+beside an explicit static of its name moving to a slot of its own instead), a member a base
 the source declares holds on it (an abstract method's included), unless that is the base's explicit
 implementation of the same interface member, which the type re-implements, and a name the runtime reads
 of every object (`equals`, `getHashCode`, `toString`).
@@ -217,3 +217,10 @@ of every object (`equals`, `getHashCode`, `toString`).
   `string INamedThing.Name() => "interface";`, and its `Build` calls both
 - **THEN** its twin writes `name$1()` and `name()`, where the parser dropped the second it met and the
   twin called the one it dropped
+
+#### Scenario: A static field beside an explicit static of its name
+
+- **WHEN** `class Made : IMake3` declares `public static string Make = "field";` and
+  `static string IMake3.Make() => "interface";`
+- **THEN** the build succeeds, the field written in a slot of its own (`make$`) and the explicit
+  implementation under `make`

@@ -11,19 +11,28 @@ sources, runs eqc again and tells the browsers watching it to reload, in Develop
 
 An app whose `UIOptions.HotReload` is unset SHALL rebuild its modules on a save of its C# and reload
 the browsers watching it when it runs in the Development environment, and SHALL do the same when it
-runs under `dotnet watch`, which sets `DOTNET_WATCH` to 1 on the app it runs, whatever its
-environment. An app that sets `HotReload` SHALL be rebuilt exactly as it says.
+runs under `dotnet watch`, which sets `DOTNET_WATCH` to 1 on the app it runs, in any environment but
+Production, which streams rebuilds only when the app sets `HotReload = true`. An app that sets
+`HotReload` SHALL be rebuilt exactly as it says.
 
 #### Scenario: dotnet watch without a launch profile
 
-- **WHEN** the dashboard sample runs under `dotnet watch --no-launch-profile`, so in Production, and
+- **WHEN** the dashboard sample runs under `dotnet watch --no-launch-profile`, so in Production, with
+  `HotReload` unset
+- **THEN** the server maps no relay and serves its modules `immutable`; with `HotReload = true` it streams
+  rebuilds as in Development
+
+#### Scenario: dotnet watch in a development environment
+
+- **WHEN** the dashboard sample runs under `dotnet watch` with `ASPNETCORE_ENVIRONMENT=Development`, and
   the text of a component's `.cs` is edited and saved
 - **THEN** eqc runs again, the page reloads, and it shows the new text
 
 #### Scenario: The decision
 
-- **WHEN** `HotReload` is unset, the environment is Production and `DOTNET_WATCH` is `1`
-- **THEN** the app rebuilds on a save; with `DOTNET_WATCH` absent it does not; with `HotReload = false`
+- **WHEN** `HotReload` is unset, the environment is Staging and `DOTNET_WATCH` is `1`
+- **THEN** the app rebuilds on a save; in Production with `DOTNET_WATCH` at `1` it does not; with
+  `DOTNET_WATCH` absent it does not; with `HotReload = false`
   in Development and `DOTNET_WATCH` at `1` it does not; with `HotReload = true` in Production it does
 
 ### Requirement: A page listens for rebuilds exactly when its server streams them
@@ -359,7 +368,7 @@ show them over itself without reloading.
 The server SHALL ask the project's MSBuild how to start eqc once for a run, as the app starts, and
 SHALL keep that eqc running, asking it to compile on each save. No MSBuild SHALL run for a save. The
 server SHALL own the process: eqc SHALL end when its standard input does, a stop or a compile past
-its limit SHALL kill it, and the next save SHALL start it again.
+its limit SHALL kill it, and the next save SHALL start it again, never waiting on the eqc that died.
 
 #### Scenario: A save
 
@@ -370,6 +379,11 @@ its limit SHALL kill it, and the next save SHALL start it again.
 
 - **WHEN** the running eqc exits between two saves
 - **THEN** the next save starts it again, with what MSBuild said at the start of the run, and compiles
+
+#### Scenario: eqc dies as a save finds it
+
+- **WHEN** the running eqc exits, and its exit is raised as the next save finds it gone
+- **THEN** the save starts eqc again and compiles, where the save and the exit each waited for the other and the hot reload hung for good
 
 #### Scenario: A compile past its limit, or a stop
 
@@ -404,3 +418,69 @@ an input the SDK handed changed, or when a file of a project the app references 
 
 - **WHEN** a file of a project the app references changed
 - **THEN** the build loads cold
+
+### Requirement: Hot reload ends with its host, stopped or not
+
+The server SHALL end hot reload, its watchers, its timers and the compiler it started, when the app stops
+and when the host's services are disposed, whichever comes first, and ending it a second time SHALL do
+nothing more.
+
+#### Scenario: A host disposed without being stopped
+
+- **WHEN** an app with hot reload on is started and its host disposed without being stopped, and a source under its content root is then written
+- **THEN** no rebuild starts, where the watcher still running started one
+
+### Requirement: A production page loads no byte of the dev loop
+
+The runtime every page imports SHALL carry no module of the runtime's `src/dev/`. The server SHALL name, in
+the page's import map, a runtime that carries the dev loop (the error overlay and the capture and replay of a
+page's fields around a hot reload) in Development and wherever it streams rebuilds, and the runtime without
+it everywhere else, and SHALL answer the runtime with the loop only where it serves the loop.
+
+#### Scenario: The runtime every page loads
+
+- **WHEN** the map of the runtime the Server embeds as `runtime.js` is read
+- **THEN** it names no source under `src/dev/`, where it named the overlay and its helpers
+
+#### Scenario: A production page
+
+- **WHEN** a page is served by an app in Production that does not stream rebuilds
+- **THEN** its import map names `/_equantic/runtime.js`, and `/_equantic/runtime.dev.js` answers 404
+
+#### Scenario: A page in Development or under hot reload
+
+- **WHEN** a page is served in Development, or in Production with hot reload on
+- **THEN** its import map names `/_equantic/runtime.dev.js`, which the server answers, and the page's hot reload and error overlay run as before
+
+### Requirement: A save is announced once
+
+The server SHALL rebuild and announce only for the saves made since the last rebuild took its saves, so a
+second call for a save the last rebuild answered SHALL rebuild nothing and send the page nothing. Every
+rebuild that ends SHALL say on the server's console whether the page hydrates or mounts, and for a mount,
+when the save was written and when the last edit reached the server.
+
+#### Scenario: A second call for an answered save
+
+- **WHEN** a save is rebuilt and announced, and the debounce asks for a rebuild again with nothing saved since
+- **THEN** the page hears one announcement, where it heard a second one, which said mount
+
+#### Scenario: An event of a path already gone
+
+- **WHEN** a save's file is written, its edit reaches the server, and the save's events include one for a path gone by the time the server reads it
+- **THEN** the event dates nothing and opens no rebuild, whether it comes before the source's event or after the save's rebuild, and the page hears one hydrate, where the gone path dated the save at its arrival and the page heard mount
+
+#### Scenario: A page that mounts
+
+- **WHEN** a rebuild tells the page to mount
+- **THEN** the server's console says when the save was written and when the last edit reached it, or that no save brings it its edit
+
+### Requirement: Asking MSBuild how to start eqc never holds the loop
+
+The MSBuild the server asks how to start eqc SHALL leave no worker node or server behind holding its
+streams, and what it wrote SHALL be read within what is left of the time the server gives it, so a save
+that asks answers instead of waiting on a stream nothing will close.
+
+#### Scenario: An MSBuild that exits and leaves its output held
+
+- **WHEN** the MSBuild the server asks exits, and something it started goes on holding its output
+- **THEN** the asking ends within its limit, and the save answers that eqc could not be started

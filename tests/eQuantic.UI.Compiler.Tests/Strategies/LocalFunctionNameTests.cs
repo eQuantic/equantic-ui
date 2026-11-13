@@ -192,7 +192,7 @@ public class LocalFunctionNameTests
     public void TheScan_FindsTheGlobalsItIsKnownToEmit()
     {
         // The instrument first: a scan that read nothing would leave the theory below with no case.
-        EmittedGlobals().Should().Contain(["console", "parseInt", "crypto", "undefined"]);
+        EmittedGlobals().Should().Contain(["console", "setTimeout", "crypto", "undefined"]);
     }
 
     [Theory]

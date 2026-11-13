@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "Element.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Elements/Element.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAuBA;QAQI;QAGA;QAIA;QAGA;QAQA;QAmBA;QAIA;QAIA;QAIA;QAIa;QAzDT;;;IAIJ;IAGA;IAIA;IAGA;IAQA;IAmBA;IAIA;IAIA;IAIA;IAIa;IAhCb;IAaA;;IAuBA;QAA4D;;;IAW5D;QACI;;;IAGJ;QAEI;QACA;QACA;QACA;QACA;QACA;QACA;QACA;QACA;;;IAIJ;IAOA;;IAOA;QAEI;YAEI,sBAAuB;YACvB;;QAGJ;YAEI;gBAEI;gBACA;;YAGJ;;QAGJ;;;IAIJ;QAEI;QACA;QACA;;;IAOJ;QAEI;QACA;QACA;;;IAGJ;;IAGA;;IAxJJ"
+}

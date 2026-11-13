@@ -46,6 +46,14 @@ public interface ICodeSurfaceModel
     int FocusVersion { get; }
 
     /// <summary>
+    /// What a screen reader hears the surface hold, and where its caret stands in it (#1333): the field's
+    /// value on every target, so a reader hears the field and its text as one thing rather than an empty
+    /// field beside lines it draws. A realizer writes it where its platform reads a field's value, and
+    /// reads no copy of the drawn text beside it.
+    /// </summary>
+    TextReading Reading { get; }
+
+    /// <summary>
     /// A key the platform reported, by NAME ("ArrowLeft", "Enter", "Tab", "z"). Answers whether the
     /// editor CLAIMED it: false leaves the key to whatever is around the editor — Escape to the
     /// dialog it sits in, Tab to the form once Escape has released it. The

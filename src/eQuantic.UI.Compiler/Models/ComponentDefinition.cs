@@ -241,6 +241,10 @@ public class StateField
     /// <summary>True for <c>static</c>/<c>const</c> fields — emitted as a <c>static</c> class member and
     /// referenced as <c>ClassName.field</c> rather than <c>this.field</c>.</summary>
     public bool IsStatic { get; set; }
+    /// <summary>The name the twin holds the field under (<c>FieldSlotExtensions.TwinSlot</c>): a static's
+    /// moves to <c>name$</c> a case apart from a static member of its name (#1175), and an instance
+    /// field's never moves, its name being the one the server hydrates.</summary>
+    public string Slot { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -327,6 +331,13 @@ public class ParameterDefinition
     /// <summary>The interface's own name — the key both sides agree on, since a C# type does not
     /// exist at run time in the browser but its name does.</summary>
     public string? ServiceKey { get; set; }
+
+    /// <summary>The interface itself, when the model knew it: what tells an app's own service from the
+    /// SDK's, whose implementation the runtime provides (#1335).</summary>
+    internal Microsoft.CodeAnalysis.ITypeSymbol? ServiceType { get; set; }
+
+    /// <summary>The parameter as written, where a diagnostic about it points.</summary>
+    internal Microsoft.CodeAnalysis.CSharp.Syntax.ParameterSyntax? Node { get; set; }
 }
 
 

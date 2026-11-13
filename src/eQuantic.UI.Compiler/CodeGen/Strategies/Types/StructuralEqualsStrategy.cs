@@ -125,11 +125,16 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         // answers none, a number and a string included. The method decides a null argument itself (Copilot's
         // second and third reviews of #947).
         if (ElementEquality.ContractKey(context.SemanticHelper.GetSymbol(inv) as IMethodSymbol) is { } contract)
+        {
+            // This call is the fence's to ask, as a call of the member is: the invocation fallback never sees it.
+            (context.SemanticHelper.GetSymbol(inv) as IMethodSymbol)?.ReportIfHostOnly(inv, context, type);
             return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other,
                 JsExpr.Call(JsExpr.Identifier(Eq.EquatableCall), JsExpr.Literal(JsStringLiteral.Quote(contract))));
+        }
 
         if (type.UnwrapNullable() is INamedTypeSymbol named && (named.IsTupleType || named.IsAnonymousType))
         {
+            if (ElementEquality.Refuses(named, equatable: true, inv, context)) return JsExpr.Literal("undefined");
             // A tuple's Equals compares each element with that element type's default comparer, an array
             // by reference, which only the static type says: a tuple is an array here (#554). An anonymous
             // object's compares its members so too, and takes only another of the same members in the same
@@ -163,7 +168,7 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         if (type.UnwrapNullable().IsStructuralValueType())
         {
             // The equality it reaches, a [ServerOnly] one included, which no twin holds (Copilot's third review of #977).
-            if (RefusesWhatItReaches(type!, equatable: false, inv, context)) return JsExpr.Literal("undefined");
+            if (ElementEquality.Refuses(type!, equatable: false, inv, context)) return JsExpr.Literal("undefined");
             // A struct whose Equals(object) is the app's code is asked it, whatever the other value is, and
             // every time: `$eq.equals` refused a value of another JavaScript type before the override could run,
             // so a struct whose override takes a string answered false (Copilot's second review of #947), and
@@ -181,6 +186,7 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
 
         if (DoesNotDecide(type))
         {
+            if (ElementEquality.Refuses(type, equatable: false, inv, context)) return JsExpr.Literal("undefined");
             // What the receiver holds is not in its type, but the value C# boxed into it may still be in
             // the call: `((object)list).Equals(other)` is a list's Equals.
             var held = Unboxed(context.SemanticHelper.GetOperation(inv) is IInvocationOperation { Instance: { } instance }
@@ -206,6 +212,7 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
                     JsExpr.Binary(JsExpr.Call(JsExpr.Identifier(Eq.SameItem), a, b), "||", JsExpr.Call(Function(function), a, b))));
         }
 
+        if (ElementEquality.Refuses(type, equatable: false, inv, context)) return JsExpr.Literal("undefined");
         return JsExpr.Call(JsExpr.Identifier(Eq.EqualsInstance), receiver, other, JsExpr.Identifier(Eq.SameItem));
     }
 
@@ -264,7 +271,7 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
     private static JsExpr ConvertDefaultEquality(InvocationExpressionSyntax invocation, ITypeSymbol compared,
         ConversionContext context)
     {
-        if (RefusesWhatItReaches(compared, equatable: true, invocation, context)) return JsExpr.Literal("undefined");
+        if (ElementEquality.Refuses(compared, equatable: true, invocation, context)) return JsExpr.Literal("undefined");
         var parts = invocation.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
         var (atX, _) = Operand(invocation, 0, context);
         var (atY, _) = Operand(invocation, 1, context);
@@ -331,55 +338,6 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
         value.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum
         || value.TypeKind == TypeKind.Interface
         || value is INamedTypeSymbol { TypeKind: TypeKind.Class, IsSealed: false, SpecialType: SpecialType.None };
-
-    /// <summary>
-    /// Refuses, where the call is written, a comparison that reaches an equality no twin holds, as a call bound to the
-    /// member is refused (<see cref="HostOnlySymbolExtensions.ReportIfHostOnly"/>, EQ2010), and answers whether it did.
-    /// A <c>[ServerOnly]</c> <c>Equals</c> is left out of its type's twin, so the comparison fell back to identity, or
-    /// to the members a struct's twin compares, and answered what the server's method never would:
-    /// <c>EqualityComparer&lt;C&gt;.Default.Equals(c, c)</c> answered true over an override that answers false, where
-    /// <c>c.Equals(c)</c> was refused (Copilot's third review of #977). Each member the comparison may reach is asked in
-    /// turn, and the first refusal is the one told.
-    /// </summary>
-    private static bool RefusesWhatItReaches(ITypeSymbol compared, bool equatable, SyntaxNode at, ConversionContext context)
-    {
-        var value = compared.UnwrapNullable() ?? compared;
-        return EqualitiesReached(value, equatable, context).Any(member => member.ReportIfHostOnly(at, context, value));
-    }
-
-    /// <summary>
-    /// The members a comparison of <paramref name="value"/>'s values reaches, each as a call bound to it would: the
-    /// typed <c>Equals</c> of the app's answering the type's <c>IEquatable&lt;T&gt;</c>, where the default comparer asks
-    /// it (<paramref name="equatable"/>) or a record's synthesized <c>Equals(object)</c> does, and otherwise the
-    /// <c>Equals(object)</c> a call on the type binds: the override it declares or inherits, or <c>object</c>'s, through
-    /// which the fence finds an override a value behind the type may carry. A type parameter's comparer asks the type
-    /// argument's <c>IEquatable&lt;T&gt;</c> too, as .NET settles it at run time. An array reaches none: it is
-    /// compared by reference, and nothing derives from it.
-    /// </summary>
-    private static IEnumerable<IMethodSymbol> EqualitiesReached(ITypeSymbol value, bool equatable, ConversionContext context)
-    {
-        if (value is IArrayTypeSymbol) yield break;
-        if (value is INamedTypeSymbol named && (equatable || named.IsRecord) && ElementEquality.SelfMethod(named) is { } typed)
-        {
-            yield return typed;
-            yield break;
-        }
-        var compilation = context.SemanticModel?.Compilation ?? context.ProjectCompilation;
-        IMethodSymbol? objectEquals = null;
-        for (var at = value as INamedTypeSymbol; at is not null && objectEquals is null; at = at.BaseType)
-            objectEquals = at.GetMembers("Equals").OfType<IMethodSymbol>().FirstOrDefault(method =>
-                IsObjectEquals(method) && (method.IsOverride || method.ContainingType.SpecialType == SpecialType.System_Object));
-        objectEquals ??= compilation?.GetSpecialType(SpecialType.System_Object).GetMembers("Equals").OfType<IMethodSymbol>()
-            .FirstOrDefault(IsObjectEquals);
-        if (objectEquals is not null) yield return objectEquals;
-        if (equatable && value is ITypeParameterSymbol
-            && compilation?.GetTypeByMetadataName("System.IEquatable`1")?.Construct(value).GetMembers("Equals")
-                .OfType<IMethodSymbol>().FirstOrDefault() is { } contract)
-            yield return contract;
-
-        static bool IsObjectEquals(IMethodSymbol method) =>
-            method is { IsStatic: false, Parameters: [{ Type.SpecialType: SpecialType.System_Object }] };
-    }
 
     private static bool IsStaticObjectEquals(InvocationExpressionSyntax invocation, ConversionContext context)
     {
@@ -590,7 +548,7 @@ public class StructuralEqualsStrategy : IExpressionIrStrategy
     /// receiver's type. The element names of a tuple are no part of its type, as .NET's closed type erases
     /// them: an identity conversion is the same type.
     /// </summary>
-    private static bool OfAnotherType(InvocationExpressionSyntax invocation, INamedTypeSymbol receiver, ConversionContext context)
+    internal static bool OfAnotherType(InvocationExpressionSyntax invocation, INamedTypeSymbol receiver, ConversionContext context)
     {
         if (context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation
             {

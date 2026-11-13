@@ -9,6 +9,7 @@ import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 import { DataPalette, DivergingScale, StatusScale } from './data-palette';
 import { MotionSpec } from './primitive-values';
+import { buttonTheme, controlsTheme } from './theme-slots';
 
 const c = (r: number, g: number, b: number, a: number): ColorValue => ({ r, g, b, a });
 const t = (light: ColorValue, dark: ColorValue): ColorToken => new ColorToken(light, dark);
@@ -353,6 +354,8 @@ export const photonTheme: AppTheme = {
   scrollbarTrack: t(c(239, 241, 244, 255), c(28, 35, 43, 255)),
   data: defaultData,
   disabledOpacity: 0.38,
+  controls: controlsTheme({"height":{"comfortable":{"small":32,"medium":40,"large":48,"xLarge":56},"compact":{"small":26,"medium":32,"large":40,"xLarge":48}},"paddingX":{"comfortable":{"small":12,"medium":16,"large":20,"xLarge":24},"compact":{"small":8,"medium":12,"large":16,"xLarge":20}},"labelSize":{"comfortable":{"small":13,"medium":15,"large":16,"xLarge":17},"compact":{"small":11.5,"medium":13,"large":14.5,"xLarge":15.5}},"gap":{"small":6,"medium":8,"large":8,"xLarge":10},"icon":{"small":16,"medium":20,"large":20,"xLarge":24},"radius":{"small":10,"medium":10,"large":10,"xLarge":14}}),
+  button: buttonTheme({"minWidth":64,"labelWeight":"semiBold","labelTracking":0.1,"outlineWidth":1,"linkPaddingX":6,"outlineColor":[[201,206,214,255],[76,86,100,255]],"quietFill":[[239,241,244,255],[28,35,43,255]]}),
   colors(variant: string): VariantColors {
     return variantColors[variant] ?? variantColors.primary;
   },

@@ -10,6 +10,7 @@ import { round as dotnetRound } from '../utils/dotnet-math';
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 import type { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
+import type { ButtonTheme, ControlsTheme } from './theme-slots';
 import { hashesByValue } from '../utils/hash';
 import { FontWeightNumbers, type FontWeightValue } from './enums.generated';
 
@@ -313,7 +314,8 @@ export class Rect {
   }
 }
 
-/** Mirror of the C# `Transform2D` — components applied translate → rotate → scale, center-anchored. */
+/** Mirror of the C# `Transform2D` — components applied translate → rotate → scale, center-anchored.
+ * The translation is units plus fractions of the box's own size (#614). */
 export class Transform2D {
   constructor(
     readonly translateX = 0,
@@ -321,10 +323,15 @@ export class Transform2D {
     readonly rotationDegrees = 0,
     readonly scaleX = 1,
     readonly scaleY = 1,
+    readonly translateFractionX = 0,
+    readonly translateFractionY = 0,
   ) {}
 
   static translate(x: number, y = 0): Transform2D {
     return new Transform2D(x, y);
+  }
+  static fractionalTranslate(x: number, y = 0): Transform2D {
+    return new Transform2D(0, 0, 0, 1, 1, x, y);
   }
   static rotate(degrees: number): Transform2D {
     return new Transform2D(0, 0, degrees);
@@ -334,10 +341,13 @@ export class Transform2D {
   }
 
   withTranslate(x: number, y = 0): Transform2D {
-    return new Transform2D(x, y, this.rotationDegrees, this.scaleX, this.scaleY);
+    return new Transform2D(x, y, this.rotationDegrees, this.scaleX, this.scaleY, this.translateFractionX, this.translateFractionY);
+  }
+  withFractionalTranslate(x: number, y = 0): Transform2D {
+    return new Transform2D(this.translateX, this.translateY, this.rotationDegrees, this.scaleX, this.scaleY, x, y);
   }
   withRotate(degrees: number): Transform2D {
-    return new Transform2D(this.translateX, this.translateY, degrees, this.scaleX, this.scaleY);
+    return new Transform2D(this.translateX, this.translateY, degrees, this.scaleX, this.scaleY, this.translateFractionX, this.translateFractionY);
   }
   withScale(uniform: number): Transform2D {
     return new Transform2D(
@@ -346,6 +356,8 @@ export class Transform2D {
       this.rotationDegrees,
       uniform,
       uniform,
+      this.translateFractionX,
+      this.translateFractionY,
     );
   }
 }
@@ -589,6 +601,10 @@ export interface AppTheme {
   data: DataPalette;
   /** The spreadsheet's slot (C# `IAppTheme.Sheet`), absent or null for its own colours. */
   sheet?: SheetTheme | null;
+  /** The control ladder (C# `IAppTheme.Controls`), absent or null for `Sizing`'s. */
+  controls?: ControlsTheme | null;
+  /** The Button's slot (C# `IAppTheme.Button`), absent or null for its own defaults. */
+  button?: ButtonTheme | null;
   disabledOpacity: number;
   /**
    * The face this theme sets CODE in (C# `IAppTheme.MonoFamily`), or undefined for the platform's
@@ -751,6 +767,21 @@ export class TableScrollRequest {
   }
 }
 
+/** Mirror of the C# `TextReading` (#1333): the text a screen reader hears a surface hold as its field's
+ * value, and the selection in it, its anchor and its focus, in UTF-16 code units of that text. A code
+ * surface's model answers one, and the door writes it. */
+export class TextReading {
+  readonly text: string;
+  readonly anchor: number;
+  readonly focus: number;
+
+  constructor(text = '', anchor = 0, focus = 0) {
+    this.text = text;
+    this.anchor = anchor;
+    this.focus = focus;
+  }
+}
+
 /** Mirror of the C# `ScrollRequest`: an offset a scroll view is asked to go to, honoured once per version. */
 export class ScrollRequest {
   readonly version: number;
@@ -769,6 +800,7 @@ hashesByValue(
   TableOffset,
   TableRange,
   TableScrollRequest,
+  TextReading,
   ScrollRequest,
   SizeValue,
   WebContent,

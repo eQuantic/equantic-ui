@@ -1704,3 +1704,82 @@ does: a number or a date in the culture in force, and a type of the app's by its
 
 - **WHEN** `IFormattable x = 1.5; return $"{x}";` runs on a pt-BR page
 - **THEN** it answers `1,5`, as .NET does; it answered `1.5`
+
+### Requirement: An array behind a collection's face keeps its size
+
+A `T[]` converted to `ICollection<T>` or `IList<T>` SHALL refuse `Add`, `Remove`, `Insert` and `RemoveAt` with `NotSupportedException` "Collection was of a fixed size.", and `Clear` with "Collection is read-only.", and `IsReadOnly` SHALL answer true. Writing an element SHALL stay allowed, and a `List<T>` behind the same faces SHALL keep growing.
+
+#### Scenario: Adding through the interface
+
+- **WHEN** a program evaluates `((ICollection<int>)new[] { 1, 2 }).Add(3)`
+- **THEN** the call throws `NotSupportedException`, and the array keeps its two elements
+
+### Requirement: A params parameter is the array it is
+
+A `params` parameter of a method, a local function or a delegate on a twin the build writes SHALL be one array: a call that lists its elements packs them, none being an empty array, and an array handed whole SHALL be passed as it is, the callee holding the caller's array, with no limit on its length.
+
+#### Scenario: A large array
+
+- **WHEN** a program calls `Count(items)` over `int Count(params int[] xs)` with an array of a million elements
+- **THEN** the call answers 1000000, as in .NET
+
+#### Scenario: The caller's array
+
+- **WHEN** a callee writes `xs[0] = 0` over an array handed whole
+- **THEN** the caller's array holds the 0, as in .NET
+
+### Requirement: A primitive's Equals answers by its own type
+
+`Equals` on `bool`, `char`, every integer width, `float`, `double` and `decimal`, typed or taking `object`, SHALL build, and `Equals(object)` SHALL be true only for an equal value of the receiver's own type, with both values evaluated, the receiver first. The other value's type SHALL be read from the bound tree before C# boxed it. A `double` and a `float` SHALL find NaN equal to NaN. A value already held as `object` SHALL compare by what it holds, where an int and a double of one value, or a char and a text of one, cannot be told apart.
+
+#### Scenario: A value of another type
+
+- **WHEN** a program evaluates `1.Equals((object)1.0)`, `'a'.Equals((object)"a")` or `1.Equals((object)1L)`
+- **THEN** the answer is False, as in .NET
+
+#### Scenario: Every primitive builds
+
+- **WHEN** a program evaluates `((byte)1).Equals((object)(byte)1)`, `1m.Equals((object)1m)` or `double.NaN.Equals((object)double.NaN)`
+- **THEN** the build succeeds and the answer is True, as in .NET
+
+#### Scenario: Both values are evaluated
+
+- **WHEN** a program evaluates `A().Equals((object)B())`, where `A` returns an int and `B` a double
+- **THEN** `A` runs, then `B`, and the answer is False
+
+### Requirement: A KeyValuePair writes its text as .NET does
+
+A `KeyValuePair<TKey, TValue>` SHALL write `[key, value]` through a hole, a concatenation, `ToString`, `string.Join`, `string.Format`, `StringBuilder.Append` and a `ToString` method group, each half as its type writes it in the culture in force, a null one as nothing.
+
+#### Scenario: Each route into text
+
+- **WHEN** a program writes `new KeyValuePair<int, string>(1, "a")` into any of those routes
+- **THEN** the text is `[1, a]`
+
+#### Scenario: Held as object
+
+- **WHEN** a program writes a pair held in an `object` into a hole
+- **THEN** the text is `[1, a]`
+
+### Requirement: A task already ended is read by whoever awaits it
+
+`Task.FromException` and `Task.FromCanceled`, generic or not, SHALL build. An `await` of the first SHALL throw its exception, and of the second a `TaskCanceledException`. A null exception and a token not cancelled SHALL be refused at the call in .NET's words. A task of either kind nobody awaits SHALL report nothing.
+
+#### Scenario: An awaited faulted task
+
+- **WHEN** a program awaits `Task.FromException(new InvalidOperationException("boom"))`
+- **THEN** the `await` throws that exception
+
+#### Scenario: A token not cancelled
+
+- **WHEN** a program calls `Task.FromCanceled(CancellationToken.None)`
+- **THEN** the call throws `ArgumentOutOfRangeException` naming `cancellationToken`
+
+### Requirement: A reference tuple is refused by the build
+
+`Tuple.Create` and `new Tuple<…>` SHALL fail the build with EQ2004 naming the member.
+
+#### Scenario: Tuple.Create
+
+- **WHEN** a client component calls `System.Tuple.Create(1, "a")`
+- **THEN** the build fails with EQ2004

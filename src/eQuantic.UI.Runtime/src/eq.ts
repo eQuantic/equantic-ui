@@ -6,7 +6,8 @@ import {
   decParse,
   decTryParse,
 } from './utils/decimal';
-import { combineDelegate, removeDelegate } from './utils/delegates';
+import { fixedSize, isReadOnly } from './utils/view';
+import { boundDelegate, combineDelegate, delegateOver, removeDelegate } from './utils/delegates';
 import { hydrate } from './utils/hydrate';
 import { twinJson } from './utils/twin-json';
 import { long } from './utils/long';
@@ -135,6 +136,8 @@ import {
   textGroup,
   tupleText,
   tupleTextGroup,
+  pairText,
+  pairTextGroup,
 } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
@@ -214,7 +217,14 @@ import { liftArith, liftCmp, liftUnary, unwrap } from './utils/nullable';
 import { equals, equalsGroup, equalsInstance } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidOf, guidParse, guidTryParse } from './utils/guid';
-import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource, delay as taskDelay } from './utils/cancellation';
+import {
+  CancellationToken,
+  CancellationTokenRegistration,
+  CancellationTokenSource,
+  delay as taskDelay,
+  fromCanceled as taskFromCanceled,
+  fromException as taskFromException,
+} from './utils/cancellation';
 import {
   bases as exceptionBases,
   create as createException,
@@ -255,9 +265,9 @@ import {
   throwIfNullOrWhiteSpace,
   throwIfZero,
 } from './utils/guards';
-import { named as namedType, of as typeOfValue, same as sameType } from './utils/runtime-types';
+import { implementsInterface, named as namedType, of as typeOfValue, same as sameType } from './utils/runtime-types';
 import { lockGate, newObject } from './utils/net-object';
-import { resolveService } from './utils/services';
+import { provideService, resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
@@ -466,6 +476,8 @@ export const $eq = {
     /** A value tuple's text, `(1, a)`, and its `ToString` method group. */
     tuple: tupleText,
     tupleGroup: tupleTextGroup,
+    pair: pairText,
+    pairGroup: pairTextGroup,
     /** The `ToString` method group of a value whose text its type writes, an enum's or a type's name. */
     group: textGroup,
     stringFormat,
@@ -518,8 +530,10 @@ export const $eq = {
    * sorted family (SortedSet / SortedDictionary / SortedList).
    */
   /** What a transpiled constructor resolves its dependencies through — see utils/services. */
-  services: { resolve: resolveService },
+  services: { resolve: resolveService, provide: provideService },
   collections: {
+    fixedSize,
+    isReadOnly,
     queue,
     stack,
     dictionary,
@@ -610,7 +624,7 @@ export const $eq = {
    * C# multicast delegates: `+=` composes an invocation list and `-=` drops the last occurrence.
    * JavaScript has neither, and emitting `+=` literally made `null + function` a STRING.
    */
-  delegates: { combine: combineDelegate, remove: removeDelegate },
+  delegates: { combine: combineDelegate, remove: removeDelegate, bound: boundDelegate, over: delegateOver },
   /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */
   equals,
   /** The method group `value.Equals` of a value the browser holds as data: a delegate over it. */
@@ -656,7 +670,7 @@ export const $eq = {
     linked: CancellationTokenSource.createLinkedTokenSource,
   },
   /** `Task.Delay(delay, cancellationToken)`, which ends as cancelled when its token is (utils/cancellation). */
-  task: { delay: taskDelay },
+  task: { delay: taskDelay, fromException: taskFromException, fromCanceled: taskFromCanceled },
   /**
    * .NET exceptions: one built from its type and the types it derives from (`new T(…)`), one of a
    * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`
@@ -697,7 +711,7 @@ export const $eq = {
     throwIfLessThanOrEqual,
   },
   /** `a.GetType() == b.GetType()` and against `typeof(X)`, where the browser knows the runtime type. */
-  types: { of: typeOfValue, named: namedType, same: sameType },
+  types: { of: typeOfValue, named: namedType, same: sameType, implements: implementsInterface },
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },
 } as const;

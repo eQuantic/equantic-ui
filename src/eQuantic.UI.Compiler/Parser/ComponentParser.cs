@@ -61,8 +61,9 @@ public class ComponentParser
     public IEnumerable<ComponentDefinition> ParseSource(string sourceCode, string sourcePath = "")
     {
         // The provider knows which language version the surrounding compilation speaks — a tree
-        // that will JOIN it must speak the same one (mixed versions are an ArgumentException).
-        var options = _semanticModelProvider?.JoinOptions ?? Services.ParseDefaults.Options;
+        // that will JOIN it must speak the same one (mixed versions are an ArgumentException) — and
+        // which symbols the project the file belongs to defined (#828).
+        var options = _semanticModelProvider?.OptionsFor(sourcePath) ?? Services.ParseDefaults.Options;
         var tree = CSharpSyntaxTree.ParseText(sourceCode, options, path: sourcePath);
         var root = tree.GetCompilationUnitRoot();
         var results = new List<ComponentDefinition>();
@@ -266,19 +267,17 @@ public class ComponentParser
             // declares a member. A class that declared none was skipped here while the resolver had
             // it imported, so the bundle could not resolve the module every user of it named. A
             // [ServerOnly] class never crosses, whichever of its declarations says so.
-            if (!PlainClassModule.Is(classDecl, ProjectSymbol(classDecl, model), chains)) continue;
             // Track L D2: a resx Designer is a plain non-static class by shape, and a module of
             // ResourceManager.GetString calls cannot run in a browser — its accessors rewrite to
             // $eq.str at every use site instead. Recorded on the way past (see the static-helper
-            // loop for why the catalog emitter needs to know it exists).
+            // loop for why the catalog emitter needs to know it exists), and kept out by the one rule
+            // below, which the resolver reads too (#824).
             if (helperModel?.GetDeclaredSymbol(classDecl) is INamedTypeSymbol declaredPlain
                 && Services.ResourceClasses.IsResourceClass(declaredPlain))
-            {
                 DiscoveredResources.TryAdd(
                     CatalogIdOf(helperModel, declaredPlain),
                     Services.ResourceClasses.DesignerPathFor(declaredPlain));
-                continue;
-            }
+            if (!PlainClassModule.Is(classDecl, ProjectSymbol(classDecl, model), chains)) continue;
 
             results.Add(new ComponentDefinition
             {
@@ -627,8 +626,8 @@ public class ComponentParser
 
     private void ParseMethods(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
-        // Extract properties
-        var properties = classDecl.Members
+        // Extract properties: a partial one from its implementing half (#1172).
+        var properties = classDecl.TwinMembers()
             .OfType<PropertyDeclarationSyntax>();
         
         foreach (var prop in properties)
@@ -782,6 +781,7 @@ public class ComponentParser
                 Name = param.Identifier.ValueText,
                 Type = param.Type?.ValueText() ?? "object",
                 DefaultValueNode = param.Default?.Value,
+                Node = param,
             };
 
             if (param.Type is not null
@@ -791,6 +791,7 @@ public class ComponentParser
             {
                 described.IsService = true;
                 described.ServiceKey = service.Name;
+                described.ServiceType = service;
                 // Whether the component can work without it, which decides what an ABSENT capability
                 // does: hand over null as the author allowed, or say which one is missing.
                 if (model.GetDeclaredSymbol(param) is { } parameter)
@@ -843,8 +844,13 @@ public class ComponentParser
         // Standalone or not, the emitter needs the source's own universe: every type DECLARED in
         // this tree. Without a semantic model it is the only ground truth left — a referenced name
         // outside this set cannot be user code, so it must be the runtime vocabulary.
+        // By its twin's name too, which is the name a reference writes and imports (`Cart$Item`,
+        // `function$`): a twin of the tree's own taken for the vocabulary was imported from the runtime.
         foreach (var declared in classDecl.SyntaxTree.GetRoot().DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
+        {
             definition.DeclaredInSource.Add(declared.Identifier.ValueText);
+            definition.DeclaredInSource.Add(declared.TwinTypeName());
+        }
 
         var model = TryGetSemanticModel(classDecl.SyntaxTree);
         if (model == null) return;
@@ -866,6 +872,7 @@ public class ComponentParser
     /// </summary>
     private void ParseComponentFields(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
+        var model = TryGetSemanticModel(classDecl.SyntaxTree);
         foreach (var field in classDecl.Members.OfType<FieldDeclarationSyntax>())
         {
             var isStatic = field.Modifiers.Any(SyntaxKind.StaticKeyword)
@@ -875,6 +882,7 @@ public class ComponentParser
                 definition.ComponentFields.Add(new StateField
                 {
                     Name = variable.Identifier.ValueText,
+                    Slot = variable.SlotOf(model),
                     Type = field.Declaration.Type.ValueText(),
                     TypeNode = field.Declaration.Type,
                     DefaultValueNode = variable.Initializer?.Value,
