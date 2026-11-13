@@ -456,7 +456,7 @@ public sealed unsafe class PhotonWindow
     {
         if (_host is null || _theme is null) return;
         var widthDp = _clientWidth / _scale;
-        var ink = _theme.TextPrimary.Resolve(_host.Mode);
+        var ink = _theme.TextPrimary.Resolve(_host.Mode, _host.Contrast);
         var buttons = new[] { HTMINBUTTON, HTMAXBUTTON, HTCLOSE };
         for (var index = 0; index < buttons.Length; index++)
         {

@@ -37,17 +37,18 @@ public static class EmailRealizer
     }
 
     /// <summary>
-    /// A token as ONE literal color. Email renders in one mode — the light leg — and a translucent
+    /// A token as ONE literal color. Email renders in one mode — the light leg, at Standard contrast,
+    /// since no mail client says what its reader asked the system for — and a translucent
     /// token is FLATTENED over the theme's surface, because the 8-digit hex a raw alpha would need
     /// is CSS Color 4, which Word's engine (and older clients) do not read: the color would not be
     /// dimmed there, it would be lost.
     /// </summary>
     internal static string Literal(ColorToken token, IAppTheme theme)
     {
-        var color = token.Resolve(ThemeMode.Light);
+        var color = token.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         if (color.A == 255) return Hex(color);
 
-        var surface = theme.Surface.Resolve(ThemeMode.Light);
+        var surface = theme.Surface.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var alpha = color.A / 255f;
         return Hex(Color.FromRgb(
             (byte)MathF.Round(color.R * alpha + surface.R * (1 - alpha)),

@@ -87,8 +87,8 @@ public static class EmailRenderer
 
     private static string Shell(string body, IAppTheme theme, string? preheader, string language)
     {
-        var page = EmailRealizer.Hex(theme.Background.Resolve(ThemeMode.Light));
-        var surface = EmailRealizer.Hex(theme.Surface.Resolve(ThemeMode.Light));
+        var page = EmailRealizer.Hex(theme.Background.Resolve(ThemeMode.Light, ContrastLevel.Standard));
+        var surface = EmailRealizer.Hex(theme.Surface.Resolve(ThemeMode.Light, ContrastLevel.Standard));
 
         var html = new StringBuilder();
         html.Append("<!DOCTYPE html>");

@@ -93,6 +93,7 @@ function varMapFor(theme: AppTheme): VarEntry[] {
     register(colors.pressed, `${variant}-pressed`);
     register(colors.subtle, `${variant}-subtle`);
     register(colors.onSubtle, `${variant}-on-subtle`);
+    register(colors.hover, `${variant}-hover`);
   }
 
   varMaps.set(theme, entries);
