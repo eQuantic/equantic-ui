@@ -46,7 +46,7 @@ public sealed class BuildOwner
     private NodeElement? _showing;
     private int _deferredCursor = -1;
     private int _stamp;
-    private int _ids;
+    private readonly ElementIds _ids;
     private readonly Func<UiComponent, ComponentContext, int, VisualNode> _buildComponent;
 
     /// <summary>A live owner: the one a host keeps for the surface it draws.</summary>
@@ -54,15 +54,21 @@ public sealed class BuildOwner
     /// of components, inside whatever boundary contains what it throws.</param>
     /// <param name="holdsEveryArm">Whether an adaptive node's position holds every arm the node declares
     /// (<see cref="HoldsEveryArm"/>).</param>
-    public BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool holdsEveryArm = false)
-        : this(buildComponent, live: true, holdsEveryArm)
+    /// <param name="ids">The count the tree takes its ids from, shared with the other trees of a host
+    /// that names their nodes in one space; a count of the tree's own when none is handed.</param>
+    public BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool holdsEveryArm = false, ElementIds? ids = null)
+        : this(buildComponent, holdsEveryArm, ids, live: true)
     {
     }
 
-    private BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool live, bool holdsEveryArm)
+    // LIVE LAST, so the twin's one constructor, which is this one's shape, takes a public call's
+    // arguments where they stand: JavaScript has one constructor, its signature is the widest, and the
+    // public form passes `holdsEveryArm` and `ids` second and third.
+    private BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool holdsEveryArm, ElementIds? ids, bool live)
     {
         ArgumentNullException.ThrowIfNull(buildComponent);
         _buildComponent = buildComponent;
+        _ids = ids ?? new ElementIds();
         Live = live;
         HoldsEveryArm = holdsEveryArm;
     }
@@ -70,8 +76,9 @@ public sealed class BuildOwner
     /// <summary>An owner for a tree laid out once: it builds, and calls no lifecycle hook.</summary>
     /// <param name="buildComponent">How a component builds, as the live owner takes it.</param>
     /// <param name="holdsEveryArm">As the live owner takes it.</param>
-    public static BuildOwner Structural(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool holdsEveryArm = false) =>
-        new(buildComponent, live: false, holdsEveryArm);
+    /// <param name="ids">The count the tree takes its ids from, as the live owner takes it.</param>
+    public static BuildOwner Structural(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool holdsEveryArm = false, ElementIds? ids = null) =>
+        new(buildComponent, holdsEveryArm, ids, live: false);
 
     /// <summary>
     /// The position whose component is building now, through the build this owner was handed, and null
@@ -337,8 +344,8 @@ public sealed class BuildOwner
     internal int NextStamp() => ++_stamp;
 
     /// <summary>The next id of this tree (<see cref="Element.Id"/>, <see cref="NodeElement.PartId"/>),
-    /// counted from one, so zero is never an id.</summary>
-    internal int NextId() => ++_ids;
+    /// from the count it was handed.</summary>
+    internal int NextId() => _ids.Next();
 
     internal void Deactivate(Element element) => element.Deactivate();
 

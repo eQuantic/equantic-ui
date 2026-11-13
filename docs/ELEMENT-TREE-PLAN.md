@@ -599,6 +599,21 @@ the parity rows it closes flip.
    `BuildOwner.Building`); 3.8 says why. eqc met one more emission defect on the way (#1483, a `for`
    head's declared type), fixed by the bug sweep. E3b-2 (#1454) moves the path attributes and the
    per-commit maps onto elements, and E3b-3 (#1455) relowers a dirty element's subtree alone.
+
+   **E3b-2, the browser keeps a node's state on its position** (#1454,
+   `openspec/changes/archive/2026-11-13-the-browser-keys-its-state-by-element`). The seven attributes
+   that carried a node's lowering path, and the ids and keys formed from one, carry the integer id of
+   the node's position. What the after-passes remembered between passes lives on the position's state,
+   as Photon keeps it (`node-states.ts`, the twin of `NodeStates`): the scroll, table, in-view and
+   canvas passes, and the code editor's last reveal, which a module map nobody cleared held before. The
+   state records the DOM element it adopted, since the reconciler matches a DOM element by tag and
+   place and can hand it to another node, and a node handed one starts at its own offset. It lets go of
+   its observers when its position leaves the tree. The engine takes its ids from a count it can be
+   handed (`ElementIds`), and the browser hands one to every owner of the document, so two roots never
+   give one id twice. The path the lowering threads stays for one reader, the cell ids of a table and a
+   grid, which cross to the server as a string (3.8). eqc met one more emission defect on the way (#1464,
+   an interface tested as a null check), fixed by the bug sweep. The served runtime stays inside its
+   budget.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.

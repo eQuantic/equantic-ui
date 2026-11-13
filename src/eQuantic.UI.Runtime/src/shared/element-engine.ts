@@ -18,6 +18,7 @@ import type {
   BuildContext,
   BuildOwner,
   ComponentElement,
+  ElementIds,
   NodeElement,
   UiComponent,
   VisualNode,
@@ -26,10 +27,26 @@ import type {
 export interface ElementEngine {
   readonly BuildOwner: typeof BuildOwner;
   readonly ComponentElement: typeof ComponentElement;
+  readonly ElementIds: typeof ElementIds;
   readonly NodeElement: typeof NodeElement;
 }
 
 let engine: ElementEngine | null = null;
+
+/**
+ * THE DOCUMENT'S COUNT of element ids, handed to every owner made below (#1454). A page owns a tree
+ * per root it lowers, an island one of its own, and a lowering with no page around it a structural one
+ * it discards; each counting alone would give two nodes of one document the same id, and the
+ * attributes the after-passes find a node by carry that id. One count also keeps an id from being
+ * given again across a navigation, so a page that leaves and the one that arrives never share one
+ * during the commit that swaps them. Made with the first owner, since the engine loads after this
+ * module.
+ */
+let documentIds: ElementIds | null = null;
+
+function idsOfTheDocument(): ElementIds {
+  return (documentIds ??= new (elementEngine().ElementIds)());
+}
 
 export function registerElementEngine(registered: ElementEngine): void {
   engine = registered;
@@ -64,6 +81,7 @@ export function liveOwner(build: BuildComponent): BuildOwner {
   const owner: BuildOwner = new (elementEngine().BuildOwner)(
     (component: UiComponent, context: BuildContext, depth: number) => build(component, context, depth, owner),
     true,
+    idsOfTheDocument(),
   );
   return owner;
 }
@@ -74,6 +92,7 @@ export function structuralOwner(build: BuildComponent): BuildOwner {
   const owner: BuildOwner = elementEngine().BuildOwner.structural(
     (component: UiComponent, context: BuildContext, depth: number) => build(component, context, depth, owner),
     true,
+    idsOfTheDocument(),
   );
   return owner;
 }
