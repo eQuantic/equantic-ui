@@ -318,7 +318,7 @@ public class InheritedComponentTests
     }
 
     private static ComponentContext Routed(string slug) => new(PhotonTheme.Instance,
-        route: new RouteValues(new Dictionary<string, string> { ["slug"] = slug }, null));
+        route: new RouteValues(new Dictionary<string, string> { ["slug"] = slug }, null, $"/docs/{slug}"));
 
     /// <summary>
     /// A navigation within one page type builds what read the route and nothing else (#1395): the route
@@ -349,7 +349,7 @@ public class InheritedComponentTests
     {
         var log = new Log();
         var root = new Column { new RouteReader(log), new Bystander(log) };
-        var route = new RouteValues(new Dictionary<string, string> { ["slug"] = "same" }, null);
+        var route = new RouteValues(new Dictionary<string, string> { ["slug"] = "same" }, null, "/docs/same");
         var owner = ComponentBoundary.Owner();
         Frame(owner, root, rebuildAll: true, context: new ComponentContext(PhotonTheme.Instance, route: route));
 
