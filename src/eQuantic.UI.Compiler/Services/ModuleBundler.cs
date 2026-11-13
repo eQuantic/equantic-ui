@@ -146,8 +146,19 @@ public sealed class ModuleBundler : IDisposable
         {
             var reading = worker.StandardOutput.ReadLineAsync();
             var left = deadline - DateTime.UtcNow;
-            if (left <= TimeSpan.Zero || !reading.Wait(left))
-                throw new TimeoutException($"bun did not answer within {Deadline.TotalSeconds:0}s");
+            bool answered;
+            try
+            {
+                answered = left > TimeSpan.Zero && reading.Wait(left);
+            }
+            catch (AggregateException ex) when (ex.InnerException is { } failure)
+            {
+                // A read that failed (a pipe the worker broke as it died) is that failure, which the
+                // bundle reports as the worker stopping, not the wrapper a wait puts around it.
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(failure);
+                throw;
+            }
+            if (!answered) throw new TimeoutException($"bun did not answer within {Deadline.TotalSeconds:0}s");
             if (reading.Result is not { } line) break;
             if (line.StartsWith(AnswerPrefix, StringComparison.Ordinal))
                 return JsonNode.Parse(line[AnswerPrefix.Length..])!.AsObject();

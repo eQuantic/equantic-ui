@@ -72,6 +72,10 @@ async function bundle(request) {
     if (!unchanged) write(path, text);
     outputs.push({ path, written: !unchanged });
   }
+  // A map this bundle did not produce is gone from the folder, so it is forgotten here too: a served
+  // eqc would otherwise keep the text of every chunk map it ever wrote for the life of the server.
+  const produced = new Set(outputs.map(output => output.path));
+  for (const path of lastMaps.keys()) if (!produced.has(path)) lastMaps.delete(path);
   return { ok: true, outputs };
 }
 
