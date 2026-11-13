@@ -157,6 +157,10 @@ jobs:
       # tells a creation from a read, and every path the pipeline skill and the agents cite is there.
       - name: The session hook still tells a branch's creation apart
         run: python3 .claude/hooks/a-branch-is-named-for-its-change.py --self-test
+      # Parallel pipeline deliveries queue their builds on this host lock (#1526): the self-test runs
+      # three holders and fails when they overlap.
+      - name: The host's build lock still holds one build at a time
+        run: python3 scripts/one-build-at-a-time.py --self-test
 
   # The SessionStart hook acts only in a cloud container, a path no laptop takes, so nothing else
   # would notice the day it stopped working. This runs it the way a fresh container would (a hostile

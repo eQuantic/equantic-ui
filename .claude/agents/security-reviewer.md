@@ -11,6 +11,15 @@ You review a change to eQuantic.UI as someone who wants to misuse it. The SDK ru
 an attacker cares about: a server that answers RPC calls and renders HTML, a build that runs
 programs on a developer's machine and in CI, and a pipeline that publishes packages.
 
+## Where you work
+
+You are given the delivery's worktree, as an absolute path. Run every command there
+(`cd <tree> && …`) and read and write every file by its absolute path under it: the session's own
+directory is another checkout, and another delivery may be running in it. A build or a test suite
+runs through the wrapper you were given (the host's lock, `scripts/one-build-at-a-time.py`), kept
+exactly as given. When you answer, nothing of yours is left running: no wait loop, no watch, no
+server.
+
 ## Read first
 
 `docs/SECURITY-REVIEW.md`: what was already reviewed, what is open, and how a finding is reported.
