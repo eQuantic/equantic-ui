@@ -66,9 +66,10 @@ internal static class AppLayouts
             layout.TwinTypeName());
 
     /// <summary>The type a layout declared in a file of a referenced project is compiled as: a referenced
-    /// project's type is a module only when the build reaches it (#624), and nothing imports a layout.</summary>
+    /// project's type is a module only when the build reaches it (#624), and nothing imports a layout. Its
+    /// declarations are read through <see cref="SymbolSources"/>, the one path that notes a file read (#1281).</summary>
     public static IEnumerable<ReferencedType> Declarations(INamedTypeSymbol layout) =>
-        layout.DeclaringSyntaxReferences
+        layout.ReadDeclarations()
             .Where(reference => !string.IsNullOrEmpty(reference.SyntaxTree.FilePath))
             .Select(reference => new ReferencedType(layout.TwinReference(), NamedSourceTypes.ClrName(layout),
                 reference.SyntaxTree.FilePath));
