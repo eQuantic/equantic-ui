@@ -280,11 +280,11 @@ def readable(folder, name, names=None):
         return None
     if name not in names or not (name.endswith(".md") or name == "state.json"):
         return None
-    path = os.path.join(folder, name)
     inside = os.path.realpath(folder) + os.sep
-    if not os.path.isfile(path) or not os.path.realpath(path).startswith(inside):
+    real = os.path.realpath(os.path.join(folder, name))
+    if not real.startswith(inside) or not os.path.isfile(real):
         return None
-    return path
+    return real  # the path checked is the path opened
 
 
 # ---------------------------------------------------------------------------- Claude Code's own files
@@ -750,9 +750,9 @@ def _fixture_and_cases(scratch, check):
     # a sibling sharing the folder's name as a prefix: `…/1-flat` + `.md`, outside the folder
     _write(os.path.join(os.path.dirname(flat), "1-flat.md"), leak_marker)
     os.symlink(os.path.join("..", "1-flat.md"), os.path.join(flat, "sibling.md"))
-    _write(os.path.join(scratch, "outside", "secret.md"), leak_marker + "\n")
+    _write(os.path.join(scratch, "outside", "outside.md"), leak_marker + "\n")
     try:
-        os.symlink(os.path.join(scratch, "outside", "secret.md"), os.path.join(flat, "leak.md"))
+        os.symlink(os.path.join(scratch, "outside", "outside.md"), os.path.join(flat, "leak.md"))
         linked = True
     except OSError:
         linked = False
@@ -786,14 +786,14 @@ def _fixture_and_cases(scratch, check):
         "measures": {"defects_after_pr": 2, "queue_exits": {"job": "samples"}}})
 
     # `.claude/pipelines` and `.claude` checked out as links out of the tree: nothing under them is read.
-    secret_marker = "LINKED-TREE-MARKER-4d1e"
+    linked_marker = "LINKED-TREE-MARKER-4d1e"
     for branch, linked_part in (("feat/three", "pipelines"), ("feat/four", "claude")):
         tree = os.path.join(scratch, branch.split("/")[1])
         subprocess.run(git + ["-C", repo, "worktree", "add", "-q", "-b", branch, tree], check=True)
         victim = os.path.join(scratch, "victim-" + linked_part)
         target = os.path.join(victim, "pipelines") if linked_part == "claude" else victim
-        _write(os.path.join(target, "v-" + linked_part, "state.json"), {"issue": 9, "branch": secret_marker})
-        _write(os.path.join(target, "v-" + linked_part, "private.md"), secret_marker)
+        _write(os.path.join(target, "v-" + linked_part, "state.json"), {"issue": 9, "branch": linked_marker})
+        _write(os.path.join(target, "v-" + linked_part, "private.md"), linked_marker)
         if linked_part == "claude":
             os.symlink(victim, os.path.join(tree, ".claude"))
         else:
@@ -888,7 +888,7 @@ def _fixture_and_cases(scratch, check):
     check("every worktree's deliveries are listed",
           sorted(by) == ["1-flat", "2-nested", "3-running", "4-failed", "5-broken", "6-odd", "7-notes"])
     check("a .claude or .claude/pipelines that is a link out is not read",
-          not any(k.startswith("v-") for k in by) and secret_marker not in json.dumps(data))
+          not any(k.startswith("v-") for k in by) and linked_marker not in json.dumps(data))
     check("a state of an unknown shape is that delivery's error, and the rest are listed",
           by["6-odd"]["status"] == "broken" and "TypeError" in by["6-odd"].get("error", ""))
     notes = by["7-notes"]["notes"]
@@ -995,7 +995,7 @@ def _fixture_and_cases(scratch, check):
         for path in ("/api/report/1-flat/leak.md", "/api/report/1-flat/..%2Fstate.json",
                      "/api/report/1-flat/..%2F..%2F..%2F..%2Fetc%2Fpasswd", "/api/report/1-flat/../2-nested/state.json",
                      "/api/report/nope/design.md", "/api/report/1-flat/nope.md", "/api/report/1-flat/",
-                     "/api/report/..%2Foutside/secret.md", "/nope", "/index.html"):
+                     "/api/report/..%2Foutside/outside.md", "/nope", "/index.html"):
             check(f"GET {path} is 404", get(path)[0] == 404)
         check("Host: evil.example is 403 on an unknown path", get("/nope", "evil.example")[0] == 403)
         check("a POST is refused", get("/api/pipelines", method="POST")[0] == 405)
@@ -1027,7 +1027,7 @@ def _fixture_and_cases(scratch, check):
               f"--surface-background: light-dark({background['light']}, {background['dark']});" in get("/tokens.css")[1])
         check("the CSP and nosniff are on every answer", all(c == CSP and n == "nosniff" for _, _, c, n, _ in seen))
         check("no answer carries the link's file or the registry's key",
-              not any(m in b for *_, b in seen for m in (leak_marker, key_marker, secret_marker, command_marker)))
+              not any(m in b for *_, b in seen for m in (leak_marker, key_marker, linked_marker, command_marker)))
     finally:
         server.shutdown()
         server.server_close()
