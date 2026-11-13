@@ -64,6 +64,7 @@ public class Wave2ComponentTests
         // Link = underline only (fenced) · inert buttons hover nothing.
         var sink = new StyleSink();
         WebRealizer.Lower(new Button("Continue"), Theme, 1f, sink).Render();
+        // Through its variable, like every theme colour, so it steps up with the fill at More (#340).
         var midpoint = TokenCss.Value(Theme.Colors(Variant.Primary).Hover);
         // The surface sits inside the button, so its hover is the control's (#614), and the whole
         // family stays behind the pointer gate: hover never fires on touch.

@@ -21,8 +21,8 @@ public class AbstractNodeGoldenTests
         using var backend = new ReferenceBackend();
         using var surface = backend.CreateSurface(w, h);
         var builder = new DisplayListBuilder();
-        builder.Clear(Theme.Background.Resolve(mode));
-        PhotonRealizer.Realize(root, w, h, Theme, mode, builder);
+        builder.Clear(Theme.Background.Resolve(mode, ContrastLevel.Standard));
+        PhotonRealizer.Realize(root, w, h, Theme, mode, ContrastLevel.Standard, builder);
         backend.Render(builder.Build(), surface);
         GoldenImage.Match(surface, name);
     }

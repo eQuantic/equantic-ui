@@ -541,6 +541,7 @@ public sealed class ThemeVarMap
             map.Register(colors.Pressed, $"{name}-pressed");
             map.Register(colors.Subtle, $"{name}-subtle");
             map.Register(colors.OnSubtle, $"{name}-on-subtle");
+            map.Register(colors.Hover, $"{name}-hover");
         }
 
         return map;

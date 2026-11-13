@@ -27,7 +27,7 @@ public class LoopMotionTests
     private static DisplayList RenderAt(VisualNode root, float timeMs, bool reducedMotion = false)
     {
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(root, 200, 40, PhotonTheme.Instance, ThemeMode.Light, builder,
+        PhotonRealizer.Realize(root, 200, 40, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder,
             timeMs: timeMs, reducedMotion: reducedMotion);
         return builder.Build();
     }
@@ -55,7 +55,7 @@ public class LoopMotionTests
         var root = new LoopMotion(new Box(SegmentStyle), LoopEffect.SlideX, -0.35f, 1.05f, 1200);
 
         var builder = new DisplayListBuilder();
-        var frame = PhotonRealizer.Realize(root, 200, 40, PhotonTheme.Instance, ThemeMode.Light, builder,
+        var frame = PhotonRealizer.Realize(root, 200, 40, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder,
             timeMs: 600, reducedMotion: true);
 
         frame.HasActiveMotion.Should().BeFalse("Reduce Motion statically replaces movement (spec §06)");
@@ -70,11 +70,11 @@ public class LoopMotionTests
         var still = new Box(SegmentStyle);
 
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(animated, 200, 40, PhotonTheme.Instance, ThemeMode.Light, builder, timeMs: 0)
+        PhotonRealizer.Realize(animated, 200, 40, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder, timeMs: 0)
             .HasActiveMotion.Should().BeTrue();
 
         builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(still, 200, 40, PhotonTheme.Instance, ThemeMode.Light, builder, timeMs: 0)
+        PhotonRealizer.Realize(still, 200, 40, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder, timeMs: 0)
             .HasActiveMotion.Should().BeFalse();
     }
 
@@ -143,7 +143,7 @@ public class LoopMotionTests
 
         // t=600 (half period): the layer offset is 0.35 × 240 = 84; the 30% segment spans 72dp.
         var builder = new DisplayListBuilder();
-        var frame = PhotonRealizer.Realize(bar, 240, 8, PhotonTheme.Instance, ThemeMode.Light, builder, timeMs: 600);
+        var frame = PhotonRealizer.Realize(bar, 240, 8, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder, timeMs: 600);
         frame.HasActiveMotion.Should().BeTrue();
 
         var clipped = builder.Build().Commands.ToArray()
