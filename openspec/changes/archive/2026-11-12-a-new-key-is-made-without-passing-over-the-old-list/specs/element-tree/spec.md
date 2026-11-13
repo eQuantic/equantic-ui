@@ -42,8 +42,8 @@ member of a list SHALL cost what building the list and letting the old one go co
 
 #### Scenario: Every member of a long list replaced
 
-- **WHEN** a column of 10,000 rows keyed `a0` to `a9999` rebuilds with rows keyed `b0` to `b9999`, or
-  with rows of another type keyed `a0` to `a9999`
+- **WHEN** a column of 10,000 text cells keyed `a0` to `a9999` rebuilds with text cells keyed `b0` to
+  `b9999`, or with rows keyed `a0` to `a9999`
 - **THEN** the rebuild costs less than twenty times what the first build of the column cost, on .NET
   and on the transpiled engine
 

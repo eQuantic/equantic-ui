@@ -127,7 +127,7 @@ public class ElementTreeTests
     /// <summary>
     /// A key the old list does not hold is a member of its own: it takes no other key's position, so
     /// the key that stayed keeps its state wherever it moved, and the new one starts from nothing, as
-    /// Flutter's <c>updateChildren</c> inflates a keyed widget with no old match (#1505).
+    /// Flutter's <c>updateChildren</c> inflates a keyed child with no old match (#1505).
     /// </summary>
     [Fact]
     public void AKeyInsertedAtTheFront_TakesNoOtherKeysPosition()

@@ -401,6 +401,7 @@ public class ElementEngineTwinTests
             const ratio = best[1] / best[0];
             trace.push('ratio:' + ratio.toFixed(1), 'under:' + (ratio < 20 ? 'True' : 'False'));
             """);
+        trace.Should().HaveCount(2, "the script measures a ratio and says whether it is under the ceiling");
         trace[1].Should().Be("under:True", $"the replacement measured {trace[0]} of the build, ceiling 20x");
     }
 
