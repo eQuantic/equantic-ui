@@ -46,12 +46,6 @@ public enum SortDirection : byte
 /// </summary>
 public sealed class DataTable : StatelessComponent
 {
-    /// <summary>Body row height — dense enough for a pointer, still a comfortable read.</summary>
-    public const float RowHeight = 52;
-
-    /// <summary>The leading selection column, when the table is selectable.</summary>
-    private const float CheckboxTrack = 44;
-
     public DataTable(IReadOnlyList<DataColumn> columns, IReadOnlyList<DataRow> rows)
     {
         Columns = columns;
@@ -88,7 +82,7 @@ public sealed class DataTable : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var tracks = Tracks();
+        var tracks = Tracks(theme.Table);
 
         var table = new Column(gap: 0) { Width = SizeValue.Fill };
         table.Add(Header(theme, tracks));
@@ -105,11 +99,12 @@ public sealed class DataTable : StatelessComponent
         return table;
     }
 
-    private GridTrack[] Tracks()
+    /// <summary>The column tracks, the leading selection column's first when the table is selectable.</summary>
+    private GridTrack[] Tracks(TableTheme? slot)
     {
         var tracks = new GridTrack[Columns.Count + (Selectable ? 1 : 0)];
         var offset = 0;
-        if (Selectable) tracks[offset++] = GridTrack.Fixed(CheckboxTrack);
+        if (Selectable) tracks[offset++] = GridTrack.Fixed(slot?.SelectionColumnWidth ?? 44);
         for (var i = 0; i < Columns.Count; i++) tracks[offset + i] = Columns[i].Track;
         return tracks;
     }
@@ -118,6 +113,8 @@ public sealed class DataTable : StatelessComponent
 
     private VisualNode Header(IAppTheme theme, GridTrack[] tracks)
     {
+        // The theme's Table slot, then the component's own (§3.10).
+        var slot = theme.Table;
         var grid = new Grid(tracks, gap: 0) { Width = SizeValue.Fill };
 
         if (Selectable)
@@ -127,7 +124,7 @@ public sealed class DataTable : StatelessComponent
             grid.Add(Cell(new Box(new BoxStyle(), new Checkbox(anySelected, OnToggleAll)
             {
                 Indeterminate = anySelected && Selection.Count < Rows.Count,
-            }), TextAlignment.Center));
+            }), TextAlignment.Center, slot));
         }
 
         for (var i = 0; i < Columns.Count; i++)
@@ -135,36 +132,37 @@ public sealed class DataTable : StatelessComponent
             var column = Columns[i];
             var sorted = i == SortColumn && SortDirection != SortDirection.None;
 
-            var label = new Row(gap: Space.S1)
+            var label = new Row(gap: slot?.HeaderIconGap ?? Space.S1)
             {
                 Width = SizeValue.Fill,
                 Cross = CrossAlign.Center,
                 Main = column.Align == TextAlignment.Start ? MainAlign.Start : MainAlign.End,
             };
-            label.Add(new Text(column.Header.ToUpperInvariant(), TypeRole.Caption,
-                sorted ? theme.TextPrimary : theme.TextMuted, maxLines: 1));
+            var sortedColor = slot?.SortedHeaderColor ?? theme.TextPrimary;
+            label.Add(new Text(slot?.HeaderUppercase ?? true ? column.Header.ToUpperInvariant() : column.Header,
+                TypeRole.Caption, sorted ? sortedColor : slot?.DataHeaderColor ?? theme.TextMuted, maxLines: 1));
             if (sorted)
             {
                 label.Add(new Icon(
                     SortDirection == SortDirection.Ascending ? Icons.ChevronUp : Icons.ChevronDown,
-                    IconSize.Sm, theme.TextPrimary));
+                    slot?.SortIconSize ?? IconSize.Sm, sortedColor));
             }
 
             var index = i;
             grid.Add(column.Sortable && OnSort is not null
-                ? new Pressable(Cell(label, column.Align), () => OnSort(index))
+                ? new Pressable(Cell(label, column.Align, slot), () => OnSort(index))
                 {
                     Label = $"Sort by {column.Header}",
                 }
-                : Cell(label, column.Align));
+                : Cell(label, column.Align, slot));
         }
 
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Background = theme.SurfaceSubtle,
-            BorderWidth = 1,
-            BorderColor = theme.Border,
+            Background = slot?.HeaderFill ?? theme.SurfaceSubtle,
+            BorderWidth = slot?.BorderWidth ?? 1,
+            BorderColor = slot?.BorderColor ?? theme.Border,
         }, grid);
     }
 
@@ -173,6 +171,7 @@ public sealed class DataTable : StatelessComponent
     private VisualNode Body(IAppTheme theme, GridTrack[] tracks, DataRow row)
     {
         var selected = Selection?.Contains(row.Key) == true;
+        var slot = theme.Table;
         var grid = new Grid(tracks, gap: 0) { Width = SizeValue.Fill };
 
         if (Selectable)
@@ -182,21 +181,21 @@ public sealed class DataTable : StatelessComponent
                 new Checkbox(selected, () => toggle?.Invoke(row))
                 {
                     Disabled = toggle is null,
-                }), TextAlignment.Center));
+                }), TextAlignment.Center, slot));
         }
 
         for (var i = 0; i < Columns.Count && i < row.Cells.Count; i++)
-            grid.Add(Cell(row.Cells[i], Columns[i].Align));
+            grid.Add(Cell(row.Cells[i], Columns[i].Align, slot));
 
         var box = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            MinHeight = RowHeight,
+            MinHeight = slot?.DataRowHeight ?? 52,
             Background = selected ? theme.Colors(Variant.Primary).Subtle : null,
-            BorderWidth = 1,
-            BorderColor = theme.Border,
+            BorderWidth = slot?.BorderWidth ?? 1,
+            BorderColor = slot?.BorderColor ?? theme.Border,
             // Declarative, so hovering a row never re-renders the table.
-            Hover = new StyleDiff { Background = theme.SurfaceSubtle },
+            Hover = new StyleDiff { Background = slot?.HoverFill ?? theme.SurfaceSubtle },
             Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
         }, grid)
         {
@@ -215,31 +214,33 @@ public sealed class DataTable : StatelessComponent
     /// </summary>
     private VisualNode Pending(IAppTheme theme, GridTrack[] tracks, int index)
     {
+        var slot = theme.Table;
         var grid = new Grid(tracks, gap: 0) { Width = SizeValue.Fill };
         if (Selectable)
             grid.Add(Cell(new Box(new BoxStyle(), new Skeleton(SkeletonShape.Block, 16, 16)),
-                TextAlignment.Center));
+                TextAlignment.Center, slot));
 
         for (var i = 0; i < Columns.Count; i++)
         {
             grid.Add(Cell(new Box(new BoxStyle(), new Skeleton(SkeletonShape.Line, i % 2 == 0 ? 96 : 64)),
-                Columns[i].Align));
+                Columns[i].Align, slot));
         }
 
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            MinHeight = RowHeight,
-            BorderWidth = 1,
-            BorderColor = theme.Border,
+            MinHeight = slot?.DataRowHeight ?? 52,
+            BorderWidth = slot?.BorderWidth ?? 1,
+            BorderColor = slot?.BorderColor ?? theme.Border,
         }, grid)
         {
             Key = $"pending-{index}",
         };
     }
 
-    /// <summary>Every cell gets the same inset and the same alignment discipline.</summary>
-    private static VisualNode Cell(VisualNode child, TextAlignment align)
+    /// <summary>Every cell gets the same inset, the theme's Table slot's, and the same alignment
+    /// discipline.</summary>
+    private static VisualNode Cell(VisualNode child, TextAlignment align, TableTheme? slot)
     {
         var row = new Row(gap: 0)
         {
@@ -258,7 +259,7 @@ public sealed class DataTable : StatelessComponent
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Padding = EdgeInsets.Symmetric(Space.S3, Space.S2),
+            Padding = EdgeInsets.Symmetric(slot?.CellPaddingX ?? Space.S3, slot?.CellPaddingY ?? Space.S2),
         }, row);
     }
 }

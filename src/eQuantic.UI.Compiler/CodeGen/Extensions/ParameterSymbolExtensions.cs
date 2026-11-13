@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -30,7 +31,7 @@ public static class ParameterSymbolExtensions
         {
             ContainingSymbol: IMethodSymbol { MethodKind: MethodKind.Constructor } constructor,
         }
-        && constructor.DeclaringSyntaxReferences.Any(
+        && constructor.ReadDeclarations().Any(
             reference => reference.GetSyntax() is TypeDeclarationSyntax);
 
     /// <summary>A parameter or local that really IS in scope — a plain callable, emitted verbatim.</summary>

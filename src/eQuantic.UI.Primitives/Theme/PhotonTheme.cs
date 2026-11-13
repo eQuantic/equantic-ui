@@ -183,8 +183,9 @@ public sealed class PhotonTheme : IAppTheme
         Radius = BySize(Sizing.Radius),
     };
 
-    /// <summary>The Button (spec A12): a 64dp floor, a semi-bold label at 0.1 tracking, a 1dp outline in
-    /// BorderStrong, a link padded by 6, and the quiet variants filling with SurfaceSubtle.</summary>
+    /// <summary>The Button (spec A12): a 64dp floor, a semi-bold label at 0.1 tracking, a 1dp outline and
+    /// a link padded by 6. Its outline (BorderStrong) and its quiet fill (SurfaceSubtle) stay null: the
+    /// Button reads those roles itself, so a theme that changes one recolours it.</summary>
     public ButtonTheme? Button => field ??= new ButtonTheme
     {
         MinWidth = Sizing.ButtonMinWidth,
@@ -192,8 +193,6 @@ public sealed class PhotonTheme : IAppTheme
         LabelTracking = 0.1f,
         OutlineWidth = 1,
         LinkPaddingX = 6,
-        OutlineColor = BorderStrong,
-        QuietFill = SurfaceSubtle,
     };
 
     // The form controls' slots (E6b): what each control drew, now the design system's. Their own
@@ -368,6 +367,185 @@ public sealed class PhotonTheme : IAppTheme
         Shape = ShapeScale.Large,
         BorderWidth = 1,
         Elevation = 1,
+    };
+
+    // Navigation and collections (E6d): what each component drew, now the design system's. A colour a
+    // component takes from one of the theme's roles stays null, as the form controls' and the surfaces'
+    // do: the component reads the role itself, so a theme that changes the role recolours it. Cached on
+    // first read.
+
+    /// <summary>The navigation family (spec B3, B4, C16): a 48dp tab strip under a 3dp indicator inset 16,
+    /// a 56dp bar of 56 by 26 pills, an 80dp rail of 52 by 30 pills with a 1dp trailing edge, a 56dp app
+    /// bar, 30dp page cells and 6dp dots.</summary>
+    public NavigationTheme? Navigation => field ??= new NavigationTheme
+    {
+        TabHeight = 48,
+        TabLabelSize = 14,
+        TabLabelLineHeight = 18,
+        TabLabelWeight = FontWeight.SemiBold,
+        TabSelectedLabelWeight = FontWeight.Bold,
+        TabLabelTracking = 0.1f,
+        IndicatorThickness = 3,
+        IndicatorInset = Space.S4,
+        IndicatorRadius = 2,
+        PillRadius = Radius.Full,
+        PillPressOpacity = 0.4f,
+        PillLabelGap = 2,
+        BarHeight = 56,
+        BarIconSize = IconSize.Md,
+        BarPillWidth = 56,
+        BarPillHeight = 26,
+        BarLabelSize = 11,
+        BarLabelLineHeight = 14,
+        BarLabelWeight = FontWeight.Bold,
+        BarLabelTracking = 0.1f,
+        RailWidth = 80,
+        RailPaddingY = Space.S3,
+        RailGap = Space.S2,
+        RailItemHeight = 56,
+        RailIconSize = IconSize.Dense,
+        RailPillWidth = 52,
+        RailPillHeight = 30,
+        RailSelectedLabelSize = 12,
+        RailSelectedLabelLineHeight = 16,
+        RailSelectedLabelWeight = FontWeight.Bold,
+        RailBorderWidth = 1,
+        AppBarHeight = 56,
+        AppBarPaddingX = 4,
+        TitleSize = 20,
+        TitleLineHeight = 26,
+        TitleWeight = FontWeight.SemiBold,
+        TitleInset = Space.S3,
+        TitleGap = Space.S2,
+        ScrolledElevation = 2,
+        CrumbGap = Space.S1,
+        SeparatorSize = IconSize.Sm,
+        PageCellSize = 30,
+        PageGap = 3,
+        PaginationGap = Space.S2,
+        PageRadius = Radius.Sm,
+        DotSize = 6,
+        CurrentDotWidth = 18,
+        DotGap = Space.S1,
+        DotRadius = Radius.Full,
+    };
+
+    /// <summary>The list family (spec A7, B2): 52, 68 and 88dp rows padded 16 by 8 with 12 between their
+    /// slots, a 15/20 medium title, a 1dp Border hairline inset 16, an accordion padded 12, and a 96dp swipe
+    /// action.</summary>
+    public ListTheme? List => field ??= new ListTheme
+    {
+        ItemHeight = 52,
+        TwoLineItemHeight = 68,
+        ThreeLineItemHeight = 88,
+        ItemPaddingX = Space.S4,
+        ItemPaddingY = Space.S2,
+        ItemGap = Space.S3,
+        TextGap = 2,
+        TitleSize = 15,
+        TitleLineHeight = 20,
+        TitleWeight = FontWeight.Medium,
+        DividerThickness = 1,
+        DividerInset = Space.S4,
+        HeaderHeight = Sizing.Height(SizeVariant.Large),
+        SectionPaddingX = Space.S3,
+        SectionPaddingBottom = Space.S3,
+        HeaderGap = Space.S2,
+        ChevronSize = IconSize.Sm,
+        SwipeActionWidth = 96,
+        SwipeActionGap = 3,
+        SwipeIconSize = IconSize.Dense,
+    };
+
+    /// <summary>The table family: cells padded 12 by 8, a Table's 44dp rows 12 apart, and a DataTable's
+    /// 52dp bordered rows under a filled header in capitals.</summary>
+    public TableTheme? Table => field ??= new TableTheme
+    {
+        CellPaddingX = Space.S3,
+        CellPaddingY = Space.S2,
+        ColumnGap = Space.S3,
+        RowMinHeight = 44,
+        DataRowHeight = 52,
+        SelectionColumnWidth = 44,
+        HeaderUppercase = true,
+        HeaderIconGap = Space.S1,
+        SortIconSize = IconSize.Sm,
+        BorderWidth = 1,
+    };
+
+    /// <summary>The badge family (spec B6, B7): an 8dp dot and a 16dp count ringed 2dp in Surface, the
+    /// avatar's own ladder, and an empty state's 64dp well over a 20/26 semi-bold title.</summary>
+    public BadgeTheme? Badge => field ??= new BadgeTheme
+    {
+        RingWidth = 2,
+        DotSize = 8,
+        CountHeight = 16,
+        CountPaddingX = Space.S1,
+        CountLabelSize = 10,
+        CountLabelLineHeight = 12,
+        CountLabelWeight = FontWeight.Bold,
+        AvatarSize = BySize(Sizing.Avatar),
+        AvatarLabelSize = BySize(Sizing.AvatarInitials),
+        AvatarLabelWeight = FontWeight.SemiBold,
+        AvatarGlyphSize = new SizeLadder { Small = IconSize.Sm, Medium = IconSize.Dense, Large = IconSize.Md, XLarge = IconSize.Lg },
+        WellSize = 64,
+        WellIconSize = IconSize.Lg,
+        EmptyPaddingX = Space.S4,
+        EmptyPaddingY = Space.S12,
+        WellGap = Space.S4,
+        BodyGap = 6,
+        ActionsGap = Space.S5,
+        ActionSpacing = Space.S2,
+        EmptyTitleSize = 20,
+        EmptyTitleLineHeight = 26,
+        EmptyTitleWeight = FontWeight.SemiBold,
+    };
+
+    /// <summary>The calendar family (spec C15): 44dp day cells under a 28dp row of weekday names, a 1.5dp
+    /// ring for today, and the DatePicker's panel at the medium corner, elevation 2, padded 12.</summary>
+    public CalendarTheme? Calendar => field ??= new CalendarTheme
+    {
+        CellSize = 44,
+        WeekdayHeight = 28,
+        HeaderGap = Space.S1,
+        Gap = Space.S2,
+        TitleRole = TypeRole.TitleSmall,
+        WeekdayRole = TypeRole.Caption,
+        DayRole = TypeRole.BodyM,
+        TodayRingWidth = 1.5f,
+        PanelRadius = Radius.Md,
+        PanelBorderWidth = 1,
+        PanelElevation = 2,
+        PanelPadding = Space.S3,
+        OpenerIconSize = IconSize.Dense,
+    };
+
+    /// <summary>The rendered document: headings on the type scale's heading roles, prose in BodyM 14
+    /// apart, quotes behind a 3dp rule, lists 8 apart, and tables at a 12dp corner.</summary>
+    public MarkdownTheme? Markdown => field ??= new MarkdownTheme
+    {
+        Heading1 = TypeRole.Heading,
+        Heading2 = TypeRole.Title,
+        Heading3 = TypeRole.TitleSmall,
+        Heading4 = TypeRole.Label,
+        Body = TypeRole.BodyM,
+        BlockGap = 14,
+        CodeLineNumbers = false,
+        CodeInverse = false,
+        HeadingSpace = 10,
+        SubheadingSpace = 6,
+        InlineCodeMaxSize = 13.5f,
+        QuoteIndent = Space.S4,
+        QuotePaddingY = 2,
+        QuoteRuleWidth = 3,
+        ListGap = Space.S2,
+        MarkerGap = 10,
+        ListIndent = Space.S5,
+        TableRadius = 12,
+        TableBorderWidth = 1,
+        TableCellPaddingX = 14,
+        TableHeaderPaddingY = 10,
+        TableCellPaddingY = 11,
     };
 
     private static DensityPair ByDensityAlone(Func<Density, float> side) => new()

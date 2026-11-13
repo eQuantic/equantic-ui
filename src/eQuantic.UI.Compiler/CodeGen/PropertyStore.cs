@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -98,7 +99,7 @@ internal static class PropertyStore
         if (!property.Modifiers.Any(SyntaxKind.OverrideKeyword)
             || model?.GetDeclaredSymbol(property) is not IPropertySymbol { OverriddenProperty: { } overridden })
             return false;
-        return Along(overridden, candidate => candidate.DeclaringSyntaxReferences
+        return Along(overridden, candidate => candidate.ReadDeclarations()
             .Select(reference => reference.GetSyntax())
             .OfType<PropertyDeclarationSyntax>()
             // A partial property is its implementing half (#1172).

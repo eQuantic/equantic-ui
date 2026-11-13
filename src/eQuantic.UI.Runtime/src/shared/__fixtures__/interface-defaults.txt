@@ -1,4 +1,6 @@
+IAppTheme.badge
 IAppTheme.button
+IAppTheme.calendar
 IAppTheme.card
 IAppTheme.chip
 IAppTheme.code
@@ -6,9 +8,12 @@ IAppTheme.controls
 IAppTheme.data
 IAppTheme.iconButton
 IAppTheme.input
+IAppTheme.list
+IAppTheme.markdown
 IAppTheme.menu
 IAppTheme.modal
 IAppTheme.monoFamily
+IAppTheme.navigation
 IAppTheme.notice
 IAppTheme.onSelection
 IAppTheme.placeholder
@@ -19,6 +24,7 @@ IAppTheme.segmented
 IAppTheme.selection
 IAppTheme.selectionControls
 IAppTheme.sheet
+IAppTheme.table
 IAppTheme.textFamily
 ICodeCompletionProvider.resolveAsync
 ICodeCompletionProvider.triggerCharacters
