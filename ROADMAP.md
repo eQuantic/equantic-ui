@@ -65,10 +65,10 @@ What is not there yet, each with its issue:
 - the variant matrix over every control, and its accessibility checklist (#294, the open slice is
   #1247); under #306 only #1259 is open, the VS Code extension's tooling advisories;
 - edit-to-view under a second on the web: the desktop meets it and the web does not. CI measures
-  both on every pull request (`scripts/measure-edit-to-view.cs`, held to
+  both in the merge queue's run, before a pull request reaches main (`scripts/measure-edit-to-view.cs`, held to
   `scripts/edit-to-view.budget.json`), and #900 is bringing the web down;
-- the transpiler's fidelity bugs, under #164, #565, #845 and #849: 1.0 reads them as an exit
-  criterion: no bug stays open where code compiles and answers differently, and the new bugs a
+- the transpiler's fidelity bugs, under #164, #565, #845, #849 and #1174 (new ones go under #1174): 1.0 reads them as an
+  exit criterion: no bug stays open where code compiles and answers differently, and the new bugs a
   week fall two weeks in a row;
 - hydration-time benchmarks and tree-shaking verification of the app bundle. The served runtime's size budget
   (`tests/eQuantic.UI.Server.Tests/Budgets/served-runtime.json`) fails the suite today.
@@ -487,8 +487,8 @@ The bar 1.0 holds the web track to (#898, criterion 3); each line says whether i
   the routes (a page's module loads on the first navigation to it).
 - **Flutter DX**: hot reload preserves state; <1s edit-to-view. The state is kept on the web and on
   the desktop (Phase 3), and on a simulator or an emulator hot reload waits for W7. The second is
-  measured on every pull request: the desktop meets it and the web does not yet (#900,
-  `scripts/measure-edit-to-view.cs`).
+  measured in the merge queue's run, before a pull request reaches main:
+  the desktop meets it and the web does not yet (#900, `scripts/measure-edit-to-view.cs`).
 - **Components**: every shipped component passes an a11y checklist + variant matrix tests. Not met
   (#294).
 - **CSS**: at least one first-party engine ships. Met by Phase 6; a provider contract was the
