@@ -135,7 +135,7 @@ public class ElementEngineTwinTests
 
     /// <summary>The twins of the components above, over the runtime's classes, and the frame helper.</summary>
     private static string Prelude(string runtime) => $$"""
-        import { BuildOwner, StatefulComponent, Column, Text, InFlow, ComponentContext } from '{{runtime}}';
+        import { BuildOwner, StatefulComponent, Column, Row, Text, InFlow, ComponentContext } from '{{runtime}}';
         const trace = [];
         // The browser's own context, as a component's build receives it: what it reports is what the
         // C# components read through theirs (InFlow, above all).
@@ -294,6 +294,115 @@ public class ElementEngineTwinTests
               'second-is-a:' + (componentAt(root.childAt(0).childAt(1)) === a ? 'True' : 'False'),
               'counts:' + a.count + ',' + b.count);
             """).Should().Equal(trace);
+    }
+
+    [SkippableFact]
+    public void AKeyInsertedAtTheFront_TakesNoOtherKeysPosition()
+    {
+        SkipUnlessBun();
+        var owner = ComponentBoundary.Owner();
+        var page = new Page(["a", "b"]) { Keyed = true };
+        var root = Frame(owner, page);
+        var a = ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(0)!);
+        var b = ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(1)!);
+        a.Press();
+        b.Press();
+        b.Press();
+        page.Show("c", "a");
+        Frame(owner, page, rebuildAll: false);
+        var first = ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(0)!);
+        List<string> trace =
+        [
+            $"first-is-new:{!ReferenceEquals(first, a) && !ReferenceEquals(first, b)}",
+            $"first:{first.Label},{first.Count}",
+            $"second-is-a:{ReferenceEquals(ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(1)!), a)}",
+            $"a:{a.Count}",
+        ];
+        trace.Should().Equal("first-is-new:True", "first:c,0", "second-is-a:True", "a:1");
+
+        OnTheWeb("""
+            const page = new Page(['a', 'b'], null, true);
+            const root = frame(page);
+            const a = componentAt(root.childAt(0).childAt(0));
+            const b = componentAt(root.childAt(0).childAt(1));
+            a.press(); b.press(); b.press();
+            page.show('c', 'a');
+            frame(page, false);
+            const first = componentAt(root.childAt(0).childAt(0));
+            trace.push('first-is-new:' + (first !== a && first !== b ? 'True' : 'False'),
+              'first:' + first.label + ',' + first.count,
+              'second-is-a:' + (componentAt(root.childAt(0).childAt(1)) === a ? 'True' : 'False'),
+              'a:' + a.count);
+            """).Should().Equal(trace);
+    }
+
+    [SkippableFact]
+    public void EveryKeyReplaced_EveryMemberStartsAgain()
+    {
+        SkipUnlessBun();
+        var owner = ComponentBoundary.Owner();
+        var page = new Page(["a", "b"]) { Keyed = true };
+        var root = Frame(owner, page);
+        var a = ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(0)!);
+        var b = ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(1)!);
+        a.Press();
+        b.Press();
+        page.Show("c", "d");
+        Frame(owner, page, rebuildAll: false);
+        var trace = new List<string>();
+        for (var i = 0; i < 2; i++)
+        {
+            var member = ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(i)!);
+            trace.Add($"{i}:{!ReferenceEquals(member, a) && !ReferenceEquals(member, b)},{member.Label},{member.Count}");
+        }
+        trace.Should().Equal("0:True,c,0", "1:True,d,0");
+
+        OnTheWeb("""
+            const page = new Page(['a', 'b'], null, true);
+            const root = frame(page);
+            const a = componentAt(root.childAt(0).childAt(0));
+            const b = componentAt(root.childAt(0).childAt(1));
+            a.press(); b.press();
+            page.show('c', 'd');
+            frame(page, false);
+            for (let i = 0; i < 2; i++) {
+              const member = componentAt(root.childAt(0).childAt(i));
+              trace.push(i + ':' + (member !== a && member !== b ? 'True' : 'False') + ',' + member.label + ',' + member.count);
+            }
+            """).Should().Equal(trace);
+    }
+
+    /// <summary>
+    /// The transpiled engine's half of <c>KeyedListPerfTests</c>, the one the browser runs: every member
+    /// of 10,000 keyed ones replaced costs what building them costs, whether every key changed or every
+    /// key stayed with a member of another type (#1505). Before the fix, about two thousand times.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EveryMemberReplaced_CostsWhatBuildingTheListCosts_OnTheTranspiledEngine(bool keysKept)
+    {
+        SkipUnlessBun();
+        var trace = OnTheWeb($$"""
+            const keysKept = {{(keysKept ? "true" : "false")}};
+            const keyed = (prefix, n, row) => { const c = new Column();
+              for (let i = 0; i < n; i++) { const m = row ? new Row() : new Text('cell', 'caption'); m.key = prefix + i; c.children.push(m); }
+              return c; };
+            const measure = (n) => {
+              const first = keyed('a', n, false), second = keyed(keysKept ? 'a' : 'b', n, keysKept);
+              const owner = new BuildOwner((component, context, depth) => component.build(context));
+              let t = performance.now(); owner.build(first, context, 400, true); owner.endFrame();
+              const build = performance.now() - t;
+              t = performance.now(); owner.build(second, context, 400, true); owner.endFrame();
+              return [build, performance.now() - t]; };
+            measure(200);
+            let best = [Infinity, Infinity];
+            for (let run = 0; run < 3; run++) { const [b, r] = measure(10000); best = [Math.min(best[0], b), Math.min(best[1], r)]; }
+            const ratio = best[1] / best[0];
+            trace.push('ratio:' + ratio.toFixed(1), 'under:' + (ratio < 20 ? 'True' : 'False'));
+            """);
+        trace.Should().HaveCount(2, "the script measures a ratio and says whether it is under the ceiling");
+        trace[1].Should().Be("under:True", $"the replacement measured {trace[0]} of the build, ceiling 20x");
     }
 
     [SkippableFact]

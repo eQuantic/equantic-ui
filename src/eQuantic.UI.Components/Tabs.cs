@@ -26,17 +26,22 @@ public sealed class Tabs : StatelessComponent
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
+        // The theme's Navigation slot, then the component's own (§3.10).
+        var slot = theme.Navigation;
+        var indicator = slot?.IndicatorThickness ?? 3;
 
-        var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = 48 };
+        var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = slot?.TabHeight ?? 48 };
         for (var i = 0; i < Labels.Count; i++)
         {
             var isActive = i == Selected;
             var index = i;
 
             var label = new Text(Labels[i], TypeRole.Caption,
-                isActive ? primary.Base : theme.TextMuted, maxLines: 1)
+                isActive ? primary.Base : slot?.InactiveColor ?? theme.TextMuted, maxLines: 1)
             {
-                StyleOverride = new TypeStyle(14, 18, isActive ? FontWeight.Bold : FontWeight.SemiBold, 0.1f, 1.3f),
+                StyleOverride = new TypeStyle(slot?.TabLabelSize ?? 14, slot?.TabLabelLineHeight ?? 18,
+                    isActive ? slot?.TabSelectedLabelWeight ?? FontWeight.Bold : slot?.TabLabelWeight ?? FontWeight.SemiBold,
+                    slot?.TabLabelTracking ?? 0.1f, 1.3f),
             };
             var labelRow = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
             labelRow.Add(label);
@@ -47,15 +52,15 @@ public sealed class Tabs : StatelessComponent
             cell.Add(new Box(new BoxStyle
             {
                 Width = SizeValue.Fill,
-                Height = 3,
-                Padding = EdgeInsets.Symmetric(Space.S4, 0),
+                Height = indicator,
+                Padding = EdgeInsets.Symmetric(slot?.IndicatorInset ?? Space.S4, 0),
             }, isActive
                 ? new Box(new BoxStyle
                 {
                     Width = SizeValue.Fill,
-                    Height = 3,
+                    Height = indicator,
                     Background = primary.Base,
-                    CornerRadius = new CornerRadii(2, 2, 0, 0),
+                    CornerRadius = new CornerRadii(slot?.IndicatorRadius ?? 2, slot?.IndicatorRadius ?? 2, 0, 0),
                 })
                 : null));
 
@@ -66,7 +71,7 @@ public sealed class Tabs : StatelessComponent
             {
                 Width = SizeValue.Fill,
                 Height = SizeValue.Fill,
-                Pressed = new StyleDiff { Background = theme.SurfaceSubtle },
+                Pressed = new StyleDiff { Background = slot?.QuietFill ?? theme.SurfaceSubtle },
             }, cell);
 
             row.Add(new Flexible(new Pressable(surface, OnSelect is null ? null : () => OnSelect(index))

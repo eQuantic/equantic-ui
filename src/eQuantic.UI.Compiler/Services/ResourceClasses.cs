@@ -66,7 +66,7 @@ public static class ResourceClasses
     /// </summary>
     public static string KeyFor(IPropertySymbol property)
     {
-        foreach (var reference in property.DeclaringSyntaxReferences)
+        foreach (var reference in property.ReadDeclarations())
         {
             if (reference.GetSyntax() is not PropertyDeclarationSyntax declaration) continue;
             foreach (var invocation in declaration.DescendantNodes().OfType<InvocationExpressionSyntax>())
@@ -83,7 +83,7 @@ public static class ResourceClasses
 
     /// <summary>Where the Designer that declares this class lives ("" for metadata-only types).</summary>
     public static string DesignerPathFor(INamedTypeSymbol type) =>
-        type.DeclaringSyntaxReferences.FirstOrDefault()?.SyntaxTree.FilePath ?? "";
+        type.ReadDeclarations().FirstOrDefault()?.SyntaxTree.FilePath ?? "";
 
     /// <summary>The catalog id for a resource class — minimal unique across the app's own set.
     /// A pure function of the compilation (cached per instance; ephemeral instances re-derive the

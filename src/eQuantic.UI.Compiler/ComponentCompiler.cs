@@ -117,6 +117,10 @@ public class ComponentCompiler
             result.Success = false;
     }
 
+    /// <summary>The resource strings the file in <see cref="CompileRecorded"/> reads, as its compile
+    /// hands them over; null outside it.</summary>
+    private List<Services.ResourceUse>? _usesSeen;
+
     /// <summary>
     /// Track L D3: aggregate the rewritten resx reads — catalogs are emitted from exactly this set,
     /// so call sites and catalogs cannot disagree.
@@ -135,6 +139,7 @@ public class ComponentCompiler
     {
         foreach (var use in uses)
         {
+            _usesSeen?.Add(use);
             if (!_resourceUses.TryGetValue(use.Id, out var aggregated))
                 _resourceUses.Add(use.Id, aggregated = new AggregatedResource(use.Id, use.DesignerPath));
             aggregated.Keys.Add(use.Key);
@@ -285,6 +290,39 @@ public class ComponentCompiler
     {
         var components = _parser.Parse(filePath);
         return CompileAll(components);
+    }
+
+    /// <summary>
+    /// Compiles one file with what a later build needs to take it as it is (#1281): the files whose
+    /// syntax its compile read, and the resource strings and classes it handed this compiler for the
+    /// catalogs, which <see cref="Replay"/> hands over again for a file a build does not compile.
+    /// </summary>
+    internal Services.FileCompile CompileRecorded(string filePath)
+    {
+        using var reads = Services.SourceReads.Begin();
+        var uses = new List<Services.ResourceUse>();
+        var discovered = new List<KeyValuePair<string, string>>();
+        _usesSeen = uses;
+        _parser.DiscoveriesSeen = discovered;
+        try
+        {
+            var results = CompileFile(filePath).ToList();
+            return new Services.FileCompile(Path.GetFullPath(filePath), results,
+                reads.Files.Select(Path.GetFullPath).ToHashSet(StringComparer.Ordinal), uses, discovered);
+        }
+        finally
+        {
+            _usesSeen = null;
+            _parser.DiscoveriesSeen = null;
+        }
+    }
+
+    /// <summary>What a file compiled by an earlier build handed the catalogs, handed over again, in the
+    /// place a compile of it would have.</summary>
+    internal void Replay(Services.FileCompile compiled)
+    {
+        CollectResourceUses(compiled.Uses);
+        foreach (var (id, designer) in compiled.Discovered) _parser.Discover(id, designer);
     }
 
     /// <summary>
