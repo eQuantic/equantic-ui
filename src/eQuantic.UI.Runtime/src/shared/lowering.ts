@@ -1845,6 +1845,12 @@ function lowerSheetSurface(
     const owner = (event.target as Element | null)?.closest?.('button, [role="button"], [data-eq-drag]');
     return owner != null && owner !== surfaceElement && surfaceElement?.contains?.(owner) === true;
   };
+  // A press on a resize grip drawn inside the sheet is the grip's drag, and the keyboard stays the sheet's, as on
+  // Photon, where a press inside a sheet makes it the editing surface before anything drawn there takes the press
+  // (BeginSheetEditing): a resize is one undo step, which ⌘Z takes back only from a sheet that still holds the
+  // keyboard (#1092). The browser would move the focus on the press's `mousedown` to the grip's nearest focusable
+  // ancestor, the page's body.
+  const onAGrip = (event: Event) => (event.target as Element | null)?.closest?.('[data-eq-drag]') != null;
   const kindOf = (event: PointerEvent) =>
     event.pointerType === 'touch' ? 'touch' : event.pointerType === 'pen' ? 'stylus' : 'mouse';
 
@@ -1882,7 +1888,11 @@ function lowerSheetSurface(
   view.events['pointerdown'] = ((event: PointerEvent) => {
     sheetClicksAnswered.delete(model);
     if (sheetPresses.has(model)) cancel();
-    if (notTheSheets(event)) return;
+    if (notTheSheets(event)) {
+      if (onAGrip(event))
+        (event.currentTarget as HTMLElement).querySelector<HTMLElement>('textarea.eq-code-input')?.focus({ preventScroll: true });
+      return;
+    }
     const target = event.currentTarget as HTMLElement;
     const press = { id: event.pointerId, kind: kindOf(event), target, blur: cancel };
     sheetPresses.set(model, press);
@@ -1902,7 +1912,10 @@ function lowerSheetSurface(
   }) as unknown as EventHandler;
 
   view.events['mousedown'] = ((event: MouseEvent) => {
-    if (sheetPresses.get(model)?.kind !== 'mouse') return;
+    if (sheetPresses.get(model)?.kind !== 'mouse') {
+      if (notTheSheets(event) && onAGrip(event)) event.preventDefault();
+      return;
+    }
     // The browser's own reaction to a press (a text sweep, a drag of what is under it, the focus moved
     // to whatever was pressed) would fight the band, the fill and the keyboard the sheet keeps.
     event.preventDefault();

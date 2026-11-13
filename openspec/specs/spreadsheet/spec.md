@@ -932,3 +932,14 @@ column, and of a row's header SHALL select the row, as a press there does, on ev
 
 - **WHEN** a reader activates the header of column C
 - **THEN** the selection is column C, as a press on that header makes it
+
+### Requirement: A resize keeps the keyboard on the sheet
+
+A press on a resize grip drawn inside a spreadsheet's surface SHALL leave the keyboard on the sheet, on the web
+as on Photon, so the keys that follow, ⌘Z among them, reach the sheet.
+
+#### Scenario: A grip pressed on the web
+
+- **WHEN** a sheet with B2 selected has a resize grip inside its surface pressed with a mouse
+- **THEN** the sheet's text control holds the focus, the `mousedown` is prevented, and B2 is still the
+  selection
