@@ -16,5 +16,5 @@
 - [x] 3.1 `subtree-relowering.spec.ts`: one lowering for one component, two for two, the outer for a nested pair, a parent's change replayed, the page for a parent that reads its child, and the shortcuts kept; every patched DOM equal to the whole lowering's
 - [x] 3.2 The runtime's suites: 3025 of 3026, the one left a perf spec's timing assert at a load average past 300 that fails on E3b-1's head too; no .NET code moved, so the twins are untouched
 - [x] 3.3 The e2e suite in a real browser: 16 of 16 on the dashboard sample
-- [x] 3.4 The served runtime's budget, re-recorded in a commit of its own: 332,177 bytes gzipped, about 2.3 KB of it this slice's
-- [ ] 3.5 `docs/ELEMENT-TREE-PLAN.md` and one ledger entry citing #1455
+- [x] 3.4 The served runtime's budget, re-recorded in a commit of its own: 345,013 bytes gzipped, about 2.5 KB of it this slice's (344,365 against main's 341,869 at gzip -9)
+- [x] 3.5 `docs/ELEMENT-TREE-PLAN.md` and one ledger entry citing #1455
