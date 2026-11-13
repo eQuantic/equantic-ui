@@ -1,7 +1,7 @@
 # eQuantic.UI — Roadmap & Honest State Assessment
 
-> Reviewed against the tree on 2026-10-14, at 0.2.0-preview.63: every row of the state below was
-> measured that day, and none of them quotes a count that moves with each release. A count names
+> Reviewed against the tree on 2026-11-13: every claim of the state below was
+> checked that day, and none of them quotes a count that moves with each release. A count names
 > where it lives (the suite, the board, the 1.0 epic), what shipped names the release or the issue
 > that carries it, and what is ahead names its issue. This document is an evidence-based assessment
 > of where eQuantic.UI stands against its vision, and a prioritized roadmap to close the gaps.
@@ -23,60 +23,50 @@ eQuantic.UI is in **preview**: its version carries a prerelease label (read `Dir
 and by rule a preview breaks its public surface whenever a shape is wrong (CLAUDE.md, "No member
 survives to keep an old shape alive"), each break listed in the release's notes and on the wiki's
 Upgrading page. The next milestone is **1.0, the web SDK stable with the native track experimental**
-([#898](https://github.com/eQuantic/equantic-ui/issues/898)). What 1.0 promises is a contract rather
-than features: an app written against it keeps compiling and keeps answering the same through the
-1.x line. Its exit criteria, and the measurements they start from, live in the epic's body. When it is likely
-to land is the board's Roadmap view, which `scripts/roadmap.py` forecasts from the pace the board
-measures ([docs/ROADMAP-FORECAST.md](docs/ROADMAP-FORECAST.md)).
+([#898](https://github.com/eQuantic/equantic-ui/issues/898)): a contract, not features. An app
+written against it keeps compiling and answering the same through the 1.x line. The exit criteria
+and what is still open are in the epic's body, and when it is likely to land is the board's Roadmap
+view, which `scripts/roadmap.py` forecasts ([docs/ROADMAP-FORECAST.md](docs/ROADMAP-FORECAST.md)).
 
-What exists, held by suites that fail rather than warn:
+What exists, each held by a suite that fails rather than warns:
 
 - **Write-once components**: a screen is authored once against the vocabulary
   (`eQuantic.UI.Primitives`) and realized as DOM and atomic CSS on the web, and as GPU pixels by
-  Photon on macOS, iOS, Android and Windows.
-- **eqc, the C#→JavaScript transpiler**: Roslyn, one strategy per C# construct, writing an IR with
-  one writer per level. A differential conformance suite runs every case under .NET and under Bun,
-  and what eqc cannot translate faithfully fails the build with a diagnostic instead of answering
-  differently.
+  Photon (shells for macOS, iOS, Android and Windows under `src/eQuantic.UI.Native.Shell.*`).
+- **eqc, the C#-to-JavaScript transpiler**: one strategy per C# construct, writing an IR with one
+  writer per level. A conformance suite runs every case under .NET and under Bun, and what eqc
+  cannot translate faithfully is a build error, listed in [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
 - **The web stack**: SSR with hydration, Server Actions with authorization, server events, a client
-  router, forms and validation, localization through `.resx`, hot reload that keeps a page's state,
-  and C# in the browser's debugger.
-- **The SDK**: `<Project Sdk="eQuantic.UI.Sdk">` and nothing else. Bun is embedded per OS and
-  architecture, so no Node or npm, and every package ships at one version.
+  router (`src/eQuantic.UI.Runtime/src/router`), forms and validation, `.resx` localization, hot
+  reload that keeps a page's fields, and C# in the browser's debugger through source maps.
+- **The SDK**: `<Project Sdk="eQuantic.UI.Sdk">` and nothing else; Bun is embedded per OS and
+  architecture, so no Node or npm.
+- **Styling**: one first-party engine, typed C# lowered to atomic classes. No other engine ships.
+- **Security**: the written review is [docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md), and an
+  app turns on a Content-Security-Policy in C# (`UseContentSecurityPolicy`).
+- **Testing without a browser**: `eQuantic.UI.Testing` renders a component with a theme and a
+  culture and says what the web lowers and what the semantics announce.
 - **The release contract**: every shipping assembly names its class (contract, tool or
-  experimental, #899), the C# surface is held by `PublicAPI.*.txt` and the MSBuild and
-  configuration surface by a baseline (#322), and the rules of a stable line follow the version
-  (#323).
+  experimental, #899), the C# surface is held by `PublicAPI.*.txt`, the MSBuild and configuration
+  surface by `tests/eQuantic.UI.Web.Tests/developer-surface.baseline.txt` (#322), and the rules of
+  a stable line follow the version (#323). Every native assembly is `[Experimental("EQX0001")]`
+  (#324).
 
-What is not there yet, each with its issue: shared state beyond a component (#289), routes as types
-for programmatic navigation (#292), a component test harness an app can use and the variant matrix
-it carries (#294), the Content-Security-Policy's proof in a real browser (#306), and edit-to-view under a
-second on the web, where CI measures 23s on every pull request (#900). Three decisions could change a shape an app writes, and Edgar took them on
-2026-10-14, each 1.0 work: the Element is built before the release (#169), the spreadsheet's engine
-leaves Primitives as the code editor's did (#185, done: it is `eQuantic.UI.Sheet`), and
-per-component theme slots ship in it (#186). The design of the first and the last is
-[`docs/ELEMENT-TREE-PLAN.md`](docs/ELEMENT-TREE-PLAN.md).
+What is not there yet, each with its issue:
 
-The bugs are part of the state. They are on the board, the transpiler's fidelity under #164, #565,
-#845 and #849, and 1.0 reads them as an exit criterion: no bug open where code compiles and answers
-differently, and the new ones a week falling two weeks in a row.
+- shared state beyond a component (#289) and routes as types for programmatic navigation (#292);
+- the variant matrix over every control, and its accessibility checklist (#294, the open slice is
+  #1247), and the security work still open under #306;
+- edit-to-view under a second on the web: the desktop meets it and the web does not. CI measures
+  both on every pull request (`scripts/measure-edit-to-view.cs`, held to
+  `scripts/edit-to-view.budget.json`), and #900 is bringing the web down;
+- the transpiler's fidelity bugs, under #164, #565, #845 and #849: 1.0 reads them as an exit
+  criterion, so no bug stays open where code compiles and answers differently;
+- hydration-time benchmarks and tree-shaking verification. The served runtime's size budget
+  (`tests/eQuantic.UI.Server.Tests/Budgets/served-runtime.json`) fails the suite today.
 
-### Evidence snapshot
-
-| Area | State |
-|------|-------|
-| Transpiler | A strategy per C# construct over an IR (`CodeGen/Ir`, one writer per level). The differential conformance suite runs every case under .NET and under Bun (the suite counts them); what eqc cannot translate faithfully is a build error, listed on the wiki's Diagnostics page, and the subset is on its Supported Features page. Open fidelity bugs: the board, under #164, #565, #845 and #849 |
-| Components | The write-once catalog (index: the wiki's Components page), realized on both targets. Owed: the variant matrix and an accessibility checklist per component, through a harness an app author can use too (#294) |
-| Client routing | **Shipped** — a link-driven client router (`src/router`), layout kept across navigations, route guards, prefetch on hover and focus, one module per route, scroll restoration; `Navigator.Go` navigates from code. Routes as types instead of strings: #292 |
-| Forms & validation | **Shipped** — `FormController`/`FormField`/`Rules` in Primitives (write-once, quiet-until-touched, cross-field, conditional via `Rules.When`/`relevantWhen`), `FormInput`/`FormSubmit` surface, async submit through Server Actions with `ApplyServerErrors`, and the `[FormModel]` DataAnnotations bridge (build-time, no second engine) |
-| State management | Component-local `SetState`, and a page's state survives a hot reload. Shared state (signals, context): #289 |
-| Server | SSR with hydration, Server Actions behind `[Authorize]`, server data before the first paint (`IServerPrefetch`), and server events: typed topics over one Server-Sent Events stream per page (#291) |
-| Hot reload | **Shipped on the web and on the desktop** — on the web a rebuild captures the page's fields and reloads, and the new code renders client-side with those fields handed back (module hot-swap without the reload is the v2 fence); a Photon desktop app applies an edit in process under `dotnet watch`. On a simulator or an emulator it is ahead: redeploy-on-save first, in-process reload across the device boundary later (Track W's W7). Edit-to-view is measured on every pull request (#900): a warm median of 0.3s on the desktop, inside the bar of a second, and 23s on the web, which the slices of #900 bring down (#1274 to #1281) |
-| Styling | The framework ships **one** styling engine: typed C# lowered to deduplicated atomic classes, byte-identical between SSR (C#) and hydration (TS) and cross-pinned by a shared fixture. Authoring is CSS-free; external CSS a consumer brings is their own build concern |
-| Debugging | C# in the browser: statement-level source maps, so a thrown error's frame names its C# statement (#293); `EQuanticSourceMaps` writes them with the C# in Debug, none elsewhere, and without the C# for an error reporter (#352); the development error overlay remaps a stack to C# frames |
-| Performance | The served runtime's gzip budget fails the suite, each page module's size is reported on every pull request, and the Photon frame has allocation ceilings (#290). Not yet: hydration-time benchmarks, tree-shaking verification |
-| Bun | Embedded per OS and architecture; the build needs no Node or npm ✅ |
-| Native (Photon) | **Experimental** — every native assembly carries `[Experimental("EQX0001")]` (#324). Shells for macOS, iOS, Android and Windows; its bar for stable (the goldens, a frame with no allocation, physical devices) is the native track's own, after 1.0 |
+Where Flutter answers something this SDK does not, [docs/FLUTTER-PARITY.md](docs/FLUTTER-PARITY.md)
+says so row by row, and `python3 scripts/roadmap.py` prints the forecast of the rest.
 
 ---
 
