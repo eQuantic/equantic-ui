@@ -3,7 +3,13 @@
 "use strict";
 
 const POLL_MS = 3000;
-const view = { tab: "running", key: null, stage: {}, report: null, reportText: "", data: null, timer: null };
+// `busy` keeps one poll loop however often the tab is hidden and shown; `ticket` drops a report's
+// answer that arrives after another report was asked for; `reportsKey` keeps the open report's <pre>
+// (its scroll) across polls.
+const view = {
+  tab: "running", key: null, stage: {}, report: null, reportText: "", data: null,
+  timer: null, busy: false, ticket: 0, reportsKey: null,
+};
 
 const ICONS = {
   completed: "✓", done: "✓", in_progress: "◐", running: "◐", pending: "○", waiting: "◷",
@@ -26,12 +32,14 @@ function add(parent, ...children) {
   return parent;
 }
 
+const known = (status) => (Object.prototype.hasOwnProperty.call(WORDS, status) ? status : "unknown");
+
 function pill(status, label) {
-  const known = Object.prototype.hasOwnProperty.call(WORDS, status) ? status : "unknown";
-  const node = el("span", "pill " + known);
-  const icon = el("span", "icon" + (known === "in_progress" || known === "running" ? " spin" : ""), ICONS[known] || "?");
+  const kind = known(status);
+  const node = el("span", "pill " + kind);
+  const icon = el("span", "icon" + (kind === "in_progress" || kind === "running" ? " spin" : ""), ICONS[kind] || "?");
   icon.setAttribute("aria-hidden", "true");
-  return add(node, icon, el("span", null, label || WORDS[known] || String(status)));
+  return add(node, icon, el("span", null, label || WORDS[kind] || String(status)));
 }
 
 const number = (n) => (typeof n === "number" ? n.toLocaleString("en-US") : "—");
@@ -67,8 +75,11 @@ function text(value) {
 // -------------------------------------------------------------------------------------- polling
 
 async function poll() {
+  if (view.busy) return;
   clearTimeout(view.timer);
+  view.timer = null;
   if (document.hidden) return;
+  view.busy = true;
   try {
     const response = await fetch("/api/pipelines", { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -77,13 +88,20 @@ async function poll() {
     document.getElementById("updated").textContent = `Updated ${new Date().toLocaleTimeString()}`;
   } catch (error) {
     document.getElementById("updated").textContent = `Not updated: ${error.message}`;
+  } finally {
+    view.busy = false;
+    clearTimeout(view.timer);
+    view.timer = document.hidden ? null : setTimeout(poll, POLL_MS);
   }
-  view.timer = setTimeout(poll, POLL_MS);
 }
 
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) clearTimeout(view.timer);
-  else poll();
+  if (document.hidden) {
+    clearTimeout(view.timer);
+    view.timer = null;
+  } else {
+    poll(); // does nothing while a request is in flight: its end schedules the next one
+  }
 });
 
 for (const tab of document.querySelectorAll("[data-tab]")) {
@@ -101,16 +119,29 @@ function shown() {
   return view.tab === "running" ? all.filter((d) => d.status === "running") : all;
 }
 
+function select(key) {
+  view.key = key;
+  view.report = null;
+  view.reportText = "";
+  view.ticket += 1;
+}
+
+// A poll rebuilds the list and the detail: the control that had the focus gets it back by its
+// `data-focus` name, so the page stays usable from the keyboard while it polls.
 function render() {
+  const active = document.activeElement;
+  const focused = active && active.dataset ? active.dataset.focus : undefined;
   const deliveries = shown();
-  if (!deliveries.some((d) => d.key === view.key)) {
-    view.key = deliveries.length ? deliveries[0].key : null;
-    view.report = null;
-    view.reportText = "";
-  }
+  if (!deliveries.some((d) => d.key === view.key)) select(deliveries.length ? deliveries[0].key : null);
+  const d = deliveries.find((x) => x.key === view.key);
   renderKpis(deliveries);
   renderList(deliveries);
-  renderDetail(deliveries.find((d) => d.key === view.key));
+  renderDetail(d);
+  renderReports(d);
+  if (focused) {
+    const target = Array.from(document.querySelectorAll("[data-focus]")).find((e) => e.dataset.focus === focused);
+    if (target && target !== document.activeElement) target.focus({ preventScroll: true });
+  }
 }
 
 function renderKpis(deliveries) {
@@ -136,11 +167,10 @@ function renderList(deliveries) {
   root.replaceChildren(...deliveries.map((d) => {
     const item = el("button", "item");
     item.type = "button";
+    item.dataset.focus = `delivery:${d.key}`;
     item.setAttribute("aria-current", String(d.key === view.key));
     item.addEventListener("click", () => {
-      view.key = d.key;
-      view.report = null;
-      view.reportText = "";
+      select(d.key);
       render();
     });
     const agents = (d.agents && d.agents.length) || 0;
@@ -151,19 +181,19 @@ function renderList(deliveries) {
 }
 
 function renderDetail(d) {
-  const root = document.getElementById("detail");
+  const root = document.getElementById("detail-main");
   if (!d) {
     root.replaceChildren();
     return;
   }
   if (d.status === "broken") {
     root.replaceChildren(add(el("div", "card"), add(el("div", "head"), el("h2", null, d.key), pill("broken")),
-      el("p", "error", `state.json could not be read: ${d.error}`)), reportsCard(d));
+      el("p", "error", `state.json could not be read: ${d.error}`)));
     return;
   }
   const stages = d.stages || [];
   const picked = stages.find((s) => s.name === view.stage[d.key]) || stages.find((s) => s.status === "in_progress") || stages[stages.length - 1];
-  root.replaceChildren(...[summary(d), graph(d, picked), agentsCard(d), stepsCard(d, picked), notesCard(d, picked), reportsCard(d)].filter(Boolean));
+  root.replaceChildren(...[summary(d), graph(d, picked), agentsCard(d), stepsCard(d, picked), notesCard(d, picked)].filter(Boolean));
 }
 
 function summary(d) {
@@ -183,9 +213,10 @@ function summary(d) {
 }
 
 function node(name, status, nums, agent, onClick, pressed) {
-  const box = el(onClick ? "button" : "div", `node ${status}`);
+  const box = el(onClick ? "button" : "div", `node ${known(status)}`);
   if (onClick) {
     box.type = "button";
+    box.dataset.focus = `stage:${name}`;
     box.setAttribute("aria-pressed", String(Boolean(pressed)));
     box.addEventListener("click", onClick);
   }
@@ -253,6 +284,7 @@ function stepsCard(d, s) {
   if (s.report && (d.reports || []).includes(s.report)) {
     const open = el("button", null, `Open ${s.report}`);
     open.type = "button";
+    open.dataset.focus = `open:${s.report}`;
     open.addEventListener("click", () => openReport(d, s.report));
     add(card, add(el("div", "reports"), open));
   }
@@ -263,10 +295,20 @@ function notesCard(d, s) {
   const items = [];
   for (const n of (s && s.notes) || []) items.push(`${s.name} › ${n.path}: ${text(n.values)}`);
   for (const [name, values] of Object.entries(d.notes || {})) {
-    for (const value of values) items.push(`${name.replace(/_/g, " ")}: ${text(value)}`);
+    for (const value of Array.isArray(values) ? values : [values]) items.push(`${name.replace(/_/g, " ")}: ${text(value)}`);
   }
   if (!items.length) return null;
   return add(el("div", "card"), el("h2", null, "Notes"), add(el("ul", "notes"), ...items.map((t) => el("li", null, t))));
+}
+
+// The reports are rebuilt only when what they show changes, never by a poll: the open report's
+// <pre> keeps its scroll and its buttons their focus.
+function renderReports(d) {
+  const root = document.getElementById("detail-reports");
+  const key = JSON.stringify([d ? d.key : null, d ? d.reports : null, view.report, view.reportText]);
+  if (key === view.reportsKey) return;
+  view.reportsKey = key;
+  root.replaceChildren(...(d ? [reportsCard(d)] : []));
 }
 
 function reportsCard(d) {
@@ -277,6 +319,7 @@ function reportsCard(d) {
   for (const name of names) {
     const button = el("button", null, name);
     button.type = "button";
+    button.dataset.focus = `report:${name}`;
     button.setAttribute("aria-pressed", String(view.report === name));
     button.addEventListener("click", () => openReport(d, name));
     add(row, button);
@@ -287,16 +330,20 @@ function reportsCard(d) {
 }
 
 async function openReport(d, name) {
+  const ticket = ++view.ticket;
   view.report = name;
   view.reportText = "Loading…";
   render();
+  let answer;
   try {
     const response = await fetch(`/api/report/${encodeURIComponent(d.key)}/${encodeURIComponent(name)}`, { cache: "no-store" });
-    view.reportText = response.ok ? await response.text() : `Not available (HTTP ${response.status}).`;
+    answer = response.ok ? await response.text() : `Not available (HTTP ${response.status}).`;
   } catch (error) {
-    view.reportText = `Not available: ${error.message}`;
+    answer = `Not available: ${error.message}`;
   }
-  if (view.report === name) render();
+  if (ticket !== view.ticket) return; // another report, or another delivery, was asked for since
+  view.reportText = answer;
+  render();
 }
 
 poll();

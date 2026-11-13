@@ -41,11 +41,11 @@ CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self';
 # ---------------------------------------------------------------------------------------- the reader
 
 def count(value):
-    """A count is an integer or a string of digits, never a boolean (`True` is an `int` in Python)."""
+    """A count is a non-negative integer or a string of digits, never a boolean (`True` is an `int`)."""
     if isinstance(value, bool):
         return None
     if isinstance(value, int):
-        return value
+        return value if value >= 0 else None
     if isinstance(value, str) and re.fullmatch(r"[0-9]+", value):
         return int(value)
     return None
@@ -87,6 +87,11 @@ def walk(node, path, steps, notes):
             walk(value, here, steps, notes)
         else:
             notes.append({"path": " › ".join(here), "values": value})
+
+
+def listed(value):
+    """A note the page iterates: a list as it is, any other value present as a list of one."""
+    return [] if value in (None, "", [], {}) else value if isinstance(value, list) else [value]
 
 
 def total(items, key):
@@ -157,7 +162,7 @@ def normalise(state, now):
         else:
             ship = {"status": "pending"}
         ship.update({k: measures.get(k) for k in ("pr_opened", "queued", "merged")})
-        ship["queue_exits"] = measures.get("queue_exits") or []
+        ship["queue_exits"] = listed(measures.get("queue_exits"))
         ship["last_ci"] = state.get("last_ci")
 
     started = moment(measures.get("started"))
@@ -170,8 +175,8 @@ def normalise(state, now):
         seconds = (max(ends) - started) if ends else None
 
     return {
-        "issue": state.get("issue") if count(state.get("issue")) is not None else None,
-        "pull_request": state.get("pull_request") if count(state.get("pull_request")) is not None else None,
+        "issue": count(state.get("issue")),
+        "pull_request": count(state.get("pull_request")),
         "branch": state.get("branch"),
         "pipeline": state.get("pipeline"),
         "high_effort": bool(state.get("high_effort")),
@@ -182,10 +187,45 @@ def normalise(state, now):
         "tokens": total(stages, "tokens"),
         "stages": stages,
         "ship": ship,
-        "notes": {k: v for k, v in (("pilot_findings", state.get("pilot_findings")),
-                                    ("defects_after_pr", measures.get("defects_after_pr")),
-                                    ("queue_exits", measures.get("queue_exits"))) if v},
+        "notes": {k: listed(v) for k, v in (("pilot_findings", state.get("pilot_findings")),
+                                            ("defects_after_pr", measures.get("defects_after_pr")),
+                                            ("queue_exits", measures.get("queue_exits"))) if listed(v)},
     }
+
+
+_CACHE = {}
+_LOCK = threading.Lock()
+
+
+def stamped(read, path):
+    """`read(path)`, read again only when the file's (mtime, size) moved: the page polls every 3 s,
+    and a transcript or a meta that did not change is not parsed again."""
+    try:
+        info = os.stat(path)
+    except OSError:
+        return read(path)
+    stamp, key = (info.st_mtime_ns, info.st_size), (read.__name__, path)
+    with _LOCK:
+        hit = _CACHE.get(key)
+    if hit is not None and hit[0] == stamp:
+        return hit[1]
+    value = read(path)
+    with _LOCK:
+        _CACHE[key] = (stamp, value)
+    return value
+
+
+def recent(compute, root, seconds=5.0):
+    """`compute(root)`, kept a few seconds: the worktrees and the remote rarely move between polls."""
+    key = (compute.__name__, root)
+    with _LOCK:
+        hit = _CACHE.get(key)
+    if hit is not None and time.monotonic() - hit[0] < seconds:
+        return hit[1]
+    value = compute(root)
+    with _LOCK:
+        _CACHE[key] = (time.monotonic(), value)
+    return value
 
 
 def worktrees(root):
@@ -200,8 +240,11 @@ def worktrees(root):
 def deliveries(root):
     """{key: (worktree, folder)} of every delivery folder of every worktree, from listings only."""
     found = {}
-    for tree in worktrees(root):
+    for tree in recent(worktrees, root):
         base = os.path.join(tree, ".claude", "pipelines")
+        # `.claude` or `.claude/pipelines` checked out as a link would take every read out of the tree
+        if os.path.realpath(base) != os.path.join(os.path.realpath(tree), ".claude", "pipelines"):
+            continue
         try:
             names = sorted(os.listdir(base))
         except OSError:
@@ -216,13 +259,13 @@ def deliveries(root):
     return found
 
 
-def readable(folder, name):
+def readable(folder, name, names=None):
     """A file the board serves: listed by the folder, `.md` or state.json, regular, really inside it."""
     try:
-        listed = os.listdir(folder)
+        names = os.listdir(folder) if names is None else names
     except OSError:
         return None
-    if name not in listed or not (name.endswith(".md") or name == "state.json"):
+    if name not in names or not (name.endswith(".md") or name == "state.json"):
         return None
     path = os.path.join(folder, name)
     inside = os.path.realpath(folder) + os.sep
@@ -246,9 +289,28 @@ def proc_start(pid):
         return None
 
 
-def alive(pid, started):
+def ps_start(pid):
+    """When the process began, in seconds since the epoch, from `ps` (where there is no /proc)."""
+    try:
+        out = subprocess.run(["ps", "-o", "lstart=", "-p", str(pid)], capture_output=True, text=True, timeout=5,
+                             env=dict(os.environ, LC_ALL="C")).stdout.strip()
+        return time.mktime(time.strptime(out, "%a %b %d %H:%M:%S %Y"))
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+def same_process(began, started_at):
+    """A pid is reused, so it is the session's only when its process began within a minute of the
+    session's `startedAt` (milliseconds); measured on Linux, the two are 2 s apart."""
+    if began is None or count(started_at) is None:
+        return None
+    return abs(began - count(started_at) / 1000) <= 60
+
+
+def alive(pid, record):
+    """Whether the session a registry file describes is running: its pid, and the same process."""
     if os.path.isdir("/proc"):
-        now = proc_start(pid)
+        now, started = proc_start(pid), record.get("procStart")
         return now is not None and (started is None or str(started) == now)
     if os.name != "posix":
         return None  # os.kill would end the process on Windows: liveness unknown
@@ -257,8 +319,8 @@ def alive(pid, started):
     except ProcessLookupError:
         return False
     except PermissionError:
-        return True
-    return True
+        pass
+    return same_process(ps_start(pid), record.get("startedAt"))
 
 
 def registry(config):
@@ -276,7 +338,7 @@ def registry(config):
         except (OSError, ValueError):
             continue
         if isinstance(data, dict) and isinstance(data.get("sessionId"), str):
-            sessions[data["sessionId"]] = alive(int(name[:-5]), data.get("procStart"))
+            sessions[data["sessionId"]] = alive(int(name[:-5]), data)
     return sessions
 
 
@@ -286,13 +348,7 @@ def agents(config):
     pattern = os.path.join(glob.escape(config), "projects", "*", "*", "subagents", "agent-*.meta.json")
     for meta in glob.glob(pattern):
         match = re.fullmatch(r"agent-([A-Za-z0-9_-]+)\.meta\.json", os.path.basename(meta))
-        if not match:
-            continue
-        try:
-            with open(meta, encoding="utf-8") as f:
-                data = json.load(f)
-        except (OSError, ValueError):
-            continue
+        data = stamped(read_meta, meta) if match else None
         if isinstance(data, dict):
             index[match.group(1)] = {
                 "meta": data,
@@ -302,7 +358,20 @@ def agents(config):
     return index
 
 
-def tail(path, window=TAIL):
+def read_meta(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def tail(path):
+    """`read_tail`, parsed again only when the transcript moved."""
+    return stamped(read_tail, path)
+
+
+def read_tail(path, window=TAIL):
     """The last usage, tool use, timestamp, branch and model of a transcript, from its end.
 
     A line can be longer than the window (151,748 bytes measured), so the window widens fourfold
@@ -366,13 +435,17 @@ def doing(tool, tree):
     args = args if isinstance(args, dict) else {}
     detail = None
     if name == "Bash":
-        detail = args.get("description") or args.get("command")
+        # a command can carry a secret (`EQS_TOKEN=… eqs …`): its description, else its program only
+        detail = args.get("description") if isinstance(args.get("description"), str) else None
+        if not detail and isinstance(args.get("command"), str):
+            words = [w for w in args["command"].split() if not re.match(r"[A-Za-z_][A-Za-z0-9_]*=", w)]
+            detail = os.path.basename(words[0])[:40] if words else None
     for key in ("file_path", "notebook_path", "path"):
         if detail is None and isinstance(args.get(key), str):
             detail = args[key]
             if tree and os.path.isabs(detail) and detail.startswith(tree.rstrip(os.sep) + os.sep):
                 detail = os.path.relpath(detail, tree)
-    for key in ("pattern", "description", "query", "url", "prompt"):
+    for key in ("pattern", "description", "query"):
         if detail is None and isinstance(args.get(key), str):
             detail = args[key]
     text = f"{name}: {detail}" if detail else str(name)
@@ -451,9 +524,13 @@ def board(root, config, now=None):
     index, sessions = agents(config), registry(config)
     shown = []
     for key, (tree, folder) in deliveries(root).items():
-        reports = sorted(n for n in os.listdir(folder) if readable(folder, n))
+        try:
+            names = os.listdir(folder)
+        except OSError:
+            names = []
+        reports = sorted(n for n in names if readable(folder, n, names))
         item = {"key": key, "worktree": tree, "reports": reports}
-        path = readable(folder, "state.json")
+        path = readable(folder, "state.json", names)
         if path is None:
             item.update(status="broken", error="no state.json")
             shown.append(item)
@@ -467,12 +544,16 @@ def board(root, config, now=None):
             item.update(status="broken", error=str(error))
             shown.append(item)
             continue
-        item.update(normalise(state, now))
-        item["agents"] = working(state, item, tree, index, sessions, now)
+        try:
+            item.update(normalise(state, now))
+            item["agents"] = working(state, item, tree, index, sessions, now)
+        except Exception as error:  # an unknown shape shows as this delivery's error, never stops the rest
+            item = {"key": key, "worktree": tree, "reports": reports, "status": "broken",
+                    "error": f"unreadable shape: {type(error).__name__}: {error}"}
         shown.append(item)
     order = {"running": 0, "failed": 1, "shipping": 2, "done": 3, "broken": 4}
     shown.sort(key=lambda d: (order.get(d["status"], 5), -(moment(d.get("started")) or 0), d["key"]))
-    return {"now": now, "repo": origin(root), "registry": sessions is not None, "deliveries": shown}
+    return {"now": now, "repo": recent(origin, root), "registry": sessions is not None, "deliveries": shown}
 
 
 # ---------------------------------------------------------------------------------------- the server
@@ -505,6 +586,7 @@ STATIC = {
     "/board.js": ("here", "board.js", "text/javascript; charset=utf-8"),
     "/logo-dark.svg": ("assets", "assets/logo-equantic-ui-white.svg", "image/svg+xml"),
     "/logo-light.svg": ("assets", "assets/logo-equantic-ui.svg", "image/svg+xml"),
+    "/favicon.png": ("assets", "assets/Icon.png", "image/png"),
 }
 
 
@@ -554,6 +636,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not self.addressed():
             return self.answer(403, "refused\n")
         raw = urllib.parse.urlsplit(self.path).path
+        if raw.startswith("/api/") and self.headers.get("Sec-Fetch-Site") in ("cross-site", "same-site"):
+            return self.answer(403, "refused\n")  # another site's page may not make the board work
         server = self.server
         try:
             if raw in STATIC:
@@ -589,6 +673,8 @@ def self_test():
     scratch = tempfile.mkdtemp(prefix="pipelines-board-")
     try:
         _fixture_and_cases(scratch, check)
+    except Exception as error:  # a case that raises fails the self-test, named, instead of a bare trace
+        failures.append(f"raised {type(error).__name__}: {error}")
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
     for case in failures:
@@ -615,7 +701,7 @@ def _fixture_and_cases(scratch, check):
     subprocess.run(git + ["-C", repo, "commit", "-q", "--allow-empty", "-m", "init"], check=True)
     subprocess.run(git + ["-C", repo, "worktree", "add", "-q", "-b", "feat/two", two], check=True)
 
-    A, B, C, D, E = ("a" + c * 16 for c in "abcde")
+    A, B, C, D, E, F = ("a" + c * 16 for c in "abcdef")
     now = time.time()
     iso = lambda seconds_ago: datetime.fromtimestamp(now - seconds_ago, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     leak_marker, key_marker = "LEAK-MARKER-7f3a", "KEY-MARKER-91c2"
@@ -665,12 +751,33 @@ def _fixture_and_cases(scratch, check):
     _write(os.path.join(repo, ".claude", "pipelines", "4-failed", "state.json"),
            {"issue": 4, "branch": "feat/four", "stages": [{"name": "Implement", "status": "failed"}]})
     _write(os.path.join(repo, ".claude", "pipelines", "5-broken", "state.json"), "{not json")
+    _write(os.path.join(repo, ".claude", "pipelines", "6-odd", "state.json"), {"issue": 6, "stages": 3})
+    _write(os.path.join(repo, ".claude", "pipelines", "7-notes", "state.json"), {
+        "issue": "7", "pull_request": "8", "branch": "feat/seven", "pilot_findings": "one finding",
+        "stages": [{"name": "Write", "status": "completed"}],
+        "measures": {"defects_after_pr": 2, "queue_exits": {"job": "samples"}}})
+
+    # `.claude/pipelines` and `.claude` checked out as links out of the tree: nothing under them is read.
+    secret_marker = "LINKED-TREE-MARKER-4d1e"
+    for branch, linked_part in (("feat/three", "pipelines"), ("feat/four", "claude")):
+        tree = os.path.join(scratch, branch.split("/")[1])
+        subprocess.run(git + ["-C", repo, "worktree", "add", "-q", "-b", branch, tree], check=True)
+        victim = os.path.join(scratch, "victim-" + linked_part)
+        target = os.path.join(victim, "pipelines") if linked_part == "claude" else victim
+        _write(os.path.join(target, "v-" + linked_part, "state.json"), {"issue": 9, "branch": secret_marker})
+        _write(os.path.join(target, "v-" + linked_part, "private.md"), secret_marker)
+        if linked_part == "claude":
+            os.symlink(victim, os.path.join(tree, ".claude"))
+        else:
+            os.makedirs(os.path.join(tree, ".claude"))
+            os.symlink(victim, os.path.join(tree, ".claude", "pipelines"))
 
     # Claude Code's files: a live session (this process) and a dead one (a child already reaped).
     child = subprocess.Popen([sys.executable, "-c", ""])
     child.wait()
     _write(os.path.join(config, "sessions", f"{os.getpid()}.json"),
-           {"pid": os.getpid(), "sessionId": "live", "procStart": proc_start(os.getpid())})
+           {"pid": os.getpid(), "sessionId": "live", "procStart": proc_start(os.getpid()),
+            "startedAt": int((ps_start(os.getpid()) or now) * 1000)})
     _write(os.path.join(config, "sessions", f"{os.getpid()}.0123abcd.key"), key_marker)
     _write(os.path.join(config, "sessions", f"{child.pid}.json"),
            {"pid": child.pid, "sessionId": "dead", "procStart": "1"})
@@ -697,6 +804,9 @@ def _fixture_and_cases(scratch, check):
     agent(live, C, {"agentType": "explorer"}, [act("feat/two", 10, "Read", {"file_path": os.path.join(two, "src", "a.py")})])
     agent(live, D, {"agentType": "explorer"}, [act("feat/else", 10, "Grep", {"pattern": "x"})])
     agent(dead, E, {"agentType": "prover"}, [act("feat/two", 10, "Bash", {"command": "true"})])
+    command_marker = "COMMAND-MARKER-0b7c"
+    agent(live, F, {"agentType": "engineer"},
+          [act("feat/two", 5, "Bash", {"command": f"EQS_TOKEN={command_marker} /usr/bin/eqs runs ls"})])
 
     # The tail widens: a last line longer than the window hides the tool use before it.
     wide = os.path.join(scratch, "wide.jsonl")
@@ -707,11 +817,39 @@ def _fixture_and_cases(scratch, check):
     check("count: digits string", count("84430") == 84430)
     check("count: a boolean is not a count", count(True) is None and count(False) is None)
     check("count: other strings", count("12k") is None and count("") is None)
+    check("count: a negative is not a count", count(-5) is None and count("-5") is None)
+    first = tail(wide)
+    check("a transcript that did not move is not parsed again", tail(wide) is first)
+    with open(wide, "a", encoding="utf-8") as f:
+        f.write(json.dumps(act("b", 1, "Grep", {"pattern": "y"})) + "\n")
+    check("a transcript that moved is parsed again", (tail(wide).get("tool") or [None])[0] == "Grep")
+    check("a Bash call with a description shows it",
+          doing(("Bash", {"command": "rm -rf x", "description": "Clean"}), None) == "Bash: Clean")
+    check("a Bash call without one shows its program only",
+          doing(("Bash", {"command": "TOKEN=s3cret A=1 /usr/bin/gh api -H x"}), None) == "Bash: gh")
+    if os.path.isdir("/proc"):
+        check("a live pid of another start is not the session", alive(os.getpid(), {"procStart": "1"}) is False)
+    check("without /proc, a pid is the session's only near its start",
+          same_process(now, int(now * 1000)) is True and same_process(now - 3600, int(now * 1000)) is False
+          and same_process(None, int(now * 1000)) is None)
+    if shutil.which("ps"):
+        began = ps_start(os.getpid())
+        check("ps gives this process's start", began is not None and abs(began - now) < 600)
 
     data = board(repo, config, now)
     by = {d["key"]: d for d in data["deliveries"]}
     check("every worktree's deliveries are listed",
-          sorted(by) == ["1-flat", "2-nested", "3-running", "4-failed", "5-broken"])
+          sorted(by) == ["1-flat", "2-nested", "3-running", "4-failed", "5-broken", "6-odd", "7-notes"])
+    check("a .claude or .claude/pipelines that is a link out is not read",
+          not any(k.startswith("v-") for k in by) and secret_marker not in json.dumps(data))
+    check("a state of an unknown shape is that delivery's error, and the rest are listed",
+          by["6-odd"]["status"] == "broken" and "TypeError" in by["6-odd"].get("error", ""))
+    notes = by["7-notes"]["notes"]
+    check("notes of any shape reach the page as lists",
+          notes == {"pilot_findings": ["one finding"], "defects_after_pr": [2], "queue_exits": [{"job": "samples"}]}
+          and by["7-notes"]["ship"]["queue_exits"] == [{"job": "samples"}])
+    check("an issue and a pull request written as strings are integers",
+          by["7-notes"]["issue"] == 7 and by["7-notes"]["pull_request"] == 8)
     check("the running delivery is listed first", data["deliveries"][0]["key"] == "3-running")
     check("the broken state is listed with its error",
           by["5-broken"]["status"] == "broken" and by["5-broken"].get("error"))
@@ -759,7 +897,9 @@ def _fixture_and_cases(scratch, check):
 
     # -------------------------------------------------------------------------------- agents
     found = {a["id"]: a for a in running["agents"]}
-    check("B and C work on the running delivery, and only they", sorted(found) == [B, C])
+    check("B, C and F work on the running delivery, and only they", sorted(found) == [B, C, F])
+    check("a Bash call's command never reaches the API",
+          F in found and found[F]["doing"] == "Bash: eqs" and command_marker not in json.dumps(data))
     check("an agent of a dead session works on nothing (finished alone does not decide)",
           all(E not in {a["id"] for a in d.get("agents", [])} for d in data["deliveries"]))
     check("an agent on another branch that no state names works on nothing",
@@ -782,10 +922,12 @@ def _fixture_and_cases(scratch, check):
     threading.Thread(target=server.serve_forever, daemon=True).start()
     seen = []
 
-    def get(path, host=None, method="GET"):
+    def get(path, host=None, method="GET", headers=()):
         conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
         conn.putrequest(method, path, skip_host=True, skip_accept_encoding=True)
         conn.putheader("Host", host or f"127.0.0.1:{port}")
+        for name, value in headers:
+            conn.putheader(name, value)
         conn.endheaders()
         response = conn.getresponse()
         body = response.read().decode("utf-8", "replace")
@@ -807,6 +949,19 @@ def _fixture_and_cases(scratch, check):
             check(f"GET {path} is 404", get(path)[0] == 404)
         check("Host: evil.example is 403 on an unknown path", get("/nope", "evil.example")[0] == 403)
         check("a POST is refused", get("/api/pipelines", method="POST")[0] == 405)
+        check("a HEAD and an OPTIONS are refused",
+              get("/api/pipelines", method="HEAD")[0] == 405 and get("/", method="OPTIONS")[0] == 405)
+        check("GET /favicon.png is 200", get("/favicon.png")[0] == 200)
+        for site in ("cross-site", "same-site"):
+            for path in ("/api/pipelines", "/api/report/1-flat/design.md"):
+                check(f"Sec-Fetch-Site: {site} is 403 on {path}",
+                      get(path, headers=[("Sec-Fetch-Site", site)])[0] == 403)
+        for site in ("same-origin", "none"):
+            check(f"Sec-Fetch-Site: {site} is answered",
+                  get("/api/pipelines", headers=[("Sec-Fetch-Site", site)])[0] == 200)
+        check("a page of another site still opens the board itself",
+              get("/", headers=[("Sec-Fetch-Site", "cross-site")])[0] == 200)
+        check("a delivery under a linked tree is not served", get("/api/report/v-pipelines/private.md")[0] == 404)
         check("a POST from another host is 403", get("/api/pipelines", "evil.example", "POST")[0] == 403)
         status, body = get("/api/pipelines")
         check("/api/pipelines lists the deliveries", status == 200 and
@@ -817,7 +972,7 @@ def _fixture_and_cases(scratch, check):
               f"--surface-background: light-dark({background['light']}, {background['dark']});" in get("/tokens.css")[1])
         check("the CSP and nosniff are on every answer", all(c == CSP and n == "nosniff" for _, _, c, n, _ in seen))
         check("no answer carries the link's file or the registry's key",
-              not any(leak_marker in b or key_marker in b for *_, b in seen))
+              not any(m in b for *_, b in seen for m in (leak_marker, key_marker, secret_marker, command_marker)))
     finally:
         server.shutdown()
         server.server_close()

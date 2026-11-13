@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title>Pipelines · eQuantic UI</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="stylesheet" href="/tokens.css">
   <link rel="stylesheet" href="/board.css">
   <script src="/board.js" defer></script>
@@ -30,7 +31,10 @@
     <section class="kpis" id="kpis" aria-label="Totals"></section>
     <div class="layout">
       <nav class="card list" id="list" aria-label="Deliveries"></nav>
-      <section class="detail" id="detail" aria-live="off"></section>
+      <section class="detail" id="detail" aria-live="off">
+        <div class="detail" id="detail-main"></div>
+        <div id="detail-reports"></div>
+      </section>
     </div>
   </main>
 </body>

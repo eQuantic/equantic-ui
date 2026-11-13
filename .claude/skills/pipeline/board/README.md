@@ -18,7 +18,10 @@ Python 3.9 or later and the standard library; nothing to install. Stop it with C
 - `.claude/pipelines/*/state.json` of every worktree of the repository, and the reports beside it
   (`design.md`, `implement.md`, ...).
 - Claude Code's own files under `CLAUDE_CONFIG_DIR` (`~/.claude` by default): `sessions/<id>.json`
-  and the transcripts, to tell which agent is working now and on what.
+  and the transcripts, to tell which agent is working now and on what. A session is running when
+  its process is: on Linux, the pid with the start time `/proc` gives; where there is no `/proc`
+  (macOS), the pid and a process that `ps` says began within a minute of the session's start, since
+  a pid alone is reused.
 - `docs/design/tokens.json`, for the page's colours.
 
 The page asks for `/api/pipelines` every 3 seconds, and stops while its tab is hidden.
@@ -26,8 +29,11 @@ The page asks for `/api/pipelines` every 3 seconds, and stops while its tab is h
 ## What it never does
 
 - It writes no file and answers only `GET`.
-- It listens on `127.0.0.1` only, and refuses a request whose `Host` is another name.
+- It listens on `127.0.0.1` only, and refuses a request whose `Host` is another name, and an
+  `/api/` request a page of another site makes (`Sec-Fetch-Site`).
 - No value from a request or from a state is used as a path: each is a key looked up in a listing
-  the board made itself, so `..` and a symbolic link out of the folder reach nothing.
-- It never sends the session's key files.
+  the board made itself, so `..` and a symbolic link out of the folder reach nothing. A worktree
+  whose `.claude` or `.claude/pipelines` is itself a link is not read.
+- It never sends the session's key files, nor a shell command an agent ran: a `Bash` call shows its
+  description, or only its program's name when it has none.
 - Every text from a state or a transcript is set as text, never as markup.

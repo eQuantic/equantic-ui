@@ -179,7 +179,8 @@ The steps are the Workflow's "Pull requests"; this is their order here.
 5. Queue the pull request. Wait for CI and for the merge in the background, never by polling in
    your own turns.
 6. Only once the pull request is MERGED: record the moment in `merged` under the state's measures,
-   merge the wiki branch into the wiki's master, move the issue to Done, run the `roadmap` skill. Being queued is not being merged: a queue discards.
+   merge the wiki branch into the wiki's master, move the issue to Done, run the `roadmap` skill.
+   Being queued is not being merged: a queue discards.
 
 ## 8. Stop and ask
 
