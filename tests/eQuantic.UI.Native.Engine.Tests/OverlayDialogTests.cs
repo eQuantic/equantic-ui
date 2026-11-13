@@ -45,17 +45,17 @@ public class OverlayDialogTests
     public void Overlay_PaintsAboveThePage_AndCoversTheViewport()
     {
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(PageWithDialog(), 360, 480, Theme, ThemeMode.Light, builder);
+        PhotonRealizer.Realize(PageWithDialog(), 360, 480, Theme, ThemeMode.Light, ContrastLevel.Standard, builder);
         var commands = builder.Build().Commands.ToArray();
 
         // The scrim fill covers the viewport and paints AFTER every page command.
-        var scrimColor = Theme.Scrim.Resolve(ThemeMode.Light);
+        var scrimColor = Theme.Scrim.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var scrimIndex = Array.FindIndex(commands, c =>
             c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == scrimColor);
         scrimIndex.Should().BeGreaterThan(0);
         commands[scrimIndex].Shape.Rect.Should().Be(new Rect(0, 0, 360, 480));
 
-        var pageSurface = Theme.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light);
+        var pageSurface = Theme.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var lastPageIndex = Array.FindLastIndex(commands, c => c.Paint.Color == pageSurface);
         scrimIndex.Should().BeGreaterThan(lastPageIndex, "overlays paint after the page (painter's order)");
     }
@@ -65,20 +65,20 @@ public class OverlayDialogTests
     {
         // Wide viewport: the card caps at 480 and centers.
         var wide = new DisplayListBuilder();
-        PhotonRealizer.Realize(PageWithDialog(), 800, 600, Theme, ThemeMode.Light, wide);
+        PhotonRealizer.Realize(PageWithDialog(), 800, 600, Theme, ThemeMode.Light, ContrastLevel.Standard, wide);
         var card = wide.Build().Commands.ToArray()
             .First(c => c.Kind == DrawCommandKind.FillRRect
-                        && c.Paint.Color == Theme.Surface.Resolve(ThemeMode.Light)
+                        && c.Paint.Color == Theme.Surface.Resolve(ThemeMode.Light, ContrastLevel.Standard)
                         && c.Shape.Radii.TopLeft == Radius.Xl);
         card.Shape.Rect.Width.Should().Be(480);
         card.Shape.Rect.X.Should().Be((800 - 480) / 2f, "centered");
 
         // Narrow viewport: screen − 48 gutters.
         var narrow = new DisplayListBuilder();
-        PhotonRealizer.Realize(PageWithDialog(), 360, 600, Theme, ThemeMode.Light, narrow);
+        PhotonRealizer.Realize(PageWithDialog(), 360, 600, Theme, ThemeMode.Light, ContrastLevel.Standard, narrow);
         var narrowCard = narrow.Build().Commands.ToArray()
             .First(c => c.Kind == DrawCommandKind.FillRRect
-                        && c.Paint.Color == Theme.Surface.Resolve(ThemeMode.Light)
+                        && c.Paint.Color == Theme.Surface.Resolve(ThemeMode.Light, ContrastLevel.Standard)
                         && c.Shape.Radii.TopLeft == Radius.Xl);
         narrowCard.Shape.Rect.Width.Should().Be(360 - 2 * Space.S6);
     }

@@ -70,7 +70,7 @@ public class SurfaceSlotsTests
 
     private static List<Rect> Boxes(VisualNode node, IAppTheme theme)
     {
-        var result = PhotonRealizer.Realize(node, 800, 800, theme, ThemeMode.Light, new DisplayListBuilder());
+        var result = PhotonRealizer.Realize(node, 800, 800, theme, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder());
         var found = new List<Rect>();
         Walk(result.Root, found);
         foreach (var layer in result.OverlayRoots) Walk(layer, found);
