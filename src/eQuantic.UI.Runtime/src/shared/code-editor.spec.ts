@@ -10,7 +10,7 @@
  * moment it had to, the two targets would have started to drift.
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
@@ -26,8 +26,9 @@ import { CodeDocument } from './components/CodeDocument';
 import { CodeLocation } from './components/CodeLocation';
 import type { HtmlNode } from '../core/types';
 import { Reconciler } from '../dom/reconciler';
-import { activeShortcuts, commitShortcuts, resetShortcuts } from '../dom/shortcuts';
+import { activeShortcuts, resetShortcuts } from '../dom/shortcuts';
 import { commitFocusTraps, resetFocusTraps } from '../dom/focus-trap';
+import { rendersOfOnePage } from './test-positions';
 
 setPhotonTheme(photonTheme);
 
@@ -131,11 +132,16 @@ describe('code surface (web)', () => {
     const editor = new CodeEditorController('count = count + count;\nx', CodeLanguages.for('csharp'));
     editor.grid = new CodeGrid(new Point(12, 12), new Size(COLUMN, LINE));
     editor.selection = new CodeRange(new CodePosition(0, 2));
+    // Rendered as a page renders it, one pass after another: the surface keeps its position, and its
+    // input the key its position's id gives it.
+    const render = rendersOfOnePage();
     const lower = (notes: VisualNode[]) =>
-      lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor, { notes }) as never, {
-        textPrimary: photonTheme.textPrimary,
-        componentContext: { theme: photonTheme, typeScale: 1 },
-      });
+      render(() =>
+        lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor, { notes }) as never, {
+          textPrimary: photonTheme.textPrimary,
+          componentContext: { theme: photonTheme, typeScale: 1 },
+        }),
+      );
     const parent = document.createElement('div');
     document.body.appendChild(parent);
     const reconciler = new Reconciler();
@@ -208,7 +214,7 @@ describe('code surface (web)', () => {
    * and not by the reference the handler ran on. Holding the element instead looked implemented
    * and did nothing: scrollIntoView on a detached caret succeeds in silence.
    */
-  it('carries its path, so it can be found again after the render that replaced it', () => {
+  it("carries its position's id, so it can be found again after the render that replaced it", () => {
     const { lowered } = surfaceFor('var x = 1;');
 
     expect(lowered.attributes['data-eq-code']).toBeTruthy();
@@ -1440,16 +1446,16 @@ describe('the find bar', () => {
       measureText: (text: string) => text.length * 7,
       monoAdvance: () => 7,
     };
-    const pathOf = (node: HtmlNode): string | undefined =>
-      node.attributes['data-eq-code'] ?? node.children.map(pathOf).find((path) => path !== undefined);
+    const idOf = (node: HtmlNode): string | undefined =>
+      node.attributes['data-eq-code'] ?? node.children.map(idOf).find((id) => id !== undefined);
     const editor = new CodeEditor('var needle = 1;', 'csharp');
 
     resetShortcuts();
-    const before = pathOf(lowerVisualNode(editor.build(context as never) as never, context as never));
-    commitShortcuts();
+    // A pass commits the shortcuts it declared as it ends, as a page's render does.
+    const render = rendersOfOnePage();
+    const before = idOf(render(() => lowerVisualNode(editor.build(context as never) as never, context as never)));
     activeShortcuts().find((binding) => binding.chord === 'command+f')!.handler();
-    const after = pathOf(lowerVisualNode(editor.build(context as never) as never, context as never));
-    commitShortcuts();
+    const after = idOf(render(() => lowerVisualNode(editor.build(context as never) as never, context as never)));
 
     expect(after).toBe(before);
     expect(activeShortcuts().some((binding) => binding.chord === 'escape')).toBe(true);
@@ -2439,11 +2445,19 @@ describe('the keys an app binds', () => {
  * back after the render.
  */
 describe('a reader hears the field and its text as one thing', () => {
+  // Rendered as a page renders it, one pass after another: the surface keeps its position, its id and
+  // the door its id keys (#1454), which a render after a render of a tree drawn once would not.
+  let render = rendersOfOnePage();
+  beforeEach(() => {
+    render = rendersOfOnePage();
+  });
   const lower = (editor: CodeEditorController) =>
-    lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor) as never, {
-      textPrimary: photonTheme.textPrimary,
-      componentContext: { theme: photonTheme, typeScale: 1 },
-    });
+    render(() =>
+      lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor) as never, {
+        textPrimary: photonTheme.textPrimary,
+        componentContext: { theme: photonTheme, typeScale: 1 },
+      }),
+    );
 
   it('holds the reading, selects where the caret is, and hides what it draws', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'requestAnimationFrame'] });
