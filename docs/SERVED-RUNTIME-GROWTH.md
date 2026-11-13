@@ -72,3 +72,40 @@ uses it or not. #1341's file saver is the plainest case: in proportion with what
 by pages that never offer a file. That is the design, not a defect of any one pull request, and the
 budget is what makes each such cost a decision: past 1% of the record a change fails the test and has
 to record the budget again, saying what the bytes bought.
+
+## Since the record of #1405
+
+#1405 recorded 328,530 bytes, measured on a `main` that did not have #1482 yet; its own merge
+(28a4f7fb0), over a `main` that did, measures 329,095. #1482 grew the bundle by 577 bytes (322,053 to
+322,630), which accounts for the gap. From that merge, the bundle was measured as above at every
+first-parent commit of `main` that touched a source of it, and #1458 over `main` at 1973005e6, the
+state that crossed the ceiling, floor(328,530 × 1.01) = 331,815. #1499 touched no source of it.
+
+| Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
+|---|---|---:|---:|---:|---:|---|---|
+| #1497 | f297815d4 | 329,095 | 329,524 | +429 | +963 | a gesture on the web reads the space its surface's offset moves in | yes |
+| #1408 | 1973005e6 | 329,524 | 331,014 | +1,490 | +5,842 | a theme slot reaches a component in order, crosses to the browser, and the Button and the control ladder read theirs | yes |
+| #1458 | | 331,014 | 331,839 | +825 | +2,595 | a table takes what is left of its scroller, measured on both targets | yes |
+| **all** | | **329,095** | **331,839** | **+2,744** | **+9,400** | | |
+
+#1458 took the bundle 24 bytes over that ceiling and did not record it: #1472, about to merge, was
+recording the budget again over all of the above.
+
+## Since the record of #1472
+
+#1472 recorded 332,993 bytes before it merged; its merge (4b82ea5c9) measures 333,519. From that merge,
+the bundle was measured as above at every first-parent commit of `main` that touched a source of it, and
+#1458 over `main` at 64cd02bf2. #1472's ceiling is floor(332,993 × 1.01) = 336,322, and `main` at
+64cd02bf2 measures 336,251, 71 bytes under it.
+
+| Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
+|---|---|---:|---:|---:|---:|---|---|
+| #1502 | 651a0567f | 333,519 | 334,283 | +764 | +3,646 | a value held as object keeps the type its answers depend on (the runtime's type marks) | yes |
+| #1428 | 4cd212fba | 334,283 | 336,243 | +1,960 | +8,337 | the surfaces, menus, notices, progress and cards read their theme slots | yes |
+| #1384 | 64cd02bf2 | 336,243 | 336,251 | +8 | +42 | contrast levels resolve beside the theme mode, from the system's own setting | yes |
+| #1458 | | 336,251 | 337,068 | +817 | +2,595 | a table takes what is left of its scroller, measured on both targets | yes |
+| **all** | | **333,519** | **337,068** | **+3,549** | **+14,620** | | |
+
+#1458 takes the bundle 746 bytes over that ceiling, and records the budget again at 337,068. Its own 817
+bytes are the table's fit, the 825 it measured over 1973005e6 above; #1428, a feature every page with a
+themed surface uses, and #1502, the code of the behaviour it fixes, spent the headroom before it.
