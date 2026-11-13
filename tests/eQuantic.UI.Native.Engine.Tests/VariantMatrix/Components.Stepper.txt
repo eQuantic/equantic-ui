@@ -2,7 +2,7 @@
 ### web
 <div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-5hocaj eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
-<button aria-label="Decrease" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Decrease" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xtjgfe eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -17,7 +17,7 @@
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1txto41 eq-1x60j26 eq-5augbd eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">0</span>
 </div>
 </div>
-<button aria-label="Increase" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Increase" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xtjgfe eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -31,6 +31,7 @@
 </div>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1eb13m5{box-sizing:border-box}
@@ -92,7 +93,7 @@ Stepper 0 0 480x32
 ### web
 <div class="eq-11kg7e8 eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-5hocaj eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
-<button aria-label="Decrease" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Decrease" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1amv73n eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -107,7 +108,7 @@ Stepper 0 0 480x32
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1txto41 eq-5augbd eq-7gvrt4 eq-7sosy0 eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">0</span>
 </div>
 </div>
-<button aria-label="Increase" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Increase" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1amv73n eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -122,6 +123,7 @@ Stepper 0 0 480x32
 ### css
 .eq-11kg7e8{height:26px}
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1amv73n{width:26px}
@@ -182,7 +184,7 @@ Stepper 0 0 480x26
 ### web
 <div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
-<button aria-label="Decrease" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Decrease" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xrfuoj eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -197,7 +199,7 @@ Stepper 0 0 480x26
 <span class="eq-type-label eq-11aex6p eq-1566de eq-16x7aca eq-1hwu9wq eq-1txto41 eq-5augbd eq-7gvrt4 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">0</span>
 </div>
 </div>
-<button aria-label="Increase" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Increase" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xrfuoj eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -212,6 +214,7 @@ Stepper 0 0 480x26
 ### css
 .eq-11aex6p{line-height:18.5px}
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1eb13m5{box-sizing:border-box}
@@ -272,7 +275,7 @@ Stepper 0 0 480x40
 ### web
 <div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-5hocaj eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
-<button aria-label="Decrease" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Decrease" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xtjgfe eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -287,7 +290,7 @@ Stepper 0 0 480x40
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1txto41 eq-1x60j26 eq-5augbd eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">0</span>
 </div>
 </div>
-<button aria-label="Increase" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Increase" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xtjgfe eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -301,6 +304,7 @@ Stepper 0 0 480x40
 </div>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1eb13m5{box-sizing:border-box}
@@ -362,7 +366,7 @@ Stepper 0 0 480x32
 ### web
 <div class="eq-12kbhu0 eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-5hocaj eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
-<button aria-label="Decrease" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Decrease" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-bo3n4y eq-g7fowl eq-ra6ajf">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -377,7 +381,7 @@ Stepper 0 0 480x32
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-1txto41 eq-5augbd eq-79lkgi eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-y9mhin">0</span>
 </div>
 </div>
-<button aria-label="Increase" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Increase" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-bo3n4y eq-g7fowl eq-ra6ajf">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -391,6 +395,7 @@ Stepper 0 0 480x32
 </div>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
@@ -452,7 +457,7 @@ Stepper 0 0 480x48
 ### web
 <div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
-<button aria-label="Decrease" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Decrease" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xrfuoj eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -467,7 +472,7 @@ Stepper 0 0 480x48
 <span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-1txto41 eq-5augbd eq-7gvrt4 eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">0</span>
 </div>
 </div>
-<button aria-label="Increase" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Increase" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xrfuoj eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -481,6 +486,7 @@ Stepper 0 0 480x48
 </div>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15cxjk8{font-size:14.5px}
 .eq-16x7aca{display:block}
@@ -542,7 +548,7 @@ Stepper 0 0 480x40
 ### web
 <div class="eq-12kbhu0 eq-15bwtfr eq-1eb13m5 eq-1fdhaeb eq-5hocaj eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
-<button aria-label="Decrease" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Decrease" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-bo3n4y eq-g7fowl eq-xil8w0">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -557,7 +563,7 @@ Stepper 0 0 480x40
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-1txto41 eq-5augbd eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">0</span>
 </div>
 </div>
-<button aria-label="Increase" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Increase" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-bo3n4y eq-g7fowl eq-xil8w0">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -571,6 +577,7 @@ Stepper 0 0 480x40
 </div>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
@@ -632,7 +639,7 @@ Stepper 0 0 480x56
 ### web
 <div class="eq-12kbhu0 eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-5hocaj eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
-<button aria-label="Decrease" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Decrease" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-bo3n4y eq-g7fowl eq-ra6ajf">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -647,7 +654,7 @@ Stepper 0 0 480x56
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-1txto41 eq-1w14u2f eq-5augbd eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-y9mhin">0</span>
 </div>
 </div>
-<button aria-label="Increase" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="Increase" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-bo3n4y eq-g7fowl eq-ra6ajf">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -661,6 +668,7 @@ Stepper 0 0 480x56
 </div>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-15qobfw{height:48px}

@@ -6,7 +6,7 @@
 <div class="eq-19dgm5h eq-1eb13m5 eq-aexooi eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
 <span class="eq-type-label eq-12qw9lh eq-1txto41 eq-7gvrt4 eq-h7owsy eq-mbtjfn eq-xkrzsg">Drop files here, or choose them</span>
 <span class="eq-type-caption eq-115fhry eq-12qw9lh eq-1txto41 eq-h7owsy eq-mbtjfn eq-xkrzsg">Any file, up to 1 B</span>
-<button disabled="" aria-label="Choose files" class="eq-1esejbi eq-1etnzxl eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button disabled="" aria-label="Choose files" class="eq-14ehxct eq-1esejbi eq-1etnzxl eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-17x308w eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-l4ygpn eq-mbtjfn eq-y9mhin">Choose files</span>
@@ -29,6 +29,7 @@
 .eq-12qw9lh{-webkit-line-clamp:2}
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 .eq-13qs2y8{opacity:0.6}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
@@ -101,7 +102,7 @@ FileUpload 0 0 480x158
 <div class="eq-19dgm5h eq-1eb13m5 eq-aexooi eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
 <span class="eq-type-label eq-12qw9lh eq-1txto41 eq-7gvrt4 eq-h7owsy eq-mbtjfn eq-xkrzsg">Drop files here, or choose them</span>
 <span class="eq-type-caption eq-115fhry eq-12qw9lh eq-1txto41 eq-h7owsy eq-mbtjfn eq-xkrzsg">Any file, up to 1 B</span>
-<button disabled="" aria-label="Choose files" class="eq-1esejbi eq-1etnzxl eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button disabled="" aria-label="Choose files" class="eq-14ehxct eq-1esejbi eq-1etnzxl eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-11kg7e8 eq-17x308w eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-l4ygpn eq-mbtjfn eq-quo2cj eq-y9mhin">Choose files</span>
@@ -125,6 +126,7 @@ FileUpload 0 0 480x158
 .eq-12qw9lh{-webkit-line-clamp:2}
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 .eq-13qs2y8{opacity:0.6}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}

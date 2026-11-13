@@ -3,7 +3,7 @@
 <div data-eq-unmeasured="" class="eq-1aoicmy eq-1eb13m5 eq-1su9m49 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-g7fowl eq-mbtjfn">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
 <div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div class="eq-1ayg6m8 eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-g7fowl eq-r2od8e">
+<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-g7fowl eq-r2od8e">
 <div class="eq-1eb13m5 eq-1jjc6f6 eq-1yd0ncc eq-g7fowl">
 <div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-96qelu eq-bo3n4y eq-kngwsg">
@@ -65,7 +65,7 @@ FormulaBar 0 0 480x32
 <div data-eq-unmeasured="" class="eq-1aoicmy eq-1eb13m5 eq-1su9m49 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-g7fowl eq-mbtjfn">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
 <div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div class="eq-1ayg6m8 eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-g7fowl eq-r2od8e">
+<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-g7fowl eq-r2od8e">
 <div class="eq-1eb13m5 eq-1jjc6f6 eq-1yd0ncc eq-g7fowl">
 <div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-96qelu eq-bo3n4y eq-kngwsg">

@@ -26,7 +26,7 @@
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-1fgorjw eq-5ew4ww eq-akjizx eq-g7fowl" data-eq-drag="y" data-eq-drag-min="0" data-eq-drag-max="64" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
@@ -55,7 +55,6 @@
 .eq-1xlbso6{top:0}
 .eq-5ew4ww{min-width:0}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-8y94ea{height:64px}
 .eq-96qelu{height:20px}
 .eq-akjizx{width:100%}
@@ -112,7 +111,7 @@ PullToRefresh 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-1fgorjw eq-5ew4ww eq-akjizx eq-g7fowl" data-eq-drag="y" data-eq-drag-min="0" data-eq-drag-max="64" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
@@ -141,7 +140,6 @@ PullToRefresh 0 0 480x24
 .eq-1xlbso6{top:0}
 .eq-5ew4ww{min-width:0}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-8y94ea{height:64px}
 .eq-96qelu{height:20px}
 .eq-akjizx{width:100%}

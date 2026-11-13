@@ -3,7 +3,7 @@
 <div tabindex="-1" role="dialog" aria-modal="true" class="eq-overlay" data-eq-trap="">
 <div class="eq-1avhl7d eq-1eviv88 eq-1jjc6f6 eq-akjizx">
 <div class="eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
-<button aria-label="Dismiss" class="eq-presence-fade eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" data-eq-exit="fade">
+<button aria-label="Dismiss" class="eq-presence-fade eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" data-eq-exit="fade">
 <div class="eq-15tkusa eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-akjizx eq-g7fowl">
 </div>
 </button>
@@ -16,7 +16,7 @@
 <div class="eq-17a2pwz eq-1857hro eq-1cutupo eq-1eb13m5 eq-1xtjgfe eq-bo3n4y eq-g7fowl">
 </div>
 </div>
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
@@ -25,6 +25,7 @@
 </div>
 ### css
 .eq-11yg588{align-items:stretch}
+.eq-14ehxct{color:inherit}
 .eq-15tkusa{background-color:var(--eq-color-scrim, light-dark(#0b0e1266, #0000008f))}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
@@ -52,7 +53,6 @@
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-7k6xnv{padding:12px 20px 24px 20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -91,7 +91,7 @@ Stack 0 0 480x800
 <div tabindex="-1" role="dialog" aria-modal="true" class="eq-overlay" data-eq-trap="">
 <div class="eq-1avhl7d eq-1eviv88 eq-1jjc6f6 eq-akjizx">
 <div class="eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
-<button aria-label="Dismiss" class="eq-presence-fade eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" data-eq-exit="fade">
+<button aria-label="Dismiss" class="eq-presence-fade eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" data-eq-exit="fade">
 <div class="eq-15tkusa eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-akjizx eq-g7fowl">
 </div>
 </button>
@@ -104,7 +104,7 @@ Stack 0 0 480x800
 <div class="eq-17a2pwz eq-1857hro eq-1cutupo eq-1eb13m5 eq-1xtjgfe eq-bo3n4y eq-g7fowl">
 </div>
 </div>
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
@@ -113,6 +113,7 @@ Stack 0 0 480x800
 </div>
 ### css
 .eq-11yg588{align-items:stretch}
+.eq-14ehxct{color:inherit}
 .eq-15tkusa{background-color:var(--eq-color-scrim, light-dark(#0b0e1266, #0000008f))}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
@@ -140,7 +141,6 @@ Stack 0 0 480x800
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-7k6xnv{padding:12px 20px 24px 20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}

@@ -1,8 +1,8 @@
 ## Comfortable
 ### web
 <div class="eq-anchorhost">
-<button role="combobox" aria-expanded="false" aria-haspopup="listbox" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-cl6mtg eq-g7fowl eq-hw1jqi eq-127uese">
+<button role="combobox" aria-expanded="false" aria-haspopup="listbox" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-cl6mtg eq-g7fowl eq-hw1jqi eq-st8mxi">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
 <span class="eq-type-bodym eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Select…</span>
 <div class="eq-168ghzj eq-5ew4ww">
@@ -19,9 +19,8 @@
 </div>
 ### css
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
-@media (hover: hover){.eq-127uese:hover{border-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
-}
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-168ghzj{flex:1 1 0%}
 .eq-16x7aca{display:block}
@@ -53,6 +52,8 @@
 .eq-mbtjfn{overflow:hidden}
 .eq-mc2xdp{justify-content:flex-start}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-st8mxi.eq-st8mxi:not(:where(.eq-pressable:not(:hover) .eq-st8mxi)){border-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+}
 ### semantics
 ComboBox "" (value "Select…", collapsed)
 ### photon
@@ -72,8 +73,8 @@ Select 0 0 480x40
 ## Compact
 ### web
 <div class="eq-anchorhost">
-<button role="combobox" aria-expanded="false" aria-haspopup="listbox" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-g7fowl eq-hw1jqi eq-127uese">
+<button role="combobox" aria-expanded="false" aria-haspopup="listbox" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-g7fowl eq-hw1jqi eq-st8mxi">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
 <span class="eq-type-bodym eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Select…</span>
 <div class="eq-168ghzj eq-5ew4ww">
@@ -90,9 +91,8 @@ Select 0 0 480x40
 </div>
 ### css
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
-@media (hover: hover){.eq-127uese:hover{border-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
-}
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-168ghzj{flex:1 1 0%}
 .eq-16x7aca{display:block}
@@ -124,6 +124,8 @@ Select 0 0 480x40
 .eq-mbtjfn{overflow:hidden}
 .eq-mc2xdp{justify-content:flex-start}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-st8mxi.eq-st8mxi:not(:where(.eq-pressable:not(:hover) .eq-st8mxi)){border-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+}
 ### semantics
 ComboBox "" (value "Select…", collapsed)
 ### photon

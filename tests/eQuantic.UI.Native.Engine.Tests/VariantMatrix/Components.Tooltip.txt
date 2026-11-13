@@ -1,7 +1,7 @@
 ## Comfortable
 ### web
 <div class="eq-anchorhost eq-hoverreveal">
-<span aria-describedby="eq-tip-1y7mkjr" class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span aria-describedby="eq-tip-1y7mkjr" class="eq-type-bodyl eq-16x7aca">x</span>
 <div id="eq-tip-1y7mkjr" role="tooltip" class="eq-anchor-panel eq-anchor-t-center eq-12ue1rl eq-low5pc">
 <div class="eq-18tlusk eq-1eb13m5 eq-60rbl8 eq-71rsfd eq-g7fowl">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-k0ph0b eq-mbtjfn">x</span>
@@ -16,7 +16,6 @@
 .eq-1eb13m5{box-sizing:border-box}
 .eq-60rbl8{padding:4px 8px 4px 8px}
 .eq-71rsfd{background-color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-epaxs4{text-overflow:ellipsis}
 .eq-g7fowl{pointer-events:auto}
 .eq-k0ph0b{color:var(--eq-color-text-inverse, light-dark(#ffffff, #171b21))}
@@ -32,7 +31,7 @@ Tooltip 0 0 480x24
 ## Compact
 ### web
 <div class="eq-anchorhost eq-hoverreveal">
-<span aria-describedby="eq-tip-1y7mkjr" class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span aria-describedby="eq-tip-1y7mkjr" class="eq-type-bodyl eq-16x7aca">x</span>
 <div id="eq-tip-1y7mkjr" role="tooltip" class="eq-anchor-panel eq-anchor-t-center eq-12ue1rl eq-low5pc">
 <div class="eq-18tlusk eq-1eb13m5 eq-60rbl8 eq-71rsfd eq-g7fowl">
 <span class="eq-type-caption eq-1566de eq-16x7aca eq-epaxs4 eq-k0ph0b eq-mbtjfn">x</span>
@@ -47,7 +46,6 @@ Tooltip 0 0 480x24
 .eq-1eb13m5{box-sizing:border-box}
 .eq-60rbl8{padding:4px 8px 4px 8px}
 .eq-71rsfd{background-color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-epaxs4{text-overflow:ellipsis}
 .eq-g7fowl{pointer-events:auto}
 .eq-k0ph0b{color:var(--eq-color-text-inverse, light-dark(#ffffff, #171b21))}

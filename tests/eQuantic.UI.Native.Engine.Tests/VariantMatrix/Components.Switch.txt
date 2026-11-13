@@ -1,6 +1,6 @@
 ## Comfortable
 ### web
-<button role="switch" aria-checked="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button role="switch" aria-checked="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-17a2pwz eq-1857hro eq-1eb13m5 eq-1su9m49 eq-bo3n4y eq-e3wn64 eq-g7fowl">
@@ -14,6 +14,7 @@
 </button>
 ### css
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
 .eq-17a2pwz{border-radius:999px}
 .eq-1857hro{background-color:var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
 .eq-19zfii6{grid-area:1 / 1}
@@ -57,7 +58,7 @@ Switch 0 0 52x32
 
 ## Compact
 ### web
-<button role="switch" aria-checked="false" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button role="switch" aria-checked="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-11kg7e8 eq-17a2pwz eq-1857hro eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl">
@@ -71,6 +72,7 @@ Switch 0 0 52x32
 </button>
 ### css
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
 .eq-17a2pwz{border-radius:999px}
 .eq-1857hro{background-color:var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
 .eq-19zfii6{grid-area:1 / 1}

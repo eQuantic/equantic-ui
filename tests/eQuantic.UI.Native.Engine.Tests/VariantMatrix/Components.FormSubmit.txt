@@ -1,13 +1,14 @@
 ## Primary · Small · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1n584ip eq-r1g8kw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1mlc16r eq-r1g8kw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
@@ -19,7 +20,7 @@
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
 .eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
-@media (hover: hover){.eq-1n584ip:hover{background-color:light-dark(#004990, #89c4ff)}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
 }
 .eq-1o1uad7{border-radius:10px}
 .eq-1su9m49{height:32px}
@@ -54,8 +55,8 @@ FormSubmit 0 0 64x32
 
 ## Primary · Small · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-11kg7e8 eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-1n584ip eq-r1g8kw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-1mlc16r eq-r1g8kw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
 </div>
@@ -63,6 +64,7 @@ FormSubmit 0 0 64x32
 </button>
 ### css
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1dakdsg{color:var(--eq-color-primary-on, light-dark(#ffffff, #06263f))}
@@ -74,7 +76,7 @@ FormSubmit 0 0 64x32
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
 .eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
-@media (hover: hover){.eq-1n584ip:hover{background-color:light-dark(#004990, #89c4ff)}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
 }
 .eq-1o1uad7{border-radius:10px}
 .eq-1uhnwvg{flex-direction:row}
@@ -108,14 +110,15 @@ FormSubmit 0 0 64x26
 
 ## Primary · Medium · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1n584ip eq-r1g8kw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1mlc16r eq-r1g8kw">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1dakdsg eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19dgm5h{gap:8px}
@@ -129,7 +132,7 @@ FormSubmit 0 0 64x26
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
 .eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
-@media (hover: hover){.eq-1n584ip:hover{background-color:light-dark(#004990, #89c4ff)}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
 }
 .eq-1o1uad7{border-radius:10px}
 .eq-1uhnwvg{flex-direction:row}
@@ -162,14 +165,15 @@ FormSubmit 0 0 64x40
 
 ## Primary · Medium · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1n584ip eq-r1g8kw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1mlc16r eq-r1g8kw">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19dgm5h{gap:8px}
@@ -182,7 +186,7 @@ FormSubmit 0 0 64x40
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
 .eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
-@media (hover: hover){.eq-1n584ip:hover{background-color:light-dark(#004990, #89c4ff)}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
 }
 .eq-1o1uad7{border-radius:10px}
 .eq-1su9m49{height:32px}
@@ -216,14 +220,15 @@ FormSubmit 0 0 64x32
 
 ## Primary · Large · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15qobfw eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1n584ip eq-r1g8kw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1mlc16r eq-r1g8kw">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
@@ -237,7 +242,7 @@ FormSubmit 0 0 64x32
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
 .eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
-@media (hover: hover){.eq-1n584ip:hover{background-color:light-dark(#004990, #89c4ff)}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
 }
 .eq-1o1uad7{border-radius:10px}
 .eq-1o5c7c3{font-size:16px}
@@ -270,14 +275,15 @@ FormSubmit 0 0 64x48
 
 ## Primary · Large · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1n584ip eq-r1g8kw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1k117pa eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1mlc16r eq-r1g8kw">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15cxjk8{font-size:14.5px}
 .eq-16x7aca{display:block}
@@ -291,7 +297,7 @@ FormSubmit 0 0 64x48
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
 .eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
-@media (hover: hover){.eq-1n584ip:hover{background-color:light-dark(#004990, #89c4ff)}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
 }
 .eq-1o1uad7{border-radius:10px}
 .eq-1uhnwvg{flex-direction:row}
@@ -324,14 +330,15 @@ FormSubmit 0 0 64x40
 
 ## Primary · XLarge · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1k117pa eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-1n584ip eq-r1g8kw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1k117pa eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-1mlc16r eq-r1g8kw">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
@@ -348,7 +355,7 @@ FormSubmit 0 0 64x40
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
 .eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
-@media (hover: hover){.eq-1n584ip:hover{background-color:light-dark(#004990, #89c4ff)}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
 }
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -378,14 +385,15 @@ FormSubmit 0 0 64x56
 
 ## Primary · XLarge · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1k117pa eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1n584ip eq-r1g8kw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1k117pa eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1mlc16r eq-r1g8kw">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1dakdsg eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-15qobfw{height:48px}
@@ -400,7 +408,7 @@ FormSubmit 0 0 64x56
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
 .eq-1k117pa{background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
-@media (hover: hover){.eq-1n584ip:hover{background-color:light-dark(#004990, #89c4ff)}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1mlc16r.eq-1mlc16r:not(:where(.eq-pressable:not(:hover) .eq-1mlc16r)){background-color:var(--eq-color-primary-hover, light-dark(#004990, #89c4ff))}
 }
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -432,14 +440,17 @@ FormSubmit 0 0 64x48
 
 ## Secondary · Small · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-ymfs57 eq-iinzcj eq-ixxydx">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-ymfs57 eq-14pw683 eq-iinzcj">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1eb13m5{box-sizing:border-box}
@@ -464,8 +475,6 @@ FormSubmit 0 0 64x48
 .eq-g7fowl{pointer-events:auto}
 .eq-hw1jqi{padding:0 12px 0 12px}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
-@media (hover: hover){.eq-ixxydx:hover{background-color:light-dark(#e3e8ee, #29323d)}
-}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -486,8 +495,8 @@ FormSubmit 0 0 64x32
 
 ## Secondary · Small · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-ymfs57 eq-iinzcj eq-ixxydx">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-ymfs57 eq-14pw683 eq-iinzcj">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-quo2cj eq-y9mhin">x</span>
 </div>
@@ -495,6 +504,9 @@ FormSubmit 0 0 64x32
 </button>
 ### css
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1eb13m5{box-sizing:border-box}
@@ -517,8 +529,6 @@ FormSubmit 0 0 64x32
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
-@media (hover: hover){.eq-ixxydx:hover{background-color:light-dark(#e3e8ee, #29323d)}
-}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -540,14 +550,17 @@ FormSubmit 0 0 64x26
 
 ## Secondary · Medium · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-ymfs57 eq-iinzcj eq-ixxydx">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-ymfs57 eq-14pw683 eq-iinzcj">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19dgm5h{gap:8px}
@@ -571,8 +584,6 @@ FormSubmit 0 0 64x26
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
-@media (hover: hover){.eq-ixxydx:hover{background-color:light-dark(#e3e8ee, #29323d)}
-}
 .eq-jsw0f2{font-size:15px}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
@@ -594,14 +605,17 @@ FormSubmit 0 0 64x40
 
 ## Secondary · Medium · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-ymfs57 eq-iinzcj eq-ixxydx">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-ymfs57 eq-14pw683 eq-iinzcj">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19dgm5h{gap:8px}
@@ -627,8 +641,6 @@ FormSubmit 0 0 64x40
 .eq-g7fowl{pointer-events:auto}
 .eq-hw1jqi{padding:0 12px 0 12px}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
-@media (hover: hover){.eq-ixxydx:hover{background-color:light-dark(#e3e8ee, #29323d)}
-}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -648,14 +660,17 @@ FormSubmit 0 0 64x32
 
 ## Secondary · Large · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-ymfs57 eq-iinzcj eq-ixxydx">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-ymfs57 eq-14pw683 eq-iinzcj">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
@@ -680,8 +695,6 @@ FormSubmit 0 0 64x32
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
-@media (hover: hover){.eq-ixxydx:hover{background-color:light-dark(#e3e8ee, #29323d)}
-}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -702,14 +715,17 @@ FormSubmit 0 0 64x48
 
 ## Secondary · Large · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-ymfs57 eq-iinzcj eq-ixxydx">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-ymfs57 eq-14pw683 eq-iinzcj">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
 .eq-1566de{white-space:pre}
 .eq-15cxjk8{font-size:14.5px}
 .eq-16x7aca{display:block}
@@ -734,8 +750,6 @@ FormSubmit 0 0 64x48
 .eq-g7fowl{pointer-events:auto}
 .eq-gxup24{line-height:18px}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
-@media (hover: hover){.eq-ixxydx:hover{background-color:light-dark(#e3e8ee, #29323d)}
-}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -756,14 +770,17 @@ FormSubmit 0 0 64x40
 
 ## Secondary · XLarge · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-ymfs57 eq-iinzcj eq-ixxydx">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-ymfs57 eq-14pw683 eq-iinzcj">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-tgoca0 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
@@ -788,8 +805,6 @@ FormSubmit 0 0 64x40
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
-@media (hover: hover){.eq-ixxydx:hover{background-color:light-dark(#e3e8ee, #29323d)}
-}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -810,14 +825,17 @@ FormSubmit 0 0 64x56
 
 ## Secondary · XLarge · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-ymfs57 eq-iinzcj eq-ixxydx">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-ymfs57 eq-14pw683 eq-iinzcj">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-nzrmhs eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-14pw683.eq-14pw683:not(:where(.eq-pressable:not(:hover) .eq-14pw683)){background-color:var(--eq-color-secondary-hover, light-dark(#e3e8ee, #29323d))}
+}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-15qobfw{height:48px}
@@ -842,8 +860,6 @@ FormSubmit 0 0 64x56
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-iinzcj:not(:where(.eq-pressable:not(:active) .eq-iinzcj)){background-color:var(--eq-color-secondary-pressed, light-dark(#dce2ea, #2e3844))}
-@media (hover: hover){.eq-ixxydx:hover{background-color:light-dark(#e3e8ee, #29323d)}
-}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -864,14 +880,15 @@ FormSubmit 0 0 64x48
 
 ## Destructive · Small · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-hw1jqi eq-1xr82qv eq-exbzmz">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-hw1jqi eq-exbzmz eq-htvfjr">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1eb13m5{box-sizing:border-box}
@@ -887,8 +904,6 @@ FormSubmit 0 0 64x48
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
 .eq-1x60j26{line-height:16px}
-@media (hover: hover){.eq-1xr82qv:hover{background-color:light-dark(#a2201b, #ffaba4)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-a53ok4{font-size:13px}
 .eq-bo3n4y{flex-shrink:0}
@@ -898,6 +913,8 @@ FormSubmit 0 0 64x48
 .eq-ewlixa{align-items:center}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
 .eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
 .eq-hw1jqi{padding:0 12px 0 12px}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
@@ -918,8 +935,8 @@ FormSubmit 0 0 64x32
 
 ## Destructive · Small · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-d0pl63 eq-g7fowl eq-1xr82qv eq-exbzmz">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-d0pl63 eq-g7fowl eq-exbzmz eq-htvfjr">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-r94c75 eq-y9mhin">x</span>
 </div>
@@ -927,6 +944,7 @@ FormSubmit 0 0 64x32
 </button>
 ### css
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1eb13m5{box-sizing:border-box}
@@ -940,8 +958,6 @@ FormSubmit 0 0 64x32
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-1xr82qv:hover{background-color:light-dark(#a2201b, #ffaba4)}
-}
 .eq-1yf2q3w{padding:0 8px 0 8px}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
@@ -952,6 +968,8 @@ FormSubmit 0 0 64x32
 .eq-ewlixa{align-items:center}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
 .eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -972,14 +990,15 @@ FormSubmit 0 0 64x26
 
 ## Destructive · Medium · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-d0pl63 eq-g7fowl eq-xhcqoy eq-1xr82qv eq-exbzmz">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-d0pl63 eq-g7fowl eq-xhcqoy eq-exbzmz eq-htvfjr">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19dgm5h{gap:8px}
@@ -995,8 +1014,6 @@ FormSubmit 0 0 64x26
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-1xr82qv:hover{background-color:light-dark(#a2201b, #ffaba4)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -1006,6 +1023,8 @@ FormSubmit 0 0 64x26
 .eq-ewlixa{align-items:center}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
 .eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
 .eq-jsw0f2{font-size:15px}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
@@ -1026,14 +1045,15 @@ FormSubmit 0 0 64x40
 
 ## Destructive · Medium · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-hw1jqi eq-1xr82qv eq-exbzmz">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-hw1jqi eq-exbzmz eq-htvfjr">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19dgm5h{gap:8px}
@@ -1050,8 +1070,6 @@ FormSubmit 0 0 64x40
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
 .eq-1x60j26{line-height:16px}
-@media (hover: hover){.eq-1xr82qv:hover{background-color:light-dark(#a2201b, #ffaba4)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-a53ok4{font-size:13px}
 .eq-bo3n4y{flex-shrink:0}
@@ -1061,6 +1079,8 @@ FormSubmit 0 0 64x40
 .eq-ewlixa{align-items:center}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
 .eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
 .eq-hw1jqi{padding:0 12px 0 12px}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
@@ -1080,14 +1100,15 @@ FormSubmit 0 0 64x32
 
 ## Destructive · Large · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-pz6kj4 eq-1xr82qv eq-exbzmz">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-pz6kj4 eq-exbzmz eq-htvfjr">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
@@ -1104,8 +1125,6 @@ FormSubmit 0 0 64x32
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-1xr82qv:hover{background-color:light-dark(#a2201b, #ffaba4)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -1115,6 +1134,8 @@ FormSubmit 0 0 64x32
 .eq-ewlixa{align-items:center}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
 .eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -1134,14 +1155,15 @@ FormSubmit 0 0 64x48
 
 ## Destructive · Large · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-d0pl63 eq-g7fowl eq-xhcqoy eq-1xr82qv eq-exbzmz">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-d0pl63 eq-g7fowl eq-xhcqoy eq-exbzmz eq-htvfjr">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15cxjk8{font-size:14.5px}
 .eq-16x7aca{display:block}
@@ -1157,8 +1179,6 @@ FormSubmit 0 0 64x48
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-1xr82qv:hover{background-color:light-dark(#a2201b, #ffaba4)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -1169,6 +1189,8 @@ FormSubmit 0 0 64x48
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
 .eq-g7fowl{pointer-events:auto}
 .eq-gxup24{line-height:18px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -1188,14 +1210,15 @@ FormSubmit 0 0 64x40
 
 ## Destructive · XLarge · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-1xr82qv eq-exbzmz">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-exbzmz eq-htvfjr">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-r94c75 eq-tgoca0 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
@@ -1213,8 +1236,6 @@ FormSubmit 0 0 64x40
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-1xr82qv:hover{background-color:light-dark(#a2201b, #ffaba4)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -1223,6 +1244,8 @@ FormSubmit 0 0 64x40
 .eq-ewlixa{align-items:center}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
 .eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -1242,14 +1265,15 @@ FormSubmit 0 0 64x56
 
 ## Destructive · XLarge · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-pz6kj4 eq-1xr82qv eq-exbzmz">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-d0pl63 eq-g7fowl eq-pz6kj4 eq-exbzmz eq-htvfjr">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-r94c75 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-15qobfw{height:48px}
@@ -1266,8 +1290,6 @@ FormSubmit 0 0 64x56
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
 .eq-1w14u2f{font-size:15.5px}
-@media (hover: hover){.eq-1xr82qv:hover{background-color:light-dark(#a2201b, #ffaba4)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-79lkgi{line-height:19.5px}
 .eq-bo3n4y{flex-shrink:0}
@@ -1277,6 +1299,8 @@ FormSubmit 0 0 64x56
 .eq-ewlixa{align-items:center}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-exbzmz:not(:where(.eq-pressable:not(:active) .eq-exbzmz)){background-color:var(--eq-color-destructive-pressed, light-dark(#8f1d1d, #fec0bb))}
 .eq-g7fowl{pointer-events:auto}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-htvfjr.eq-htvfjr:not(:where(.eq-pressable:not(:hover) .eq-htvfjr)){background-color:var(--eq-color-destructive-hover, light-dark(#a2201b, #ffaba4))}
+}
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -1296,8 +1320,8 @@ FormSubmit 0 0 64x48
 
 ## Outline · Small · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
@@ -1305,10 +1329,9 @@ FormSubmit 0 0 64x48
 </button>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
@@ -1336,6 +1359,8 @@ FormSubmit 0 0 64x48
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-v9un6z{gap:6px}
 .eq-y9mhin{font-weight:600}
 ### semantics
@@ -1350,8 +1375,8 @@ FormSubmit 0 0 64x32
 
 ## Outline · Small · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-11kg7e8 eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-7gvrt4 eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
 </div>
@@ -1360,10 +1385,9 @@ FormSubmit 0 0 64x32
 ### css
 .eq-11kg7e8{height:26px}
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
@@ -1390,6 +1414,8 @@ FormSubmit 0 0 64x32
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
 .eq-quo2cj{font-size:11.5px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-v9un6z{gap:6px}
 .eq-y9mhin{font-weight:600}
 ### semantics
@@ -1404,8 +1430,8 @@ FormSubmit 0 0 64x26
 
 ## Outline · Medium · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-a51p1u eq-teoc5m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
 </div>
@@ -1413,10 +1439,9 @@ FormSubmit 0 0 64x26
 </button>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19dgm5h{gap:8px}
 .eq-1cb9own{line-height:19px}
 .eq-1eb13m5{box-sizing:border-box}
@@ -1444,6 +1469,8 @@ FormSubmit 0 0 64x26
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-xhcqoy{padding:0 16px 0 16px}
 .eq-y9mhin{font-weight:600}
 ### semantics
@@ -1458,8 +1485,8 @@ FormSubmit 0 0 64x40
 
 ## Outline · Medium · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-a51p1u eq-teoc5m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
@@ -1467,10 +1494,9 @@ FormSubmit 0 0 64x40
 </button>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19dgm5h{gap:8px}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
@@ -1499,6 +1525,8 @@ FormSubmit 0 0 64x40
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -1512,8 +1540,8 @@ FormSubmit 0 0 64x32
 
 ## Outline · Large · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-12kbhu0 eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-a51p1u eq-teoc5m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-7gvrt4 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
@@ -1521,11 +1549,10 @@ FormSubmit 0 0 64x32
 </button>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19dgm5h{gap:8px}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
@@ -1553,6 +1580,8 @@ FormSubmit 0 0 64x32
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
 .eq-pz6kj4{padding:0 20px 0 20px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -1566,8 +1595,8 @@ FormSubmit 0 0 64x48
 
 ## Outline · Large · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-a51p1u eq-teoc5m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
 </div>
@@ -1575,11 +1604,10 @@ FormSubmit 0 0 64x48
 </button>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15cxjk8{font-size:14.5px}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19dgm5h{gap:8px}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
@@ -1606,6 +1634,8 @@ FormSubmit 0 0 64x48
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-xhcqoy{padding:0 16px 0 16px}
 .eq-y9mhin{font-weight:600}
 ### semantics
@@ -1620,8 +1650,8 @@ FormSubmit 0 0 64x40
 
 ## Outline · XLarge · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-12kbhu0 eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
 </div>
@@ -1629,11 +1659,10 @@ FormSubmit 0 0 64x40
 </button>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-18qb60o{padding:0 24px 0 24px}
 .eq-196dx6e{gap:10px}
 .eq-1eb13m5{box-sizing:border-box}
@@ -1660,6 +1689,8 @@ FormSubmit 0 0 64x40
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-tgoca0{font-size:17px}
 .eq-y9mhin{font-weight:600}
 ### semantics
@@ -1674,8 +1705,8 @@ FormSubmit 0 0 64x56
 
 ## Outline · XLarge · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-12kbhu0 eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-a51p1u eq-teoc5m">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
@@ -1683,12 +1714,11 @@ FormSubmit 0 0 64x56
 </button>
 ### css
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-196dx6e{gap:10px}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
@@ -1715,6 +1745,8 @@ FormSubmit 0 0 64x56
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
 .eq-pz6kj4{padding:0 20px 0 20px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -1728,18 +1760,17 @@ FormSubmit 0 0 64x48
 
 ## Ghost · Small · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
@@ -1767,6 +1798,8 @@ FormSubmit 0 0 64x48
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-v9un6z{gap:6px}
 .eq-y9mhin{font-weight:600}
 ### semantics
@@ -1781,8 +1814,8 @@ FormSubmit 0 0 64x32
 
 ## Ghost · Small · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-7gvrt4 eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
 </div>
@@ -1790,10 +1823,9 @@ FormSubmit 0 0 64x32
 </button>
 ### css
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
@@ -1820,6 +1852,8 @@ FormSubmit 0 0 64x32
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
 .eq-quo2cj{font-size:11.5px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-v9un6z{gap:6px}
 .eq-y9mhin{font-weight:600}
 ### semantics
@@ -1834,18 +1868,17 @@ FormSubmit 0 0 64x26
 
 ## Ghost · Medium · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-a51p1u eq-teoc5m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19dgm5h{gap:8px}
 .eq-1cb9own{line-height:19px}
 .eq-1eb13m5{box-sizing:border-box}
@@ -1873,6 +1906,8 @@ FormSubmit 0 0 64x26
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-xhcqoy{padding:0 16px 0 16px}
 .eq-y9mhin{font-weight:600}
 ### semantics
@@ -1887,18 +1922,17 @@ FormSubmit 0 0 64x40
 
 ## Ghost · Medium · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-a51p1u eq-teoc5m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19dgm5h{gap:8px}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
@@ -1927,6 +1961,8 @@ FormSubmit 0 0 64x40
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -1940,19 +1976,18 @@ FormSubmit 0 0 64x32
 
 ## Ghost · Large · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-a51p1u eq-teoc5m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-7gvrt4 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19dgm5h{gap:8px}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
@@ -1980,6 +2015,8 @@ FormSubmit 0 0 64x32
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
 .eq-pz6kj4{padding:0 20px 0 20px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -1993,19 +2030,18 @@ FormSubmit 0 0 64x48
 
 ## Ghost · Large · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-a51p1u eq-teoc5m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15cxjk8{font-size:14.5px}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19dgm5h{gap:8px}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
@@ -2032,6 +2068,8 @@ FormSubmit 0 0 64x48
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-xhcqoy{padding:0 16px 0 16px}
 .eq-y9mhin{font-weight:600}
 ### semantics
@@ -2046,19 +2084,18 @@ FormSubmit 0 0 64x40
 
 ## Ghost · XLarge · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-18qb60o{padding:0 24px 0 24px}
 .eq-196dx6e{gap:10px}
 .eq-1eb13m5{box-sizing:border-box}
@@ -2085,6 +2122,8 @@ FormSubmit 0 0 64x40
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-tgoca0{font-size:17px}
 .eq-y9mhin{font-weight:600}
 ### semantics
@@ -2099,20 +2138,19 @@ FormSubmit 0 0 64x56
 
 ## Ghost · XLarge · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-a51p1u eq-teoc5m">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-196dx6e{gap:10px}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
@@ -2139,6 +2177,8 @@ FormSubmit 0 0 64x56
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
 .eq-pz6kj4{padding:0 20px 0 20px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -2152,7 +2192,7 @@ FormSubmit 0 0 64x48
 
 ## Link · Small · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-i29sta eq-mbtjfn eq-y9mhin">x</span>
@@ -2160,6 +2200,7 @@ FormSubmit 0 0 64x48
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1eb13m5{box-sizing:border-box}
@@ -2202,7 +2243,7 @@ FormSubmit 0 0 64x32
 
 ## Link · Small · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-i29sta eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
@@ -2211,6 +2252,7 @@ FormSubmit 0 0 64x32
 </button>
 ### css
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1eb13m5{box-sizing:border-box}
@@ -2252,7 +2294,7 @@ FormSubmit 0 0 64x26
 
 ## Link · Medium · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-cl6mtg eq-g7fowl">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-i29sta eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
@@ -2260,6 +2302,7 @@ FormSubmit 0 0 64x26
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19dgm5h{gap:8px}
@@ -2302,7 +2345,7 @@ FormSubmit 0 0 64x40
 
 ## Link · Medium · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-i29sta eq-mbtjfn eq-y9mhin">x</span>
@@ -2310,6 +2353,7 @@ FormSubmit 0 0 64x40
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19dgm5h{gap:8px}
@@ -2352,7 +2396,7 @@ FormSubmit 0 0 64x32
 
 ## Link · Large · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-i29sta eq-mbtjfn eq-y9mhin">x</span>
@@ -2360,6 +2404,7 @@ FormSubmit 0 0 64x32
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
@@ -2402,7 +2447,7 @@ FormSubmit 0 0 64x48
 
 ## Link · Large · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-cl6mtg eq-g7fowl">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-i29sta eq-mbtjfn eq-y9mhin">x</span>
@@ -2410,6 +2455,7 @@ FormSubmit 0 0 64x48
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15cxjk8{font-size:14.5px}
 .eq-16x7aca{display:block}
@@ -2452,7 +2498,7 @@ FormSubmit 0 0 64x40
 
 ## Link · XLarge · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-15bwtfr eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-i29sta eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
@@ -2460,6 +2506,7 @@ FormSubmit 0 0 64x40
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
@@ -2502,7 +2549,7 @@ FormSubmit 0 0 64x56
 
 ## Link · XLarge · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-30o80s eq-bo3n4y eq-g7fowl">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-i29sta eq-mbtjfn eq-y9mhin">x</span>
@@ -2510,6 +2557,7 @@ FormSubmit 0 0 64x56
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-15qobfw{height:48px}
@@ -2552,14 +2600,15 @@ FormSubmit 0 0 64x48
 
 ## Success · Small · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-hw1jqi eq-a0zn9g eq-dfsx6k">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1l6gvdn eq-a0zn9g">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1eb13m5{box-sizing:border-box}
@@ -2569,6 +2618,8 @@ FormSubmit 0 0 64x48
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
 .eq-1o1uad7{border-radius:10px}
 .eq-1su9m49{height:32px}
 .eq-1uhnwvg{flex-direction:row}
@@ -2581,8 +2632,6 @@ FormSubmit 0 0 64x48
 .eq-a53ok4{font-size:13px}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
-@media (hover: hover){.eq-dfsx6k:hover{background-color:light-dark(#346c1d, #94cc6e)}
-}
 .eq-epaxs4{text-overflow:ellipsis}
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
@@ -2606,8 +2655,8 @@ FormSubmit 0 0 64x32
 
 ## Success · Small · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-32r373 eq-bo3n4y eq-g7fowl eq-a0zn9g eq-dfsx6k">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-32r373 eq-bo3n4y eq-g7fowl eq-1l6gvdn eq-a0zn9g">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-r1c0xf eq-y9mhin">x</span>
 </div>
@@ -2615,6 +2664,7 @@ FormSubmit 0 0 64x32
 </button>
 ### css
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-1eb13m5{box-sizing:border-box}
@@ -2624,6 +2674,8 @@ FormSubmit 0 0 64x32
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
 .eq-1o1uad7{border-radius:10px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -2634,8 +2686,6 @@ FormSubmit 0 0 64x32
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a0zn9g:not(:where(.eq-pressable:not(:active) .eq-a0zn9g)){background-color:var(--eq-color-success-pressed, light-dark(#2c5e17, #9fd279))}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
-@media (hover: hover){.eq-dfsx6k:hover{background-color:light-dark(#346c1d, #94cc6e)}
-}
 .eq-eo53tp{line-height:14.5px}
 .eq-epaxs4{text-overflow:ellipsis}
 .eq-ewlixa{align-items:center}
@@ -2660,14 +2710,15 @@ FormSubmit 0 0 64x26
 
 ## Success · Medium · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-a0zn9g eq-dfsx6k">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1l6gvdn eq-a0zn9g">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19dgm5h{gap:8px}
@@ -2679,6 +2730,8 @@ FormSubmit 0 0 64x26
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
 .eq-1o1uad7{border-radius:10px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -2689,8 +2742,6 @@ FormSubmit 0 0 64x26
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
 .eq-cl6mtg{height:40px}
-@media (hover: hover){.eq-dfsx6k:hover{background-color:light-dark(#346c1d, #94cc6e)}
-}
 .eq-epaxs4{text-overflow:ellipsis}
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
@@ -2714,14 +2765,15 @@ FormSubmit 0 0 64x40
 
 ## Success · Medium · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-hw1jqi eq-a0zn9g eq-dfsx6k">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1l6gvdn eq-a0zn9g">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19dgm5h{gap:8px}
@@ -2732,6 +2784,8 @@ FormSubmit 0 0 64x40
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
 .eq-1o1uad7{border-radius:10px}
 .eq-1su9m49{height:32px}
 .eq-1uhnwvg{flex-direction:row}
@@ -2744,8 +2798,6 @@ FormSubmit 0 0 64x40
 .eq-a53ok4{font-size:13px}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
-@media (hover: hover){.eq-dfsx6k:hover{background-color:light-dark(#346c1d, #94cc6e)}
-}
 .eq-epaxs4{text-overflow:ellipsis}
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
@@ -2768,14 +2820,15 @@ FormSubmit 0 0 64x32
 
 ## Success · Large · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-a0zn9g eq-dfsx6k">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1l6gvdn eq-a0zn9g">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
@@ -2787,6 +2840,8 @@ FormSubmit 0 0 64x32
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
 .eq-1o1uad7{border-radius:10px}
 .eq-1o5c7c3{font-size:16px}
 .eq-1uhnwvg{flex-direction:row}
@@ -2798,8 +2853,6 @@ FormSubmit 0 0 64x32
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
 .eq-da01c7{line-height:20px}
-@media (hover: hover){.eq-dfsx6k:hover{background-color:light-dark(#346c1d, #94cc6e)}
-}
 .eq-epaxs4{text-overflow:ellipsis}
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
@@ -2822,14 +2875,15 @@ FormSubmit 0 0 64x48
 
 ## Success · Large · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-a0zn9g eq-dfsx6k">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1l6gvdn eq-a0zn9g">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15cxjk8{font-size:14.5px}
 .eq-16x7aca{display:block}
@@ -2841,6 +2895,8 @@ FormSubmit 0 0 64x48
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
 .eq-1o1uad7{border-radius:10px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -2851,8 +2907,6 @@ FormSubmit 0 0 64x48
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
 .eq-cl6mtg{height:40px}
-@media (hover: hover){.eq-dfsx6k:hover{background-color:light-dark(#346c1d, #94cc6e)}
-}
 .eq-epaxs4{text-overflow:ellipsis}
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
@@ -2876,14 +2930,15 @@ FormSubmit 0 0 64x40
 
 ## Success · XLarge · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-a0zn9g eq-dfsx6k">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-1l6gvdn eq-a0zn9g">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-r1c0xf eq-tgoca0 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
@@ -2898,6 +2953,8 @@ FormSubmit 0 0 64x40
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
@@ -2906,8 +2963,6 @@ FormSubmit 0 0 64x40
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a0zn9g:not(:where(.eq-pressable:not(:active) .eq-a0zn9g)){background-color:var(--eq-color-success-pressed, light-dark(#2c5e17, #9fd279))}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
-@media (hover: hover){.eq-dfsx6k:hover{background-color:light-dark(#346c1d, #94cc6e)}
-}
 .eq-epaxs4{text-overflow:ellipsis}
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
@@ -2930,14 +2985,15 @@ FormSubmit 0 0 64x56
 
 ## Success · XLarge · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-a0zn9g eq-dfsx6k">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-32r373 eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1l6gvdn eq-a0zn9g">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-r1c0xf eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-15qobfw{height:48px}
@@ -2950,6 +3006,8 @@ FormSubmit 0 0 64x56
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1l6gvdn.eq-1l6gvdn:not(:where(.eq-pressable:not(:hover) .eq-1l6gvdn)){background-color:var(--eq-color-success-hover, light-dark(#346c1d, #94cc6e))}
+}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
@@ -2960,8 +3018,6 @@ FormSubmit 0 0 64x56
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-a0zn9g:not(:where(.eq-pressable:not(:active) .eq-a0zn9g)){background-color:var(--eq-color-success-pressed, light-dark(#2c5e17, #9fd279))}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
-@media (hover: hover){.eq-dfsx6k:hover{background-color:light-dark(#346c1d, #94cc6e)}
-}
 .eq-epaxs4{text-overflow:ellipsis}
 .eq-ewlixa{align-items:center}
 .eq-g7fowl{pointer-events:auto}
@@ -2984,15 +3040,18 @@ FormSubmit 0 0 64x48
 
 ## Warning · Small · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-sws4m eq-18nlty2 eq-xp13xg">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-sws4m eq-16s8lzy eq-18nlty2">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1tsjeg9 eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
 .eq-16x7aca{display:block}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
 .eq-1eb13m5{box-sizing:border-box}
@@ -3023,8 +3082,6 @@ FormSubmit 0 0 64x48
 .eq-p7nbpw{text-align:start}
 .eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
 .eq-v9un6z{gap:6px}
-@media (hover: hover){.eq-xp13xg:hover{background-color:light-dark(#7c5100, #ecb85b)}
-}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -3038,8 +3095,8 @@ FormSubmit 0 0 64x32
 
 ## Warning · Small · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-sws4m eq-18nlty2 eq-xp13xg">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-sws4m eq-16s8lzy eq-18nlty2">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1tsjeg9 eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
 </div>
@@ -3047,7 +3104,10 @@ FormSubmit 0 0 64x32
 </button>
 ### css
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
 .eq-16x7aca{display:block}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
 .eq-1eb13m5{box-sizing:border-box}
@@ -3077,8 +3137,6 @@ FormSubmit 0 0 64x32
 .eq-quo2cj{font-size:11.5px}
 .eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
 .eq-v9un6z{gap:6px}
-@media (hover: hover){.eq-xp13xg:hover{background-color:light-dark(#7c5100, #ecb85b)}
-}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -3092,15 +3150,18 @@ FormSubmit 0 0 64x26
 
 ## Warning · Medium · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-sws4m eq-xhcqoy eq-18nlty2 eq-xp13xg">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-sws4m eq-xhcqoy eq-16s8lzy eq-18nlty2">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1cb9own eq-1hwu9wq eq-1tsjeg9 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
 .eq-16x7aca{display:block}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
 .eq-19dgm5h{gap:8px}
@@ -3131,8 +3192,6 @@ FormSubmit 0 0 64x26
 .eq-p7nbpw{text-align:start}
 .eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
 .eq-xhcqoy{padding:0 16px 0 16px}
-@media (hover: hover){.eq-xp13xg:hover{background-color:light-dark(#7c5100, #ecb85b)}
-}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -3146,15 +3205,18 @@ FormSubmit 0 0 64x40
 
 ## Warning · Medium · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-sws4m eq-18nlty2 eq-xp13xg">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-sws4m eq-16s8lzy eq-18nlty2">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1tsjeg9 eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
 .eq-16x7aca{display:block}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
 .eq-19dgm5h{gap:8px}
@@ -3185,8 +3247,6 @@ FormSubmit 0 0 64x40
 .eq-mbtjfn{overflow:hidden}
 .eq-p7nbpw{text-align:start}
 .eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
-@media (hover: hover){.eq-xp13xg:hover{background-color:light-dark(#7c5100, #ecb85b)}
-}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -3200,16 +3260,19 @@ FormSubmit 0 0 64x32
 
 ## Warning · Large · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-sws4m eq-18nlty2 eq-xp13xg">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-sws4m eq-16s8lzy eq-18nlty2">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1o5c7c3 eq-1tsjeg9 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
 .eq-16x7aca{display:block}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
 .eq-19dgm5h{gap:8px}
@@ -3239,8 +3302,6 @@ FormSubmit 0 0 64x32
 .eq-p7nbpw{text-align:start}
 .eq-pz6kj4{padding:0 20px 0 20px}
 .eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
-@media (hover: hover){.eq-xp13xg:hover{background-color:light-dark(#7c5100, #ecb85b)}
-}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -3254,16 +3315,19 @@ FormSubmit 0 0 64x48
 
 ## Warning · Large · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-sws4m eq-xhcqoy eq-18nlty2 eq-xp13xg">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-sws4m eq-xhcqoy eq-16s8lzy eq-18nlty2">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-1hwu9wq eq-1tsjeg9 eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15cxjk8{font-size:14.5px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
 .eq-16x7aca{display:block}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
 .eq-19dgm5h{gap:8px}
@@ -3293,8 +3357,6 @@ FormSubmit 0 0 64x48
 .eq-p7nbpw{text-align:start}
 .eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
 .eq-xhcqoy{padding:0 16px 0 16px}
-@media (hover: hover){.eq-xp13xg:hover{background-color:light-dark(#7c5100, #ecb85b)}
-}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -3308,16 +3370,19 @@ FormSubmit 0 0 64x40
 
 ## Warning · XLarge · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-sws4m eq-18nlty2 eq-xp13xg">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-sws4m eq-16s8lzy eq-18nlty2">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hme0ng eq-1hwu9wq eq-1tsjeg9 eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
 .eq-16x7aca{display:block}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
 .eq-18qb60o{padding:0 24px 0 24px}
@@ -3347,8 +3412,6 @@ FormSubmit 0 0 64x40
 .eq-p7nbpw{text-align:start}
 .eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
 .eq-tgoca0{font-size:17px}
-@media (hover: hover){.eq-xp13xg:hover{background-color:light-dark(#7c5100, #ecb85b)}
-}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -3362,17 +3425,20 @@ FormSubmit 0 0 64x56
 
 ## Warning · XLarge · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-sws4m eq-18nlty2 eq-xp13xg">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-sws4m eq-16s8lzy eq-18nlty2">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1tsjeg9 eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-15qobfw{height:48px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-16s8lzy.eq-16s8lzy:not(:where(.eq-pressable:not(:hover) .eq-16s8lzy)){background-color:var(--eq-color-warning-hover, light-dark(#7c5100, #ecb85b))}
+}
 .eq-16x7aca{display:block}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-18nlty2:not(:where(.eq-pressable:not(:active) .eq-18nlty2)){background-color:var(--eq-color-warning-pressed, light-dark(#6e4700, #f0c06b))}
 .eq-196dx6e{gap:10px}
@@ -3401,8 +3467,6 @@ FormSubmit 0 0 64x56
 .eq-p7nbpw{text-align:start}
 .eq-pz6kj4{padding:0 20px 0 20px}
 .eq-sws4m{background-color:var(--eq-color-warning-base, light-dark(#8a5a00, #e8b04b))}
-@media (hover: hover){.eq-xp13xg:hover{background-color:light-dark(#7c5100, #ecb85b)}
-}
 .eq-y9mhin{font-weight:600}
 ### semantics
 Button "x"
@@ -3416,14 +3480,15 @@ FormSubmit 0 0 64x48
 
 ## Info · Small · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1gyb634 eq-v2sn1m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -3432,6 +3497,8 @@ FormSubmit 0 0 64x48
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -3441,8 +3508,6 @@ FormSubmit 0 0 64x48
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
 .eq-1x60j26{line-height:16px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-a53ok4{font-size:13px}
 .eq-bo3n4y{flex-shrink:0}
@@ -3470,8 +3535,8 @@ FormSubmit 0 0 64x32
 
 ## Info · Small · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-11kg7e8 eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-1gyb634 eq-v2sn1m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
 </div>
@@ -3479,6 +3544,7 @@ FormSubmit 0 0 64x32
 </button>
 ### css
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -3487,6 +3553,8 @@ FormSubmit 0 0 64x32
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -3495,8 +3563,6 @@ FormSubmit 0 0 64x32
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
 .eq-1yf2q3w{padding:0 8px 0 8px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -3524,14 +3590,15 @@ FormSubmit 0 0 64x26
 
 ## Info · Medium · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1gyb634 eq-v2sn1m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -3542,6 +3609,8 @@ FormSubmit 0 0 64x26
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -3549,8 +3618,6 @@ FormSubmit 0 0 64x26
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -3578,14 +3645,15 @@ FormSubmit 0 0 64x40
 
 ## Info · Medium · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1gyb634 eq-v2sn1m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -3595,6 +3663,8 @@ FormSubmit 0 0 64x40
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -3604,8 +3674,6 @@ FormSubmit 0 0 64x40
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
 .eq-1x60j26{line-height:16px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-a53ok4{font-size:13px}
 .eq-bo3n4y{flex-shrink:0}
@@ -3632,14 +3700,15 @@ FormSubmit 0 0 64x32
 
 ## Info · Large · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1gyb634 eq-v2sn1m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
@@ -3650,6 +3719,8 @@ FormSubmit 0 0 64x32
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -3658,8 +3729,6 @@ FormSubmit 0 0 64x32
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -3686,14 +3755,15 @@ FormSubmit 0 0 64x48
 
 ## Info · Large · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1gyb634 eq-v2sn1m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15cxjk8{font-size:14.5px}
 .eq-16x7aca{display:block}
@@ -3704,6 +3774,8 @@ FormSubmit 0 0 64x48
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -3711,8 +3783,6 @@ FormSubmit 0 0 64x48
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -3740,14 +3810,15 @@ FormSubmit 0 0 64x40
 
 ## Info · XLarge · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-17wyma7 eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-17wyma7 eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-1gyb634 eq-v2sn1m">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
@@ -3760,6 +3831,8 @@ FormSubmit 0 0 64x40
 .eq-1etnzxl{border:none}
 .eq-1fdhaeb{height:56px}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hme0ng{line-height:21px}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
@@ -3767,8 +3840,6 @@ FormSubmit 0 0 64x40
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -3794,14 +3865,15 @@ FormSubmit 0 0 64x56
 
 ## Info · XLarge · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1gyb634 eq-v2sn1m">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-15qobfw{height:48px}
@@ -3813,6 +3885,8 @@ FormSubmit 0 0 64x56
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -3820,8 +3894,6 @@ FormSubmit 0 0 64x56
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
 .eq-1w14u2f{font-size:15.5px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-79lkgi{line-height:19.5px}
 .eq-bo3n4y{flex-shrink:0}
@@ -3848,14 +3920,15 @@ FormSubmit 0 0 64x48
 
 ## Tertiary · Small · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1gyb634 eq-v2sn1m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -3864,6 +3937,8 @@ FormSubmit 0 0 64x48
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -3873,8 +3948,6 @@ FormSubmit 0 0 64x48
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
 .eq-1x60j26{line-height:16px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-a53ok4{font-size:13px}
 .eq-bo3n4y{flex-shrink:0}
@@ -3902,8 +3975,8 @@ FormSubmit 0 0 64x32
 
 ## Tertiary · Small · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-11kg7e8 eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-1gyb634 eq-v2sn1m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">x</span>
 </div>
@@ -3911,6 +3984,7 @@ FormSubmit 0 0 64x32
 </button>
 ### css
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -3919,6 +3993,8 @@ FormSubmit 0 0 64x32
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -3927,8 +4003,6 @@ FormSubmit 0 0 64x32
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
 .eq-1yf2q3w{padding:0 8px 0 8px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -3956,14 +4030,15 @@ FormSubmit 0 0 64x26
 
 ## Tertiary · Medium · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1gyb634 eq-v2sn1m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1cb9own eq-1hwu9wq eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -3974,6 +4049,8 @@ FormSubmit 0 0 64x26
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -3981,8 +4058,6 @@ FormSubmit 0 0 64x26
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -4010,14 +4085,15 @@ FormSubmit 0 0 64x40
 
 ## Tertiary · Medium · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-1gyb634 eq-v2sn1m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1x60j26 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -4027,6 +4103,8 @@ FormSubmit 0 0 64x40
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -4036,8 +4114,6 @@ FormSubmit 0 0 64x40
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
 .eq-1x60j26{line-height:16px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-a53ok4{font-size:13px}
 .eq-bo3n4y{flex-shrink:0}
@@ -4064,14 +4140,15 @@ FormSubmit 0 0 64x32
 
 ## Tertiary · Large · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1gyb634 eq-v2sn1m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1o5c7c3 eq-da01c7 eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
@@ -4082,6 +4159,8 @@ FormSubmit 0 0 64x32
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -4090,8 +4169,6 @@ FormSubmit 0 0 64x32
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -4118,14 +4195,15 @@ FormSubmit 0 0 64x48
 
 ## Tertiary · Large · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17wyma7 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-g7fowl eq-xhcqoy eq-1gyb634 eq-v2sn1m">
 <div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-15cxjk8 eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-epaxs4 eq-gxup24 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15cxjk8{font-size:14.5px}
 .eq-16x7aca{display:block}
@@ -4136,6 +4214,8 @@ FormSubmit 0 0 64x48
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -4143,8 +4223,6 @@ FormSubmit 0 0 64x48
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -4172,14 +4250,15 @@ FormSubmit 0 0 64x40
 
 ## Tertiary · XLarge · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-17wyma7 eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-17wyma7 eq-18qb60o eq-1eb13m5 eq-1fdhaeb eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-1gyb634 eq-v2sn1m">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hme0ng eq-1hwu9wq eq-epaxs4 eq-mbtjfn eq-tgoca0 eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
@@ -4192,6 +4271,8 @@ FormSubmit 0 0 64x40
 .eq-1etnzxl{border:none}
 .eq-1fdhaeb{height:56px}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hme0ng{line-height:21px}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
@@ -4199,8 +4280,6 @@ FormSubmit 0 0 64x40
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-bo3n4y{flex-shrink:0}
 .eq-byqqyj{background:none}
@@ -4226,14 +4305,15 @@ FormSubmit 0 0 64x56
 
 ## Tertiary · XLarge · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15bwtfr eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-3duoqg eq-v2sn1m">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15bwtfr eq-15qobfw eq-17wyma7 eq-1eb13m5 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-pz6kj4 eq-1gyb634 eq-v2sn1m">
 <div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-19p6vwl eq-1hwu9wq eq-1w14u2f eq-79lkgi eq-epaxs4 eq-mbtjfn eq-y9mhin">x</span>
 </div>
 </div>
 </button>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15bwtfr{border-radius:14px}
 .eq-15qobfw{height:48px}
@@ -4245,6 +4325,8 @@ FormSubmit 0 0 64x56
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
 .eq-1gudvpj{min-height:0}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1gyb634.eq-1gyb634:not(:where(.eq-pressable:not(:hover) .eq-1gyb634)){background-color:var(--eq-color-info-hover, light-dark(#0b6077, #5ecbe3))}
+}
 .eq-1hwu9wq{letter-spacing:0.1px}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
@@ -4252,8 +4334,6 @@ FormSubmit 0 0 64x56
 .eq-1uykvw{padding:0}
 .eq-1vzw3dm{min-width:64px}
 .eq-1w14u2f{font-size:15.5px}
-@media (hover: hover){.eq-3duoqg:hover{background-color:light-dark(#0b6077, #5ecbe3)}
-}
 .eq-6gdbvu{justify-content:center}
 .eq-79lkgi{line-height:19.5px}
 .eq-bo3n4y{flex-shrink:0}

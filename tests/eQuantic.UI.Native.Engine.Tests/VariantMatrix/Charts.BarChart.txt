@@ -54,8 +54,8 @@
 </div>
 </div>
 <div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-hqijl0 eq-kngwsg eq-m92pvu">
-<button aria-label="Show as table" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-189q21e eq-a51p1u">
+<button aria-label="Show as table" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-g7fowl eq-hw1jqi eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin">Show as table</span>
 </div>
@@ -65,11 +65,10 @@
 </div>
 ### css
 .eq-11yg588{align-items:stretch}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-168ghzj{flex:1 1 0%}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19dgm5h{gap:8px}
 .eq-19zfii6{grid-area:1 / 1}
 .eq-1avhl7d{display:grid}
@@ -128,6 +127,8 @@
 .eq-qqppm6{top:40px}
 .eq-ra6ajf{width:48px}
 .eq-rmru7{top:-8px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-v9un6z{gap:6px}
 .eq-y9mhin{font-weight:600}
 ### semantics
@@ -232,8 +233,8 @@ BarChart 0 0 480x284
 </div>
 </div>
 <div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-hqijl0 eq-kngwsg eq-m92pvu">
-<button aria-label="Show as table" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<button aria-label="Show as table" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-1yf2q3w eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-kngwsg eq-m92pvu eq-v9un6z">
 <span class="eq-type-label eq-1566de eq-16x7aca eq-1hwu9wq eq-7gvrt4 eq-eo53tp eq-epaxs4 eq-mbtjfn eq-quo2cj eq-y9mhin">Show as table</span>
 </div>
@@ -244,11 +245,10 @@ BarChart 0 0 480x284
 ### css
 .eq-11kg7e8{height:26px}
 .eq-11yg588{align-items:stretch}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-168ghzj{flex:1 1 0%}
 .eq-16x7aca{display:block}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19dgm5h{gap:8px}
 .eq-19zfii6{grid-area:1 / 1}
 .eq-1avhl7d{display:grid}
@@ -306,6 +306,8 @@ BarChart 0 0 480x284
 .eq-quo2cj{font-size:11.5px}
 .eq-ra6ajf{width:48px}
 .eq-rmru7{top:-8px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-v9un6z{gap:6px}
 .eq-y9mhin{font-weight:600}
 ### semantics

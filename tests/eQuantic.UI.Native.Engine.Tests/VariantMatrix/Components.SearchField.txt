@@ -13,8 +13,8 @@
 </span>
 </div>
 </div>
-<button aria-label="Clear search" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17a2pwz eq-1eb13m5 eq-bo3n4y eq-cl6mtg eq-g7fowl eq-ra6ajf eq-1m836id eq-1tjg7qo">
+<button aria-label="Clear search" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-bo3n4y eq-cl6mtg eq-g7fowl eq-ra6ajf eq-1glut8d eq-1tjg7qo">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-lgp7n6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z">
@@ -27,6 +27,7 @@
 </div>
 ### css
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-14ehxct{color:inherit}
 .eq-168ghzj{flex:1 1 0%}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
@@ -34,11 +35,11 @@
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1glut8d.eq-1glut8d:not(:where(.eq-pressable:not(:hover) .eq-1glut8d)){background-color:light-dark(#e9ebef, #232b34)}
+}
 .eq-1gudvpj{min-height:0}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
-@media (hover: hover){.eq-1m836id:hover{background-color:light-dark(#e9ebef, #232b34)}
-}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-1tjg7qo:not(:where(.eq-pressable:not(:active) .eq-1tjg7qo)){background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -90,8 +91,8 @@ SearchField 0 0 480x40
 </span>
 </div>
 </div>
-<button aria-label="Clear search" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-bo3n4y eq-g7fowl eq-ra6ajf eq-1m836id eq-1tjg7qo">
+<button aria-label="Clear search" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-bo3n4y eq-g7fowl eq-ra6ajf eq-1glut8d eq-1tjg7qo">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-lgp7n6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z">
@@ -104,6 +105,7 @@ SearchField 0 0 480x40
 </div>
 ### css
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-14ehxct{color:inherit}
 .eq-168ghzj{flex:1 1 0%}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
@@ -111,11 +113,11 @@ SearchField 0 0 480x40
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1glut8d.eq-1glut8d:not(:where(.eq-pressable:not(:hover) .eq-1glut8d)){background-color:light-dark(#e9ebef, #232b34)}
+}
 .eq-1gudvpj{min-height:0}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
-@media (hover: hover){.eq-1m836id:hover{background-color:light-dark(#e9ebef, #232b34)}
-}
 .eq-1su9m49{height:32px}
 .eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-1tjg7qo:not(:where(.eq-pressable:not(:active) .eq-1tjg7qo)){background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 .eq-1uhnwvg{flex-direction:row}

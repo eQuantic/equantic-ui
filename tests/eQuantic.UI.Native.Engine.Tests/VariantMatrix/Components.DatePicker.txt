@@ -12,7 +12,7 @@
 </div>
 </div>
 <div class="eq-anchorhost">
-<button aria-expanded="false" aria-haspopup="dialog" aria-label="Choose a date" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-expanded="false" aria-haspopup="dialog" aria-label="Choose a date" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <svg class="eq-115fhry eq-16x7aca eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 <path d="M5 22q-.825 0-1.412-.587Q3 20.825 3 20V6q0-.825.588-1.412Q4.175 4 5 4h1V2h2v2h8V2h2v2h1q.825 0 1.413.588Q21 5.175 21 6v14q0 .825-.587 1.413Q19.825 22 19 22Zm0-2h14V10H5v10ZM5 8h14V6H5Zm0 0V6v2Z">
 </path>
@@ -31,6 +31,7 @@
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
 .eq-11yg588{align-items:stretch}
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15qobfw{height:48px}
 .eq-168ghzj{flex:1 1 0%}
@@ -101,7 +102,7 @@ DatePicker 0 0 480x69
 </div>
 </div>
 <div class="eq-anchorhost">
-<button aria-expanded="false" aria-haspopup="dialog" aria-label="Choose a date" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-expanded="false" aria-haspopup="dialog" aria-label="Choose a date" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <svg class="eq-115fhry eq-16x7aca eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 <path d="M5 22q-.825 0-1.412-.587Q3 20.825 3 20V6q0-.825.588-1.412Q4.175 4 5 4h1V2h2v2h8V2h2v2h1q.825 0 1.413.588Q21 5.175 21 6v14q0 .825-.587 1.413Q19.825 22 19 22Zm0-2h14V10H5v10ZM5 8h14V6H5Zm0 0V6v2Z">
 </path>
@@ -120,6 +121,7 @@ DatePicker 0 0 480x69
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
 .eq-11yg588{align-items:stretch}
 .eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-168ghzj{flex:1 1 0%}
 .eq-16x7aca{display:block}

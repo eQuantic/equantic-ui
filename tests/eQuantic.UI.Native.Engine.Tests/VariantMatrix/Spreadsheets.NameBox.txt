@@ -3,13 +3,12 @@
 <div data-eq-unmeasured="" class="eq-1aoicmy eq-1eb13m5 eq-1su9m49 eq-1yxcnfo eq-5hocaj eq-bo3n4y eq-g7fowl eq-mbtjfn">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
 <div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div class="eq-1ayg6m8 eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-g7fowl eq-r2od8e">
+<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-g7fowl eq-r2od8e">
 <div class="eq-1eb13m5 eq-1jjc6f6 eq-1yd0ncc eq-g7fowl">
 <span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">A1</span>
 </div>
 </div>
-<textarea class="eq-code-input" style="left:0;top:0;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Name box">
-</textarea>
+<textarea class="eq-code-input" style="left:0;top:0;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Name box">A1</textarea>
 </div>
 </div>
 </div>
@@ -44,8 +43,7 @@
 .eq-olitnf{outline:none}
 .eq-r2od8e{width:18px}
 ### semantics
-StaticText "A1"
-TextField "Name box" (value "")
+TextField "Name box" (value "A1")
 ### photon
 NameBox 0 0 96x32
   Box 0 0 96x32
@@ -60,13 +58,12 @@ NameBox 0 0 96x32
 <div data-eq-unmeasured="" class="eq-1aoicmy eq-1eb13m5 eq-1su9m49 eq-1yxcnfo eq-5hocaj eq-bo3n4y eq-g7fowl eq-mbtjfn">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
 <div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div class="eq-1ayg6m8 eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-g7fowl eq-r2od8e">
+<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2s6r7n eq-bo3n4y eq-g7fowl eq-r2od8e">
 <div class="eq-1eb13m5 eq-1jjc6f6 eq-1yd0ncc eq-g7fowl">
 <span class="eq-type-bodym eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn">A1</span>
 </div>
 </div>
-<textarea class="eq-code-input" style="left:0;top:0;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Name box">
-</textarea>
+<textarea class="eq-code-input" style="left:0;top:0;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-multiline="true" aria-label="Name box">A1</textarea>
 </div>
 </div>
 </div>
@@ -101,8 +98,7 @@ NameBox 0 0 96x32
 .eq-olitnf{outline:none}
 .eq-r2od8e{width:18px}
 ### semantics
-StaticText "A1"
-TextField "Name box" (value "")
+TextField "Name box" (value "A1")
 ### photon
 NameBox 0 0 96x32
   Box 0 0 96x32

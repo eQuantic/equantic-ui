@@ -1,7 +1,7 @@
 ## Small · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz" fill="currentColor" aria-hidden="true">
 <path>
@@ -12,10 +12,9 @@
 </button>
 ### css
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-14ehxct{color:inherit}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19vml7g{width:16px}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
@@ -39,6 +38,8 @@
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 ### semantics
 Button "x"
 ### photon
@@ -50,8 +51,8 @@ IconButton 0 0 32x32
 
 ## Small · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-11kg7e8 eq-17a2pwz eq-1amv73n eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-11kg7e8 eq-17a2pwz eq-1amv73n eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz" fill="currentColor" aria-hidden="true">
 <path>
@@ -63,10 +64,9 @@ IconButton 0 0 32x32
 ### css
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
 .eq-11kg7e8{height:26px}
+.eq-14ehxct{color:inherit}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-19vml7g{width:16px}
 .eq-1amv73n{width:26px}
 .eq-1eb13m5{box-sizing:border-box}
@@ -89,6 +89,8 @@ IconButton 0 0 32x32
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 ### semantics
 Button "x"
 ### photon
@@ -100,8 +102,8 @@ IconButton 0 0 26x26
 
 ## Medium · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17a2pwz eq-1eb13m5 eq-1xrfuoj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1xrfuoj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-115fhry eq-16x7aca eq-96qelu eq-i95eb9" fill="currentColor" aria-hidden="true">
 <path>
@@ -112,10 +114,9 @@ IconButton 0 0 26x26
 </button>
 ### css
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-14ehxct{color:inherit}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
@@ -139,6 +140,8 @@ IconButton 0 0 26x26
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 ### semantics
 Button "x"
 ### photon
@@ -150,8 +153,8 @@ IconButton 0 0 40x40
 
 ## Medium · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-1xtjgfe eq-bo3n4y eq-g7fowl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-115fhry eq-16x7aca eq-96qelu eq-i95eb9" fill="currentColor" aria-hidden="true">
 <path>
@@ -162,10 +165,9 @@ IconButton 0 0 40x40
 </button>
 ### css
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-14ehxct{color:inherit}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
@@ -189,6 +191,8 @@ IconButton 0 0 40x40
 .eq-kngwsg{pointer-events:none}
 .eq-m92pvu{display:flex}
 .eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 ### semantics
 Button "x"
 ### photon
@@ -200,8 +204,8 @@ IconButton 0 0 32x32
 
 ## Large · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15qobfw eq-17a2pwz eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-ra6ajf eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-17a2pwz eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-ra6ajf eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-10z2v8p eq-115fhry eq-16x7aca eq-rwnvja" fill="currentColor" aria-hidden="true">
 <path>
@@ -213,11 +217,10 @@ IconButton 0 0 32x32
 ### css
 .eq-10z2v8p{width:24px}
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-14ehxct{color:inherit}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
@@ -239,6 +242,8 @@ IconButton 0 0 32x32
 .eq-p7nbpw{text-align:start}
 .eq-ra6ajf{width:48px}
 .eq-rwnvja{height:24px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 ### semantics
 Button "x"
 ### photon
@@ -250,8 +255,8 @@ IconButton 0 0 48x48
 
 ## Large · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17a2pwz eq-1eb13m5 eq-1xrfuoj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1xrfuoj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-10z2v8p eq-115fhry eq-16x7aca eq-rwnvja" fill="currentColor" aria-hidden="true">
 <path>
@@ -263,10 +268,9 @@ IconButton 0 0 48x48
 ### css
 .eq-10z2v8p{width:24px}
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-14ehxct{color:inherit}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
@@ -289,6 +293,8 @@ IconButton 0 0 48x48
 .eq-m92pvu{display:flex}
 .eq-p7nbpw{text-align:start}
 .eq-rwnvja{height:24px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 ### semantics
 Button "x"
 ### photon
@@ -300,8 +306,8 @@ IconButton 0 0 40x40
 
 ## XLarge · Comfortable
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-17a2pwz eq-1eb13m5 eq-1fdhaeb eq-bo3n4y eq-g7fowl eq-xil8w0 eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1fdhaeb eq-bo3n4y eq-g7fowl eq-xil8w0 eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-10z2v8p eq-115fhry eq-16x7aca eq-rwnvja" fill="currentColor" aria-hidden="true">
 <path>
@@ -313,10 +319,9 @@ IconButton 0 0 40x40
 ### css
 .eq-10z2v8p{width:24px}
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-14ehxct{color:inherit}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
@@ -338,6 +343,8 @@ IconButton 0 0 40x40
 .eq-m92pvu{display:flex}
 .eq-p7nbpw{text-align:start}
 .eq-rwnvja{height:24px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 .eq-xil8w0{width:56px}
 ### semantics
 Button "x"
@@ -350,8 +357,8 @@ IconButton 0 0 56x56
 
 ## XLarge · Compact
 ### web
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
-<div class="eq-15qobfw eq-17a2pwz eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-ra6ajf eq-189q21e eq-a51p1u">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-15qobfw eq-17a2pwz eq-1eb13m5 eq-bo3n4y eq-g7fowl eq-ra6ajf eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-10z2v8p eq-115fhry eq-16x7aca eq-rwnvja" fill="currentColor" aria-hidden="true">
 <path>
@@ -363,11 +370,10 @@ IconButton 0 0 56x56
 ### css
 .eq-10z2v8p{width:24px}
 .eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-14ehxct{color:inherit}
 .eq-15qobfw{height:48px}
 .eq-16x7aca{display:block}
 .eq-17a2pwz{border-radius:999px}
-@media (hover: hover){.eq-189q21e:hover{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
-}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
@@ -389,6 +395,8 @@ IconButton 0 0 56x56
 .eq-p7nbpw{text-align:start}
 .eq-ra6ajf{width:48px}
 .eq-rwnvja{height:24px}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+}
 ### semantics
 Button "x"
 ### photon

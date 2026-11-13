@@ -3,7 +3,7 @@
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1k117pa eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-1dakdsg eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -17,12 +17,13 @@
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -48,7 +49,6 @@
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -87,7 +87,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1k117pa eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-1dakdsg eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -101,12 +101,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -132,7 +133,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -171,7 +171,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl eq-ymfs57">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-nzrmhs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -185,12 +185,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -214,7 +215,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -255,7 +255,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl eq-ymfs57">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-nzrmhs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -269,12 +269,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -298,7 +299,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -339,7 +339,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-d0pl63 eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-r94c75" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -353,12 +353,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -382,7 +383,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -423,7 +423,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-d0pl63 eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-r94c75" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -437,12 +437,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -466,7 +467,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -507,7 +507,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-15b7nbg eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -521,12 +521,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15b7nbg{background-color:#00000000}
 .eq-16x7aca{display:block}
@@ -590,7 +591,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-15b7nbg eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -604,12 +605,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15b7nbg{background-color:#00000000}
 .eq-16x7aca{display:block}
@@ -673,7 +675,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-15b7nbg eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -687,12 +689,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15b7nbg{background-color:#00000000}
 .eq-16x7aca{display:block}
@@ -756,7 +759,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-15b7nbg eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -770,12 +773,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-15b7nbg{background-color:#00000000}
 .eq-16x7aca{display:block}
@@ -839,7 +843,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1fh5had eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i29sta eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -853,12 +857,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -883,7 +888,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -923,7 +927,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1fh5had eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i29sta eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -937,12 +941,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -967,7 +972,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -1007,7 +1011,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-32r373 eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-r1c0xf" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1021,12 +1025,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -1051,7 +1056,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -1091,7 +1095,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-32r373 eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-r1c0xf" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1105,12 +1109,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -1135,7 +1140,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -1175,7 +1179,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl eq-sws4m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-1tsjeg9 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1189,12 +1193,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -1219,7 +1224,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -1259,7 +1263,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl eq-sws4m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-1tsjeg9 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1273,12 +1277,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-19zfii6{grid-area:1 / 1}
@@ -1303,7 +1308,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -1343,7 +1347,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-17wyma7 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-19p6vwl eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1357,12 +1361,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -1388,7 +1393,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -1427,7 +1431,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-17wyma7 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-19p6vwl eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1441,12 +1445,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -1472,7 +1477,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -1511,7 +1515,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-17wyma7 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-19p6vwl eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1525,12 +1529,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -1556,7 +1561,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
@@ -1595,7 +1599,7 @@ SwipeableRow 0 0 480x24
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
 <div class="eq-1pwthtl eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z">
-<button aria-label="x" class="eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<button aria-label="x" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
 <div class="eq-17wyma7 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1yxcnfo eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1gwdd6k eq-1jjc6f6 eq-5ew4ww eq-6gdbvu eq-aexooi eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-16x7aca eq-19p6vwl eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1609,12 +1613,13 @@ SwipeableRow 0 0 480x24
 </div>
 <div class="eq-19zfii6 eq-1jjc6f6 eq-1p2uoqo eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp">
 <div class="eq-1afasck eq-1eb13m5 eq-5ew4ww eq-5hocaj eq-akjizx eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-96" data-eq-drag-max="0" data-eq-drag-rest="0">
-<span class="eq-type-bodyl eq-16x7aca eq-7gvrt4">x</span>
+<span class="eq-type-bodyl eq-16x7aca">x</span>
 </div>
 </div>
 </div>
 </div>
 ### css
+.eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
 .eq-16x7aca{display:block}
 .eq-17wyma7{background-color:var(--eq-color-info-base, light-dark(#0c6c86, #4dc4df))}
@@ -1640,7 +1645,6 @@ SwipeableRow 0 0 480x24
 .eq-5ew4ww{min-width:0}
 .eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
 .eq-6gdbvu{justify-content:center}
-.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
 .eq-96qelu{height:20px}
 .eq-aexooi{flex-direction:column}
 .eq-akjizx{width:100%}
