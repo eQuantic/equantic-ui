@@ -241,6 +241,8 @@ internal sealed partial class WebLoweringVisitor(
 
     public HtmlElement? Visit(LiveRegion live, bool? horizontalAxis) => LowerLiveRegion(live);
 
+    public HtmlElement? Visit(Group group, bool? horizontalAxis) => LowerGroup(group);
+
     public HtmlElement? Visit(Navigable navigable, bool? horizontalAxis) => LowerNavigable(navigable);
 
     public HtmlElement? Visit(Shortcut shortcut, bool? horizontalAxis) =>

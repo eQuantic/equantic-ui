@@ -84,6 +84,7 @@ import type {
   AdjustableNode,
   ProgressNode,
   LiveRegionNode,
+  GroupNode,
   NavigableNode,
   NavigableMoveValue,
   CameraPreviewNode,
@@ -655,6 +656,8 @@ function lowerNodeKind(
       return lowerProgress(node as unknown as ProgressNode, context, path);
     case 'liveRegion':
       return lowerLiveRegion(node as unknown as LiveRegionNode, context, path);
+    case 'group':
+      return lowerGroup(node as unknown as GroupNode, context, path);
     case 'navigable':
       return lowerNavigable(node as unknown as NavigableNode, context, path);
     case 'hoverable':
@@ -3976,6 +3979,9 @@ function lowerText(text: TextNode): HtmlNode {
   const heading = typeof level === 'number' && Number.isInteger(level) && level >= 1 && level <= 6;
   const node = element(heading ? `h${level}` : 'span', style, children);
   prependClass(node, `eq-type-${text.role.toLowerCase()}`);
+  // Drawn and never read, unless a run of it links somewhere (C# twin).
+  if (text.excludeFromSemantics && !text.spans?.some((run) => run.destination))
+    node.attributes['aria-hidden'] = 'true';
   return node;
 }
 
@@ -4002,6 +4008,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'adjustable':
     case 'progress':
     case 'liveRegion':
+    case 'group':
     case 'flexible':
     case 'loopMotion':
     case 'link':
@@ -4056,6 +4063,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as unknown as ProgressNode).child as VisualNodeValue);
     case 'liveRegion':
       return fills((node as unknown as LiveRegionNode).child as VisualNodeValue);
+    case 'group':
+      return fills((node as unknown as GroupNode).child as VisualNodeValue);
     case 'navigable':
       // A grid host has ROWS, not one child: nothing to inherit a fill from.
       return { width: false, height: false };
@@ -4331,6 +4340,8 @@ function visualTextOf(node: VisualNodeValue): string {
       return ((node as unknown as FlexNodeValue).children ?? []).map(visualTextOf).join('');
     case 'pressable':
       return visualTextOf((node as PressableNode).child);
+    case 'group':
+      return visualTextOf((node as unknown as GroupNode).child as VisualNodeValue);
     default:
       return '';
   }
@@ -4615,6 +4626,26 @@ function lowerLiveRegion(node: LiveRegionNode, context: LoweringContext, path: s
   // The region is announced as a WHOLE when any part of it changes. Without this a reader reads
   // only the changed node, so a banner whose title and body both change is announced as a fragment.
   host.attributes['aria-atomic'] = 'true';
+  if (node.label) host.attributes['aria-label'] = node.label;
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/**
+ * A LABELLED GROUP (C# twin: LowerGroup) — one `role="group"` host a reader names by its
+ * `aria-label` and then walks into. No label, no `aria-label` (the lowerLiveRegion rule). The
+ * host takes the child's fill and cap, as every role-bearing wrapper's does.
+ */
+function lowerGroup(node: GroupNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : 'fit-content',
+    'max-width': sizeValue(cap),
+    height: fill.height ? '100%' : undefined,
+  });
+  host.attributes['role'] = 'group';
   if (node.label) host.attributes['aria-label'] = node.label;
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);

@@ -499,7 +499,7 @@ internal static class OverloadedMethods
     private static IEnumerable<string> PrimaryParameters(INamedTypeSymbol type) =>
         type.IsRecord
             ? []
-            : type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
+            : type.ReadDeclarations().Select(reference => reference.GetSyntax())
                 .OfType<TypeDeclarationSyntax>()
                 .SelectMany(declaration => declaration.ParameterList?.Parameters ?? default)
                 .Select(parameter => parameter.Identifier.ValueText);
@@ -560,7 +560,7 @@ internal static class OverloadedMethods
             var name = TwinMethodName.Of(symbol);
             if (Inherited(declared, symbol, name, isStatic) is not { } inherited) continue;
             var position = method.Identifier.GetLocation().GetLineSpan().StartLinePosition;
-            var where = inherited.Locations.FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
+            var where = inherited.ReadLocations().FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
             var at = where is { } span ? $" ({Path.GetFileName(span.Path)} line {span.StartLinePosition.Line + 1})" : "";
             errors.Add(new CompilationError
             {
@@ -593,11 +593,11 @@ internal static class OverloadedMethods
         {
             if (member is IMethodSymbol { IsPartialDefinition: true, PartialImplementationPart: null }) continue;
             if (member.FieldItLandsOn() is not { } field) continue;
-            if (member.Locations.FirstOrDefault(location => location.SourceTree == type.SyntaxTree
+            if (member.ReadLocations().FirstOrDefault(location => location.SourceTree == type.SyntaxTree
                     && type.Span.Contains(location.SourceSpan)) is not { } declaredAt)
                 continue;
             var position = declaredAt.GetLineSpan().StartLinePosition;
-            var where = field.Locations.FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
+            var where = field.ReadLocations().FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
             var at = where is { } span ? $" ({Path.GetFileName(span.Path)} line {span.StartLinePosition.Line + 1})" : "";
             errors.Add(new CompilationError
             {
@@ -637,13 +637,13 @@ internal static class OverloadedMethods
         if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared) return;
         var own = declared.GetMembers()
             .Where(member => HoldsAKey(member)
-                && member.Locations.Any(at => at.SourceTree == type.SyntaxTree && type.Span.Contains(at.SourceSpan)))
-            .OrderBy(member => member.Locations[0].SourceSpan.Start);
+                && member.ReadLocations().Any(at => at.SourceTree == type.SyntaxTree && type.Span.Contains(at.SourceSpan)))
+            .OrderBy(member => member.ReadLocations()[0].SourceSpan.Start);
         foreach (var member in own)
         {
             var key = KeyOf(member);
             if (InheritedKey(declared, member, key) is not { } inherited) continue;
-            var where = inherited.Locations.FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
+            var where = inherited.ReadLocations().FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
             var at = where is { } span ? $" ({Path.GetFileName(span.Path)} line {span.StartLinePosition.Line + 1})" : "";
             var kind = member.IsStatic ? "static " : "";
             Refuse(errors, sourcePath, member, type,
@@ -809,7 +809,7 @@ internal static class OverloadedMethods
             .Select(member => (Name: ExplicitImplementations.NameOf(member), member.IsStatic))
             .Distinct()
             .SelectMany(key => ExplicitImplementations.Written(declared, key.Name, key.IsStatic))
-            .OrderBy(member => member.Locations.FirstOrDefault()?.SourceSpan.Start ?? 0)
+            .OrderBy(member => member.ReadLocations().FirstOrDefault()?.SourceSpan.Start ?? 0)
             .ToList();
         foreach (var held in written)
         {
@@ -846,7 +846,7 @@ internal static class OverloadedMethods
                 return;
             }
             if (held.IsStatic || InheritedOn(declared, held, name) is not { } inherited) continue;
-            var where = inherited.Locations.FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
+            var where = inherited.ReadLocations().FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
             var at = where is { } span ? $" ({Path.GetFileName(span.Path)} line {span.StartLinePosition.Line + 1})" : "";
             var (other, reached) = ExplicitImplementations.IsExplicit(inherited)
                 ? ($"the explicit implementation of '{Answering(inherited)}' it inherits from '{inherited.ContainingType.Name}'{at}",
@@ -995,7 +995,7 @@ internal static class OverloadedMethods
     private static void Refuse(List<CompilationError> errors, string sourcePath, ISymbol member, TypeDeclarationSyntax type,
         string message)
     {
-        var location = member.Locations.FirstOrDefault(at => at.SourceTree == type.SyntaxTree && type.Span.Contains(at.SourceSpan))
+        var location = member.ReadLocations().FirstOrDefault(at => at.SourceTree == type.SyntaxTree && type.Span.Contains(at.SourceSpan))
             ?? type.Identifier.GetLocation();
         var position = location.GetLineSpan().StartLinePosition;
         errors.Add(new CompilationError
@@ -1092,7 +1092,7 @@ internal static class OverloadedMethods
 
     /// <summary>Where a member's name is written, for an error that points at it.</summary>
     private static SyntaxToken? Identifier(ISymbol member) =>
-        member.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() switch
+        member.ReadDeclarations().FirstOrDefault()?.GetSyntax() switch
         {
             MethodDeclarationSyntax method => method.Identifier,
             PropertyDeclarationSyntax property => property.Identifier,

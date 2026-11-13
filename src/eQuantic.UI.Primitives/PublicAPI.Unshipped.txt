@@ -1018,3 +1018,12 @@ eQuantic.UI.Primitives.ChipTheme.OutlineColor.get -> eQuantic.UI.Primitives.Colo
 eQuantic.UI.Primitives.ChipTheme.OutlineColor.init -> void
 eQuantic.UI.Primitives.ChipTheme.OutlineWidth.get -> float?
 eQuantic.UI.Primitives.ChipTheme.OutlineWidth.init -> void
+eQuantic.UI.Primitives.Group
+override eQuantic.UI.Primitives.Group.NodeKind.get -> string!
+eQuantic.UI.Primitives.Group.Group(eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Primitives.Group.Label.get -> string!
+eQuantic.UI.Primitives.Group.Label.init -> void
+override sealed eQuantic.UI.Primitives.Group.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Group! node, TState state) -> TResult
+eQuantic.UI.Primitives.Text.ExcludeFromSemantics.get -> bool
+eQuantic.UI.Primitives.Text.ExcludeFromSemantics.init -> void

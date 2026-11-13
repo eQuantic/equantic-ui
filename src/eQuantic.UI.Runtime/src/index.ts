@@ -145,6 +145,7 @@ export {
   Adjustable,
   Progress,
   LiveRegion,
+  Group,
   RangeValue,
   Navigable,
   CameraPreview,
