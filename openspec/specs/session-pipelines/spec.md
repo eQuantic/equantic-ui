@@ -40,7 +40,9 @@ in the tree while it runs. Agents that write SHALL run one at a time in the sess
 
 The gate SHALL sort each finding as a defect, as hardening or as wrong, in the Workflow's meaning
 of each, SHALL stop the delivery for the person after two rounds with a defect standing, and SHALL
-keep a security finding rated high out of every issue, pull request and commit message.
+keep a security finding rated high out of every issue, pull request and commit message. A defect
+found by the second round whose fix the finding states exactly, and that touches only the lines of
+the previous round's own fix, is fixed and recorded instead, so it leaves no defect standing.
 
 #### Scenario: A high security finding
 

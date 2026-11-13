@@ -253,7 +253,8 @@ The steps are the Workflow's "Pull requests"; this is their order here.
    review threads and answers with the sorted findings, never the raw threads. Each round with a defect: the author fixes, the prover runs its A/B again, ONE
    push, the threads answered and resolved, the next round asked for.
 4. Archive the OpenSpec change after the last round, so a scenario a round changed is edited once.
-5. Queue the pull request. Wait for CI and for the merge in the background, never by polling in
+5. Queue the pull request once its review is settled: for a contributor, that is the owner's
+   approval, never green CI alone. Wait for CI and for the merge in the background, never by polling in
    your own turns; a wait loop reads an empty or failed answer as "ask again", never as "left the
    queue". When the queue removes it, read the failed job's annotations and log before anything
    else, and sort the exit: INFRASTRUCTURE (a runner lost or never acquired), a FLAKE (a test this
