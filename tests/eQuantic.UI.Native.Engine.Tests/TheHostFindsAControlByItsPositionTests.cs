@@ -172,7 +172,7 @@ public class TheHostFindsAControlByItsPositionTests
             Width = 60, Height = 30, Background = BaseFill, Pressed = new StyleDiff { Background = PressedFill },
         }), () => { }));
         var paintsPressed = (DrawCommand[] commands) => commands.Any(command =>
-            command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == PressedFill.Resolve(ThemeMode.Light));
+            command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == PressedFill.Resolve(ThemeMode.Light, ContrastLevel.Standard));
 
         host.PressDown(30, 15);
         paintsPressed(Paint(host)).Should().BeTrue("pressed");
@@ -201,7 +201,7 @@ public class TheHostFindsAControlByItsPositionTests
 
     private static bool HasHoverFill(DrawCommand[] commands) =>
         commands.Any(command => command.Kind == DrawCommandKind.FillRRect
-            && command.Paint.Color == HoverFill.Resolve(ThemeMode.Light));
+            && command.Paint.Color == HoverFill.Resolve(ThemeMode.Light, ContrastLevel.Standard));
 
     [Fact]
     public void ABoxAtAnothersPlace_IsNotHoveredUntilThePointerMovesOverIt()

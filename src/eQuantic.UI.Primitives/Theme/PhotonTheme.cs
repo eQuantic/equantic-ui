@@ -7,6 +7,11 @@ namespace eQuantic.UI.Primitives;
 /// which HandoffTokenPinTests compares against every value below; WCAG ratios verified by
 /// <c>DesignTokenTests</c>). Brand anchors: eQuantic blue #0050A0 (Primary), eQuantic green #80B85C
 /// (Success, darkened to clear AA in light mode).
+/// <para>
+/// A token's fourth and fifth arguments are its legs at <see cref="ContrastLevel.More"/>, from
+/// tokens.json's <c>color.more</c>: one APCA level up, never below the WCAG 2 targets, each keeping its
+/// OKLCH hue. A token without them paints its Standard pair at More.
+/// </para>
 /// </summary>
 public sealed class PhotonTheme : IAppTheme
 {
@@ -17,13 +22,13 @@ public sealed class PhotonTheme : IAppTheme
     public ColorToken Surface { get; } = Token(0xFFFFFF, 0x14181E);
     public ColorToken SurfaceSubtle { get; } = Token(0xEFF1F4, 0x1C232B);
     public ColorToken SurfaceHighlight { get; } = new(Rgba(0xFFFFFF, 140), Rgba(0xFFFFFF, 18)); // 55% / 7%
-    public ColorToken Border { get; } = Token(0xE2E5EA, 0x2A323D);
-    public ColorToken BorderStrong { get; } = Token(0xC9CED6, 0x4C5664);
+    public ColorToken Border { get; } = Token(0xE2E5EA, 0x2A323D, 0x8C8F94, 0x5C6571);
+    public ColorToken BorderStrong { get; } = Token(0xC9CED6, 0x4C5664, 0x6D7178, 0x768190);
 
     // ---- Text tiers (§01) ------------------------------------------------------------------------
     public ColorToken TextPrimary { get; } = Token(0x171B21, 0xF2F4F7);
-    public ColorToken TextSecondary { get; } = Token(0x4B5563, 0xC7D1DC);
-    public ColorToken TextMuted { get; } = Token(0x5F6B7A, 0xACB7C5);
+    public ColorToken TextSecondary { get; } = Token(0x4B5563, 0xC7D1DC, 0x2B3441, 0xDEE9F4);
+    public ColorToken TextMuted { get; } = Token(0x5F6B7A, 0xACB7C5, 0x475261, 0xC5D1DF);
     public ColorToken TextInverse { get; } = Token(0xFFFFFF, 0x171B21);
 
     // ---- Interaction chrome (§01) ----------------------------------------------------------------
@@ -35,11 +40,11 @@ public sealed class PhotonTheme : IAppTheme
 
     // ---- Variants (§01 interactive table) --------------------------------------------------------
     private static readonly VariantColors PrimaryColors = new(
-        Base: Token(0x0050A0, 0x76BAFF),
+        Base: Token(0x0050A0, 0x76BAFF, 0x0050A0, 0xAED5FE),
         OnBase: Token(0xFFFFFF, 0x06263F),
-        Pressed: Token(0x00427F, 0x9BCDFF),
+        Pressed: Token(0x00427F, 0x9BCDFF, 0x00427F, 0xD0E7FE),
         Subtle: Token(0xE8F1FA, 0x0F2740),
-        OnSubtle: Token(0x003E7E, 0xA8CDF2));
+        OnSubtle: Token(0x003E7E, 0xA8CDF2, 0x003E7E, 0xB0D5FA));
 
     private static readonly VariantColors SecondaryColors = new(
         Base: Token(0xE9EDF2, 0x242C36),
@@ -49,30 +54,30 @@ public sealed class PhotonTheme : IAppTheme
         OnSubtle: Token(0x3A4350, 0xD7DDE5));   // = OnBase
 
     private static readonly VariantColors DestructiveColors = new(
-        Base: Token(0xB42318, 0xFF958C),
+        Base: Token(0xB42318, 0xFF958C, 0xAE1C12, 0xFEC0B9),
         OnBase: Token(0xFFFFFF, 0x3B0704),
-        Pressed: Token(0x8F1D1D, 0xFEC0BB),
+        Pressed: Token(0x8F1D1D, 0xFEC0BB, 0x891618, 0xFEE7E5),
         Subtle: Token(0xFCEBEA, 0x3A1210),
-        OnSubtle: Token(0x8F1D1D, 0xF4A9A4));
+        OnSubtle: Token(0x8F1D1D, 0xF4A9A4, 0x8F1D1D, 0xFEC0BC));
 
     private static readonly VariantColors SuccessColors = new(
-        Base: Token(0x3B7A22, 0x89C562),
+        Base: Token(0x3B7A22, 0x89C562, 0x276605, 0xA3E17D),
         OnBase: Token(0xFFFFFF, 0x12290A),
-        Pressed: Token(0x2C5E17, 0x9FD279),
+        Pressed: Token(0x2C5E17, 0x9FD279, 0x1B4B02, 0xBAEE94),
         Subtle: Token(0xEDF6E6, 0x16290C),
-        OnSubtle: Token(0x2C5E17, 0xB5DB97));
+        OnSubtle: Token(0x2C5E17, 0xB5DB97, 0x2B5D16, 0xB6DC98));
 
     private static readonly VariantColors WarningColors = new(
-        Base: Token(0x8A5A00, 0xE8B04B),
+        Base: Token(0x8A5A00, 0xE8B04B, 0x7B5004, 0xFEC561),
         OnBase: Token(0xFFFFFF, 0x2E1B02),
-        Pressed: Token(0x6E4700, 0xF0C06B),
+        Pressed: Token(0x6E4700, 0xF0C06B, 0x5F3E03, 0xFFD794),
         Subtle: Token(0xFBF3DF, 0x2E2008),
-        OnSubtle: Token(0x7A5200, 0xEECF8F));
+        OnSubtle: Token(0x7A5200, 0xEECF8F, 0x714B01, 0xEECF8F));
 
     private static readonly VariantColors InfoColors = new(
-        Base: Token(0x0C6C86, 0x4DC4DF),
+        Base: Token(0x0C6C86, 0x4DC4DF, 0x01617A, 0x6DE1FC),
         OnBase: Token(0xFFFFFF, 0x062B33),
-        Pressed: Token(0x0A5468, 0x6FD1E7),
+        Pressed: Token(0x0A5468, 0x6FD1E7, 0x024A5C, 0x9BECFF),
         Subtle: Token(0xE4F3F8, 0x0A2A32),
         OnSubtle: Token(0x0A5468, 0x9FDCEB));
 
@@ -178,8 +183,9 @@ public sealed class PhotonTheme : IAppTheme
         Radius = BySize(Sizing.Radius),
     };
 
-    /// <summary>The Button (spec A12): a 64dp floor, a semi-bold label at 0.1 tracking, a 1dp outline in
-    /// BorderStrong, a link padded by 6, and the quiet variants filling with SurfaceSubtle.</summary>
+    /// <summary>The Button (spec A12): a 64dp floor, a semi-bold label at 0.1 tracking, a 1dp outline and
+    /// a link padded by 6. Its outline (BorderStrong) and its quiet fill (SurfaceSubtle) stay null: the
+    /// Button reads those roles itself, so a theme that changes one recolours it.</summary>
     public ButtonTheme? Button => field ??= new ButtonTheme
     {
         MinWidth = Sizing.ButtonMinWidth,
@@ -187,8 +193,6 @@ public sealed class PhotonTheme : IAppTheme
         LabelTracking = 0.1f,
         OutlineWidth = 1,
         LinkPaddingX = 6,
-        OutlineColor = BorderStrong,
-        QuietFill = SurfaceSubtle,
     };
 
     // The form controls' slots (E6b): what each control drew, now the design system's. Their own
@@ -365,6 +369,185 @@ public sealed class PhotonTheme : IAppTheme
         Elevation = 1,
     };
 
+    // Navigation and collections (E6d): what each component drew, now the design system's. A colour a
+    // component takes from one of the theme's roles stays null, as the form controls' and the surfaces'
+    // do: the component reads the role itself, so a theme that changes the role recolours it. Cached on
+    // first read.
+
+    /// <summary>The navigation family (spec B3, B4, C16): a 48dp tab strip under a 3dp indicator inset 16,
+    /// a 56dp bar of 56 by 26 pills, an 80dp rail of 52 by 30 pills with a 1dp trailing edge, a 56dp app
+    /// bar, 30dp page cells and 6dp dots.</summary>
+    public NavigationTheme? Navigation => field ??= new NavigationTheme
+    {
+        TabHeight = 48,
+        TabLabelSize = 14,
+        TabLabelLineHeight = 18,
+        TabLabelWeight = FontWeight.SemiBold,
+        TabSelectedLabelWeight = FontWeight.Bold,
+        TabLabelTracking = 0.1f,
+        IndicatorThickness = 3,
+        IndicatorInset = Space.S4,
+        IndicatorRadius = 2,
+        PillRadius = Radius.Full,
+        PillPressOpacity = 0.4f,
+        PillLabelGap = 2,
+        BarHeight = 56,
+        BarIconSize = IconSize.Md,
+        BarPillWidth = 56,
+        BarPillHeight = 26,
+        BarLabelSize = 11,
+        BarLabelLineHeight = 14,
+        BarLabelWeight = FontWeight.Bold,
+        BarLabelTracking = 0.1f,
+        RailWidth = 80,
+        RailPaddingY = Space.S3,
+        RailGap = Space.S2,
+        RailItemHeight = 56,
+        RailIconSize = IconSize.Dense,
+        RailPillWidth = 52,
+        RailPillHeight = 30,
+        RailSelectedLabelSize = 12,
+        RailSelectedLabelLineHeight = 16,
+        RailSelectedLabelWeight = FontWeight.Bold,
+        RailBorderWidth = 1,
+        AppBarHeight = 56,
+        AppBarPaddingX = 4,
+        TitleSize = 20,
+        TitleLineHeight = 26,
+        TitleWeight = FontWeight.SemiBold,
+        TitleInset = Space.S3,
+        TitleGap = Space.S2,
+        ScrolledElevation = 2,
+        CrumbGap = Space.S1,
+        SeparatorSize = IconSize.Sm,
+        PageCellSize = 30,
+        PageGap = 3,
+        PaginationGap = Space.S2,
+        PageRadius = Radius.Sm,
+        DotSize = 6,
+        CurrentDotWidth = 18,
+        DotGap = Space.S1,
+        DotRadius = Radius.Full,
+    };
+
+    /// <summary>The list family (spec A7, B2): 52, 68 and 88dp rows padded 16 by 8 with 12 between their
+    /// slots, a 15/20 medium title, a 1dp Border hairline inset 16, an accordion padded 12, and a 96dp swipe
+    /// action.</summary>
+    public ListTheme? List => field ??= new ListTheme
+    {
+        ItemHeight = 52,
+        TwoLineItemHeight = 68,
+        ThreeLineItemHeight = 88,
+        ItemPaddingX = Space.S4,
+        ItemPaddingY = Space.S2,
+        ItemGap = Space.S3,
+        TextGap = 2,
+        TitleSize = 15,
+        TitleLineHeight = 20,
+        TitleWeight = FontWeight.Medium,
+        DividerThickness = 1,
+        DividerInset = Space.S4,
+        HeaderHeight = Sizing.Height(SizeVariant.Large),
+        SectionPaddingX = Space.S3,
+        SectionPaddingBottom = Space.S3,
+        HeaderGap = Space.S2,
+        ChevronSize = IconSize.Sm,
+        SwipeActionWidth = 96,
+        SwipeActionGap = 3,
+        SwipeIconSize = IconSize.Dense,
+    };
+
+    /// <summary>The table family: cells padded 12 by 8, a Table's 44dp rows 12 apart, and a DataTable's
+    /// 52dp bordered rows under a filled header in capitals.</summary>
+    public TableTheme? Table => field ??= new TableTheme
+    {
+        CellPaddingX = Space.S3,
+        CellPaddingY = Space.S2,
+        ColumnGap = Space.S3,
+        RowMinHeight = 44,
+        DataRowHeight = 52,
+        SelectionColumnWidth = 44,
+        HeaderUppercase = true,
+        HeaderIconGap = Space.S1,
+        SortIconSize = IconSize.Sm,
+        BorderWidth = 1,
+    };
+
+    /// <summary>The badge family (spec B6, B7): an 8dp dot and a 16dp count ringed 2dp in Surface, the
+    /// avatar's own ladder, and an empty state's 64dp well over a 20/26 semi-bold title.</summary>
+    public BadgeTheme? Badge => field ??= new BadgeTheme
+    {
+        RingWidth = 2,
+        DotSize = 8,
+        CountHeight = 16,
+        CountPaddingX = Space.S1,
+        CountLabelSize = 10,
+        CountLabelLineHeight = 12,
+        CountLabelWeight = FontWeight.Bold,
+        AvatarSize = BySize(Sizing.Avatar),
+        AvatarLabelSize = BySize(Sizing.AvatarInitials),
+        AvatarLabelWeight = FontWeight.SemiBold,
+        AvatarGlyphSize = new SizeLadder { Small = IconSize.Sm, Medium = IconSize.Dense, Large = IconSize.Md, XLarge = IconSize.Lg },
+        WellSize = 64,
+        WellIconSize = IconSize.Lg,
+        EmptyPaddingX = Space.S4,
+        EmptyPaddingY = Space.S12,
+        WellGap = Space.S4,
+        BodyGap = 6,
+        ActionsGap = Space.S5,
+        ActionSpacing = Space.S2,
+        EmptyTitleSize = 20,
+        EmptyTitleLineHeight = 26,
+        EmptyTitleWeight = FontWeight.SemiBold,
+    };
+
+    /// <summary>The calendar family (spec C15): 44dp day cells under a 28dp row of weekday names, a 1.5dp
+    /// ring for today, and the DatePicker's panel at the medium corner, elevation 2, padded 12.</summary>
+    public CalendarTheme? Calendar => field ??= new CalendarTheme
+    {
+        CellSize = 44,
+        WeekdayHeight = 28,
+        HeaderGap = Space.S1,
+        Gap = Space.S2,
+        TitleRole = TypeRole.TitleSmall,
+        WeekdayRole = TypeRole.Caption,
+        DayRole = TypeRole.BodyM,
+        TodayRingWidth = 1.5f,
+        PanelRadius = Radius.Md,
+        PanelBorderWidth = 1,
+        PanelElevation = 2,
+        PanelPadding = Space.S3,
+        OpenerIconSize = IconSize.Dense,
+    };
+
+    /// <summary>The rendered document: headings on the type scale's heading roles, prose in BodyM 14
+    /// apart, quotes behind a 3dp rule, lists 8 apart, and tables at a 12dp corner.</summary>
+    public MarkdownTheme? Markdown => field ??= new MarkdownTheme
+    {
+        Heading1 = TypeRole.Heading,
+        Heading2 = TypeRole.Title,
+        Heading3 = TypeRole.TitleSmall,
+        Heading4 = TypeRole.Label,
+        Body = TypeRole.BodyM,
+        BlockGap = 14,
+        CodeLineNumbers = false,
+        CodeInverse = false,
+        HeadingSpace = 10,
+        SubheadingSpace = 6,
+        InlineCodeMaxSize = 13.5f,
+        QuoteIndent = Space.S4,
+        QuotePaddingY = 2,
+        QuoteRuleWidth = 3,
+        ListGap = Space.S2,
+        MarkerGap = 10,
+        ListIndent = Space.S5,
+        TableRadius = 12,
+        TableBorderWidth = 1,
+        TableCellPaddingX = 14,
+        TableHeaderPaddingY = 10,
+        TableCellPaddingY = 11,
+    };
+
     private static DensityPair ByDensityAlone(Func<Density, float> side) => new()
     {
         Comfortable = side(Density.Comfortable),
@@ -387,6 +570,9 @@ public sealed class PhotonTheme : IAppTheme
 
     // ---- helpers ----------------------------------------------------------------------------------
     private static ColorToken Token(uint lightRgb, uint darkRgb) => new(Rgb(lightRgb), Rgb(darkRgb));
+
+    private static ColorToken Token(uint lightRgb, uint darkRgb, uint moreLightRgb, uint moreDarkRgb) =>
+        new ColorToken(Rgb(lightRgb), Rgb(darkRgb)).WithMore(Rgb(moreLightRgb), Rgb(moreDarkRgb));
 
     private static Color Rgb(uint rgb) =>
         Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
