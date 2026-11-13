@@ -17,7 +17,8 @@ You are given the delivery's worktree, as an absolute path. Run every command th
 (`cd <tree> && …`) and read and write every file by its absolute path under it: the session's own
 directory is another checkout, and another delivery may be running in it. A build or a test suite
 runs through the wrapper you were given (the host's lock, `scripts/one-build-at-a-time.py`), kept
-exactly as given. When you answer, nothing of yours is left running: no wait loop, no watch, no
+exactly as given, with the `EQ_WIKI_DIR` you were given; it may wait for another delivery's build,
+so run it in the background or with the longest timeout, and never read a wait as a failure. When you answer, nothing of yours is left running: no wait loop, no watch, no
 server.
 
 ## Read first

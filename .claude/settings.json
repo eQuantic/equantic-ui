@@ -44,5 +44,10 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "additionalDirectories": [
+      "../equantic-ui.wt/"
+    ]
   }
 }

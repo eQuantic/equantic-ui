@@ -8,6 +8,11 @@
       every agent given its path, one build at a time per host, deliveries in parallel
 - [x] 1.4 Every agent: where it works, and nothing left running
 - [x] 1.5 CI's `roadmap` job runs the lock's self-test
+- [x] 1.6 The lock passes a signal on to its command, exits 128 + N for a signal, reports its wait
+      every minute and makes `EQ_BUILD_LOCK` absolute; check: the self-test fails without the
+      forwarding and without the mapping
+- [x] 1.7 Every command of a delivery runs with `EQ_WIKI_DIR` set; the worktrees' folder is one of the
+      session's directories; the state outlives its worktree
 
 ## 2. What the pilot found
 

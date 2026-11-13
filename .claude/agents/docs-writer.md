@@ -16,7 +16,8 @@ You are given the delivery's worktree, as an absolute path. Run every command th
 (`cd <tree> && …`) and read and write every file by its absolute path under it: the session's own
 directory is another checkout, and another delivery may be running in it. A build or a test suite
 runs through the wrapper you were given (the host's lock, `scripts/one-build-at-a-time.py`), kept
-exactly as given. When you answer, nothing of yours is left running: no wait loop, no watch, no
+exactly as given, with the `EQ_WIKI_DIR` you were given; it may wait for another delivery's build,
+so run it in the background or with the longest timeout, and never read a wait as a failure. When you answer, nothing of yours is left running: no wait loop, no watch, no
 server.
 
 ## Read first
@@ -38,7 +39,8 @@ server.
 3. **A new `EQ` diagnostic.** Its entry in `docs/DIAGNOSTICS.md`, and its rows on the wiki.
 4. **The wiki.** The clone beside the repository stays on master, always. Work in the wiki's
    worktree you were given, on a branch named exactly like this delivery's branch; when none was
-   given, make it beside the delivery's: `git -C ../equantic-ui.wiki worktree add <dir> -b <branch>`. A page changes in EVERY language it
+   given, make it beside the delivery's, from the wiki's clone beside the REPOSITORY's clone (not
+   beside your tree): `git -C <clone>/../equantic-ui.wiki worktree add -b <branch> <dir> origin/master`. A page changes in EVERY language it
    is written in, a new page in all five (English at the root; `pt-BR`, `es`, `fr`, `de` under
    `locale/`), in one commit there. Translate the meaning; keep code, identifiers and diagnostics
    as they are. Do not push it: answer with the worktree's path.

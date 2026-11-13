@@ -12,6 +12,14 @@ The state stays where it was, `.claude/pipelines/<issue>-<slug>/`, now inside th
 worktree, which `.gitignore` already covers. Whatever reads deliveries in flight reads that folder
 of every worktree (`git worktree list`).
 
+Every worktree sits under `../equantic-ui.wt/`, which `.claude/settings.json` adds to the session's
+directories (`permissions.additionalDirectories`, applied after the folder is trusted): reads need
+no prompt there, and edits follow the session's permission mode as they do in the clone. The wiki
+guards look for `equantic-ui.wiki` beside the tree they run in and pass in silence when none is
+there, so every command of a delivery runs with `EQ_WIKI_DIR` set, to the delivery's wiki worktree
+or to the wiki's clone beside the repository's. The state is moved into the clone's own
+`.claude/pipelines/` before the worktree is removed, so its measures outlive it.
+
 The branch hook judges `git worktree add -b`, and it compares repositories by their common git
 directory, so a worktree of this clone is held to the convention like the clone.
 

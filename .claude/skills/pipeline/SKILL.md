@@ -79,21 +79,34 @@ worktree (below); run the `roadmap` skill. Set no git identity: on a laptop it i
 `origin/main`, in a folder beside the clone named after it:
 
 ```bash
-git worktree add -b <type>/<slug> ../<clone>.wt/<issue>-<slug> origin/main
+git worktree add -b <type>/<slug> ../equantic-ui.wt/<issue>-<slug> origin/main
 ```
 
 Everything of the delivery happens there: every agent's work, every build, the state. The clone's
 own checkout is never switched, and no delivery works in another's tree, so several deliveries run
 on one machine at once, from one session or from several: a branch switched under a running
-delivery was one of the pilot's findings. A wiki page the delivery changes is written in a worktree
-of the wiki's clone beside it, `../<clone>.wt/<issue>-<slug>.wiki`, on the branch of the same name.
-Once the pull request is merged, both worktrees are removed (`git worktree remove`) and the branch
-deleted. Before deleting anything, look at it: a tree that holds uncommitted work is reported, not
-removed.
+delivery was one of the pilot's findings. `.claude/settings.json` adds `../equantic-ui.wt/` to the
+session's directories (`additionalDirectories`, applied once the folder is trusted), so an agent
+reads there without a prompt and edits there under the same permission mode as in the clone.
+
+**The wiki is always named.** The wiki guards look for `equantic-ui.wiki` beside the tree they run
+in, which a delivery's worktree does not have, and when they find none they pass without reading a
+page. So every command of a delivery runs with `EQ_WIKI_DIR` set, absolute: the delivery's wiki
+worktree when it writes a page (`git -C <clone>/../equantic-ui.wiki worktree add -b <branch>
+../equantic-ui.wt/<issue>-<slug>.wiki origin/master`, on the branch of the same name), and the
+wiki's clone beside the repository's, on master, when it does not.
+
+**After the merge.** Move the delivery's state folder into the clone's own `.claude/pipelines/`,
+where its measures outlive the tree, then remove both worktrees (`git worktree remove`) and delete
+the branches. Before deleting anything, look at it: a tree that holds uncommitted work is reported,
+not removed.
 
 **One build at a time, for the whole host.** Every build and test suite of every delivery runs
 through the host's lock, `python3 scripts/one-build-at-a-time.py -- <command>`, which waits while
-another holds it. A person who runs their suites through a lock of their own names it once, and the
+another holds it, and says so every minute. A command with shell syntax (`&&`, a variable set before
+it) is one argument to a shell: `-- sh -c 'EQ_UPDATE_TRANSPILED=1 dotnet test tests/X'`. The wait
+counts against the caller's timeout, so a wrapped suite runs in the background or with the longest
+timeout the tool allows, and a wait is never read as a failure. A person who runs their suites through a lock of their own names it once, and the
 state records it in place of this one. Every proof command handed to an agent is given already
 wrapped.
 
@@ -104,7 +117,8 @@ read the few lines it answers, mark it `completed` or `failed`. A failed stage s
 report it with the report's path.
 
 **What an agent is given**, and nothing else: the issue number; the delivery's worktree, as an
-absolute path, where it runs every command (`cd <tree> && …`) and reads and writes every file;
+absolute path, where it runs every command (`cd <tree> && …`) and reads and writes every file, and
+the `EQ_WIKI_DIR` its commands run with (section 3);
 the OpenSpec change's name, when there is one; what it may write (its write boundary); the report's
 path; the proof commands of its area, wrapped in the host's lock; and, for a large change, the files
 the design names as the starting points, so it does not spend its turns finding them. It answers in fifteen lines at most, with the report's path. Never paste a file, a test log
@@ -215,15 +229,17 @@ The steps are the Workflow's "Pull requests"; this is their order here.
    the delivery wrote one (CI reads it for the docs guards); open the pull request from
    `.github/pull_request_template.md`, closing the issue; read the body back; the issue moves to In
    review. Then confirm CI STARTED on the head: a pull request that conflicts with `main` runs no
-   workflow at all and nothing says so (`mergeable` reads `CONFLICTING`). Merge `main` into the
-   branch, in its worktree, and prove the merged tree before pushing it.
+   workflow at all and nothing says so. Only when `mergeable` reads `CONFLICTING`, merge `main`
+   into the branch, in its worktree, and prove the merged tree before pushing it; a pull request
+   that merely lags `main` is never brought up to date (the Workflow's "Pull requests", step 4).
 2. When the diff touches the native track, the SDKs, packaging, `Directory.Build.props` or a
    sample: ask for the macOS jobs on the branch now, since packing and the samples run only there.
    Those runners are the scarcest thing the queue has, so the pilot counts what this run buys:
    record in the state what it caught, and whether the queue's own run would have caught it.
-3. Copilot's loop, after confirming the request registered (`requested_reviewers` lists it, or a
-   review arrives): from an account whose request does not register, the round cannot happen, and
-   the state says so. A person's review is sorted and answered the same way. A subagent reads the
+3. Copilot's loop, after confirming its round started (`requested_reviewers` lists it, or a review
+   arrives within a few minutes). When it did not, say so to the person and record it: the
+   Workflow skips Copilot only when the account's credits are exhausted, so skipping for any other
+   reason is the person's call, never the skill's. A person's review is sorted and answered the same way. A subagent reads the
    review threads and answers with the sorted findings, never the raw threads. Each round with a defect: the author fixes, the prover runs its A/B again, ONE
    push, the threads answered and resolved, the next round asked for.
 4. Archive the OpenSpec change after the last round, so a scenario a round changed is edited once.

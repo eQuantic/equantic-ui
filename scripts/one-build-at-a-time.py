@@ -7,14 +7,22 @@ and suite of every delivery goes through this one lock, whichever worktree it ru
 
     python3 scripts/one-build-at-a-time.py -- dotnet test tests/eQuantic.UI.Web.Tests
 
-It waits for the lock, says so once on stderr, runs the command and exits with its exit code. The
-lock is a file under the user's cache (`EQ_BUILD_LOCK` names another), held with `flock`, so a
-process that dies releases it. Where `fcntl` does not exist (Windows), it runs the command unlocked
+It waits for the lock, saying so on stderr every minute it waits, runs the command and exits with
+its exit code (128 + N when a signal N ended it). A signal the wrapper receives is passed on to the
+command, so the lock is never free while the command it guards still runs. The lock is a file under
+the user's cache (`EQ_BUILD_LOCK` names another, made absolute), held with `flock`, so a process
+that dies releases it. A command with shell syntax is one argument to a shell:
+
+    python3 scripts/one-build-at-a-time.py -- sh -c 'EQ_UPDATE_TRANSPILED=1 dotnet test tests/X'
+
+The wait counts against the caller's own timeout: run a wrapped suite in the background, or with
+the longest timeout the caller allows. Where `fcntl` does not exist (Windows), it runs the command unlocked
 and says so: it serialises, it never stops a build.
 
     python3 scripts/one-build-at-a-time.py --self-test
 """
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -29,9 +37,19 @@ except ImportError:  # Windows
 def lock_path():
     named = os.environ.get("EQ_BUILD_LOCK")
     if named:
-        return named
+        return os.path.abspath(named)
     cache = os.environ.get("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache")
     return os.path.join(cache, "equantic-ui", "one-build-at-a-time.lock")
+
+
+def guarded(command):
+    """The command's exit code, with every signal the wrapper gets passed on to it first."""
+    child = subprocess.Popen(command)
+    forwarded = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
+    for number in forwarded:
+        signal.signal(number, lambda n, _: child.send_signal(n))
+    code = child.wait()
+    return 128 - code if code < 0 else code
 
 
 def run(command):
@@ -41,12 +59,18 @@ def run(command):
     path = lock_path()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "a+") as handle:
-        try:
-            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            print(f"one-build-at-a-time: another build holds {path}, waiting", file=sys.stderr)
-            fcntl.flock(handle, fcntl.LOCK_EX)
-        return subprocess.call(command)
+        waited = 0
+        while True:
+            try:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if waited % 60 == 0:
+                    print(f"one-build-at-a-time: another build holds {path}, waiting ({waited}s)",
+                          file=sys.stderr, flush=True)
+                time.sleep(1)
+                waited += 1
+        return guarded(command)
 
 
 def self_test():
@@ -75,6 +99,23 @@ def self_test():
         code = subprocess.call([sys.executable, me, "--", "sh", "-c", "exit 7"], env=env)
         if code != 7:
             failures.append(f"the command's exit code 7 came back as {code}")
+        code = subprocess.call([sys.executable, me, "--", "sh", "-c", "kill -TERM $$"], env=env)
+        if code != 128 + signal.SIGTERM:
+            failures.append(f"a command ended by SIGTERM came back as {code}, not {128 + signal.SIGTERM}")
+        # A signal to the wrapper reaches the command: the command's trap writes, then it exits.
+        trapped = os.path.join(scratch, "trapped")
+        wrapper = subprocess.Popen([sys.executable, me, "--", "sh", "-c",
+                                    f"trap 'echo got > {trapped}; exit 0' TERM; sleep 5 & wait"],
+                                   env=env)
+        time.sleep(0.5)
+        wrapper.send_signal(signal.SIGTERM)
+        wrapper.wait(timeout=5)
+        if not os.path.exists(trapped):
+            failures.append("a SIGTERM to the wrapper did not reach the command it runs")
+        relative = subprocess.call([sys.executable, me, "--", "true"], cwd=scratch,
+                                   env=dict(os.environ, EQ_BUILD_LOCK="relative.lock"))
+        if relative != 0 or not os.path.exists(os.path.join(scratch, "relative.lock")):
+            failures.append(f"a relative EQ_BUILD_LOCK did not lock beside the cwd (exit {relative})")
     for failure in failures:
         print(f"FAIL: {failure}")
     print(f"one-build-at-a-time self-test: {len(failures)} failure(s)")
