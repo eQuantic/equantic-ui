@@ -374,5 +374,3 @@ override sealed eQuantic.UI.Primitives.Group.Accept<TState, TResult>(eQuantic.UI
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Group! node, TState state) -> TResult
 eQuantic.UI.Primitives.Text.ExcludeFromSemantics.get -> bool
 eQuantic.UI.Primitives.Text.ExcludeFromSemantics.init -> void
-eQuantic.UI.Primitives.Group.IsNamed.get -> bool
-eQuantic.UI.Primitives.Text.IsHiddenFromReaders.get -> bool

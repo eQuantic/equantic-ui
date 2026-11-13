@@ -8,7 +8,8 @@ open `role="listbox"` SHALL hold, per such group, one `role="group"` element who
 label and which contains the heading, hidden from readers since the group's name already says it, and
 the group's `role="option"` rows; the server's producer and the
 client's SHALL write the same tree. On Photon the menu SHALL draw the same heading over the same rows. A
-group whose label is empty SHALL draw no heading and wrap no group, its options read as ungrouped.
+group whose label is empty or blank SHALL draw no heading and wrap no group, its options read as
+ungrouped. An open Select with no options SHALL name no active option.
 
 #### Scenario: A grouped Select opened on the web
 
@@ -20,7 +21,8 @@ group whose label is empty SHALL draw no heading and wrap no group, its options 
 
 #### Scenario: A group with no name
 
-- **WHEN** `new Select(groups: [new OptionGroup("", ["Braga", "Faro"])])` is opened on either target
+- **WHEN** `new Select(groups: [new OptionGroup("", ["Braga", "Faro"])])`, or with a label of blank
+  space, is opened on either target
 - **THEN** the listbox holds the options `Braga` and `Faro` with no `role="group"` around them and no
   heading above them
 

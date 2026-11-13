@@ -115,17 +115,18 @@ public sealed class Select : StatefulComponent
             list.Add(OptionRow(theme, option, index++, gap, paddingX, rowHeight));
         foreach (var group in Groups)
         {
-            var rows = new Column(gap: 0) { Width = SizeValue.Fill };
-            // The Group decides whether its label names it; a nameless one is no group, and draws
-            // no heading either.
-            var labelled = new Group(rows) { Label = group.Label };
-            if (labelled.IsNamed)
+            var rows = list;
+            // A group needs a name: one whose label is blank draws no heading and wraps no Group.
+            if (!string.IsNullOrWhiteSpace(group.Label))
+            {
+                rows = new Column(gap: 0) { Width = SizeValue.Fill };
                 // The heading is the group's name, which the Group announces: drawn, and read once.
                 rows.Add(new Box(new BoxStyle { Padding = EdgeInsets.Symmetric(paddingX, Space.S1), Width = SizeValue.Fill },
                     new Text(group.Label, TypeRole.Caption, theme.TextMuted, maxLines: 1) { ExcludeFromSemantics = true }));
+                list.Add(new Group(rows) { Label = group.Label });
+            }
             foreach (var option in group.Options)
                 rows.Add(OptionRow(theme, option, index++, gap, paddingX, rowHeight));
-            list.Add(labelled);
         }
 
         var panel = new Box(new BoxStyle

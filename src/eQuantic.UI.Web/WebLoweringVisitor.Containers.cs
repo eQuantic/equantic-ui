@@ -18,8 +18,6 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private VisualNode ResolveForPositioning(VisualNode child)
     {
-        // Through a node that stands in for its child (a nameless Group), as through a component.
-        if (StandsIn(child)) return ResolveForPositioning(((Group)child).Child);
         if (child is not UiComponent component) return child;
 
         // NAMED HERE TOO, because this is the one place a component is expanded WITHOUT the
@@ -1233,7 +1231,7 @@ internal sealed partial class WebLoweringVisitor
     private HtmlElement? Place(VisualNode child, Func<VisualNode, HtmlElement?> rule)
     {
         if (child is AdaptiveNode adaptive) return PlaceArms(adaptive, rule);
-        if (child is not UiComponent && !StandsIn(child)) return rule(child);
+        if (child is not UiComponent) return rule(child);
 
         var outer = _placing;
         _placing = rule;

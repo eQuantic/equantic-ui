@@ -269,15 +269,12 @@ internal sealed partial class WebLoweringVisitor
     /// <summary>
     /// A LABELLED GROUP (TS twin: lowerGroup): one <c>role="group"</c> host a reader names by its
     /// <c>aria-label</c> and then walks into — inside a listbox, the APG's grouped options. No label,
-    /// no host: the child lowers in its place, as the node's own summary says. The host takes the child's fill
+    /// no <c>aria-label</c>, the <see cref="LowerLiveRegion"/> rule. The host takes the child's fill
     /// and cap with it, as every role-bearing wrapper's does: the box a reader outlines is the box it
     /// names.
     /// </summary>
-    private HtmlElement? LowerGroup(Group group, bool? horizontalAxis)
+    private HtmlElement LowerGroup(Group group)
     {
-        // A group with no name is no group to a reader: the child lowers in its place, on the
-        // parent's axis, as through every other transparent wrapper.
-        if (!group.IsNamed) return Lower(group.Child, horizontalAxis, LoweringPath.Child);
         var fills = Fills(group.Child);
         var cap = CapsAt(group.Child);
         var element = new RealizedElement("div")
@@ -288,8 +285,9 @@ internal sealed partial class WebLoweringVisitor
                 MaxWidth = Size(cap),
                 Height = fills.Height ? "100%" : null,
             },
-            RawAttributes = new Dictionary<string, string> { ["role"] = "group", ["aria-label"] = group.Label },
+            RawAttributes = new Dictionary<string, string> { ["role"] = "group" },
         };
+        if (group.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
         if (Lower(group.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
     }

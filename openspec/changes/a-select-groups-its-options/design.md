@@ -74,24 +74,10 @@ constructor with the `Label` tail (`UiFactoryConformanceTests`, `EveryVocabulary
 - Web: `<div role="group" aria-label="{Label}">`. Photon: `AnnounceGroup(new(SemanticRole.Group,
   IdOf(laidOut), laidOut.Bounds, node.Label, null, false))`. Email: walks into the child (both the HTML
   and the text alternative), since the medium has no reader stop to give.
-- AN EMPTY LABEL IS NO GROUP, settled at the node and not inside the Select (gate round 1, H2): every
-  realizer lets the child stand in its place. The web lowers no host, Photon announces nothing for
-  it and measures it as a plain wrapper (no inlined constraints, because no host exists on the web).
-  A nameless group is noise to every reader, and a required label would throw on a page whose
-  culture's string came back empty. The rule is ONE predicate, `Group.IsNamed`, which every realizer
-  reads (gate round 2, R2-H2), and so does the Select, which asks it rather than restating it (R3-7).
-  Blank space is no name (R3-8). The predicate is twinned as `Group.isNamed`, since the Select crosses.
-  Where it is false the web lowers the child on the parent's axis (R2-D2). A container rule that looks
-  for a `Positioned` (a Stack's layer) or an `AdaptiveNode` (a placed child) looks through it as it
-  looks through a component (R3-4, `StandsIn`/`standsIn`).
-- ONE FUNNEL RULE for every node that lowers to its child's element (a Shortcut, a Simulated, an
-  InheritedComponent, a nameless Group), with no Group branch (R3-1, R3-2, R3-3, R3-10). The element
-  reaches the funnel once per node, innermost first. The OUTERMOST key wins, because the outermost node
-  is the one among the siblings, so keyed siblings keep distinct keys, with or without a key of the
-  child's own. A bookmark lands on the element. A second, different id on the same element (another
-  bookmark, or an id the realizer gave it) is REFUSED with an exception naming both, because an element
-  has one id and a dropped one is a link that silently goes nowhere. Photon keys a path segment per
-  node, so both keys hold there (`KeyedNamelessGroupsKeepDistinctIdentities_AndStateFollowsTheirKeys`).
+- THE LABEL SHOULD NOT BE EMPTY, and it is not enforced: a `Group` with an empty label is still drawn
+  as a group with no name on every target (web `role="group"` without `aria-label`, Photon an unnamed
+  `SemanticRole.Group`). The Select, the one component that builds groups, builds none for a blank
+  label (`string.IsNullOrWhiteSpace`), so its options read as ungrouped there.
 - The interface member `IVisualNodeVisitor.Visit(Group, TState)` makes each visitor that does not
   name it fail the build (CS0535), which is the instrument that fails.
 
@@ -159,15 +145,14 @@ Group(label) ── Column ── heading Box(Text(label, TypeRole.Caption, them
 - THE HEADING IS READ ONCE, as the group's name (gate round 1, D2). It is drawn as a `Text` with
   `ExcludeFromSemantics = true`, a new `Text` property and Flutter's own word
   (`Image.excludeFromSemantics`). The web writes `aria-hidden="true"` on it, and Photon's semantics walk
-  passes over it, also when it derives a control's name from what the control holds (`TextWithin`,
-  R2-D1), as the web's `aria-hidden` drops the text from a button's name. The group carries the same
+  passes over it, also when it derives a control's name from what the control holds (`TextWithin`), as
+  the web's `aria-hidden` drops the text from a button's name. The group carries the same
   words as its `Label`.
-- A PARAGRAPH WITH A LINKED RUN IS READ whatever `ExcludeFromSemantics` says (R2-H1, settled as
-  "ignore"). Every realizer reads it through one predicate, `Text.IsHiddenFromReaders`, which is
-  `[ServerOnly]` (R3-0): a page never asks it, and the TS lowering reads the two fields itself.
-  `ServerOnlyAttribute` now also targets properties, which the compiler's fence already reads. A link is
+- A PARAGRAPH WITH A LINKED RUN IS READ whatever `ExcludeFromSemantics` says. Each realizer reads the
+  flag where it needs it (web `LowerText`, Photon `SemanticsVisitor.HiddenFromReaders`, the TS
+  `lowerText`), with no new public member. A link is
   something a reader can follow, and a link hidden from the reader that a keyboard still reaches is
-  a trap (`aria-hidden` over a focusable element). Refusing with a throw would take down a page over
+a trap (`aria-hidden` over a focusable element). Refusing with a throw would take down a page over
   a semantics hint.
 - Web: inside `role="listbox"`, a `role="group" aria-label="A seguir"` holding the hidden heading and
   the `role="option"` rows. This is WAI-ARIA APG's grouped listbox, named by `aria-label` instead of
@@ -205,7 +190,7 @@ eQuantic.UI.Components.OptionGroup … (the record's lines, the shape `MenuItem`
 The exact lines are what `./scripts/public-api.sh update` writes; the list above is what to read the
 diff against. `tests/eQuantic.UI.Web.Tests/developer-surface.baseline.txt` does not move.
 
-Added in gate round 1: `eQuantic.UI.Primitives.Text.ExcludeFromSemantics.get -> bool` and `.init -> void`. Added in gate round 2: `Group.IsNamed.get -> bool` and `Text.IsHiddenFromReaders.get -> bool`.
+Added in gate round 1: `eQuantic.UI.Primitives.Text.ExcludeFromSemantics.get -> bool` and `.init -> void`.
 
 ### 8. `docs/FLUTTER-PARITY.md` gets no row
 
@@ -223,8 +208,20 @@ here, a labelled semantics container, is row 154/155's, whose verdicts this chan
 - [Ungrouped options cannot follow the groups] → accepted (design A); an app puts a trailing choice in
   a group of its own, as the issue's "Outro concelho" is.
 - [`Text` grows a property] → `ExcludeFromSemantics` is init-only and false by default, so no existing
-  text changes. An open Select with no options names no active option (`ActiveIndex` -1, R2-D4). The C# realizer and the TS twin write the same `aria-hidden`, and the parity fixture pins
+  text changes. An open Select with no options names no active option (`ActiveIndex` -1). The C# realizer and the TS twin write the same `aria-hidden`, and the parity fixture pins
   it.
+
+## Not done
+
+Dropped when the scope was reduced after three gate rounds that did not converge:
+
+- A nameless `Group` as TRANSPARENT (its child standing in its place on every target). It drew a
+  chain of follow-ups: the parent's axis, the child's key, bookmark and origin, and container rules
+  looking through it. A nameless Group is drawn as a group with no name instead, and the Select builds
+  none.
+- ONE DECORATION RULE for every wrapper that lowers to its child's element (Shortcut, Simulated,
+  InheritedComponent): what wins when wrapper and child both carry a key or a bookmark. The funnel
+  keeps its behaviour on main (the wrapper's writes last). This needs its own issue.
 
 ## Migration Plan
 

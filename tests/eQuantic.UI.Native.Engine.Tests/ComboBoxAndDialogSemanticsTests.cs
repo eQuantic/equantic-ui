@@ -114,12 +114,12 @@ public class ComboBoxAndDialogSemanticsTests
         var nameless = new Column(gap: 8);
         nameless.Add(new Text("Delivery", TypeRole.BodyM));
         Render(new Group(nameless)).Semantics().Select(node => node.Role).Should().Equal(
-            [SemanticRole.StaticText], "a group with no name is no group: its child stands in its place");
+            [SemanticRole.Group, SemanticRole.StaticText], "a Group is a group, named or not, as on the web");
     }
 
     /// <summary>A control whose content holds a text drawn and never read is named WITHOUT it, on both
-    /// targets: the web's aria-hidden drops it from the button's name, and Photon's derived name
-    /// drops it too.</summary>
+    /// targets: the web's aria-hidden drops it from the button's name, and Photon's derived name drops
+    /// it too.</summary>
     [Fact]
     public void AControlIsNamedWithoutTheTextItsReaderPassesOver_OnBothTargets()
     {
@@ -133,53 +133,9 @@ public class ComboBoxAndDialogSemanticsTests
 
         using var web = new eQuantic.UI.Testing.ComponentTester(Theme);
         web.Pump(Control());
-        var photon = Render(Control());
 
         web.Semantics.Single(stop => stop.Role == SemanticRole.Button).Name.Should().Be("Free");
-        photon.Semantics().Single(node => node.Role == SemanticRole.Button).Label.Should().Be("Free");
-    }
-
-    /// <summary>Photon's side of identity through a nameless Group: each node keys its own path segment,
-    /// so two keyed groups around children with the same key stay two identities, and a child's state
-    /// follows its group's key when the siblings swap.</summary>
-    [Fact]
-    public void KeyedNamelessGroupsKeepDistinctIdentities_AndStateFollowsTheirKeys()
-    {
-        var page = new SwappingPage();
-        var host = new PhotonHost(page, Theme, ThemeMode.Light, 400, 600);
-        host.RenderFrame(new DisplayListBuilder());
-
-        host.Activate(host.Semantics().Single(node => node.Label == "Alpha 0").Id).Should().BeTrue();
-        host.RenderFrame(new DisplayListBuilder(), 16);
-        page.Swap();
-        host.RenderFrame(new DisplayListBuilder(), 32);
-
-        host.Semantics().Where(node => node.Role == SemanticRole.Button).Select(node => node.Label)
-            .Should().Equal(["Bravo 0", "Alpha 1"], "the press stayed with Alpha, keyed by its group, not by its place");
-    }
-
-    private sealed class SwappingPage : StatefulComponent
-    {
-        private bool _swapped;
-
-        public void Swap() => SetState(() => _swapped = !_swapped);
-
-        public override VisualNode Build(ComponentContext context)
-        {
-            static VisualNode Item(string key, string name) => new Group(new Counter(name) { Key = "row" }) { Key = key };
-            var column = new Column(gap: 0);
-            column.Add(_swapped ? Item("b", "Bravo") : Item("a", "Alpha"));
-            column.Add(_swapped ? Item("a", "Alpha") : Item("b", "Bravo"));
-            return column;
-        }
-    }
-
-    private sealed class Counter(string name) : StatefulComponent
-    {
-        private int _count;
-
-        public override VisualNode Build(ComponentContext context) =>
-            new Pressable(new Text($"{name} {_count}", TypeRole.BodyM), () => SetState(() => _count++));
+        Render(Control()).Semantics().Single(node => node.Role == SemanticRole.Button).Label.Should().Be("Free");
     }
 
     [Fact]

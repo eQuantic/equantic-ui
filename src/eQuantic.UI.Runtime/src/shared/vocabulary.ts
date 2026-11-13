@@ -1545,11 +1545,6 @@ export class Group extends VisualNode {
   child: VisualNode;
   label = '';
 
-  /** Whether this IS a group to a reader: one with a name, which blank space is not (C# twin). */
-  get isNamed(): boolean {
-    return this.label.trim().length > 0;
-  }
-
   constructor(child: VisualNode, config?: { label?: string }) {
     super();
     this.child = child;

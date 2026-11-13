@@ -15,7 +15,7 @@ runs once the solution compiles.
 
 ## 2. The web realizer and its TypeScript twin (one engineer)
 
-- [x] 2.1 `WebLoweringVisitor.cs`: `Visit(Group, …) => LowerGroup(group)`; `WebLoweringVisitor.Interaction.cs`: `LowerGroup` (a `div`, `role="group"`, `aria-label`, no host at all when the label is empty, the `fills`/`capsAt` host rule `LowerLiveRegion` uses), and `Group` arms in `Fills` and `CapsAt`
+- [x] 2.1 `WebLoweringVisitor.cs`: `Visit(Group, …) => LowerGroup(group)`; `WebLoweringVisitor.Interaction.cs`: `LowerGroup` (a `div`, `role="group"`, `aria-label` when the label is not empty, the `fills`/`capsAt` host rule `LowerLiveRegion` uses), and `Group` arms in `Fills` and `CapsAt`
 - [x] 2.2 `WebLoweringVisitor.Containers.cs`: `TextContentOf` gains `Group group => TextContentOf(group.Child)`, so a grouped panel's id hashes its options
 - [x] 2.3 TS twin, same commit: `shared/vocabulary.ts` (`class Group`), `shared/nodes.ts` (`GroupNode`), `shared/lowering.ts` (`lowerGroup`, and the `group` case in `lowerNode`, `capsAt` and `fills`, each `switch` still ending in `assertNever`)
 - [x] 2.4 Regenerate the transpiled twins (`Select.ts`, `OptionGroup.ts`, `UI.ts`, `ChildSlots.ts` and their maps) with `EQ_UPDATE_TRANSPILED=1 dotnet test tests/eQuantic.UI.Web.Tests --filter FullyQualifiedName~SharedComponentTranspilationTests`; settle design.md's open question on `options ?? []` from the pin
@@ -38,11 +38,9 @@ runs once the solution compiles.
 
 - [x] 3b.1 D2: the heading is read once. `Text.ExcludeFromSemantics` (aria-hidden on the web, passed over by Photon's walk) on the Select's heading; the readings in `GroupSemanticsTests` and `ComboBoxAndDialogSemanticsTests` lose the `StaticText`
 - [x] 3b.2 D1: `semantics-parity.baseline.txt` ends with no line this branch added; the curated case is dropped (3.6)
-- [x] 3b.3 H2: an empty label is no group on every realizer (web, TS twin, Photon semantics and measure)
 - [x] 3b.4 H3/H4: `Select` keeps its flat list in `_choices` (constructor, `AdoptConfig`) and clamps the highlight when the list shrinks while open (`KeyboardTests.TheHighlightStaysOnAnOptionThatExists_WhenTheOptionsShrinkWhileOpen`)
 - [x] 3b.5 H1: `role-host-bounds.spec.ts` gets a `group` row
-- [x] 3b.7 Round 3: one funnel rule (outermost key wins, a second id is refused) in C# and TS; a Stack and a placed child look through a nameless Group; `Group.IsNamed` twinned, blank-is-no-name, asked by the Select; `Text.IsHiddenFromReaders` is `[ServerOnly]` (`AHostOnlyNodeMemberTests`)
-- [x] 3b.6 Round 2: `Group.IsNamed` read by every realizer, and a nameless group lowers its child on the parent's axis, leaving its Key, Bookmark and Origin (R2-H2, D2, D3; C# and TS); `TextWithin` skips a text hidden from readers (R2-D1); an empty Select names no active option (R2-D4); a linked paragraph is read whatever `ExcludeFromSemantics` says (`Text.IsHiddenFromReaders`, R2-H1)
+- [x] 3b.6 Reduced scope: a nameless Group is drawn as a group with no name (round 1's H2 taken out); the Select builds no Group for a blank label; Photon's `TextWithin` skips a text marked `ExcludeFromSemantics` (`AControlIsNamedWithoutTheTextItsReaderPassesOver_OnBothTargets`); an open empty Select names no active option; a paragraph with a linked run is read whatever `ExcludeFromSemantics` says (no new public member)
 
 ## 4. Documentation
 

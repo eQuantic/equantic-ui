@@ -11,7 +11,6 @@ import { photonTheme } from './design-system.generated';
 import { setPhotonTheme } from './photon-context';
 import { Column } from './vocabulary';
 import { lowerVisualNode } from './lowering';
-import type { VisualNodeValue } from './nodes';
 import { Select } from './components/Select';
 import { OptionGroup } from './components/OptionGroup';
 
@@ -79,55 +78,19 @@ describe('a grouped Select, driven in the browser', () => {
   });
 });
 
-describe('a nameless Group (C# twin: GroupSemanticsTests)', () => {
-  const text = (content: string, extra: Record<string, unknown> = {}) => ({
-    nodeKind: 'text',
-    content,
-    role: 'bodyM',
-    ...extra,
-  });
-  const flexible = () => ({ nodeKind: 'flexible', child: text('Delivery') });
-  const group = (child: unknown, extra: Record<string, unknown> = {}) => ({
-    nodeKind: 'group',
-    label: '',
-    child,
-    ...extra,
-  });
-  const column = (...children: unknown[]) =>
-    ({ nodeKind: 'column', gap: 0, children, height: { kind: 'fixed', value: 200 } }) as unknown as VisualNodeValue;
-  const lower = (node: unknown) => lowerVisualNode(node as VisualNodeValue, { textPrimary: photonTheme.textPrimary });
+describe('a text drawn and never read (C# twin: GroupSemanticsTests)', () => {
+  const lower = (node: unknown) =>
+    lowerVisualNode(node as never, { textPrimary: photonTheme.textPrimary }) as { attributes: Record<string, string> };
 
-  it('lowers to its child, on the parent axis', () => {
-    expect(JSON.stringify(lower(column(group(flexible()))))).toBe(JSON.stringify(lower(column(flexible()))));
-  });
-
-  it('the outermost key wins, so keyed siblings stay distinct', () => {
-    const lowered = lower(
-      column(
-        group(text('A', { key: 'row' }), { key: 'a' }),
-        group(text('B', { key: 'row' }), { key: 'b' }),
-        group(text('C'), { key: 'c' }),
-      ),
-    ) as { children: { key?: string }[] };
-    expect(lowered.children.map((child) => child.key)).toEqual(['a', 'b', 'c']);
-  });
-
-  it('a bookmark lands, and a second id on the same element is refused', () => {
-    expect((lower(group(text('Next'), { bookmark: 'next' })) as { attributes: Record<string, string> }).attributes['id']).toBe('next');
-    expect(() => lower(group(text('Next', { bookmark: 'inner' }), { bookmark: 'outer' }))).toThrow(/'outer'.*'inner'/);
-  });
-
-  it('a stack sees a positioned through it', () => {
-    const corner = () => ({ nodeKind: 'positioned', child: text('x'), top: 0, end: 0 });
-    const stack = (layer: unknown) => ({
-      nodeKind: 'stack',
-      align: 'topStart',
-      children: [{ nodeKind: 'box', style: { width: { kind: 'fixed', value: 100 } } }, layer],
+  it('is hidden from readers, unless a run of it links somewhere', () => {
+    expect(lower({ nodeKind: 'text', content: 'Next', role: 'caption', excludeFromSemantics: true }).attributes['aria-hidden']).toBe('true');
+    const linked = lower({
+      nodeKind: 'text',
+      content: '',
+      role: 'bodyM',
+      excludeFromSemantics: true,
+      spans: [{ content: 'See ' }, { content: 'terms', destination: '/terms' }],
     });
-    expect(JSON.stringify(lower(stack(group(corner()))))).toBe(JSON.stringify(lower(stack(corner()))));
-  });
-
-  it('blank space is no name', () => {
-    expect((lower(group(text('Delivery'), { label: '  ' })) as { attributes: Record<string, string> }).attributes['role']).toBeUndefined();
+    expect(linked.attributes['aria-hidden']).toBeUndefined();
   });
 });

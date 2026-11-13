@@ -102,15 +102,10 @@ internal sealed partial class WebLoweringVisitor(
                 _placing = null;
                 return PlaceArms(adaptive, rule);
             }
-            if (node is not UiComponent && !StandsIn(node)) _placing = null;
+            if (node is not UiComponent) _placing = null;
         }
         return Decorate(node, node.Accept(this, horizontalAxis));
     }
-
-    /// <summary>A node that lowers to its child's element, so a container's rule (a Stack's
-    /// <c>Positioned</c>, a placed <c>AdaptiveNode</c>) looks through it as through a component: a
-    /// nameless Group, which is no group (<see cref="Group.IsNamed"/>). TS twin: <c>standsIn</c>.</summary>
-    private static bool StandsIn(VisualNode node) => node is Group { IsNamed: false };
 
     /// <summary>
     /// What the funnel writes on the element a node lowered to. A method of its own, apart from the
@@ -125,23 +120,12 @@ internal sealed partial class WebLoweringVisitor(
         // from the third position to the first is a MOVED row, not a rewritten one. Written in the
         // funnel because it belongs to every node; SSR emits no attribute for it, so the DOM is
         // unchanged and the twin in lowering.ts writes exactly the same field.
-        //
-        // A WRAPPER THAT LOWERS TO ITS CHILD'S ELEMENT (a Shortcut, a Simulated, an InheritedComponent,
-        // a nameless Group) hands that element on, so it reaches this funnel once per node, innermost
-        // first. One rule for all of them: the OUTERMOST key wins, since the outermost node is the one
-        // that stands among the siblings, and keyed siblings must keep distinct keys.
         if (lowered is not null && node.Key is { Length: > 0 } key) lowered.Key = key;
 
         // The one funnel every node passes through, which is where a property that belongs to ALL
         // of them has to be written — an in-page link may point at any node, not at a chosen few.
         if (lowered is not null && node.Bookmark is { Length: > 0 } bookmark)
         {
-            // An element answers to ONE id. A second bookmark, or a bookmark over an id the element
-            // already carries, would leave a link or a reference pointing at nothing: refused, loudly.
-            if (lowered.Id is { Length: > 0 } carried && carried != bookmark)
-                throw new InvalidOperationException(
-                    $"The bookmark '{bookmark}' lands on an element that already answers to '{carried}': "
-                    + "an element has one id. Bookmark one of the two nodes.");
             lowered.Id = bookmark;
             // ROOM TO LAND. A browser scrolls a target to the very top, so under a pinned header
             // the anchor arrives hidden behind it — the link "works" and still looks broken, which
@@ -256,7 +240,7 @@ internal sealed partial class WebLoweringVisitor(
 
     public HtmlElement? Visit(LiveRegion live, bool? horizontalAxis) => LowerLiveRegion(live);
 
-    public HtmlElement? Visit(Group group, bool? horizontalAxis) => LowerGroup(group, horizontalAxis);
+    public HtmlElement? Visit(Group group, bool? horizontalAxis) => LowerGroup(group);
 
     public HtmlElement? Visit(Navigable navigable, bool? horizontalAxis) => LowerNavigable(navigable);
 

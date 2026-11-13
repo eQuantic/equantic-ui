@@ -30,16 +30,11 @@ public sealed class Group : SingleChildNode
     }
 
     /// <summary>
-    /// The group's name, what a reader hears on arriving at it. Left empty there is NO group: every
-    /// realizer lets the child stand in its place, since a nameless group is noise to every reader
-    /// and a throw would take down a page whose culture's string came back empty.
+    /// The group's name, what a reader hears on arriving at it. It should not be empty: a group with no
+    /// name is still announced as a group, which is noise to every reader, so a component that has no
+    /// name for a group wraps none (a Select with a blank group label does exactly that).
     /// </summary>
     public string Label { get; init; } = "";
-
-    /// <summary>Whether this IS a group to a reader: one with a name, which blank space is not. The one
-    /// statement of the rule every realizer and the Select read, twinned as <c>Group.isNamed</c>; a
-    /// nameless group lets its child stand in its place.</summary>
-    public bool IsNamed => !string.IsNullOrWhiteSpace(Label);
 
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);

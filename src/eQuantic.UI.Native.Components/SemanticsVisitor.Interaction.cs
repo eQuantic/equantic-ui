@@ -275,9 +275,8 @@ internal sealed partial class SemanticsVisitor
 
     /// <summary>A labelled group: one stop named by its label, then what it holds, as the web's
     /// <c>role="group"</c> is read.</summary>
-    public bool Visit(Group node, LayoutNode laidOut) => !node.IsNamed
-        ? Wraps
-        : AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+    public bool Visit(Group node, LayoutNode laidOut) =>
+        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
 
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(DragDismiss node, LayoutNode laidOut) => Wraps;
@@ -324,7 +323,7 @@ internal sealed partial class SemanticsVisitor
             // to emphasise one word derived NO name at all, and a nameless button is announced as
             // "button" and nothing else.
             // A text drawn and never read is no part of a name either, as the web's aria-hidden says.
-            if (node.Source is Text { PlainContent.Length: > 0, IsHiddenFromReaders: false } text)
+            if (node.Source is Text { PlainContent.Length: > 0 } text && !HiddenFromReaders(text))
                 parts.Add(text.PlainContent);
             foreach (var child in node) Gather(child, parts);
         }
