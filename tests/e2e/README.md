@@ -92,6 +92,21 @@ the directive and what it refused:
 2. **Client navigation through every screen raises no violation**: each route is reached by a click,
    so the runtime builds the screen inside a document already under the policy.
 
+### `app-layout.spec.ts`
+
+The sample declares its frame once, as the app's layout (`UseLayout<ConsoleLayout>()`, #1129), and every
+screen returns its content only:
+
+1. **The drawer opened on one screen is still open on the next**: at a phone's width the layout's own
+   trigger opens the drawer on `/charts`, a link in it leads to `/table`, and the drawer is still open over
+   the new page, lighting its destination. The drawer's state is the layout's, so only the instance that
+   opened it can still have it open.
+2. **The server renders the page inside the layout's frame**: the markup `/charts` is served with, parsed
+   and never run, holds the page once, inside the layout's root, after its sidebar and its toolbar, with
+   the page's destination lit.
+3. **What the payments screen owns still answers inside the layout**: ⌘K opens its palette, its sandbox
+   switch and "New payment" answer, now that the screen draws them instead of the frame.
+
 `E2E_PORT` runs the server on another port, beside another checkout's.
 
 ## Estrutura
@@ -100,6 +115,7 @@ the directive and what it refused:
 tests/e2e/
 ├── playwright.config.ts    # Configuração do Playwright
 ├── tests/
+│   ├── app-layout.spec.ts     # The app's layout stays mounted (#1129)
 │   ├── contrast.spec.ts       # Contrast levels in a real browser (#340)
 │   ├── content-security.spec.ts # The strict policy in a real browser (#1270)
 │   ├── passkeys.spec.ts       # Passkeys through IPasskeys (#1017)

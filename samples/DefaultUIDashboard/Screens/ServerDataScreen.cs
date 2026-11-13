@@ -34,23 +34,20 @@ public sealed class ServerDataScreen : StatelessComponent, IServerPrefetch
     {
         var theme = context.Theme;
 
-        // A stateless page owns no drawer state, so the frame gets a closed one, as the ticker's does.
-        return ConsoleShell.Frame(theme, "/server-data", "Server data",
-            Box(new BoxStyle
-            {
-                Width = SizeValue.Fill,
-                Height = SizeValue.Fill,
-                Background = theme.Background,
-                Padding = EdgeInsets.All(Space.S6),
-            },
-            Column(gap: Space.S4, children: [
-                Text("Values only the server knows", TypeRole.Heading, theme.TextPrimary),
-                Text("They are in the page source. They must still be here once the page hydrates, and "
-                    + "after arriving from another screen by a link.", TypeRole.BodyM, theme.TextSecondary),
-                Text($"Server process {ProcessId}", TypeRole.BodyL, theme.TextPrimary),
-                Text($"Running on {Runtime}", TypeRole.BodyL, theme.TextPrimary),
-                new ServerStamp("Rendered"),
-            ])),
-            navOpen: false, onToggleNav: () => { });
+        return Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Background = theme.Background,
+            Padding = EdgeInsets.All(Space.S6),
+        },
+        Column(gap: Space.S4, children: [
+            Text("Values only the server knows", TypeRole.Heading, theme.TextPrimary),
+            Text("They are in the page source. They must still be here once the page hydrates, and "
+                + "after arriving from another screen by a link.", TypeRole.BodyM, theme.TextSecondary),
+            Text($"Server process {ProcessId}", TypeRole.BodyL, theme.TextPrimary),
+            Text($"Running on {Runtime}", TypeRole.BodyL, theme.TextPrimary),
+            new ServerStamp("Rendered"),
+        ]));
     }
 }
