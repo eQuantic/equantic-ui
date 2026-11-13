@@ -78,6 +78,60 @@ describe('a grouped Select, driven in the browser', () => {
   });
 });
 
+describe('a grouped Select in the browser: what it wraps and numbers', () => {
+  const open = async (groups: OptionGroup[], selected = -1) => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    class Host extends StatefulComponent {
+      build(): Column {
+        const column = new Column(0);
+        column.add(new Select(null, selected, (index: number) => chosen.push(index), null, groups) as never);
+        return column as never;
+      }
+    }
+    new Host().mount(container);
+    (container.querySelector('[role="combobox"]') as HTMLElement).click();
+    await nextFrame();
+    return container;
+  };
+
+  afterEach(() => {
+    resetShortcuts();
+    document.body.innerHTML = '';
+    chosen.length = 0;
+  });
+
+  it('wraps no group it cannot name or has nothing in', async () => {
+    const container = await open([
+      new OptionGroup('', ['Braga']),
+      new OptionGroup(' ', ['Faro']),
+      new OptionGroup('Empty', []),
+    ]);
+    expect(container.querySelector('[role="group"]')).toBeNull();
+    expect(container.textContent).not.toContain('Empty');
+    expect([...container.querySelectorAll('[role="option"]')].map((o) => o.textContent)).toEqual(['Braga', 'Faro']);
+  });
+
+  it('numbers the rows across the groups: one is selected, and an empty Select names no active option', async () => {
+    const container = await open([new OptionGroup('Open', ['Lisboa', 'Porto']), new OptionGroup('Next', ['Braga'])], 2);
+    const options = [...container.querySelectorAll('[role="option"]')];
+    expect(options.map((o) => o.getAttribute('aria-selected'))).toEqual(['false', 'false', 'true']);
+    document.body.innerHTML = '';
+    const empty = await open([]);
+    expect(empty.querySelector('[role="combobox"]')!.hasAttribute('aria-activedescendant')).toBe(false);
+  });
+
+  it('stops on the last option, never on a heading', async () => {
+    await open([new OptionGroup('Open', ['Lisboa', 'Porto']), new OptionGroup('Next', ['Braga'])], 0);
+    for (let step = 0; step < 6; step++)
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+    await nextFrame();
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    await nextFrame();
+    expect(chosen).toEqual([2]);
+  });
+});
+
 describe('a text drawn and never read (C# twin: GroupSemanticsTests)', () => {
   const lower = (node: unknown) =>
     lowerVisualNode(node as never, { textPrimary: photonTheme.textPrimary }) as { attributes: Record<string, string> };
@@ -92,5 +146,13 @@ describe('a text drawn and never read (C# twin: GroupSemanticsTests)', () => {
       spans: [{ content: 'See ' }, { content: 'terms', destination: '/terms' }],
     });
     expect(linked.attributes['aria-hidden']).toBeUndefined();
+    const styledOnly = lower({
+      nodeKind: 'text',
+      content: '',
+      role: 'bodyM',
+      excludeFromSemantics: true,
+      spans: [{ content: 'See ' }, { content: 'terms' }],
+    });
+    expect(styledOnly.attributes['aria-hidden']).toBe('true');
   });
 });

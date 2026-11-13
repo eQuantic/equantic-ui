@@ -95,6 +95,56 @@ public class ComboBoxAndDialogSemanticsTests
             .Should().Equal([(SemanticRole.Option, "Braga"), (SemanticRole.Option, "Faro")]);
     }
 
+    /// <summary>A group it cannot name or has nothing in wraps no Group and draws no heading, here as
+    /// on the web: the whole reading holds no Group, and no stop says the empty group's name.</summary>
+    [Fact]
+    public void ASelectWrapsNoGroupItCannotNameOrFill()
+    {
+        var host = Render(new Select(groups:
+            [new OptionGroup("", ["Braga"]), new OptionGroup(" ", ["Faro"]), new OptionGroup("Empty", [])]));
+
+        Open(host);
+
+        host.Semantics().Should().NotContain(node => node.Role == SemanticRole.Group);
+        host.Semantics().Should().NotContain(node => node.Label == "Empty");
+        host.Semantics().Where(node => node.Role == SemanticRole.Option).Select(node => node.Label)
+            .Should().Equal("Braga", "Faro");
+    }
+
+    /// <summary>The row index runs across the groups: only the third option is the selected one.</summary>
+    [Fact]
+    public void TheSelectedRowIsOneAcrossTheGroups()
+    {
+        var host = Render(new Select(selectedIndex: 2, onChanged: _ => { }, groups:
+            [new OptionGroup("Open", ["Lisboa", "Porto"]), new OptionGroup("Next", ["Braga"])]));
+
+        Open(host);
+
+        host.Semantics().Where(node => node.Role == SemanticRole.Option).Select(node => node.Selected)
+            .Should().Equal([false, false, true]);
+    }
+
+    /// <summary>A paragraph with a linked run is read whatever ExcludeFromSemantics says; one with styled
+    /// runs and no link stays hidden.</summary>
+    [Fact]
+    public void AnExcludedParagraphIsReadOnlyWhenARunLinks()
+    {
+        var linked = new Text("", TypeRole.BodyM)
+        {
+            ExcludeFromSemantics = true,
+            Spans = [new TextRun("See "), new TextRun("terms") { Destination = "/terms" }],
+        };
+        var unlinked = new Text("", TypeRole.BodyM)
+        {
+            ExcludeFromSemantics = true,
+            Spans = [new TextRun("See "), new TextRun("terms")],
+        };
+
+        Render(linked).Semantics().Should().Contain(node => node.Role == SemanticRole.StaticText)
+            .And.Contain(node => node.Role == SemanticRole.Link);
+        Render(unlinked).Semantics().Should().BeEmpty();
+    }
+
     /// <summary>A Group outside a Select: one stop named by its label, then what it holds, with the
     /// bounds of what it holds.</summary>
     [Fact]

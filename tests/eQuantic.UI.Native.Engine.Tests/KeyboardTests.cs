@@ -970,6 +970,27 @@ public class DropdownKeyboardTests
         host.Semantics().Should().NotContain(node => node.Role == SemanticRole.Option, "Enter closed the panel");
     }
 
+    /// <summary>The headings are no stops: pressing ArrowDown past the end stays on the last OPTION.</summary>
+    [Fact]
+    public void ArrowDownStopsOnTheLastOption_NeverOnAHeading()
+    {
+        var chosen = new List<int>();
+        var column = new Column(gap: 0) { Width = 300 };
+        column.Add(new Select(selectedIndex: 0, onChanged: chosen.Add, groups:
+            [new OptionGroup("Open", ["Lisboa", "Porto"]), new OptionGroup("Next", ["Braga"])]));
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 300, 400);
+        host.RenderFrame(new DisplayListBuilder());
+        var trigger = host.RenderFrame(new DisplayListBuilder()).HitRegions[0].Bounds;
+        host.PressDown(trigger.Center.X, trigger.Center.Y);
+        host.PressUp(trigger.Center.X, trigger.Center.Y);
+        host.RenderFrame(new DisplayListBuilder());
+
+        for (var step = 0; step < 6; step++) Press(host, "ArrowDown");
+        Press(host, "Enter");
+
+        chosen.Should().Equal([2]);
+    }
+
     /// <summary>The options shrink under an open panel, as a parent's rebuild may hand a Select fewer
     /// of them: the keyboard stays on an option that exists, so Enter still chooses one.</summary>
     [Fact]

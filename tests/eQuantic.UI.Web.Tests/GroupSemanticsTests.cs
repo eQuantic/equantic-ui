@@ -87,6 +87,8 @@ public class GroupSemanticsTests
         combobox.Attributes["aria-activedescendant"].Should().Be(options[2].Attributes["id"]);
         var group = nodes.Single(node => node.Attributes.GetValueOrDefault("role") == "group"
             && Walk(node).Contains(options[2]));
+        options.Select(option => option.Attributes.GetValueOrDefault("aria-selected")).Should().Equal(
+            ["false", "false", "true"], "the row index runs across the groups, so only the third option is the selected one");
         group.Attributes.GetValueOrDefault("aria-label").Should().Be("Next");
         Walk(group).Should().NotContain(options[0], "an option of another group stands outside it");
     }
@@ -136,6 +138,17 @@ public class GroupSemanticsTests
         var reading = OpenedReading(new Select(["Lisboa"], 0, _ => { }, groups: [new OptionGroup("Empty", [])]));
         reading.Should().NotContain(stop => stop.Role == SemanticRole.Group);
         reading.Should().NotContain(stop => stop.Name == "Empty");
+    }
+
+    /// <summary>A styled paragraph with no link stays hidden: only a run that links somewhere lifts it.</summary>
+    [Fact]
+    public void AStyledExcludedParagraphWithNoLinkStaysHidden()
+    {
+        WebRealizer.Lower(new Text("", TypeRole.BodyM)
+        {
+            ExcludeFromSemantics = true,
+            Spans = [new TextRun("See "), new TextRun("terms")],
+        }, Theme).Render().Attributes["aria-hidden"].Should().Be("true");
     }
 
     [Fact]
