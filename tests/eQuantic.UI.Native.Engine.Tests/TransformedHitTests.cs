@@ -46,7 +46,7 @@ public class TransformedHitTests
         host.RenderFrame(builder);
         foreach (var command in builder.Build().Commands)
         {
-            if (command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == HoverFill.Resolve(ThemeMode.Light))
+            if (command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == HoverFill.Resolve(ThemeMode.Light, ContrastLevel.Standard))
                 return true;
         }
         return false;

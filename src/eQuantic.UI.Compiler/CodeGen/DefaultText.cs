@@ -38,8 +38,9 @@ internal static class DefaultText
         type.GetMembers(nameof(object.ToString)).OfType<IMethodSymbol>()
             .Any(method => !method.IsStatic && method.Parameters.Length == 0);
 
-    /// <summary><c>Type.ToString()</c> of a type that is not generic.</summary>
-    private static string FullName(INamedTypeSymbol type)
+    /// <summary><c>Type.ToString()</c> of a type that is not generic: its namespace, and a nested type's owners
+    /// joined by <c>+</c>, as .NET's <c>FullName</c> writes them.</summary>
+    internal static string FullName(INamedTypeSymbol type)
     {
         var name = type.MetadataName;
         for (var owner = type.ContainingType; owner is not null; owner = owner.ContainingType)

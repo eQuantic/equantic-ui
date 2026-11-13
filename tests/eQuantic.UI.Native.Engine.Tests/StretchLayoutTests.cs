@@ -38,7 +38,7 @@ public class StretchLayoutTests
     private static LayoutNode Layout(VisualNode root, float width = 600, float height = 200)
     {
         var builder = new DisplayListBuilder();
-        return PhotonRealizer.Realize(root, width, height, PhotonTheme.Instance, ThemeMode.Light, builder).Root;
+        return PhotonRealizer.Realize(root, width, height, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder).Root;
     }
 
     [Fact]
