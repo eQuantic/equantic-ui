@@ -457,7 +457,8 @@ def doing(tool, tree):
         # a command can carry a secret (`EQS_TOKEN=… eqs …`): its description, else its program only
         detail = args.get("description") if isinstance(args.get("description"), str) else None
         if not detail and isinstance(args.get("command"), str):
-            words = [w for w in args["command"].split() if not re.match(r"[A-Za-z_][A-Za-z0-9_]*=", w)]
+            words = [w for w in args["command"].split()
+                     if not re.match(r"[A-Za-z_][A-Za-z0-9_]*=", w) and not re.fullmatch(r"[;&|(){}!]+", w)]
             detail = os.path.basename(words[0])[:40] if words else None
     for key in ("file_path", "notebook_path", "path"):
         if detail is None and isinstance(args.get(key), str):
@@ -744,6 +745,11 @@ def _fixture_and_cases(scratch, check):
             "pr_opened": "2026-01-01T00:11:00Z", "queued": "2026-01-01T00:12:00Z",
             "queue_exits": [{"job": "samples", "cause": "runner lost"}]}})
     _write(os.path.join(flat, "design.md"), "# design\n")
+    _write(os.path.join(flat, "round2.sha"), leak_marker)  # neither .md nor state.json
+    _write(os.path.join(flat, "sub", "inner.md"), leak_marker)  # inside, but not listed by the folder
+    # a sibling sharing the folder's name as a prefix: `…/1-flat` + `.md`, outside the folder
+    _write(os.path.join(os.path.dirname(flat), "1-flat.md"), leak_marker)
+    os.symlink(os.path.join("..", "1-flat.md"), os.path.join(flat, "sibling.md"))
     _write(os.path.join(scratch, "outside", "secret.md"), leak_marker + "\n")
     try:
         os.symlink(os.path.join(scratch, "outside", "secret.md"), os.path.join(flat, "leak.md"))
@@ -803,7 +809,10 @@ def _fixture_and_cases(scratch, check):
     _write(os.path.join(config, "sessions", f"{os.getpid()}.0123abcd.key"), key_marker)
     _write(os.path.join(config, "sessions", f"{child.pid}.json"),
            {"pid": child.pid, "sessionId": "dead", "procStart": "1"})
-    live, dead = (os.path.join(config, "projects", "p", s, "subagents") for s in ("live", "dead"))
+    _write(os.path.join(config, "sessions", f"{os.getppid()}.json"),
+           {"pid": os.getppid(), "sessionId": "other", "procStart": proc_start(os.getppid()),
+            "startedAt": int((ps_start(os.getppid()) or now) * 1000)})
+    live, dead, other = (os.path.join(config, "projects", "p", s, "subagents") for s in ("live", "dead", "other"))
 
     def agent_path(folder, agent_id):
         return os.path.join(folder, f"agent-{agent_id}.jsonl")
@@ -829,6 +838,8 @@ def _fixture_and_cases(scratch, check):
     agent(live, C, {"agentType": "explorer"}, [act("feat/two", 10, "Read", {"file_path": os.path.join(two, "src", "a.py")})])
     agent(live, D, {"agentType": "explorer"}, [act("feat/else", 10, "Grep", {"pattern": "x"})])
     agent(dead, E, {"agentType": "prover"}, [act("feat/two", 10, "Bash", {"command": "true"})])
+    G = "a" + "g" * 16
+    agent(other, G, {"agentType": "engineer"}, [act("feat/two", 5, "Read", {"file_path": "x"})])
     command_marker = "COMMAND-MARKER-0b7c"
     agent(live, F, {"agentType": "engineer"},
           [act("feat/two", 5, "Bash", {"command": f"EQS_TOKEN={command_marker} /usr/bin/eqs runs ls"})])
@@ -865,6 +876,14 @@ def _fixture_and_cases(scratch, check):
     data = board(repo, config, now)
     check("a poll forgets a file it did not read",
           ("read_tail", wide) not in _FILES and ("read_tail", agent_path(live, B)) in _FILES)
+    recent(origin, repo)
+    forget(600.0)
+    kept = ("origin", repo) in _TIMED
+    time.sleep(0.01)
+    forget(0.001)
+    check("a timed value is kept while young and forgotten when old", kept and ("origin", repo) not in _TIMED)
+    check("a Bash call's program is found past assignments and operators",
+          doing(("Bash", {"command": "A=1 && B=2 ; make all"}), None) == "Bash: make")
     by = {d["key"]: d for d in data["deliveries"]}
     check("every worktree's deliveries are listed",
           sorted(by) == ["1-flat", "2-nested", "3-running", "4-failed", "5-broken", "6-odd", "7-notes"])
@@ -926,6 +945,8 @@ def _fixture_and_cases(scratch, check):
     # -------------------------------------------------------------------------------- agents
     found = {a["id"]: a for a in running["agents"]}
     check("B, C and F work on the running delivery, and only they", sorted(found) == [B, C, F])
+    check("an agent of a live session the delivery does not own works on nothing, even on its branch",
+          all(G not in {a["id"] for a in d.get("agents", [])} for d in data["deliveries"]))
     check("a Bash call's command never reaches the API",
           F in found and found[F]["doing"] == "Bash: eqs" and command_marker not in json.dumps(data))
     check("an agent of a dead session works on nothing (finished alone does not decide)",
@@ -946,6 +967,7 @@ def _fixture_and_cases(scratch, check):
 
     # -------------------------------------------------------------------------------- server
     server = Board(0, repo, config, REPO)
+    check("the server listens on 127.0.0.1 only", server.server_address[0] == "127.0.0.1")
     port = server.server_address[1]
     threading.Thread(target=server.serve_forever, daemon=True).start()
     seen = []
@@ -990,6 +1012,11 @@ def _fixture_and_cases(scratch, check):
         check("a page of another site still opens the board itself",
               get("/", headers=[("Sec-Fetch-Site", "cross-site")])[0] == 200)
         check("a delivery under a linked tree is not served", get("/api/report/v-pipelines/private.md")[0] == 404)
+        for host in ("127.0.0.1.evil.example", f"127.0.0.1.evil.example:{port}", "127.0.0.1:1", "localhost:1",
+                     "127.0.0.1", f"evil.127.0.0.1:{port}"):
+            check(f"Host: {host} is 403", get("/api/pipelines", host)[0] == 403)
+        for name in ("round2.sha", "sub%2Finner.md", "sibling.md"):
+            check(f"/api/report/1-flat/{name} is 404", get(f"/api/report/1-flat/{name}")[0] == 404)
         check("a POST from another host is 403", get("/api/pipelines", "evil.example", "POST")[0] == 403)
         status, body = get("/api/pipelines")
         check("/api/pipelines lists the deliveries", status == 200 and
