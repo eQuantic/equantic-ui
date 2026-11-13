@@ -22,7 +22,7 @@ runs once the solution compiles.
 - [x] 2.5 Parity fixture: add `("select-grouped-opens", new Select(["Lisboa"], 0, groups: [new OptionGroup("A seguir", ["Braga", "Faro"])]), [0])` to `ComponentParityFixtureTests` and its twin in `component-parity.spec.ts`; regenerate with `EQ_UPDATE_PARITY_FIXTURE=1`
 - [x] 2.6 Vitest, driven as the browser drives it (`shared/anchored.spec.ts`): open a grouped Select, `keydown` ArrowDown with its flags from the last option of the first group, assert `aria-activedescendant` names `Braga` and that its parent is the `role="group"` labelled `Next`, then Enter and assert `onChanged(2)`; prove it fails with the group's options left out of the numbering (the plausible wrong one)
 - [x] 2.7 Web tests: the announced reading of the opened grouped Select through `ComponentTester` (design.md, decision 6), and the empty-label case; `Group` in the role-bearing host and wrapper transparency suites if they list wrappers (design.md, open question)
-- [ ] 2.8 Check: `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` passes; `dotnet test tests/eQuantic.UI.Web.Tests tests/eQuantic.UI.Server.Tests` passes, `ServedRuntimeBudgetTests` included (regenerated only with `EQ_UPDATE_RUNTIME_BUDGET` and a sentence on what the bytes bought)
+- [x] 2.8 Check: `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` passes; `dotnet test tests/eQuantic.UI.Web.Tests tests/eQuantic.UI.Server.Tests` passes, `ServedRuntimeBudgetTests` included (regenerated only with `EQ_UPDATE_RUNTIME_BUDGET` and a sentence on what the bytes bought)
 
 ## 3. Photon and the email realizer
 
@@ -36,10 +36,10 @@ runs once the solution compiles.
 
 ## 4. Documentation
 
-- [ ] 4.1 The wiki's Select section, in every language the page is written in, on the wiki branch named like the pull request's: grouped options, the one index across groups, the issue's call as the example
-- [ ] 4.2 The wiki's Upgrading page, in every language it is written in: the two `*REMOVED*` signatures and the migration line ("no source change; recompile")
-- [ ] 4.3 One ledger entry under `docs/ledger/` citing #677
-- [ ] 4.4 Check: the docs guards pass with `EQ_WIKI_DIR` pointing at the wiki branch's worktree; `dotnet test tests/eQuantic.UI.Native.Engine.Tests --filter FullyQualifiedName~FlutterParityPinTests` still passes (no row added, design.md decision 8)
+- [x] 4.1 The wiki's Select section, in every language the page is written in, on the wiki branch named like the pull request's: grouped options, the one index across groups, the issue's call as the example
+- [x] 4.2 The wiki's Upgrading page, in every language it is written in: the two `*REMOVED*` signatures and the migration line ("no source change; recompile")
+- [x] 4.3 One ledger entry under `docs/ledger/` citing #677
+- [x] 4.4 Check: the docs guards pass with `EQ_WIKI_DIR` pointing at the wiki branch's worktree; `dotnet test tests/eQuantic.UI.Native.Engine.Tests --filter FullyQualifiedName~FlutterParityPinTests` still passes (no row added, design.md decision 8)
 
 ## 5. Archive
 
