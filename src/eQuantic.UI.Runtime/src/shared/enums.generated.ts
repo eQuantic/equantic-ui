@@ -92,6 +92,8 @@ export type CodeTokenKindValue =
 
 export type ConsentStateValue = 'unknown' | 'granted' | 'denied';
 
+export type ContrastLevelValue = 'standard' | 'more';
+
 export type CrossAlignValue = 'start' | 'center' | 'end' | 'stretch';
 
 export type DensityValue = 'comfortable' | 'compact';

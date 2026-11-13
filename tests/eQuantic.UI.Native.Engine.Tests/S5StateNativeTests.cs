@@ -26,13 +26,13 @@ public class S5StateNativeTests
 
         var rest = new DisplayListBuilder();
         host.RenderFrame(rest);
-        FillColors(rest.Build()).Should().Contain(baseFill.Resolve(ThemeMode.Light))
-            .And.NotContain(hoverFill.Resolve(ThemeMode.Light));
+        FillColors(rest.Build()).Should().Contain(baseFill.Resolve(ThemeMode.Light, ContrastLevel.Standard))
+            .And.NotContain(hoverFill.Resolve(ThemeMode.Light, ContrastLevel.Standard));
 
         host.SetHovered(box);
         var hovered = new DisplayListBuilder();
         host.RenderFrame(hovered);
-        FillColors(hovered.Build()).Should().Contain(hoverFill.Resolve(ThemeMode.Light),
+        FillColors(hovered.Build()).Should().Contain(hoverFill.Resolve(ThemeMode.Light, ContrastLevel.Standard),
             "the hovered Box swaps to its Hover diff fill");
     }
 

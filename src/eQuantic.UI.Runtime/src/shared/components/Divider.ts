@@ -18,9 +18,12 @@ export class Divider extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let line = new Box(new BoxStyle({ width: this.axis === 'vertical' ? SizeValue.fixed(1) : SizeValue.fill, height: this.axis === 'vertical' ? SizeValue.fill : SizeValue.fixed(1), background: context.theme.border }));
+        let slot = context.theme.list;
+        let thickness = slot?.dividerThickness ?? 1;
+        let line = new Box(new BoxStyle({ width: this.axis === 'vertical' ? SizeValue.fixed(thickness) : SizeValue.fill, height: this.axis === 'vertical' ? SizeValue.fill : SizeValue.fixed(thickness), background: slot?.dividerColor ?? context.theme.border }));
         if (this.inset === 'none') return line;
-        let padding = this.inset === 'leading' ? new EdgeInsets(this.leadingInset ?? 16, 0, 0, 0) : EdgeInsets.symmetric(16, 0);
+        let inset = slot?.dividerInset ?? 16;
+        let padding = this.inset === 'leading' ? new EdgeInsets(this.leadingInset ?? inset, 0, 0, 0) : EdgeInsets.symmetric(inset, 0);
         return new Box(new BoxStyle({ width: SizeValue.fill, padding: padding }), line);
     }
 }

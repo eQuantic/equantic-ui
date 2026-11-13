@@ -1,1 +1,23 @@
 #nullable enable
+*REMOVED*const eQuantic.UI.Components.DataTable.RowHeight = 52 -> float
+*REMOVED*eQuantic.UI.Components.Markdown.Style.get -> eQuantic.UI.Components.MarkdownStyle?
+*REMOVED*eQuantic.UI.Components.MarkdownStyle
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.BlockGap.get -> float
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.BlockGap.init -> void
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.Body.get -> eQuantic.UI.Primitives.TypeRole
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.Body.init -> void
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.CodeInverse.get -> bool
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.CodeInverse.init -> void
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.CodeLineNumbers.get -> bool
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.CodeLineNumbers.init -> void
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.Heading1.get -> eQuantic.UI.Primitives.TypeRole
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.Heading1.init -> void
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.Heading2.get -> eQuantic.UI.Primitives.TypeRole
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.Heading2.init -> void
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.Heading3.get -> eQuantic.UI.Primitives.TypeRole
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.Heading3.init -> void
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.Heading4.get -> eQuantic.UI.Primitives.TypeRole
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.Heading4.init -> void
+*REMOVED*eQuantic.UI.Components.MarkdownStyle.MarkdownStyle() -> void
+*REMOVED*const eQuantic.UI.Components.SwipeableRow.ActionWidth = 96 -> float
+eQuantic.UI.Components.Markdown.Style.get -> eQuantic.UI.Primitives.MarkdownTheme?

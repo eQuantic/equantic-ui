@@ -6,5 +6,5 @@
         "eQuantic.UI.Components/Badge.cs"
     ],
     "names" : [],
-    "mappings" : ";;;;IAoBI;IACA;IACA;IAGA;IAGA;IAIA;;;;;;;;;;;;;QAjBI;QACA;QACA;;;;;QAkCA;QACA;QACA;QAEA;YAEI;;QAWJ;QACA;QAKA;QAEA;;;IA1CJ;QAAoE;;;IAOpE;QAEI;QACA;QACA;QACA"
+    "mappings" : ";;;;IAoBI;IACA;IACA;IAGA;IAGA;IAIA;;;;;;;;;;;;;QAjBI;QACA;QACA;;;;;QAkCA;QAGA;QACA;QACA;QACA;QACA;QAEA;YAEI;YACA;;QAWJ;QACA;QAMA;QACA;QAEA;;;IAlDJ;QAAoE;;;IAOpE;QAEI;QACA;QACA;QACA"
 }

@@ -57,7 +57,7 @@ public class AppIconTests
         var rgba = new byte[size * size * 4];
         surface.ReadPixelsSrgb(rgba);
 
-        var brand = theme.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light);
+        var brand = theme.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         Pixel(rgba, size, 0, 0).Should().Be((brand.R, brand.G, brand.B), "the top-left corner is painted");
         Pixel(rgba, size, size - 1, size - 1).Should().Be((brand.R, brand.G, brand.B));
         Pixel(rgba, size, size / 2, size / 2).Should().NotBe((brand.R, brand.G, brand.B),
