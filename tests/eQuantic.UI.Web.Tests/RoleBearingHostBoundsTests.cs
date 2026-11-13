@@ -51,6 +51,7 @@ public class RoleBearingHostBoundsTests
         // the same rule applies for the same reason — written down when the node was added rather
         // than found on a page later, which is what the two above cost.
         { "LiveRegion", new LiveRegion(HugTrack()) { Label = "Upload status" }, new LiveRegion(FillTrack()) },
+        { "Group", new Group(HugTrack()) { Label = "Shipping" }, new Group(FillTrack()) { Label = "Shipping" } },
     };
 
     [Theory]

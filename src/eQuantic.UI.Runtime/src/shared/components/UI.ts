@@ -1,4 +1,4 @@
-import { $eq, AdaptiveNode, Adjustable, AdjustableRoleValue, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, CookieConsent, CornerRadii, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, FileUpload, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, LiveRegion, LiveRegionUrgencyValue, LoopEffectValue, LoopMotion, MainAlignValue, Markdown, Mermaid, Navigable, NavigableMoveValue, NavigableRoleValue, NavigationRail, NavItem, Overlay, PickedFile, Pinned, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, SegmentedControl, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Switch, TableCellRoleValue, TableOffset, TableRange, TableRoleValue, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, UploadedFile, UploadPolicy, VariantValue, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
+import { $eq, AdaptiveNode, Adjustable, AdjustableRoleValue, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, CookieConsent, CornerRadii, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, FileUpload, Flexible, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, LiveRegion, LiveRegionUrgencyValue, LoopEffectValue, LoopMotion, MainAlignValue, Markdown, Mermaid, Navigable, NavigableMoveValue, NavigableRoleValue, NavigationRail, NavItem, OptionGroup, Overlay, PickedFile, Pinned, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, SegmentedControl, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Switch, TableCellRoleValue, TableOffset, TableRange, TableRoleValue, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, UploadedFile, UploadPolicy, VariantValue, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
 
 export class UI {
     static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
@@ -151,6 +151,10 @@ export class UI {
         return new LiveRegion(child, { urgency: urgency, label: label });
     }
 
+    static group(child: VisualNode, label: string = '') {
+        return new Group(child, { label: label });
+    }
+
     static adjustable(child: VisualNode, onAdjust: (int: number) => void, value: RangeValue | null = null, role: AdjustableRoleValue = 'slider', valueText: string | null = null) {
         return new Adjustable(child, onAdjust, { value: value, role: role, valueText: valueText });
     }
@@ -251,8 +255,8 @@ export class UI {
         return new Calendar(selected, onChanged, min, max);
     }
 
-    static select(options: string[], selectedIndex: number = -1, onChanged: ((int: number) => void) | null = null, placeholder: string | null = null) {
-        return new Select(options, selectedIndex, onChanged, placeholder);
+    static select(options: string[] | null = null, selectedIndex: number = -1, onChanged: ((int: number) => void) | null = null, placeholder: string | null = null, groups: OptionGroup[] | null = null) {
+        return new Select(options, selectedIndex, onChanged, placeholder, groups);
     }
 
     static textInput(value: string, onChanged: ((string: string) => void) | null = null, label: string = '', placeholder: string | null = null, helper: string | null = null, error: string | null = null, leading: IconsValue | null = null, size: SizeVariantValue = 'large', trailing: VisualNode | null = null) {
