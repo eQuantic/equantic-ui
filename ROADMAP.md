@@ -1,7 +1,7 @@
 # eQuantic.UI — Roadmap & Honest State Assessment
 
-> Reviewed against the tree on 2026-11-13: every claim of the state below was
-> checked that day, and none of them quotes a count that moves with each release. A count names
+> Reviewed against the tree on 2026-11-13: every claim of the Current State section
+> was checked that day, and none of them quotes a count that moves with each release. A count names
 > where it lives (the suite, the board, the 1.0 epic), what shipped names the release or the issue
 > that carries it, and what is ahead names its issue. This document is an evidence-based assessment
 > of where eQuantic.UI stands against its vision, and a prioritized roadmap to close the gaps.
@@ -25,7 +25,7 @@ survives to keep an old shape alive"), each break listed in the release's notes 
 Upgrading page. The next milestone is **1.0, the web SDK stable with the native track experimental**
 ([#898](https://github.com/eQuantic/equantic-ui/issues/898)): a contract, not features. An app
 written against it keeps compiling and answering the same through the 1.x line. The exit criteria
-and what is still open are in the epic's body, and when it is likely to land is the board's Roadmap
+are in the epic's body, what is still open is its sub-issues on the board, and when it is likely to land is the board's Roadmap
 view, which `scripts/roadmap.py` forecasts ([docs/ROADMAP-FORECAST.md](docs/ROADMAP-FORECAST.md)).
 
 What exists, each held by a suite that fails rather than warns:
@@ -43,7 +43,8 @@ What exists, each held by a suite that fails rather than warns:
   architecture, so no Node or npm.
 - **Styling**: one first-party engine, typed C# lowered to atomic classes. No other engine ships.
 - **Security**: the written review is [docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md), and an
-  app turns on a Content-Security-Policy in C# (`UseContentSecurityPolicy`).
+  app turns on a Content-Security-Policy in C# (`UseContentSecurityPolicy`), and a real
+  browser runs the dashboard under the strict policy, a violation failing the build (#1270).
 - **Testing without a browser**: `eQuantic.UI.Testing` renders a component with a theme and a
   culture and says what the web lowers and what the semantics announce.
 - **The release contract**: every shipping assembly names its class (contract, tool or
@@ -55,14 +56,18 @@ What exists, each held by a suite that fails rather than warns:
 What is not there yet, each with its issue:
 
 - shared state beyond a component (#289) and routes as types for programmatic navigation (#292);
+- the Element tree, one instance per position on every target (#937: the browser's and the
+  server's slices are open), and per-component theme slots (#938: a Theme applying to its subtree,
+  #1387, is open); the design is [docs/ELEMENT-TREE-PLAN.md](docs/ELEMENT-TREE-PLAN.md);
 - the variant matrix over every control, and its accessibility checklist (#294, the open slice is
-  #1247), and the security work still open under #306;
+  #1247); under #306 only #1259 is open, the VS Code extension's tooling advisories;
 - edit-to-view under a second on the web: the desktop meets it and the web does not. CI measures
   both on every pull request (`scripts/measure-edit-to-view.cs`, held to
   `scripts/edit-to-view.budget.json`), and #900 is bringing the web down;
 - the transpiler's fidelity bugs, under #164, #565, #845 and #849: 1.0 reads them as an exit
-  criterion, so no bug stays open where code compiles and answers differently;
-- hydration-time benchmarks and tree-shaking verification. The served runtime's size budget
+  criterion: no bug stays open where code compiles and answers differently, and the new bugs a
+  week fall two weeks in a row;
+- hydration-time benchmarks and tree-shaking verification of the app bundle. The served runtime's size budget
   (`tests/eQuantic.UI.Server.Tests/Budgets/served-runtime.json`) fails the suite today.
 
 Where Flutter answers something this SDK does not, [docs/FLUTTER-PARITY.md](docs/FLUTTER-PARITY.md)
@@ -101,14 +106,14 @@ once. Still missing: hydration-time benchmarks and tree-shaking verification.
 ### 3. Flutter-like DX
 The `Build(context)` model is genuinely Flutter-like, and hot reload keeps state on the web and on
 the desktop (Phase 3; the simulators and emulators are W7's). Missing the rest of the productivity
-multipliers: edit-to-view under a second on the web (#900, measured at 23s), module hot-swap without a page reload on
+multipliers: edit-to-view under a second on the web (#900, measured by `scripts/measure-edit-to-view.cs`), module hot-swap without a page reload on
 the web, richer/more predictable layout components, and layout/diagnostic tooling.
 
 ### 4. shadcn-like components
 The catalog (the wiki's Components page is its index) is a respectable start, but shadcn's value is **polish + accessibility + variants**.
 The accessibility half is done on the web and on the three native shells with a bridge (Phase 5;
 UI Automation on Windows is owed). What remains is proof per component: the variant matrix and the
-checklist, through a harness an app can use too (#294). Quality > quantity here.
+checklist, through `eQuantic.UI.Testing`, which an app can use too (#294). Quality > quantity here.
 
 ### 5. Styling — **one engine, resolved by decision, not by plugging**
 The first-party engine shipped (Track S): typed C# styles lowered to deduplicated atomic classes,
@@ -119,8 +124,8 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
 
 ### Cross-cutting maturity (framework → SDK)
 - **Compiler diagnostics**: actionable messages with C# `file:line` + suggestions.
-- **Component test harness**: the repository's suites render a component through fixtures an app
-  cannot reference, so app authors cannot unit-test theirs (#294).
+- **Component test harness**: `eQuantic.UI.Testing` lets an app author render and test a
+  component; what #294 still holds open is the variant matrix over every control (#1247).
 - **Docs & examples**: essential for a "0 JS" audience — the supported subset and recipes.
 - **SSR/hydration robustness**: the build derives the hydration contract (#515), and the classes SSR
   writes are cross-pinned with the ones hydration computes. `tests/e2e` proves adoption, live events
@@ -479,7 +484,8 @@ The bar 1.0 holds the web track to (#898, criterion 3); each line says whether i
   the routes (a page's module loads on the first navigation to it).
 - **Flutter DX**: hot reload preserves state; <1s edit-to-view. The state is kept on the web and on
   the desktop (Phase 3), and on a simulator or an emulator hot reload waits for W7. The second is
-  measured on every pull request: the desktop meets it (0.3s) and the web is at 23s (#900).
+  measured on every pull request: the desktop meets it and the web does not yet (#900,
+  `scripts/measure-edit-to-view.cs`).
 - **Components**: every shipped component passes an a11y checklist + variant matrix tests. Not met
   (#294).
 - **CSS**: at least one first-party engine ships. Met by Phase 6; a provider contract was the
