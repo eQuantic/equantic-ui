@@ -5,8 +5,8 @@
   type builds what read the route and nothing else, in the browser and on .NET. `RouteValues.Current`
   goes, and a prefetch resolves the request's route from the services it is handed. `InFlow.Current`
   goes, since a position answers from the tree. `new Theme(value, child)` hands a subtree another theme,
-  read by the components below it from `context.Theme`. Two ambient channels leave the list that may
-  only shrink, and the SSR fixtures are unchanged
+  read by the components below it from `context.Theme`, and a message draws that subtree in it too.
+  Two ambient channels leave the list that may only shrink, and the SSR fixtures are unchanged
   ([#1395](https://github.com/eQuantic/equantic-ui/issues/1395), under
   [#937](https://github.com/eQuantic/equantic-ui/issues/937)). Proposed and archived through OpenSpec
   (`openspec/specs/element-tree`).
