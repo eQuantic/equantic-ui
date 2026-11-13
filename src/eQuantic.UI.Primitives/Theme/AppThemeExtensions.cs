@@ -15,6 +15,8 @@ public static class AppThemeExtensions
     /// </summary>
     public static IAppTheme With(this IAppTheme theme, ControlsTheme? controls = null, ButtonTheme? button = null,
         IconButtonTheme? iconButton = null, InputTheme? input = null, SelectionControlsTheme? selectionControls = null,
-        SegmentedTheme? segmented = null, ChipTheme? chip = null) =>
-        new OverriddenTheme(theme, controls, button, iconButton, input, selectionControls, segmented, chip);
+        SegmentedTheme? segmented = null, ChipTheme? chip = null, ModalTheme? modal = null, MenuTheme? menu = null,
+        NoticeTheme? notice = null, ProgressTheme? progress = null, CardTheme? card = null) =>
+        new OverriddenTheme(theme, controls, button, iconButton, input, selectionControls, segmented, chip, modal, menu,
+            notice, progress, card);
 }

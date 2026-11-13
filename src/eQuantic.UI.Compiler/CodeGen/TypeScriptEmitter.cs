@@ -799,7 +799,17 @@ public class TypeScriptEmitter
                     }
                 }
                 // Abstract classes: no build method emitted
-                
+
+                // An event declared with accessors, as a class's is (#1445), on every branch above: a
+                // primitive's, and an abstract base's that holds nothing else for the branch to count.
+                if (component.ClassSyntax is { } withEvents)
+                {
+                    _converter.SetCurrentClass(component.Name);
+                    foreach (var e in withEvents.TwinMembers().OfType<EventDeclarationSyntax>())
+                        foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic: false))
+                            c.Member(member, member.Origin?.Member);
+                }
+
                 // Server Actions
                 foreach (var action in component.ServerActions)
                 {
@@ -1900,8 +1910,9 @@ public class TypeScriptEmitter
             // accessors, which every subscription calls as C# compiles `+=` into a call of them (#746).
             // Nothing wrote them, so a handler subscribed through an interface landed on a key of the
             // event's name that the accessors never read.
-            foreach (var e in cls.Members.OfType<EventDeclarationSyntax>())
-                EmitEventAccessors(e, c, asStatic);
+            foreach (var e in cls.TwinMembers().OfType<EventDeclarationSyntax>())
+                foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic))
+                    c.Member(member, member.Origin?.Member);
             if (ordered)
             {
                 _converter.UsedHelpers.Add(Eq.Import);
@@ -2161,31 +2172,6 @@ public class TypeScriptEmitter
                         DefaultInterfaceMembers.Unreadable(self, implementation));
                     break;
             }
-        }
-    }
-
-    /// <summary>
-    /// An event's <c>add</c> and <c>remove</c> accessors, written as two methods of its twin under the names
-    /// every subscription calls (<see cref="EventAccessors"/>, #746), each taking the handler as C#'s
-    /// <c>value</c>, on the class for a static event. A <c>[ServerOnly]</c> event never crosses.
-    /// </summary>
-    private void EmitEventAccessors(EventDeclarationSyntax e, TypeScriptCodeBuilder.ClassBuilder c, bool asStatic)
-    {
-        if (e.AccessorList is null || Parser.ComponentParser.StaysOnTheServer(e, inAComponent: false, ModelFor(e))) return;
-        var twin = ModelFor(e)?.GetDeclaredSymbol(e) is IEventSymbol symbol
-            ? symbol.MemberTwinName()
-            : e.Identifier.ValueText.ToCamelCase();
-        var modifiers = asStatic || e.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) ? "static " : "";
-        var parameter = TypeAnnotations ? $"value: {DeclaredType(e.Type)}" : "value";
-        foreach (var accessor in e.AccessorList.Accessors)
-        {
-            var verb = accessor.Keyword.ValueText;
-            if (verb is not ("add" or "remove")) continue;
-            JsStatement? body = accessor.Body is { } block ? Lowering.AccessorBody(block)
-                : accessor.ExpressionBody is { } arrow ? _converter.ConvertExpressionBodyIr(arrow.Expression, returns: false)
-                : null;
-            if (body is not null)
-                c.Member(JsClassMember.Method(modifiers, EventAccessors.Name(verb, twin), "", parameter, "", body), accessor);
         }
     }
 

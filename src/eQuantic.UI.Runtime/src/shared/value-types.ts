@@ -12,10 +12,15 @@ import type { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
 import type {
   ButtonTheme,
+  CardTheme,
   ChipTheme,
   ControlsTheme,
   IconButtonTheme,
   InputTheme,
+  MenuTheme,
+  ModalTheme,
+  NoticeTheme,
+  ProgressTheme,
   SegmentedTheme,
   SelectionControlsTheme,
 } from './theme-slots';
@@ -623,6 +628,16 @@ export interface AppTheme {
   segmented?: SegmentedTheme | null;
   /** The Chip's slot (C# `IAppTheme.Chip`), absent or null for its own defaults. */
   chip?: ChipTheme | null;
+  /** The modal surfaces' slot: Dialog, BottomSheet and Drawer (C# `IAppTheme.Modal`). */
+  modal?: ModalTheme | null;
+  /** The menus' slot: Popover, Menu and Tooltip (C# `IAppTheme.Menu`). */
+  menu?: MenuTheme | null;
+  /** The notices' slot: Toast, Banner and CookieConsent (C# `IAppTheme.Notice`). */
+  notice?: NoticeTheme | null;
+  /** The progress slot: ProgressBar, PullToRefresh and Skeleton (C# `IAppTheme.Progress`). */
+  progress?: ProgressTheme | null;
+  /** The Card's slot (C# `IAppTheme.Card`). */
+  card?: CardTheme | null;
   disabledOpacity: number;
   /**
    * The face this theme sets CODE in (C# `IAppTheme.MonoFamily`), or undefined for the platform's
