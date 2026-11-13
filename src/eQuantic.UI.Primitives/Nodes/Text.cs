@@ -127,7 +127,9 @@ public sealed class Text : VisualNode
     public bool ExcludeFromSemantics { get; init; }
 
     /// <summary>Whether a reader passes over this paragraph: <see cref="ExcludeFromSemantics"/>, unless
-    /// a run of it links somewhere. The one statement every realizer reads.</summary>
+    /// a run of it links somewhere. The one statement every realizer reads; a page never asks it, so it
+    /// has no runtime twin (the TS lowering reads the same two fields itself).</summary>
+    [ServerOnly]
     public bool IsHiddenFromReaders =>
         ExcludeFromSemantics && !(Spans?.Any(run => run.Destination is { Length: > 0 }) ?? false);
 

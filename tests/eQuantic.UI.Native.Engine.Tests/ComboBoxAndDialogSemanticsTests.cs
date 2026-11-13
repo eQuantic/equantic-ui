@@ -139,6 +139,49 @@ public class ComboBoxAndDialogSemanticsTests
         photon.Semantics().Single(node => node.Role == SemanticRole.Button).Label.Should().Be("Free");
     }
 
+    /// <summary>Photon's side of identity through a nameless Group: each node keys its own path segment,
+    /// so two keyed groups around children with the same key stay two identities, and a child's state
+    /// follows its group's key when the siblings swap.</summary>
+    [Fact]
+    public void KeyedNamelessGroupsKeepDistinctIdentities_AndStateFollowsTheirKeys()
+    {
+        var page = new SwappingPage();
+        var host = new PhotonHost(page, Theme, ThemeMode.Light, 400, 600);
+        host.RenderFrame(new DisplayListBuilder());
+
+        host.Activate(host.Semantics().Single(node => node.Label == "Alpha 0").Id).Should().BeTrue();
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        page.Swap();
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.Semantics().Where(node => node.Role == SemanticRole.Button).Select(node => node.Label)
+            .Should().Equal(["Bravo 0", "Alpha 1"], "the press stayed with Alpha, keyed by its group, not by its place");
+    }
+
+    private sealed class SwappingPage : StatefulComponent
+    {
+        private bool _swapped;
+
+        public void Swap() => SetState(() => _swapped = !_swapped);
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            static VisualNode Item(string key, string name) => new Group(new Counter(name) { Key = "row" }) { Key = key };
+            var column = new Column(gap: 0);
+            column.Add(_swapped ? Item("b", "Bravo") : Item("a", "Alpha"));
+            column.Add(_swapped ? Item("a", "Alpha") : Item("b", "Bravo"));
+            return column;
+        }
+    }
+
+    private sealed class Counter(string name) : StatefulComponent
+    {
+        private int _count;
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Pressable(new Text($"{name} {_count}", TypeRole.BodyM), () => SetState(() => _count++));
+    }
+
     [Fact]
     public void ATimePickersTriggerIsAComboBoxToo()
     {

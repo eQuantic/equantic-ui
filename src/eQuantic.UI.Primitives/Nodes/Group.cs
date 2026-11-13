@@ -36,9 +36,10 @@ public sealed class Group : SingleChildNode
     /// </summary>
     public string Label { get; init; } = "";
 
-    /// <summary>Whether this IS a group to a reader: one with a name. The one statement of the rule
-    /// every realizer reads; a nameless group lets its child stand in its place.</summary>
-    public bool IsNamed => Label.Length > 0;
+    /// <summary>Whether this IS a group to a reader: one with a name, which blank space is not. The one
+    /// statement of the rule every realizer and the Select read, twinned as <c>Group.isNamed</c>; a
+    /// nameless group lets its child stand in its place.</summary>
+    public bool IsNamed => !string.IsNullOrWhiteSpace(Label);
 
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);

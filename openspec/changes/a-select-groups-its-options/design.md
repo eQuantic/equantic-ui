@@ -79,9 +79,19 @@ constructor with the `Label` tail (`UiFactoryConformanceTests`, `EveryVocabulary
   it and measures it as a plain wrapper (no inlined constraints, because no host exists on the web).
   A nameless group is noise to every reader, and a required label would throw on a page whose
   culture's string came back empty. The rule is ONE predicate, `Group.IsNamed`, which every realizer
-  reads (gate round 2, R2-H2). Where it is false the web lowers the child on the parent's axis, and
-  the child's own Key, Bookmark and Origin stay its own (R2-D2, R2-D3), as through every other
-  transparent wrapper; the TS twin's `isNamedGroup` mirrors it.
+  reads (gate round 2, R2-H2), and so does the Select, which asks it rather than restating it (R3-7).
+  Blank space is no name (R3-8). The predicate is twinned as `Group.isNamed`, since the Select crosses.
+  Where it is false the web lowers the child on the parent's axis (R2-D2). A container rule that looks
+  for a `Positioned` (a Stack's layer) or an `AdaptiveNode` (a placed child) looks through it as it
+  looks through a component (R3-4, `StandsIn`/`standsIn`).
+- ONE FUNNEL RULE for every node that lowers to its child's element (a Shortcut, a Simulated, an
+  InheritedComponent, a nameless Group), with no Group branch (R3-1, R3-2, R3-3, R3-10). The element
+  reaches the funnel once per node, innermost first. The OUTERMOST key wins, because the outermost node
+  is the one among the siblings, so keyed siblings keep distinct keys, with or without a key of the
+  child's own. A bookmark lands on the element. A second, different id on the same element (another
+  bookmark, or an id the realizer gave it) is REFUSED with an exception naming both, because an element
+  has one id and a dropped one is a link that silently goes nowhere. Photon keys a path segment per
+  node, so both keys hold there (`KeyedNamelessGroupsKeepDistinctIdentities_AndStateFollowsTheirKeys`).
 - The interface member `IVisualNodeVisitor.Visit(Group, TState)` makes each visitor that does not
   name it fail the build (CS0535), which is the instrument that fails.
 
@@ -153,7 +163,9 @@ Group(label) ── Column ── heading Box(Text(label, TypeRole.Caption, them
   R2-D1), as the web's `aria-hidden` drops the text from a button's name. The group carries the same
   words as its `Label`.
 - A PARAGRAPH WITH A LINKED RUN IS READ whatever `ExcludeFromSemantics` says (R2-H1, settled as
-  "ignore"). Every realizer reads it through one predicate, `Text.IsHiddenFromReaders`. A link is
+  "ignore"). Every realizer reads it through one predicate, `Text.IsHiddenFromReaders`, which is
+  `[ServerOnly]` (R3-0): a page never asks it, and the TS lowering reads the two fields itself.
+  `ServerOnlyAttribute` now also targets properties, which the compiler's fence already reads. A link is
   something a reader can follow, and a link hidden from the reader that a keyboard still reaches is
   a trap (`aria-hidden` over a focusable element). Refusing with a throw would take down a page over
   a semantics hint.

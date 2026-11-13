@@ -91,30 +91,81 @@ public class GroupSemanticsTests
         Walk(group).Should().NotContain(options[0], "an option of another group stands outside it");
     }
 
-    /// <summary>A nameless Group lowers to exactly what its child lowers to: the parent's axis reaches
-    /// the child (the axis a flexible lets shrink), and the child's own key,
-    /// bookmark and origin stay its own.</summary>
+    /// <summary>A nameless Group lowers to exactly what its child lowers to, on the parent's axis (the
+    /// axis a flexible lets shrink; a column, since null reads as across).</summary>
     [Fact]
-    public void ANamelessGroupLowersToItsChild_OnTheParentsAxis_KeepingWhatTheChildSays()
+    public void ANamelessGroupLowersToItsChild_OnTheParentsAxis()
     {
-        // A column, because a flexible reads which axis it shrinks on, and null reads as across.
         static Column In(VisualNode child)
         {
             var column = new Column(gap: 0) { Height = 200 };
             column.Add(child);
             return column;
         }
-        Flexible Child() => new(new Text("Delivery", TypeRole.BodyM))
+        static Flexible Child() => new(new Text("Delivery", TypeRole.BodyM));
+
+        HtmlRenderer.RenderNode(WebRealizer.Lower(In(new Group(Child())), Theme).Render())
+            .Should().Be(HtmlRenderer.RenderNode(WebRealizer.Lower(In(Child()), Theme).Render()));
+    }
+
+    /// <summary>One rule for every node that lowers to its child's element: the OUTERMOST key wins, the
+    /// one among the siblings, so keyed siblings keep distinct keys whether the child has its own or
+    /// not.</summary>
+    [Fact]
+    public void TheOutermostKeyWins_SoKeyedSiblingsStayDistinct()
+    {
+        var column = new Column(gap: 0);
+        column.Add(new Group(new Text("A", TypeRole.BodyM) { Key = "row" }) { Key = "a" });
+        column.Add(new Group(new Text("B", TypeRole.BodyM) { Key = "row" }) { Key = "b" });
+        column.Add(new Group(new Text("C", TypeRole.BodyM)) { Key = "c" });
+
+        WebRealizer.Lower(column, Theme).Children.OfType<HtmlElement>().Select(child => child.Key)
+            .Should().Equal("a", "b", "c");
+    }
+
+    /// <summary>A bookmark lands on the element its node lowers to, through a wrapper that hands its
+    /// child's element on; a second id on the same element would leave a link pointing at nothing, so
+    /// it is refused rather than dropped.</summary>
+    [Fact]
+    public void ABookmarkLands_AndASecondIdOnTheSameElementIsRefused()
+    {
+        WebRealizer.Lower(new Group(new Text("Next", TypeRole.BodyM)) { Bookmark = "next" }, Theme).Id
+            .Should().Be("next");
+
+        var twice = () => WebRealizer.Lower(
+            new Group(new Text("Next", TypeRole.BodyM) { Bookmark = "inner" }) { Bookmark = "outer" }, Theme);
+        twice.Should().Throw<InvalidOperationException>().WithMessage("*'outer'*'inner'*");
+    }
+
+    /// <summary>A container's rule looks through a nameless Group as through a component: a Positioned
+    /// inside one still positions in a Stack.</summary>
+    [Fact]
+    public void AStackSeesAPositionedThroughANamelessGroup()
+    {
+        static Stack With(VisualNode layer)
         {
-            Key = "child", Bookmark = "child-mark", Origin = "Child.cs:1",
-        };
+            var stack = new Stack();
+            stack.Add(new Box(new BoxStyle { Width = 100, Height = 100 }));
+            stack.Add(layer);
+            return stack;
+        }
+        static Positioned Corner() => new(new Text("x", TypeRole.BodyM), top: 0, end: 0);
 
-        var bare = WebRealizer.Lower(In(Child()), Theme).Render();
-        var wrapped = WebRealizer.Lower(In(new Group(Child()) { Key = "group", Bookmark = "group-mark", Origin = "Group.cs:1" }), Theme).Render();
+        HtmlRenderer.RenderNode(WebRealizer.Lower(With(new Group(Corner())), Theme).Render())
+            .Should().Be(HtmlRenderer.RenderNode(WebRealizer.Lower(With(Corner()), Theme).Render()));
+    }
 
-        HtmlRenderer.RenderNode(wrapped).Should().Be(HtmlRenderer.RenderNode(bare));
-        var lowered = WebRealizer.Lower(new Group(Child()) { Key = "group" }, Theme);
-        lowered.Key.Should().Be("child");
+    /// <summary>Blank space is no name: a group labelled with it is no group, and a Select draws no
+    /// heading for it.</summary>
+    [Fact]
+    public void ABlankLabelIsNoName()
+    {
+        WebRealizer.Lower(new Group(new Text("Delivery", TypeRole.BodyM)) { Label = "  " }, Theme).Render()
+            .Attributes.Should().NotContainKey("role");
+
+        var reading = OpenedReading(new Select(groups: [new OptionGroup(" ", ["Braga"])]));
+        reading.SkipWhile(stop => stop.Role != SemanticRole.Option).Select(stop => (stop.Role, stop.Name))
+            .Should().Equal((SemanticRole.Option, "Braga"));
     }
 
     /// <summary>An open Select with no options names no active one: there is no option to name.</summary>

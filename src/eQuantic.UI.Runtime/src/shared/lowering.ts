@@ -336,16 +336,22 @@ function decorate(node: VisualNodeValue, lowered: HtmlNode | null): HtmlNode | n
   // from the third position to the first is a MOVED row, not a rewritten one, and the focus,
   // the hover and the scroll state on its element move with it. The C# twin
   // (WebRealizer.LowerNode) writes the same field; SSR emits no attribute for it.
-  // A nameless Group is no group: its child stands in its place, and what the child says of itself
-  // stays (C# twin).
-  const standIn = (node as { nodeKind?: string }).nodeKind === 'group' && !isNamedGroup(node);
+  // A wrapper that lowers to its child's element hands it on, so it reaches here once per node,
+  // innermost first: the OUTERMOST key wins, the one among the siblings (C# twin).
   const keyed = node as { key?: string | null };
-  if (lowered && keyed.key && !(standIn && lowered.key)) lowered.key = keyed.key;
+  if (lowered && keyed.key) lowered.key = keyed.key;
 
   // The C# twin writes exactly this (WebRealizer.LowerNode), because an in-page link may point at
   // ANY node — and because SSR and hydration disagreeing by one attribute is a diverged tree.
   const bookmarked = node as { bookmark?: string };
-  if (lowered && bookmarked.bookmark && !(standIn && lowered.attributes['id'])) {
+  if (lowered && bookmarked.bookmark) {
+    // An element answers to ONE id: a second one is refused, loudly (C# twin).
+    const carried = lowered.attributes['id'];
+    if (carried && carried !== bookmarked.bookmark)
+      throw new Error(
+        `The bookmark '${bookmarked.bookmark}' lands on an element that already answers to '${carried}': ` +
+          'an element has one id. Bookmark one of the two nodes.',
+      );
     lowered.attributes['id'] = bookmarked.bookmark;
     // Room to land under a pinned header — the variable the pinned itself publishes, never a
     // number the author repeats. See the C# side for the reasoning.
@@ -362,7 +368,7 @@ function decorate(node: VisualNodeValue, lowered: HtmlNode | null): HtmlNode | n
   }
 
   const stamped = node as { origin?: string; originLabel?: string };
-  if (lowered && stamped.origin && !(standIn && lowered.attributes['data-eq-origin'])) {
+  if (lowered && stamped.origin) {
     lowered.attributes['data-eq-origin'] = stamped.origin;
     if (stamped.originLabel) lowered.attributes['data-eq-component'] = stamped.originLabel;
   }
@@ -404,7 +410,7 @@ function lowerNodeKind(
         placeChild(arm, armPath, rule),
       );
     }
-    if (!buildsItsOwnNode(node)) placing = null;
+    if (!buildsItsOwnNode(node) && !standsIn(node)) placing = null;
   }
 
   if (foreign.nodeKind === undefined) {
@@ -3610,7 +3616,7 @@ function placeChild(
       ),
     );
   }
-  if (!buildsItsOwnNode(child)) return rule(child, path);
+  if (!buildsItsOwnNode(child) && !standsIn(child)) return rule(child, path);
 
   // A component builds in its own turn, once, so the rule waits for what it builds (C# twin, #738).
   const outer = placing;
@@ -3849,8 +3855,8 @@ function lowerText(text: TextNode): HtmlNode {
   prependClass(node, `eq-type-${text.role.toLowerCase()}`);
   // Drawn and never read (C# twin): its words reached the reader another way.
   // A paragraph with a linked run is read whatever the flag says (C# `Text.IsHiddenFromReaders`).
-  const linked = text.spans?.some((run) => !!run.destination) ?? false;
-  if (text.excludeFromSemantics === true && !linked) node.attributes['aria-hidden'] = 'true';
+  if (text.excludeFromSemantics && !text.spans?.some((run) => run.destination))
+    node.attributes['aria-hidden'] = 'true';
   return node;
 }
 
@@ -4504,10 +4510,10 @@ function lowerLiveRegion(node: LiveRegionNode, context: LoweringContext, path: s
  * `aria-label` and then walks into. No label, no host: a nameless group says nothing. The
  * host takes the child's fill and cap, as every role-bearing wrapper's does.
  */
-/** Whether a Group IS a group to a reader: one with a name (C# `Group.IsNamed`). */
-function isNamedGroup(node: unknown): boolean {
-  const group = node as { nodeKind?: string; label?: string } | null;
-  return group?.nodeKind === 'group' && !!group.label;
+/** Whether a label names a group, which blank space does not (C# `Group.IsNamed`). Read from the
+ * value, since a hydrated node is a plain object without the class's getter. */
+function namesAGroup(label: string | undefined): boolean {
+  return (label ?? '').trim().length > 0;
 }
 
 function lowerGroup(
@@ -4518,7 +4524,7 @@ function lowerGroup(
 ): HtmlNode | null {
   // A group with no name is no group to a reader: the child lowers in its place, on the parent's
   // axis, as through every other transparent wrapper (C# twin).
-  if (!isNamedGroup(node)) return lowerNode(node.child, context, horizontalAxis, path + '/0');
+  if (!namesAGroup(node.label)) return lowerNode(node.child, context, horizontalAxis, path + '/0');
   const fill = fills(node.child);
   const cap = capsAt(node.child);
   const host = element('div', {
@@ -4774,6 +4780,15 @@ function lowerSimulated(
  * tested too because it is the thing this walk needs, the offsets living in the node a component
  * BUILDS, and a value that only declares one still answers it.
  */
+/**
+ * A node that lowers to its child's element, so a container's rule looks through it as it looks
+ * through a component (C# `StandsIn`): a nameless Group, which is no group.
+ */
+function standsIn(node: unknown): boolean {
+  const group = node as { nodeKind?: string; label?: string } | null | undefined;
+  return group?.nodeKind === 'group' && !namesAGroup(group.label);
+}
+
 function buildsItsOwnNode(node: unknown): boolean {
   const candidate = node as { nodeKind?: string; build?: unknown } | null | undefined;
   return candidate?.nodeKind === 'component' || typeof candidate?.build === 'function';
@@ -4786,7 +4801,13 @@ function resolveStackChild(
 ): VisualNodeValue | null {
   let node = child;
   // Bounded: a component whose build returns itself would otherwise spin here.
-  for (let hops = 0; hops < 8 && buildsItsOwnNode(node); hops++) {
+  for (let hops = 0; hops < 8 && (standsIn(node) || buildsItsOwnNode(node)); hops++) {
+    // Through a nameless Group too, which is not a hop: it builds nothing (C# twin).
+    if (standsIn(node)) {
+      node = (node as unknown as GroupNode).child as VisualNodeValue;
+      hops--;
+      continue;
+    }
     const pass = getActivePass();
     const resolved = (
       pass ? pass.store.reconcile(path, node, pass.invalidator) : node

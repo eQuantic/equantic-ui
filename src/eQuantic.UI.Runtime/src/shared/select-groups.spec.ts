@@ -80,23 +80,54 @@ describe('a grouped Select, driven in the browser', () => {
 });
 
 describe('a nameless Group (C# twin: GroupSemanticsTests)', () => {
-  const flexible = () => ({
-    nodeKind: 'flexible',
-    child: { nodeKind: 'text', content: 'Delivery', role: 'bodyM' },
-    key: 'child',
-    bookmark: 'child-mark',
-    origin: 'Child.cs:1',
+  const text = (content: string, extra: Record<string, unknown> = {}) => ({
+    nodeKind: 'text',
+    content,
+    role: 'bodyM',
+    ...extra,
   });
-  const column = (child: unknown) =>
-    ({ nodeKind: 'column', gap: 0, children: [child], height: { kind: 'fixed', value: 200 } }) as unknown as VisualNodeValue;
-  const ctx = { textPrimary: photonTheme.textPrimary };
+  const flexible = () => ({ nodeKind: 'flexible', child: text('Delivery') });
+  const group = (child: unknown, extra: Record<string, unknown> = {}) => ({
+    nodeKind: 'group',
+    label: '',
+    child,
+    ...extra,
+  });
+  const column = (...children: unknown[]) =>
+    ({ nodeKind: 'column', gap: 0, children, height: { kind: 'fixed', value: 200 } }) as unknown as VisualNodeValue;
+  const lower = (node: unknown) => lowerVisualNode(node as VisualNodeValue, { textPrimary: photonTheme.textPrimary });
 
-  it('lowers to its child, on the parent axis, keeping what the child says of itself', () => {
-    const bare = lowerVisualNode(column(flexible()), ctx);
-    const wrapped = lowerVisualNode(
-      column({ nodeKind: 'group', label: '', child: flexible(), key: 'group', bookmark: 'group-mark', origin: 'Group.cs:1' }),
-      ctx,
-    );
-    expect(JSON.stringify(wrapped)).toBe(JSON.stringify(bare));
+  it('lowers to its child, on the parent axis', () => {
+    expect(JSON.stringify(lower(column(group(flexible()))))).toBe(JSON.stringify(lower(column(flexible()))));
+  });
+
+  it('the outermost key wins, so keyed siblings stay distinct', () => {
+    const lowered = lower(
+      column(
+        group(text('A', { key: 'row' }), { key: 'a' }),
+        group(text('B', { key: 'row' }), { key: 'b' }),
+        group(text('C'), { key: 'c' }),
+      ),
+    ) as { children: { key?: string }[] };
+    expect(lowered.children.map((child) => child.key)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('a bookmark lands, and a second id on the same element is refused', () => {
+    expect((lower(group(text('Next'), { bookmark: 'next' })) as { attributes: Record<string, string> }).attributes['id']).toBe('next');
+    expect(() => lower(group(text('Next', { bookmark: 'inner' }), { bookmark: 'outer' }))).toThrow(/'outer'.*'inner'/);
+  });
+
+  it('a stack sees a positioned through it', () => {
+    const corner = () => ({ nodeKind: 'positioned', child: text('x'), top: 0, end: 0 });
+    const stack = (layer: unknown) => ({
+      nodeKind: 'stack',
+      align: 'topStart',
+      children: [{ nodeKind: 'box', style: { width: { kind: 'fixed', value: 100 } } }, layer],
+    });
+    expect(JSON.stringify(lower(stack(group(corner()))))).toBe(JSON.stringify(lower(stack(corner()))));
+  });
+
+  it('blank space is no name', () => {
+    expect((lower(group(text('Delivery'), { label: '  ' })) as { attributes: Record<string, string> }).attributes['role']).toBeUndefined();
   });
 });

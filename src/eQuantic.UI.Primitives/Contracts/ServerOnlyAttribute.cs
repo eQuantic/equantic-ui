@@ -38,7 +38,7 @@ namespace eQuantic.UI.Primitives;
 /// concatenates it into a string, or answers NaN, in a page that compiled and shipped.
 /// </para>
 /// </summary>
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Struct)]
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct)]
 public sealed class ServerOnlyAttribute : Attribute
 {
 }

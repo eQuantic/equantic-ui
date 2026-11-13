@@ -57,13 +57,11 @@ export class Select extends StatefulComponent {
         let index = 0;
         for (const option of this.options) list.add(this.optionRow(theme, option, index++, gap, paddingX, rowHeight));
         for (const group of this.groups) {
-            let rows = list;
-            if (group.label.length > 0) {
-                rows = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-                rows.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(paddingX, 4), width: SizeValue.fill }), new Text(group.label, 'caption', theme.textMuted, 1, 'start', false, false, null, 0, { excludeFromSemantics: true })));
-                list.add(new Group(rows, { label: group.label }));
-            }
+            let rows = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
+            let labelled = new Group(rows, { label: group.label });
+            if (labelled.isNamed) rows.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(paddingX, 4), width: SizeValue.fill }), new Text(group.label, 'caption', theme.textMuted, 1, 'start', false, false, null, 0, { excludeFromSemantics: true })));
             for (const option of group.options) rows.add(this.optionRow(theme, option, index++, gap, paddingX, rowHeight));
+            list.add(labelled);
         }
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: slot?.panelBorderColor ?? theme.border, elevation: slot?.panelElevation ?? 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
         let trigger = new Pressable(field, this.disabled ? null : $eq.delegates.bound(this, this.toggle), { disabled: this.disabled, expanded: this._open && !this.disabled });
