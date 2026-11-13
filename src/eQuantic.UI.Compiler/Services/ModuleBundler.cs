@@ -30,7 +30,7 @@ public static class ModuleBundler
         // it runs and a bundle that fails leaves the folder as it found it, the contract the SDK
         // keeps for the whole folder (the generated-files spec).
         var started = DateTime.UtcNow.AddSeconds(-2);
-        var before = Maps(outputDir);
+        var before = Outputs(outputDir);
         string[] mapArguments = sourceMaps switch
         {
             SourceMapMode.Full => ["--sourcemap"],
@@ -69,18 +69,20 @@ public static class ModuleBundler
         process.WaitForExit();
         if (process.ExitCode != 0) return error;
 
-        // A map is this bundle's when bun wrote it, new or written again; any other is removed now,
-        // after bun has written. A map this build does not write must not survive from one that
-        // did: the output folder is shared by every configuration, so a Debug build's maps would
-        // ride out with a Release publish. Every map here is eqc's own. One written in the two
-        // seconds before the bundle started is kept, as the SDK's prune keeps one: a file system
-        // that stores whole seconds cannot tell it from a map bun wrote again, and composing an
-        // earlier bundle's map again leaves it as it was.
+        // A module, a chunk or a map is this bundle's when bun wrote it, new or written again: bun
+        // writes every file of a bundle on every run. Any other is removed now, after bun has written,
+        // never before, so the folder holds every module while a compile runs: a removed or renamed
+        // component, a shared chunk bun renamed, the maps a Release build does not write (the output
+        // folder is shared by every configuration, so a Debug build's maps would ride out with a
+        // Release publish). This is the folder's one prune, and it goes by what the bundle wrote, which
+        // a compile served to a running app needs as much as a build (#1279). One written in the two
+        // seconds before the bundle started is kept: a file system that stores whole seconds cannot
+        // tell it from one bun wrote again, and the next bundle removes it.
         var written = new List<string>();
-        foreach (var (map, time) in Maps(outputDir))
+        foreach (var (file, time) in Outputs(outputDir))
         {
-            if (before.TryGetValue(map, out var earlier) && earlier == time && time < started) File.Delete(map);
-            else written.Add(map);
+            if (before.TryGetValue(file, out var earlier) && earlier == time && time < started) File.Delete(file);
+            else if (file.EndsWith(".map", StringComparison.Ordinal)) written.Add(file);
         }
 
         // A module's map leads to the TypeScript eqc wrote (bun), and that TypeScript's map to the
@@ -106,10 +108,15 @@ public static class ModuleBundler
         return null;
     }
 
-    /// <summary>Every map under <paramref name="outputDir"/>, with the time it was last written.</summary>
-    private static Dictionary<string, DateTime> Maps(string outputDir) =>
+    /// <summary>
+    /// Every module, chunk and map under <paramref name="outputDir"/>, with the time it was last written:
+    /// what bun writes, and the runtime aside, which the SDK copies there and is not the bundle's.
+    /// </summary>
+    private static Dictionary<string, DateTime> Outputs(string outputDir) =>
         Directory.Exists(outputDir)
-            ? Directory.GetFiles(outputDir, "*.js.map", SearchOption.AllDirectories)
-                .ToDictionary(map => map, File.GetLastWriteTimeUtc, StringComparer.Ordinal)
+            ? Directory.GetFiles(outputDir, "*.js", SearchOption.AllDirectories)
+                .Concat(Directory.GetFiles(outputDir, "*.js.map", SearchOption.AllDirectories))
+                .Where(file => !Path.GetFileName(file).StartsWith("runtime.js", StringComparison.Ordinal))
+                .ToDictionary(file => file, File.GetLastWriteTimeUtc, StringComparer.Ordinal)
             : new Dictionary<string, DateTime>(StringComparer.Ordinal);
 }

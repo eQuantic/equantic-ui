@@ -2,8 +2,6 @@ import { $eq, Box, BoxStyle, BuildContext, Checkbox, Column, DataColumn, DataRow
 
 export class DataTable extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.DataTable';
-    static rowHeight: number = 52;
-    static checkboxTrack: number = 44;
     declare columns: DataColumn[];
     declare rows: DataRow[];
     declare sortColumn: number;
@@ -34,7 +32,7 @@ export class DataTable extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let tracks = this.tracks();
+        let tracks = this.tracks(theme.table);
         let table = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         table.add(this.header(theme, tracks));
         let empty: any; 
@@ -47,60 +45,64 @@ export class DataTable extends StatelessComponent {
         return table;
     }
 
-    tracks() {
+    tracks(slot: any) {
         let tracks = new Array($eq.collections.count(this.columns) + (this.selectable ? 1 : 0)).fill(undefined);
         let offset = 0;
-        if (this.selectable) tracks[offset++] = GridTrack.fixed(DataTable.checkboxTrack);
+        if (this.selectable) tracks[offset++] = GridTrack.fixed(slot?.selectionColumnWidth ?? 44);
         for (let i = 0; i < $eq.collections.count(this.columns); i++) tracks[offset + i] = $eq.collections.item(this.columns, i).track;
         return tracks;
     }
 
     header(theme: any, tracks: GridTrack[]) {
+        let slot = theme.table;
         let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });
         if (this.selectable) {
             let anySelected = $eq.collections.count(this.selection!) > 0;
-            grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(anySelected, this.onToggleAll, null, { indeterminate: anySelected && $eq.collections.count(this.selection) < $eq.collections.count(this.rows) })), 'center'));
+            grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(anySelected, this.onToggleAll, null, { indeterminate: anySelected && $eq.collections.count(this.selection) < $eq.collections.count(this.rows) })), 'center', slot));
         }
         for (let i = 0; i < $eq.collections.count(this.columns); i++) {
             let column = $eq.collections.item(this.columns, i);
             let sorted = i === this.sortColumn && this.sortDirection !== 'none';
-            let label = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center', main: column.align === 'start' ? 'start' : 'end' });
-            label.add(new Text($eq.text.toUpper(column.header, true), 'caption', sorted ? theme.textPrimary : theme.textMuted, 1));
+            let label = new Row(slot?.headerIconGap ?? 4, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center', main: column.align === 'start' ? 'start' : 'end' });
+            let sortedColor = slot?.sortedHeaderColor ?? theme.textPrimary;
+            label.add(new Text(slot?.headerUppercase ?? true ? $eq.text.toUpper(column.header, true) : column.header, 'caption', sorted ? sortedColor : slot?.dataHeaderColor ?? theme.textMuted, 1));
             if (sorted) {
-                label.add(new Icon(IconGlyph.fromIcons(this.sortDirection === 'ascending' ? 'chevronUp' : 'chevronDown'), 16, theme.textPrimary));
+                label.add(new Icon(IconGlyph.fromIcons(this.sortDirection === 'ascending' ? 'chevronUp' : 'chevronDown'), slot?.sortIconSize ?? 16, sortedColor));
             }
             let index = i;
-            grid.add(column.sortable && !(this.onSort == null) ? new Pressable(DataTable.cell(label, column.align), () => this.onSort!(index), { label: `Sort by ${column.header}` }) : DataTable.cell(label, column.align));
+            grid.add(column.sortable && !(this.onSort == null) ? new Pressable(DataTable.cell(label, column.align, slot), () => this.onSort!(index), { label: `Sort by ${column.header}` }) : DataTable.cell(label, column.align, slot));
         }
-        return new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surfaceSubtle, borderWidth: 1, borderColor: theme.border }), grid);
+        return new Box(new BoxStyle({ width: SizeValue.fill, background: slot?.headerFill ?? theme.surfaceSubtle, borderWidth: slot?.borderWidth ?? 1, borderColor: slot?.borderColor ?? theme.border }), grid);
     }
 
     body(theme: any, tracks: GridTrack[], row: DataRow) {
         let $n0: any; 
         let selected = (($n0 = this.selection) == null ? null : $eq.collections.contains($n0, row.key)) === true;
+        let slot = theme.table;
         let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });
         if (this.selectable) {
             let toggle = this.onToggleRow;
-            grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(selected, () => toggle?.(row), null, { disabled: toggle == null })), 'center'));
+            grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(selected, () => toggle?.(row), null, { disabled: toggle == null })), 'center', slot));
         }
-        for (let i = 0; i < $eq.collections.count(this.columns) && i < $eq.collections.count(row.cells); i++) grid.add(DataTable.cell($eq.collections.item(row.cells, i), $eq.collections.item(this.columns, i).align));
-        let box = new Box(new BoxStyle({ width: SizeValue.fill, minHeight: DataTable.rowHeight, background: selected ? theme.colors('primary').subtle : null, borderWidth: 1, borderColor: theme.border, hover: new StyleDiff({ background: theme.surfaceSubtle }), transition: TransitionSpec.of(1, Motion.press) }), grid, { key: row.key });
+        for (let i = 0; i < $eq.collections.count(this.columns) && i < $eq.collections.count(row.cells); i++) grid.add(DataTable.cell($eq.collections.item(row.cells, i), $eq.collections.item(this.columns, i).align, slot));
+        let box = new Box(new BoxStyle({ width: SizeValue.fill, minHeight: slot?.dataRowHeight ?? 52, background: selected ? theme.colors('primary').subtle : null, borderWidth: slot?.borderWidth ?? 1, borderColor: slot?.borderColor ?? theme.border, hover: new StyleDiff({ background: slot?.hoverFill ?? theme.surfaceSubtle }), transition: TransitionSpec.of(1, Motion.press) }), grid, { key: row.key });
         return this.onRowPressed == null ? box : new Pressable(box, () => this.onRowPressed!(row));
     }
 
     pending(theme: any, tracks: GridTrack[], index: number) {
+        let slot = theme.table;
         let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });
-        if (this.selectable) grid.add(DataTable.cell(new Box(new BoxStyle(), new Skeleton('block', 16, 16)), 'center'));
+        if (this.selectable) grid.add(DataTable.cell(new Box(new BoxStyle(), new Skeleton('block', 16, 16)), 'center', slot));
         for (let i = 0; i < $eq.collections.count(this.columns); i++) {
-            grid.add(DataTable.cell(new Box(new BoxStyle(), new Skeleton('line', i % 2 === 0 ? 96 : 64)), $eq.collections.item(this.columns, i).align));
+            grid.add(DataTable.cell(new Box(new BoxStyle(), new Skeleton('line', i % 2 === 0 ? 96 : 64)), $eq.collections.item(this.columns, i).align, slot));
         }
-        return new Box(new BoxStyle({ width: SizeValue.fill, minHeight: DataTable.rowHeight, borderWidth: 1, borderColor: theme.border }), grid, { key: `pending-${$eq.text.format(index, null, undefined, undefined, 'int32')}` });
+        return new Box(new BoxStyle({ width: SizeValue.fill, minHeight: slot?.dataRowHeight ?? 52, borderWidth: slot?.borderWidth ?? 1, borderColor: slot?.borderColor ?? theme.border }), grid, { key: `pending-${$eq.text.format(index, null, undefined, undefined, 'int32')}` });
     }
 
-    static cell(child: VisualNode, align: TextAlignmentValue) {
+    static cell(child: VisualNode, align: TextAlignmentValue, slot: any) {
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: (() => { const $s = align; if ($s === 'center') return 'center'; if ($s === 'end') return 'end'; return 'start'; })() });
         row.add(child);
-        return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), row);
+        return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(slot?.cellPaddingX ?? 12, slot?.cellPaddingY ?? 8) }), row);
     }
 }
 
