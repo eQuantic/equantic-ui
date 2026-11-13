@@ -637,13 +637,13 @@ internal static class OverloadedMethods
         if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared) return;
         var own = declared.GetMembers()
             .Where(member => HoldsAKey(member)
-                && member.Locations.Any(at => at.SourceTree == type.SyntaxTree && type.Span.Contains(at.SourceSpan)))
-            .OrderBy(member => member.Locations[0].SourceSpan.Start);
+                && member.ReadLocations().Any(at => at.SourceTree == type.SyntaxTree && type.Span.Contains(at.SourceSpan)))
+            .OrderBy(member => member.ReadLocations()[0].SourceSpan.Start);
         foreach (var member in own)
         {
             var key = KeyOf(member);
             if (InheritedKey(declared, member, key) is not { } inherited) continue;
-            var where = inherited.Locations.FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
+            var where = inherited.ReadLocations().FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
             var at = where is { } span ? $" ({Path.GetFileName(span.Path)} line {span.StartLinePosition.Line + 1})" : "";
             var kind = member.IsStatic ? "static " : "";
             Refuse(errors, sourcePath, member, type,

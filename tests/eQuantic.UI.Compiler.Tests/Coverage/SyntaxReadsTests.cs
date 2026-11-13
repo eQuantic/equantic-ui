@@ -34,6 +34,8 @@ public class SyntaxReadsTests
             "reads declarations alone (attributes and interface maps), which a save that changed bodies alone leaves as they were",
         ["src/eQuantic.UI.Compiler/CodeGen/Extensions/FieldSlotExtensions.cs:Descendants"] =
             "reads declarations alone (each type's members and base), which a save that changed bodies alone leaves as they were",
+        ["src/eQuantic.UI.Compiler/CodeGen/Extensions/FieldSlotExtensions.cs:Slots"] =
+            "reads declarations alone (the field names of a type, its chain and the types derived from it), which a save that changed bodies alone leaves as they were",
         ["src/eQuantic.UI.Compiler/Services/ResourceClasses.cs:IdCache"] =
             "reads declarations alone (the names of the resource classes), which a save that changed bodies alone leaves as they were",
     };
