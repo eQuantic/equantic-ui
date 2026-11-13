@@ -543,34 +543,14 @@
     </Target>
 
     <!--
-        A module, a map, a chunk or a culture's catalog eqc STOPS writing is removed by the compile that
-        stopped writing it: a removed or renamed component, a shared chunk bun renamed, a culture taken
-        out, the maps a Release build does not write. Removed AFTER eqc has written, never before: the
-        compile takes seconds, and a folder emptied first served a 404 for every module in between,
-        which is where dotnet watch's own refresh of the browser landed on every edit (#627). Measured
-        on the dashboard sample, a compile rewrites every file it writes, the unchanged ones included,
-        so a file older than its start is one it did not write. "Stale" is two seconds before the start,
-        as in the prune of generated sources above: a file system that stores whole seconds can then
-        only keep a stale file one compile longer, never delete one the compile just wrote. The runtime
-        is not eqc's: CopyEQuanticRuntime writes it, and keeps its source's time when it is unchanged.
+        A module, a map, a chunk or a culture's catalog eqc STOPS writing is removed by eqc itself, by
+        the compile that stopped writing it, AFTER it wrote the rest: the compile takes seconds, and a
+        folder emptied first served a 404 for every module in between (#627). eqc decides by what the
+        compile produced, the catalogs it named and the files the bundle wrote, never by a file's time:
+        a file whose text did not change is not written again (#1279), and the eqc a running app keeps
+        compiles with no MSBuild around it (#1276). The runtime is not eqc's: CopyEQuanticRuntime
+        writes it.
     -->
-    <Target Name="_EQuanticMarkOutputStart" BeforeTargets="CompileEQuanticUI"
-            Condition="'$(EnableEQuanticUICompilation)' == 'true'">
-        <PropertyGroup>
-            <_EQuanticOutputStaleBeforeTicks>$([System.DateTime]::UtcNow.AddSeconds(-2).Ticks)</_EQuanticOutputStaleBeforeTicks>
-        </PropertyGroup>
-    </Target>
-
-    <Target Name="_EQuanticPruneStaleOutput" AfterTargets="CompileEQuanticUI"
-            Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(_EQuanticOutputStaleBeforeTicks)' != ''">
-        <ItemGroup>
-            <_EQuanticOutputFile Include="$(EQuanticOutputPath)*.js;$(EQuanticOutputPath)*.js.map;$(EQuanticOutputPath)strings/*.json"
-                Exclude="$(EQuanticOutputPath)runtime.js" />
-            <_EQuanticStaleOutputFile Include="@(_EQuanticOutputFile)"
-                Condition="$([System.IO.File]::GetLastWriteTime('%(FullPath)').ToUniversalTime().Ticks) &lt; $(_EQuanticOutputStaleBeforeTicks)" />
-        </ItemGroup>
-        <Delete Files="@(_EQuanticStaleOutputFile)" />
-    </Target>
 
     <!--
         No map from eqc's output reaches a publish, whatever EQuanticSourceMaps says (#352). The maps
