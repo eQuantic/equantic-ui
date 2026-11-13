@@ -40,7 +40,8 @@ public sealed class PullToRefresh : StatelessComponent
             Main = MainAlign.Center,
             Cross = CrossAlign.Center,
         };
-        indicator.Add(new Spinner(IconSize.Dense, theme.Colors(Variant.Primary).Base));
+        // The progress slot (docs/ELEMENT-TREE-PLAN.md §3.10) sizes the spinner; the threshold is behaviour.
+        indicator.Add(new Spinner(theme.Progress?.RefreshSpinner ?? IconSize.Dense, theme.Colors(Variant.Primary).Base));
 
         var content = new Box(new BoxStyle
         {
