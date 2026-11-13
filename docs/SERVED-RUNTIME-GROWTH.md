@@ -95,7 +95,7 @@ recording the budget again over all of the above.
 
 #1472 recorded 332,993 bytes before it merged; its merge (4b82ea5c9) measures 333,519. From that merge,
 the bundle was measured as above at every first-parent commit of `main` that touched a source of it, and
-#1458 over `main` at 2e03c4d28. #1433 recorded the budget again at 337,565 bytes, also before it merged;
+#1458 over `main` at be8b33109. #1433 recorded the budget again at 337,565 bytes, also before it merged;
 its merge (92b0af2a8) measures 339,508, under that record's ceiling, floor(337,565 × 1.01) = 340,940.
 
 | Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
@@ -104,9 +104,13 @@ its merge (92b0af2a8) measures 339,508, under that record's ceiling, floor(337,5
 | #1428 | 4cd212fba | 334,283 | 336,243 | +1,960 | +8,337 | the surfaces, menus, notices, progress and cards read their theme slots | yes |
 | #1384 | 64cd02bf2 | 336,243 | 336,251 | +8 | +42 | contrast levels resolve beside the theme mode, from the system's own setting | yes |
 | #1433 | 92b0af2a8 | 336,251 | 339,508 | +3,257 | +12,772 | navigation and collections read their theme slots, and the document's style becomes one | yes |
-| #1458 | | 339,508 | 340,329 | +821 | +2,595 | a table takes what is left of its scroller, measured on both targets | yes |
-| **all** | | **333,519** | **340,329** | **+6,810** | **+27,392** | | |
+| #1520 | fbde35b8a | 339,508 | 339,521 | +13 | +44 | a new key is made without a pass over the old list | yes |
+| #1521 | be8b33109 | 339,521 | 340,025 | +504 | +2,484 | a Select groups its options, on the web and on Photon | yes |
+| #1458 | | 340,025 | 340,855 | +830 | +2,595 | a table takes what is left of its scroller, measured on both targets | yes |
+| **all** | | **333,519** | **340,855** | **+7,336** | **+29,920** | | |
 
-#1458 stays inside #1433's ceiling, 611 bytes under it, and records nothing. Its own 821 bytes are the
-table's fit, the 825 it measured over 1973005e6 above. The theme slots (#1428 and #1433) are the largest
-share since #1472: a feature every page with a themed surface uses.
+#1458 stays inside #1433's ceiling, 85 bytes under it, and records nothing. Its own 830 bytes are the
+table's fit, the same 2,595 raw bytes it added over 1973005e6 above, which gzip packs a little
+differently beside different neighbours. The theme slots (#1428 and #1433) are the largest share since
+#1472: a feature every page with a themed surface uses. 85 bytes is less than any feature adds, so the
+next change that grows the runtime records the budget again.

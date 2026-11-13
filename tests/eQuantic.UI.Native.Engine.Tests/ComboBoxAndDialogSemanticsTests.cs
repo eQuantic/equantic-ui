@@ -65,6 +65,129 @@ public class ComboBoxAndDialogSemanticsTests
             .Should().Equal([true, false]);
     }
 
+    /// <summary>A grouped Select's open list names each group and then walks into it (#677): the
+    /// group, named by the heading a person sees, then its options; the web's <c>role="group"</c>
+    /// reads the same.</summary>
+    [Fact]
+    public void AGroupedSelectsListNamesEachGroupBeforeItsOptions()
+    {
+        var host = Render(new Select(["Lisboa"], 0, _ => { }, groups: [new OptionGroup("A seguir", ["Braga"])]));
+
+        Open(host);
+
+        host.Semantics().Select(node => (node.Role, node.Label)).Should().Equal(
+            [(SemanticRole.ComboBox, "Lisboa"), (SemanticRole.Button, "Dismiss"),
+             (SemanticRole.Option, "Lisboa"), (SemanticRole.Group, "A seguir"), (SemanticRole.Option, "Braga")],
+            "the heading is the group's name, read once: as the group, never again as text");
+        host.Semantics().Where(node => node.Role == SemanticRole.Option).Select(option => option.Selected)
+            .Should().Equal([true, false]);
+    }
+
+    /// <summary>A group with no name wraps nothing: its options read as ungrouped, with no heading.</summary>
+    [Fact]
+    public void AGroupWithNoNameReadsAsUngroupedOptions()
+    {
+        var host = Render(new Select(groups: [new OptionGroup("", ["Braga", "Faro"])]));
+
+        Open(host);
+
+        host.Semantics().SkipWhile(node => node.Role != SemanticRole.Option).Select(node => (node.Role, node.Label))
+            .Should().Equal([(SemanticRole.Option, "Braga"), (SemanticRole.Option, "Faro")]);
+    }
+
+    /// <summary>A group it cannot name or has nothing in wraps no Group and draws no heading, here as
+    /// on the web: the whole reading holds no Group, and no stop says the empty group's name.</summary>
+    [Fact]
+    public void ASelectWrapsNoGroupItCannotNameOrFill()
+    {
+        var host = Render(new Select(groups:
+            [new OptionGroup("", ["Braga"]), new OptionGroup(" ", ["Faro"]), new OptionGroup("Empty", [])]));
+
+        Open(host);
+
+        host.Semantics().Should().NotContain(node => node.Role == SemanticRole.Group);
+        host.Semantics().Should().NotContain(node => node.Label == "Empty");
+        host.Semantics().Where(node => node.Role == SemanticRole.Option).Select(node => node.Label)
+            .Should().Equal("Braga", "Faro");
+    }
+
+    /// <summary>The row index runs across the groups: only the third option is the selected one.</summary>
+    [Fact]
+    public void TheSelectedRowIsOneAcrossTheGroups()
+    {
+        var host = Render(new Select(selectedIndex: 2, onChanged: _ => { }, groups:
+            [new OptionGroup("Open", ["Lisboa", "Porto"]), new OptionGroup("Next", ["Braga"])]));
+
+        Open(host);
+
+        host.Semantics().Where(node => node.Role == SemanticRole.Option).Select(node => node.Selected)
+            .Should().Equal([false, false, true]);
+    }
+
+    /// <summary>A paragraph with a linked run is read whatever ExcludeFromSemantics says; one with styled
+    /// runs and no link stays hidden.</summary>
+    [Fact]
+    public void AnExcludedParagraphIsReadOnlyWhenARunLinks()
+    {
+        var linked = new Text("", TypeRole.BodyM)
+        {
+            ExcludeFromSemantics = true,
+            Spans = [new TextRun("See "), new TextRun("terms") { Destination = "/terms" }],
+        };
+        var unlinked = new Text("", TypeRole.BodyM)
+        {
+            ExcludeFromSemantics = true,
+            Spans = [new TextRun("See "), new TextRun("terms")],
+        };
+
+        Render(linked).Semantics().Should().Contain(node => node.Role == SemanticRole.StaticText)
+            .And.Contain(node => node.Role == SemanticRole.Link);
+        Render(unlinked).Semantics().Should().BeEmpty();
+    }
+
+    /// <summary>A Group outside a Select: one stop named by its label, then what it holds, with the
+    /// bounds of what it holds.</summary>
+    [Fact]
+    public void AGroupIsNamedAndThenWalkedInto()
+    {
+        var column = new Column(gap: 8);
+        column.Add(new Text("Delivery", TypeRole.BodyM));
+        column.Add(new Checkbox(true, () => { }));
+        var host = Render(new Group(column) { Label = "Shipping" });
+
+        var semantics = host.Semantics();
+        semantics.Select(node => node.Role).Should().Equal(
+            [SemanticRole.Group, SemanticRole.StaticText, SemanticRole.Checkbox]);
+        semantics[0].Label.Should().Be("Shipping");
+        semantics[1].Label.Should().Be("Delivery");
+
+        var nameless = new Column(gap: 8);
+        nameless.Add(new Text("Delivery", TypeRole.BodyM));
+        Render(new Group(nameless)).Semantics().Select(node => node.Role).Should().Equal(
+            [SemanticRole.Group, SemanticRole.StaticText], "a Group is a group, named or not, as on the web");
+    }
+
+    /// <summary>A control whose content holds a text drawn and never read is named WITHOUT it, on both
+    /// targets: the web's aria-hidden drops it from the button's name, and Photon's derived name drops
+    /// it too.</summary>
+    [Fact]
+    public void AControlIsNamedWithoutTheTextItsReaderPassesOver_OnBothTargets()
+    {
+        static VisualNode Control()
+        {
+            var row = new Row(gap: 4);
+            row.Add(new Text("Shipping", TypeRole.Caption) { ExcludeFromSemantics = true });
+            row.Add(new Text("Free", TypeRole.BodyM));
+            return new Pressable(row, () => { });
+        }
+
+        using var web = new eQuantic.UI.Testing.ComponentTester(Theme);
+        web.Pump(Control());
+
+        web.Semantics.Single(stop => stop.Role == SemanticRole.Button).Name.Should().Be("Free");
+        Render(Control()).Semantics().Single(node => node.Role == SemanticRole.Button).Label.Should().Be("Free");
+    }
+
     [Fact]
     public void ATimePickersTriggerIsAComboBoxToo()
     {

@@ -359,6 +359,14 @@ public static class UI
         new LiveRegion(child) { Urgency = urgency, Label = label };
 
     /// <summary>
+    /// A labelled group: a reader hears <paramref name="label"/> as the group's name and then walks
+    /// into <paramref name="child"/>. It draws nothing and adds no geometry; the heading a person
+    /// sees, when there is one, is the child's own.
+    /// </summary>
+    public static Group Group(VisualNode child, string label = "") =>
+        new Group(child) { Label = label };
+
+    /// <summary>
     /// Arrow-key adjustment semantics: one Tab stop, arrows call back with ±1.
     /// <para>
     /// <paramref name="value"/> is what the control HOLDS, and a slider needs it —
@@ -585,10 +593,11 @@ public static class UI
         DateOnly? min = null, DateOnly? max = null) =>
         new Calendar(selected, onChanged, min, max);
 
-    /// <summary>One choice out of a dropdown list.</summary>
-    public static Select Select(IReadOnlyList<string> options, int selectedIndex = -1,
-        Action<int>? onChanged = null, string? placeholder = null) =>
-        new Select(options, selectedIndex, onChanged, placeholder);
+    /// <summary>One choice out of a dropdown list: the ungrouped <paramref name="options"/> first, then
+    /// each of <paramref name="groups"/> under its heading, one index across them all.</summary>
+    public static Select Select(IReadOnlyList<string>? options = null, int selectedIndex = -1,
+        Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null) =>
+        new Select(options, selectedIndex, onChanged, placeholder, groups);
 
     /// <summary>The full text field: label, helper, error, leading icon, and a trailing SLOT
     /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.</summary>
