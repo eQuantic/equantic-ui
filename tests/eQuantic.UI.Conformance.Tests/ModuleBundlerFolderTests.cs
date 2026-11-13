@@ -70,7 +70,7 @@ public class ModuleBundlerFolderTests
             return path;
         }
 
-        ModuleBundler.Bundle(bun, project, [Page("First", 1), Page("Second", 2)], output, ts, SourceMapMode.None)
+        using (var bundler = new ModuleBundler(bun, project)) bundler.Bundle([Page("First", 1), Page("Second", 2)], output, ts, SourceMapMode.None)
             .Should().BeNull();
 
         return Directory.GetFiles(output)

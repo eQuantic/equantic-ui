@@ -14,6 +14,7 @@ namespace eQuantic.UI.Compiler.Services;
 public sealed class AppBuild
 {
     private readonly AppBuildOptions _options;
+    private readonly ModuleBundler? _bundler;
     private readonly TextWriter _output;
     private readonly TextWriter _errors;
     private readonly ComponentCompiler _compiler;
@@ -49,9 +50,13 @@ public sealed class AppBuild
     /// <param name="output">Where the build narrates; the console when null.</param>
     /// <param name="errors">Where diagnostics go, in MSBuild's canonical form; the console's error
     /// stream when null.</param>
-    public AppBuild(AppBuildOptions options, TextWriter? output = null, TextWriter? errors = null)
+    /// <param name="bundler">The bundler a caller keeps between builds, a served eqc's (#1280); null, and
+    /// the build starts bun for its own bundle and stops it after.</param>
+    public AppBuild(AppBuildOptions options, TextWriter? output = null, TextWriter? errors = null,
+        ModuleBundler? bundler = null)
     {
         _options = options;
+        _bundler = bundler;
         _output = output ?? Console.Out;
         _errors = errors ?? Console.Error;
         _primarySourceDir = options.SourceDirectories[0];
@@ -796,8 +801,17 @@ public sealed class AppBuild
                 // in the project's folder, where the build has always run it, so a chunk keeps its
                 // name wherever eqc itself runs.
                 var bundling = System.Diagnostics.Stopwatch.StartNew();
-                var bunError = ModuleBundler.Bundle(bunPath!, _primarySourceDir, entryPoints, outputDir,
-                    _intermediateDir, _options.SourceMaps, _errors.WriteLine);
+                var bundler = _bundler ?? new ModuleBundler(bunPath!, _primarySourceDir);
+                string? bunError;
+                try
+                {
+                    bunError = bundler.Bundle(entryPoints, outputDir, _intermediateDir, _options.SourceMaps,
+                        _errors.WriteLine);
+                }
+                finally
+                {
+                    if (_bundler is null) bundler.Dispose();
+                }
                 BundleElapsed = bundling.Elapsed;
                 if (bunError is not null)
                 {
