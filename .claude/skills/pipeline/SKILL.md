@@ -44,9 +44,11 @@ which bills separately, or the Workflow tool, unless the person asks for either.
 
 ## 2. State
 
-One folder per delivery, `.claude/pipelines/<issue>-<slug>/`, which git ignores:
+One folder per delivery, `.claude/pipelines/<issue>-<slug>/` inside the delivery's own worktree
+(section 3), which git ignores:
 
-- `state.json`: the issue, the branch, the pipeline and whether it is high-effort with the reason,
+- `state.json`: the issue, the branch, the worktree's absolute path (and the wiki's, when there is
+  one), the pipeline and whether it is high-effort with the reason,
   the OpenSpec change's name, the pull request, the STAGES COPIED from the registry (name, agent,
   status `pending|in_progress|completed|failed|not_applicable`, the agent's id for a resume, the
   report's path), the gate's round, Copilot's round, the last CI run and the commit it saw, and
@@ -57,12 +59,15 @@ One folder per delivery, `.claude/pipelines/<issue>-<slug>/`, which git ignores:
   was compacted, every defect found after the pull request opened (the round, or the queue's exit,
   that found it), for a macOS run asked for on the branch, whether it caught something and
   whether the queue's own run would have caught it too, and `merged`, the moment the pull request
-  merged (section 7, step 6).
+  merged (section 7, step 6). Every stop for the person, with what they decided. Every queue exit,
+  with its cause. An agent's reported duration counts its wall clock, so it is only a measure when
+  the agent left nothing running behind it.
 - `<stage>.md`: each stage's report, written by its agent.
 
-Write the state before the first stage and at every transition. It exists so a compacted or a new
+Write the state before the first stage and at every transition, and only through its own file:
+another delivery's state is never touched. It exists so a compacted or a new
 session resumes without rereading anything: read it first when one is there. It is a convenience of
-one checkout. The truth is what was pushed: the issue and the board, the commits, the checkboxes of
+one worktree. The truth is what was pushed: the issue and the board, the commits, the checkboxes of
 the OpenSpec change's `tasks.md`, the pull request.
 
 `python3 .claude/skills/pipeline/board/board.py` serves a read-only board of every delivery of every
@@ -75,12 +80,45 @@ files and writes nothing.
 As the Workflow's "Every change starts from an issue on the board" and "Branches" say. In order:
 search for the issue before creating one; an issue assigned to someone else, labelled
 `good first issue` or already In progress is that person's, so stop and say so; create a missing
-one with `scripts/new-issue.py`; move it to In progress; `git fetch`, then the branch from
-`origin/main`; run the `roadmap` skill. Set no git identity: on a laptop it is the person's own.
+one with `scripts/new-issue.py`; move it to In progress; `git fetch`, then the delivery's
+worktree (below); run the `roadmap` skill. Set no git identity: on a laptop it is the person's own.
 
-Ask once, here, whether this host has a LOCK for the test suites (a wrapper the person runs them
-through, so that parallel sessions do not run suites at the same time), and write its command in
-the state. Every proof command handed to an agent is then given already wrapped in it.
+**Each delivery has a worktree of its own, and one of the wiki.** From the clone, where the
+orchestrating session starts, the branch is created with its tree from `origin/main`, and the
+wiki's branch of the same name with its tree from the wiki's `origin/master`, fetched first:
+
+```bash
+git worktree add -b <type>/<slug> ../equantic-ui.wt/<issue>-<slug> origin/main
+git -C ../equantic-ui.wiki fetch -q origin
+git -C ../equantic-ui.wiki worktree add -b <type>/<slug> ../equantic-ui.wt/<issue>-<slug>.wiki origin/master
+```
+
+Everything of the delivery happens there: every agent's work, every build, the state. The clone's
+own checkout is never switched, and no delivery works in another's tree, so several deliveries run
+on one machine at once, from one session or from several: a branch switched under a running
+delivery was one of the pilot's findings. `.claude/settings.json` adds `../equantic-ui.wt/` to the
+session's directories (`additionalDirectories`, applied once the folder is trusted), so an agent
+reads there without a prompt and edits there under the same permission mode as in the clone.
+
+**The wiki is always named.** The wiki guards look for `equantic-ui.wiki` beside the tree they run
+in, which a delivery's worktree does not have, and when they find none they pass without reading a
+page. So every command of a delivery runs with `EQ_WIKI_DIR` set to the delivery's wiki worktree,
+absolute. Until the docs stage writes a page there it reads as master does; a wiki branch with no
+commit of its own is never pushed.
+
+**After the merge.** The delivery's measures go to GitHub first (its pull request, or the issue
+that collects them): the state folder lives in the worktree and goes with it. Then remove both
+worktrees (`git worktree remove`) and delete the branches. Before deleting anything, look at it: a
+tree that holds uncommitted work is reported, not removed.
+
+**One build at a time, for the whole host.** Every build and test suite of every delivery runs
+through the host's lock, `python3 scripts/one-build-at-a-time.py -- <command>`, which waits while
+another holds it, and says so every minute. A command with shell syntax (`&&`, a variable set before
+it) is one argument to a shell: `-- sh -c 'EQ_UPDATE_TRANSPILED=1 dotnet test tests/X'`. The wait
+counts against the caller's timeout, so a wrapped suite runs in the background or with the longest
+timeout the tool allows, and a wait is never read as a failure. A person who runs their suites through a lock of their own names it once, and the
+state records it in place of this one. Every proof command handed to an agent is given already
+wrapped.
 
 ## 4. Stages
 
@@ -88,13 +126,18 @@ For each stage of the pipeline: mark it `in_progress`, spawn its agent, end your
 read the few lines it answers, mark it `completed` or `failed`. A failed stage stops the pipeline:
 report it with the report's path.
 
-**What an agent is given**, and nothing else: the issue number; the OpenSpec change's name, when
-there is one; what it may write (its write boundary); the report's path; the proof commands of its
-area. It answers in fifteen lines at most, with the report's path. Never paste a file, a test log
+**What an agent is given**, and nothing else: the issue number; the delivery's worktree, as an
+absolute path, where it runs every command (`cd <tree> && …`) and reads and writes every file, and
+the `EQ_WIKI_DIR` its commands run with (section 3);
+the OpenSpec change's name, when there is one; what it may write (its write boundary); the report's
+path; the proof commands of its area, wrapped in the host's lock; and, for a large change, the files
+the design names as the starting points, so it does not spend its turns finding them. It answers in fifteen lines at most, with the report's path. Never paste a file, a test log
 or a diff into a prompt or ask for one back: name the path.
 
 **The engineer** is one agent, and the area's row gives its rules, model and effort, passed as the
-Agent call's `model` and `effort`:
+Agent call's `model` and `effort`. It runs once per area, unless the design says the areas compile
+together (a visitor's new member breaks every realizer until each handles it): then one engineer,
+on the strongest of their rows, does them in order.
 
 | Area | Rules it reads first | Model, effort | Proves with |
 |---|---|---|---|
@@ -107,15 +150,26 @@ Agent call's `model` and `effort`:
 Run a test PROJECT, or a filter of one, never the whole solution: that is CI's, and it takes a
 quarter of an hour here.
 
-**One build at a time.** Reading in parallel is cheap; building is what loads the machine, and
-other sessions share it. At most one agent of a delivery builds or runs a suite at any moment,
-through the host's lock when it has one. Agents that run in parallel read, and run nothing.
+**One build at a time, on the host.** Reading in parallel is cheap; building is what loads the
+machine, and other deliveries and sessions share it. Every build and suite goes through the host's
+lock (section 3), so deliveries run side by side and their builds queue. Agents of one delivery
+that run in parallel read, and run nothing.
 
-**One writer in the tree.** Agents that only read run in parallel, in one message. Agents that
-write run one at a time, in the session's own tree, in the order the dependency gives: the
-vocabulary before the realizers, a realizer's C# and its TypeScript twin by the same engineer. No
-agent is isolated in a worktree: one starts from the default branch, so it would not see the
-proposal, and the wiki guards pass in silence inside one. Nobody but you commits or pushes.
+**One writer in each tree.** Agents that only read run in parallel, in one message. Agents that
+write run one at a time in their delivery's worktree, in the order the dependency gives: the
+vocabulary before the realizers, a realizer's C# and its TypeScript twin by the same engineer.
+Writers of DIFFERENT deliveries run at the same time, each in its own tree. The Agent tool's own
+`isolation: worktree` is not used: it branches from the default branch, so it would not see the
+delivery's proposal; the delivery's worktree is the isolation. Nobody but you commits or pushes.
+
+**Deliveries in parallel.** A session may run several deliveries at once, each with its tree and
+its state, when they touch different files: two deliveries that would edit the same file run one
+after the other, since their merge is a conflict nobody reviewed. Each turn, act on whichever
+delivery's agent answered, by its state.
+
+**Nothing left running.** An agent ends its turn with nothing of its own running in the background:
+no wait loop, no watch, no server. A loop it leaves behind keeps its turn's clock running and its
+wall time stops measuring anything.
 
 **Every commit is pushed as it lands.** A branch that exists only on one disk is lost with the
 disk. Commit each green unit and push it at once: a push outside `main` starts no CI before the
@@ -124,8 +178,10 @@ pull request exists, so the backup is free.
 **Whoever wrote it does not verify it.** The prover is never the engineer, and it runs alone: its
 A/B takes the fix out of the tree for a while.
 
-**A fix goes back to its author.** Send the finding to the engineer that wrote the code (a message
-to its id, from the state) and do not spawn a new one, which would read everything again.
+**A fix goes back to its author**, a message to its id from the state, since a new agent would
+read everything again, UNLESS the author's context is already large (above about 200 k tokens by
+its reports) and the fix is small and located: then a fresh engineer, given the finding's exact
+`file:line`, costs a fraction of resuming it (60 k against 400 k in the pilot).
 
 ## 5. Duties the diff brings
 
@@ -158,32 +214,61 @@ delivery's parent; a WRONG finding is answered with what shows so. A security fi
 never written in an issue or a pull request: it goes to a private advisory, as
 `docs/SECURITY-REVIEW.md` says, and the delivery stops for the person.
 
-Then `prover`, alone, over the final tree. Two rounds of the gate at most: a defect still standing
-after the second stops the delivery, with the reports, for the person.
+**A fix is held to its finding.** In every delivery of the pilot, a fix of one round made the next
+round's defect, and on a component the gate did not converge: each round's fixes widened the
+change. So a fix changes only what its finding names. A hardening or a nit that would change
+behaviour, add a public member or reach a file the change did not touch becomes an issue under the
+delivery's parent, never a commit of the round. Every round after the first reviews only the
+previous round's delta (`<commit before the round>..HEAD`), and says first whether that delta did
+more than its findings asked.
+
+Then `prover`, alone, over the final tree. A test it finds a plausible wrong version passing is a
+defect of the proof: a fresh engineer strengthens the TEST only, and the prover runs again the
+variants it had listed, nothing else.
+
+Two rounds of the gate at most: a defect still standing after the second stops the delivery, with
+the reports, for the person. The exception is a defect whose fix the finding states exactly and
+which touches only the lines of the previous round's own fix (a word, a clause): it is fixed and
+recorded without the stop.
 
 ## 7. Ship, by you
 
 The steps are the Workflow's "Pull requests"; this is their order here.
 
 1. The branch is already pushed, commit by commit. Push the wiki's branch of the same name when
-   the delivery wrote one (CI reads it for the docs guards); open the pull request from `.github/pull_request_template.md`, closing the issue; read the
-   body back; the issue moves to In review.
+   the delivery wrote one (CI reads it for the docs guards); open the pull request from
+   `.github/pull_request_template.md`, closing the issue; read the body back; the issue moves to In
+   review. Then confirm CI STARTED on the head: a pull request that conflicts with `main` runs no
+   workflow at all and nothing says so. Only when `mergeable` reads `CONFLICTING`, merge `main`
+   into the branch, in its worktree, and prove the merged tree before pushing it; a pull request
+   that merely lags `main` is never brought up to date (the Workflow's "Pull requests", step 4).
 2. When the diff touches the native track, the SDKs, packaging, `Directory.Build.props` or a
    sample: ask for the macOS jobs on the branch now, since packing and the samples run only there.
    Those runners are the scarcest thing the queue has, so the pilot counts what this run buys:
    record in the state what it caught, and whether the queue's own run would have caught it.
-3. Copilot's loop. A subagent reads the review threads and answers with the sorted findings, never
-   the raw threads. Each round with a defect: the author fixes, the prover runs its A/B again, ONE
+3. Copilot's loop, after confirming its round started (`requested_reviewers` lists it, or a review
+   arrives within a few minutes). When it did not, say so to the person and record it: the
+   Workflow skips Copilot only when the account's credits are exhausted, so skipping for any other
+   reason is the person's call, never the skill's. A person's review is sorted and answered the same way. A subagent reads the
+   review threads and answers with the sorted findings, never the raw threads. Each round with a defect: the author fixes, the prover runs its A/B again, ONE
    push, the threads answered and resolved, the next round asked for.
 4. Archive the OpenSpec change after the last round, so a scenario a round changed is edited once.
-5. Queue the pull request. Wait for CI and for the merge in the background, never by polling in
-   your own turns.
+5. Queue the pull request once its review is settled: for a contributor, that is the owner's
+   approval, never green CI alone. Wait for CI and for the merge in the background, never by polling in
+   your own turns; a wait loop reads an empty or failed answer as "ask again", never as "left the
+   queue". When the queue removes it, read the failed job's annotations and log before anything
+   else, and sort the exit: INFRASTRUCTURE (a runner lost or never acquired), a FLAKE (a test this
+   diff does not reach, failing for a reason of its own), or a DEFECT. The first two are queued
+   again with the evidence in the state; a flake seen twice gets an issue; a defect goes back to
+   its author.
 6. Only once the pull request is MERGED: record the moment in `merged` under the state's measures,
-   merge the wiki branch into the wiki's master, move the issue to Done, run the `roadmap` skill.
-   Being queued is not being merged: a queue discards.
+   merge the wiki branch into the wiki's master, move the issue to Done, run the `roadmap` skill,
+   and remove the delivery's worktrees (section 3). Being queued is not being merged: a queue
+   discards.
 
 ## 8. Stop and ask
 
-The issue is someone else's. A capture needs a Mac. A security finding is high. The gate did not
+The issue is someone else's. A capture needs a Mac. A round's fixes did more than its findings
+asked, and taking them back is not obvious. A security finding is high. The gate did not
 converge in two rounds, or Copilot's third round still names a defect. The request needs a release.
 A step needs a right this account does not have.

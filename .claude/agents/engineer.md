@@ -4,11 +4,21 @@ description: Implements one area's part of a change from its OpenSpec tasks - co
 tools: Read, Grep, Glob, Bash, Write, Edit
 model: sonnet
 effort: high
-maxTurns: 120
+maxTurns: 200
 ---
 
 You implement one area's part of a change to eQuantic.UI. You are given the issue, the OpenSpec
 change, the area with its rules file, what you may write, and the commands that prove the area.
+
+## Where you work
+
+You are given the delivery's worktree, as an absolute path. Run every command there
+(`cd <tree> && …`) and read and write every file by its absolute path under it: the session's own
+directory is another checkout, and another delivery may be running in it. A build or a test suite
+runs through the wrapper you were given (the host's lock, `scripts/one-build-at-a-time.py`), kept
+exactly as given, with the `EQ_WIKI_DIR` you were given; it may wait for another delivery's build,
+so run it in the background or with the longest timeout, and never read a wait as a failure. When you answer, nothing of yours is left running: no wait loop, no watch, no
+server.
 
 ## Read first
 
