@@ -61,15 +61,15 @@ public class MaterialDynamicColorTests
         // the derivation is byte-identical to the published baseline — the strongest proof of the port.
         foreach (var mode in new[] { ThemeMode.Light, ThemeMode.Dark })
         {
-            Close(d.Surface.Resolve(mode), b.Surface.Resolve(mode), $"surface {mode}");
-            Close(d.Background.Resolve(mode), b.Background.Resolve(mode), $"background {mode}");
-            Close(d.TextPrimary.Resolve(mode), b.TextPrimary.Resolve(mode), $"on-surface {mode}");
-            Close(d.TextSecondary.Resolve(mode), b.TextSecondary.Resolve(mode), $"on-surface-variant {mode}");
-            Close(d.BorderStrong.Resolve(mode), b.BorderStrong.Resolve(mode), $"outline {mode}");
-            Close(d.Colors(Variant.Secondary).Base.Resolve(mode),
-                  b.Colors(Variant.Secondary).Base.Resolve(mode), $"secondary {mode}");
-            Close(d.Colors(Variant.Tertiary).Base.Resolve(mode),
-                  b.Colors(Variant.Tertiary).Base.Resolve(mode), $"tertiary {mode}");
+            Close(d.Surface.Resolve(mode, ContrastLevel.Standard), b.Surface.Resolve(mode, ContrastLevel.Standard), $"surface {mode}");
+            Close(d.Background.Resolve(mode, ContrastLevel.Standard), b.Background.Resolve(mode, ContrastLevel.Standard), $"background {mode}");
+            Close(d.TextPrimary.Resolve(mode, ContrastLevel.Standard), b.TextPrimary.Resolve(mode, ContrastLevel.Standard), $"on-surface {mode}");
+            Close(d.TextSecondary.Resolve(mode, ContrastLevel.Standard), b.TextSecondary.Resolve(mode, ContrastLevel.Standard), $"on-surface-variant {mode}");
+            Close(d.BorderStrong.Resolve(mode, ContrastLevel.Standard), b.BorderStrong.Resolve(mode, ContrastLevel.Standard), $"outline {mode}");
+            Close(d.Colors(Variant.Secondary).Base.Resolve(mode, ContrastLevel.Standard),
+                  b.Colors(Variant.Secondary).Base.Resolve(mode, ContrastLevel.Standard), $"secondary {mode}");
+            Close(d.Colors(Variant.Tertiary).Base.Resolve(mode, ContrastLevel.Standard),
+                  b.Colors(Variant.Tertiary).Base.Resolve(mode, ContrastLevel.Standard), $"tertiary {mode}");
         }
     }
 
@@ -81,10 +81,10 @@ public class MaterialDynamicColorTests
         // TonalSpot caps primary chroma at 36; the seed itself sits at ~48, so the vivid primary tone
         // is a touch less saturated than the hand-tuned published baseline (#6750A4). This IS Google's
         // live material-color-utilities output for the same seed.
-        Close(primary.Base.Resolve(ThemeMode.Light), Rgb(0x65558F), "primary tone-40 = TonalSpot output");
+        Close(primary.Base.Resolve(ThemeMode.Light, ContrastLevel.Standard), Rgb(0x65558F), "primary tone-40 = TonalSpot output");
 
         // Where the gamut holds chroma 36 (the light dark-on tone 80), it matches the baseline exactly.
-        Close(primary.Base.Resolve(ThemeMode.Dark), Rgb(0xD0BCFF), "primary tone-80 tracks the baseline");
+        Close(primary.Base.Resolve(ThemeMode.Dark, ContrastLevel.Standard), Rgb(0xD0BCFF), "primary tone-80 tracks the baseline");
     }
 
     [Fact]
@@ -93,16 +93,16 @@ public class MaterialDynamicColorTests
         // eQuantic blue #0050A0 → a coherent blue Material theme, distinct from the purple baseline.
         var blue = MaterialTheme.FromSeed(Rgb(0x0050A0));
 
-        var primaryLight = blue.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light);
+        var primaryLight = blue.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         primaryLight.B.Should().BeGreaterThan(primaryLight.R, "a blue seed yields a blue-dominant primary");
-        primaryLight.Should().NotBe(MaterialTheme.Instance.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light));
+        primaryLight.Should().NotBe(MaterialTheme.Instance.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light, ContrastLevel.Standard));
 
-        var onPrimary = blue.Colors(Variant.Primary).OnBase.Resolve(ThemeMode.Light);
+        var onPrimary = blue.Colors(Variant.Primary).OnBase.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         (onPrimary.R + onPrimary.G + onPrimary.B).Should().BeGreaterThan(600, "on-primary is near-white");
 
         // Tone ordering holds: dark-scheme surface is darker than light-scheme surface.
-        var lightSurface = blue.Surface.Resolve(ThemeMode.Light);
-        var darkSurface = blue.Surface.Resolve(ThemeMode.Dark);
+        var lightSurface = blue.Surface.Resolve(ThemeMode.Light, ContrastLevel.Standard);
+        var darkSurface = blue.Surface.Resolve(ThemeMode.Dark, ContrastLevel.Standard);
         (lightSurface.R + lightSurface.G + lightSurface.B)
             .Should().BeGreaterThan(darkSurface.R + darkSurface.G + darkSurface.B, "light surface is lighter");
     }

@@ -265,6 +265,7 @@ public static class PhotonRealizer
         float viewportHeight,
         IAppTheme theme,
         ThemeMode mode,
+        ContrastLevel contrast,
         DisplayListBuilder builder,
         ITextMeasurer? measurer = null,
         float typeScale = 1f,
@@ -385,7 +386,7 @@ public static class PhotonRealizer
         // sets state for a tree laid out once would set it for nobody.
         var reportsInView = builds.Live;
         EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
-            theme, mode, builder, motion, overlays));
+            theme, mode, contrast, builder, motion, overlays));
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -422,7 +423,7 @@ public static class PhotonRealizer
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
             EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
-                theme, mode, builder, motion, overlays));
+                theme, mode, contrast, builder, motion, overlays));
         }
 
         // The frame's end, for the tree: what a layer did not show this frame leaves it, and what

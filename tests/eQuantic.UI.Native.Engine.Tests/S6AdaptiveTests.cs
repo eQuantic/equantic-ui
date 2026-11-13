@@ -140,7 +140,7 @@ public class S6AdaptiveTests
         column.Add(new AdaptiveNode(Spacer.Fixed(24), medium: null, expanded: Spacer.Fixed(64)));
         column.Add(new Box(new BoxStyle { Width = 40, Height = 10 }));
 
-        var frame = PhotonRealizer.Realize(column, width, 400, PhotonTheme.Instance, ThemeMode.Light,
+        var frame = PhotonRealizer.Realize(column, width, 400, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder());
 
         frame.Root.Children[^1].Bounds.Y.Should().Be(10 + gap, "the arm's space sits between the two boxes");
@@ -159,7 +159,7 @@ public class S6AdaptiveTests
         stack.Add(new AdaptiveNode(new Box(), medium: null,
             expanded: new Positioned(new Box(new BoxStyle { Width = 32, Height = 32 }), top: 0, end: 0)));
 
-        var frame = PhotonRealizer.Realize(stack, 1200, 800, PhotonTheme.Instance, ThemeMode.Light,
+        var frame = PhotonRealizer.Realize(stack, 1200, 800, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder());
 
         frame.Root.Bounds.Width.Should().Be(400);
@@ -193,7 +193,7 @@ public class S6AdaptiveTests
         grid.Add(new Box(new BoxStyle { Width = 40, Height = 10 }));
 
         LayoutNode Lay(VisualNode root, float width) => PhotonRealizer.Realize(root, width, 800,
-            PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder()).Root;
+            PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder()).Root;
 
         Lay(row, 1200).Children[1].Bounds.Y.Should().Be(90,
             "the arm aligns to the end of a 100dp line, not to the node's center");

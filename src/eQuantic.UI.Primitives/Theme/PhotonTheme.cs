@@ -7,6 +7,11 @@ namespace eQuantic.UI.Primitives;
 /// which HandoffTokenPinTests compares against every value below; WCAG ratios verified by
 /// <c>DesignTokenTests</c>). Brand anchors: eQuantic blue #0050A0 (Primary), eQuantic green #80B85C
 /// (Success, darkened to clear AA in light mode).
+/// <para>
+/// A token's fourth and fifth arguments are its legs at <see cref="ContrastLevel.More"/>, from
+/// tokens.json's <c>color.more</c>: one APCA level up, never below the WCAG 2 targets, each keeping its
+/// OKLCH hue. A token without them paints its Standard pair at More.
+/// </para>
 /// </summary>
 public sealed class PhotonTheme : IAppTheme
 {
@@ -17,13 +22,13 @@ public sealed class PhotonTheme : IAppTheme
     public ColorToken Surface { get; } = Token(0xFFFFFF, 0x14181E);
     public ColorToken SurfaceSubtle { get; } = Token(0xEFF1F4, 0x1C232B);
     public ColorToken SurfaceHighlight { get; } = new(Rgba(0xFFFFFF, 140), Rgba(0xFFFFFF, 18)); // 55% / 7%
-    public ColorToken Border { get; } = Token(0xE2E5EA, 0x2A323D);
-    public ColorToken BorderStrong { get; } = Token(0xC9CED6, 0x4C5664);
+    public ColorToken Border { get; } = Token(0xE2E5EA, 0x2A323D, 0x8C8F94, 0x5C6571);
+    public ColorToken BorderStrong { get; } = Token(0xC9CED6, 0x4C5664, 0x6D7178, 0x768190);
 
     // ---- Text tiers (§01) ------------------------------------------------------------------------
     public ColorToken TextPrimary { get; } = Token(0x171B21, 0xF2F4F7);
-    public ColorToken TextSecondary { get; } = Token(0x4B5563, 0xC7D1DC);
-    public ColorToken TextMuted { get; } = Token(0x5F6B7A, 0xACB7C5);
+    public ColorToken TextSecondary { get; } = Token(0x4B5563, 0xC7D1DC, 0x2B3441, 0xDEE9F4);
+    public ColorToken TextMuted { get; } = Token(0x5F6B7A, 0xACB7C5, 0x475261, 0xC5D1DF);
     public ColorToken TextInverse { get; } = Token(0xFFFFFF, 0x171B21);
 
     // ---- Interaction chrome (§01) ----------------------------------------------------------------
@@ -35,11 +40,11 @@ public sealed class PhotonTheme : IAppTheme
 
     // ---- Variants (§01 interactive table) --------------------------------------------------------
     private static readonly VariantColors PrimaryColors = new(
-        Base: Token(0x0050A0, 0x76BAFF),
+        Base: Token(0x0050A0, 0x76BAFF, 0x0050A0, 0xAED5FE),
         OnBase: Token(0xFFFFFF, 0x06263F),
-        Pressed: Token(0x00427F, 0x9BCDFF),
+        Pressed: Token(0x00427F, 0x9BCDFF, 0x00427F, 0xD0E7FE),
         Subtle: Token(0xE8F1FA, 0x0F2740),
-        OnSubtle: Token(0x003E7E, 0xA8CDF2));
+        OnSubtle: Token(0x003E7E, 0xA8CDF2, 0x003E7E, 0xB0D5FA));
 
     private static readonly VariantColors SecondaryColors = new(
         Base: Token(0xE9EDF2, 0x242C36),
@@ -49,30 +54,30 @@ public sealed class PhotonTheme : IAppTheme
         OnSubtle: Token(0x3A4350, 0xD7DDE5));   // = OnBase
 
     private static readonly VariantColors DestructiveColors = new(
-        Base: Token(0xB42318, 0xFF958C),
+        Base: Token(0xB42318, 0xFF958C, 0xAE1C12, 0xFEC0B9),
         OnBase: Token(0xFFFFFF, 0x3B0704),
-        Pressed: Token(0x8F1D1D, 0xFEC0BB),
+        Pressed: Token(0x8F1D1D, 0xFEC0BB, 0x891618, 0xFEE7E5),
         Subtle: Token(0xFCEBEA, 0x3A1210),
-        OnSubtle: Token(0x8F1D1D, 0xF4A9A4));
+        OnSubtle: Token(0x8F1D1D, 0xF4A9A4, 0x8F1D1D, 0xFEC0BC));
 
     private static readonly VariantColors SuccessColors = new(
-        Base: Token(0x3B7A22, 0x89C562),
+        Base: Token(0x3B7A22, 0x89C562, 0x276605, 0xA3E17D),
         OnBase: Token(0xFFFFFF, 0x12290A),
-        Pressed: Token(0x2C5E17, 0x9FD279),
+        Pressed: Token(0x2C5E17, 0x9FD279, 0x1B4B02, 0xBAEE94),
         Subtle: Token(0xEDF6E6, 0x16290C),
-        OnSubtle: Token(0x2C5E17, 0xB5DB97));
+        OnSubtle: Token(0x2C5E17, 0xB5DB97, 0x2B5D16, 0xB6DC98));
 
     private static readonly VariantColors WarningColors = new(
-        Base: Token(0x8A5A00, 0xE8B04B),
+        Base: Token(0x8A5A00, 0xE8B04B, 0x7B5004, 0xFEC561),
         OnBase: Token(0xFFFFFF, 0x2E1B02),
-        Pressed: Token(0x6E4700, 0xF0C06B),
+        Pressed: Token(0x6E4700, 0xF0C06B, 0x5F3E03, 0xFFD794),
         Subtle: Token(0xFBF3DF, 0x2E2008),
-        OnSubtle: Token(0x7A5200, 0xEECF8F));
+        OnSubtle: Token(0x7A5200, 0xEECF8F, 0x714B01, 0xEECF8F));
 
     private static readonly VariantColors InfoColors = new(
-        Base: Token(0x0C6C86, 0x4DC4DF),
+        Base: Token(0x0C6C86, 0x4DC4DF, 0x01617A, 0x6DE1FC),
         OnBase: Token(0xFFFFFF, 0x062B33),
-        Pressed: Token(0x0A5468, 0x6FD1E7),
+        Pressed: Token(0x0A5468, 0x6FD1E7, 0x024A5C, 0x9BECFF),
         Subtle: Token(0xE4F3F8, 0x0A2A32),
         OnSubtle: Token(0x0A5468, 0x9FDCEB));
 
@@ -191,6 +196,186 @@ public sealed class PhotonTheme : IAppTheme
         QuietFill = SurfaceSubtle,
     };
 
+    // The form controls' slots (E6b): what each control drew, now the design system's. Their own
+    // ladders stay null, so the theme's Controls above reaches them. A colour a control takes from one
+    // of the theme's roles stays null too: the control reads the role itself, so a theme that changes
+    // the role (a decorator, or a spread of this theme in the browser) recolours the control, which a
+    // copy of the role taken here would not. Cached on first read.
+
+    /// <summary>The IconButton (spec A13): the §07 glyph ladder, a circle, a 1dp outline, and the tonal
+    /// press at 24%.</summary>
+    public IconButtonTheme? IconButton => field ??= new IconButtonTheme
+    {
+        IconSize = new SizeLadder { Small = IconSize.Sm, Medium = IconSize.Dense, Large = IconSize.Md, XLarge = IconSize.Md },
+        Radius = Radius.Full,
+        OutlineWidth = 1,
+        TonalPressOpacity = 0.24f,
+    };
+
+    /// <summary>The fields (spec B9, B10): 14 and 10 for a text field's padding and gap, 12 and 8 for
+    /// a picker's, a 1dp border that grows to 2 while focused, the medium corner, the search pill, and
+    /// the label 6 above and the helper 5 below.</summary>
+    public InputTheme? Input => field ??= new InputTheme
+    {
+        PaddingX = 14,
+        PickerPaddingX = Space.S3,
+        Gap = 10,
+        PickerGap = Space.S2,
+        BorderWidth = 1,
+        FocusBorderWidth = 2,
+        Radius = Radius.Md,
+        SearchRadius = Radius.Full,
+        IconSize = IconSize.Dense,
+        LabelGap = 6,
+        CaptionGap = 5,
+        LabelRole = TypeRole.Label,
+        CaptionRole = TypeRole.Caption,
+        PanelElevation = 2,
+    };
+
+    /// <summary>The selection controls (spec B11-B13, C7): Sizing's selection ladder, a 2dp border, the
+    /// extra-small corner, a 44dp radio row, and the slider's 4dp track under a 24dp thumb.</summary>
+    public SelectionControlsTheme? SelectionControls => field ??= new SelectionControlsTheme
+    {
+        Box = ByDensityAlone(Sizing.SelectionBox),
+        BorderWidth = 2,
+        CheckboxRadius = Radius.Xs,
+        RadioDot = ByDensityAlone(Sizing.RadioDot),
+        RadioRowHeight = 44,
+        LabelGap = Space.S3,
+        SwitchWidth = ByDensityAlone(Sizing.SwitchWidth),
+        SwitchHeight = ByDensityAlone(Sizing.SwitchHeight),
+        SwitchThumb = ByDensityAlone(Sizing.SwitchThumb),
+        SwitchInset = Sizing.SwitchInset,
+        SwitchThumbElevation = 1,
+        SliderTrackHeight = 4,
+        SliderThumbSize = 24,
+        SliderThumbBorder = 1,
+        SliderThumbElevation = 2,
+        SliderMinWidth = 120,
+    };
+
+    /// <summary>The segmented controls: a 3dp lip, the selected segment raised on the surface, and
+    /// the stepper's 1dp border around 20dp glyphs.</summary>
+    public SegmentedTheme? Segmented => field ??= new SegmentedTheme
+    {
+        Inset = 3,
+        ThumbElevation = 1,
+        BorderWidth = 1,
+        IconSize = IconSize.Dense,
+    };
+
+    /// <summary>The Chip: a pill padded 12, its label at 13 over 16 semi-bold, and a filter chip's
+    /// 1dp border, the selected one's and the outline of the unselected one.</summary>
+    public ChipTheme? Chip => field ??= new ChipTheme
+    {
+        PaddingX = Space.S3,
+        Gap = 6,
+        LabelSize = 13,
+        LabelLineHeight = 16,
+        LabelWeight = FontWeight.SemiBold,
+        LabelTracking = 0,
+        Radius = Radius.Full,
+        SelectedBorderWidth = 1,
+        OutlineWidth = 1,
+        PressOpacity = 0.24f,
+        IconSize = IconSize.Sm,
+        RemoveIconSize = IconSize.Dense,
+    };
+
+    // The surfaces' slots (E6c) follow the same rule: what each surface drew, a colour it takes from
+    // one of the theme's roles left null, so a tooltip, a toast, a track, a skeleton or a filled card
+    // reads the role and a theme that changes it reaches them.
+
+    /// <summary>The surfaces (spec C2): a dialog of at most 480 at extra-large corners and elevation 5,
+    /// a sheet rising at elevation 4 with a 32 by 4 handle, a drawer at elevation 3.</summary>
+    public ModalTheme? Modal => field ??= new()
+    {
+        DialogMaxWidth = 480,
+        DialogShape = ShapeScale.ExtraLarge,
+        DialogElevation = 5,
+        DialogPadding = EdgeInsets.All(Space.S5),
+        DialogGap = 20,
+        DialogTextGap = 8,
+        DialogActionGap = 8,
+        DialogGutter = Space.S6,
+        BottomSheetShape = ShapeScale.ExtraLarge,
+        BottomSheetElevation = 4,
+        BottomSheetPadding = new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
+        BottomSheetGap = Space.S3,
+        HandleWidth = 32,
+        HandleHeight = 4,
+        DrawerElevation = 3,
+        DrawerPadding = EdgeInsets.All(Space.S4),
+    };
+
+    /// <summary>What opens beside an anchor: a bordered panel at medium corners and elevation 2, a menu
+    /// at least 180 wide, a tooltip in the inverse colours.</summary>
+    public MenuTheme? Menu => field ??= new()
+    {
+        PanelShape = ShapeScale.Medium,
+        PanelBorderWidth = 1,
+        PanelElevation = 2,
+        PopoverPadding = EdgeInsets.All(Space.S3),
+        MenuMinWidth = 180,
+        MenuPadding = EdgeInsets.Symmetric(0, Space.S1),
+        ItemPadding = EdgeInsets.Symmetric(Space.S3, 0),
+        ItemGap = Space.S2,
+        TooltipShape = ShapeScale.Small,
+        TooltipPadding = EdgeInsets.Symmetric(Space.S2, Space.S1),
+    };
+
+    /// <summary>The notices: a pill of a toast in the inverse colours, a banner in 13 over 18 (spec
+    /// B18), a cookie consent at large corners.</summary>
+    public NoticeTheme? Notice => field ??= new()
+    {
+        ToastShape = ShapeScale.Full,
+        ToastElevation = 3,
+        ToastPadding = EdgeInsets.Symmetric(Space.S4, Space.S3),
+        ToastMaxWidth = 480,
+        ToastDot = 8,
+        ToastGap = Space.S3,
+        ToastMargin = EdgeInsets.Symmetric(Space.S4, Space.S6),
+        BannerShape = ShapeScale.Large,
+        BannerPadding = new EdgeInsets(14, 12, 14, 12),
+        BannerIconGap = 10,
+        BannerGap = Space.S1,
+        BannerTextSize = 13,
+        BannerLineHeight = 18,
+        BannerTitleWeight = FontWeight.SemiBold,
+        BannerBodyWeight = FontWeight.Regular,
+        ConsentShape = ShapeScale.Large,
+        ConsentElevation = 2,
+        ConsentBorderWidth = 1,
+        ConsentPadding = EdgeInsets.All(Space.S4),
+    };
+
+    /// <summary>What shows something is on its way: a bar 4 high (8 prominent) on a subtle track, a
+    /// skeleton line 12 high with a glint.</summary>
+    public ProgressTheme? Progress => field ??= new()
+    {
+        BarHeight = 4,
+        ProminentBarHeight = 8,
+        BarShape = ShapeScale.Full,
+        RefreshSpinner = IconSize.Dense,
+        SkeletonLineHeight = 12,
+        SkeletonShape = ShapeScale.Medium,
+    };
+
+    /// <summary>The Card: large corners, a 1dp border on the outlined and elevated kinds, elevation 1.</summary>
+    public CardTheme? Card => field ??= new()
+    {
+        Shape = ShapeScale.Large,
+        BorderWidth = 1,
+        Elevation = 1,
+    };
+
+    private static DensityPair ByDensityAlone(Func<Density, float> side) => new()
+    {
+        Comfortable = side(Density.Comfortable),
+        Compact = side(Density.Compact),
+    };
+
     private static SizeLadder BySize(Func<SizeVariant, float> rung) => new()
     {
         Small = rung(SizeVariant.Small),
@@ -207,6 +392,9 @@ public sealed class PhotonTheme : IAppTheme
 
     // ---- helpers ----------------------------------------------------------------------------------
     private static ColorToken Token(uint lightRgb, uint darkRgb) => new(Rgb(lightRgb), Rgb(darkRgb));
+
+    private static ColorToken Token(uint lightRgb, uint darkRgb, uint moreLightRgb, uint moreDarkRgb) =>
+        new ColorToken(Rgb(lightRgb), Rgb(darkRgb)).WithMore(Rgb(moreLightRgb), Rgb(moreDarkRgb));
 
     private static Color Rgb(uint rgb) =>
         Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);

@@ -21,6 +21,7 @@
  */
 
 import { exception } from './exceptions';
+import { isReference } from './marks';
 export function hash(value: unknown): number {
   if (value == null) return 0;
   switch (typeof value) {
@@ -128,7 +129,8 @@ function stringHash(text: string): number {
 function objectHash(value: object): number {
   const own = (value as { getHashCode?: unknown }).getHashCode;
   if (typeof own === 'function') return Number((own as () => unknown).call(value)) | 0;
-  if (Array.isArray(value)) return arrayHash(value);
+  // A list or an array that went into `object` hashes by its identity, as .NET's does (#954); a tuple by its elements.
+  if (Array.isArray(value)) return isReference(value) ? identityHash(value) : arrayHash(value);
   // Plain data (an anonymous value) and a vocabulary value type's hand-written twin by their members,
   // in any order, as `equals` matches them by name. A record's and a struct's twin answer above, from
   // the members their `equals` reads; any other class, the runtime's included, is its identity unless

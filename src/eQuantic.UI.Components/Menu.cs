@@ -59,6 +59,8 @@ public sealed class Menu : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The menus' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
+        var slot = theme.Menu;
 
         var list = new Column(gap: 0) { Width = SizeValue.Fill };
         for (var i = 0; i < Items.Count; i++)
@@ -66,7 +68,7 @@ public sealed class Menu : StatefulComponent
             var item = Items[i];
             var index = i;
 
-            var row = new Row(gap: Space.S2)
+            var row = new Row(gap: slot?.ItemGap ?? Space.S2)
             {
                 Cross = CrossAlign.Center,
                 Width = SizeValue.Fill,
@@ -85,7 +87,7 @@ public sealed class Menu : StatefulComponent
             var surface = new Box(new BoxStyle
             {
                 Height = ControlMetrics.Height(context, SizeVariant.Medium),
-                Padding = EdgeInsets.Symmetric(Space.S3, 0),
+                Padding = slot?.ItemPadding ?? EdgeInsets.Symmetric(Space.S3, 0),
                 Width = SizeValue.Fill,
                 Opacity = item.Disabled ? theme.DisabledOpacity : null,
                 Background = _open && index == _highlight && !item.Disabled ? theme.SurfaceSubtle : null,
@@ -104,13 +106,13 @@ public sealed class Menu : StatefulComponent
 
         var panel = new Box(new BoxStyle
         {
-            MinWidth = 180,
+            MinWidth = slot?.MenuMinWidth ?? 180,
             Background = theme.Surface,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
-            BorderWidth = 1,
+            CornerRadius = new CornerRadii(theme.Shape(slot?.PanelShape ?? ShapeScale.Medium)),
+            BorderWidth = slot?.PanelBorderWidth ?? 1,
             BorderColor = theme.Border,
-            Elevation = 2,
-            Padding = EdgeInsets.Symmetric(0, Space.S1),
+            Elevation = slot?.PanelElevation ?? 2,
+            Padding = slot?.MenuPadding ?? EdgeInsets.Symmetric(0, Space.S1),
             Clip = true,
         }, list);
 
