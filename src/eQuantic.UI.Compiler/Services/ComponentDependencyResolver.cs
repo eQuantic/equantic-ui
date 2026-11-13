@@ -91,18 +91,33 @@ public class ComponentDependencyResolver
         return modules;
     }
 
-    /// <summary>
-    /// Scans source code directories to build dependency map
-    /// </summary>
     /// <summary>The generated-sources directory for the configuration being built; null lets the
     /// scan find it. Set from the SDK, for the reason <see cref="ProjectCompilationHelper"/> gives:
     /// a project built Debug AND Release otherwise contributes every generated type twice.</summary>
     public string? GeneratedDirectory { get; set; }
 
-    public void ScanSourceDirectories(IEnumerable<string> directories)
+    /// <summary>Scans the source directories, every one of them walked, to build the dependency map: a host
+    /// with no list of what the C# compiler compiled.</summary>
+    public void ScanSourceDirectories(IEnumerable<string> directories) => ScanSourceDirectories(directories, null);
+
+    /// <summary>The scan, with what the C# compiler compiled for the project of the first root (#828).</summary>
+    /// <param name="directories">The roots, the project's own first.</param>
+    /// <param name="projectSources">What the C# compiler compiled for the project of the first root, read in
+    /// place of walking it, with its symbols (#828); null walks it.</param>
+    internal void ScanSourceDirectories(IEnumerable<string> directories, ProjectSources? projectSources)
     {
+        var first = true;
         foreach (var directory in directories)
         {
+            var isProject = first;
+            first = false;
+            if (isProject && projectSources is not null)
+            {
+                foreach (var file in projectSources.OwnFiles) AnalyzeFile(file, projectSources.ParseOptions);
+                foreach (var file in ProjectCompilationHelper.GetCompilerGeneratedFiles(directory, GeneratedDirectory))
+                    AnalyzeFile(file, projectSources.ParseOptions);
+                continue;
+            }
             if (!Directory.Exists(directory)) continue;
 
             var csFiles = Directory.GetFiles(directory, "*.cs", SearchOption.AllDirectories);
@@ -127,12 +142,12 @@ public class ComponentDependencyResolver
     /// <summary>
     /// Analyzes a C# file to extract component inheritance relationships
     /// </summary>
-    private void AnalyzeFile(string filePath)
+    private void AnalyzeFile(string filePath, CSharpParseOptions? options = null)
     {
         try
         {
             var code = File.ReadAllText(filePath);
-            Analyze(CSharpSyntaxTree.ParseText(code, ParseDefaults.Options, path: filePath).GetRoot());
+            Analyze(CSharpSyntaxTree.ParseText(code, options ?? ParseDefaults.Options, path: filePath).GetRoot());
         }
         catch (Exception ex)
         {

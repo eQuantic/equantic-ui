@@ -70,6 +70,17 @@ public class PointerContractFidelityTests
             .Should().Contain(":hover", "B8: chips answer the pointer");
     }
 
+    /// <summary>B8: "outlined/quiet chips = SurfaceSubtle". The unselected filter chip is the outlined
+    /// one, so it hovers where an outline Button does, and on nothing derived from it. Its surface sits
+    /// inside the chip's control, so the rule is the control's hover reaching it (#614), whose selector
+    /// carries <c>:hover</c> ahead of the class rather than at its end.</summary>
+    [Fact]
+    public void AnOutlinedFilterChipHoversOnSurfaceSubtle()
+    {
+        Css(new Chip("Expenses", ChipKind.Filter, onPressed: () => { })).Should().MatchRegex(
+            $@":hover[^{{}}]*\{{background-color:[^{{}};]*{System.Text.RegularExpressions.Regex.Escape(TokenCss.Value(Theme.SurfaceSubtle))}[^{{}};]*\}}");
+    }
+
     /// <summary>A Tag is an annotation, not a control — nothing to press, so nothing to promise.</summary>
     [Fact]
     public void ATagChipDoesNotHover()

@@ -4,7 +4,7 @@ using FluentAssertions;
 namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
-/// A FRAME OF A LIVE ELEMENT TREE, lowered by <see cref="WebRealizer.LowerFrame"/>: each component
+/// A FRAME OF A LIVE ELEMENT TREE, lowered by <see cref="MarkupHost.Lower"/>: each component
 /// from what its position built, by the instance the position keeps, and each layer shown to the
 /// owner before it lowers. The parity fixture proves the first frame is the server's markup; these
 /// prove the frames after it, which is where lowering a tree drawn once goes wrong.
@@ -13,7 +13,7 @@ public class FrameLoweringTests
 {
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
 
-    private static ComponentContext Context() => new(Theme, 1f, Density.Comfortable, static (_, _) => 0f);
+    private static MarkupHost Host() => new(Theme);
 
     /// <summary>A stateful component a parent builds: the shape that loses its state when a lowering
     /// builds it again, because the parent's build makes a fresh instance every time.</summary>
@@ -44,11 +44,11 @@ public class FrameLoweringTests
         }
     }
 
-    private static HtmlNode Frame(BuildOwner owner, VisualNode root)
+    private static HtmlNode Frame(MarkupHost host, VisualNode root, bool rebuildAll = false)
     {
-        var lowered = WebRealizer.LowerFrame(owner.Build(root, Context(), WindowSizeClass.Expanded, rebuildAll: false), Theme)
-            .Render();
-        owner.EndFrame();
+        host.Build(root, WindowSizeClass.Expanded, rebuildAll);
+        var lowered = host.Lower().Render();
+        host.EndFrame();
         return lowered;
     }
 
@@ -71,16 +71,16 @@ public class FrameLoweringTests
     [Fact]
     public void ANestedStatefulComponent_KeepsItsStateFromOneFrameToTheNext()
     {
-        var owner = ComponentBoundary.Owner();
+        var host = Host();
         var page = new Page(() => new Counter());
 
-        var first = Frame(owner, page);
+        var first = Frame(host, page);
         Markup(first).Should().Contain("Count: 0");
 
         Press(first);
-        owner.HasDirty.Should().BeTrue("the press set state on the instance its position keeps");
+        host.Owner.HasDirty.Should().BeTrue("the press set state on the instance its position keeps");
 
-        Markup(Frame(owner, page)).Should().Contain("Count: 1",
+        Markup(Frame(host, page)).Should().Contain("Count: 1",
             "the counter is lowered from what its KEPT instance built, not from the fresh one the page's build made");
     }
 
@@ -99,37 +99,36 @@ public class FrameLoweringTests
     [Fact]
     public void ALayerIsShownBeforeItLowers_SoWhatItHoldsKeepsItsState()
     {
-        var owner = ComponentBoundary.Owner();
+        var host = Host();
         Counter? kept = null;
         var page = new Page(() => new Overlay(new Counter()));
 
-        var first = Frame(owner, page);
-        kept = owner.Root is { } root ? KeptCounter(root) : null;
+        var first = Frame(host, page);
+        kept = host.Owner.Root is { } root ? KeptCounter(root) : null;
         kept.Should().NotBeNull("an overlay's child builds in the slot the frame showed it in");
         kept!.Mounts.Should().Be(1, "it mounts once, when the frame that first showed it ends");
 
         Press(first);
-        Markup(Frame(owner, page)).Should().Contain("Count: 1");
+        Markup(Frame(host, page)).Should().Contain("Count: 1");
         kept.Mounts.Should().Be(1, "the same instance, still in the tree");
     }
 
     [Fact]
     public void ALayerTheFrameDoesNotLower_LeavesTheTreeWhenTheFrameEnds()
     {
-        var owner = ComponentBoundary.Owner();
+        var host = Host();
         var open = true;
         var page = new Page(() => new Anchored(new Text("anchor", TypeRole.BodyM), new Counter()) { Open = open });
 
-        Frame(owner, page);
-        var counter = KeptCounter(owner.Root!)!;
+        Frame(host, page);
+        var counter = KeptCounter(host.Owner.Root!)!;
         counter.Mounts.Should().Be(1);
 
         // Closed, with no motion to keep it mounted: the web lowers no panel for it, so the frame
         // shows nothing in its slot, and the slot is taken out when the frame ends — the rule the
         // element tree states for a layer, and the one Photon follows.
         open = false;
-        WebRealizer.LowerFrame(owner.Build(page, Context(), WindowSizeClass.Expanded, rebuildAll: true), Theme);
-        owner.EndFrame();
+        Frame(host, page, rebuildAll: true);
 
         counter.Unmounts.Should().Be(1);
     }
@@ -144,33 +143,25 @@ public class FrameLoweringTests
     [Fact]
     public void ADiscoveryRound_NamesTheKeptInstance_NotTheOneAParentsBuildMade()
     {
-        var owner = ComponentBoundary.Owner();
+        var host = Host();
         var page = new Page(() => new Counter());
-        Frame(owner, page);
-        var kept = KeptCounter(owner.Root!);
+        Frame(host, page);
+        var kept = KeptCounter(host.Owner.Root!);
 
         var scope = new ComponentExpansionScope();
-        ComponentExpansionScope.Ambient = scope;
-        try
-        {
-            // Every component builds again, so the page hands the position a FRESH counter.
-            WebRealizer.LowerFrame(owner.Build(page, Context(), WindowSizeClass.Expanded, rebuildAll: true), Theme);
-        }
-        finally
-        {
-            ComponentExpansionScope.Ambient = null;
-        }
-
-        owner.EndFrame();
+        // Every component builds again, so the page hands the position a FRESH counter.
+        host.Build(page, WindowSizeClass.Expanded, rebuildAll: true);
+        host.Lower(new RenderChannels(scope));
+        host.EndFrame();
         scope.Expanded.Values.OfType<Counter>().Should().ContainSingle().Which.Should().BeSameAs(kept);
     }
 
     [Fact]
     public void AComponentTheFrameDidNotBuild_IsRefused_RatherThanDrawnAtItsDefaults()
     {
-        var owner = ComponentBoundary.Owner();
-        var frame = new ElementFrame(owner.Build(new Page(() => new Text("only text", TypeRole.BodyM)), Context(),
-            WindowSizeClass.Expanded, rebuildAll: false));
+        var host = Host();
+        var frame = new ElementFrame(host.Build(new Page(() => new Text("only text", TypeRole.BodyM)),
+            WindowSizeClass.Expanded));
 
         var stranger = new Counter();
         var lowering = () => frame.At(stranger);

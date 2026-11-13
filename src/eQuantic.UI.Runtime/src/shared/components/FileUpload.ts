@@ -77,9 +77,9 @@ export class FileUpload extends StatefulComponent {
         let error: any; 
         if (failed && (($0) => (($0 != null && $0.length > 0) && (error = $0, true)))(upload.error)) row.add(new Text(error, 'caption', theme.colors('destructive').base, 3));
         let actions = new Row(8);
-        if (state === 'waiting' || state === 'sending') actions.add(new Button(SdkStrings.uploadPause, 'ghost', 'small', upload.pause.bind(upload)));
-        if (state === 'paused') actions.add(new Button(SdkStrings.uploadResume, 'ghost', 'small', upload.resume.bind(upload)));
-        if (state === 'waiting' || state === 'sending' || state === 'paused') actions.add(new Button(SdkStrings.uploadCancel, 'ghost', 'small', upload.cancel.bind(upload)));
+        if (state === 'waiting' || state === 'sending') actions.add(new Button(SdkStrings.uploadPause, 'ghost', 'small', $eq.delegates.bound(upload, upload.pause)));
+        if (state === 'paused') actions.add(new Button(SdkStrings.uploadResume, 'ghost', 'small', $eq.delegates.bound(upload, upload.resume)));
+        if (state === 'waiting' || state === 'sending' || state === 'paused') actions.add(new Button(SdkStrings.uploadCancel, 'ghost', 'small', $eq.delegates.bound(upload, upload.cancel)));
         row.add(actions);
         return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.all(12), background: theme.surface, borderWidth: 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape('medium')) }), row);
     }
@@ -103,7 +103,7 @@ export class FileUpload extends StatefulComponent {
             for (let i = 0; i < count; i++) {
                 let upload = uploads.start($eq.collections.item(files, i), config.policy);
                 this._uploads.push(upload);
-                this._subscriptions.push(upload.subscribe(this.changed.bind(this)));
+                this._subscriptions.push(upload.subscribe($eq.delegates.bound(this, this.changed)));
                 if (upload.state === 'failed') this._announcement = FileUpload.announcement(upload);
             }
         });

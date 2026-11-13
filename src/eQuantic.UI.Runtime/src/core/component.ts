@@ -4,6 +4,8 @@
 
 import { Component, HtmlNode, RenderContext } from './types';
 import type { VisualNodeValue } from '../shared/nodes';
+import type { CrossAlignValue } from '../shared/enums.generated';
+import type { ComponentElement } from '../shared/components/ComponentElement';
 import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
@@ -215,7 +217,47 @@ function applyServerFields(target: object, payload: Record<string, unknown>): bo
   return adopted;
 }
 
-export abstract class StatelessComponent extends Component {
+/**
+ * The C# `UiComponent`: a component IS a node of the vocabulary (`UiComponent : VisualNode`), as a
+ * Flutter `StatelessWidget` is a `Widget`. Its kind is `component`, it carries the node's key, and
+ * nested inside an abstract tree the lowering expands it through the positional store, the server
+ * data its ordinal names and the error boundary: one door for every component, with or without state.
+ * <p>
+ * The web family (`HtmlElement`, the DOM escape hatch) is a `Component` and not one of these, as in
+ * C#, where `HtmlElement` is an `IComponent` and no node: it carries no `nodeKind`, and the lowering
+ * lets it render itself. `component-is-a-node.type-test.ts` holds this class to every member the
+ * vocabulary's `VisualNode` declares, so the two cannot drift apart in silence.
+ */
+export abstract class UiComponent extends Component {
+  /** The shared-vocabulary discriminator. As a page ROOT it is inert: a page mounts through render(). */
+  readonly nodeKind = 'component' as const;
+
+  /** The C# `VisualNode.Key` mirror: part of the reconciler identity (path + type + key). */
+  key: string | null = null;
+
+  /**
+   * The C# `VisualNode.Bookmark`, `AlignSelf` and `GridSpan`, which a component carries as any node
+   * does. Fields rather than `declare`d types: the lowering reads them off the component, and a field
+   * is what eqc's list of runtime members sees, so an app member of one of these names is refused
+   * at build time instead of becoming the element's id or its alignment.
+   */
+  bookmark?: string | null;
+  alignSelf?: CrossAlignValue | null;
+  gridSpan?: number;
+
+  abstract build(context: RenderContext): Component | VisualNodeValue;
+
+  abstract getVirtualNode(): HtmlNode;
+
+  /**
+   * The C# `UiComponent.AdoptConfig`: a position that keeps its instance hands it the configuration of
+   * the fresh one its parent built. The default copies nothing, as C#'s does, and a component with
+   * configuration of its own overrides it; the element engine calls it on every instance it keeps.
+   */
+  adoptConfig(_next: UiComponent): void {}
+}
+
+export abstract class StatelessComponent extends UiComponent {
   private _renderManager: RenderManager = new RenderManager();
   private _instances = new ComponentInstanceStore();
   /** The page's own invalidator, ONE for its life: what a measure in a shipped face holds on to, weakly,
@@ -391,7 +433,7 @@ export class EscapeHatchPage extends StatelessComponent {
  * fields on the component itself and `setState` triggers the rebuild directly. eqc emits every
  * stateful component against this base.
  */
-export abstract class StatefulComponent extends Component {
+export abstract class StatefulComponent extends UiComponent {
   private _renderManager: RenderManager = new RenderManager();
   private _mounted = false;
   private _renderScheduled = false;
@@ -400,16 +442,6 @@ export abstract class StatefulComponent extends Component {
    *  to rebuild the page should the face be taken back (#1056). A function made per pass is a new one
    *  every render, so nothing could hold it without holding every render. */
   private readonly _invalidate = (): void => this._scheduleRender();
-
-  /**
-   * The shared-vocabulary discriminator: nested inside an abstract tree this IS a component node —
-   * the lowering expands it through the positional store (retention) instead of the plain mixing
-   * seam (an embedded self-render with a dead render manager). As a page ROOT the field is inert.
-   */
-  readonly nodeKind = 'component';
-
-  /** The C# `VisualNode.Key` mirror — part of the reconciler identity (path + type + key). */
-  key: string | null = null;
 
   /** Duck-type marker the instance store keys on (avoids an import cycle with shared/). */
   readonly _sharedStateful = true;
@@ -430,9 +462,48 @@ export abstract class StatefulComponent extends Component {
   // values (expanded by the lowering — they never reach render() below).
   abstract build(context: RenderContext): Component | VisualNodeValue;
 
-  /** The C# `SetState(mutate)` contract: run the mutation, then schedule a rebuild. */
+  /**
+   * The position the element engine mounted this instance at (the C# `StatefulComponent.MountedAt`):
+   * the first one, while a second position that holds the same instance waits in `_alsoMountedAt`.
+   * Null while no engine holds it, which is every instance the browser builds today (E3b moves the
+   * browser onto the engine).
+   */
+  mountedAt: ComponentElement | null = null;
+
+  private _alsoMountedAt: ComponentElement[] | null = null;
+
+  /** Taken by a position (the C# `EnterPosition`): true when it is the first, which is the one that mounts it. */
+  enterPosition(at: ComponentElement): boolean {
+    if (this.mountedAt === null) {
+      this.mountedAt = at;
+      return true;
+    }
+    (this._alsoMountedAt ??= []).push(at);
+    return false;
+  }
+
+  /** Left by a position (the C# `LeavePosition`): true when it was the last, which is the one that unmounts it. */
+  leavePosition(at: ComponentElement): boolean {
+    const others = this._alsoMountedAt;
+    if (this.mountedAt !== at) {
+      const index = others?.indexOf(at) ?? -1;
+      if (index >= 0) others!.splice(index, 1);
+      return false;
+    }
+    if (others !== null && others.length > 0) {
+      this.mountedAt = others.pop()!;
+      return false;
+    }
+    this.mountedAt = null;
+    return true;
+  }
+
+  /** The C# `SetState(mutate)` contract: run the mutation, mark the positions that hold this
+   * instance for the engine's next build, then schedule a rebuild. */
   protected setState(fn: () => void): void {
     fn();
+    this.mountedAt?.markNeedsBuild();
+    for (const at of this._alsoMountedAt ?? []) at.markNeedsBuild();
     this._scheduleRender();
   }
 
@@ -445,6 +516,19 @@ export abstract class StatefulComponent extends Component {
 
   /** Runs when this instance's position LEAVES the tree (C# `OnUnmount`) — unsubscribe here. */
   onUnmount(): void {}
+
+  /**
+   * Runs before this instance builds again because a value it read through `context.dependOn`
+   * changed (C# `OnDependenciesChanged`, Flutter's `didChangeDependencies`) — the transpiled subclass
+   * overrides it.
+   */
+  onDependenciesChanged(): void {}
+
+  /** Called by the element engine before a build a changed dependency asked for (C#
+      `NotifyDependenciesChanged`). */
+  notifyDependenciesChanged(): void {
+    this.onDependenciesChanged();
+  }
 
   /** Called by the HOST — the instance store, or `mount`/`hydrate` for a page root. Idempotent. */
   notifyMounted(): void {

@@ -1135,18 +1135,20 @@ describe('components centre like nodes', () => {
     expect(node.nodeKind).toBe('component');
   });
 
-  it('a STATELESS component is deliberately not one — the absence is the signal', async () => {
+  it('a STATELESS component is one too, and the DOM escape hatch is not', async () => {
     const { Card } = await import('./components/Card');
     const { Text } = await import('./vocabulary');
+    const { VisualNodeComponent } = await import('./visual-node-component');
 
-    // Not an oversight, and worth pinning so nobody "fixes" it by moving nodeKind onto the base:
-    // the lowering's MIXING SEAM recognises a web component by its LACK of a nodeKind, embedding the
-    // HtmlNode it renders for itself. Give every component the field and that routing changes for
-    // the whole library — a runtime decision, not a typing one. The seam used to be the lowering's
-    // default arm and is now the check ahead of its switch, since `nodeKind` became a closed union
-    // and the default arm became the compiler's (node-kinds.spec.ts walks it from the other side).
-    const card = new Card(new Text('hi') as never) as unknown as { nodeKind?: string };
-    expect(card.nodeKind).toBeUndefined();
+    // In C# `StatelessComponent : UiComponent : VisualNode`, as a Flutter StatelessWidget is a Widget,
+    // so a stateless component takes the lowering's `component` arm (the positional store, the server
+    // data its ordinal names, the boundary) exactly as a stateful one does. What stays outside is the
+    // web family, as in C#, where `HtmlElement` is an `IComponent` and no node: the lowering's MIXING
+    // SEAM recognises it by its LACK of a nodeKind and embeds the HtmlNode it renders for itself.
+    const card: VisualNode = new Card(new Text('hi') as never);
+    expect(card.nodeKind).toBe('component');
+    const escapeHatch = new VisualNodeComponent(new Text('hi') as never) as unknown as { nodeKind?: string };
+    expect(escapeHatch.nodeKind).toBeUndefined();
   });
 });
 
@@ -2426,5 +2428,71 @@ describe('the keys an app binds', () => {
     expect(press('d')).toBe(true);
     const selection = component.editor.selection;
     expect([selection.start.line, selection.start.column, selection.end.line, selection.end.column]).toEqual([0, 0, 1, 5]);
+  });
+});
+
+/**
+ * A reader hears the field and its text as one thing (#1333, C# twin:
+ * SurfaceSsrTests.ItsInputHoldsTheReading_AndItsDrawingIsHidden). The door held nothing and the code was
+ * read as lines of their own beside an empty field. It now holds the model's reading, its selection is the
+ * model's, and what the surface draws is out of the reading order; an input method's text left in it is put
+ * back after the render.
+ */
+describe('a reader hears the field and its text as one thing', () => {
+  const lower = (editor: CodeEditorController) =>
+    lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor) as never, {
+      textPrimary: photonTheme.textPrimary,
+      componentContext: { theme: photonTheme, typeScale: 1 },
+    });
+
+  it('holds the reading, selects where the caret is, and hides what it draws', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'requestAnimationFrame'] });
+    const parent = document.createElement('div');
+    try {
+      const editor = new CodeEditorController('one\ntwo\nthree', CodeLanguages.for('csharp'));
+      editor.selection = new CodeRange(new CodePosition(1, 1), new CodePosition(2, 3));
+      document.body.append(parent);
+      const reconciler = new Reconciler();
+      const first = lower(editor);
+      reconciler.reconcile(parent, null, first);
+      vi.advanceTimersByTime(100);
+
+      const door = parent.querySelector('textarea')!;
+      expect(door.value).toBe('one\ntwo\nthree');
+      expect([door.selectionStart, door.selectionEnd, door.selectionDirection]).toEqual([5, 11, 'forward']);
+      expect(parent.querySelector('.eq-code-surface')!.firstElementChild!.getAttribute('aria-hidden')).toBe('true');
+
+      // What an input method left in the door is no part of the document: the next render puts the reading back.
+      door.value = 'one\ntかwo\nthree';
+      editor.selection = new CodeRange(new CodePosition(0, 3));
+      reconciler.reconcile(parent, first, lower(editor), 0);
+      vi.advanceTimersByTime(100);
+      expect(door.value).toBe('one\ntwo\nthree');
+      expect([door.selectionStart, door.selectionEnd]).toEqual([3, 3]);
+    } finally {
+      vi.useRealTimers();
+      parent.remove();
+    }
+  });
+
+  // A phone's keyboard composes and corrects in the text around its caret, and the door never tells the
+  // model which range a correction replaces: under a finger the door holds nothing, as it always did.
+  it('holds nothing under a finger', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'requestAnimationFrame'] });
+    const parent = document.createElement('div');
+    const matchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ matches: query === '(pointer: coarse)' })) as never;
+    try {
+      const editor = new CodeEditorController('one\ntwo', CodeLanguages.for('csharp'));
+      document.body.append(parent);
+      new Reconciler().reconcile(parent, null, lower(editor));
+      vi.advanceTimersByTime(100);
+
+      expect(parent.querySelector('textarea')!.value).toBe('');
+    } finally {
+      window.matchMedia = matchMedia;
+      vi.useRealTimers();
+      parent.remove();
+    }
   });
 });

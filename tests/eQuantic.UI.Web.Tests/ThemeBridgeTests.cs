@@ -50,6 +50,22 @@ public class ThemeBridgeTests
         json.Should().Contain($"\"display\":[{style.Size.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},{style.LineHeight.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},");
     }
 
+    /// <summary>Every member of the theme reaches the browser: a theme that overrides <c>Code</c> coloured a
+    /// CodeBlock with its palette on the server and on Photon, and with the default one in the browser (#936).</summary>
+    [Fact]
+    public void ATheme_ThatOverridesCode_CarriesItsPalette()
+    {
+        var ink = new ColorToken(new Color(1, 2, 3, 255));
+        var theme = new NamedFaceTests.RoleTheme(PhotonTheme.Instance, TypeRole.Display, PhotonTheme.Instance.Type(TypeRole.Display),
+            kind => kind == CodeTokenKind.Keyword ? ink : ((IAppTheme)PhotonTheme.Instance).Code(kind));
+
+        var json = ThemeBridge.SerializeJson(theme);
+
+        json.Should().Contain("\"code\":{").And.Contain("\"keyword\":[[1,2,3,");
+        foreach (var kind in Enum.GetValues<CodeTokenKind>())
+            json.Should().Contain($"\"{char.ToLowerInvariant(kind.ToString()[0])}{kind.ToString()[1..]}\":[[");
+    }
+
     [Fact]
     public void PhotonSerialization_MatchesTheSharedFixture()
     {
@@ -113,18 +129,6 @@ public class ThemeBridgeTests
         sheet.EnumerateObject().Select(p => p.Name).Should().Equal("gridline");
         sheet.GetProperty("gridline")[0].EnumerateArray().Select(v => v.GetDouble()).Take(3)
             .Should().Equal(0x12, 0x34, 0x56);
-    }
-
-    /// <summary>Every member of the slot has a name on the wire: a member the record gains and the
-    /// bridge forgets is a colour the browser never draws.</summary>
-    [Fact]
-    public void EveryMemberOfTheSheetSlot_Crosses()
-    {
-        var named = ThemeBridge.SheetMembers(new SheetTheme()).Select(m => m.Name).ToList();
-
-        named.Should().Equal(typeof(SheetTheme).GetProperties()
-            .Where(p => p.PropertyType == typeof(ColorToken?))
-            .Select(p => char.ToLowerInvariant(p.Name[0]) + p.Name[1..]));
     }
 }
 

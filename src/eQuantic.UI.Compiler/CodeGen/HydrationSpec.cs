@@ -60,9 +60,11 @@ public static class HydrationSpec
         }
 
         // A 64-bit [Flags] enum crosses as its digits, as a long does, and is held as a BigInt (#551): it
-        // arrived as text. Any other enum arrives as the browser holds it, a member's key or a number.
+        // arrived as text. A 32-bit one arrives as the number the browser holds. Any other enum arrives as a
+        // member's camelCase name, which the browser holds, or, for a value no member names, as its digits,
+        // where the browser holds a number, or a BigInt for one over a long (#1238).
         if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
-            return enumType.IsFlagsEnum() && Strategies.Types.EnumShape.IsWide(enumType) ? "'long'" : null;
+            return EnumTag(enumType, flagsNarrow: null);
 
         if (type is IArrayTypeSymbol array)
             return List(array.ElementType, referenced, visiting);
@@ -127,7 +129,11 @@ public static class HydrationSpec
             {
                 try
                 {
-                    return $"{{ of: {named.TwinTypeName()}, members: {MemberMap(MemberEntries(named, referenced, visiting))} }}";
+                    // What it was built as travels in the spec: the wire says nothing of it (#687).
+                    var closed = Strategies.Expressions.ObjectCreationStrategy.ClosureOf(named) is { } typeArguments
+                        ? $", closed: '{typeArguments}'"
+                        : "";
+                    return $"{{ of: {named.TwinTypeName()}, members: {MemberMap(MemberEntries(named, referenced, visiting))}{closed} }}";
                 }
                 finally
                 {
@@ -249,7 +255,9 @@ public static class HydrationSpec
         References referenced, HashSet<INamedTypeSymbol> visiting)
     {
         var parts = new List<string> { $"dict: {Of(value, referenced, visiting) ?? "null"}" };
+        // A key is a value like any other: a record or a struct on its twin, or it equals no key built here (#706).
         if (KeyTag(key) is { } tag) parts.Add($"key: {tag}");
+        else if (Of(key, referenced, visiting) is { } keySpec) parts.Add($"keyOf: {keySpec}");
         if (dictionary.DictionaryFactory() is Eq.SortedDictionary or Eq.SortedList)
         {
             // Which of the two: a SortedList refuses a key already there in its own words.
@@ -261,17 +269,30 @@ public static class HydrationSpec
     }
 
     /// <summary>
+    /// How an enum's value comes back from what EqJson wrote: a <c>[Flags]</c> one's number, a 64-bit one's
+    /// as a long's digits, and <paramref name="flagsNarrow"/> for a narrower one (nothing for a value, which
+    /// is a JSON number, and a number for a key, which is its text); any other enum's member name as itself,
+    /// and a value no member names from its digits to the number the browser holds, or the BigInt of one
+    /// over a long (#1238).
+    /// </summary>
+    private static string? EnumTag(INamedTypeSymbol enumType, string? flagsNarrow) =>
+        enumType.IsFlagsEnum()
+            ? Strategies.Types.EnumShape.IsWide(enumType) ? "'long'" : flagsNarrow
+            : Strategies.Types.EnumShape.IsWide(enumType) ? "'enumLong'" : "'enum'";
+
+    /// <summary>
     /// How the property name System.Text.Json writes for a key of this type becomes the key (a
     /// <c>HydrationKey</c> of <c>utils/hydrate.ts</c>): a number, a bool, or a compat scalar by its tag.
-    /// Null where the name IS the key: a string, a char, a <c>Guid</c>, an enum's camelCase name. A
-    /// <c>[Flags]</c> enum's key is its number's text (EqJson), and a number here (#442), a 64-bit
-    /// one's a BigInt, as a long's key is (#551).
+    /// Null where the name IS the key: a string, a char, a <c>Guid</c>. A <c>[Flags]</c> enum's key is its
+    /// number's text (EqJson), and a number here (#442), a 64-bit one's a BigInt, as a long's key is (#551);
+    /// any other enum's is its member's camelCase name, or a value no member names as its digits
+    /// (<see cref="EnumTag"/>).
     /// </summary>
     private static string? KeyTag(ITypeSymbol key)
     {
         var type = key.UnwrapNullable() ?? key;
-        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } flags && flags.IsFlagsEnum())
-            return Strategies.Types.EnumShape.IsWide(flags) ? "'long'" : "'number'";
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            return EnumTag(enumType, flagsNarrow: "'number'");
         switch (type.SpecialType)
         {
             case SpecialType.System_Boolean:

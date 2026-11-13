@@ -146,4 +146,36 @@ public class ChildProcessTests
     {
         ProcessStarts($"class C {{ void M(ProcessStartInfo s) {{ {statement} }} }}").Should().Be(starts);
     }
+
+    /// <summary>
+    /// A program this suite has just written, held open for writing as a process another test forked in
+    /// that moment holds it until it execs, starts once it is let go of (#1206): Linux refused the start
+    /// with "Text file busy", and a test that writes a program and runs it failed on a race it does not
+    /// own (<c>ProgramArchiveTests</c> on PR #1194's CI). The descriptor is held here, so the refusal comes
+    /// on every run rather than on the race.
+    /// </summary>
+    [LinuxFact]
+    [System.Runtime.Versioning.SupportedOSPlatform("linux")]
+    public void AProgramHeldOpenForWriting_StartsOnceItIsLetGo()
+    {
+        var folder = Directory.CreateTempSubdirectory("eq-busy-").FullName;
+        try
+        {
+            var program = Path.Combine(folder, "says");
+            File.WriteAllText(program, "#!/bin/sh\necho started\n");
+            File.SetUnixFileMode(program, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            var held = new FileStream(program, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+            var letGo = Task.Delay(TimeSpan.FromMilliseconds(300)).ContinueWith(_ => held.Dispose());
+
+            var (exitCode, output, _) = ChildProcess.Run(program, [], TimeSpan.FromMinutes(1));
+
+            letGo.Wait(TimeSpan.FromSeconds(10));
+            exitCode.Should().Be(0);
+            output.Trim().Should().Be("started", "the program ran once nothing held it open for writing");
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
 }

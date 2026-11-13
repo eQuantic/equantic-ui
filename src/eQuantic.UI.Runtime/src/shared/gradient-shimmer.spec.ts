@@ -103,7 +103,8 @@ describe('gradient + shimmer lowering (C# GradientShimmerRealizerTests cross-pin
     // effectiveStyle presents the atomic rules SORTED, so assert each declaration on its own
     // rather than assuming the emission adjacency the C# inline-style string has.
     const style = effectiveStyle(node);
-    expect(style).toContain(`color: ${tokenValue(photonTheme.textPrimary)}`);
+    // No colour of its own since #614: the fallback is the colour it inherits (the C# cross-pin).
+    expect(style).not.toMatch(/(^|[^-\w])color:/);
     expect(style).toContain('-webkit-background-clip: text');
     expect(style).toContain('background-clip: text');
     expect(style).toContain('-webkit-text-fill-color: transparent');

@@ -163,6 +163,228 @@ public sealed class PhotonTheme : IAppTheme
         Rgba(0x0F1720, (byte)MathF.Round(lightAlpha * 255)),
         Rgba(0x000000, (byte)MathF.Round(darkAlpha * 255)));
 
+    // ---- Slots (docs/ELEMENT-TREE-PLAN.md §3.10) ------------------------------------------------------
+    // Today's constants, now the design system's rather than each component's. The ladder is Sizing's
+    // own, read rung by rung, so the slot and the fallback cannot disagree under this theme.
+
+    /// <summary>The control ladder (spec §09): <see cref="Sizing"/>, every rung of it.</summary>
+    public ControlsTheme? Controls { get; } = new()
+    {
+        Height = ByDensity(Sizing.Height),
+        PaddingX = ByDensity(Sizing.PaddingX),
+        LabelSize = ByDensity(Sizing.LabelSize),
+        Gap = BySize(Sizing.Gap),
+        Icon = BySize(Sizing.Icon),
+        Radius = BySize(Sizing.Radius),
+    };
+
+    /// <summary>The Button (spec A12): a 64dp floor, a semi-bold label at 0.1 tracking, a 1dp outline in
+    /// BorderStrong, a link padded by 6, and the quiet variants filling with SurfaceSubtle.</summary>
+    public ButtonTheme? Button => field ??= new ButtonTheme
+    {
+        MinWidth = Sizing.ButtonMinWidth,
+        LabelWeight = FontWeight.SemiBold,
+        LabelTracking = 0.1f,
+        OutlineWidth = 1,
+        LinkPaddingX = 6,
+        OutlineColor = BorderStrong,
+        QuietFill = SurfaceSubtle,
+    };
+
+    // The form controls' slots (E6b): what each control drew, now the design system's. Their own
+    // ladders stay null, so the theme's Controls above reaches them. A colour a control takes from one
+    // of the theme's roles stays null too: the control reads the role itself, so a theme that changes
+    // the role (a decorator, or a spread of this theme in the browser) recolours the control, which a
+    // copy of the role taken here would not. Cached on first read.
+
+    /// <summary>The IconButton (spec A13): the §07 glyph ladder, a circle, a 1dp outline, and the tonal
+    /// press at 24%.</summary>
+    public IconButtonTheme? IconButton => field ??= new IconButtonTheme
+    {
+        IconSize = new SizeLadder { Small = IconSize.Sm, Medium = IconSize.Dense, Large = IconSize.Md, XLarge = IconSize.Md },
+        Radius = Radius.Full,
+        OutlineWidth = 1,
+        TonalPressOpacity = 0.24f,
+    };
+
+    /// <summary>The fields (spec B9, B10): 14 and 10 for a text field's padding and gap, 12 and 8 for
+    /// a picker's, a 1dp border that grows to 2 while focused, the medium corner, the search pill, and
+    /// the label 6 above and the helper 5 below.</summary>
+    public InputTheme? Input => field ??= new InputTheme
+    {
+        PaddingX = 14,
+        PickerPaddingX = Space.S3,
+        Gap = 10,
+        PickerGap = Space.S2,
+        BorderWidth = 1,
+        FocusBorderWidth = 2,
+        Radius = Radius.Md,
+        SearchRadius = Radius.Full,
+        IconSize = IconSize.Dense,
+        LabelGap = 6,
+        CaptionGap = 5,
+        LabelRole = TypeRole.Label,
+        CaptionRole = TypeRole.Caption,
+        PanelElevation = 2,
+    };
+
+    /// <summary>The selection controls (spec B11-B13, C7): Sizing's selection ladder, a 2dp border, the
+    /// extra-small corner, a 44dp radio row, and the slider's 4dp track under a 24dp thumb.</summary>
+    public SelectionControlsTheme? SelectionControls => field ??= new SelectionControlsTheme
+    {
+        Box = ByDensityAlone(Sizing.SelectionBox),
+        BorderWidth = 2,
+        CheckboxRadius = Radius.Xs,
+        RadioDot = ByDensityAlone(Sizing.RadioDot),
+        RadioRowHeight = 44,
+        LabelGap = Space.S3,
+        SwitchWidth = ByDensityAlone(Sizing.SwitchWidth),
+        SwitchHeight = ByDensityAlone(Sizing.SwitchHeight),
+        SwitchThumb = ByDensityAlone(Sizing.SwitchThumb),
+        SwitchInset = Sizing.SwitchInset,
+        SwitchThumbElevation = 1,
+        SliderTrackHeight = 4,
+        SliderThumbSize = 24,
+        SliderThumbBorder = 1,
+        SliderThumbElevation = 2,
+        SliderMinWidth = 120,
+    };
+
+    /// <summary>The segmented controls: a 3dp lip, the selected segment raised on the surface, and
+    /// the stepper's 1dp border around 20dp glyphs.</summary>
+    public SegmentedTheme? Segmented => field ??= new SegmentedTheme
+    {
+        Inset = 3,
+        ThumbElevation = 1,
+        BorderWidth = 1,
+        IconSize = IconSize.Dense,
+    };
+
+    /// <summary>The Chip: a pill padded 12, its label at 13 over 16 semi-bold, and a filter chip's
+    /// 1dp border, the selected one's and the outline of the unselected one.</summary>
+    public ChipTheme? Chip => field ??= new ChipTheme
+    {
+        PaddingX = Space.S3,
+        Gap = 6,
+        LabelSize = 13,
+        LabelLineHeight = 16,
+        LabelWeight = FontWeight.SemiBold,
+        LabelTracking = 0,
+        Radius = Radius.Full,
+        SelectedBorderWidth = 1,
+        OutlineWidth = 1,
+        PressOpacity = 0.24f,
+        IconSize = IconSize.Sm,
+        RemoveIconSize = IconSize.Dense,
+    };
+
+    // The surfaces' slots (E6c) follow the same rule: what each surface drew, a colour it takes from
+    // one of the theme's roles left null, so a tooltip, a toast, a track, a skeleton or a filled card
+    // reads the role and a theme that changes it reaches them.
+
+    /// <summary>The surfaces (spec C2): a dialog of at most 480 at extra-large corners and elevation 5,
+    /// a sheet rising at elevation 4 with a 32 by 4 handle, a drawer at elevation 3.</summary>
+    public ModalTheme? Modal => field ??= new()
+    {
+        DialogMaxWidth = 480,
+        DialogShape = ShapeScale.ExtraLarge,
+        DialogElevation = 5,
+        DialogPadding = EdgeInsets.All(Space.S5),
+        DialogGap = 20,
+        DialogTextGap = 8,
+        DialogActionGap = 8,
+        DialogGutter = Space.S6,
+        BottomSheetShape = ShapeScale.ExtraLarge,
+        BottomSheetElevation = 4,
+        BottomSheetPadding = new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
+        BottomSheetGap = Space.S3,
+        HandleWidth = 32,
+        HandleHeight = 4,
+        DrawerElevation = 3,
+        DrawerPadding = EdgeInsets.All(Space.S4),
+    };
+
+    /// <summary>What opens beside an anchor: a bordered panel at medium corners and elevation 2, a menu
+    /// at least 180 wide, a tooltip in the inverse colours.</summary>
+    public MenuTheme? Menu => field ??= new()
+    {
+        PanelShape = ShapeScale.Medium,
+        PanelBorderWidth = 1,
+        PanelElevation = 2,
+        PopoverPadding = EdgeInsets.All(Space.S3),
+        MenuMinWidth = 180,
+        MenuPadding = EdgeInsets.Symmetric(0, Space.S1),
+        ItemPadding = EdgeInsets.Symmetric(Space.S3, 0),
+        ItemGap = Space.S2,
+        TooltipShape = ShapeScale.Small,
+        TooltipPadding = EdgeInsets.Symmetric(Space.S2, Space.S1),
+    };
+
+    /// <summary>The notices: a pill of a toast in the inverse colours, a banner in 13 over 18 (spec
+    /// B18), a cookie consent at large corners.</summary>
+    public NoticeTheme? Notice => field ??= new()
+    {
+        ToastShape = ShapeScale.Full,
+        ToastElevation = 3,
+        ToastPadding = EdgeInsets.Symmetric(Space.S4, Space.S3),
+        ToastMaxWidth = 480,
+        ToastDot = 8,
+        ToastGap = Space.S3,
+        ToastMargin = EdgeInsets.Symmetric(Space.S4, Space.S6),
+        BannerShape = ShapeScale.Large,
+        BannerPadding = new EdgeInsets(14, 12, 14, 12),
+        BannerIconGap = 10,
+        BannerGap = Space.S1,
+        BannerTextSize = 13,
+        BannerLineHeight = 18,
+        BannerTitleWeight = FontWeight.SemiBold,
+        BannerBodyWeight = FontWeight.Regular,
+        ConsentShape = ShapeScale.Large,
+        ConsentElevation = 2,
+        ConsentBorderWidth = 1,
+        ConsentPadding = EdgeInsets.All(Space.S4),
+    };
+
+    /// <summary>What shows something is on its way: a bar 4 high (8 prominent) on a subtle track, a
+    /// skeleton line 12 high with a glint.</summary>
+    public ProgressTheme? Progress => field ??= new()
+    {
+        BarHeight = 4,
+        ProminentBarHeight = 8,
+        BarShape = ShapeScale.Full,
+        RefreshSpinner = IconSize.Dense,
+        SkeletonLineHeight = 12,
+        SkeletonShape = ShapeScale.Medium,
+    };
+
+    /// <summary>The Card: large corners, a 1dp border on the outlined and elevated kinds, elevation 1.</summary>
+    public CardTheme? Card => field ??= new()
+    {
+        Shape = ShapeScale.Large,
+        BorderWidth = 1,
+        Elevation = 1,
+    };
+
+    private static DensityPair ByDensityAlone(Func<Density, float> side) => new()
+    {
+        Comfortable = side(Density.Comfortable),
+        Compact = side(Density.Compact),
+    };
+
+    private static SizeLadder BySize(Func<SizeVariant, float> rung) => new()
+    {
+        Small = rung(SizeVariant.Small),
+        Medium = rung(SizeVariant.Medium),
+        Large = rung(SizeVariant.Large),
+        XLarge = rung(SizeVariant.XLarge),
+    };
+
+    private static DensityLadder ByDensity(Func<SizeVariant, Density, float> rung) => new()
+    {
+        Comfortable = BySize(size => rung(size, Density.Comfortable)),
+        Compact = BySize(size => rung(size, Density.Compact)),
+    };
+
     // ---- helpers ----------------------------------------------------------------------------------
     private static ColorToken Token(uint lightRgb, uint darkRgb) => new(Rgb(lightRgb), Rgb(darkRgb));
 

@@ -352,16 +352,18 @@ containment and its depth bound unchanged.
 
 ### Requirement: A frame of the tree is lowered on the web from its positions
 
-`WebRealizer.LowerFrame` SHALL lower the tree a `BuildOwner` has just built, between its `Build` and
-its `EndFrame`. A component SHALL be lowered from what its position built in that frame, by the
+A `MarkupHost` SHALL lower the tree its `BuildOwner` has just built, between its `Build` and its
+`EndFrame`. A component SHALL be lowered from what its position built in that frame, by the
 instance the position keeps, never built again. A layer the web lowers (an overlay's child, an
 anchored panel, one kept mounted while closed for its motion included) SHALL be shown in its
 position's deferred slot before it lowers; a layer the web does not lower SHALL leave the tree when
 the frame ends. Of an adaptive node, the arm its element holds SHALL lower from its positions and the
 other arms as a tree drawn once does. A component, or a layer's holder, that the frame has no
-position for SHALL be refused with an exception. The first frame SHALL be the markup `WebRealizer.Lower`
-writes for the same tree, byte for byte, save hydration's unmeasured mark, which a frame does not
-write.
+position for SHALL be refused with an exception. The host's components SHALL build through the error
+boundary with a measurer that has no font, and the host SHALL note which build asked it, so a
+component whose build asked is marked for hydration as a tree drawn once marks it. The first frame
+SHALL be the markup `WebRealizer.Lower` writes for the same tree, byte for byte, hydration's
+unmeasured mark included.
 
 #### Scenario: The second frame of a nested stateful component
 
@@ -371,10 +373,10 @@ write.
 
 #### Scenario: The first frame is the server's markup
 
-- **WHEN** each case of the component parity fixture is built by a live owner at `Compact`, `Medium`
+- **WHEN** each case of the component parity fixture is built by a live host at `Compact`, `Medium`
   and `Expanded`, and its first frame lowered
-- **THEN** each markup equals `WebRealizer.Lower`'s for the same case with `data-eq-unmeasured` taken
-  out, and the frame's carries no such mark
+- **THEN** each markup equals `WebRealizer.Lower`'s for the same case, the unmeasured mark included,
+  and at least one case carries the mark
 
 #### Scenario: A closed panel leaves
 
@@ -416,3 +418,197 @@ with the instance it keeps.
 - **WHEN** a stateless component a page builds anew on every build loads its data, its position is
   marked, and the owner builds
 - **THEN** only that position builds, with the instance that loaded, and draws what it loaded
+
+### Requirement: A component rebuilds when a value it depends on changes, and nothing else does
+
+A component that reads an inherited value through `DependOn<T>()` SHALL build again in the same frame
+when a parent's build hands that value's position a new node whose `UpdateShouldNotify` answers true,
+and a component that read nothing of it, or read it once through `Find<T>()`, SHALL NOT. A lookup SHALL
+answer the nearest value of its type above the component, and a component whose position left the tree
+SHALL NOT build when the value changes. A value inside a layer that changes in the frame the realizer
+shows the layer SHALL build its dependents in that frame, before the layer is laid out, and SHALL NOT
+ask for a frame after it.
+
+#### Scenario: A value changes under a subtree built once
+
+- **WHEN** a stateful holder places a new value over the same child, which holds a reader, a component
+  that reads nothing and one that read the value once
+- **THEN** only the reader builds again, in that frame, with the new value
+
+#### Scenario: The value says nothing changed
+
+- **WHEN** the new node's `UpdateShouldNotify` answers false
+- **THEN** no dependent builds
+
+#### Scenario: Two values of one type
+
+- **WHEN** a reader stands under two values of its type, with a value of another type between them
+- **THEN** it reads the nearest of its type
+
+#### Scenario: A value inside a layer changes in the frame the layer is shown
+
+- **WHEN** a stateful holder builds an overlay whose layer places a new value over the same child, which
+  holds a reader and a component that reads nothing, and the realizer shows the layer
+- **THEN** the reader builds with the new value before the layer is laid out, the other does not, and no
+  position waits for the next frame
+
+#### Scenario: A value changes while a layer's marked positions build
+
+- **WHEN** a stateful holder inside a layer, out of reach of the walk that shows the layer, places a new
+  value over the same child, which holds a reader, and builds when the layer is shown
+- **THEN** the reader builds behind it in that frame, with the new value, and no position waits for the
+  next frame
+
+#### Scenario: A value changes over a layer inside the layer
+
+- **WHEN** the value inside a layer changes over a second overlay whose layer holds the reader, and the
+  realizer shows the outer layer and then the inner one
+- **THEN** the outer layer does not build the reader, and the inner one builds it with the new value in
+  that frame
+
+### Requirement: A stateful component hears a dependency change before it builds
+
+A `StatefulComponent` that depends on a value SHALL have `OnDependenciesChanged()` called before the
+build that the value's change caused.
+
+#### Scenario: The value changes
+
+- **WHEN** a stateful dependent's value changes
+- **THEN** `OnDependenciesChanged` runs, and then its build reads the new value
+
+### Requirement: A position's context reads the frame and the tree
+
+A component built through an element SHALL build with a context of its position. It SHALL read the
+frame's theme, density and type scale from its owner, and a frame that hands a different one SHALL
+build again the components that read it and no other. It SHALL answer `InFlow` from whether an `InFlow`
+is above its position. A context made with no position SHALL answer `DependOn` and `Find` with null.
+
+#### Scenario: The density changes
+
+- **WHEN** a frame hands a different density
+- **THEN** the component that read the density builds again, and a component that read nothing of the
+  frame does not
+
+#### Scenario: InFlow
+
+- **WHEN** one component stands under an `InFlow` and another beside it
+- **THEN** the first answers true, the second false, and no ambient channel is armed
+
+### Requirement: A component navigates the host of its tree
+
+`Navigator.Of(context).Go(destination)` SHALL hand a non-empty destination to the navigation handler
+of the owner of the component's tree, and SHALL do nothing for an empty destination or a context with
+no position.
+
+#### Scenario: A component navigates
+
+- **WHEN** a component of a tree whose owner has a handler navigates to `/orders`, then to an empty
+  destination, and a context with no position navigates
+- **THEN** the handler receives `/orders` once
+
+### Requirement: A component is a node in the browser too
+
+A component, with or without state, SHALL be a node of the vocabulary in the browser as it is in C#:
+its kind SHALL be `component` at run time, and it SHALL carry every member the vocabulary's node
+declares, a type check failing when the node gains one the component lacks. The DOM escape hatch
+(`HtmlElement`) SHALL NOT be one, as in C#.
+
+#### Scenario: A component without state
+
+- **WHEN** a component without state is made in the browser
+- **THEN** its kind is `component`, and it is assignable to the vocabulary's node
+
+#### Scenario: The escape hatch
+
+- **WHEN** an `HtmlElement` is made in the browser
+- **THEN** it carries no node kind, and the lowering lets it render itself
+
+#### Scenario: The node gains a member
+
+- **WHEN** the vocabulary's node declares a member the component does not
+- **THEN** the runtime's type check fails
+
+### Requirement: The engine runs in the browser as it runs on .NET
+
+The element engine SHALL be transpiled into the runtime, its modules committed and pinned byte for byte,
+exported from the served runtime and accepted by the runtime's type check, and no hand-written
+TypeScript twin of any of it SHALL exist. Driven by the same components through the same steps, the
+transpiled engine SHALL answer every case it is held to as the C# engine does: what a position keeps,
+what a frame builds and in which order, and what mounts and unmounts.
+
+#### Scenario: A position keeps its stateful instance in the browser too
+
+- **WHEN** an owner of the transpiled engine mounts a stateful component, its state changes, and the
+  next build hands the same position a component of the same type and key with new configuration
+- **THEN** the same instance holds the new configuration and the old state, as on .NET
+
+#### Scenario: One instance at two positions
+
+- **WHEN** one stateful instance is placed at two positions and they leave one after the other
+- **THEN** it unmounts once, when the last leaves, on both engines
+
+#### Scenario: An app member takes a name the engine calls
+
+- **WHEN** an app's stateful component declares a method named `EnterPosition` or `LeavePosition`
+- **THEN** the build refuses it with EQ2011
+
+### Requirement: The server draws a write-once page through an owner for the request
+
+The server SHALL draw a write-once page through a structural `MarkupHost` it keeps for the request,
+each prefetch round a frame of that one tree, and a client navigation's discovery of it SHALL run
+the same rounds through the same kind of host, keeping each component's wire form as it loads. After a frame, `ServerDataRounds` SHALL name the
+components to ask: each that loads data, that the frame reached and that was not asked, in the order
+the frame named them, save a stateless one below another asked in the same round, which SHALL wait for
+the next. A component that loaded SHALL have its positions marked, and only those subtrees SHALL build
+in the next frame, with the instance that loaded. A bound of five rounds SHALL count a round that
+reached a position, or a component holding none, that no round before it had; past it the page SHALL
+be drawn with what it has, its markup and payload agreeing. The markup and the hydration payload SHALL
+be byte for byte what drawing the tree once per round wrote: components named `Type#ordinal` in
+lowering order, and the payload carrying every component that loads data or holds a value from the
+container, read off the instances that drew. An escape-hatch page SHALL keep drawing its write-once
+bridges as trees drawn once, putting back by name what each loaded.
+
+#### Scenario: A round draws the instance that loaded
+
+- **WHEN** a page composes a stateless component that loads, and draws whether the instance drawing it
+  is the one whose prefetch ran
+- **THEN** the markup says it is
+
+#### Scenario: What a round could not put back
+
+- **WHEN** a component's prefetch stores a delegate, and what it builds depends on that delegate and
+  loads data of its own
+- **THEN** a full load draws what it composed with its data, and a navigation's payload carries it
+
+#### Scenario: A chain deeper than the bound
+
+- **WHEN** each component of a chain exists only once the one above it has loaded, twelve deep
+- **THEN** the page is drawn after five rounds, and every link the payload says loaded reads loaded in
+  the markup
+
+### Requirement: A render's channels are handed to it
+
+The web SHALL hand each render its channels as one `RenderChannels`: the atomic style sink, the
+gradient sink, the face sink, the expansion scope, the density and the link policy. The server SHALL
+make one for each prefetch round and one for each discovery, and SHALL hand it to `MarkupHost.Lower`
+for a write-once page. An escape-hatch page SHALL be rendered with its round's channels armed by
+`RenderChannels.BridgeWith`, and a write-once bridge inside it SHALL read them there, the one web
+channel read from the async flow. Every `AsyncLocal` the SDK's source declares SHALL be named in a
+list with the reason it is one, and the list SHALL fail on a channel it does not name and on a name
+the source no longer declares.
+
+#### Scenario: Two requests drawn at once
+
+- **WHEN** two requests at different densities are drawn at the same time, each held in its page's
+  build until the other is drawing too, for a write-once page and for an escape-hatch page
+- **THEN** each page carries its own density and its own atomic rules, and none of the other's
+
+#### Scenario: A page in a language
+
+- **WHEN** a page lowered through channels whose link policy is a language's links to `/about`
+- **THEN** its href is the language's, and the same page lowered outside a render links to `/about`
+
+#### Scenario: A channel nobody named
+
+- **WHEN** the source declares an `AsyncLocal` the list does not name
+- **THEN** the list's test fails, naming it

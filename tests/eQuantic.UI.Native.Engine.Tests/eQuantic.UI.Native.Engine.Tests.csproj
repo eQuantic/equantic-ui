@@ -53,6 +53,9 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Shell.MacOS\eQuantic.UI.Native.Shell.MacOS.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Codegen\eQuantic.UI.Codegen.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Hosting\eQuantic.UI.Native.Hosting.csproj" />
+    <!-- The web half of the component tester: what a screen reader announces on the web, which the
+         semantics parity fixture compares with Photon's tree (#339). -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Testing\eQuantic.UI.Testing.csproj" />
     <!-- The component tester's native half: a golden scene is painted through it, so the package is
          held to the goldens the host is (#1246). -->
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Testing\eQuantic.UI.Native.Testing.csproj" />
@@ -81,6 +84,8 @@
     <!-- The walk behind "a node belongs to ONE tree", compiled in from the web tests rather than
          copied: the native shells are held to the same rule by the same instrument. -->
     <Compile Include="..\eQuantic.UI.Web.Tests\NodePlacements.cs" Link="Shared\NodePlacements.cs" />
+    <!-- Plausible arguments for any constructor: the semantics parity fixture builds every component with them (#339). -->
+    <Compile Include="..\eQuantic.UI.Web.Tests\FactoryArguments.cs" Link="Shared\FactoryArguments.cs" />
     <!-- The dashboard's signature provider, the one its code screen hands the editor, compiled in so
          its reading of a call is asked here as the panel asks it (LedgerSignaturesTests). The web
          sample is no project this one can reference: it is an app over the web SDK. -->

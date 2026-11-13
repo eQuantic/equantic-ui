@@ -1,7 +1,9 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -32,11 +34,12 @@ internal sealed class BoundArguments
     public readonly record struct Slot(int Written, bool Spread);
 
     private BoundArguments(IReadOnlyList<ExpressionSyntax> sources, IReadOnlyList<JsExpr> written,
-        IReadOnlyList<IReadOnlyList<Slot>?> byParameter)
+        IReadOnlyList<IReadOnlyList<Slot>?> byParameter, IReadOnlySet<int> packs)
     {
         Sources = sources;
         Written = written;
         ByParameter = byParameter;
+        _packs = packs;
         // An optional parameter left out after the last argument is not passed at all.
         var slots = byParameter.SelectMany(placed => placed ?? [new Slot(-1, false)]).ToList();
         while (slots.Count > 0 && slots[^1].Written < 0) slots.RemoveAt(slots.Count - 1);
@@ -52,6 +55,11 @@ internal sealed class BoundArguments
 
     /// <summary>The arguments in parameter order, a params parameter's elements each a slot of its own.</summary>
     public IReadOnlyList<Slot> Slots { get; }
+
+    /// <summary>The params parameters that are the array they are on the twin (<see cref="TakesAnArray"/>), by
+    /// ordinal: the elements a call lists go to it packed into one array, and a collection handed whole goes as
+    /// it is, where a rest parameter takes the elements one by one and the collection spread.</summary>
+    private readonly IReadOnlySet<int> _packs;
 
     /// <summary>What each parameter takes, in parameter order: its argument, the elements packed into a
     /// params parameter's array or collection (none for an empty one), or null for an optional parameter left out.</summary>
@@ -89,6 +97,7 @@ internal sealed class BoundArguments
         var sources = new List<ExpressionSyntax>();
         var written = new List<JsExpr>();
         var placed = new List<Slot>?[method.Parameters.Length];
+        var packs = method.Parameters.Where(TakesAnArray).Select(parameter => parameter.Ordinal).ToHashSet();
         foreach (var argument in arguments)
         {
             if (argument.Parameter is not { } parameter) return null;
@@ -125,7 +134,7 @@ internal sealed class BoundArguments
             }
         }
 
-        return new BoundArguments(sources, written, placed);
+        return new BoundArguments(sources, written, placed, packs);
     }
 
     /// <summary>
@@ -152,8 +161,68 @@ internal sealed class BoundArguments
     private static bool IsHandedWhole(ArgumentSyntax argument, ConversionContext context) =>
         context.SemanticHelper.GetOperation(argument) is IArgumentOperation
         {
-            ArgumentKind: ArgumentKind.Explicit, Parameter.IsParams: true,
+            ArgumentKind: ArgumentKind.Explicit, Parameter: { IsParams: true } parameter,
+        } && !TakesAnArray(parameter);
+
+    /// <summary>
+    /// Whether a params parameter is the array it is in C#, on a twin a build writes, this one's or a referenced
+    /// project's, which reaches it as metadata: a call that lists its elements packs them, and an array handed whole is
+    /// passed as it is, so it meets no argument cap and the callee holds the caller's array (#1159). A constructor's
+    /// too, whose overloads count it as the one argument it is (#1192). A parameter of the SDK's own stays a rest
+    /// parameter, which a hand-written twin may spell.
+    /// </summary>
+    internal static bool TakesAnArray(IParameterSymbol parameter) =>
+        parameter is { IsParams: true, ContainingSymbol: IMethodSymbol { ContainingType: { } type } }
+        && !type.IsFramework() && !BoundaryShape.IsPlatform(type);
+
+    /// <summary>Whether a method's parameter a build of <paramref name="compilation"/> writes is a rest parameter: a
+    /// params one that does not <see cref="TakesAnArray"/>. The method is that build's own, and a component's arrives
+    /// here as rewritten syntax no model binds, so it is the build that is asked. With no compilation, no call
+    /// packs anything either.</summary>
+    internal static bool IsRest(ParameterSyntax parameter, Compilation? compilation) =>
+        parameter.Modifiers.Any(SyntaxKind.ParamsKeyword)
+        && (compilation?.Assembly is not { } assembly || assembly.IsSdk());
+
+    /// <summary>
+    /// A call's arguments in parameter order, with the elements a call lists for a params parameter that
+    /// <see cref="TakesAnArray"/> packed into the array C# packs them into.
+    /// </summary>
+    internal static List<JsExpr> Packed(ExpressionSyntax call, List<JsExpr> arguments, IMethodSymbol? method,
+        ConversionContext context)
+    {
+        var bound = context.SemanticHelper.GetOperation(call) switch
+        {
+            IInvocationOperation invocation => invocation.Arguments,
+            IObjectCreationOperation creation => creation.Arguments,
+            _ => default,
         };
+        if (method?.Parameters is not [.., { IsParams: true } last] || !TakesAnArray(last) || bound.IsDefault
+            || !bound.Any(argument => argument.ArgumentKind is ArgumentKind.ParamArray or ArgumentKind.ParamCollection))
+            return arguments;
+        var before = last.Ordinal - method.Parameters.Take(last.Ordinal).Count(parameter => parameter.RefKind == RefKind.Out);
+        // An optional parameter a call left out before it takes its default.
+        var missing = Enumerable.Repeat<JsExpr>(JsExpr.Identifier("undefined"), Math.Max(0, before - arguments.Count));
+        return [.. arguments.Take(before), .. missing, JsExpr.Array(arguments.Skip(before).ToList())];
+    }
+
+    /// <summary>
+    /// The ordinal of the params parameter of <paramref name="method"/> whose elements a call lists and the twin
+    /// takes packed into one array (<see cref="TakesAnArray"/>), for a call laid out by its places
+    /// (<see cref="InPlaces"/>); -1 where none is, an array handed whole included, which goes as it is.
+    /// </summary>
+    internal static int PackedPlace(ExpressionSyntax call, IMethodSymbol method, ConversionContext context)
+    {
+        var bound = context.SemanticHelper.GetOperation(call) switch
+        {
+            IInvocationOperation invocation => invocation.Arguments,
+            IObjectCreationOperation creation => creation.Arguments,
+            _ => default,
+        };
+        return method.Parameters is [.., { IsParams: true } last] && TakesAnArray(last) && !bound.IsDefault
+            && bound.Any(argument => argument.ArgumentKind is ArgumentKind.ParamArray or ArgumentKind.ParamCollection)
+                ? last.Ordinal
+                : -1;
+    }
 
     /// <summary>
     /// A call's written arguments, read from its syntax, in its parameters' places: a named one in the
@@ -193,12 +262,43 @@ internal sealed class BoundArguments
 
     /// <summary>The arguments in parameter order, each the written argument it is, or what
     /// <paramref name="read"/> answers for it (a temporary it was evaluated into), spread where it
-    /// is spread, and <c>undefined</c> for an optional parameter left out.</summary>
+    /// is handed whole to a rest parameter, the elements a call lists for a params parameter that is an
+    /// array packed into one, and <c>undefined</c> for an optional parameter left out.</summary>
     public IReadOnlyList<JsExpr> InParameterOrder(Func<int, JsExpr>? read = null) =>
-        Slots.Select(slot => slot.Written < 0
-                ? JsExpr.Identifier("undefined")
-                : slot.Spread ? JsExpr.Spread(Read(slot.Written, read)) : Read(slot.Written, read))
-            .ToList();
+        Laid(written => Read(written, read), elements => JsExpr.Array(elements.ToList()), value => JsExpr.Spread(value),
+            JsExpr.Identifier("undefined"));
+
+    /// <summary>
+    /// The arguments in parameter order, as <paramref name="value"/> writes a written one: each in its place, a
+    /// rest parameter's elements one by one and a collection handed whole to it through <paramref name="spread"/>,
+    /// a params parameter that is an array its elements through <paramref name="packed"/> and a collection handed
+    /// whole as it is, and <paramref name="missing"/> for an optional parameter left out before one that is not.
+    /// </summary>
+    private List<T> Laid<T>(Func<int, T> value, Func<IEnumerable<T>, T> packed, Func<T, T> spread, T missing)
+    {
+        var laid = new List<(T Value, bool Missing)>();
+        for (var ordinal = 0; ordinal < ByParameter.Count; ordinal++)
+        {
+            switch (ByParameter[ordinal])
+            {
+                case null:
+                    laid.Add((missing, true));
+                    break;
+                case [{ Spread: true } whole] when _packs.Contains(ordinal):
+                    laid.Add((value(whole.Written), false));
+                    break;
+                case var elements when _packs.Contains(ordinal):
+                    laid.Add((packed(elements.Select(element => value(element.Written))), false));
+                    break;
+                case var slots:
+                    laid.AddRange(slots.Select(slot => (slot.Spread ? spread(value(slot.Written)) : value(slot.Written), false)));
+                    break;
+            }
+        }
+        // An optional parameter left out after the last argument is not passed at all.
+        while (laid.Count > 0 && laid[^1].Missing) laid.RemoveAt(laid.Count - 1);
+        return laid.Select(entry => entry.Value).ToList();
+    }
 
     private JsExpr Read(int index, Func<int, JsExpr>? read = null) => read?.Invoke(index) ?? Written[index];
 
@@ -239,7 +339,7 @@ internal sealed class BoundArguments
             var construction = built(InParameterOrder(index => JsExpr.Identifier($"$a{index}")));
             return JsExpr.Call(JsExpr.Arrow(parameters, construction), Written);
         }
-        var holes = Slots.Select(slot => slot.Written < 0 ? "undefined" : (slot.Spread ? "..." : "") + $"{{{slot.Written}}}");
+        var holes = Laid(written => $"{{{written}}}", elements => $"[{string.Join(", ", elements)}]", hole => "..." + hole, "undefined");
         return JsExpr.Template($"({head}{string.Join(", ", holes)}))", Written);
     }
 }

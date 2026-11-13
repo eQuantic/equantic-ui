@@ -32,6 +32,7 @@
         <Compile Include="../Shared/BoundaryShape.cs" Link="Shared/BoundaryShape.cs" />
         <Compile Include="../Shared/CapabilityRule.cs" Link="Shared/CapabilityRule.cs" />
         <Compile Include="../Shared/TwinName.cs" Link="Shared/TwinName.cs" />
+        <Compile Include="../Shared/JsNames.cs" Link="Shared/JsNames.cs" />
     </ItemGroup>
 
   <ItemGroup>

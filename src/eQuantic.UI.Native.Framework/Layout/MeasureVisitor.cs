@@ -302,6 +302,10 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     /// </summary>
     public LayoutNode Visit(UiComponent node, MeasureState s) => MeasureComponent(node, s.Constraints, _ctx, s.At);
 
+    /// <summary>A value for a subtree measures as the wrapper it is.</summary>
+    public LayoutNode Visit(InheritedComponent node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
     // ---- what every wrapper does ----------------------------------------------------------------
 
     /// <summary>

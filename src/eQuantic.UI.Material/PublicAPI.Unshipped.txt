@@ -1,1 +1,12 @@
 #nullable enable
+eQuantic.UI.Material.MaterialTheme.Button.get -> eQuantic.UI.Primitives.ButtonTheme?
+eQuantic.UI.Material.MaterialTheme.Modal.get -> eQuantic.UI.Primitives.ModalTheme?
+eQuantic.UI.Material.MaterialTheme.Menu.get -> eQuantic.UI.Primitives.MenuTheme?
+eQuantic.UI.Material.MaterialTheme.Notice.get -> eQuantic.UI.Primitives.NoticeTheme?
+eQuantic.UI.Material.MaterialTheme.Progress.get -> eQuantic.UI.Primitives.ProgressTheme?
+eQuantic.UI.Material.MaterialTheme.Card.get -> eQuantic.UI.Primitives.CardTheme?
+eQuantic.UI.Material.MaterialTheme.Chip.get -> eQuantic.UI.Primitives.ChipTheme?
+eQuantic.UI.Material.MaterialTheme.IconButton.get -> eQuantic.UI.Primitives.IconButtonTheme?
+eQuantic.UI.Material.MaterialTheme.Input.get -> eQuantic.UI.Primitives.InputTheme?
+eQuantic.UI.Material.MaterialTheme.Segmented.get -> eQuantic.UI.Primitives.SegmentedTheme?
+eQuantic.UI.Material.MaterialTheme.SelectionControls.get -> eQuantic.UI.Primitives.SelectionControlsTheme?

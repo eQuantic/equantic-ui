@@ -65,7 +65,7 @@ public class DistinctStrategy : IExpressionIrStrategy
         // anonymous object and every class that overrides Equals, and JSON.stringify found two records
         // equal by the text of every member, an array they held included.
         var elementType = context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType();
-        if (ElementEquality.Of(elementType) is { } equality)
+        if (ElementEquality.Of(elementType, node, context) is { } equality)
         {
             context.UsedHelpers.Add(Eq.Import);
             return JsExpr.Template($"[...{Eq.HashSet}({equality}, {{0}})]", [source]);

@@ -162,3 +162,18 @@ environment, without the grant of the token, or with a key from anywhere but the
   met nuget.org's 403 for an expired key on all 52 packages
 - **THEN** it logs in through the policy for `publish-release.yml` and publishes the packages
   nuget.org does not list at `0.2.0-preview.66`
+
+### Requirement: A package's page draws its head
+
+A package's readme SHALL open with a head nuget.org draws: Markdown with no HTML, saying what the head of `README.md` says,
+with the same links and pictures. The rest SHALL be `README.md`.
+
+#### Scenario: A pack
+
+- **WHEN** a package is packed
+- **THEN** its readme opens with `# eQuantic.UI` and holds no tag of the head
+
+#### Scenario: A head that drifts
+
+- **WHEN** a link, a picture or a word of one head changes and the other does not
+- **THEN** a test fails

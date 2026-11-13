@@ -6,3 +6,37 @@ eQuantic.UI.Compiler.Services.AppBuild.AppBuild(eQuantic.UI.Compiler.Services.Ap
 eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(System.Collections.Generic.IReadOnlyCollection<string!>! entryPoints, string! outputDir, string! intermediateDir, eQuantic.UI.Compiler.SourceMapMode sourceMaps, System.Action<string!>? warn = null) -> string?
 eQuantic.UI.Compiler.Services.ModuleBundler.Dispose() -> void
 eQuantic.UI.Compiler.Services.ModuleBundler.ModuleBundler(string! bunPath, string! workingDirectory) -> void
+const eQuantic.UI.Compiler.CodeGen.Eq.FixedSize = "$eq.collections.fixedSize" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CollectionIsReadOnly = "$eq.collections.isReadOnly" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.CollectionIsReadOnlyStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CollectionIsReadOnlyStrategy.Priority.get -> int
+eQuantic.UI.Compiler.Models.StateField.Slot.get -> string!
+eQuantic.UI.Compiler.Models.StateField.Slot.set -> void
+*REMOVED*static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnits(System.Collections.Generic.IReadOnlyList<string!>! sourceDirectories, string? generatedDirectory) -> System.Collections.Generic.IEnumerable<(string! Directory, string! File, bool IsGenerated)>!
+eQuantic.UI.Compiler.Services.AppBuildOptions.SourcesFile.get -> string?
+eQuantic.UI.Compiler.Services.AppBuildOptions.SourcesFile.init -> void
+static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnits(System.Collections.Generic.IReadOnlyList<string!>! sourceDirectories, string? generatedDirectory, System.Collections.Generic.IReadOnlyList<string!>? projectFiles = null) -> System.Collections.Generic.IEnumerable<(string! Directory, string! File, bool IsGenerated)>!
+eQuantic.UI.Compiler.Services.SemanticModelProvider.OptionsFor(string? path) -> Microsoft.CodeAnalysis.CSharp.CSharpParseOptions!
+const eQuantic.UI.Compiler.CodeGen.Eq.PairText = "$eq.text.pair" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.PairTextGroup = "$eq.text.pairGroup" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ProvideService = "$eq.services.provide" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TaskFromCanceled = "$eq.task.fromCanceled" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TaskFromException = "$eq.task.fromException" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.PrimitiveEqualsStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.Priority.get -> int
+const eQuantic.UI.Compiler.CodeGen.Eq.AddToEvent = "$eq.delegates.addToEvent" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.RemoveFromEvent = "$eq.delegates.removeFromEvent" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TypesImplements = "$eq.types.implements" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.DelegateBound = "$eq.delegates.bound" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.DelegateOver = "$eq.delegates.over" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Anonymous = "$eq.anonymous" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Box = "$eq.box" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.IsBox = "$eq.isBox" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Reference = "$eq.reference" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Unbox = "$eq.unbox" -> string!

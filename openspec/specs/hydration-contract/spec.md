@@ -273,3 +273,75 @@ it found them.
 
 - **WHEN** `new VisualNodeComponent(new Checkbox(false), custom)` renders in the browser, `custom.borderStrong` being green
 - **THEN** the checkbox's box is drawn with that green, and the ambient theme is the same after the render
+
+### Requirement: A value no enum member names crosses as the browser holds it
+
+A value of an enum that is not a flags one SHALL cross from the server to the browser as the browser holds it: a member's name as that name, and a value no member names as the number, or the BigInt for an enum over a long, as a field, as a collection's element and as a dictionary's key.
+
+#### Scenario: An unnamed value in a field
+
+- **WHEN** a page's prefetch sets a field to `(CrossingRank)7` and the browser compares it with `(CrossingRank)7`
+- **THEN** the comparison answers true, as on the server; the browser could not draw the page
+
+#### Scenario: An unnamed value over a long
+
+- **WHEN** the field holds `(CrossingTier)4611686018427387905` of an enum over a long
+- **THEN** the browser holds the BigInt with every digit
+
+### Requirement: Hydration adopts the server's element with the client's attributes and text
+
+When hydration finds the server's markup with the structure of the client's tree, it SHALL keep each
+element the server wrote and SHALL make it carry the client's attributes: an attribute the client's
+tree names SHALL have the client's value, and one the client's tree does not name SHALL be removed,
+except a framework marker (`data-eq-*`), which SHALL stay, and except a field's `value` or
+`checked` the person already changed before the runtime loaded, which SHALL stay as the person left
+it. A text node SHALL carry the client's text. The first render after hydration SHALL then find nothing the DOM does not already say.
+
+#### Scenario: A button the server drew disabled for a capability it does not have
+
+- **WHEN** the server renders a button disabled because the capability it gates on is unavailable
+  there, and the browser's tree, built with the real capability, says it is enabled
+- **THEN** after hydration the same button element is enabled, and its listeners are attached
+
+#### Scenario: An attribute only the client knows
+
+- **WHEN** the client's tree names an attribute the server did not write, a link's `href` or an
+  `aria-current`
+- **THEN** after hydration the element carries it with the client's value
+
+#### Scenario: A text the client writes otherwise
+
+- **WHEN** a text node the server wrote holds other text than the client's tree
+- **THEN** after hydration it holds the client's
+
+#### Scenario: A framework marker the client does not repeat
+
+- **WHEN** the server wrote a `data-eq-*` marker on an element and the client's tree does not name it
+- **THEN** the marker is still on the element after hydration
+
+#### Scenario: A field the person used before the runtime loaded
+
+- **WHEN** a person types in a served field, or ticks a served box, before hydration, and the
+  client's tree gives that field another value
+- **THEN** after hydration the field holds what the person typed or ticked, while a field nobody
+  used takes the client's value
+
+### Requirement: Every component a page composes is named where it builds
+
+The browser SHALL name every component a page composes, with or without state, where the lowering
+builds it, by its type and its ordinal among the components of that type in depth-first order, as the
+server's realizer names it. A component SHALL adopt only the entry that names it, on the first load and
+on a client navigation alike.
+
+#### Scenario: A page that mixes components with and without state
+
+- **WHEN** a page composes components without state and with state, one inside the other and side by
+  side, and the server sent an entry for each
+- **THEN** each component adopts its own entry
+
+#### Scenario: A navigation lands
+
+- **WHEN** a client navigation mounts a page whose nested component without state holds a component
+  with state, over a page that composed the same types
+- **THEN** each component of the new page adopts the entry the new payload names it by, and none shows
+  the previous page's

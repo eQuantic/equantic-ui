@@ -40,13 +40,13 @@ public sealed class AClassNamedLikeADotNetTypeTests
         """;
 
     [Theory]
-    [InlineData("Type")]
-    [InlineData("Uri")]
-    [InlineData("Console")]
-    [InlineData("Convert")]
-    [InlineData("Math")]
-    [InlineData("Regex")]
-    public void AReferencedProjectsClass_IsAModuleThePageImports(string name)
+    [InlineData("Type", "Type")]
+    [InlineData("Uri", "Uri")]
+    [InlineData("Console", "Console")]
+    [InlineData("Convert", "Convert")]
+    [InlineData("Math", "Math$")]
+    [InlineData("Regex", "Regex")]
+    public void AReferencedProjectsClass_IsAModuleThePageImports(string name, string twin)
     {
         using var solution = new Solution()
             .Library("Common", files: [($"{name}.cs", Library(name))])
@@ -54,8 +54,8 @@ public sealed class AClassNamedLikeADotNetTypeTests
         var built = solution.Build();
 
         built.Failed.Should().BeFalse(built.Errors);
-        built.Module(name).Should().NotBeNull($"the page calls {name}.Family(), a class the library declares");
-        built.SiblingImportsOf("Home").Should().Contain(name, $"the page names {name}, and only the import defines it");
+        built.Module(twin).Should().NotBeNull($"the page calls {name}.Family(), a class the library declares");
+        built.SiblingImportsOf("Home").Should().Contain(twin, $"the page names {name}, and only the import defines it");
     }
 
     [Fact]
@@ -99,9 +99,35 @@ public sealed class AClassNamedLikeADotNetTypeTests
         var built = solution.Build();
 
         built.Failed.Should().BeFalse(built.Errors);
-        built.SiblingImportsOf("Home").Should().Contain("Math", "this file calls the solution's Math");
-        built.SiblingImportsOf("Other").Should().NotContain("Math", "this file calls System.Math, and the import would hide JavaScript's");
+        built.SiblingImportsOf("Home").Should().Contain("Math$", "this file calls the solution's Math");
+        built.SiblingImportsOf("Other").Should().NotContain("Math$", "this file calls System.Math");
         built.Module("Other").Should().Contain("Math.max(1, 2)");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OneFileCallingTheSolutionsMathAndDotNets_CallsEach(bool declaredByTheLibrary)
+    {
+        // Both names in ONE file (#890): the module had one binding of `Math`, the solution's class it
+        // imported, so `System.Math.Max` beside it called the class. The class's twin is `Math$`, and the
+        // name JavaScript gives its own is left to it.
+        var declaredIn = declaredByTheLibrary ? "Common" : "App.Util";
+        var math = $"namespace {declaredIn};\n\npublic static class Math\n{{\n    public static int Twice(int value) => value * 2;\n}}\n";
+        var files = new List<(string Path, string Text)>
+        {
+            ("Screens/Home.cs", Page("Type").Replace("Common.Type.Family()", $"({declaredIn}.Math.Twice(2) + System.Math.Max(1, 2)).ToString()")),
+        };
+        if (!declaredByTheLibrary) files.Add(("Util/Math.cs", math));
+        using var solution = new Solution()
+            .Library("Common", files: declaredByTheLibrary ? [("Math.cs", math)] : [("Nothing.cs", "namespace Common;\n\npublic static class Nothing\n{\n}\n")])
+            .App("App", references: ["Common"], globalUsings: SharedLibrary.Factories, files: [.. files]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Module("Math$").Should().Contain("export class Math$");
+        built.Module("Home").Should().Contain("Math$.twice(2) + Math.max(1, 2)");
+        built.SiblingImportsOf("Home").Should().Equal("Math$");
     }
 
     [Theory]
@@ -124,8 +150,8 @@ public sealed class AClassNamedLikeADotNetTypeTests
         var built = solution.Build();
 
         built.Failed.Should().BeFalse(built.Errors);
-        built.Module("Home").Should().Contain("Math.twice(2)");
-        built.SiblingImportsOf("Home").Should().Contain("Math", "the module names Math, which the conversion wrote for the solution's class");
+        built.Module("Home").Should().Contain("Math$.twice(2)");
+        built.SiblingImportsOf("Home").Should().Contain("Math$", "the module names Math$, which the conversion wrote for the solution's class");
     }
 
     [Theory]
@@ -153,11 +179,11 @@ public sealed class AClassNamedLikeADotNetTypeTests
         var built = solution.Build();
 
         built.Failed.Should().BeFalse(built.Errors);
-        built.SiblingImportsOf("Names").Should().Contain("Math", "this class calls the solution's Math");
-        built.Module("Doubles").Should().Contain("Math.twice(2)");
-        built.SiblingImportsOf("Doubles").Should().Contain("Math", "the conversion wrote the name for the solution's Math");
+        built.SiblingImportsOf("Names").Should().Contain("Math$", "this class calls the solution's Math");
+        built.Module("Doubles").Should().Contain("Math$.twice(2)");
+        built.SiblingImportsOf("Doubles").Should().Contain("Math$", "the conversion wrote the name for the solution's Math");
         built.Module("Sizes").Should().Contain("Math.max(1, 2)");
-        built.SiblingImportsOf("Sizes").Should().NotContain("Math", "this class calls System.Math");
+        built.SiblingImportsOf("Sizes").Should().NotContain("Math$", "this class calls System.Math");
     }
 
     [Fact]

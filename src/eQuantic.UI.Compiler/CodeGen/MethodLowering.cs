@@ -107,7 +107,7 @@ internal sealed class MethodLowering
                     parameter.Default is null
                         ? null
                         : _converter.ConvertExpression(parameter.Default.Value, parameter.Type?.ValueText()),
-                    parameter.Modifiers.Any(SyntaxKind.ParamsKeyword));
+                    Strategies.BoundArguments.IsRest(parameter, _converter.Compilation));
             }));
 
         if (withReceiver is not null) parameters = withReceiver(parameters);
@@ -181,6 +181,41 @@ internal sealed class MethodLowering
             : [.. statements, JsStatement.Return(value)];
         yield return JsClassMember.Method("", setName, "", parameters, "",
             JsStatement.Block(setter)) with { Origin = new JsOrigin(set) };
+    }
+
+    /// <summary>
+    /// An event's <c>add</c> and <c>remove</c> accessors as the two methods of its twin every subscription
+    /// calls (<see cref="CodeGen.EventAccessors"/>, #746), each taking the handler as C#'s <c>value</c>, static for a
+    /// static event. One path for a class, a static class, a component, a record and a struct (#1445): only
+    /// the class's emitter wrote them, and <c>s.$add$fired(h)</c> on a record threw where .NET counts.
+    /// </summary>
+    /// <param name="e">The event, declared with accessors or field-like (which yields nothing).</param>
+    /// <param name="declaredType">The emitter's annotation for a declared type.</param>
+    /// <param name="asStatic">Emit them as statics whatever the event's modifiers say: a static class's
+    /// members are its twin's statics.</param>
+    /// <remarks>An accessor that stays on the server is no member of any twin
+    /// (<see cref="Parser.ComponentParser.StaysOnTheServer"/>): a <c>[ServerOnly]</c> one, and a
+    /// <c>[ServerAction]</c> one where the type that declares the event is a component.</remarks>
+    public IEnumerable<JsClassMember> EventAccessors(EventDeclarationSyntax e, Func<TypeSyntax?, string> declaredType, bool asStatic)
+    {
+        if (e.AccessorList is null) yield break;
+        var symbol = _modelFor(e)?.GetDeclaredSymbol(e) as IEventSymbol;
+        var twin = symbol?.MemberTwinName() ?? e.Identifier.ValueText.ToCamelCase();
+        var inAComponent = symbol?.ContainingType.IsUiComponent() == true;
+        var modifiers = asStatic || e.Modifiers.Any(SyntaxKind.StaticKeyword) ? "static " : "";
+        var parameter = Param("value", declaredType(e.Type));
+        foreach (var accessor in e.AccessorList.Accessors)
+        {
+            var verb = accessor.Keyword.ValueText;
+            if (verb is not ("add" or "remove")
+                || Parser.ComponentParser.StaysOnTheServer(accessor, inAComponent, _modelFor(accessor))) continue;
+            JsStatement? body = accessor.Body is { } block ? AccessorBody(block)
+                : accessor.ExpressionBody is { } arrow ? ExpressionBody(arrow.Expression, returns: false)
+                : null;
+            if (body is not null)
+                yield return JsClassMember.Method(modifiers, CodeGen.EventAccessors.Name(verb, twin), "", parameter, "", body)
+                    with { Origin = new JsOrigin(accessor) };
+        }
     }
 
     /// <summary>The value an indexer's setter was handed, kept where its body reassigns <c>value</c>:

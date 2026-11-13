@@ -20,7 +20,7 @@ internal sealed class ServerEventPublisher(IServerEventBackplane backplane, IOpt
     {
         ArgumentNullException.ThrowIfNull(topic);
         var id = publish?.Id;
-        if (id is not null && id.AsSpan().IndexOfAny('\r', '\n', '\0') >= 0)
+        if (!ServerEventFrames.IsWritableId(id))
             throw new ArgumentException(
                 $"The id of an event published to '{topic.Name}' holds a line break, which the event stream cannot carry.",
                 nameof(publish));
