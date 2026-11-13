@@ -63,6 +63,9 @@ internal sealed class Built
                 .ToList()
             : [];
 
+    /// <summary>Where the module written for a type is.</summary>
+    public string ModulePath(string name) => Path.Combine(_build.IntermediateDirectory, name + ".ts");
+
     /// <summary>The module written for a type, or null when the build wrote none.</summary>
     public string? Module(string name)
     {
