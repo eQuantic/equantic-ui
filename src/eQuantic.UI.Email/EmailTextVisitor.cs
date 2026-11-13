@@ -42,6 +42,9 @@ internal sealed class EmailTextVisitor(IAppTheme theme, StringBuilder text) : Em
         return node.Build(new ComponentContext(theme)).Accept(this, state);
     }
 
+    /// <inheritdoc/>
+    private protected override EmailWalk Under(IAppTheme theme) => new EmailTextVisitor(theme, text);
+
     public override Nothing Visit(Text node, Nothing state)
     {
         if (node.Spans is { Count: > 0 } spans)

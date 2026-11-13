@@ -23,6 +23,11 @@ internal sealed class EmailVisitor(ComponentContext context, StringBuilder html)
         return node.Build(context).Accept(this, state);
     }
 
+    /// <inheritdoc/>
+    private protected override EmailWalk Under(IAppTheme theme) =>
+        new EmailVisitor(new ComponentContext(theme, context.TypeScale, context.Density,
+            route: context.Route, inFlow: context.InFlow), html);
+
     /// <summary>
     /// A Column is a table with one row per child. Its gap — which no email engine implements as a
     /// property — is a SPACER ROW with an explicit height, between children and never after the

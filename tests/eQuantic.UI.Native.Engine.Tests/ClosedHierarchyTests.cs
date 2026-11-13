@@ -151,10 +151,12 @@ public class ClosedHierarchyTests
     [Fact]
     public void TheScanActuallySeesTheVocabulary()
     {
-        EveryNodeType().Count(t => !t.IsAbstract && t.Assembly == typeof(VisualNode).Assembly)
+        EveryNodeType().Count(t => !t.IsAbstract && t.Assembly == typeof(VisualNode).Assembly
+                && !typeof(InheritedComponent).IsAssignableFrom(t))
             .Should().Be(45, "the vocabulary is 45 concrete nodes, and IVisualNodeVisitor has a "
                 + "method for each — if this number moved, the interface moved with it or the "
-                + "compiler would have said so");
+                + "compiler would have said so. A Theme is not one of them: the visitor answers it "
+                + "once, as its family, InheritedComponent");
 
         EveryNodeType().Should().Contain(typeof(eQuantic.UI.Components.Button),
             "the component library is in the scan, so a node declared there would be seen");
