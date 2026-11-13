@@ -252,7 +252,7 @@ public class DraggableTests
 
         var draggable = (Draggable)stack.Children[1];
         draggable.Axis.Should().Be(DragAxis.Horizontal);
-        draggable.Min.Should().Be(-SwipeableRow.ActionWidth);
+        draggable.Min.Should().Be(-PhotonTheme.Instance.List!.SwipeActionWidth!.Value);
         draggable.Max.Should().Be(0, "a row never swipes the other way");
     }
 
@@ -279,7 +279,7 @@ public class DraggableTests
         var row = new SwipeableRow(new Text("Marcos"), "Dispute", Icons.Warning) { Open = true };
         var draggable = (Draggable)((Stack)((Box)row.Build(Ctx)).Child!).Children[1];
 
-        draggable.RestOffset.Should().Be(-SwipeableRow.ActionWidth);
+        draggable.RestOffset.Should().Be(-PhotonTheme.Instance.List!.SwipeActionWidth!.Value);
     }
 
     [Fact]

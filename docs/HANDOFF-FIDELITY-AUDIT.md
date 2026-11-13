@@ -167,7 +167,7 @@ the pill's 40 down.
       public bool Visit(Text node, LayoutNode laidOut) =>
           node.PlainContent.Length > 0
   src/eQuantic.UI.Native.Components/SemanticsVisitor.Interaction.cs:320  if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
-  src/eQuantic.UI.Components/Markdown.cs:167  return new Text("", style.Body, theme.TextSecondary, maxLines: 0) { Spans = spans };
+  src/eQuantic.UI.Components/Markdown.cs:149  return new Text("", body, style.BodyColor ?? theme.TextSecondary, maxLines: 0) { Spans = spans };
   ```
 
 ### A8 Text · documented-deviation · **unverified**
@@ -278,8 +278,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ListItem.cs:109  if (Trailing is { } trailing) row.Add(trailing);
-  ListItem.cs:133-135  return OnPressed is null ? body : new Pressable(body, Disabled ? null : OnPressed)
+  ListItem.cs:121  if (Trailing is { } trailing) row.Add(trailing);
+  ListItem.cs:145-147  return OnPressed is null ? body : new Pressable(body, Disabled ? null : OnPressed)
   reconciler.ts:456-460  if (eventName === 'click') { if ((handler as unknown as Record<symbol, boolean>)[WANTS_THE_EVENT]) handler(e); else (handler as () => void)(); return; }
   ```
 
@@ -291,7 +291,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ListItem.cs:111-116  var body = new Box(new BoxStyle
+  ListItem.cs:118-123  var body = new Box(new BoxStyle
   {
       Width = SizeValue.Fill,
       MinHeight = MinHeight,
@@ -307,7 +307,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  AppBar.cs:72  row.Add(new Flexible(titlePad));
+  AppBar.cs:76  row.Add(new Flexible(titlePad));
   ```
 
 ### B3 AppBar · documented-deviation · **unverified**
@@ -318,7 +318,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  AppBar.cs:82  Height = 56,
+  AppBar.cs:86  Height = slot?.AppBarHeight ?? 56,
   ```
 
 ### B4 BottomNavigation · metric · **unverified**
@@ -329,7 +329,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:76-81  var column = new Column(gap: 2) { Height = SizeValue.Fill, Main = MainAlign.Center, Cross = CrossAlign.Center };
+  BottomNavigation.cs:78-83  var column = new Column(gap: slot?.PillLabelGap ?? 2) { Height = SizeValue.Fill, Main = MainAlign.Center, Cross = CrossAlign.Center };
   ```
 
 ### B4 BottomNavigation · documented-deviation · **unverified**
@@ -351,7 +351,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Tabs.cs:45  var cell = new Column(gap: 0) { Height = SizeValue.Fill };
+  Tabs.cs:50  var cell = new Column(gap: 0) { Height = SizeValue.Fill };
   ```
 
 ### B6 Avatar · missing-feature · **CONFIRMED**
@@ -1246,7 +1246,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Divider.cs:57-60  var padding = Inset == DividerInset.Leading
+  Divider.cs:58-61  var padding = Inset == DividerInset.Leading
               ? new EdgeInsets(LeadingInset ?? Space.S4, 0, 0, 0)
               : EdgeInsets.Symmetric(Space.S4, 0);
           return new Box(new BoxStyle { Width = SizeValue.Fill, Padding = padding }, line);
@@ -1412,9 +1412,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ListItem.cs:98  content.Add(new Text(subtitle, TypeRole.Caption, theme.TextSecondary,
+  ListItem.cs:110  content.Add(new Text(subtitle, TypeRole.Caption, theme.TextSecondary,
   PhotonTheme.cs:135  TypeRole.Caption => new TypeStyle(12, 16, FontWeight.Medium, 0.2f, 1.3f),
-  (cf. ListItem.cs:95  StyleOverride = new TypeStyle(15, 20, FontWeight.Medium, 0, 1.3f),)
+  (cf. ListItem.cs:106-107  StyleOverride = new TypeStyle(slot?.TitleSize ?? 15, slot?.TitleLineHeight ?? 20, slot?.TitleWeight ?? FontWeight.Medium, 0, 1.3f),)
   ```
 
 ### B2 List · ListItem · semantics · **CONFIRMED**
@@ -1425,7 +1425,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ListItem.cs:138  Label = Title,
+  ListItem.cs:150  Label = Title,
   WebLoweringVisitor.Interaction.cs:531  AriaLabel = pressable.Label,
   ```
 
@@ -1437,8 +1437,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ListItem.cs:170  var column = new Column(gap: 0) { Width = SizeValue.Fill };
-  ListItem.cs:178  return column;
+  ListItem.cs:182  var column = new Column(gap: 0) { Width = SizeValue.Fill };
+  ListItem.cs:190  return column;
   ```
 
 ### B2 List · ListItem · behaviour · **CONFIRMED**
@@ -1450,7 +1450,7 @@ the pill's 40 down.
 
   ```
   ThemeStylesheet.cs:225  css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");
-  ListItem.cs:128-130  Pressed = OnPressed is null || Selected ? null : new StyleDiff { Background = theme.SurfaceSubtle },   // since #616 the fill is the row body's Pressed diff, still under the transition above
+  ListItem.cs:140-142  Pressed = OnPressed is null || Selected ? null : new StyleDiff { Background = theme.SurfaceSubtle },   // since #616 the fill is the row body's Pressed diff, still under the transition above
   ```
 
 ### B2 List · ListItem · missing-feature · **CONFIRMED**
@@ -1461,7 +1461,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Components/SwipeableRow.cs:25  public SwipeableRow(VisualNode child, string actionLabel, Icons actionIcon, Action? onAction = null)  — no context-menu hook on this or any node type
+  src/eQuantic.UI.Components/SwipeableRow.cs:22  public SwipeableRow(VisualNode child, string actionLabel, Icons actionIcon, Action? onAction = null)  — no context-menu hook on this or any node type
   ```
 
 ### B3 AppBar · documented-deviation · **unverified**
@@ -1483,7 +1483,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  AppBar.cs:84-85  Background = Scrolled ? theme.Surface : null,
+  AppBar.cs:88-89  Background = Scrolled ? slot?.Background ?? theme.Surface : null,
               Elevation = Scrolled ? 2 : 0,
   ```
 
@@ -1517,7 +1517,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:102  Height = 56,
+  BottomNavigation.cs:105  Height = slot?.BarHeight ?? 56,
   ```
 
 ### B4 BottomNavigation · behaviour · **unverified**
@@ -1528,7 +1528,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:73  Pressed = isActive ? null : new StyleDiff { Background = primary.Subtle.WithOpacity(0.4f) },   // the pill at 40% since #1254
+  BottomNavigation.cs:75  Pressed = isActive ? null : new StyleDiff { Background = primary.Subtle.WithOpacity(slot?.PillPressOpacity ?? 0.4f) },   // the pill at 40% since #1254
   ```
 
 ### B4 BottomNavigation · missing-feature · **unverified**
@@ -1550,7 +1550,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:99-103  return new Box(new BoxStyle { Width = SizeValue.Fill, Height = 56, Background = theme.Surface, }, row);
+  BottomNavigation.cs:100-104  return new Box(new BoxStyle { Width = SizeValue.Fill, Height = 56, Background = theme.Surface, }, row);
   ```
 
 ### B4 BottomNavigation · semantics · **unverified**
@@ -1561,7 +1561,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:90  Label = item.Label,
+  BottomNavigation.cs:93  Label = item.Label,
   ```
 
 ### B4 BottomNavigation · behaviour · **unverified**
@@ -1572,7 +1572,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:102  Height = 56,
+  BottomNavigation.cs:105  Height = slot?.BarHeight ?? 56,
   ```
 
 ### B5 Tabs · documented-deviation · **unverified**
@@ -1616,7 +1616,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Tabs.cs:65-69  var surface = new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill, Pressed = new StyleDiff { Background = theme.SurfaceSubtle } })
+  Tabs.cs:68-72  var surface = new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill, Pressed = new StyleDiff { Background = theme.SurfaceSubtle } })
   ```
 
 ### B5 Tabs · documented-deviation · **unverified**
@@ -1649,8 +1649,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Avatar.cs:65  var seed = Name ?? Initials;
-  Avatar.cs:66  var tint = theme.Colors(TintPalette[seed.Length % TintPalette.Length]);
+  Avatar.cs:67  var seed = Name ?? Initials;
+  Avatar.cs:68  var tint = theme.Colors(TintPalette[seed.Length % TintPalette.Length]);
   ```
 
 ### B6 Avatar · semantics · **CONFIRMED**
@@ -1661,9 +1661,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Avatar.cs:58  var photo = new Image(source, side, side, ImageFit.Cover, Name ?? Initials)
-  Avatar.cs:79  ? new Text(clipped, TypeRole.Caption, tint.OnSubtle, maxLines: 1)
-  Avatar.cs:83  : new Icon(Icons.Person, glyphSize, theme.TextMuted);
+  Avatar.cs:60  var photo = new Image(source, side, side, ImageFit.Cover, Name ?? Initials)
+  Avatar.cs:81  ? new Text(clipped, TypeRole.Caption, tint.OnSubtle, maxLines: 1)
+  Avatar.cs:85  : new Icon(Icons.Person, glyphSize, slot?.AvatarGlyphColor ?? theme.TextMuted);
   ```
 
 ### B6 Avatar · missing-feature · **REFUTED**
@@ -1699,8 +1699,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:60  var iconNode = item.BadgeCount > 0 ? Badge.Over(icon, item.BadgeCount) : (VisualNode)icon;
-  BottomNavigation.cs:90  Label = item.Label,
+  BottomNavigation.cs:62  var iconNode = item.BadgeCount > 0 ? Badge.Over(icon, item.BadgeCount) : (VisualNode)icon;
+  BottomNavigation.cs:93  Label = item.Label,
   WebLoweringVisitor.Interaction.cs:531  AriaLabel = pressable.Label,
   ```
 
@@ -1969,8 +1969,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  EmptyState.cs:95  public Skeleton(SkeletonShape shape, float width, float height = 0)
-  EmptyState.cs:103  public float Width { get; init; }
+  EmptyState.cs:100  public Skeleton(SkeletonShape shape, float width, float height = 0)
+  EmptyState.cs:108  public float Width { get; init; }
   ```
 
 ### B17 EmptyState · missing-feature · **CONFIRMED**
@@ -1982,7 +1982,7 @@ the pill's 40 down.
 
   ```
   EmptyState.cs:13  public EmptyState(Icon icon, string title, string? body = null)
-  EmptyState.cs:34  var wellContent = new Icon(Icon.Glyph, IconSize.Lg, theme.TextMuted).Centered();
+  EmptyState.cs:37-38  var wellContent = new Icon(Icon.Glyph, slot?.WellIconSize ?? IconSize.Lg, slot?.WellIconColor ?? theme.TextMuted) .Centered();
   ```
 
 ### B17 EmptyState · behaviour · **CONFIRMED**
@@ -1993,7 +1993,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  EmptyState.cs:43-48  var column = new Column(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Center, Padding = EdgeInsets.Symmetric(Space.S4, Space.S12), };
+  EmptyState.cs:44-49  var column = new Column(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Center, Padding = EdgeInsets.Symmetric(Space.S4, Space.S12), };
   ```
 
 ### B17 EmptyState · missing-feature · **CONFIRMED**
@@ -2004,7 +2004,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  EmptyState.cs:51  column.Add(new Text(Title, TypeRole.Title, theme.TextPrimary, maxLines: 2)
+  EmptyState.cs:55  column.Add(new Text(Title, TypeRole.Title, theme.TextPrimary, maxLines: 2)
   ```
 
 ### B18 Banner · metric · **CONFIRMED**
@@ -2260,7 +2260,7 @@ the pill's 40 down.
 
   ```
   SegmentedControl.cs:72-81  var segment = new Box(new BoxStyle { Width = ..., Height = ..., Padding = ..., Background = selected ? theme.Surface : null, CornerRadius = ..., Elevation = ..., Transition = ... }, label);   // no Hover = ...
-  Pagination.cs:108  Hover = current ? null : new StyleDiff { Background = theme.SurfaceSubtle },
+  Pagination.cs:110  Hover = current ? null : new StyleDiff { Background = theme.SurfaceSubtle },
   ```
 
 ### C6 SegmentedControl · behaviour · **unverified**
@@ -2273,7 +2273,7 @@ the pill's 40 down.
   ```
   SegmentedControl.cs:86  var press = new Pressable(segment, Disabled || selected ? null : () => OnChanged?.Invoke(index))
   SegmentedControl.cs:84-89  { Disabled = Disabled, Label = Segments[index], Role = PressableRole.Radio, Selected = selected, }   // no pressed fill
-  Tabs.cs:69  Pressed = new StyleDiff { Background = theme.SurfaceSubtle },
+  Tabs.cs:74  Pressed = new StyleDiff { Background = slot?.QuietFill ?? theme.SurfaceSubtle },
   ```
 
 ### C6 SegmentedControl · missing-feature · **unverified**
@@ -3063,8 +3063,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ListItem.cs:159  public List(IReadOnlyList<ListItem> items, bool dividers = true)
-  ListItem.cs:152-153  /// v1 fences: recycling/virtualization joins the List engine work (this renders bounded item sets),
+  ListItem.cs:171  public List(IReadOnlyList<ListItem> items, bool dividers = true)
+  ListItem.cs:163-164  /// v1 fences: recycling/virtualization joins the List engine work (this renders bounded item sets),
   ```
 
 ### B2 List · ListItem · documented-deviation · **CONFIRMED**
@@ -3075,7 +3075,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ListItem.cs:141  Role = Selected ? PressableRole.Destination : PressableRole.Button,
+  ListItem.cs:153  Role = Selected ? PressableRole.Destination : PressableRole.Button,
   ListItem.cs:53-59  /// FENCE — the handoff's B2 draws a line this does not yet cross. … a SELECTABLE list is a listbox of option rows stating aria-selected, and one tab stop for the whole thing
   ```
 
@@ -3087,7 +3087,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  AppBar.cs:57  if (Leading is { } leading) row.Add(leading);
+  AppBar.cs:59  if (Leading is { } leading) row.Add(leading);
   ```
 
 ### B4 BottomNavigation · semantics · **unverified**
@@ -3098,7 +3098,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  BottomNavigation.cs:94  Role = PressableRole.Destination,
+  BottomNavigation.cs:97  Role = PressableRole.Destination,
   ```
 
 ### B5 Tabs · missing-feature · **unverified**
@@ -3121,7 +3121,7 @@ the pill's 40 down.
 
   ```
   Avatar.cs:16  /// from the name (the spec's 2-stop gradient hash upgrades this when gradient tokens land); the
-  Avatar.cs:90  Background = hasInitials ? tint.Subtle : theme.SurfaceSubtle,
+  Avatar.cs:92  Background = hasInitials ? tint.Subtle : theme.SurfaceSubtle,
   src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs  public LinearGradient? Gradient { get; init; }
   ```
 
@@ -3133,7 +3133,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Badge.cs:77  return new Box(new BoxStyle
+  Badge.cs:85  return new Box(new BoxStyle
   src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs      Fade = 0,
   src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs      SlideUp = 1,
   ```
@@ -3352,7 +3352,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  EmptyState.cs:137-144  return new Box(new BoxStyle { Width = Width, Height = height, Background = theme.SurfaceSubtle, CornerRadius = new CornerRadii(radius), Clip = true, }, new LoopMotion(...));
+  EmptyState.cs:145-152  return new Box(new BoxStyle { Width = Width, Height = height, Background = theme.SurfaceSubtle, CornerRadius = new CornerRadii(radius), Clip = true, }, new LoopMotion(...));
   ```
 
 ### C1 BottomSheet · missing-feature · **unverified**

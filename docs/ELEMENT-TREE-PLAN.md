@@ -367,8 +367,9 @@ the rule `Sizing` states.
 At every step a value that varies by density is read at `context.Density`, so a slot never bypasses
 the compact layout the fallback would have given.
 
-The precedent is already in the tree three times: `Text.StyleOverride ?? theme.Type(role)`, a code
-decoration's colour or its kind's, and `Markdown.Style ?? new MarkdownStyle()`.
+The precedent was already in the tree three times: `Text.StyleOverride ?? theme.Type(role)`, a code
+decoration's colour or its kind's, and a Markdown's own `Style` ahead of its defaults, which E6d made
+the `Markdown` slot's first step.
 
 **A subtree.** `Theme(theme, child)` overrides the theme below it, and `theme.With(button: …)` builds
 the override from the current theme with a slot laid over its own, member by member, so naming one
@@ -404,9 +405,11 @@ proves it.
 | `Table` | Table, DataTable |
 | `Badge` | Badge, Avatar, EmptyState |
 | `Calendar` | Calendar, DatePicker |
+| `Markdown` | Markdown |
 
-The code editor, the document and the charts already have theirs (`Code`, `MarkdownStyle`, `Data`),
-and E6 brings them under the same rules: `MarkdownStyle` becomes a slot, and all three cross.
+The code editor, the document and the charts already had theirs (`Code`, `MarkdownStyle`, `Data`),
+and E6 brings them under the same rules: `MarkdownStyle` became the `Markdown` slot, a
+`MarkdownTheme` that a document's own `Style` still comes ahead of, and all three cross.
 
 ### 3.11 What an app sees
 
