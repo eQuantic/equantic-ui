@@ -614,6 +614,21 @@ the parity rows it closes flip.
    grid, which cross to the server as a string (3.8). eqc met one more emission defect on the way (#1464,
    an interface tested as a null check), fixed by the bug sweep. The served runtime stays inside its
    budget.
+
+   **E3b-3, a dirty element in the browser lowers its own subtree** (#1455,
+   `openspec/changes/archive/2026-11-13-a-dirty-element-relowers-its-own-subtree`). After E3b-1 a nested
+   `SetState` built its own element alone, but the page then lowered all of itself and the reconciler
+   read the whole page. Now each component's position keeps what it lowered to and what it lowered with
+   (`lowered-records.ts`): its root as its own lowering left it, the same root as the page drew it, its
+   inputs and the record above it. A render the page's owners asked for builds the marked positions,
+   lowers each component that built alone, does again what its parents did to its root, and patches only
+   the DOM that root drew (`RenderManager.patch`). What a parent did is read off the two roots and
+   replayed only where the replay gives back the drawn root exactly. A component a parent read or walked
+   into (a shortcut's marker, a box sized from its child, an anchored menu's numbered rows) is lowered with
+   the nearest record above it that nothing reached into, the page in the end, which lowers whole as
+   before. The shortcuts a patch lowered again give way to the ones they declare now, and every other
+   binding stays. The DOM a patch leaves is the DOM a whole lowering leaves, which every spec of the slice
+   compares. The served runtime grows by the records and the replay, recorded in its budget.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.

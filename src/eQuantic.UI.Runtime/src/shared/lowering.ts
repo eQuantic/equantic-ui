@@ -33,7 +33,7 @@ import {
   reportComponentFailure,
   setFailureRenderer,
 } from './component-boundary';
-import { getActivePass, setRootLowering } from './element-roots';
+import { getActivePass, setRootLowering, setRootRelowering, type Relowered, type SubtreePatch } from './element-roots';
 import { ElementFrame } from './element-frame';
 // The engine's types through the barrel its own modules import from, for the reason
 // `element-frame.ts` gives; its classes through the seam the barrel registers them in.
@@ -145,6 +145,7 @@ import { StyleChannels } from './value-types';
 import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
 import { DISPOSABLE, nodeStateFor, positionOf, type NodeState } from './node-states';
+import { collectBuilds, declarerAmong, lowerRecorded, patchableAt, reachedInto, replay, type LoweredRecord } from './lowered-records';
 
 /** The C# `Anchored.MotionLiftDp` twin — the open/close nudge toward the anchor. */
 const ANCHOR_MOTION_LIFT = 8;
@@ -342,8 +343,78 @@ export function lowerVisualNode(node: VisualNodeValue, context: LoweringContext)
   });
 }
 
+
+/**
+ * A render the page's owners asked for, LOWERED BY WHAT THEY BUILT (E3b-3, #1455): `node`, the tree
+ * the page built last, is built again through its owner, which builds the marked positions and
+ * nothing else, and each component that built is lowered alone, with what it was lowered with and
+ * what its parents did to its root done again (lowered-records.ts). What the page drew elsewhere is
+ * not lowered.
+ *
+ * Null when the render cannot be answered so: no pass, a component no record can stand for alone
+ * (one a parent read or walked into, up to the page), or a parent's change the replay cannot say.
+ * The page then lowers whole, as before, and its owner builds nothing twice.
+ */
+export function relowerBuilt(node: VisualNodeValue, context: LoweringContext): Relowered | null {
+  const pass = getActivePass();
+  if (!pass) return null;
+  const root = pass.roots.nextRoot(liveOwner);
+  return runLoweringWalk(() => {
+    const tree = nextTree();
+    treeOfOwner.set(root.owner, tree);
+    const { result: built, positions } = collectBuilds(() => buildTree(root.owner, node, context));
+    const records: LoweredRecord[] = [];
+    for (const position of positions) {
+      const record = patchableAt(position);
+      if (!record) return null;
+      if (!records.includes(record)) records.push(record);
+    }
+    const topmost = records.filter((record) => !records.some((other) => other !== record && isBelow(record, other)));
+    const frame = new ElementFrame(built);
+    const patches: SubtreePatch[] = [];
+    for (const record of topmost) {
+      const drawn = record.root!;
+      const next = relowerRecord(record, frame);
+      if (next === undefined) return null;
+      patches.push({ drawn, next });
+    }
+    return { patches, declaredBy: (binding) => declarerAmong(topmost, binding.within) };
+  });
+}
+
+/** Whether `record` stands below `above`. */
+function isBelow(record: LoweredRecord, above: LoweredRecord): boolean {
+  for (let at = record.parent; at; at = at.parent) if (at === above) return true;
+  return false;
+}
+
+/**
+ * Lowers `record`'s component again, with what it was lowered with, and does again what its parents
+ * did to its root. Undefined when what they did cannot be said exactly.
+ */
+function relowerRecord(record: LoweredRecord, frame: ElementFrame): HtmlNode | null | undefined {
+  const inputs = record.inputs as LoweringInputs;
+  const node = record.position.configuration as unknown as VisualNodeValue;
+  const drawn = { root: record.root, snapshot: record.snapshot };
+  const outer = walkAmbients();
+  setWalkAmbients(inputs.ambients);
+  try {
+    const context: LoweringContext = { ...inputs.context, frame };
+    const fresh = lowerRecorded(
+      record.position,
+      inputs,
+      () => decorate(node, lowerNodeKind(node, context, inputs.horizontalAxis, inputs.path)),
+      record.parent,
+    );
+    return replay(drawn, fresh);
+  } finally {
+    setWalkAmbients(outer);
+  }
+}
+
 // Registered here rather than imported by the page bases: see `setRootLowering`.
 setRootLowering((node) => lowerVisualNode(node, ambientLoweringContext()));
+setRootRelowering((node) => relowerBuilt(node, ambientLoweringContext()));
 
 // ---- token → CSS value formatting (mirrors C# TokenCss) ------------------------------------------
 
@@ -478,7 +549,50 @@ function lowerNode(
   horizontalAxis: boolean | null,
   path: string,
 ): HtmlNode | null {
-  return decorate(node, lowerNodeKind(node, context, horizontalAxis, path));
+  // A component's position keeps what it lowered to, and with what (lowered-records.ts), so a render
+  // its owner asks for can lower it alone (#1455).
+  const position = node.nodeKind === 'component' ? context.frame?.elementAt(node) : null;
+  if (!position) return decorate(node, lowerNodeKind(node, context, horizontalAxis, path));
+  return lowerRecorded(position, inputsOf(context, horizontalAxis, path), () =>
+    decorate(node, lowerNodeKind(node, context, horizontalAxis, path)),
+  );
+}
+
+/**
+ * What a component was lowered with, so it can be lowered again exactly so: its context (without the
+ * frame, which the next render makes anew and which holds the whole tree), the axis it was laid on,
+ * its path, and the walk's ambients its parents had set.
+ */
+interface LoweringInputs {
+  readonly context: LoweringContext;
+  readonly horizontalAxis: boolean | null;
+  readonly path: string;
+  readonly ambients: WalkAmbients;
+}
+
+/** The state a walk carries down to what it lowers, set by a parent around its children. */
+interface WalkAmbients {
+  readonly placing: PlaceRule | null;
+  readonly simulatedState: number;
+  readonly inDisabledControl: boolean;
+  readonly inControl: boolean;
+  readonly enclosingGates: readonly string[];
+}
+
+function inputsOf(context: LoweringContext, horizontalAxis: boolean | null, path: string): LoweringInputs {
+  return { context: { ...context, frame: undefined }, horizontalAxis, path, ambients: walkAmbients() };
+}
+
+function walkAmbients(): WalkAmbients {
+  return { placing, simulatedState, inDisabledControl, inControl, enclosingGates };
+}
+
+function setWalkAmbients(ambients: WalkAmbients): void {
+  placing = ambients.placing;
+  simulatedState = ambients.simulatedState;
+  inDisabledControl = ambients.inDisabledControl;
+  inControl = ambients.inControl;
+  enclosingGates = ambients.enclosingGates;
 }
 
 /**
@@ -4502,6 +4616,7 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
 
 /** Walks the lowered panel and ids every menuitem/option row — the C# NumberItemRows twin. */
 function numberItemRows(node: HtmlNode, panelId: string, counter: { next: number }): void {
+  reachedInto(node);
   const role = node.attributes['role'];
   if (role === 'menuitem' || role === 'option') {
     node.attributes['id'] = `${panelId}-${counter.next}`;
@@ -4544,6 +4659,8 @@ function lowerShortcut(
   if (node.enabled === false) return child;
   const chord = chordId(node.chord);
   // C# twin: nested shortcuts share one child root, so the marker LISTS them.
+  // The marker joins what the child already carries: the child is not lowered alone.
+  reachedInto(child);
   const existing = child.attributes['data-eq-shortcut'];
   child.attributes['data-eq-shortcut'] = existing ? `${existing} ${chord}` : chord;
   if (node.onPressed) {
@@ -5100,6 +5217,7 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
  * cannot know which.
  */
 function asksForAll(node: HtmlNode): { width: boolean; height: boolean; cap?: string } {
+  reachedInto(node);
   const gate = (node.attributes['class'] ?? '').split(' ').some(isAdaptiveGate);
   if (gate || atomicDeclaration(node, 'display') === 'contents') {
     const inner = node.children.filter((child) => child.textContent === undefined).map(asksForAll);

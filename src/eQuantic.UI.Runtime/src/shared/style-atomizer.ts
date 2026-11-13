@@ -11,6 +11,8 @@ import type { AppTheme, ColorToken } from './value-types';
 import { getPhotonTheme } from './photon-context';
 import { SCROLLED_MARKER } from './markers';
 import { createStyleElement } from '../utils/page-nonce';
+import type { HtmlNode } from '../core/types';
+import { reachedInto } from './lowered-records';
 
 /** FNV-1a 32-bit over UTF-16 code units, base36 — the exact C# `StyleAtomizer.Hash`. */
 export function hashDeclaration(text: string): string {
@@ -289,10 +291,17 @@ export function mergeAtomicDeclaration(
  * draggable's glide to its box's transition list, #511). A state's or the scrolled variant's
  * declaration is not the resting one, and is skipped as effectiveStyle skips it.
  */
+/** Whether `cls` is an atomic class this registry wrote, rather than a semantic one. */
+export function isAtomicClass(cls: string): boolean {
+  return ruleTexts.has(cls);
+}
+
 export function atomicDeclaration(
   node: { attributes: Record<string, string | undefined> },
   prop: string,
 ): string | undefined {
+  // A parent that reads what its child lowered to decides from it: the child is not lowered alone.
+  reachedInto(node as HtmlNode);
   for (const cls of (node.attributes['class'] ?? '').split(' ')) {
     const rule = ruleTexts.get(cls);
     if (rule && !rule.includes('\u0001') && rule.startsWith(`${prop}:`)) return rule.slice(prop.length + 1);
