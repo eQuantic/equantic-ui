@@ -362,6 +362,9 @@ with the agent, model and effort the registry gives it (`.claude/agents/`), hold
 as the Workflow above says. It restates none of these rules, and where it differs from this file,
 this file wins.
 
+`python3 .claude/skills/pipeline/board/board.py` serves a local, read-only board of every delivery in
+flight, its stages, agents, tokens and time (`.claude/skills/pipeline/board/README.md`, #1524).
+
 ## Project Overview
 
 **eQuantic.UI** is a Flutter-inspired component-based UI framework for .NET that compiles C# components directly to optimized JavaScript at build time (not WASM). It provides type-safe, HTML-native components with a small runtime (its gzip size is measured by the site's

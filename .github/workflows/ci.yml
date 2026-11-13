@@ -158,6 +158,13 @@ jobs:
       - name: The session hook still tells a branch's creation apart
         run: python3 .claude/hooks/a-branch-is-named-for-its-change.py --self-test
 
+      # The pipelines board (#1524) reads every delivery's state and Claude Code's own files, and
+      # serves them on the loopback only: its reading rule (a string of digits counts, a boolean
+      # never), who is working (a live session, not a missing `finished`) and its refusals (a path,
+      # a link out, another Host) hold over a fixture on disk and through the real server.
+      - name: The pipelines board still reads, attributes and refuses
+        run: python3 .claude/skills/pipeline/board/board.py --self-test
+
   # The SessionStart hook acts only in a cloud container, a path no laptop takes, so nothing else
   # would notice the day it stopped working. This runs it the way a fresh container would (a hostile
   # global git config, no dotnet on PATH) and asserts every promise, with two controls: a commit
