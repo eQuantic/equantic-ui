@@ -184,10 +184,28 @@ public sealed class ModuleBundler : IDisposable
         startInfo.ArgumentList.Add("-e");
         startInfo.ArgumentList.Add(WorkerScript.Value);
         var worker = Process.Start(startInfo) ?? throw new InvalidOperationException("bun did not start");
-        // Standard error drains on its own, so a warning bun prints never fills its pipe and stalls it.
-        _drainErrors = worker.StandardError.ReadToEndAsync();
+        // Standard error drains on its own, so a warning bun prints never fills its pipe and stalls it,
+        // and is thrown away as it comes: a worker kept for a served eqc's life would otherwise hold every
+        // line it ever printed. A bundle's errors reach eqc in its answer, never on this stream.
+        _drainErrors = Discard(worker.StandardError);
         _worker = worker;
         return worker;
+    }
+
+    /// <summary>Reads <paramref name="stream"/> to its end and keeps nothing.</summary>
+    private static async Task Discard(StreamReader stream)
+    {
+        var buffer = new char[4096];
+        try
+        {
+            while (await stream.ReadAsync(buffer.AsMemory()).ConfigureAwait(false) > 0)
+            {
+            }
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+        {
+            // The worker is gone, and so is what it had to say.
+        }
     }
 
     private void Stop()
