@@ -114,13 +114,16 @@ surface uses. #1501 took the bundle 507 bytes over #1433's ceiling and recorded 
 
 ## Since the record of #1501
 
-#1501 recorded 341,447 bytes, and its merge (621f63310) measures exactly that. #1458 was measured over
-`main` at 621f63310.
+#1501 recorded 341,447 bytes, and its merge (621f63310) measures exactly that. From that merge, the
+bundle was measured as above at every first-parent commit of `main` that touched a source of it, and
+#1458 over `main` at 1b41cdc80.
 
 | Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
 |---|---|---:|---:|---:|---:|---|---|
-| #1458 | | 341,447 | 342,266 | +819 | +2,595 | a table takes what is left of its scroller, measured on both targets | yes |
+| #1495 | 1b41cdc80 | 341,447 | 342,575 | +1,128 | +3,922 | the browser keeps a node's state on its position | yes |
+| #1458 | | 342,575 | 343,344 | +769 | +2,595 | a table takes what is left of its scroller, measured on both targets | yes |
+| **all** | | **341,447** | **343,344** | **+1,897** | **+6,517** | | |
 
-#1458 stays inside #1501's ceiling, floor(341,447 × 1.01) = 344,861, and records nothing. Its 819 bytes
-are the table's fit, the same 2,595 raw bytes it added over 1973005e6 above, which gzip packs a little
+#1458 stays inside #1501's ceiling, floor(341,447 × 1.01) = 344,861, 1,517 bytes under it, and records
+nothing. Its 769 bytes are the table's fit, the same 2,595 raw bytes it added over 1973005e6 above, which gzip packs a little
 differently beside different neighbours.

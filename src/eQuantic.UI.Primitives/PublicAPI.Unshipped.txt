@@ -978,11 +978,14 @@ static eQuantic.UI.Primitives.ComponentBoundary.BuildAtDepth(eQuantic.UI.Primiti
 *REMOVED*eQuantic.UI.Primitives.BuildOwner.BuildOwner(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent) -> void
 *REMOVED*static eQuantic.UI.Primitives.BuildOwner.Structural(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent) -> eQuantic.UI.Primitives.BuildOwner!
 eQuantic.UI.Primitives.BuildOwner.HoldsEveryArm.get -> bool
-eQuantic.UI.Primitives.BuildOwner.BuildOwner(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent, bool holdsEveryArm = false) -> void
-static eQuantic.UI.Primitives.BuildOwner.Structural(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent, bool holdsEveryArm = false) -> eQuantic.UI.Primitives.BuildOwner!
+eQuantic.UI.Primitives.BuildOwner.BuildOwner(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent, bool holdsEveryArm = false, eQuantic.UI.Primitives.ElementIds? ids = null) -> void
+static eQuantic.UI.Primitives.BuildOwner.Structural(System.Func<eQuantic.UI.Primitives.UiComponent!, eQuantic.UI.Primitives.ComponentContext!, int, eQuantic.UI.Primitives.VisualNode!>! buildComponent, bool holdsEveryArm = false, eQuantic.UI.Primitives.ElementIds? ids = null) -> eQuantic.UI.Primitives.BuildOwner!
 eQuantic.UI.Primitives.BuildOwner.Building.get -> eQuantic.UI.Primitives.ComponentElement?
 eQuantic.UI.Primitives.Element.Slot.get -> int
 eQuantic.UI.Primitives.Element.SlotsBelow(int depth) -> string!
+eQuantic.UI.Primitives.ElementIds
+eQuantic.UI.Primitives.ElementIds.ElementIds() -> void
+eQuantic.UI.Primitives.ElementIds.Next() -> int
 static eQuantic.UI.Primitives.ButtonTheme.Merge(eQuantic.UI.Primitives.ButtonTheme? under, eQuantic.UI.Primitives.ButtonTheme? over) -> eQuantic.UI.Primitives.ButtonTheme?
 static eQuantic.UI.Primitives.ControlsTheme.Merge(eQuantic.UI.Primitives.ControlsTheme? under, eQuantic.UI.Primitives.ControlsTheme? over) -> eQuantic.UI.Primitives.ControlsTheme?
 static eQuantic.UI.Primitives.DensityLadder.Merge(eQuantic.UI.Primitives.DensityLadder? under, eQuantic.UI.Primitives.DensityLadder? over) -> eQuantic.UI.Primitives.DensityLadder?
