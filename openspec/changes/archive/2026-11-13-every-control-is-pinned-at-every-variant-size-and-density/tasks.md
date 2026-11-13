@@ -10,7 +10,7 @@
 - [x] 2.2 Every control drawn at every variant, size and density it accepts, each cell pinned on the web, in the semantics and on Photon, rewritten behind `EQ_UPDATE_VARIANT_MATRIX=1`
 - [x] 2.3 The baseline of the cells that cannot exist, each with its reason
 - [x] 2.4 Verify both ways in a disposable worktree: a changed badge padding names its 20 cells, a new control with no pin is named with its two missing axes, and a removed baseline line is named
-- [ ] 2.5 Regenerate the pins once the theme slots (#1241 to #1244) are on main
+- [x] 2.5 Regenerate the pins once the theme slots (#1241 to #1244) are on main
 
 ## 3. Documentation
 
