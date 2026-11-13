@@ -208,9 +208,9 @@ export { IAppTheme, ICodeCompletionProvider, ICodeLanguage, ICodeSignatureProvid
 export * from './components';
 // The element engine the lowering builds through, handed to it once every module above has loaded:
 // element-engine.ts says why the lowering cannot import it.
-import { BuildOwner, ComponentElement, NodeElement } from './components';
+import { BuildOwner, ComponentElement, ElementIds, NodeElement } from './components';
 import { registerElementEngine } from './element-engine';
-registerElementEngine({ BuildOwner, ComponentElement, NodeElement });
+registerElementEngine({ BuildOwner, ComponentElement, ElementIds, NodeElement });
 
 // ---- Device capabilities ---------------------------------------------------------------------
 // A capability is a service on both sides: C# takes it through a constructor, and here it is
