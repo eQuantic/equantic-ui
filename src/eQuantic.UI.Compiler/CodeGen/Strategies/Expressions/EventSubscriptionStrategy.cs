@@ -54,19 +54,38 @@ public class EventSubscriptionStrategy : IConversionStrategy
                 : ReadModifyWrite.Assign(context.Converter.ConvertIr(assignment.Left), [value], Next, answerOld: false, context));
         }
         var target = context.Converter.ConvertExpression(assignment.Left);
+        return Subscription(symbol, assignment, target,
+            () => Receiver(assignment.Left, symbol, symbol.MemberTwinName(), target, context), context);
+    }
+
+    /// <summary>
+    /// A subscription to <paramref name="symbol"/>, <c>+=</c> or <c>-=</c>, read off what <paramref name="receiver"/>
+    /// answers, asked only where the event has accessors to call, so a field-like one converts its receiver once:
+    /// the event's accessors, as C# compiles the subscription into a call of them (#746), or its invocation list,
+    /// composed in <paramref name="target"/>, for a field-like event and where no receiver is known. One lowering
+    /// for a plain subscription and a null-conditional one (<c>s?.Fired += h</c>), whose receiver is the value
+    /// its guard read once (<see cref="NullConditionalAssignment"/>, #1445). An accessor no twin holds is
+    /// refused here, where either is written (EQ2010).
+    /// </summary>
+    internal static string Subscription(IEventSymbol symbol, AssignmentExpressionSyntax assignment, string target,
+        Func<string?> receiver, ConversionContext context)
+    {
+        var adds = assignment.IsKind(SyntaxKind.AddAssignmentExpression);
+        context.UsedHelpers.Add(Eq.Import);
+        (adds ? symbol.AddMethod : symbol.RemoveMethod)?.ReportIfAccessorStaysOnTheServer(assignment, context);
         var handler = context.Converter.ConvertExpression(assignment.Right);
 
-        // The event's accessors, as C# compiles the subscription into a call of them (#746): an event
-        // declared with accessors was written nowhere, and a subscription through an interface wrote a key
-        // its explicit implementation's accessors never read.
-        if (EventAccessors.Of(symbol) is var kind and not EventAccessors.Kind.FieldLike
-            && symbol.MemberTwinName() is var name && Receiver(assignment.Left, symbol, name, target, context) is { } receiver)
+        // An event declared with accessors was written nowhere, and a subscription through an interface wrote a
+        // key its explicit implementation's accessors never read.
+        if (EventAccessors.Of(symbol) is var kind and not EventAccessors.Kind.FieldLike && receiver() is { } read)
         {
+            var name = symbol.MemberTwinName();
             return kind == EventAccessors.Kind.Declared
-                ? $"{receiver}.{EventAccessors.Name(adds ? "add" : "remove", name)}({handler})"
-                : $"{(adds ? Eq.AddToEvent : Eq.RemoveFromEvent)}({receiver}, '{name}', {handler})";
+                ? $"{read}.{EventAccessors.Name(adds ? "add" : "remove", name)}({handler})"
+                : $"{(adds ? Eq.AddToEvent : Eq.RemoveFromEvent)}({read}, '{name}', {handler})";
         }
 
+        var helper = adds ? Eq.CombineDelegate : Eq.RemoveDelegate;
         return $"{target} = {helper}({target}, {handler})";
     }
 

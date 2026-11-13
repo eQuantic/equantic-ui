@@ -278,6 +278,93 @@ public sealed class PhotonTheme : IAppTheme
         RemoveIconSize = IconSize.Dense,
     };
 
+    // The surfaces' slots (E6c) follow the same rule: what each surface drew, a colour it takes from
+    // one of the theme's roles left null, so a tooltip, a toast, a track, a skeleton or a filled card
+    // reads the role and a theme that changes it reaches them.
+
+    /// <summary>The surfaces (spec C2): a dialog of at most 480 at extra-large corners and elevation 5,
+    /// a sheet rising at elevation 4 with a 32 by 4 handle, a drawer at elevation 3.</summary>
+    public ModalTheme? Modal => field ??= new()
+    {
+        DialogMaxWidth = 480,
+        DialogShape = ShapeScale.ExtraLarge,
+        DialogElevation = 5,
+        DialogPadding = EdgeInsets.All(Space.S5),
+        DialogGap = 20,
+        DialogTextGap = 8,
+        DialogActionGap = 8,
+        DialogGutter = Space.S6,
+        BottomSheetShape = ShapeScale.ExtraLarge,
+        BottomSheetElevation = 4,
+        BottomSheetPadding = new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
+        BottomSheetGap = Space.S3,
+        HandleWidth = 32,
+        HandleHeight = 4,
+        DrawerElevation = 3,
+        DrawerPadding = EdgeInsets.All(Space.S4),
+    };
+
+    /// <summary>What opens beside an anchor: a bordered panel at medium corners and elevation 2, a menu
+    /// at least 180 wide, a tooltip in the inverse colours.</summary>
+    public MenuTheme? Menu => field ??= new()
+    {
+        PanelShape = ShapeScale.Medium,
+        PanelBorderWidth = 1,
+        PanelElevation = 2,
+        PopoverPadding = EdgeInsets.All(Space.S3),
+        MenuMinWidth = 180,
+        MenuPadding = EdgeInsets.Symmetric(0, Space.S1),
+        ItemPadding = EdgeInsets.Symmetric(Space.S3, 0),
+        ItemGap = Space.S2,
+        TooltipShape = ShapeScale.Small,
+        TooltipPadding = EdgeInsets.Symmetric(Space.S2, Space.S1),
+    };
+
+    /// <summary>The notices: a pill of a toast in the inverse colours, a banner in 13 over 18 (spec
+    /// B18), a cookie consent at large corners.</summary>
+    public NoticeTheme? Notice => field ??= new()
+    {
+        ToastShape = ShapeScale.Full,
+        ToastElevation = 3,
+        ToastPadding = EdgeInsets.Symmetric(Space.S4, Space.S3),
+        ToastMaxWidth = 480,
+        ToastDot = 8,
+        ToastGap = Space.S3,
+        ToastMargin = EdgeInsets.Symmetric(Space.S4, Space.S6),
+        BannerShape = ShapeScale.Large,
+        BannerPadding = new EdgeInsets(14, 12, 14, 12),
+        BannerIconGap = 10,
+        BannerGap = Space.S1,
+        BannerTextSize = 13,
+        BannerLineHeight = 18,
+        BannerTitleWeight = FontWeight.SemiBold,
+        BannerBodyWeight = FontWeight.Regular,
+        ConsentShape = ShapeScale.Large,
+        ConsentElevation = 2,
+        ConsentBorderWidth = 1,
+        ConsentPadding = EdgeInsets.All(Space.S4),
+    };
+
+    /// <summary>What shows something is on its way: a bar 4 high (8 prominent) on a subtle track, a
+    /// skeleton line 12 high with a glint.</summary>
+    public ProgressTheme? Progress => field ??= new()
+    {
+        BarHeight = 4,
+        ProminentBarHeight = 8,
+        BarShape = ShapeScale.Full,
+        RefreshSpinner = IconSize.Dense,
+        SkeletonLineHeight = 12,
+        SkeletonShape = ShapeScale.Medium,
+    };
+
+    /// <summary>The Card: large corners, a 1dp border on the outlined and elevated kinds, elevation 1.</summary>
+    public CardTheme? Card => field ??= new()
+    {
+        Shape = ShapeScale.Large,
+        BorderWidth = 1,
+        Elevation = 1,
+    };
+
     private static DensityPair ByDensityAlone(Func<Density, float> side) => new()
     {
         Comfortable = side(Density.Comfortable),

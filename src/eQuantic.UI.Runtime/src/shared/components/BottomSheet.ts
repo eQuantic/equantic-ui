@@ -20,14 +20,15 @@ export class BottomSheet extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
+        let slot = theme.modal;
         let scrim = new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: theme.scrim })), this.dismissible ? this.onDismiss : null, { disabled: !this.dismissible, label: SdkStrings.dismiss });
-        let body = new Column(12, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'stretch' });
+        let body = new Column(slot?.bottomSheetGap ?? 12, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'stretch' });
         let handleRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, main: 'center' });
-        handleRow.add(new Box(new BoxStyle({ width: 32, height: 4, background: theme.borderStrong, cornerRadius: new CornerRadii(999) })));
+        handleRow.add(new Box(new BoxStyle({ width: slot?.handleWidth ?? 32, height: slot?.handleHeight ?? 4, background: slot?.handleColor ?? theme.borderStrong, cornerRadius: new CornerRadii(999) })));
         body.add(handleRow);
         body.add(this.content);
-        let radius = theme.shape('extraLarge');
-        let sheet = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surface, cornerRadius: new CornerRadii(radius, radius, 0, 0), elevation: 4, padding: new EdgeInsets(20, 12, 20, 24) }), body);
+        let radius = theme.shape(slot?.bottomSheetShape ?? 'extraLarge');
+        let sheet = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surface, cornerRadius: new CornerRadii(radius, radius, 0, 0), elevation: slot?.bottomSheetElevation ?? 4, padding: slot?.bottomSheetPadding ?? new EdgeInsets(20, 12, 20, 24) }), body);
         if (context.inFlow) return sheet;
         let anchor = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'end' });
         let sheetNode = this.dismissible ? new DragDismiss(sheet, this.onDismiss) : sheet;
