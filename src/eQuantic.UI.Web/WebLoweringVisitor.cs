@@ -120,11 +120,14 @@ internal sealed partial class WebLoweringVisitor(
         // from the third position to the first is a MOVED row, not a rewritten one. Written in the
         // funnel because it belongs to every node; SSR emits no attribute for it, so the DOM is
         // unchanged and the twin in lowering.ts writes exactly the same field.
-        if (lowered is not null && node.Key is { Length: > 0 } key) lowered.Key = key;
+        // A nameless Group is no group (Group.IsNamed): its child stands in its place, so what the
+        // child says of itself stays, as through every other wrapper that lowers to its child.
+        var standIn = node is Group { IsNamed: false };
+        if (lowered is not null && node.Key is { Length: > 0 } key && !(standIn && lowered.Key is not null)) lowered.Key = key;
 
         // The one funnel every node passes through, which is where a property that belongs to ALL
         // of them has to be written — an in-page link may point at any node, not at a chosen few.
-        if (lowered is not null && node.Bookmark is { Length: > 0 } bookmark)
+        if (lowered is not null && node.Bookmark is { Length: > 0 } bookmark && !(standIn && lowered.Id is not null))
         {
             lowered.Id = bookmark;
             // ROOM TO LAND. A browser scrolls a target to the very top, so under a pinned header
@@ -136,7 +139,8 @@ internal sealed partial class WebLoweringVisitor(
             lowered.Style.ScrollMarginTop = "var(--eq-anchor-offset, 0px)";
         }
 
-        if (lowered is not null && node.Origin is { Length: > 0 } origin)
+        if (lowered is not null && node.Origin is { Length: > 0 } origin
+            && !(standIn && lowered.DataAttributes?.ContainsKey("eq-origin") == true))
         {
             // DataAttributes and not RawAttributes: RawAttributes lives on RealizedElement (it exists
             // so SVG can emit viewBox/d verbatim), and not every lowered node is one. DataAttributes
@@ -240,7 +244,7 @@ internal sealed partial class WebLoweringVisitor(
 
     public HtmlElement? Visit(LiveRegion live, bool? horizontalAxis) => LowerLiveRegion(live);
 
-    public HtmlElement? Visit(Group group, bool? horizontalAxis) => LowerGroup(group);
+    public HtmlElement? Visit(Group group, bool? horizontalAxis) => LowerGroup(group, horizontalAxis);
 
     public HtmlElement? Visit(Navigable navigable, bool? horizontalAxis) => LowerNavigable(navigable);
 

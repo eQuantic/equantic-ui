@@ -78,7 +78,10 @@ constructor with the `Label` tail (`UiFactoryConformanceTests`, `EveryVocabulary
   realizer lets the child stand in its place. The web lowers no host, Photon announces nothing for
   it and measures it as a plain wrapper (no inlined constraints, because no host exists on the web).
   A nameless group is noise to every reader, and a required label would throw on a page whose
-  culture's string came back empty.
+  culture's string came back empty. The rule is ONE predicate, `Group.IsNamed`, which every realizer
+  reads (gate round 2, R2-H2). Where it is false the web lowers the child on the parent's axis, and
+  the child's own Key, Bookmark and Origin stay its own (R2-D2, R2-D3), as through every other
+  transparent wrapper; the TS twin's `isNamedGroup` mirrors it.
 - The interface member `IVisualNodeVisitor.Visit(Group, TState)` makes each visitor that does not
   name it fail the build (CS0535), which is the instrument that fails.
 
@@ -146,7 +149,14 @@ Group(label) ── Column ── heading Box(Text(label, TypeRole.Caption, them
 - THE HEADING IS READ ONCE, as the group's name (gate round 1, D2). It is drawn as a `Text` with
   `ExcludeFromSemantics = true`, a new `Text` property and Flutter's own word
   (`Image.excludeFromSemantics`). The web writes `aria-hidden="true"` on it, and Photon's semantics walk
-  passes over it. The group carries the same words as its `Label`.
+  passes over it, also when it derives a control's name from what the control holds (`TextWithin`,
+  R2-D1), as the web's `aria-hidden` drops the text from a button's name. The group carries the same
+  words as its `Label`.
+- A PARAGRAPH WITH A LINKED RUN IS READ whatever `ExcludeFromSemantics` says (R2-H1, settled as
+  "ignore"). Every realizer reads it through one predicate, `Text.IsHiddenFromReaders`. A link is
+  something a reader can follow, and a link hidden from the reader that a keyboard still reaches is
+  a trap (`aria-hidden` over a focusable element). Refusing with a throw would take down a page over
+  a semantics hint.
 - Web: inside `role="listbox"`, a `role="group" aria-label="A seguir"` holding the hidden heading and
   the `role="option"` rows. This is WAI-ARIA APG's grouped listbox, named by `aria-label` instead of
   `aria-labelledby` because the label is a string the node already has.
@@ -183,7 +193,7 @@ eQuantic.UI.Components.OptionGroup … (the record's lines, the shape `MenuItem`
 The exact lines are what `./scripts/public-api.sh update` writes; the list above is what to read the
 diff against. `tests/eQuantic.UI.Web.Tests/developer-surface.baseline.txt` does not move.
 
-Added in gate round 1: `eQuantic.UI.Primitives.Text.ExcludeFromSemantics.get -> bool` and `.init -> void`.
+Added in gate round 1: `eQuantic.UI.Primitives.Text.ExcludeFromSemantics.get -> bool` and `.init -> void`. Added in gate round 2: `Group.IsNamed.get -> bool` and `Text.IsHiddenFromReaders.get -> bool`.
 
 ### 8. `docs/FLUTTER-PARITY.md` gets no row
 
@@ -201,7 +211,7 @@ here, a labelled semantics container, is row 154/155's, whose verdicts this chan
 - [Ungrouped options cannot follow the groups] → accepted (design A); an app puts a trailing choice in
   a group of its own, as the issue's "Outro concelho" is.
 - [`Text` grows a property] → `ExcludeFromSemantics` is init-only and false by default, so no existing
-  text changes. The C# realizer and the TS twin write the same `aria-hidden`, and the parity fixture pins
+  text changes. An open Select with no options names no active option (`ActiveIndex` -1, R2-D4). The C# realizer and the TS twin write the same `aria-hidden`, and the parity fixture pins
   it.
 
 ## Migration Plan

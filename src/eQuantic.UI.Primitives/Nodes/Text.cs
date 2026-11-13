@@ -118,8 +118,18 @@ public sealed class Text : VisualNode
     /// <c>excludeFromSemantics</c> says of an image or a gesture. For text whose words a reader already
     /// heard another way — a group's heading, which the <see cref="Group"/> announces as its name — so
     /// the same words are not announced twice.
+    /// <para>
+    /// A paragraph with a LINKED run is read whatever this says (<see cref="IsHiddenFromReaders"/>): a
+    /// link is something a reader can follow, and one hidden from it that a keyboard still reaches is
+    /// a trap.
+    /// </para>
     /// </summary>
     public bool ExcludeFromSemantics { get; init; }
+
+    /// <summary>Whether a reader passes over this paragraph: <see cref="ExcludeFromSemantics"/>, unless
+    /// a run of it links somewhere. The one statement every realizer reads.</summary>
+    public bool IsHiddenFromReaders =>
+        ExcludeFromSemantics && !(Spans?.Any(run => run.Destination is { Length: > 0 }) ?? false);
 
     /// <summary>
     /// RICH runs (spec A8's inline emphasis): when set, the paragraph renders these runs in order

@@ -275,7 +275,7 @@ internal sealed partial class SemanticsVisitor
 
     /// <summary>A labelled group: one stop named by its label, then what it holds, as the web's
     /// <c>role="group"</c> is read.</summary>
-    public bool Visit(Group node, LayoutNode laidOut) => node.Label.Length == 0
+    public bool Visit(Group node, LayoutNode laidOut) => !node.IsNamed
         ? Wraps
         : AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
 
@@ -323,7 +323,9 @@ internal sealed partial class SemanticsVisitor
             // Content. Here it costs more than a missing announcement — a control whose label happens
             // to emphasise one word derived NO name at all, and a nameless button is announced as
             // "button" and nothing else.
-            if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
+            // A text drawn and never read is no part of a name either, as the web's aria-hidden says.
+            if (node.Source is Text { PlainContent.Length: > 0, IsHiddenFromReaders: false } text)
+                parts.Add(text.PlainContent);
             foreach (var child in node) Gather(child, parts);
         }
     }

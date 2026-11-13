@@ -10,6 +10,8 @@ import { resetShortcuts } from '../dom/shortcuts';
 import { photonTheme } from './design-system.generated';
 import { setPhotonTheme } from './photon-context';
 import { Column } from './vocabulary';
+import { lowerVisualNode } from './lowering';
+import type { VisualNodeValue } from './nodes';
 import { Select } from './components/Select';
 import { OptionGroup } from './components/OptionGroup';
 
@@ -74,5 +76,27 @@ describe('a grouped Select, driven in the browser', () => {
 
     expect(chosen).toEqual([2]);
     expect(container.querySelector('[role="listbox"]')).toBeNull();
+  });
+});
+
+describe('a nameless Group (C# twin: GroupSemanticsTests)', () => {
+  const flexible = () => ({
+    nodeKind: 'flexible',
+    child: { nodeKind: 'text', content: 'Delivery', role: 'bodyM' },
+    key: 'child',
+    bookmark: 'child-mark',
+    origin: 'Child.cs:1',
+  });
+  const column = (child: unknown) =>
+    ({ nodeKind: 'column', gap: 0, children: [child], height: { kind: 'fixed', value: 200 } }) as unknown as VisualNodeValue;
+  const ctx = { textPrimary: photonTheme.textPrimary };
+
+  it('lowers to its child, on the parent axis, keeping what the child says of itself', () => {
+    const bare = lowerVisualNode(column(flexible()), ctx);
+    const wrapped = lowerVisualNode(
+      column({ nodeKind: 'group', label: '', child: flexible(), key: 'group', bookmark: 'group-mark', origin: 'Group.cs:1' }),
+      ctx,
+    );
+    expect(JSON.stringify(wrapped)).toBe(JSON.stringify(bare));
   });
 });

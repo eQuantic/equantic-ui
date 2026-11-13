@@ -239,7 +239,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     // gives the host `fit-content` when the child does not ask to fill, and the box a reader outlines
     // has to be the box Photon lays out. A group with no name emits no host, so nothing is inlined.
     public LayoutNode Visit(Group node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, node.Label.Length == 0 ? s.Constraints : s.Constraints.Inline(), _ctx, s.At);
+        MeasureWrapper(node, node.Child, node.IsNamed ? s.Constraints.Inline() : s.Constraints, _ctx, s.At);
 
     // INLINED like the three wrappers above it, and the reason this comment once said otherwise is
     // worth keeping: "a progress bar reports across whatever it is given" sounds right and is not

@@ -16,7 +16,7 @@ internal sealed partial class SemanticsVisitor
     public bool Visit(Text node, LayoutNode laidOut)
     {
         // Drawn and never read: its words reached the reader another way.
-        if (node.ExcludeFromSemantics) return PureLayout;
+        if (node.IsHiddenFromReaders) return PureLayout;
         var announced = node.PlainContent.Length > 0
             ? Announce(new(SemanticRole.StaticText, IdOf(laidOut), laidOut.Bounds,
                 node.PlainContent, null, false, HeadingLevel: node.HeadingLevel))

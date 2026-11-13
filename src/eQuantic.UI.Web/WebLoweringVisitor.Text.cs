@@ -509,7 +509,7 @@ internal sealed partial class WebLoweringVisitor
             element.Style.LetterSpacing = TokenCss.LetterSpacing(style);
         }
 
-        if (text.ExcludeFromSemantics)
+        if (text.IsHiddenFromReaders)
         {
             element.RawAttributes ??= new Dictionary<string, string>();
             element.RawAttributes["aria-hidden"] = "true";

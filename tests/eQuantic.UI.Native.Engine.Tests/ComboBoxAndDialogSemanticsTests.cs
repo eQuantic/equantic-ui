@@ -117,6 +117,28 @@ public class ComboBoxAndDialogSemanticsTests
             [SemanticRole.StaticText], "a group with no name is no group: its child stands in its place");
     }
 
+    /// <summary>A control whose content holds a text drawn and never read is named WITHOUT it, on both
+    /// targets: the web's aria-hidden drops it from the button's name, and Photon's derived name
+    /// drops it too.</summary>
+    [Fact]
+    public void AControlIsNamedWithoutTheTextItsReaderPassesOver_OnBothTargets()
+    {
+        static VisualNode Control()
+        {
+            var row = new Row(gap: 4);
+            row.Add(new Text("Shipping", TypeRole.Caption) { ExcludeFromSemantics = true });
+            row.Add(new Text("Free", TypeRole.BodyM));
+            return new Pressable(row, () => { });
+        }
+
+        using var web = new eQuantic.UI.Testing.ComponentTester(Theme);
+        web.Pump(Control());
+        var photon = Render(Control());
+
+        web.Semantics.Single(stop => stop.Role == SemanticRole.Button).Name.Should().Be("Free");
+        photon.Semantics().Single(node => node.Role == SemanticRole.Button).Label.Should().Be("Free");
+    }
+
     [Fact]
     public void ATimePickersTriggerIsAComboBoxToo()
     {

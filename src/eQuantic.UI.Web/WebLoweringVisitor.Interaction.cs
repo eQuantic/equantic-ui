@@ -273,10 +273,11 @@ internal sealed partial class WebLoweringVisitor
     /// and cap with it, as every role-bearing wrapper's does: the box a reader outlines is the box it
     /// names.
     /// </summary>
-    private HtmlElement? LowerGroup(Group group)
+    private HtmlElement? LowerGroup(Group group, bool? horizontalAxis)
     {
-        // A group with no name is no group to a reader: the child lowers in its place.
-        if (group.Label.Length == 0) return Lower(group.Child, null, LoweringPath.Child);
+        // A group with no name is no group to a reader: the child lowers in its place, on the
+        // parent's axis, as through every other transparent wrapper.
+        if (!group.IsNamed) return Lower(group.Child, horizontalAxis, LoweringPath.Child);
         var fills = Fills(group.Child);
         var cap = CapsAt(group.Child);
         var element = new RealizedElement("div")

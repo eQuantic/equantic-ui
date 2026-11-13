@@ -336,13 +336,16 @@ function decorate(node: VisualNodeValue, lowered: HtmlNode | null): HtmlNode | n
   // from the third position to the first is a MOVED row, not a rewritten one, and the focus,
   // the hover and the scroll state on its element move with it. The C# twin
   // (WebRealizer.LowerNode) writes the same field; SSR emits no attribute for it.
+  // A nameless Group is no group: its child stands in its place, and what the child says of itself
+  // stays (C# twin).
+  const standIn = (node as { nodeKind?: string }).nodeKind === 'group' && !isNamedGroup(node);
   const keyed = node as { key?: string | null };
-  if (lowered && keyed.key) lowered.key = keyed.key;
+  if (lowered && keyed.key && !(standIn && lowered.key)) lowered.key = keyed.key;
 
   // The C# twin writes exactly this (WebRealizer.LowerNode), because an in-page link may point at
   // ANY node — and because SSR and hydration disagreeing by one attribute is a diverged tree.
   const bookmarked = node as { bookmark?: string };
-  if (lowered && bookmarked.bookmark) {
+  if (lowered && bookmarked.bookmark && !(standIn && lowered.attributes['id'])) {
     lowered.attributes['id'] = bookmarked.bookmark;
     // Room to land under a pinned header — the variable the pinned itself publishes, never a
     // number the author repeats. See the C# side for the reasoning.
@@ -359,7 +362,7 @@ function decorate(node: VisualNodeValue, lowered: HtmlNode | null): HtmlNode | n
   }
 
   const stamped = node as { origin?: string; originLabel?: string };
-  if (lowered && stamped.origin) {
+  if (lowered && stamped.origin && !(standIn && lowered.attributes['data-eq-origin'])) {
     lowered.attributes['data-eq-origin'] = stamped.origin;
     if (stamped.originLabel) lowered.attributes['data-eq-component'] = stamped.originLabel;
   }
@@ -501,7 +504,7 @@ function lowerNodeKind(
     case 'liveRegion':
       return lowerLiveRegion(node as unknown as LiveRegionNode, context, path);
     case 'group':
-      return lowerGroup(node as unknown as GroupNode, context, path);
+      return lowerGroup(node as unknown as GroupNode, context, horizontalAxis, path);
     case 'navigable':
       return lowerNavigable(node as unknown as NavigableNode, context, path);
     case 'hoverable':
@@ -3845,7 +3848,9 @@ function lowerText(text: TextNode): HtmlNode {
   const node = element(heading ? `h${level}` : 'span', style, children);
   prependClass(node, `eq-type-${text.role.toLowerCase()}`);
   // Drawn and never read (C# twin): its words reached the reader another way.
-  if (text.excludeFromSemantics === true) node.attributes['aria-hidden'] = 'true';
+  // A paragraph with a linked run is read whatever the flag says (C# `Text.IsHiddenFromReaders`).
+  const linked = text.spans?.some((run) => !!run.destination) ?? false;
+  if (text.excludeFromSemantics === true && !linked) node.attributes['aria-hidden'] = 'true';
   return node;
 }
 
@@ -4499,9 +4504,21 @@ function lowerLiveRegion(node: LiveRegionNode, context: LoweringContext, path: s
  * `aria-label` and then walks into. No label, no host: a nameless group says nothing. The
  * host takes the child's fill and cap, as every role-bearing wrapper's does.
  */
-function lowerGroup(node: GroupNode, context: LoweringContext, path: string): HtmlNode | null {
-  // A group with no name is no group to a reader: the child lowers in its place (C# twin).
-  if (!node.label) return lowerNode(node.child, context, null, path + '/0');
+/** Whether a Group IS a group to a reader: one with a name (C# `Group.IsNamed`). */
+function isNamedGroup(node: unknown): boolean {
+  const group = node as { nodeKind?: string; label?: string } | null;
+  return group?.nodeKind === 'group' && !!group.label;
+}
+
+function lowerGroup(
+  node: GroupNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  // A group with no name is no group to a reader: the child lowers in its place, on the parent's
+  // axis, as through every other transparent wrapper (C# twin).
+  if (!isNamedGroup(node)) return lowerNode(node.child, context, horizontalAxis, path + '/0');
   const fill = fills(node.child);
   const cap = capsAt(node.child);
   const host = element('div', {

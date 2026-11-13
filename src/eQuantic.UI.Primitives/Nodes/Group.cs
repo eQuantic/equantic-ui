@@ -36,6 +36,10 @@ public sealed class Group : SingleChildNode
     /// </summary>
     public string Label { get; init; } = "";
 
+    /// <summary>Whether this IS a group to a reader: one with a name. The one statement of the rule
+    /// every realizer reads; a nameless group lets its child stand in its place.</summary>
+    public bool IsNamed => Label.Length > 0;
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

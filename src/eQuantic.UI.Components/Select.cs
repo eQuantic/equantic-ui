@@ -152,7 +152,8 @@ public sealed class Select : StatefulComponent
             // the panel a role=listbox of numbered options, and the keyboard highlight rides
             // aria-activedescendant off the field — stated, not merely painted.
             PanelRole = AnchorPanelRole.Listbox,
-            ActiveIndex = _open ? _highlight : -1,
+            // No option, no active one: an empty listbox names nothing.
+            ActiveIndex = _open && _choices.Count > 0 ? _highlight : -1,
         };
 
         // The keyboard, exactly while the panel is up. Nested Shortcuts share one child root — the

@@ -91,6 +91,62 @@ public class GroupSemanticsTests
         Walk(group).Should().NotContain(options[0], "an option of another group stands outside it");
     }
 
+    /// <summary>A nameless Group lowers to exactly what its child lowers to: the parent's axis reaches
+    /// the child (the axis a flexible lets shrink), and the child's own key,
+    /// bookmark and origin stay its own.</summary>
+    [Fact]
+    public void ANamelessGroupLowersToItsChild_OnTheParentsAxis_KeepingWhatTheChildSays()
+    {
+        // A column, because a flexible reads which axis it shrinks on, and null reads as across.
+        static Column In(VisualNode child)
+        {
+            var column = new Column(gap: 0) { Height = 200 };
+            column.Add(child);
+            return column;
+        }
+        Flexible Child() => new(new Text("Delivery", TypeRole.BodyM))
+        {
+            Key = "child", Bookmark = "child-mark", Origin = "Child.cs:1",
+        };
+
+        var bare = WebRealizer.Lower(In(Child()), Theme).Render();
+        var wrapped = WebRealizer.Lower(In(new Group(Child()) { Key = "group", Bookmark = "group-mark", Origin = "Group.cs:1" }), Theme).Render();
+
+        HtmlRenderer.RenderNode(wrapped).Should().Be(HtmlRenderer.RenderNode(bare));
+        var lowered = WebRealizer.Lower(new Group(Child()) { Key = "group" }, Theme);
+        lowered.Key.Should().Be("child");
+    }
+
+    /// <summary>An open Select with no options names no active one: there is no option to name.</summary>
+    [Fact]
+    public void AnOpenSelectWithNoOptionsNamesNoActiveOption()
+    {
+        var select = new Select(groups: []);
+        var trigger = Walk(WebRealizer.Lower(select, Theme).Render())
+            .First(node => node.Tag == "button" && node.Events.ContainsKey("click"));
+        ((Action)trigger.Events["click"])();
+
+        var combobox = Walk(WebRealizer.Lower(select, Theme).Render())
+            .Single(node => node.Attributes.GetValueOrDefault("role") == "combobox");
+        combobox.Attributes.Should().NotContainKey("aria-activedescendant");
+    }
+
+    /// <summary>A paragraph with a linked run is read whatever ExcludeFromSemantics says: a link hidden
+    /// from a reader that a keyboard still reaches is a trap.</summary>
+    [Fact]
+    public void AParagraphWithALinkIsReadEvenWhenExcluded()
+    {
+        var plain = WebRealizer.Lower(new Text("Heading", TypeRole.Caption) { ExcludeFromSemantics = true }, Theme).Render();
+        plain.Attributes["aria-hidden"].Should().Be("true");
+
+        var linked = WebRealizer.Lower(new Text("", TypeRole.BodyM)
+        {
+            ExcludeFromSemantics = true,
+            Spans = [new TextRun("See "), new TextRun("terms") { Destination = "/terms" }],
+        }, Theme).Render();
+        linked.Attributes.Should().NotContainKey("aria-hidden");
+    }
+
     [Fact]
     public void AGroupHostSaysGroupAndItsLabel_AndIsNoHostWithoutOne()
     {

@@ -41,6 +41,7 @@ runs once the solution compiles.
 - [x] 3b.3 H2: an empty label is no group on every realizer (web, TS twin, Photon semantics and measure)
 - [x] 3b.4 H3/H4: `Select` keeps its flat list in `_choices` (constructor, `AdoptConfig`) and clamps the highlight when the list shrinks while open (`KeyboardTests.TheHighlightStaysOnAnOptionThatExists_WhenTheOptionsShrinkWhileOpen`)
 - [x] 3b.5 H1: `role-host-bounds.spec.ts` gets a `group` row
+- [x] 3b.6 Round 2: `Group.IsNamed` read by every realizer, and a nameless group lowers its child on the parent's axis, leaving its Key, Bookmark and Origin (R2-H2, D2, D3; C# and TS); `TextWithin` skips a text hidden from readers (R2-D1); an empty Select names no active option (R2-D4); a linked paragraph is read whatever `ExcludeFromSemantics` says (`Text.IsHiddenFromReaders`, R2-H1)
 
 ## 4. Documentation
 
