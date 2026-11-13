@@ -842,6 +842,14 @@ export interface LiveRegionNode extends VisualNodeValue {
 
 export type { LiveRegionUrgencyValue } from './enums.generated';
 
+/** A labelled group (C# twin: Group) — a reader names it by its label and then walks into it. */
+export interface GroupNode extends VisualNodeValue {
+  nodeKind: 'group';
+  child: VisualNodeValue;
+  /** The group's name; none is announced when absent or empty. */
+  label?: string;
+}
+
 /**
  * Wire shape of the C# `RangeValue`: the trio ARIA calls now/min/max. One object rather than three
  * fields because `role="slider"` REQUIRES a now, and a now without its bounds is read against ARIA's

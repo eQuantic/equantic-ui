@@ -946,6 +946,30 @@ public class DropdownKeyboardTests
         chosen.Should().Equal([2], "two steps down from the selected option is the third");
     }
 
+    /// <summary>The options of every group are one list (#677): ArrowDown from the last option of a
+    /// group lands on the first of the next, never on its heading, and Enter reports the index in
+    /// reading order across the groups.</summary>
+    [Fact]
+    public void ArrowsCrossAGroup_AndEnterReportsTheIndexAcrossTheGroups()
+    {
+        var chosen = new List<int>();
+        var column = new Column(gap: 0) { Width = 300 };
+        column.Add(new Select(selectedIndex: 1, onChanged: chosen.Add, groups:
+            [new OptionGroup("Open", ["Lisboa", "Porto"]), new OptionGroup("Next", ["Braga"])]));
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 300, 400);
+        host.RenderFrame(new DisplayListBuilder());
+        var trigger = host.RenderFrame(new DisplayListBuilder()).HitRegions[0].Bounds;
+        host.PressDown(trigger.Center.X, trigger.Center.Y);
+        host.PressUp(trigger.Center.X, trigger.Center.Y);
+        host.RenderFrame(new DisplayListBuilder());
+
+        Press(host, "ArrowDown");
+        Press(host, "Enter");
+
+        chosen.Should().Equal([2], "one step down from Porto, the last of Open, is Braga, the first of Next");
+        host.Semantics().Should().NotContain(node => node.Role == SemanticRole.Option, "Enter closed the panel");
+    }
+
     [Fact]
     public void TheHighlightStartsOnTheValue_SoEnterAloneRecommits()
     {

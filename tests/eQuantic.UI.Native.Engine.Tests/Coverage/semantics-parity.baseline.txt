@@ -29,6 +29,8 @@ case disabled select: ComboBox "" is announced on the web only  waits on #1328: 
 case disabled select: ComboBox "Lisbon" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
 case select opened: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
 case select opened: ComboBox "Lisbon" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
+case grouped select opened: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
+case grouped select opened: ComboBox "Lisboa" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
 case select: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
 case select: ComboBox "Lisbon" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
 eQuantic.UI.Components.Calendar: ColumnHeader "Fri" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon

@@ -4,13 +4,13 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>
-/// Interaction and motion — fifteen words. Three are controls with a keyboard stop each:
+/// Interaction and motion — sixteen words. Three are controls with a keyboard stop each:
 /// <see cref="Pressable"/> and <see cref="Link"/> announce as one stop, and
 /// <see cref="Adjustable"/> as one stop when it is a slider and as a GROUP that keeps walking when it
 /// is a tab strip or a radio group (#500); a fourth, <see cref="Progress"/>, announces WITHOUT being
-/// one — it is read, never moved, which is why it carries no tab stop and no key handler; two,
-/// <see cref="Navigable"/> and <see cref="LiveRegion"/>, are GROUPS that announce and then keep
-/// walking; the remaining nine wrap a child or are ornament.
+/// one — it is read, never moved, which is why it carries no tab stop and no key handler; three,
+/// <see cref="Navigable"/>, <see cref="LiveRegion"/> and <see cref="Group"/>, are GROUPS that announce
+/// and then keep walking; the remaining nine wrap a child or are ornament.
 /// <para>
 /// This tally said "the fourteenth, Navigable, is the gap" until <see cref="SemanticRole.Group"/>
 /// landed — the running-count shape that rots, caught here one commit after the gap closed.
@@ -272,6 +272,11 @@ internal sealed partial class SemanticsVisitor
     public bool Visit(LiveRegion node, LayoutNode laidOut) =>
         AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
             node.Label, null, false, Live: node.Urgency));
+
+    /// <summary>A labelled group: one stop named by its label, then what it holds, as the web's
+    /// <c>role="group"</c> is read.</summary>
+    public bool Visit(Group node, LayoutNode laidOut) =>
+        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
 
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(DragDismiss node, LayoutNode laidOut) => Wraps;

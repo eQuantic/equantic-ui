@@ -1,1 +1,21 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Components.Select.Select(System.Collections.Generic.IReadOnlyList<string!>! options, int selectedIndex = -1, System.Action<int>? onChanged = null, string? placeholder = null) -> void
+*REMOVED*static eQuantic.UI.Components.UI.Select(System.Collections.Generic.IReadOnlyList<string!>! options, int selectedIndex = -1, System.Action<int>? onChanged = null, string? placeholder = null) -> eQuantic.UI.Components.Select!
+eQuantic.UI.Components.OptionGroup.<Clone>$() -> eQuantic.UI.Components.OptionGroup!
+eQuantic.UI.Components.OptionGroup.Deconstruct(out string! Label, out System.Collections.Generic.IReadOnlyList<string!>! Options) -> void
+eQuantic.UI.Components.OptionGroup.Equals(eQuantic.UI.Components.OptionGroup? other) -> bool
+eQuantic.UI.Components.OptionGroup
+eQuantic.UI.Components.OptionGroup.OptionGroup(string! Label, System.Collections.Generic.IReadOnlyList<string!>! Options) -> void
+override eQuantic.UI.Components.OptionGroup.Equals(object? obj) -> bool
+override eQuantic.UI.Components.OptionGroup.GetHashCode() -> int
+override eQuantic.UI.Components.OptionGroup.ToString() -> string!
+static eQuantic.UI.Components.OptionGroup.operator !=(eQuantic.UI.Components.OptionGroup? left, eQuantic.UI.Components.OptionGroup? right) -> bool
+static eQuantic.UI.Components.OptionGroup.operator ==(eQuantic.UI.Components.OptionGroup? left, eQuantic.UI.Components.OptionGroup? right) -> bool
+eQuantic.UI.Components.OptionGroup.Label.get -> string!
+eQuantic.UI.Components.OptionGroup.Label.init -> void
+eQuantic.UI.Components.OptionGroup.Options.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Components.OptionGroup.Options.init -> void
+eQuantic.UI.Components.Select.Select(System.Collections.Generic.IReadOnlyList<string!>? options = null, int selectedIndex = -1, System.Action<int>? onChanged = null, string? placeholder = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.OptionGroup!>? groups = null) -> void
+eQuantic.UI.Components.Select.Groups.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.OptionGroup!>!
+static eQuantic.UI.Components.UI.Group(eQuantic.UI.Primitives.VisualNode! child, string! label = "") -> eQuantic.UI.Primitives.Group!
+static eQuantic.UI.Components.UI.Select(System.Collections.Generic.IReadOnlyList<string!>? options = null, int selectedIndex = -1, System.Action<int>? onChanged = null, string? placeholder = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.OptionGroup!>? groups = null) -> eQuantic.UI.Components.Select!

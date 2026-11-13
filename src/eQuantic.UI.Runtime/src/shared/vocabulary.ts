@@ -1532,6 +1532,22 @@ export class LiveRegion extends VisualNode {
   }
 }
 
+/**
+ * Mirror of the C# `Group` node: a labelled group a reader names and then walks into. It draws
+ * nothing and adds no geometry.
+ */
+export class Group extends VisualNode {
+  readonly nodeKind = 'group';
+  child: VisualNode;
+  label = '';
+
+  constructor(child: VisualNode, config?: { label?: string }) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `Adjustable` node: the child answers to the arrow keys as ONE Tab stop. */
 export class Adjustable extends VisualNode {
   readonly nodeKind = 'adjustable';

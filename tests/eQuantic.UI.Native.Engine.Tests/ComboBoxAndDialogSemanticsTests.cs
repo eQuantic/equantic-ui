@@ -65,6 +65,53 @@ public class ComboBoxAndDialogSemanticsTests
             .Should().Equal([true, false]);
     }
 
+    /// <summary>A grouped Select's open list names each group and then walks into it (#677): the
+    /// group, the heading a person sees, then its options; the web's <c>role="group"</c> reads the
+    /// same three.</summary>
+    [Fact]
+    public void AGroupedSelectsListNamesEachGroupBeforeItsOptions()
+    {
+        var host = Render(new Select(["Lisboa"], 0, _ => { }, groups: [new OptionGroup("A seguir", ["Braga"])]));
+
+        Open(host);
+
+        host.Semantics().Select(node => (node.Role, node.Label)).Should().Equal(
+            [(SemanticRole.ComboBox, "Lisboa"), (SemanticRole.Button, "Dismiss"),
+             (SemanticRole.Option, "Lisboa"), (SemanticRole.Group, "A seguir"),
+             (SemanticRole.StaticText, "A seguir"), (SemanticRole.Option, "Braga")]);
+        host.Semantics().Where(node => node.Role == SemanticRole.Option).Select(option => option.Selected)
+            .Should().Equal([true, false]);
+    }
+
+    /// <summary>A group with no name wraps nothing: its options read as ungrouped, with no heading.</summary>
+    [Fact]
+    public void AGroupWithNoNameReadsAsUngroupedOptions()
+    {
+        var host = Render(new Select(groups: [new OptionGroup("", ["Braga", "Faro"])]));
+
+        Open(host);
+
+        host.Semantics().SkipWhile(node => node.Role != SemanticRole.Option).Select(node => (node.Role, node.Label))
+            .Should().Equal([(SemanticRole.Option, "Braga"), (SemanticRole.Option, "Faro")]);
+    }
+
+    /// <summary>A Group outside a Select: one stop named by its label, then what it holds, with the
+    /// bounds of what it holds.</summary>
+    [Fact]
+    public void AGroupIsNamedAndThenWalkedInto()
+    {
+        var column = new Column(gap: 8);
+        column.Add(new Text("Delivery", TypeRole.BodyM));
+        column.Add(new Checkbox(true, () => { }));
+        var host = Render(new Group(column) { Label = "Shipping" });
+
+        var semantics = host.Semantics();
+        semantics.Select(node => node.Role).Should().Equal(
+            [SemanticRole.Group, SemanticRole.StaticText, SemanticRole.Checkbox]);
+        semantics[0].Label.Should().Be("Shipping");
+        semantics[1].Label.Should().Be("Delivery");
+    }
+
     [Fact]
     public void ATimePickersTriggerIsAComboBoxToo()
     {

@@ -180,6 +180,7 @@ export { NavItem } from './NavItem';
 export { NavigationRail } from './NavigationRail';
 export { NodeElement } from './NodeElement';
 export { NodeSlots } from './NodeSlots';
+export { OptionGroup } from './OptionGroup';
 export { PageIndicator } from './PageIndicator';
 export { Pagination } from './Pagination';
 export { PlainTextLanguage } from './PlainTextLanguage';

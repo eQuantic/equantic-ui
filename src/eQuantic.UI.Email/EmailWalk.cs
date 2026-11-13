@@ -50,6 +50,10 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
     /// <summary>A value for a subtree reaches a message as the child it holds.</summary>
     public Nothing Visit(InheritedComponent node, Nothing state) => node.Child.Accept(this, state);
 
+    /// <summary>A labelled group reaches a message as the child it holds: it draws nothing, and the
+    /// heading a reader sees is the child's own.</summary>
+    public Nothing Visit(Group node, Nothing state) => node.Child.Accept(this, state);
+
     /// <summary>
     /// The one refusal, loud and naming the node — the repo's rule: never a silent divergence. The
     /// alternative is a message that goes out without a piece of itself and says nothing about it.
