@@ -30,13 +30,17 @@ public sealed class EmptyState : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The theme's Badge slot, then the component's own (§3.10).
+        var slot = theme.Badge;
+        var wellSize = slot?.WellSize ?? 64;
 
-        var wellContent = new Icon(Icon.Glyph, IconSize.Lg, theme.TextMuted).Centered();
+        var wellContent = new Icon(Icon.Glyph, slot?.WellIconSize ?? IconSize.Lg, slot?.WellIconColor ?? theme.TextMuted)
+            .Centered();
         var well = new Box(new BoxStyle
         {
-            Width = 64,
-            Height = 64,
-            Background = theme.SurfaceSubtle,
+            Width = wellSize,
+            Height = wellSize,
+            Background = slot?.WellFill ?? theme.SurfaceSubtle,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
         }, wellContent);
 
@@ -44,23 +48,24 @@ public sealed class EmptyState : StatelessComponent
         {
             Width = SizeValue.Fill,
             Cross = CrossAlign.Center,
-            Padding = EdgeInsets.Symmetric(Space.S4, Space.S12),
+            Padding = EdgeInsets.Symmetric(slot?.EmptyPaddingX ?? Space.S4, slot?.EmptyPaddingY ?? Space.S12),
         };
         column.Add(well);
-        column.Add(Spacer.Fixed(Space.S4));
-        column.Add(new Text(Title, TypeRole.Title, theme.TextPrimary, maxLines: 2)
+        column.Add(Spacer.Fixed(slot?.WellGap ?? Space.S4));
+        column.Add(new Text(Title, TypeRole.Title, slot?.EmptyTitleColor ?? theme.TextPrimary, maxLines: 2)
         {
-            StyleOverride = new TypeStyle(20, 26, FontWeight.SemiBold, 0, 1.3f),
+            StyleOverride = new TypeStyle(slot?.EmptyTitleSize ?? 20, slot?.EmptyTitleLineHeight ?? 26,
+                slot?.EmptyTitleWeight ?? FontWeight.SemiBold, 0, 1.3f),
         });
         if (Body is { } body)
         {
-            column.Add(Spacer.Fixed(6));
-            column.Add(new Text(body, TypeRole.BodyM, theme.TextSecondary, maxLines: 2));
+            column.Add(Spacer.Fixed(slot?.BodyGap ?? 6));
+            column.Add(new Text(body, TypeRole.BodyM, slot?.EmptyBodyColor ?? theme.TextSecondary, maxLines: 2));
         }
         if (Action is not null || SecondaryAction is not null)
         {
-            column.Add(Spacer.Fixed(Space.S5));
-            var actions = new Row(gap: Space.S2) { Main = MainAlign.Center };
+            column.Add(Spacer.Fixed(slot?.ActionsGap ?? Space.S5));
+            var actions = new Row(gap: slot?.ActionSpacing ?? Space.S2) { Main = MainAlign.Center };
             if (Action is { } action) actions.Add(action);
             if (SecondaryAction is { } secondary) actions.Add(secondary);
             column.Add(actions);

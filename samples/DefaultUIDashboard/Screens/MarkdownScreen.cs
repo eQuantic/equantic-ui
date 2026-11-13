@@ -26,7 +26,7 @@ public sealed class MarkdownScreen : StatefulComponent
         "",
         "## What rides the type scale",
         "",
-        "- Headings map to `TypeRole` rungs, overridable per level via *MarkdownStyle*",
+        "- Headings map to `TypeRole` rungs, overridable per level by the theme's *Markdown* slot or the document's own",
         "- Prose is ONE `Text` with spans, so a sentence with `code` in it wraps between **words**",
         "- Links ride inside the sentence: the [component library](/declarative) is one",
         "",
@@ -141,7 +141,7 @@ public sealed class MarkdownScreen : StatefulComponent
             Padding = EdgeInsets.All(Space.S5),
         }, new Markdown(_document == 0 ? Doc : _document == 1 ? Chat : Diagrams)
         {
-            Style = new MarkdownStyle { CodeLineNumbers = _document == 0 },
+            Style = new MarkdownTheme { CodeLineNumbers = _document == 0 },
         }))
         { Width = SizeValue.Fill });
 
