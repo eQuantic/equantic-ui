@@ -31,6 +31,8 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.CanCo
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.PrimitiveEqualsStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.PrimitiveEqualsStrategy.Priority.get -> int
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Scoped(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, string! converted, bool typeAnnotations) -> string!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertInitializer(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression, System.Func<string!>! convert, bool typeAnnotations) -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.AddToEvent = "$eq.delegates.addToEvent" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RemoveFromEvent = "$eq.delegates.removeFromEvent" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TypesImplements = "$eq.types.implements" -> string!

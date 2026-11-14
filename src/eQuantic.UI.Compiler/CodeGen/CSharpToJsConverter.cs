@@ -520,6 +520,28 @@ public class CSharpToJsConverter
         return code;
     }
 
+    /// <summary>
+    /// The JavaScript of an expression that runs OUTSIDE any statement, a field's or a property's initializer
+    /// or a prop's default, converted in a scope of its own, in an arrow that declares what
+    /// <paramref name="expression"/> declares and the temporaries its conversion bound, or unchanged when it
+    /// needs neither: <c>(() =&gt; { let n; return (n = …) ? n : 0; })()</c>. Nothing else is in a position to
+    /// declare them, and each initializer is its own C# scope, so two of them may bind the same name: the
+    /// constructor they are written into cannot take both as siblings. An arrow keeps <c>this</c>, and an
+    /// initializer never awaits, which is what kept the other lowerings from an arrow of their own
+    /// (<see cref="Temporaries"/>). A call whose named arguments are written out of the signature's order
+    /// binds what it evaluates as written here (#1201), where it kept the signature's order.
+    /// </summary>
+    /// <param name="expression">The initializer, whose declarations the arrow holds.</param>
+    /// <param name="convert">Its conversion, run inside the scope.</param>
+    /// <param name="typeAnnotations">Whether the declarations are written with their types.</param>
+    public string ConvertInitializer(ExpressionSyntax expression, Func<string> convert, bool typeAnnotations)
+    {
+        var (converted, bound) = _context.Temporaries.In(convert);
+        var declared = ExpressionVariableScanner.Declarations(expression, typeAnnotations)
+            + _context.Temporaries.Declarations(bound, typeAnnotations);
+        return declared.Length == 0 ? converted : $"(() => {{ {declared}return {converted}; }})()";
+    }
+
     public string Convert(SyntaxNode node)
     {
         if (node is ExpressionSyntax expr) return ConvertExpression(expr);

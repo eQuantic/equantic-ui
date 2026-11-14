@@ -17,7 +17,7 @@
 # Regenerate with EQ_UPDATE_INTRODUCED_FUNCTIONS=1 after a REMOVAL. It carries every reason across
 # and writes "not looked at yet" for a file new to the list, which is not an approval.
 src/eQuantic.UI.Compiler/CodeGen/BrowserServices.cs  1  no C# inside: the factory of an app's registered service, a new of its class with each dependency resolved, written from its symbols and never from the app's C# (#1335)
-src/eQuantic.UI.Compiler/CodeGen/ExpressionVariableScanner.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs  1  no statement there: the arrow an initializer is converted in, which declares what it declares and binds (ConvertInitializer, #1201)
 src/eQuantic.UI.Compiler/CodeGen/Ir/JsExprWriter.cs  4  the IR's writer, and the two patterns that find the names a template's own arrows declare
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Async/TaskMethodStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/DictionaryLookup.cs  1  not looked at yet

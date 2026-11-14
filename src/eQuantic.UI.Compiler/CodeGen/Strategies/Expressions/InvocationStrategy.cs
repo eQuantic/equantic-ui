@@ -222,21 +222,23 @@ public class InvocationStrategy : IExpressionIrStrategy
 
         // 1. Resolve Arguments — as IR, so the writer fences each for argument position and the
         // author's redundant parentheses around one go the way they go everywhere else.
-        var argsList = new List<JsExpr>();
+        // Each written argument by its index in the list written, an `out` one as nothing: `out` is not
+        // passed IN, it comes back in the result object. `ref` is read before it is written, so it stays
+        // an argument as well as a field of the result.
+        var written = new List<JsExpr>();
         foreach (var arg in invocation.ArgumentList.Arguments)
         {
-            // `out` is not passed IN — it comes back in the result object. `ref` is read before it
-            // is written, so it stays an argument as well as a field of the result.
-            if (arg.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword)) continue;
             // A `params` parameter that is a REST parameter on the other side makes the two C# call forms
             // diverge: `Count("a", "b")` already lines up, and a collection handed whole,
             // `Count(names)`, would arrive as ONE element, so it spreads (BoundArguments.Convert). One that
             // is the array it is takes the first form packed, below (BoundArguments.Packed).
-            argsList.Add(replaced.TryGetValue(arg, out var held) ? held
+            written.Add(arg.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword) ? JsExpr.Identifier("undefined")
+                : replaced.TryGetValue(arg, out var held) ? held
                 : arg.Expression is DeclarationExpressionSyntax declaration
-                ? JsExpr.Identifier(declaration.Designation.ToString().ToJsIdentifier())
-                : BoundArguments.Convert(arg, context));
+                    ? JsExpr.Identifier(declaration.Designation.ToString().ToJsIdentifier())
+                    : BoundArguments.Convert(arg, context));
         }
+        var argsList = written.Where((_, index) => !invocation.ArgumentList.Arguments[index].RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword)).ToList();
 
         // NAMED arguments bind by NAME in C# but JS only has positions: reorder into the
         // signature's slots, filling skipped parameters from their defaults — otherwise
@@ -244,16 +246,20 @@ public class InvocationStrategy : IExpressionIrStrategy
         // icon and the wrong size, found on the header CTA).
         // A positional argument's place is its LIST position (`Column(gap: Space.S3, [children])`),
         // and the elements a call lists for a params parameter all go to that one (BoundArguments.InPlaces).
+        // An `out` parameter takes no place: the twin's signature has none for it. Each argument is
+        // evaluated in the order it is written, as C# evaluates it (#1071).
         if (symbol != null && invocation.ArgumentList.Arguments.Any(a => a.NameColon != null))
         {
-            var places = BoundArguments.InPlaces(invocation.ArgumentList.Arguments, argsList, symbol);
+            var places = BoundArguments.InPlaces(invocation.ArgumentList.Arguments, symbol);
             var lastSet = Array.FindLastIndex(places, place => place != null);
-            argsList = new List<JsExpr>();
+            var slots = new List<(int Written, JsExpr? Own)>();
             for (var i = 0; i <= lastSet; i++)
             {
-                if (places[i] is { } supplied) argsList.AddRange(supplied);
-                else argsList.Add(JsExpr.Opaque(ObjectCreationStrategy.DefaultLiteralFor(symbol.Parameters[i], context)));
+                if (symbol.Parameters[i].RefKind == RefKind.Out) continue;
+                if (places[i] is { } supplied) slots.AddRange(supplied.Select(index => (index, (JsExpr?)null)));
+                else slots.Add((-1, JsExpr.Opaque(ObjectCreationStrategy.DefaultLiteralFor(symbol.Parameters[i], context))));
             }
+            argsList = BoundArguments.PassedAsWritten(invocation.ArgumentList.Arguments, written, slots, replaced.Keys.ToHashSet(), context);
         }
         var argIrs = BoundArguments.Packed(invocation, argsList, symbol, context);
         // The same arguments as text, for the template branches that splice them.
