@@ -208,6 +208,7 @@ export { SheetNameBox } from './SheetNameBox';
 export { SheetPalette } from './SheetPalette';
 export { SheetRange } from './SheetRange';
 export { SheetReference } from './SheetReference';
+export { SheetSelection } from './SheetSelection';
 export { SheetSpans } from './SheetSpans';
 export { SheetSummary } from './SheetSummary';
 export { Skeleton } from './Skeleton';

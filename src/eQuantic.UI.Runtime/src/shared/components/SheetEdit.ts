@@ -1,4 +1,4 @@
-import { SheetCellSnapshot, SheetEditKindValue, SheetRange } from "../runtime-exports";
+import { CellRef, SheetCellSnapshot, SheetEditKindValue, SheetRange, SheetSelection } from "../runtime-exports";
 
 export class SheetEdit {
     constructor() {
@@ -10,8 +10,8 @@ export class SheetEdit {
         this.removed = [];
         this.oldSize = 0;
         this.newSize = 0;
-        this.selectionBefore = SheetRange.$zero();
-        this.selectionAfter = SheetRange.$zero();
+        this.selectionBefore = new SheetSelection(new SheetRange(new CellRef(0, 0)));
+        this.selectionAfter = new SheetSelection(new SheetRange(new CellRef(0, 0)));
     }
 
     kind!: SheetEditKindValue;
@@ -22,8 +22,8 @@ export class SheetEdit {
     removed!: SheetCellSnapshot[];
     oldSize!: number;
     newSize!: number;
-    selectionBefore!: SheetRange;
-    selectionAfter!: SheetRange;
+    selectionBefore!: SheetSelection;
+    selectionAfter!: SheetSelection;
 
     toString(): string {
         return 'eQuantic.UI.Sheet.SheetEdit';
