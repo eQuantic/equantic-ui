@@ -237,8 +237,8 @@ beyond a component) builds on.
 | Today | Becomes | Why it moves, or why it stays |
 |---|---|---|
 | `CapabilityScope` (`AsyncLocal`, set per request on the server, once per app on Photon) | the root element's services, overridable by a subtree | a capability is resolved from a position; the server's middleware outside the tree keeps the channel for server actions |
-| `RouteValues.Current` (`AsyncLocal`) | an inherited route at the page root | a navigation rebuilds only its dependents |
-| `InFlow.Current` (`AsyncLocal`, saved and restored around a child) | an inherited value set by the interaction wrapper's element | it is a subtree value, which is what an inherited component is |
+| `RouteValues.Current` (`AsyncLocal`) | the frame's route, read through the owner, which keeps its readers apart (E5b, #1395) | a navigation rebuilds only its dependents |
+| `InFlow.Current` (`AsyncLocal`, saved and restored around a child) | an inherited value set by the interaction wrapper's element (#1412; the ambient went in E5b, #1395) | it is a subtree value, which is what an inherited component is |
 | `ComponentBoundary` diagnostics, report and tally (three `AsyncLocal`s) | the owner's (3.6) | they belong to one tree, not to an async flow |
 | `FaceResolution` (`AsyncLocal`) | stays | it is the text services' diagnostic, outside the tree |
 | `Navigator.Handler` (public static, "the last host wins") | `Navigator.Of(context).Go(destination)`, the host found from the root | two windows in one process each navigate their own |
@@ -420,8 +420,8 @@ and E6 brings them under the same rules: `MarkdownStyle` became the `Markdown` s
   `Navigator.Of(context)`, and a shell declared once in `Program.cs` (3.7).
 - **Gone from the public surface:** `ComponentInstanceStore`, `NotifyMounted`, `NotifyUnmounted`
   and `StateInvalidated` (the host's, never the app's), the constructor of `ComponentContext`,
-  `Navigator.Handler` and the static `Navigator.Go`, and the setters of `UiDispatcher.Current` and
-  `RouteValues.Current`. Nothing in `samples/` calls any of them.
+  `Navigator.Handler` and the static `Navigator.Go`, the setter of `UiDispatcher.Current`, and
+  `RouteValues.Current` and `InFlow.Current` (E5b, #1395). Nothing in `samples/` calls any of them.
 
 The preview's rule applies: each goes in the pull request that replaces it, and each is a
 `*REMOVED*` line in the release's notes.
@@ -687,6 +687,25 @@ the parity rows it closes flip.
    `OnDependenciesChanged`, dependency-driven rebuild, `Theme`, the route and `InFlow` as inherited
    components, `Navigator.Of`. Proof: a change rebuilds its dependents and nothing else, on both
    targets.
+
+   **E5b, the web and the server inherit the theme, the route and InFlow** (#1395,
+   `openspec/changes/the-web-and-the-server-inherit-the-theme-route-and-inflow`):
+   - `DependOn<T>()` and `Find<T>()` cross to the browser with `T`'s twin as their argument, and the
+     runtime's position looks the type up with `instanceof`.
+   - The route is the frame's: `ComponentContext` takes it, a position reads it through its owner,
+     which keeps the route's readers apart from the frame's, and a navigation within one page type
+     rebuilds what read the route and nothing else, on .NET and in the browser.
+     `RouteValues.Current` goes: the server registers the request's route in its services
+     (`AddRequestRoute`) for code outside the tree, a prefetch among it, and an escape-hatch page's
+     bridges are drawn with the round's route (`RenderChannels.Route`), which E4a left owed.
+   - `InFlow.Current` goes: a position answers from the tree, and the web visitor hands a component
+     it expands without a position the wrapper's flag in a context of its own.
+   - `new Theme(value, child)` is the vocabulary's inherited theme, and `context.Theme` reads the nearest
+     one above, or the frame's. A message draws a `Theme`'s child in the theme it holds, in both its
+     alternatives, since the email walk has no positions to look it up from. A colour a realizer
+     picks for a node by itself (a field's text, a caret, an elevation's shadow) still reads the
+     frame's theme on the web, the server and Photon, so the server's markup and the browser's
+     lowering agree; following the nearest `Theme` there is owed (noted on #1395).
 6. **E6, the theme slots.** Section 3.10, on the inherited theme of E5.
 
 E1 to E5 are [#937](https://github.com/eQuantic/equantic-ui/issues/937), and E6 is

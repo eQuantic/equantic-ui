@@ -206,6 +206,9 @@ public class FlutterParityPinTests
     private static bool EveryOneChildNodeIsA(string baseType) => Find(baseType) is { } shape
         && typeof(VisualNode).Assembly.GetExportedTypes()
             .Where(t => t is { IsAbstract: false } && typeof(VisualNode).IsAssignableFrom(t))
+            // A Theme holds a required child too, and is no wrapper: it is a value for a subtree,
+            // which the visitor answers once as its family, InheritedComponent, as it does a component.
+            .Where(t => !typeof(InheritedComponent).IsAssignableFrom(t))
             .Where(WrapsOneRequiredChild)
             .All(shape.IsAssignableFrom);
 

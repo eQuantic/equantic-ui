@@ -17,13 +17,24 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public sealed class ComponentContext
 {
+    /// <summary>A frame's context: what its owner hands every component it builds.</summary>
+    /// <param name="theme">The theme of the frame.</param>
+    /// <param name="typeScale">The OS text scale.</param>
+    /// <param name="density">How tight the target wants its controls.</param>
+    /// <param name="measureText">The host's text measurer, when it has one.</param>
+    /// <param name="route">The route the tree is drawn for; <see cref="RouteValues.Empty"/> when none is handed.</param>
+    /// <param name="inFlow">Whether the components built with it were asked to draw in the flow: what a
+    /// realizer hands a subtree under an <see cref="Primitives.InFlow"/> that it draws without positions.</param>
     public ComponentContext(IAppTheme theme, float typeScale = 1f,
-        Density density = Density.Comfortable, Func<string, TypeStyle, float>? measureText = null)
+        Density density = Density.Comfortable, Func<string, TypeStyle, float>? measureText = null,
+        RouteValues? route = null, bool inFlow = false)
     {
         _theme = theme;
         _typeScale = typeScale;
         _density = density;
         _measureText = measureText;
+        _route = route ?? RouteValues.Empty;
+        _inFlow = inFlow;
     }
 
     /// <summary>The context of a position: its frame's values come from the position's owner.</summary>
@@ -31,6 +42,7 @@ public sealed class ComponentContext
     {
         _position = position;
         _theme = null!;
+        _route = RouteValues.Empty;
     }
 
     private readonly ComponentElement? _position;
@@ -38,6 +50,8 @@ public sealed class ComponentContext
     private readonly float _typeScale;
     private readonly Density _density;
     private readonly Func<string, TypeStyle, float>? _measureText;
+    private readonly RouteValues _route;
+    private readonly bool _inFlow;
 
     /// <summary>The frame this position builds in, with the position registered as one that read it.</summary>
     private ComponentContext ReadFrame(ComponentElement position)
@@ -47,7 +61,14 @@ public sealed class ComponentContext
         return position.Owner.Context;
     }
 
-    public IAppTheme Theme => _position is { } at ? ReadFrame(at).Theme : _theme;
+    /// <summary>
+    /// The theme this component draws in: the nearest <see cref="Primitives.Theme"/> above its position,
+    /// or its frame's when none is, and reading it makes the component a dependent of whichever answered
+    /// (#1395). A frame's context answers the theme it was handed.
+    /// </summary>
+    public IAppTheme Theme => _position is { } at
+        ? (at.DependOn(static inherited => inherited is Primitives.Theme) as Primitives.Theme)?.Value ?? ReadFrame(at).Theme
+        : _theme;
 
     public float TypeScale => _position is { } at ? ReadFrame(at).TypeScale : _typeScale;
 
@@ -55,20 +76,36 @@ public sealed class ComponentContext
     /// What the ROUTE said — <c>context.Route.Param("slug")</c>, <c>context.Route.Query("page")</c>.
     /// Never null; an unmatched name answers null.
     /// <para>
-    /// Reads the ambient per-request route, which is why a page does not have to be handed one and
-    /// does not have to reach for <c>IHttpContextAccessor</c> to find it. Asking ASP.NET for the
+    /// The route of the frame the tree is drawn for, which is why a page does not have to be handed one
+    /// and does not have to reach for <c>IHttpContextAccessor</c> to find it. Asking ASP.NET for the
     /// route works and costs the page its write-once-ness: a component that knows the web is a
     /// component that cannot run on Photon.
     /// </para>
+    /// <para>
+    /// A position reads it from its owner's frame and is registered as one of the route's readers, apart
+    /// from the theme's: a frame handed another route builds again what read the route and nothing else,
+    /// so a navigation within one page type rebuilds its dependents alone (docs/ELEMENT-TREE-PLAN.md 3.5).
+    /// </para>
     /// </summary>
-    public RouteValues Route => RouteValues.Current;
+    public RouteValues Route => _position is { } at ? ReadRoute(at) : _route;
+
+    /// <summary>The route of the frame `position` builds in, with the position registered as its reader.</summary>
+    private static RouteValues ReadRoute(ComponentElement position)
+    {
+        if (position.IsActive) position.Owner.ReadRoute(position);
+        return position.Owner.Context.Route;
+    }
 
     /// <summary>
     /// Whether this component was asked to draw WHERE IT STANDS rather than over everything — see
     /// <see cref="Primitives.InFlow"/>. Only the overlays answer it; every other component builds
     /// the same either way, which is why it is a question rather than an instruction.
+    /// <para>
+    /// A position answers from the tree, whether an <see cref="Primitives.InFlow"/> stands above it; a
+    /// frame's context answers what its realizer handed it.
+    /// </para>
     /// </summary>
-    public bool InFlow => _position?.UnderInFlow ?? Primitives.InFlow.Current;
+    public bool InFlow => _position?.UnderInFlow ?? _inFlow;
 
     /// <summary>
     /// The nearest <typeparamref name="T"/> above this component, and a registration: the component

@@ -411,9 +411,8 @@ public class UiFactoryConformanceTests
     };
 
     /// <summary>
-    /// The vocabulary nodes a consumer can still only reach with <c>new</c> — EMPTY, and kept as
-    /// an empty list rather than deleted so a new node with no factory still has somewhere it
-    /// would have to be written down.
+    /// The vocabulary nodes a consumer can still only reach with <c>new</c>, each with its reason: a
+    /// new node with no factory has to be written down here.
     ///
     /// <para>
     /// "Trees are written with FACTORIES, never <c>new</c>" is the authoring rule, and until this
@@ -431,8 +430,16 @@ public class UiFactoryConformanceTests
     /// over that shape would have put the precedence in the SDK's public signature, so the
     /// exclusion became <see cref="WebContent"/> instead.
     /// </para>
+    ///
+    /// <para>
+    /// <c>Theme</c> is the one entry, and its reason is a name: the SDK puts <c>using static UI</c> in
+    /// every file of an app, so a factory called <c>Theme</c> shadows any type an app already calls
+    /// <c>Theme</c>, and <c>Theme.Serif</c> stops compiling (CS0119), as a real app's did
+    /// (<c>ReferencedProjectRefusalTests</c>). Nothing in the SDK places one yet; the slice that does
+    /// (#1387) names its factory, and the entry leaves with it.
+    /// </para>
     /// </summary>
-    private static readonly string[] ReachableOnlyByNew = [];
+    private static readonly string[] ReachableOnlyByNew = ["Theme"];
 
     /// <summary>
     /// Every node in the vocabulary is reachable through the declarative surface, or is named above.

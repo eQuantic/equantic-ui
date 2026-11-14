@@ -36,24 +36,16 @@ public class ConsoleLayoutTests
     /// </summary>
     private static VisualNode Frame(VisualNode page, string location = "/code", bool navOpen = false)
     {
-        RouteValues.Current = new RouteValues(null, null, location);
-        try
+        var layout = new ConsoleLayout(page);
+        var context = new ComponentContext(Theme, route: new RouteValues(null, null, location));
+        if (navOpen)
         {
-            var layout = new ConsoleLayout(page);
-            var context = new ComponentContext(Theme);
-            if (navOpen)
-            {
-                var trigger = NodePlacements.Of(layout.Build(context)).Select(placement => placement.Node)
-                    .OfType<IconButton>().Single(button => button.Label == "Navigation");
-                trigger.OnPressed!();
-            }
+            var trigger = NodePlacements.Of(layout.Build(context)).Select(placement => placement.Node)
+                .OfType<IconButton>().Single(button => button.Label == "Navigation");
+            trigger.OnPressed!();
+        }
 
-            return layout.Build(context);
-        }
-        finally
-        {
-            RouteValues.ClearCurrent();
-        }
+        return layout.Build(context);
     }
 
     [Theory]

@@ -8,7 +8,7 @@
  * falls back to a full document load, which is the honest behavior for a plain multi-page site.
  */
 
-import { RouteValues } from '../shared/route-values';
+import { getCurrentRoute } from './current-route';
 import { splitCulturePath } from '../utils/culture-routes';
 
 type NavigationHandler = (destination: string) => void;
@@ -59,6 +59,6 @@ export const Navigator = {
 const contextNavigator: ContextNavigator = {
   go: (destination: string) => Navigator.go(destination),
   get location(): string {
-    return typeof window !== 'undefined' ? splitCulturePath(window.location.pathname)[1] : RouteValues.current.path;
+    return typeof window !== 'undefined' ? splitCulturePath(window.location.pathname)[1] : getCurrentRoute().path;
   },
 };

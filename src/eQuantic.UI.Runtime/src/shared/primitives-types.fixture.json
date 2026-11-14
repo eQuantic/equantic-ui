@@ -230,6 +230,7 @@
   "TextEntry",
   "TextReading",
   "TextRun",
+  "Theme",
   "Touch",
   "Transform2D",
   "TransitionSpec",

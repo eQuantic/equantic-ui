@@ -35,6 +35,7 @@ public sealed class BuildOwner
     // The positions that read what a frame hands every build (the theme, the density, the type scale),
     // each knowing its index here, so one that leaves is taken out in one step.
     private readonly List<ComponentElement> _frameReaders = new();
+    private readonly List<ComponentElement> _routeReaders = new();
     private ComponentContext? _context;
     private int _building;
     // Whether the build phase of a frame is running, and which dirty position it is building: a value a
@@ -183,6 +184,9 @@ public sealed class BuildOwner
             // What a frame hands every build changed: the positions that read it build again, and only
             // they, where a density switch used to rebuild every component (docs/ELEMENT-TREE-PLAN.md, 3.4).
             if (previous is not null && FrameValuesDiffer(previous, context)) MarkFrameReaders();
+            // The route is read apart: a navigation within one page type builds what read the route, and
+            // not every reader of the theme.
+            if (previous is not null && !ReferenceEquals(previous.Route, context.Route)) MarkRouteReaders();
 
             if (Root is null || !Element.CanUpdate(Root.Configuration, root))
             {
@@ -234,6 +238,31 @@ public sealed class BuildOwner
     private void MarkFrameReaders()
     {
         foreach (var reader in _frameReaders) reader.DependencyChanged();
+    }
+
+    /// <summary>A position read the frame's route, and builds again when the frame hands another.</summary>
+    internal void ReadRoute(ComponentElement reader)
+    {
+        if (reader.RouteReaderIndex >= 0) return;
+        reader.RouteReaderIndex = _routeReaders.Count;
+        _routeReaders.Add(reader);
+    }
+
+    /// <summary>A position that read the route left the tree: the last reader takes its place.</summary>
+    internal void ForgetRouteReader(ComponentElement reader)
+    {
+        var index = reader.RouteReaderIndex;
+        if (index < 0) return;
+        var last = _routeReaders[_routeReaders.Count - 1];
+        _routeReaders[index] = last;
+        last.RouteReaderIndex = index;
+        _routeReaders.RemoveAt(_routeReaders.Count - 1);
+        reader.RouteReaderIndex = -1;
+    }
+
+    private void MarkRouteReaders()
+    {
+        foreach (var reader in _routeReaders) reader.DependencyChanged();
     }
 
     /// <summary>

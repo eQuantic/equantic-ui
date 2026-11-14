@@ -1,5 +1,3 @@
-using System.Threading;
-
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
@@ -20,6 +18,11 @@ namespace eQuantic.UI.Primitives;
 /// LAYER — the scrim, the viewport sizing, the portal and the keyboard binding that only make sense
 /// for something floating above a page.
 /// </para>
+/// <para>
+/// A component reads it from its context, which answers from the tree: whether an <see cref="InFlow"/>
+/// stands above its position, or, for a tree drawn without positions, the flag the realizer hands the
+/// context it builds the subtree with (#1395).
+/// </para>
 /// </summary>
 public sealed class InFlow : SingleChildNode
 {
@@ -27,21 +30,6 @@ public sealed class InFlow : SingleChildNode
 
     public InFlow(VisualNode child) : base(child) { }
 
-
-    // ---- The AMBIENT intent, while this subtree builds ---------------------------------------
-
-    private static readonly AsyncLocal<bool> Scoped = new();
-
-    /// <summary>
-    /// Whether the subtree being built right now was asked to draw in the flow. Read through
-    /// <see cref="ComponentContext.InFlow"/>; AsyncLocal for the same reason every other ambient
-    /// here is — SSR renders concurrent requests on shared instances.
-    /// </summary>
-    public static bool Current
-    {
-        get => Scoped.Value;
-        set => Scoped.Value = value;
-    }
 
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);

@@ -27,8 +27,6 @@ public class AmbientChannelsTests
         ["CapabilityScope.Scoped"] =
             "the request's container; it becomes the root element's services, and the server's middleware keeps "
             + "the channel for server actions, which run outside any tree",
-        ["RouteValues.Scoped"] = "the page's route; it becomes an inherited route at the page root",
-        ["InFlow.Scoped"] = "the interaction wrapper's intent; it becomes an inherited value its element sets",
         ["ComponentBoundary._diagnostics"] = "the error boundary's, which moves to the owner with E4c (#1452)",
         ["ComponentBoundary._report"] = "the error boundary's, which moves to the owner with E4c (#1452)",
         ["ComponentBoundary._contained"] = "the error boundary's, which moves to the owner with E4c (#1452)",

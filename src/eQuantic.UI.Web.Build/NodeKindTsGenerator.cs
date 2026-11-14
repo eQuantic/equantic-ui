@@ -148,11 +148,16 @@ public static class NodeKindTsGenerator
     public static IEnumerable<(string Node, string Kind)> Declared() =>
         Vocabulary().Select(node => (node.Name, Kind: WireKind(node)));
 
-    /// <summary>The vocabulary, asked of the assembly rather than listed.</summary>
+    /// <summary>
+    /// The vocabulary, asked of the assembly rather than listed: every concrete node that declares a kind
+    /// of its own. A concrete member of a family (<see cref="Theme"/>, an <see cref="InheritedComponent"/>)
+    /// takes the kind the family seals, so it is the family's and is not one of these.
+    /// </summary>
     public static IEnumerable<Type> Vocabulary() =>
         typeof(VisualNode).Assembly.GetExportedTypes()
             .Where(type => type is { IsAbstract: false, IsPublic: true }
-                && typeof(VisualNode).IsAssignableFrom(type))
+                && typeof(VisualNode).IsAssignableFrom(type)
+                && !Families.Any(family => family.Family.IsAssignableFrom(type)))
             .OrderBy(type => type.Name, StringComparer.Ordinal);
 
     /// <summary>

@@ -180,8 +180,10 @@ public class FactoryAuthoringTests
 
             public sealed class Routed : StatelessComponent
             {
-                public override VisualNode Build(ComponentContext context) =>
-                    Text(RouteValues.Current.Param("slug") ?? "none", TypeRole.BodyM);
+                public override VisualNode Build(ComponentContext context) => Slug(context.Route);
+
+                private static VisualNode Slug(RouteValues route) =>
+                    Text(route.Param("slug") ?? "none", TypeRole.BodyM);
             }
             """);
 

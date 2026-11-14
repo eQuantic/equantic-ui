@@ -12,6 +12,7 @@ import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from '.
 import type { NodeKind } from './node-kinds.generated';
 import type { TableCellRoleValue, TableRoleValue, WindowSizeClassValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
+import type { AppTheme } from './value-types';
 import { iconPaths } from './icons.generated';
 import type {
   BoxStyleValue,
@@ -29,7 +30,7 @@ import type { PickedFile } from './picked-file';
 export { CanvasPointer };
 import { floatText } from './css-values';
 import { lowerVisualNode } from './lowering';
-import { ambientLoweringContext, getInFlow, setInFlow } from './photon-context';
+import { ambientLoweringContext, registerThemeNode } from './photon-context';
 import {
   artworkAspect,
   CornerRadii,
@@ -938,9 +939,8 @@ export class Simulated extends VisualNode {
  */
 /**
  * A value for a subtree (the C# `InheritedComponent`, after Flutter's `InheritedWidget`): an app
- * subclasses it with the value it holds, and a component below reads it through its context. It draws
- * its child alone. Until the browser builds on the element engine (E3b) a context has no position to
- * look it up from, so `dependOn` and `find` answer null here, as C# answers on a context with none.
+ * subclasses it with the value it holds, and a component below reads it through its context
+ * (`context.dependOn(Score)`, which eqc writes with the type's twin, #1395). It draws its child alone.
  */
 export abstract class InheritedComponent extends VisualNode {
   readonly nodeKind = 'inherited';
@@ -960,6 +960,26 @@ export abstract class InheritedComponent extends VisualNode {
   abstract updateShouldNotify(old: InheritedComponent): boolean;
 }
 
+/**
+ * A theme for a subtree (the C# `Theme`, after Flutter's `Theme`): the vocabulary's own inherited value.
+ * A component below it reads `context.theme` as this node's `value`, and builds again when a new one
+ * replaces it; a component with none above it reads its frame's (#1395).
+ */
+export class Theme extends InheritedComponent {
+  readonly value: AppTheme;
+
+  constructor(value: AppTheme, child: VisualChild, config?: EqConfig) {
+    super(child, config);
+    this.value = value;
+  }
+
+  updateShouldNotify(old: InheritedComponent): boolean {
+    return (old as Theme).value !== this.value;
+  }
+}
+// The context finds it by its class, which it cannot import: this module imports the context.
+registerThemeNode(Theme);
+
 export class InFlow extends VisualNode {
   readonly nodeKind = 'inFlow';
   child: VisualChild;
@@ -968,20 +988,6 @@ export class InFlow extends VisualNode {
     super();
     this.child = child;
     if (config) Object.assign(this, config);
-  }
-
-  /**
-   * Whether the subtree being built right now was asked to draw in the flow (the C# static
-   * `InFlow.Current`). The element engine arms it around a component's build, the lowering around
-   * an `InFlow`'s child, and both read and write the ONE ambient the build context reports. A static
-   * here is what C#'s AsyncLocal is there: the browser builds on one thread.
-   */
-  static get current(): boolean {
-    return getInFlow();
-  }
-
-  static set current(value: boolean) {
-    setInFlow(value);
   }
 }
 

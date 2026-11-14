@@ -175,6 +175,7 @@ export {
   RadialGradient,
   InFlow,
   InheritedComponent,
+  Theme,
   InView,
   Simulated,
   TextEntry,

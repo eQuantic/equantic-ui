@@ -16,7 +16,6 @@ import { ElementRoots, enterPass, exitPass, lowerRoot, relowerRoot, type Relower
 import { partialCommitIsExact } from '../dom/shortcuts';
 import {
   getPhotonDensity,
-  getInFlow,
   getPhotonTheme,
   getPhotonTypeScale,
   measurePhotonText,
@@ -294,7 +293,6 @@ function pageContext(serviceProvider: ServiceProvider): RenderContext {
     getService: <T>(key: import('./types').ServiceKey<T>) => serviceProvider.getService<T>(key),
     serviceProvider,
     route: getCurrentRoute(),
-    inFlow: getInFlow(),
     theme: getPhotonTheme(),
     density: getPhotonDensity(),
     typeScale: getPhotonTypeScale(),
