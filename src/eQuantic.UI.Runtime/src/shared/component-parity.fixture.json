@@ -47271,7 +47271,8 @@
                 "tabindex": "-1"
               },
               "events": [
-                "click"
+                "click",
+                "mousedown"
               ],
               "children": [
                 {
@@ -47362,7 +47363,8 @@
                 "tabindex": "-1"
               },
               "events": [
-                "click"
+                "click",
+                "mousedown"
               ],
               "children": [
                 {
@@ -47457,7 +47459,8 @@
                 "tabindex": "-1"
               },
               "events": [
-                "click"
+                "click",
+                "mousedown"
               ],
               "children": [
                 {
@@ -47548,7 +47551,8 @@
                 "tabindex": "-1"
               },
               "events": [
-                "click"
+                "click",
+                "mousedown"
               ],
               "children": [
                 {
@@ -47618,7 +47622,8 @@
                 "tabindex": "-1"
               },
               "events": [
-                "click"
+                "click",
+                "mousedown"
               ],
               "children": [
                 {
@@ -47688,7 +47693,8 @@
                 "tabindex": "-1"
               },
               "events": [
-                "click"
+                "click",
+                "mousedown"
               ],
               "children": [
                 {
@@ -47783,7 +47789,8 @@
                 "tabindex": "-1"
               },
               "events": [
-                "click"
+                "click",
+                "mousedown"
               ],
               "children": [
                 {
@@ -47874,7 +47881,8 @@
                 "tabindex": "-1"
               },
               "events": [
-                "click"
+                "click",
+                "mousedown"
               ],
               "children": [
                 {
@@ -47944,7 +47952,8 @@
                 "tabindex": "-1"
               },
               "events": [
-                "click"
+                "click",
+                "mousedown"
               ],
               "children": [
                 {
@@ -48014,7 +48023,8 @@
                 "tabindex": "-1"
               },
               "events": [
-                "click"
+                "click",
+                "mousedown"
               ],
               "children": [
                 {

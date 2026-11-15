@@ -4372,6 +4372,13 @@ function lowerPressable(
     if (pressable.selected !== undefined && pressable.selected !== null)
       node.attributes['aria-selected'] = pressable.selected ? 'true' : 'false';
     node.attributes['tabindex'] = '-1';
+    // A press keeps the keyboard on the TREE: the host is the one stop and the element
+    // aria-activedescendant is read from, so the item's own focus is cancelled and the tree takes it.
+    node.events['mousedown'] = ((event: MouseEvent) => {
+      event.preventDefault();
+      const host = (event.currentTarget as HTMLElement | null)?.closest('[role="tree"]');
+      if (host instanceof HTMLElement) host.focus();
+    }) as unknown as EventHandler;
     const place = pressable.treePlace;
     if (place) {
       node.attributes['aria-level'] = String(place.level);

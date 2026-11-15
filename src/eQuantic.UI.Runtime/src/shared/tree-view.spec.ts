@@ -146,6 +146,19 @@ describe('a TreeView, driven in the browser', () => {
     expect(chord.defaultPrevented).toBe(false);
   });
 
+  it('keeps the keyboard on the tree when an item is pressed, where aria-activedescendant is read', async () => {
+    const container = mount();
+    const item = container.querySelector('[aria-label="README.md"]') as HTMLElement;
+    const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    item.dispatchEvent(down);
+    expect(down.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(tree(container));
+    item.click();
+    await nextFrame();
+    expect(active(container)).toBe('README.md');
+    expect(pressed).toEqual(['README.md']);
+  });
+
   it('loads a folder once, with a loading item under it until its children arrive', async () => {
     const container = mount();
     (container.querySelector('[aria-label="docs"]') as HTMLElement).click();

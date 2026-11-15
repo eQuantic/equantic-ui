@@ -678,6 +678,11 @@ internal sealed partial class WebLoweringVisitor
             element.AriaPressed = null;
             element.TabIndex = -1;
             if (pressable.Disabled) element.AriaDisabled = true;
+            // A press keeps the keyboard on the TREE (#1530): the host is the one stop, and the element
+            // aria-activedescendant has to be read from, so a press must not move the focus to the item.
+            // The runtime cancels the item's own focus and focuses the tree; the server never dispatches
+            // a mousedown and declares it all the same, so the parity net notices the client losing it.
+            element.OnMouseDown = static _ => { };
             if (pressable.TreePlace is { } place)
             {
                 element.RawAttributes ??= new Dictionary<string, string>();
