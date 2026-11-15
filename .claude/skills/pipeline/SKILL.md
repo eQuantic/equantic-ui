@@ -96,9 +96,11 @@ git -C ../equantic-ui.wiki worktree add -b <type>/<slug> ../equantic-ui.wt/<issu
 Everything of the delivery happens there: every agent's work, every build, the state. The clone's
 own checkout is never switched, and no delivery works in another's tree, so several deliveries run
 on one machine at once, from one session or from several: a branch switched under a running
-delivery was one of the pilot's findings. `.claude/settings.json` adds `../equantic-ui.wt/` to the
-session's directories (`additionalDirectories`, applied once the folder is trusted), so an agent
-reads there without a prompt and edits there under the same permission mode as in the clone.
+delivery was one of the pilot's findings. The folder is added to the orchestrating session only:
+at its first intake, ask the person to run `/add-dir ../equantic-ui.wt` (a built-in command, which
+the session cannot run itself), so its agents read there without a prompt and edit there under the
+same permission mode as in the clone. The repository's settings do not add it, since that would
+widen every session, the ones that never run a pipeline included.
 
 **The wiki is always named.** The wiki guards look for `equantic-ui.wiki` beside the tree they run
 in, which a delivery's worktree does not have, and when they find none they pass without reading a

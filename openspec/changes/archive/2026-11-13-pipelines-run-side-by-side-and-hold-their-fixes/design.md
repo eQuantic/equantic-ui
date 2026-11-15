@@ -12,9 +12,12 @@ The state stays where it was, `.claude/pipelines/<issue>-<slug>/`, now inside th
 worktree, which `.gitignore` already covers. Whatever reads deliveries in flight reads that folder
 of every worktree (`git worktree list`).
 
-Every worktree sits under `../equantic-ui.wt/`, which `.claude/settings.json` adds to the
-directories of a session started in the clone (`permissions.additionalDirectories`, applied after the folder is trusted): reads need
-no prompt there, and edits follow the session's permission mode as they do in the clone. The wiki
+Every worktree sits under `../equantic-ui.wt/`, which the orchestrating session adds to its own
+directories with `/add-dir` at its first intake, asked of the person since a built-in command is
+not the session's to run: reads need no prompt there, and edits follow the session's permission
+mode as they do in the clone. The owner's review chose this over `permissions.additionalDirectories`
+in `.claude/settings.json`, which would widen every session in the repository, the ones that never
+run a pipeline included. The wiki
 guards look for `equantic-ui.wiki` beside the tree they run in and pass in silence when none is
 there, so intake makes the delivery's wiki worktree too, from a freshly fetched `origin/master`,
 and every command runs with `EQ_WIKI_DIR` set to it. The state lives in the worktree and goes with

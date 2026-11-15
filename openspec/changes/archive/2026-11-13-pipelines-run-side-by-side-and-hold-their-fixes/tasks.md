@@ -13,7 +13,7 @@
       its command inherits the locked file; check: the self-test fails without the forwarding,
       without the mapping, without the inheritance and without the refusal
 - [x] 1.7 Intake makes the delivery's wiki worktree from a fetched master and every command runs with
-      `EQ_WIKI_DIR` on it; the worktrees' folder is one of the session's directories; the measures
+      `EQ_WIKI_DIR` on it; the orchestrating session adds the worktrees' folder with `/add-dir`; the measures
       go to GitHub before a worktree is removed
 
 ## 2. What the pilot found
