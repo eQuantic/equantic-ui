@@ -64,6 +64,12 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
     /// <summary>What a person asks the menu of reaches a message as the child it holds: a message has no menu
     /// to ask for, and the content is the same without one (#1531).</summary>
     public Nothing Visit(ContextTarget node, Nothing state) => node.Child.Accept(this, state);
+    /// <summary>A list a pointer sorts is, in a message, the list as it stands (#1535): nothing in an email is
+    /// dragged, and nothing in the list needs it to be read.</summary>
+    public Nothing Visit(Sortable node, Nothing state) => node.Child.Accept(this, state);
+
+    /// <inheritdoc cref="Visit(Sortable, Nothing)"/>
+    public Nothing Visit(SortableItem node, Nothing state) => node.Child.Accept(this, state);
 
     /// <summary>
     /// The one refusal, loud and naming the node — the repo's rule: never a silent divergence. The

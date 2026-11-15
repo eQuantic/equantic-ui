@@ -20,21 +20,16 @@
  * pixels under a scaled one, as Photon reads it (#1195, #1204).
  */
 import { gestureSpace } from './gesture-space';
+import { followPointer, pointerDownDelegate, SLOP } from './pointer-gesture';
 
-const SLOP = 12; // Touch.PressCancelSlop — cross-pinned with the C# host
-
-let installed = false;
+const delegate = pointerDownDelegate(onPointerDown);
 
 export function installDraggableController(): void {
-  if (installed || typeof document === 'undefined') return;
-  installed = true;
-  document.addEventListener('pointerdown', onPointerDown);
+  delegate.install();
 }
 
 export function resetDraggableController(): void {
-  if (typeof document === 'undefined') return;
-  installed = false;
-  document.removeEventListener('pointerdown', onPointerDown);
+  delegate.reset();
 }
 
 /**
@@ -78,71 +73,32 @@ function onPointerDown(down: Event): void {
   const startX = pointer.clientX;
   const startY = pointer.clientY;
   const slop = space.onScreen(horizontal, SLOP);
-  let active = false;
 
   // How far the finger has carried the surface along its own axis, in the space its offset is in.
-  const travelled = (ev: Event): number =>
-    space.along(horizontal, (ev as PointerEvent).clientX - startX, (ev as PointerEvent).clientY - startY);
+  const travelled = (ev: PointerEvent): number => space.along(horizontal, ev.clientX - startX, ev.clientY - startY);
 
   // Where the gesture now IS, measured from the rest it started at.
-  const travelOf = (ev: Event): number => {
+  const travelOf = (ev: PointerEvent): number => {
     const raw = travelled(ev);
     const at = rest + (normalized && extent > 0 ? raw / extent : raw);
     return Math.min(max, Math.max(min, at));
   };
 
-  const move = (ev: Event): void => {
-    if (!active && Math.abs(travelled(ev)) > slop) {
-      active = true;
+  followPointer(pointer, {
+    arms: (ev) => Math.abs(travelled(ev)) > slop,
+    armed: () => {
       if (follows) surface.style.transition = 'none';
-    }
-    if (!active) return;
-
-    // The browser's own scroll must not fight the gesture once it has armed.
-    ev.preventDefault();
-    const offset = travelOf(ev);
-    if (follows) {
-      const px = normalized ? offset * extent : offset;
-      // Through setProperty: the property is newer than the CSSOM's named accessors, and the
-      // generic one writes it on every engine.
-      surface.style.setProperty('translate', horizontal ? `${px}px` : `0 ${px}px`);
-    }
-    if (moves) surface.dispatchEvent(new CustomEvent('eq-drag-moved', { detail: offset }));
-  };
-
-  const detach = (): void => {
-    document.removeEventListener('pointermove', move);
-    document.removeEventListener('pointerup', up);
-    document.removeEventListener('pointercancel', cancel);
-  };
-
-  // The system can take a gesture away without ever lifting the finger — a browser claiming the
-  // scroll, a call arriving. Nothing was decided, so nothing is reported: the surface returns to
-  // where the caller last put it, which is the rest its markup carries.
-  const cancel = (): void => {
-    detach();
-    if (!active) return;
-    active = false;
-    if (follows) handBack(surface);
-  };
-
-  const up = (ev: Event): void => {
-    detach();
-    if (!active) return;
-
-    // An activated drag swallows the click the browser fires after pointerup — a row's own buttons
-    // must not receive a tap that was really a swipe.
-    //
-    // The timer holds the DOCUMENT it registered on rather than reading the global when it fires,
-    // and the difference is the fifty milliseconds between the two. A page cannot lose `document`
-    // in that window, but a torn-down environment can: the suite's own teardown removed the global
-    // while this was pending, the callback threw `document is not defined` where nothing could
-    // catch it, and vitest failed a run in which all 134 files had passed. Deferred cleanup carries
-    // what it cleans up.
-    const host = document;
-    host.addEventListener('click', squashClick, { capture: true, once: true });
-    setTimeout(() => host.removeEventListener('click', squashClick, { capture: true }), 50);
-
+    },
+    move: (ev) => {
+      const offset = travelOf(ev);
+      if (follows) {
+        const px = normalized ? offset * extent : offset;
+        // Through setProperty: the property is newer than the CSSOM's named accessors, and the
+        // generic one writes it on every engine.
+        surface.style.setProperty('translate', horizontal ? `${px}px` : `0 ${px}px`);
+      }
+      if (moves) surface.dispatchEvent(new CustomEvent('eq-drag-moved', { detail: offset }));
+    },
     // Report, then let the RE-RENDER place it: the caller's new RestOffset is the truth about where
     // this belongs, and gliding to a guess here would fight the frame that follows. The gesture's
     // own offset is handed back AFTER the report, so a re-render the report runs has already written
@@ -150,13 +106,17 @@ function onPointerDown(down: Event): void {
     // leaves the rest where it was (a swipe short of opening) changes no markup at all, and the
     // surface still goes home: it used to stay where the finger left it, since nothing re-wrote the
     // inline offset the drag had set.
-    surface.dispatchEvent(new CustomEvent('eq-drag-released', { detail: travelOf(ev) }));
-    if (follows) handBack(surface);
-  };
-
-  document.addEventListener('pointermove', move, { passive: false });
-  document.addEventListener('pointerup', up);
-  document.addEventListener('pointercancel', cancel);
+    release: (ev) => {
+      surface.dispatchEvent(new CustomEvent('eq-drag-released', { detail: travelOf(ev) }));
+      if (follows) handBack(surface);
+    },
+    // The system can take a gesture away without ever lifting the finger — a browser claiming the
+    // scroll, a call arriving. Nothing was decided, so nothing is reported: the surface returns to
+    // where the caller last put it, which is the rest its markup carries.
+    cancel: () => {
+      if (follows) handBack(surface);
+    },
+  });
 }
 
 /**
@@ -166,9 +126,4 @@ function onPointerDown(down: Event): void {
 function handBack(surface: HTMLElement): void {
   surface.style.removeProperty('translate');
   surface.style.removeProperty('transition');
-}
-
-function squashClick(e: Event): void {
-  e.stopPropagation();
-  e.preventDefault();
 }

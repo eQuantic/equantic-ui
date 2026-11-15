@@ -81,6 +81,18 @@ internal sealed class FrameRegions
     private List<ContextRegion>? _contexts;
 
     /// <summary>
+    /// The sortable lists and their items (#1537), in tree order, a list before what it holds. LAZY like
+    /// the live regions, and for the same ceiling: a frame with nothing to sort allocates nothing for it.
+    /// </summary>
+    public List<SortRegion> Sorts => _sorts ??= [];
+
+    /// <summary>What the frame reads back, without creating the list to find out it is empty.</summary>
+    public IReadOnlyList<SortRegion> SortsOrEmpty =>
+        (IReadOnlyList<SortRegion>?)_sorts ?? Array.Empty<SortRegion>();
+
+    private List<SortRegion>? _sorts;
+
+    /// <summary>
     /// The regions registered under a transform, each with what turns a point back into its own
     /// space (#513). LAZY like the live regions, and for the same ceiling: a frame where nothing
     /// interactive is transformed, which is nearly every frame, allocates nothing for it.

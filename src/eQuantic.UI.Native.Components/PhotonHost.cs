@@ -360,7 +360,10 @@ public sealed partial class PhotonHost
         if (RenderScale != 1f) builder.PushTransform(Matrix2D.Scale(RenderScale, RenderScale));
         if (_lift != 0) builder.PushTransform(Matrix2D.Translation(0, -_lift));
         _lastTimeMs = timeMs;
-        // A finger's hold over what a person may ask the menu of becomes a long press here (#1531).
+        // A carried item's hold, lean and the scroll under it advance before the frame shows them (#1537).
+        var sortScrolled = TickSort(timeMs);
+        // A finger's hold over what a person may ask the menu of becomes a long press here (#1531), after the
+        // sort's: a hold that lifted a sortable item is the lift's.
         TickContext(timeMs);
         // The tree lays out above what the system covers, and a SafeArea at the bottom pads only
         // what the keyboard leaves of the home indicator: the keyboard is already in its way.
@@ -390,6 +393,8 @@ public sealed partial class PhotonHost
             hoveredAt: _hoverAt, hoveredPart: _hoveredPart,
             nodePool: RecycleFrames ? _nodePool : null,
             windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame, rebuildAll: rebuildAll, log: Log);
+        // The carried item's copy goes over everything the frame drew, as the web's lies over the page.
+        PaintSort(builder, sortScrolled);
         if (_lift != 0) builder.Pop();
         if (RenderScale != 1f) builder.Pop();
         // The frame shows what the app made of the keyboard's edit. A composition in a text the app
@@ -426,7 +431,7 @@ public sealed partial class PhotonHost
         // from a build is waiting in the owner, and a write of `false` here would leave it there
         // until something else asked for a frame.
         NeedsRender = _lastFrame.HasActiveMotion || gliding || PhotonFrameTicker.Shared.HasSubscribers
-            || _owner.HasDirty;
+            || _owner.HasDirty || SortWantsFrames(sortScrolled);
 
         // A code surface whose caret was MOVED since the last frame is brought into view — by a key,
         // a command, a find stepping to a match. After the frame, because that is when the caret's
@@ -456,9 +461,12 @@ public sealed partial class PhotonHost
         _nextFrameDueMs = caretDue is { } caret && announcementDue is { } owed
             ? MathF.Min(caret, owed)
             : caretDue ?? announcementDue;
-        // A finger holding a target is due a frame when its hold is long enough (#1531).
-        if (ContextDueMs() is { } holdDue)
+        // A finger holding a sortable item is due a frame when its hold is long enough (#1537).
+        if (SortDueMs() is { } holdDue)
             _nextFrameDueMs = _nextFrameDueMs is { } due ? MathF.Min(due, holdDue) : holdDue;
+        // A finger holding a target is due a frame when its hold is long enough (#1531).
+        if (ContextDueMs() is { } contextDue)
+            _nextFrameDueMs = _nextFrameDueMs is { } soonest ? MathF.Min(soonest, contextDue) : contextDue;
         // Said once per edit, on the frame that draws it, as the web's server says each rebuild: the
         // person sees how long an edit took to reach the window, and the edit-to-view measurement
         // (#900) reads the same line. The shell presents this frame next, within a vsync.
@@ -2176,6 +2184,9 @@ public sealed partial class PhotonHost
             return;
         }
 
+        // An item a pointer carries between sortable lists, or picks up when it travels far enough (#1537).
+        if (MoveSort(new Point(x, y))) return;
+
         // Gestures v2: a pressed pointer travelling inside a drag surface becomes a DRAG once it
         // passes the slop — the pressable press cancels (spec §08's cancel rule) and the subtree
         // follows the pointer (downward only) until release.
@@ -2602,6 +2613,8 @@ public sealed partial class PhotonHost
         _held = true;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
+        // A press puts back an item the keyboard carries, wherever it lands (#1537).
+        if (_sort is { ByKeyboard: true } carried) CancelSort(carried);
 
         // W3: a canvas owns the pointer inside its box. It is asked FIRST because it draws its own
         // content and therefore knows its own hit-testing — the engine has no idea what is under
@@ -2662,6 +2675,10 @@ public sealed partial class PhotonHost
             _tablePress = null;
             underDrag.Viewport.Scroll.Pointer(PointerPhase.Cancel, Point.Zero, kind, _lastTimeMs);
         }
+        // A press over a sortable item is a candidate to carry it (#1537), which a drag surface under the
+        // point outranks as it outranks a scroll.
+        _sort = null;
+        if (_drag is null) PressSort(point, kind);
 
         // A finger pressing what a person may ask the menu of is a candidate long press (#1531).
         PressContext(point, kind);
@@ -2868,6 +2885,7 @@ public sealed partial class PhotonHost
         _pan = null;
         _panBeside = null;
         _contextHold = null;
+        CancelPointerSort();
         if (_tablePress is { } table)
         {
             _tablePress = null;
@@ -2966,6 +2984,9 @@ public sealed partial class PhotonHost
         // during the sequence, and a pen that lifts is the same. A mouse stays where it is, so its
         // hover survives the click (clearing it would flicker on every press).
         if (kind != PointerKind.Mouse) PointerLeave();
+
+        // A carried item lands where it was offered; a candidate never picked up leaves the press to press.
+        if (ReleaseSort()) return true;
 
         // A table's press ends: one the table took lands there (a finger still moving flings); a
         // candidate that never left the slop was a tap, which goes on to the cell it began on.
@@ -3514,6 +3535,13 @@ public sealed partial class PhotonHost
     public bool KeyDown(string key, KeyModifiers modifiers = KeyModifiers.None)
     {
         _keyModifiers = modifiers;
+        // A carried item's keys are the carry's alone, before an app's chord (#1537).
+        if (SortKey(key))
+        {
+            NeedsRender = true;
+            return true;
+        }
+
         // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.
         if (BindingFor(key, modifiers) is { } binding)
         {
@@ -3604,6 +3632,13 @@ public sealed partial class PhotonHost
                 NeedsRender = true;
                 return true;
             }
+        }
+
+        // Space on a sortable item, or inside one, picks it up for the keyboard (#1537), rather than pressing it.
+        if (key is " " or "Space" && modifiers == KeyModifiers.None && CarryByKeyboard())
+        {
+            NeedsRender = true;
+            return true;
         }
 
         switch (key)

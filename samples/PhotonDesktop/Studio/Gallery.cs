@@ -21,11 +21,12 @@ public enum GallerySection
     Sheets = 6,
     Table = 7,
     Charts = 8,
-    Navigation = 9,
-    Feedback = 10,
-    Overlays = 11,
-    Device = 12,
-    Culture = 13,
+    Board = 9,
+    Navigation = 10,
+    Feedback = 11,
+    Overlays = 12,
+    Device = 13,
+    Culture = 14,
 }
 
 /// <summary>
@@ -33,7 +34,7 @@ public enum GallerySection
 /// Kept apart from the shell so the shell is only chrome and the sections are only components —
 /// adding a control to the library means adding it here and nowhere else.
 /// </summary>
-public static class Gallery
+public static partial class Gallery
 {
     public static readonly GallerySection[] Sections = Enum.GetValues<GallerySection>();
 
@@ -59,6 +60,7 @@ public static class Gallery
         GallerySection.Sheets => "Spreadsheet",
         GallerySection.Table => "Table",
         GallerySection.Charts => "Charts",
+        GallerySection.Board => "Board",
         GallerySection.Culture => "Language",
         _ => "Device",
     };
@@ -69,7 +71,8 @@ public static class Gallery
     {
         GallerySection.Buttons or GallerySection.Inputs or GallerySection.Selection => "Primitives",
         GallerySection.DataDisplay or GallerySection.Containers or GallerySection.Progress
-            or GallerySection.Sheets or GallerySection.Table or GallerySection.Charts => "Data display",
+            or GallerySection.Sheets or GallerySection.Table or GallerySection.Charts
+            or GallerySection.Board => "Data display",
         GallerySection.Navigation => "Navigation",
         GallerySection.Feedback or GallerySection.Overlays => "Feedback",
         _ => "Device",   // Language belongs here too: what the MACHINE says, taken as a service.
@@ -109,6 +112,8 @@ public static class Gallery
             "Excel's whole grid, built only where it is in view: both axes scroll, the header row and column stay.",
         GallerySection.Charts =>
             "Bars from the theme's data palette, drawn with the engine's own shapes — one C# for the web and this window.",
+        GallerySection.Board =>
+            "Cards a pointer or the keyboard moves inside a column and across columns — one C# for every target.",
         GallerySection.Culture =>
             "Two cultures in one window: resx strings and .NET formats, switched without a reload.",
         _ => "What the DEVICE can do, taken through a constructor like any other dependency.",
@@ -128,6 +133,7 @@ public static class Gallery
         GallerySection.Sheets => Icons.Table,
         GallerySection.Table => Icons.Table,
         GallerySection.Charts => Icons.Table,
+        GallerySection.Board => Icons.Table,
         GallerySection.Culture => Icons.Mail,
         _ => Icons.Person,
     };
@@ -147,6 +153,7 @@ public static class Gallery
         GallerySection.Sheets => 1,
         GallerySection.Table => 1,
         GallerySection.Charts => 1,
+        GallerySection.Board => 2,
         GallerySection.Culture => 2,
         _ => 6,
     };
@@ -167,6 +174,7 @@ public static class Gallery
         GallerySection.Sheets => Sheets(theme, state),
         GallerySection.Table => TableGrid(theme),
         GallerySection.Charts => Charts(theme),
+        GallerySection.Board => Board(theme, state, mutate),
         GallerySection.Culture => Culture(theme, state),
         _ => Device(theme, state, mutate),
     };

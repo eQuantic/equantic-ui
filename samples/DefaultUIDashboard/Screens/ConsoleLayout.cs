@@ -67,6 +67,8 @@ public sealed class ConsoleLayout(VisualNode body) : StatefulComponent
         new(Icons.Plus, "Uploads", "/uploads"),
         // A repository's files in a tree, its folders loaded through a Server Action as they open.
         new(Icons.Menu, "Files", "/files"),
+        // Cards a pointer moves inside a column and across columns.
+        new(Icons.Table, "Board", "/board"),
     ];
 
     /// <summary>Whether the compact drawer is up. The layout's, so a navigation keeps it.</summary>

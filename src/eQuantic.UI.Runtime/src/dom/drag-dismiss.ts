@@ -15,79 +15,39 @@
  * the finger whatever it is drawn under, as Photon counts it since #734 (#1492).
  */
 import { gestureSpace } from './gesture-space';
-
-/** Touch.PressCancelSlop — the same 12dp that cancels a native press into a drag. */
-const SLOP = 12;
+import { followPointer, pointerDownDelegate, SLOP } from './pointer-gesture';
 
 /** Motion.Base glide-back + clearance for the transition to land before styles reset. */
 const GLIDE_MS = 200;
 
-let installed = false;
+const delegate = pointerDownDelegate(onPointerDown);
 
 /** Idempotent: the first `DragDismiss` lowering installs the delegate for the whole document. */
 export function installDragDismissController(): void {
-  if (installed || typeof document === 'undefined') return;
-  installed = true;
-  document.addEventListener('pointerdown', onPointerDown);
+  delegate.install();
 }
 
 /** Test seam: uninstalls and forgets, so specs exercise a fresh install. */
 export function resetDragDismissController(): void {
-  if (!installed) return;
-  installed = false;
-  document.removeEventListener('pointerdown', onPointerDown);
+  delegate.reset();
 }
 
-function onPointerDown(down: Event): void {
+function onPointerDown(down: PointerEvent): void {
   const target = down.target as Element | null;
   const sheet = target?.closest?.('[data-eq-drag-dismiss]') as HTMLElement | null;
   if (!sheet || sheet.closest('[data-eq-exiting]')) return;
 
   const threshold = parseFloat(sheet.getAttribute('data-eq-drag-dismiss') || '96');
   const space = gestureSpace(sheet);
-  const startX = (down as PointerEvent).clientX;
-  const startY = (down as PointerEvent).clientY;
+  const startX = down.clientX;
+  const startY = down.clientY;
   const slop = space.onScreen(false, SLOP);
-  let active = false;
 
   // How far down the finger has carried the sheet, in the space its offset is in.
-  const travelled = (ev: Event): number =>
-    space.along(false, (ev as PointerEvent).clientX - startX, (ev as PointerEvent).clientY - startY);
+  const travelled = (ev: PointerEvent): number => space.along(false, ev.clientX - startX, ev.clientY - startY);
 
-  const move = (ev: Event): void => {
-    const dy = travelled(ev);
-    if (!active && dy > slop) {
-      active = true;
-      sheet.style.transition = 'none';
-    }
-    if (active) {
-      sheet.style.transform = `translateY(${Math.max(0, dy)}px)`;
-    }
-  };
-
-  const up = (ev: Event): void => {
-    document.removeEventListener('pointermove', move);
-    document.removeEventListener('pointerup', up);
-    if (!active) return;
-
-    // An activated drag swallows the click the browser fires after pointerup — inner buttons
-    // (the sheet's own actions) must not receive a tap that was really a drag.
-    //
-    // The timer holds the DOCUMENT it registered on, as draggable.ts's does and for its reason: a
-    // torn-down test environment removed the global while this was pending, the callback threw
-    // `document is not defined` where nothing could catch it, and vitest failed a run in which all
-    // 137 files had passed. Deferred cleanup carries what it cleans up.
-    const host = document;
-    host.addEventListener('click', squashClick, { capture: true, once: true });
-    setTimeout(() => host.removeEventListener('click', squashClick, { capture: true }), 50);
-
-    const dy = travelled(ev);
-    if (dy >= threshold) {
-      sheet.dispatchEvent(new CustomEvent('eq-drag-dismiss'));
-      return;
-    }
-
-    // Short of the threshold: glide back over Motion.Base, then clear the inline styles.
+  // Short of the threshold, or taken away: glide back over Motion.Base, then clear the inline styles.
+  const glideBack = (): void => {
     sheet.style.transition = `transform ${GLIDE_MS}ms ease-out`;
     sheet.style.transform = '';
     setTimeout(() => {
@@ -95,11 +55,21 @@ function onPointerDown(down: Event): void {
     }, GLIDE_MS + 50);
   };
 
-  document.addEventListener('pointermove', move);
-  document.addEventListener('pointerup', up);
-}
-
-function squashClick(e: Event): void {
-  e.stopPropagation();
-  e.preventDefault();
+  followPointer(down, {
+    arms: (ev) => travelled(ev) > slop,
+    armed: () => {
+      sheet.style.transition = 'none';
+    },
+    move: (ev) => {
+      sheet.style.transform = `translateY(${Math.max(0, travelled(ev))}px)`;
+    },
+    release: (ev) => {
+      if (travelled(ev) >= threshold) {
+        sheet.dispatchEvent(new CustomEvent('eq-drag-dismiss'));
+        return;
+      }
+      glideBack();
+    },
+    cancel: glideBack,
+  });
 }

@@ -117,6 +117,12 @@ public sealed partial class PhotonHost
     private void TickContext(float timeMs)
     {
         if (_contextHold is not { } hold) return;
+        // A hold that lifted a sortable item is the lift's (250 ms, before this one's 500): it asks for nothing.
+        if (_sort is { Active: true })
+        {
+            _contextHold = null;
+            return;
+        }
         if (hold.PressedAtMs is not { } pressedAt)
         {
             _contextHold = hold with { PressedAtMs = timeMs };

@@ -274,6 +274,11 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     public Nothing Visit(DropTarget node, EmitState s) { Descend(s); return Nothing.Value; }
     // Registers where it was drawn, for the host to answer a request for its menu by (#1531).
     public Nothing Visit(ContextTarget node, EmitState s) { EmitContextTarget(node, s); return Nothing.Value; }
+
+    // Each registers where it was drawn for the host to carry an item by, and a carried item is dimmed in
+    // its place under the copy that follows the pointer (#1537).
+    public Nothing Visit(Sortable node, EmitState s) { EmitSortable(node, s); return Nothing.Value; }
+    public Nothing Visit(SortableItem node, EmitState s) { EmitSortableItem(node, s); return Nothing.Value; }
     public Nothing Visit(Shortcut node, EmitState s) { EmitShortcut(node, s); Descend(s); return Nothing.Value; }
 
     // ---- nodes that descend themselves, because HOW they descend is the point -----------------

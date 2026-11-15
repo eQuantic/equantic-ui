@@ -215,6 +215,7 @@ export { SheetSpans } from './SheetSpans';
 export { SheetSummary } from './SheetSummary';
 export { Skeleton } from './Skeleton';
 export { Slider } from './Slider';
+export { SortPlacement } from './SortPlacement';
 export { SparseTableSpans } from './SparseTableSpans';
 export { Spreadsheet } from './Spreadsheet';
 export { SpreadsheetsUI } from './SpreadsheetsUI';

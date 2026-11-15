@@ -174,6 +174,42 @@ public class ContextTargetHostTests
         page.Heard.Should().ContainSingle();
     }
 
+    private sealed class CardInAMenu : StatefulComponent
+    {
+        public List<ContextRequest> Heard { get; } = [];
+        public List<SortDrop?> Hovered { get; } = [];
+
+        public override VisualNode Build(ComponentContext context) =>
+            new ContextTarget(
+                new Sortable(
+                    new Column(gap: 8)
+                    {
+                        new SortableItem(new Box(new BoxStyle { Width = 300, Height = 40, Background = context.Theme.Surface }), "a"),
+                        new SortableItem(new Box(new BoxStyle { Width = 300, Height = 40, Background = context.Theme.Surface }), "b"),
+                    },
+                    "list", _ => { })
+                { OnHovered = drop => Hovered.Add(drop) },
+                r => Heard.Add(r));
+    }
+
+    [Fact]
+    public void AHoldThatLiftsASortableItem_IsTheLifts_AndAsksForNoMenu()
+    {
+        var page = new CardInAMenu();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        host.RenderFrame(new DisplayListBuilder(), 0);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        var card = Walk(host.LastFrame!.Root).First(n => n.Source is SortableItem).Bounds;
+
+        host.PressDown(card.X + 20, card.Y + 10, kind: PointerKind.Touch);
+        host.RenderFrame(new DisplayListBuilder(), 100);
+        host.RenderFrame(new DisplayListBuilder(), 100 + SortPlacement.HoldMs);
+        host.RenderFrame(new DisplayListBuilder(), 100 + ContextTarget.HoldMs + 50);
+
+        page.Hovered.Should().NotBeEmpty("the item was lifted");
+        page.Heard.Should().BeEmpty("the hold was the lift's");
+    }
+
     [Fact]
     public void AMouseHeldStill_IsAPress_NotARequest()
     {

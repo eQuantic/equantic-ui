@@ -27,6 +27,8 @@ import {
   BoxStyle,
   Column,
   ContextTarget,
+  Sortable,
+  SortableItem,
   Draggable,
   Drawing,
   DropTarget,
@@ -529,6 +531,18 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       node: new Select(['Lisboa'], 0, null, null, [new OptionGroup('A seguir', ['Braga', 'Faro'])]),
       presses: [0],
     },
+    'sortable-column': still(
+      new Sortable(
+        column(
+          0,
+          new SortableItem(new Text('a', 'bodyM', photonTheme.textPrimary), 'a'),
+          new SortableItem(new Text('b', 'bodyM', photonTheme.textPrimary), 'b'),
+        ),
+        'todo',
+        () => undefined,
+        { group: 'board', onHovered: () => undefined },
+      ),
+    ),
     'tree-opens': {
       node: Object.assign(
         new TreeView(

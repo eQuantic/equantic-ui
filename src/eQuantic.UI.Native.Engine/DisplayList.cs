@@ -337,6 +337,43 @@ public sealed class DisplayListBuilder
     }
 
     /// <summary>
+    /// The commands recorded since <paramref name="start"/>, with the textures they draw, as a
+    /// <see cref="Picture"/> any later frame can draw (<see cref="DrawPicture"/>).
+    /// </summary>
+    public Picture PictureFrom(int start)
+    {
+        var commands = CommandsFrom(start);
+        var textures = new TextureData?[commands.Length];
+        for (var i = 0; i < commands.Length; i++)
+        {
+            if (commands[i].Kind == DrawCommandKind.Texture) textures[i] = _textures[commands[i].TextureId];
+        }
+        return new Picture(commands, textures);
+    }
+
+    /// <summary>
+    /// Draws <paramref name="picture"/> again in this frame, every command moved by <paramref name="offset"/>:
+    /// a matrix in DEVICE space, applied after the transform each command was baked with, as
+    /// <see cref="Replay"/> applies it. Each texture is registered in this frame's table, so a text recorded
+    /// in another frame draws its own glyphs here. A baked clip moves by the offset's translation: exact for a
+    /// translation, and approximate under a rotation, as the builder's own clip is (<see cref="PushClip"/>).
+    /// </summary>
+    public void DrawPicture(Picture picture, in Matrix2D offset)
+    {
+        var commands = picture.Commands;
+        var textures = picture.Textures;
+        for (var i = 0; i < commands.Length; i++)
+        {
+            Replay(textures[i] is { } texture
+                ? commands[i] with { TextureId = RegisterTexture(texture) }
+                : commands[i], offset);
+        }
+    }
+
+    /// <summary>The transform commands are baked with now: every transform pushed and not popped, composed.</summary>
+    public Matrix2D CurrentTransform => _current;
+
+    /// <summary>
     /// Re-records an ALREADY-BAKED command (a presence-exit replay), shifted by
     /// <paramref name="offset"/> — a pure translation in DEVICE space, which also moves the baked
     /// clip so clipped content travels with its own pixels.

@@ -48,6 +48,8 @@ public class SharedComponentTranspilationTests
         EngineSources(RepoRoot())
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Forms"), "*.cs"))
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Elements"), "*.cs"))
+            // The arithmetic of a sort (#1537): the browser's controller and the Photon host place an item by it.
+            .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Sorting"), "*.cs"))
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
 

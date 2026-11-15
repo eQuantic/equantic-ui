@@ -25,6 +25,7 @@ export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
 import { installDraggableController } from '../dom/draggable';
+import { installSortableController } from '../dom/sortable';
 import { dropHandlers, installDropGuard } from '../dom/file-drop';
 import { installContextController } from '../dom/context-request';
 import { MOUNTED_HOOK, clickWithEvent } from '../dom/reconciler';
@@ -109,6 +110,9 @@ import type {
   HoverableNode,
   DropTargetNode,
   ContextTargetNode,
+  SortableItemNode,
+  SortDropValue,
+  SortableNode,
   InFlowNode,
   InheritedNode,
   InViewNode,
@@ -784,6 +788,10 @@ function lowerNodeKind(
       return lowerDropTarget(node as unknown as DropTargetNode, context, path);
     case 'contextTarget':
       return lowerContextTarget(node as unknown as ContextTargetNode, context, path);
+    case 'sortable':
+      return lowerSortable(node as unknown as SortableNode, context, horizontalAxis, path);
+    case 'sortableItem':
+      return lowerSortableItem(node as unknown as SortableItemNode, context, horizontalAxis, path);
     case 'simulated':
       return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
     case 'inFlow':
@@ -4163,6 +4171,8 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'hoverable':
     case 'dropTarget':
     case 'contextTarget':
+    case 'sortable':
+    case 'sortableItem':
     case 'adjustable':
     case 'progress':
     case 'liveRegion':
@@ -4232,6 +4242,10 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as DropTargetNode).child);
     case 'contextTarget':
       return fills((node as ContextTargetNode).child);
+    case 'sortable':
+      return fills((node as unknown as SortableNode).child);
+    case 'sortableItem':
+      return fills((node as unknown as SortableItemNode).child);
     case 'simulated':
       return fills((node as SimulatedNode).child);
     case 'inFlow':
@@ -5652,4 +5666,75 @@ function lowerDropTarget(node: DropTargetNode, context: LoweringContext, path: s
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
+}
+
+/**
+ * A list a pointer sorts (#1535, C# twin: LowerSortable): no element of its own, its CHILD marked as the
+ * list the sortable controller finds, and the controller's custom events turned into the C# callbacks.
+ */
+function lowerSortable(
+  node: SortableNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
+  if (!child) return null;
+  child.attributes['data-eq-sort'] = node.group ?? '';
+  child.attributes['data-eq-sort-id'] = node.id;
+  child.attributes['data-eq-sort-axis'] = node.axis === 'horizontal' ? 'x' : 'y';
+  if (node.label) {
+    child.attributes['data-eq-sort-label'] = node.label;
+    // A named list is a labelled group to a reader, unless what it marks already says what it is (a
+    // tree's host). C# twin: LowerSortable.
+    if (child.attributes['role'] === undefined) {
+      child.attributes['role'] = 'group';
+      if (child.attributes['aria-label'] === undefined) child.attributes['aria-label'] = node.label;
+    }
+  }
+  if (node.nests) child.attributes['data-eq-sort-nests'] = '1';
+  if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
+  const dropped = node.onDropped;
+  child.events['eq-sort-dropped'] = ((ev: Event) =>
+    dropped((ev as CustomEvent<SortDropValue>).detail)) as unknown as EventHandler;
+  if (node.onHovered) {
+    const hovered = node.onHovered;
+    child.events['eq-sort-hovered'] = ((ev: Event) =>
+      hovered((ev as CustomEvent<SortDropValue | null>).detail ?? null)) as unknown as EventHandler;
+  }
+  if (node.accepts) {
+    const accepts = node.accepts;
+    child.events['eq-sort-accepts'] = ((ev: Event) => {
+      const question = (ev as CustomEvent<{ drop: SortDropValue; accepted: boolean }>).detail;
+      question.accepted = accepts(question.drop);
+    }) as unknown as EventHandler;
+  }
+  installSortableController();
+  return child;
+}
+
+/** The elements that take the keyboard's focus of their own. */
+const FOCUSABLE_TAGS = new Set(['button', 'a', 'input', 'select', 'textarea']);
+
+/**
+ * One item a pointer picks up (#1535, C# twin: LowerSortableItem): its child marked with the item's id,
+ * and a target for the pointer, which `none` from a transparent row above would otherwise take away.
+ */
+function lowerSortableItem(
+  node: SortableItemNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
+  if (!child) return null;
+  replaceAtomicDeclaration(child, 'pointer-events', 'auto');
+  child.attributes['data-eq-sort-item'] = node.id;
+  if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
+  // The keyboard sorts an item from its focus (#1536): one that takes none of its own becomes a Tab stop
+  // (the C# twin decides by the same tags).
+  else if (child.attributes['tabindex'] === undefined && !FOCUSABLE_TAGS.has(child.tag))
+    child.attributes['tabindex'] = '0';
+  installSortableController();
+  return child;
 }
