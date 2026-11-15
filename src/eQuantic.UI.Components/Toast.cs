@@ -30,22 +30,25 @@ public sealed class Toast : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The notices' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
+        var slot = theme.Notice;
+        var text = slot?.ToastText ?? theme.TextInverse;
 
-        var row = new Row(gap: Space.S3) { Cross = CrossAlign.Center };
+        var row = new Row(gap: slot?.ToastGap ?? Space.S3) { Cross = CrossAlign.Center };
         // The status dot: the one splash of role color on the inverse pill.
         row.Add(new Box(new BoxStyle
         {
-            Width = 8, Height = 8,
+            Width = slot?.ToastDot ?? 8, Height = slot?.ToastDot ?? 8,
             Background = theme.Colors(Status).Base,
             CornerRadius = new CornerRadii(Radius.Full),
         }));
-        row.Add(new Text(Message, TypeRole.BodyM, theme.TextInverse, maxLines: 2));
+        row.Add(new Text(Message, TypeRole.BodyM, text, maxLines: 2));
         if (ActionLabel is { } label)
         {
             row.Add(new Pressable(new Box(new BoxStyle
             {
                 Padding = EdgeInsets.Symmetric(Space.S2, Space.S1),
-            }, new Text(label, TypeRole.Label, theme.TextInverse)), OnAction)
+            }, new Text(label, TypeRole.Label, text)), OnAction)
             {
                 Label = label,
             });
@@ -53,11 +56,11 @@ public sealed class Toast : StatelessComponent
 
         var pill = new Box(new BoxStyle
         {
-            Background = theme.TextPrimary,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-            Elevation = 3,
-            Padding = EdgeInsets.Symmetric(Space.S4, Space.S3),
-            MaxWidth = 480,
+            Background = slot?.ToastFill ?? theme.TextPrimary,
+            CornerRadius = new CornerRadii(theme.Shape(slot?.ToastShape ?? ShapeScale.Full)),
+            Elevation = slot?.ToastElevation ?? 3,
+            Padding = slot?.ToastPadding ?? EdgeInsets.Symmetric(Space.S4, Space.S3),
+            MaxWidth = slot?.ToastMaxWidth ?? 480,
         }, row);
 
         var anchor = new Column(gap: 0)
@@ -66,7 +69,7 @@ public sealed class Toast : StatelessComponent
             Height = SizeValue.Fill,
             Main = MainAlign.End,
             Cross = CrossAlign.Center,
-            Padding = EdgeInsets.Symmetric(Space.S4, Space.S6),
+            Padding = slot?.ToastMargin ?? EdgeInsets.Symmetric(Space.S4, Space.S6),
         };
         // Spec C4: a POLITE live region — the toast tells the user what just happened and must not
         // cut off whatever a reader is saying. It wraps the PILL rather than the layer: the layer

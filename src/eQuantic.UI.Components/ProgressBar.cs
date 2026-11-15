@@ -82,7 +82,11 @@ public sealed class ProgressBar : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var height = Prominent ? 8f : 4f;
+        // The progress slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
+        var slot = theme.Progress;
+        var height = Prominent ? slot?.ProminentBarHeight ?? 8f : slot?.BarHeight ?? 4f;
+        var ends = new CornerRadii(theme.Shape(slot?.BarShape ?? ShapeScale.Full));
+        var trackColor = slot?.TrackColor ?? theme.SurfaceSubtle;
 
         if (Value is { } value)
         {
@@ -95,8 +99,8 @@ public sealed class ProgressBar : StatefulComponent
             {
                 Width = SizeValue.Fill,
                 Height = height,
-                Background = theme.SurfaceSubtle,
-                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
+                Background = trackColor,
+                CornerRadius = ends,
             };
             if (filledWeight > 0)
             {
@@ -104,7 +108,7 @@ public sealed class ProgressBar : StatefulComponent
                 {
                     Height = height,
                     Background = theme.Colors(Variant).Base,
-                    CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
+                    CornerRadius = ends,
                 }), filledWeight)
                 {
                     AnimateChanges = animate,
@@ -137,7 +141,7 @@ public sealed class ProgressBar : StatefulComponent
         {
             Height = height,
             Background = theme.Colors(Variant).Base,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
+            CornerRadius = ends,
         }), 300));
         segment.Add(new Spacer(700));
 
@@ -147,8 +151,8 @@ public sealed class ProgressBar : StatefulComponent
         {
             Width = SizeValue.Fill,
             Height = height,
-            Background = theme.SurfaceSubtle,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
+            Background = trackColor,
+            CornerRadius = ends,
             Clip = true,
         }, new LoopMotion(segment, LoopEffect.SlideX, SweepFromX, SweepToX, SweepDurationMs)))
         {

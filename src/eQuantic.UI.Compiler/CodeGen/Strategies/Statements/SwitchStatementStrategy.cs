@@ -30,10 +30,18 @@ public class SwitchStatementStrategy : IStatementStrategy
         var expr = context.Converter.ConvertIr(switchStmt.Expression);
         // A DECIMAL label takes the chain too: JavaScript's switch compares by `===`, which never
         // matches the runtime's Decimal, an object (PatternConverter.ConstantMatch).
+        // A member or a float a label compares with a value held as object is a box, which `===` never matches.
         var usesPatterns = switchStmt.Sections
             .SelectMany(s => s.Labels)
             .Any(l => l is CasePatternSwitchLabelSyntax
-                || (l is CaseSwitchLabelSyntax && PatternConverter.DecimalConstant(l, context) is not null));
+                || (l is CaseSwitchLabelSyntax && PatternConverter.DecimalConstant(l, context) is not null)
+                || (l is CaseSwitchLabelSyntax && Boxing.BoxedConstant(context.SemanticHelper.GetOperation(l) switch
+                {
+                    Microsoft.CodeAnalysis.Operations.ISingleValueCaseClauseOperation single => single.Value,
+                    Microsoft.CodeAnalysis.Operations.IPatternCaseClauseOperation
+                        { Pattern: Microsoft.CodeAnalysis.Operations.IConstantPatternOperation pattern } => pattern.Value,
+                    _ => null,
+                }) is not null));
 
         return JsStatement.Hoisted(declared, usesPatterns
             ? ConvertAsIfChain(switchStmt, expr, context)

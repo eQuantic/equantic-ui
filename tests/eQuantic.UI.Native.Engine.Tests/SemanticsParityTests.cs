@@ -17,8 +17,8 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// compared them whole, which is how a radio, a tab and three more roles were a Button on every native
 /// platform with every suite green.
 /// <para>
-/// THE SET IS DERIVED, never listed: every public component of every assembly beside this test that
-/// references the vocabulary, built with plausible arguments (<see cref="FactoryArguments"/>), and a
+/// THE SET IS DERIVED, never listed: every component of <see cref="ComponentCatalog"/>, built with
+/// plausible arguments (<see cref="FactoryArguments"/>) or the catalog's override, and a
 /// <see cref="Pressable"/> in every <see cref="PressableRole"/>. A component a screen reader hears
 /// nothing from on either target has no semantic role and compares nothing. The curated cases below
 /// add what plausible arguments cannot: real content, and a disclosure opened before the reading.
@@ -82,8 +82,8 @@ public class SemanticsParityTests(ITestOutputHelper output)
 
         compared.Should().BeGreaterThan(40, "the derived set reaches every component with a semantic role");
 
-        var path = BaselinePath();
-        var baseline = ReadBaseline(path);
+        var path = ShrinkingBaseline.PathOf("semantics-parity.baseline.txt");
+        var baseline = ShrinkingBaseline.Read(path);
         var unexplained = found.Where(entry => !baseline.ContainsKey(entry)).ToList();
         var stale = baseline.Keys.Where(entry => !found.Contains(entry)).ToList();
 
@@ -92,7 +92,7 @@ public class SemanticsParityTests(ITestOutputHelper output)
         foreach (var entry in stale) output.WriteLine($"stale: {entry}");
 
         if (Environment.GetEnvironmentVariable(UpdateVariable) == "1" && stale.Count > 0)
-            WriteBaseline(path, baseline.Where(pair => found.Contains(pair.Key)));
+            ShrinkingBaseline.Write(path, baseline.Where(pair => found.Contains(pair.Key)));
 
         string.Join(Environment.NewLine, unexplained).Should().BeEmpty(
             "a component says the same thing to a screen reader on every target; a difference that is right "
@@ -109,29 +109,11 @@ public class SemanticsParityTests(ITestOutputHelper output)
         foreach (var role in Enum.GetValues<PressableRole>())
             yield return new Subject($"Pressable({role})",
                 () => new Pressable(new Text("Choose"), () => { }) { Role = role });
-        var overrides = Overrides().ToDictionary(subject => subject.Name, StringComparer.Ordinal);
-        foreach (var type in Components())
-            yield return overrides.GetValueOrDefault(type.FullName!) ?? Derived(type);
+        foreach (var type in ComponentCatalog.Components)
+            yield return ComponentCatalog.Overrides.TryGetValue(type, out var build)
+                ? new Subject(type.FullName!, build)
+                : Derived(type);
     }
-
-    /// <summary>
-    /// The components plausible arguments cannot read, built here instead and compared IN THEIR PLACE in
-    /// the derived set: a navigation refuses an empty list of destinations, a dialog an empty row of
-    /// actions, a list beside a detail a list that builds nothing; and a calendar left without a date
-    /// shows the month the clock says, so a difference in it would name another month every month.
-    /// </summary>
-    private static IEnumerable<Subject> Overrides()
-    {
-        NavItem[] destinations = [new(Icons.Person, "Profile"), new(Icons.Search, "Search"), new(Icons.Heart, "Saved")];
-        yield return Instead<BottomNavigation>(() => new BottomNavigation(destinations, 1, _ => { }));
-        yield return Instead<NavigationRail>(() => new NavigationRail(destinations, 0, _ => { }));
-        yield return Instead<ListDetail>(() => new ListDetail(() => new Text("Inbox"), () => new Text("Message")));
-        yield return Instead<Dialog>(() => Page(new Dialog("Sign out?", "You can sign back in anytime.",
-            [new DialogAction("Stay", null, Variant.Ghost), new DialogAction("Sign out")])));
-        yield return Instead<eQuantic.UI.Components.Calendar>(() => new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17), _ => { }));
-    }
-
-    private static Subject Instead<T>(Func<VisualNode> build) where T : UiComponent => new(typeof(T).FullName!, build);
 
     /// <summary>The cases plausible arguments cannot make: real content, and an opened disclosure.</summary>
     private static IEnumerable<Subject> Curated()
@@ -149,7 +131,7 @@ public class SemanticsParityTests(ITestOutputHelper output)
             () => new Menu(new Button("More"), [new MenuItem("Rename"), new MenuItem("Delete")], _ => { }), Open: true);
         yield return new("case date-picker opened",
             () => new DatePicker(new DateOnly(2026, 7, 17), _ => { }, label: "Departure"), Open: true);
-        yield return new("case alert-dialog", () => Page(new Dialog("Delete card?", "It cannot be undone.",
+        yield return new("case alert-dialog", () => ComponentCatalog.Page(new Dialog("Delete card?", "It cannot be undone.",
             [new DialogAction("Keep", null, Variant.Ghost), new DialogAction("Delete", null, Variant.Destructive)])));
         yield return new("case checkbox", () => new Checkbox(true, label: "Agree"));
         yield return new("case switch", () => new Switch(false));
@@ -195,47 +177,11 @@ public class SemanticsParityTests(ITestOutputHelper output)
         return viewport;
     }
 
-    private static VisualNode Page(VisualNode layer)
-    {
-        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
-        page.Add(new Text("Cards", TypeRole.Title));
-        page.Add(layer);
-        return page;
-    }
-
     /// <summary>A component of an assembly beside this test, built through its widest constructor.</summary>
-    private static Subject Derived(Type type)
-    {
-        var constructor = type.GetConstructors().MaxBy(candidate => candidate.GetParameters().Length);
-        if (constructor is null)
-            return new(type.FullName!, () => throw new MissingMethodException("no public constructor to build it with"));
-        if (!FactoryArguments.For(constructor.GetParameters(), out var arguments, out var why))
-            return new(type.FullName!, () => throw new MissingMethodException(why));
-        return new(type.FullName!, () => (VisualNode)constructor.Invoke(arguments));
-    }
-
-    /// <summary>Every public, concrete component of every assembly beside this test that references the
-    /// vocabulary. Derived from the build output, never listed.</summary>
-    private static IEnumerable<Type> Components()
-    {
-        var vocabulary = typeof(VisualNode).Assembly.GetName().Name;
-        var types = new List<Type>();
-        foreach (var path in Directory.EnumerateFiles(AppContext.BaseDirectory, "eQuantic.*.dll"))
-        {
-            if (Path.GetFileNameWithoutExtension(path).EndsWith(".Tests", StringComparison.Ordinal)) continue;
-            Assembly assembly;
-            try { assembly = Assembly.LoadFrom(path); }
-            catch (BadImageFormatException) { continue; }
-            catch (FileLoadException) { continue; }
-            if (assembly.GetReferencedAssemblies().All(reference => reference.Name != vocabulary)) continue;
-            Type[] exported;
-            try { exported = assembly.GetExportedTypes(); }
-            catch (Exception) { continue; }
-            types.AddRange(exported.Where(type => typeof(UiComponent).IsAssignableFrom(type)
-                && type is { IsAbstract: false, ContainsGenericParameters: false }));
-        }
-        return types.Distinct().OrderBy(type => type.FullName, StringComparer.Ordinal);
-    }
+    private static Subject Derived(Type type) =>
+        ComponentCatalog.TryWidest(type, out var constructor, out var arguments, out var why)
+            ? new(type.FullName!, () => (VisualNode)constructor!.Invoke(arguments))
+            : new(type.FullName!, () => throw new MissingMethodException(why));
 
     // ---- the comparison --------------------------------------------------------------------------
 
@@ -381,36 +327,5 @@ public class SemanticsParityTests(ITestOutputHelper output)
             host.Unmount();
             (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture) = (culture, uiCulture);
         }
-    }
-
-    // ---- the baseline ----------------------------------------------------------------------------
-
-    private static string BaselinePath()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Directory.Build.props"))) dir = dir.Parent;
-        return Path.Combine(dir!.FullName, "tests", "eQuantic.UI.Native.Engine.Tests", "Coverage", "semantics-parity.baseline.txt");
-    }
-
-    /// <summary>Each entry and its reason: the entry runs to the first two spaces, the reason after.</summary>
-    private static Dictionary<string, string> ReadBaseline(string path)
-    {
-        var entries = new Dictionary<string, string>(StringComparer.Ordinal);
-        if (!File.Exists(path)) return entries;
-        foreach (var line in File.ReadLines(path))
-        {
-            if (line.Length == 0 || line.StartsWith('#')) continue;
-            var split = line.IndexOf("  ", StringComparison.Ordinal);
-            if (split < 0) entries[line] = "";
-            else entries[line[..split]] = line[(split + 2)..];
-        }
-        return entries;
-    }
-
-    private static void WriteBaseline(string path, IEnumerable<KeyValuePair<string, string>> kept)
-    {
-        var header = File.ReadLines(path).TakeWhile(line => line.StartsWith('#'));
-        File.WriteAllLines(path, header.Concat(kept.OrderBy(pair => pair.Key, StringComparer.Ordinal)
-            .Select(pair => $"{pair.Key}  {pair.Value}")));
     }
 }

@@ -6,8 +6,8 @@ namespace eQuantic.UI.Compiler.Tests;
 /// <summary>
 /// An app's component that reads an inherited value compiles for the browser (#1095): the inherited
 /// component is a vocabulary node an app subclasses, and <c>context.DependOn&lt;T&gt;()</c> and
-/// <c>Find&lt;T&gt;()</c> reach the runtime's context, which answers null until the browser builds an
-/// element per position (#1395). Built as an app is built, so the model binds both calls to the
+/// <c>Find&lt;T&gt;()</c> reach the runtime's context with <c>T</c>'s twin, which the browser's position
+/// looks the value up by (#1395). Built as an app is built, so the model binds both calls to the
 /// context's members and no strategy claims one by its name (a list's <c>Find</c>).
 /// </summary>
 public class AnInheritedValueReadInTheBrowserTests
@@ -53,6 +53,10 @@ public class AnInheritedValueReadInTheBrowserTests
 
         built.Errors.Split('\n').Where(line => line.Contains(": error ", StringComparison.Ordinal))
             .Should().BeEmpty("an app reads its inherited values on every target");
-        built.Module("Reader").Should().Contain("context.dependOn(").And.Contain("context.find(");
+        // With the type's twin, which is what the browser looks the value up by (#1395): the type
+        // argument itself does not reach JavaScript, and a lookup handed nothing found nothing.
+        var reader = built.Module("Reader");
+        reader.Should().Contain("context.dependOn(Score)").And.Contain("context.find(Score)");
+        reader.Should().MatchRegex(@"import \{[^}]*\bScore\b[^}]*\} from", "the twin it names is imported");
     }
 }

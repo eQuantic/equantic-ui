@@ -131,7 +131,7 @@
     {
       "id": "contrast-levels",
       "name": "Contrast levels (Standard / More)",
-      "status": "request",
+      "status": "shipped",
       "probe": {
         "apiContains": "ContrastLevel",
         "in": "eQuantic.UI.Primitives"

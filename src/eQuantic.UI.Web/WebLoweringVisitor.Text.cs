@@ -509,6 +509,14 @@ internal sealed partial class WebLoweringVisitor
             element.Style.LetterSpacing = TokenCss.LetterSpacing(style);
         }
 
+        // Drawn and never read, unless a run of it links somewhere: a link hidden from a reader that a
+        // keyboard still reaches is a trap. Photon's SemanticsVisitor.HiddenFromReaders reads the same.
+        if (text.ExcludeFromSemantics && !(text.Spans?.Any(run => run.Destination is { Length: > 0 }) ?? false))
+        {
+            element.RawAttributes ??= new Dictionary<string, string>();
+            element.RawAttributes["aria-hidden"] = "true";
+        }
+
         return element;
     }
 }

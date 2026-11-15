@@ -1,4 +1,4 @@
-import { Avatar, Box, BoxStyle, BuildContext, Column, EdgeInsets, Flexible, Icon, Pressable, Row, SizeValue, Sizing, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNode } from "../runtime-exports";
+import { Avatar, Box, BoxStyle, BuildContext, Column, EdgeInsets, Flexible, Icon, Pressable, Row, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class ListItem extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.ListItem';
@@ -11,14 +11,6 @@ export class ListItem extends StatelessComponent {
     declare trailing: any;
     declare selected: boolean;
     declare subtitleLines: number;
-
-    get minHeight() {
-        return this.subtitle == null ? 52 : this.subtitleLines >= 2 ? 88 : 68;
-    }
-
-    get contentInset() {
-        return this.leading == null ? 16 : Math.fround(Math.fround(16 + ListItem.slotWidth(this.leading, this.leadingWidth)) + 12);
-    }
 
     constructor(title?: any, subtitle: any = null, onPressed: any = null, props?: any) {
         super();
@@ -37,22 +29,34 @@ export class ListItem extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let content = new Column(2);
-        content.add(new Text(this.title, 'bodyM', theme.textPrimary, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(15, 20, 'medium', 0, Math.fround(1.3)) }));
+        let slot = theme.list;
+        let quietFill = slot?.quietFill ?? theme.surfaceSubtle;
+        let content = new Column(slot?.textGap ?? 2);
+        content.add(new Text(this.title, 'bodyM', slot?.titleColor ?? theme.textPrimary, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(slot?.titleSize ?? 15, slot?.titleLineHeight ?? 20, slot?.titleWeight ?? 'medium', 0, Math.fround(1.3)) }));
         let subtitle: any; 
-        if ((subtitle = this.subtitle) != null) content.add(new Text(subtitle, 'caption', theme.textSecondary, this.subtitleLines >= 2 ? 2 : 1));
-        let row = new Row(12, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center', padding: EdgeInsets.symmetric(16, 8) });
+        if ((subtitle = this.subtitle) != null) content.add(new Text(subtitle, 'caption', slot?.subtitleColor ?? theme.textSecondary, this.subtitleLines >= 2 ? 2 : 1));
+        let row = new Row(slot?.itemGap ?? 12, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center', padding: EdgeInsets.symmetric(slot?.itemPaddingX ?? 16, slot?.itemPaddingY ?? 8) });
         let leading: any; 
         if ((leading = this.leading) != null) row.add(leading);
         row.add(new Flexible(content));
         let trailing: any; 
         if ((trailing = this.trailing) != null) row.add(trailing);
-        let body = new Box(new BoxStyle({ width: SizeValue.fill, minHeight: this.minHeight, background: this.selected ? theme.colors('primary').subtle : null, hover: this.onPressed == null || this.selected ? null : new StyleDiff({ background: theme.surfaceSubtle }), pressed: this.onPressed == null || this.selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row);
+        let body = new Box(new BoxStyle({ width: SizeValue.fill, minHeight: this.minHeight(slot), background: this.selected ? theme.colors('primary').subtle : null, hover: this.onPressed == null || this.selected ? null : new StyleDiff({ background: quietFill }), pressed: this.onPressed == null || this.selected ? null : new StyleDiff({ background: quietFill }) }), row);
         return this.onPressed == null ? body : new Pressable(body, this.disabled ? null : this.onPressed, { disabled: this.disabled, label: this.title, role: this.selected ? 'destination' : 'button', selected: this.selected ? true : null });
     }
 
-    static slotWidth(leading: VisualNode, declared: number) {
-        return (() => { const $s = leading; if ($s instanceof Icon) { const icon = $s; return icon.size; } if ($s instanceof Avatar) { const avatar = $s; return Sizing.avatar(avatar.size); } return declared; })();
+    minHeight(slot: any) {
+        return this.subtitle == null ? slot?.itemHeight ?? 52 : this.subtitleLines >= 2 ? slot?.threeLineItemHeight ?? 88 : slot?.twoLineItemHeight ?? 68;
+    }
+
+    contentInset(theme: any) {
+        let slot = theme.list;
+        let padding = slot?.itemPaddingX ?? 16;
+        return this.leading == null ? padding : Math.fround(Math.fround(padding + ListItem.slotWidth(this.leading, this.leadingWidth, theme)) + (slot?.itemGap ?? 12));
+    }
+
+    static slotWidth(leading: VisualNode, declared: number, theme: any) {
+        return (() => { const $s = leading; if ($s instanceof Icon) { const icon = $s; return icon.size; } if ($s instanceof Avatar) { const avatar = $s; return Avatar.sideOf(theme, avatar.size); } return declared; })();
     }
 }
 

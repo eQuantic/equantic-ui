@@ -11,6 +11,7 @@
  * overflow names the target where a double's narrow width names an Int32.
  */
 import { boolConvert } from './boolean-text';
+import { unboxed } from './box';
 import { DateTime, timeTypeOf } from './datetime';
 import { Decimal } from './decimal';
 import { round } from './dotnet-math';
@@ -136,6 +137,7 @@ export function integerFromObject(value: unknown, type: LongType, invariant?: bo
 export function integerFromObject(value: unknown, type: NarrowType, invariant?: boolean): number;
 export function integerFromObject(value: unknown, type: IntegerType, invariant?: boolean): number | bigint;
 export function integerFromObject(value: unknown, type: IntegerType, invariant = false): number | bigint {
+  value = unboxed(value);
   const zero = type === 'long' || type === 'ulong' ? 0n : 0;
   if (value == null) return zero;
   if (typeof value === 'string') return intConvert(value, type, invariant);
@@ -150,6 +152,7 @@ export function integerFromObject(value: unknown, type: IntegerType, invariant =
 
 /** `Convert.ToDouble` and `ToSingle` of an `object`, read as {@link integerFromObject} reads one. */
 export function realFromObject(value: unknown, type: RealType, invariant = false): number {
+  value = unboxed(value);
   if (value == null) return 0;
   if (typeof value === 'string') return realConvert(value, type, invariant);
   if (typeof value === 'bigint' && type === 'single') return singleFromLong(value);
@@ -165,6 +168,7 @@ export function realFromObject(value: unknown, type: RealType, invariant = false
 /** `Convert.ToBoolean` of an `object`: a null is false, a text reads as `bool.Parse`, a number is
  * whether it is not zero, a NaN included. */
 export function booleanFromObject(value: unknown): boolean {
+  value = unboxed(value);
   if (value == null) return false;
   if (typeof value === 'string') return boolConvert(value);
   if (typeof value === 'boolean') return value;
@@ -194,6 +198,7 @@ export function charFromText(value: string | null): string {
 /** `Convert.ToChar` of an `object`: a null is the zero char, and an integer its code unit. A bool, a
  * real number and a decimal have no conversion to a char. */
 export function charFromObject(value: unknown): string {
+  value = unboxed(value);
   if (value == null) return '\0';
   if (typeof value === 'string') return charFromText(value);
   if (typeof value === 'bigint' || (typeof value === 'number' && Number.isInteger(value))) return charFrom(value);

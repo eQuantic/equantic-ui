@@ -33,7 +33,7 @@ public class TextTakesItsParentsWidthTests
     private static Rect Bar(VisualNode root)
     {
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(root, 400, 300, Theme, ThemeMode.Light, builder);
+        PhotonRealizer.Realize(root, 400, 300, Theme, ThemeMode.Light, ContrastLevel.Standard, builder);
         return builder.Build().Commands.ToArray()
             .Single(c => c.Kind == DrawCommandKind.FillRRect).Shape.Rect;
     }

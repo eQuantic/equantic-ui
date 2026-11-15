@@ -186,6 +186,9 @@ describe('the faces of a family a page names', () => {
   // The two places a page meets a family: the text it lowers and the text it measures, each before the
   // other may run, so each declares it.
   it('declares the family a text names when it is lowered, and when it is measured', async () => {
+    // The modules were reset, so the runtime is loaded again as the bundle loads it: the lowering
+    // builds through the element engine its export barrel registers (element-engine.ts).
+    await import('./runtime-exports');
     const { lowerVisualNode } = await import('./lowering');
     const { measurePhotonText } = await import('./photon-context');
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({

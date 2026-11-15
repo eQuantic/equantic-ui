@@ -197,7 +197,7 @@ public class FormControlSlotsTests
 
     private static bool FellBack(VisualNode node, IAppTheme theme)
     {
-        var result = PhotonRealizer.Realize(node, 400, 400, theme, ThemeMode.Light, new DisplayListBuilder());
+        var result = PhotonRealizer.Realize(node, 400, 400, theme, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder());
         return Any(result.Root, n => n.Source is Text { Content: var content }
             && (content.Contains("could not be displayed", StringComparison.Ordinal)
                 || content.Contains("failed to render", StringComparison.Ordinal)));
@@ -215,7 +215,7 @@ public class FormControlSlotsTests
 
     private static List<Rect> Boxes(VisualNode node, IAppTheme theme, Density density)
     {
-        var result = PhotonRealizer.Realize(node, 400, 400, theme, ThemeMode.Light, new DisplayListBuilder(),
+        var result = PhotonRealizer.Realize(node, 400, 400, theme, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder(),
             density: density);
         var found = new List<Rect>();
         Walk(result.Root, found);

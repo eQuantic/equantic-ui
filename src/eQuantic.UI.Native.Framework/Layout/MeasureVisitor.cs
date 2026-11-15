@@ -235,6 +235,12 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(LiveRegion node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
 
+    // The sixth wrapper that emits a host of its own, inlined for the LiveRegion's reason: `LowerGroup`
+    // gives the host `fit-content` when the child does not ask to fill, and the box a reader outlines
+    // has to be the box Photon lays out.
+    public LayoutNode Visit(Group node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
+
     // INLINED like the three wrappers above it, and the reason this comment once said otherwise is
     // worth keeping: "a progress bar reports across whatever it is given" sounds right and is not
     // what the other target does. `LowerProgress` gives the host `fit-content` when the child does

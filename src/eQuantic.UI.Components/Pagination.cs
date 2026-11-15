@@ -23,8 +23,6 @@ public sealed class Pagination : StatelessComponent
     /// <summary>Up to this many pages, every number is shown — eliding would save nothing.</summary>
     public const int AlwaysShow = 7;
 
-    private const float Cell = 30;
-
     public Pagination(int pageCount, int currentPage, Action<int>? onChanged = null)
     {
         PageCount = pageCount;
@@ -41,8 +39,10 @@ public sealed class Pagination : StatelessComponent
     {
         var theme = context.Theme;
         var current = Math.Clamp(CurrentPage, 1, Math.Max(1, PageCount));
+        // The theme's Navigation slot, then the component's own (§3.10).
+        var slot = theme.Navigation;
 
-        var numbers = new Row(gap: 3) { Cross = CrossAlign.Center };
+        var numbers = new Row(gap: slot?.PageGap ?? 3) { Cross = CrossAlign.Center };
         var previous = 0;
         foreach (var page in Pages(PageCount, current))
         {
@@ -51,7 +51,7 @@ public sealed class Pagination : StatelessComponent
             previous = page;
         }
 
-        var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
+        var row = new Row(gap: slot?.PaginationGap ?? Space.S2) { Cross = CrossAlign.Center };
         row.Add(Step("Previous", current > 1, () => OnChanged?.Invoke(current - 1)));
         row.Add(numbers);
         row.Add(Step("Next", current < PageCount, () => OnChanged?.Invoke(current + 1)));
@@ -86,6 +86,8 @@ public sealed class Pagination : StatelessComponent
 
     private VisualNode Number(IAppTheme theme, int page, bool current)
     {
+        var slot = theme.Navigation;
+        var cell = slot?.PageCellSize ?? 30;
         var centered = new Row(gap: 0)
         {
             Width = SizeValue.Fill,
@@ -94,18 +96,18 @@ public sealed class Pagination : StatelessComponent
             Cross = CrossAlign.Center,
         };
         centered.Add(new Text(page.ToString(), TypeRole.Caption,
-            current ? theme.Colors(Variant.Primary).OnBase : theme.TextSecondary, maxLines: 1)
+            current ? theme.Colors(Variant.Primary).OnBase : slot?.PageColor ?? theme.TextSecondary, maxLines: 1)
         {
             Tabular = true,
         });
 
         var box = new Box(new BoxStyle
         {
-            Width = Cell,
-            Height = Cell,
+            Width = cell,
+            Height = cell,
             Background = current ? theme.Colors(Variant.Primary).Base : null,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Small)),
-            Hover = current ? null : new StyleDiff { Background = theme.SurfaceSubtle },
+            CornerRadius = new CornerRadii(slot?.PageRadius ?? theme.Shape(ShapeScale.Small)),
+            Hover = current ? null : new StyleDiff { Background = slot?.QuietFill ?? theme.SurfaceSubtle },
             Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
         }, centered);
 
@@ -119,6 +121,8 @@ public sealed class Pagination : StatelessComponent
     /// <summary>The skipped run. Not a button — there is no single page it could mean.</summary>
     private static VisualNode Ellipsis(IAppTheme theme)
     {
+        var slot = theme.Navigation;
+        var cell = slot?.PageCellSize ?? 30;
         var centered = new Row(gap: 0)
         {
             Width = SizeValue.Fill,
@@ -126,8 +130,8 @@ public sealed class Pagination : StatelessComponent
             Main = MainAlign.Center,
             Cross = CrossAlign.Center,
         };
-        centered.Add(new Text("…", TypeRole.Caption, theme.TextMuted, maxLines: 1));
-        return new Box(new BoxStyle { Width = Cell, Height = Cell }, centered);
+        centered.Add(new Text("…", TypeRole.Caption, slot?.EllipsisColor ?? theme.TextMuted, maxLines: 1));
+        return new Box(new BoxStyle { Width = cell, Height = cell }, centered);
     }
 
     /// <summary>Previous / Next. Disabled at the ends — never removed, or the row reflows.</summary>

@@ -20,7 +20,7 @@ export class PullToRefresh extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let indicator = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: PullToRefresh.threshold, main: 'center', cross: 'center' });
-        indicator.add(new Spinner(20, theme.colors('primary').base));
+        indicator.add(new Spinner(theme.progress?.refreshSpinner ?? 20, theme.colors('primary').base));
         let content = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.background }), this.child);
         let stack = new Stack();
         stack.add(new Positioned(indicator, 0, 0, null, 0));

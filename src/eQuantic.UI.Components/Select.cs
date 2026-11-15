@@ -14,7 +14,15 @@ namespace eQuantic.UI.Components;
 /// is what makes the same lines work on both targets: each host's key pipeline already dispatches
 /// chords, and "on screen is the subscription" scopes them to exactly while the panel is up.
 /// </para>
-/// v1 fences: typeahead, option groups, multi-select, disabled options.
+/// <para>
+/// GROUPS: the ungrouped <see cref="Options"/> come first, then each of <see cref="Groups"/> under its
+/// heading, which every reader announces as a labelled <see cref="Group"/>. The index
+/// <see cref="SelectedIndex"/> names and <see cref="OnChanged"/> reports counts every option in that
+/// reading order, across the groups, as the web's own <c>select.selectedIndex</c> counts across its
+/// <c>optgroup</c>s; the arrows walk the same one list and never stop on a heading. A group whose
+/// label is empty draws no heading and wraps no group: a group with no name is noise to a reader.
+/// </para>
+/// v1 fences: typeahead, multi-select, disabled options.
 /// </summary>
 public sealed class Select : StatefulComponent
 {
@@ -24,16 +32,25 @@ public sealed class Select : StatefulComponent
     /// which is the app's committed value: arrowing around commits nothing until Enter.</summary>
     private int _highlight;
 
-    public Select(IReadOnlyList<string> options, int selectedIndex = -1,
-        Action<int>? onChanged = null, string? placeholder = null)
+    /// <summary>Every option in reading order, the one list an index counts in: settled when the
+    /// options arrive, in the constructor and in <see cref="AdoptConfig"/>.</summary>
+    private IReadOnlyList<string> _choices;
+
+    public Select(IReadOnlyList<string>? options = null, int selectedIndex = -1,
+        Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null)
     {
-        Options = options;
+        Options = options ?? [];
         SelectedIndex = selectedIndex;
         OnChanged = onChanged;
         Placeholder = placeholder;
+        Groups = groups ?? [];
+        _choices = Flatten(Options, Groups);
     }
 
+    /// <summary>The options outside every group, which lead the list.</summary>
     public IReadOnlyList<string> Options { get; private set; }
+    /// <summary>The groups of options after <see cref="Options"/>, each under its heading.</summary>
+    public IReadOnlyList<OptionGroup> Groups { get; private set; }
     public int SelectedIndex { get; private set; }
     public Action<int>? OnChanged { get; private set; }
     public string? Placeholder { get; private set; }
@@ -49,6 +66,10 @@ public sealed class Select : StatefulComponent
         SelectedIndex = fresh.SelectedIndex;
         OnChanged = fresh.OnChanged;
         Placeholder = fresh.Placeholder;
+        Groups = fresh.Groups;
+        _choices = fresh._choices;
+        // The list can shrink under an open panel: the keyboard stays on an option that exists.
+        _highlight = Math.Max(0, Math.Min(_highlight, _choices.Count - 1));
         _disabled = fresh.Disabled;
     }
 
@@ -65,10 +86,11 @@ public sealed class Select : StatefulComponent
         var radius = slot?.Radius ?? theme.Shape(ShapeScale.Medium);
         var borderWidth = slot?.BorderWidth ?? 1;
         var rowHeight = slot?.PanelRowHeight ?? height;
-        var hasValue = SelectedIndex >= 0 && SelectedIndex < Options.Count;
+        var choices = _choices;
+        var hasValue = SelectedIndex >= 0 && SelectedIndex < choices.Count;
 
         var fieldRow = new Row(gap: gap) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
-        fieldRow.Add(new Text(hasValue ? Options[SelectedIndex] : Placeholder ?? "Select…",
+        fieldRow.Add(new Text(hasValue ? choices[SelectedIndex] : Placeholder ?? "Select…",
             TypeRole.BodyM, hasValue ? theme.TextPrimary : theme.TextMuted, maxLines: 1));
         fieldRow.Add(new Flexible(new Spacer()));
         fieldRow.Add(new Icon(Icons.ChevronDown, IconSize.Sm, theme.TextSecondary));
@@ -86,39 +108,27 @@ public sealed class Select : StatefulComponent
             Hover = Disabled ? null : new StyleDiff { BorderColor = theme.Colors(Variant.Primary).Base },
         }, fieldRow);
 
+        // One index across the groups: a row is numbered in reading order wherever it stands.
         var list = new Column(gap: 0) { Width = SizeValue.Fill };
-        for (var i = 0; i < Options.Count; i++)
+        var index = 0;
+        foreach (var option in Options)
+            list.Add(OptionRow(theme, option, index++, gap, paddingX, rowHeight));
+        foreach (var group in Groups)
         {
-            var index = i;
-            var selected = i == SelectedIndex;
-
-            var row = new Row(gap: gap) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
-            row.Add(new Text(Options[i], TypeRole.BodyM,
-                selected ? theme.Colors(Variant.Primary).OnSubtle : theme.TextPrimary, maxLines: 1));
-            if (selected)
+            var rows = list;
+            // A group needs a name: one whose label is blank draws no heading and wraps no Group.
+            // One with no options has nothing to head, and is skipped like it.
+            if (group.Options.Count == 0) continue;
+            if (!string.IsNullOrWhiteSpace(group.Label))
             {
-                row.Add(new Flexible(new Spacer()));
-                row.Add(new Icon(Icons.Check, IconSize.Sm, theme.Colors(Variant.Primary).OnSubtle));
+                rows = new Column(gap: 0) { Width = SizeValue.Fill };
+                // The heading is the group's name, which the Group announces: drawn, and read once.
+                rows.Add(new Box(new BoxStyle { Padding = EdgeInsets.Symmetric(paddingX, Space.S1), Width = SizeValue.Fill },
+                    new Text(group.Label, TypeRole.Caption, theme.TextMuted, maxLines: 1) { ExcludeFromSemantics = true }));
+                list.Add(new Group(rows) { Label = group.Label });
             }
-
-            var highlighted = _open && i == _highlight;
-            list.Add(new Pressable(new Box(new BoxStyle
-            {
-                Height = rowHeight,
-                Padding = EdgeInsets.Symmetric(paddingX, 0),
-                Width = SizeValue.Fill,
-                // The keyboard's row wears the hover coat: one visual language for "you are here",
-                // whichever hand is steering.
-                Background = selected ? theme.Colors(Variant.Primary).Subtle
-                    : highlighted ? theme.SurfaceSubtle : null,
-                Hover = selected ? null : new StyleDiff { Background = theme.SurfaceSubtle },
-            }, row), () => Choose(index))
-            {
-                // An option is PICKED, like a tab — the check glyph is paint, aria-selected is
-                // the answer.
-                Role = PressableRole.Option,
-                Selected = selected,
-            });
+            foreach (var option in group.Options)
+                rows.Add(OptionRow(theme, option, index++, gap, paddingX, rowHeight));
         }
 
         var panel = new Box(new BoxStyle
@@ -145,20 +155,57 @@ public sealed class Select : StatefulComponent
             // the panel a role=listbox of numbered options, and the keyboard highlight rides
             // aria-activedescendant off the field — stated, not merely painted.
             PanelRole = AnchorPanelRole.Listbox,
-            ActiveIndex = _open ? _highlight : -1,
+            // No option, no active one: an empty listbox names nothing.
+            ActiveIndex = _open && _choices.Count > 0 ? _highlight : -1,
         };
 
         // The keyboard, exactly while the panel is up. Nested Shortcuts share one child root — the
         // realizers LIST the chords on it — and one that is not enabled binds nothing, so a closed
         // Select owns no keys at all. The chords stay around the tree whether it is open or not, so
         // opening moves nothing in it and the focus stays on the field (#567).
-        var live = _open && !Disabled && Options.Count > 0;
+        var live = _open && !Disabled && choices.Count > 0;
         select = new Shortcut(select, KeyChord.ArrowDown,
-            () => SetState(() => _highlight = Math.Min(Options.Count - 1, _highlight + 1))) { Enabled = live };
+            () => SetState(() => _highlight = Math.Min(choices.Count - 1, _highlight + 1))) { Enabled = live };
         select = new Shortcut(select, KeyChord.ArrowUp,
             () => SetState(() => _highlight = Math.Max(0, _highlight - 1))) { Enabled = live };
         select = new Shortcut(select, KeyChord.Enter, () => Choose(_highlight)) { Enabled = live };
         return select;
+    }
+
+    private static IReadOnlyList<string> Flatten(IReadOnlyList<string> options, IReadOnlyList<OptionGroup> groups) =>
+        [.. options, .. groups.SelectMany(group => group.Options)];
+
+    private Pressable OptionRow(IAppTheme theme, string option, int index, float gap, float paddingX, float rowHeight)
+    {
+        var selected = index == SelectedIndex;
+
+        var row = new Row(gap: gap) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
+        row.Add(new Text(option, TypeRole.BodyM,
+            selected ? theme.Colors(Variant.Primary).OnSubtle : theme.TextPrimary, maxLines: 1));
+        if (selected)
+        {
+            row.Add(new Flexible(new Spacer()));
+            row.Add(new Icon(Icons.Check, IconSize.Sm, theme.Colors(Variant.Primary).OnSubtle));
+        }
+
+        var highlighted = _open && index == _highlight;
+        return new Pressable(new Box(new BoxStyle
+        {
+            Height = rowHeight,
+            Padding = EdgeInsets.Symmetric(paddingX, 0),
+            Width = SizeValue.Fill,
+            // The keyboard's row wears the hover coat: one visual language for "you are here",
+            // whichever hand is steering.
+            Background = selected ? theme.Colors(Variant.Primary).Subtle
+                : highlighted ? theme.SurfaceSubtle : null,
+            Hover = selected ? null : new StyleDiff { Background = theme.SurfaceSubtle },
+        }, row), () => Choose(index))
+        {
+            // An option is PICKED, like a tab — the check glyph is paint, aria-selected is
+            // the answer.
+            Role = PressableRole.Option,
+            Selected = selected,
+        };
     }
 
     private void Toggle() => SetState(() =>
@@ -166,12 +213,12 @@ public sealed class Select : StatefulComponent
         _open = !_open;
         // The keyboard starts where the VALUE is — Enter straight away re-commits the current
         // choice, which is the no-surprise default the platforms share.
-        if (_open) _highlight = SelectedIndex >= 0 && SelectedIndex < Options.Count ? SelectedIndex : 0;
+        if (_open) _highlight = SelectedIndex >= 0 && SelectedIndex < _choices.Count ? SelectedIndex : 0;
     });
 
     private void Choose(int index)
     {
-        if (index < 0 || index >= Options.Count) return;
+        if (index < 0 || index >= _choices.Count) return;
         OnChanged?.Invoke(index);
         SetState(() => _open = false);
     }

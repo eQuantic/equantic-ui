@@ -50,6 +50,10 @@ public class PrimitiveEqualsStrategy : IExpressionIrStrategy
         if (home.SpecialType is SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal)
         {
             context.UsedHelpers.Add(Eq.Import);
+            // A float's Equals(object) is its box's: the argument was boxed for the call, so the receiver is too.
+            if (home.SpecialType == SpecialType.System_Single
+                && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [{ Type.SpecialType: SpecialType.System_Object }] })
+                receiver = Boxing.Box(home, receiver, context);
             return JsExpr.Call(JsExpr.Identifier(Eq.Equals), receiver, other);
         }
 

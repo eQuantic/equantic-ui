@@ -20,8 +20,9 @@ namespace eQuantic.UI.Primitives;
 /// row creates prefetchers that did not exist when the first round looked.
 /// </para>
 /// <para>
-/// The payload names each component <c>Type#ordinal</c> in that expansion order, and the client
-/// counts the same way as it builds, so each component is handed back its own fields. A tree that
+/// The payload names each component by where it stands, the tree, its type and the slots from the
+/// tree's root down to it, and the client reads the same position as it builds, so each component is
+/// handed back its own fields whatever order either side built in. A tree that
 /// somehow differs between the two sides leaves a component with its DEFAULTS rather than another
 /// component's data: the type in the key has to match before anything is written, and it is the
 /// type's full name, so two components called <c>Row</c> from different namespaces are two types.

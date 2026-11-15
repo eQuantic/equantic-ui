@@ -1,0 +1,109 @@
+# The cells of the variant matrix that cannot exist (VariantMatrixTests, #1247), each with its reason.
+# An entry runs to the first two spaces, and its reason follows. This file may ONLY SHRINK: an entry is
+# written by hand, and EQ_UPDATE_VARIANT_MATRIX=1 drops the entries that no longer occur, keeping every
+# reason, and never adds one. A control that gains a Variant or a SizeVariant loses its line here.
+Charts.BarChart: no SizeVariant  a chart fills the box it is given
+Charts.BarChart: no Variant  data is coloured by the theme's data palette (IAppTheme.Data), not by a variant
+Components.Accordion: no SizeVariant  its header stands at the large rung, and its sections are as tall as their content
+Components.Accordion: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
+Components.AppBar: no SizeVariant  a navigation is sized by its own specification and the Navigation slot, not by the control ladder
+Components.AppBar: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
+Components.Avatar: no Variant  its tint is derived from the name (spec B6), never chosen
+Components.Badge: no SizeVariant  a dot or a count at the Badge slot's own two sizes, not the control ladder
+Components.Banner: no SizeVariant  a notice spans what holds it: it has no control size
+Components.BottomNavigation: no SizeVariant  a navigation is sized by its own specification and the Navigation slot, not by the control ladder
+Components.BottomNavigation: no Variant  a navigation: the selection takes the primary colours and nothing else, so there is no variant to choose
+Components.BottomSheet: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
+Components.BottomSheet: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
+Components.Breadcrumb: no SizeVariant  a navigation is sized by its own specification and the Navigation slot, not by the control ladder
+Components.Breadcrumb: no Variant  a navigation: the selection takes the primary colours and nothing else, so there is no variant to choose
+Components.Calendar: no SizeVariant  a grid of days at the Calendar slot's cell (spec C15), not the control ladder
+Components.Calendar: no Variant  the selected day and today take the primary colours, and nothing else is chosen
+Components.Card: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
+Components.Card: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
+Components.Checkbox: no SizeVariant  sized by density alone, through the SelectionControls slot (spec B11 to B13, C7)
+Components.Checkbox: no Variant  a selection control: on is primary and off is the theme's border, so a variant would choose nothing
+Components.Chip: no SizeVariant  a chip is always as tall as a small control (spec B8)
+Components.CodeBlock: no Variant  code is coloured by the theme's code palette (IAppTheme.Code), not by a variant
+Components.CodeDiff: no Variant  code is coloured by the theme's code palette (IAppTheme.Code), not by a variant
+Components.CodeEditor: no Variant  code is coloured by the theme's code palette (IAppTheme.Code), not by a variant
+Components.CookieConsent: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
+Components.CookieConsent: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours; its two actions are buttons of their own
+Components.CultureSwitcher: no Variant  a menu of cultures, drawn in the theme's roles: there is no variant to choose
+Components.DataTable: no SizeVariant  rows at their family's own heights (the List and Table slots), not the control ladder
+Components.DataTable: no Variant  a layout of other components: the colours are theirs, and a selected row takes the primary subtle fill
+Components.DatePicker: no SizeVariant  a field stands at one rung of the control ladder, and density sizes it
+Components.DatePicker: no Variant  a field: its colours follow its state (primary while focused, destructive on an error), never a variant
+Components.DateTimePicker: no SizeVariant  a field stands at one rung of the control ladder, and density sizes it
+Components.DateTimePicker: no Variant  a field: its colours follow its state (primary while focused, destructive on an error), never a variant
+Components.Dialog: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
+Components.Dialog: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours; its actions carry their own variants
+Components.Divider: no SizeVariant  a hairline: its thickness is the List slot's
+Components.Divider: no Variant  a hairline in the theme's border (the List slot), never a variant
+Components.Drawer: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
+Components.Drawer: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
+Components.EmptyState: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
+Components.EmptyState: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours; its actions carry their own variants
+Components.FileUpload: no SizeVariant  a drop zone that fills its width
+Components.FileUpload: no Variant  a field: its colours follow its state (primary while focused, destructive on an error), never a variant
+Components.FormInput: no Variant  a field: its colours follow its state (primary while focused, destructive on an error), never a variant
+Components.IconButton: no Variant  its kinds (standard, filled, tonal, outlined) are IconButtonKind, Material 3's, not Variant
+Components.List: no SizeVariant  rows at their family's own heights (the List and Table slots), not the control ladder
+Components.List: no Variant  a layout of other components: the colours are theirs
+Components.ListDetail: no SizeVariant  a layout: the panes take the width the window gives
+Components.ListDetail: no Variant  a layout of other components: the colours are theirs
+Components.ListItem: no SizeVariant  rows at their family's own heights (the List and Table slots), not the control ladder
+Components.ListItem: no Variant  a row in the theme's roles; a selected one takes the primary subtle fill
+Components.ListView: no SizeVariant  rows at their family's own heights (the List and Table slots), not the control ladder
+Components.ListView: no Variant  a layout of other components: the colours are theirs
+Components.Markdown: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
+Components.Markdown: no Variant  a document in the theme's roles and its Markdown slot, never a variant
+Components.Menu: no SizeVariant  its items are the Menu's own rows, not the control ladder
+Components.Menu: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
+Components.Mermaid: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
+Components.Mermaid: no Variant  a diagram in the theme's roles, never a variant
+Components.NavigationRail: no SizeVariant  a navigation is sized by its own specification and the Navigation slot, not by the control ladder
+Components.NavigationRail: no Variant  a navigation: the selection takes the primary colours and nothing else, so there is no variant to choose
+Components.PageIndicator: no SizeVariant  dots at the Navigation slot's size, not the control ladder
+Components.Pagination: no SizeVariant  a navigation is sized by its own specification and the Navigation slot, not by the control ladder; its steps are small buttons
+Components.Pagination: no Variant  a navigation: the selection takes the primary colours and nothing else, so there is no variant to choose
+Components.Popover: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
+Components.Popover: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
+Components.ProgressBar: no SizeVariant  a track that fills its width at a fixed thickness
+Components.PullToRefresh: no SizeVariant  a gesture around its child, which sizes it
+Components.PullToRefresh: no Variant  a layout of other components: the colours are theirs
+Components.RadioGroup: no SizeVariant  sized by density alone, through the SelectionControls slot (spec B11 to B13, C7)
+Components.RadioGroup: no Variant  a selection control: on is primary and off is the theme's border, so a variant would choose nothing
+Components.SearchField: no SizeVariant  a field stands at one rung of the control ladder, and density sizes it
+Components.SearchField: no Variant  a field: its colours follow its state (primary while focused, destructive on an error), never a variant
+Components.SegmentedControl: no Variant  a selection control: on is primary and off is the theme's border, so a variant would choose nothing
+Components.Select: no SizeVariant  a field stands at one rung of the control ladder, and density sizes it
+Components.Select: no Variant  a field: its colours follow its state (primary while focused, destructive on an error), never a variant
+Components.Skeleton: no SizeVariant  it takes the size of what it stands in for
+Components.Skeleton: no Variant  a placeholder in the theme's subtle surface and its glint, never a variant
+Components.Slider: no SizeVariant  sized by density alone, through the SelectionControls slot (spec B11 to B13, C7)
+Components.Stepper: no Variant  its border and glyphs are the theme's roles (the Segmented slot), never a variant
+Components.SwipeableRow: no SizeVariant  a row that wraps its child; the action is the List slot's width
+Components.Switch: no SizeVariant  sized by density alone, through the SelectionControls slot (spec B11 to B13, C7)
+Components.Switch: no Variant  a selection control: on is primary and off is the theme's border, so a variant would choose nothing
+Components.Table: no SizeVariant  rows at their family's own heights (the List and Table slots), not the control ladder
+Components.Table: no Variant  a layout of other components: the colours are theirs
+Components.TableView: no SizeVariant  rows at their family's own heights (the List and Table slots), not the control ladder
+Components.TableView: no Variant  a layout of other components: the colours are theirs
+Components.Tabs: no SizeVariant  a navigation is sized by its own specification and the Navigation slot, not by the control ladder
+Components.Tabs: no Variant  a navigation: the selection takes the primary colours and nothing else, so there is no variant to choose
+Components.TextInput · Small: refused (ArgumentOutOfRangeException)  a text field has no small size: its text and padding cannot fit 32dp (spec B9)
+Components.TextInput: no Variant  a field: its colours follow its state (primary while focused, destructive on an error), never a variant
+Components.TimePicker: no SizeVariant  a field stands at one rung of the control ladder, and density sizes it
+Components.TimePicker: no Variant  a field: its colours follow its state (primary while focused, destructive on an error), never a variant
+Components.Toast: no SizeVariant  a notice spans what holds it: it has no control size
+Components.Tooltip: no SizeVariant  a label that hugs its text
+Components.Tooltip: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
+Spreadsheets.FormulaBar: no SizeVariant  the grid's rows and columns are the document's, and its chrome the Sheet slot's
+Spreadsheets.FormulaBar: no Variant  the spreadsheet's chrome is coloured by its Sheet slot, not by a variant
+Spreadsheets.NameBox: no SizeVariant  the grid's rows and columns are the document's, and its chrome the Sheet slot's
+Spreadsheets.NameBox: no Variant  the spreadsheet's chrome is coloured by its Sheet slot, not by a variant
+Spreadsheets.Spreadsheet: no SizeVariant  the grid's rows and columns are the document's, and its chrome the Sheet slot's
+Spreadsheets.Spreadsheet: no Variant  the spreadsheet's chrome is coloured by its Sheet slot, not by a variant
+Spreadsheets.StatusBar: no SizeVariant  the grid's rows and columns are the document's, and its chrome the Sheet slot's
+Spreadsheets.StatusBar: no Variant  the spreadsheet's chrome is coloured by its Sheet slot, not by a variant

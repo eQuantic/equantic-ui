@@ -28,15 +28,20 @@ export class Badge extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let fill = this.neutral ? theme.surfaceSubtle : theme.colors(this.variant).base;
-        let textColor = this.neutral ? theme.textSecondary : theme.colors(this.variant).onBase;
+        let slot = theme.badge;
+        let fill = this.neutral ? slot?.neutralFill ?? theme.surfaceSubtle : theme.colors(this.variant).base;
+        let textColor = this.neutral ? slot?.neutralColor ?? theme.textSecondary : theme.colors(this.variant).onBase;
+        let ring = this.ring ? slot?.ringWidth ?? 2 : 0;
+        let ringColor = slot?.ringColor ?? theme.surface;
         if (this.dot) {
-            return new Box(new BoxStyle({ width: this.ring ? 12 : 8, height: this.ring ? 12 : 8, background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.ring ? 2 : 0, borderColor: theme.surface }));
+            let dot = Math.fround((slot?.dotSize ?? 8) + Math.fround(ring * 2));
+            return new Box(new BoxStyle({ width: dot, height: dot, background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: ring, borderColor: ringColor }));
         }
         let label = this.count > this.max ? `${$eq.text.format(this.max, null, undefined, undefined, 'int32')}+` : `${$eq.text.format(this.count, null, undefined, undefined, 'int32')}`;
-        let text = new Text(label, 'caption', textColor, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(10, 12, 'bold', 0, Math.fround(1.3)) });
+        let text = new Text(label, 'caption', textColor, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(slot?.countLabelSize ?? 10, slot?.countLabelLineHeight ?? 12, slot?.countLabelWeight ?? 'bold', 0, Math.fround(1.3)) });
         let content = VisualNodeExtensions.centered(text);
-        return new Box(new BoxStyle({ height: this.ring ? 20 : 16, minWidth: this.ring ? 20 : 16, padding: EdgeInsets.symmetric(4, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.ring ? 2 : 0, borderColor: theme.surface }), content);
+        let height = Math.fround((slot?.countHeight ?? 16) + Math.fround(ring * 2));
+        return new Box(new BoxStyle({ height: height, minWidth: height, padding: EdgeInsets.symmetric(slot?.countPaddingX ?? 4, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: ring, borderColor: ringColor }), content);
     }
 
     static asDot(variant: VariantValue = 'destructive') {

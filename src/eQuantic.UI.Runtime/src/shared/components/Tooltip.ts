@@ -18,7 +18,8 @@ export class Tooltip extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let pill = new Box(new BoxStyle({ background: theme.textPrimary, cornerRadius: new CornerRadii(theme.shape('small')), padding: EdgeInsets.symmetric(8, 4) }), new Text(this.text, 'caption', theme.textInverse, 1));
+        let slot = theme.menu;
+        let pill = new Box(new BoxStyle({ background: slot?.tooltipFill ?? theme.textPrimary, cornerRadius: new CornerRadii(theme.shape(slot?.tooltipShape ?? 'small')), padding: slot?.tooltipPadding ?? EdgeInsets.symmetric(8, 4) }), new Text(this.text, 'caption', slot?.tooltipText ?? theme.textInverse, 1));
         return new Anchored(this.child, pill, { placement: this.placement, openOnHover: true, describesAnchor: true });
     }
 }

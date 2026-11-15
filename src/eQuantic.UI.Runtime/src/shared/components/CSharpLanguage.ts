@@ -5,12 +5,7 @@ export class CSharpLanguage extends CurlyBraceLanguage {
     static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
 
     constructor() {
-        const $$$rules: CodeLanguageRules = (() => {
-        const $o = new CodeLanguageRules();
-        $o.lineComment = '//';
-        $o.blockComment = ['/*', '*/'];
-        return $o;
-    })();
+        const $$$rules: CodeLanguageRules = (() => { let $n0: CodeLanguageRules; return ($n0 = new CodeLanguageRules(), $n0.lineComment = '//', $n0.blockComment = ['/*', '*/'], $n0); })();
         const $$$reservedWords: Set<string> = $eq.collections.hashSetOf(['abstract', 'as', 'async', 'await', 'base', 'break', 'case', 'catch', 'checked', 'class', 'const', 'continue', 'default', 'delegate', 'do', 'else', 'enum', 'event', 'explicit', 'extern', 'file', 'finally', 'fixed', 'for', 'foreach', 'get', 'global', 'goto', 'if', 'implicit', 'in', 'init', 'interface', 'internal', 'is', 'lock', 'namespace', 'new', 'not', 'operator', 'out', 'override', 'params', 'partial', 'private', 'protected', 'public', 'readonly', 'record', 'ref', 'required', 'return', 'sealed', 'set', 'sizeof', 'stackalloc', 'static', 'struct', 'switch', 'this', 'throw', 'try', 'typeof', 'unchecked', 'unsafe', 'using', 'value', 'virtual', 'volatile', 'when', 'where', 'while', 'with', 'yield']);
         const $$$typeWords: Set<string> = $eq.collections.hashSetOf(['bool', 'byte', 'char', 'decimal', 'double', 'dynamic', 'float', 'int', 'long', 'nint', 'nuint', 'object', 'sbyte', 'short', 'string', 'uint', 'ulong', 'ushort', 'var', 'void']);
         const $$$constantWords: Set<string> = $eq.collections.hashSetOf(['true', 'false', 'null', 'default']);

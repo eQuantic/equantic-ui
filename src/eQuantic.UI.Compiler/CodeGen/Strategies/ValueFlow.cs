@@ -128,6 +128,11 @@ public static class ValueFlow
             && SinglePrecision.HoldsExactly(conversion.Operand))
             return translated;
 
+        // A boxing a call's own lowering reads through, by the value's type (Boxing.ReadThrough), is left to it,
+        // and so is a list that only passes through object's statics, which compare it by its type.
+        if (conversion.GetConversion().IsBoxing && Boxing.ReadThrough(conversion)) return translated;
+        if (conversion.GetConversion().IsReference && Boxing.PassesThrough(conversion)) return translated;
+
         return Apply(conversion.GetConversion(), conversion.Operand.Type, conversion.Type,
             conversion.ConstantValue.HasValue ? conversion.ConstantValue.Value : null,
             conversion.Operand.ConstantValue.HasValue ? conversion.Operand.ConstantValue.Value : null,
@@ -151,6 +156,13 @@ public static class ValueFlow
         // (0x10 is not 16 to a reader) for no gain.
         if (convertedConstant is not null && Constant(convertedConstant, to) is { } folded)
             return folded;
+
+        // A VALUE HELD AS OBJECT keeps the type the browser cannot read from it (Boxing): an enum member and a float
+        // are boxed with it, an unboxing asks the box, and a list or an array is marked as compared by reference
+        // (#552, #768, #954).
+        if (kind.IsBoxing && Boxing.Carries(from) && Boxing.IsABox(to)) return Boxing.Box(from!, translated, context);
+        if (kind.IsUnboxing && Boxing.Unbox(to, translated, context) is { } unboxed) return unboxed;
+        if (kind.IsReference && Boxing.IsMarked(from, to)) return Boxing.Mark(translated, context);
 
         // A cast of a floating constant the COMPILER folded is the compiler's value, which is no run-time
         // conversion's: `unchecked((int)1e12)` is 0 where the same cast of a variable saturates (#1015).

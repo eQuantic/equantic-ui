@@ -225,6 +225,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     /// </summary>
     protected override void OnDestroy()
     {
+        StopFollowingContrast();
         TakeDown();
         base.OnDestroy();
     }
@@ -323,6 +324,8 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         _host = new PhotonHost(app.Root(), app.Theme, Mode(), metrics.WidthPixels / scale,
             metrics.HeightPixels / scale, text)
         {
+            // The contrast level of Android 14, read from the system like the mode (#340).
+            Contrast = Contrast(),
             RecycleFrames = true,   // production owns its frames (LayoutNodePool)
             RenderScale = scale,
             TextRasterizer = text,
@@ -332,6 +335,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             // What Ctrl+C, X and V on a keyboard attached to the phone copy, cut and paste through.
             Clipboard = new AndroidClipboard(),
         };
+        FollowContrast();
         cultureController?.Attach(_host.Invalidate);
 
         // The semantics bridge: TalkBack reads the SAME target-neutral tree the Apple shells read,
@@ -403,6 +407,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         base.OnConfigurationChanged(newConfig);
         if (_host is null) return;
         _host.Mode = Mode();
+        _host.Contrast = Contrast();
         var scale = Resources!.DisplayMetrics!.Density;
         _host.RenderScale = scale;
         if (_view?.Holder?.SurfaceFrame is { } frame && !frame.IsEmpty)
@@ -830,6 +835,55 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         MotionEventToolType.Stylus or MotionEventToolType.Eraser => PointerKind.Stylus,
         _ => PointerKind.Touch,
     };
+
+    /// <summary>
+    /// The contrast level Android 14 offers under Accessibility, Color and motion: 0 is standard,
+    /// 0.5 medium and 1 high, and anything above standard is the person asking for more (#340).
+    /// Earlier versions have no such setting.
+    /// </summary>
+    private ContrastLevel Contrast() =>
+        OperatingSystem.IsAndroidVersionAtLeast(34)
+        && GetSystemService(UiModeService) is global::Android.App.UiModeManager modes
+        && modes.Contrast > 0
+            ? ContrastLevel.More
+            : ContrastLevel.Standard;
+
+    private object? _contrastListener;
+
+    /// <summary>A change of the contrast level is no configuration change, so the activity is told
+    /// by the listener Android 14 has for it, and repaints with the new level.</summary>
+    private void FollowContrast()
+    {
+        if (!OperatingSystem.IsAndroidVersionAtLeast(34) || _contrastListener is not null) return;
+        if (GetSystemService(UiModeService) is not global::Android.App.UiModeManager modes || MainExecutor is not { } executor)
+            return;
+        var listener = new ContrastListener(this);
+        modes.AddContrastChangeListener(executor, listener);
+        _contrastListener = listener;
+    }
+
+    private void StopFollowingContrast()
+    {
+        if (!OperatingSystem.IsAndroidVersionAtLeast(34) || _contrastListener is not ContrastListener listener) return;
+        (GetSystemService(UiModeService) as global::Android.App.UiModeManager)?.RemoveContrastChangeListener(listener);
+        _contrastListener = null;
+    }
+
+    private void ContrastChanged()
+    {
+        if (_host is null) return;
+        var contrast = Contrast();
+        if (_host.Contrast == contrast) return;
+        _host.Contrast = contrast;
+        _host.Invalidate();
+    }
+
+    [SupportedOSPlatform("android34.0")]
+    private sealed class ContrastListener(PhotonActivity activity)
+        : Java.Lang.Object, global::Android.App.UiModeManager.IContrastChangeListener
+    {
+        public void OnContrastChanged(float contrast) => activity.ContrastChanged();
+    }
 
     private ThemeMode Mode()
     {

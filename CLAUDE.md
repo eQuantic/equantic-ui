@@ -353,6 +353,18 @@ packages are pinned by the lockfile's integrity hashes. When a tool it is respon
 set up, the person in the session sees a warning naming it, and the session still starts. CI's `session-start` job runs the hook the
 way a fresh container would and asserts every promise (`scripts/check-session-start.sh`).
 
+## Pipelines (a pilot, #1493)
+
+A delivery in Claude Code can run through the `pipeline` skill (`.claude/skills/pipeline/SKILL.md`),
+only when a person invokes it (`/pipeline`): it is being measured against the way we work today,
+and no session takes it up by itself. It selects the pipeline of the change's kind, runs each stage
+with the agent, model and effort the registry gives it (`.claude/agents/`), holds the gate and ships
+as the Workflow above says. It restates none of these rules, and where it differs from this file,
+this file wins.
+
+`python3 .claude/skills/pipeline/board/board.py` serves a local, read-only board of every delivery in
+flight, its stages, agents, tokens and time (`.claude/skills/pipeline/board/README.md`, #1524).
+
 ## Project Overview
 
 **eQuantic.UI** is a Flutter-inspired component-based UI framework for .NET that compiles C# components directly to optimized JavaScript at build time (not WASM). It provides type-safe, HTML-native components with a small runtime (its gzip size is measured by the site's
@@ -679,8 +691,8 @@ suite compares, and CI reports the page modules' on every pull request):
    its sources are named inside the project, and a publish never takes one (#352). `boot.ts` imports
    the page's module dynamically on navigation, so per-route lazy loading falls out of the module
    graph. eqc runs bun with `--splitting`, so what two or more modules share is a chunk named after
-   one of them with a hash: `NotFoundScreen-<hash>.js` in the dashboard sample is its console
-   shell, not a second type of that name. There is no `pages/` folder
+   one of them with a hash: `ChartsScreen-<hash>.js` in the dashboard sample holds the clock its
+   two time screens share, not a second type of that name. There is no `pages/` folder
 3. **strings/`<culture>`.json** — the culture catalogs, when the app has `.resx`
 4. **icons/** — the app icon sizes, the tab's `favicon.ico` (answered at `/favicon.ico` too) and the web manifest, when an `AppIcon` is declared
 

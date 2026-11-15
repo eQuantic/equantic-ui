@@ -104,8 +104,8 @@ internal sealed partial class EmitVisitor
     /// <see cref="IAppTheme.ScrollbarTrack"/> and <see cref="IAppTheme.ScrollbarThumb"/>.</summary>
     private static void EmitScrollbars(ITableScrollModel scroll, EmitState s, Rect bounds)
     {
-        var track = s.Theme.ScrollbarTrack.Resolve(s.Mode);
-        var thumb = s.Theme.ScrollbarThumb.Resolve(s.Mode);
+        var track = s.Theme.ScrollbarTrack.Resolve(s.Mode, s.Contrast);
+        var thumb = s.Theme.ScrollbarThumb.Resolve(s.Mode, s.Contrast);
         foreach (var axis in (ReadOnlySpan<ScrollAxis>)[ScrollAxis.Vertical, ScrollAxis.Horizontal])
         {
             if (scroll.TrackOf(axis) is not { } strip || scroll.ThumbOf(axis) is not { } knob) continue;

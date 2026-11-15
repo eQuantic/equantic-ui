@@ -14,12 +14,12 @@ internal sealed partial class EmitVisitor
     // engine gains texture upload (M4) - the documented placeholder pattern.
     private void EmitImageNode(Image image, EmitState s)
     {
-        EmitImage(s.Node, image, s.Theme, s.Mode, s.Builder, s.Motion);
+        EmitImage(s.Node, image, s.Theme, s.Mode, s.Contrast, s.Builder, s.Motion);
     }
 
     private void EmitCamera(CameraPreview camera, EmitState s)
     {
-        EmitCameraPreview(s.Node, camera, s.Theme, s.Mode, s.Builder, s.Motion);
+        EmitCameraPreview(s.Node, camera, s.Theme, s.Mode, s.Contrast, s.Builder, s.Motion);
     }
 
     // Spec A10, W4 fence: a tinted disc at 30% alpha stands in for the glyph until the atlas
@@ -33,11 +33,11 @@ internal sealed partial class EmitVisitor
             && (s.Motion.IconCache ?? IconRasterCache.Shared)
                 .Get(icons, icon.Glyph, icon.Size, icon.Size, s.Motion.RenderScale) is { } raster)
         {
-            var tint = s.Ink(icon.Color).Resolve(s.Mode);
+            var tint = s.Ink(icon.Color).Resolve(s.Mode, s.Contrast);
             s.Builder.Texture(s.Node.Bounds, tint, raster);
             return;
         }
-        var placeholder = s.Ink(icon.Color).Resolve(s.Mode).WithOpacity(0.30f);
+        var placeholder = s.Ink(icon.Color).Resolve(s.Mode, s.Contrast).WithOpacity(0.30f);
         s.Builder.FillRRect(
             new RRect(s.Node.Bounds, new CornerRadii(s.Node.Bounds.Width / 2)),
             Paint.Solid(placeholder));
@@ -53,11 +53,11 @@ internal sealed partial class EmitVisitor
                 .Get(vectorIcons, vector.Glyph, vector.Size, vector.Height, s.Motion.RenderScale)
                 is { } vectorRaster)
         {
-            var vectorTint = s.Ink(vector.Color).Resolve(s.Mode);
+            var vectorTint = s.Ink(vector.Color).Resolve(s.Mode, s.Contrast);
             s.Builder.Texture(s.Node.Bounds, vectorTint, vectorRaster);
             return;
         }
-        var vectorPlaceholder = s.Ink(vector.Color).Resolve(s.Mode).WithOpacity(0.30f);
+        var vectorPlaceholder = s.Ink(vector.Color).Resolve(s.Mode, s.Contrast).WithOpacity(0.30f);
         s.Builder.FillRRect(
             new RRect(s.Node.Bounds, new CornerRadii(s.Node.Bounds.Width / 2)),
             Paint.Solid(vectorPlaceholder));
@@ -77,13 +77,13 @@ internal sealed partial class EmitVisitor
         {
             // No platform service (tests, headless): the documented placeholder, one box
             // rather than one per shape — it stands for the artwork, not for its parts.
-            var box = (drawing.Tint ?? s.Theme.TextPrimary).Resolve(s.Mode).WithOpacity(0.30f);
+            var box = (drawing.Tint ?? s.Theme.TextPrimary).Resolve(s.Mode, s.Contrast).WithOpacity(0.30f);
             s.Builder.FillRRect(new RRect(s.Node.Bounds, new CornerRadii(0)), Paint.Solid(box));
             return;
         }
 
         var cache = s.Motion.IconCache ?? IconRasterCache.Shared;
-        var inherited = (drawing.Tint ?? s.Theme.TextPrimary).Resolve(s.Mode);
+        var inherited = (drawing.Tint ?? s.Theme.TextPrimary).Resolve(s.Mode, s.Contrast);
         var shapes = drawing.Artwork.Shapes;
         for (var i = 0; i < shapes.Count; i++)
         {
@@ -104,7 +104,7 @@ internal sealed partial class EmitVisitor
             // around a concelho's box would cross its neighbours.
             if (id != 0 && s.Press.FocusedId == id)
                 EmitShape(shape with { StrokeWidth = FocusRingOnTheGrid(drawing.Artwork, s.Node.Bounds), Opacity = 1 },
-                    IconGlyphStyle.Stroke, VectorPaint.Solid(s.Theme.FocusRing.Resolve(s.Mode)));
+                    IconGlyphStyle.Stroke, VectorPaint.Solid(s.Theme.FocusRing.Resolve(s.Mode, s.Contrast)));
         }
 
         void EmitShape(VectorShape shape, IconGlyphStyle style, VectorPaint paint)
@@ -207,8 +207,8 @@ internal sealed partial class EmitVisitor
     /// stroke from its border, and its opacity, which is all <see cref="VectorShape.Hover"/> takes.</summary>
     private static VectorShape Hovered(VectorShape shape, StyleDiff hover, EmitState s) => shape with
     {
-        Fill = hover.Background is { } fill ? VectorPaint.Solid(fill.Resolve(s.Mode)) : shape.Fill,
-        Stroke = hover.BorderColor is { } stroke ? VectorPaint.Solid(stroke.Resolve(s.Mode)) : shape.Stroke,
+        Fill = hover.Background is { } fill ? VectorPaint.Solid(fill.Resolve(s.Mode, s.Contrast)) : shape.Fill,
+        Stroke = hover.BorderColor is { } stroke ? VectorPaint.Solid(stroke.Resolve(s.Mode, s.Contrast)) : shape.Stroke,
         StrokeWidth = hover.BorderWidth ?? shape.StrokeWidth,
         Opacity = hover.Opacity ?? shape.Opacity,
     };
@@ -226,7 +226,7 @@ internal sealed partial class EmitVisitor
     {
         // The app draws its own pixels here, in ITS coordinates, once per frame. The
         // painter is handed out for THIS frame only — it is the frame being built.
-        canvas.Draw(new PhotonCanvasPainter(s.Builder, s.Node.Bounds, s.Mode));
+        canvas.Draw(new PhotonCanvasPainter(s.Builder, s.Node.Bounds, s.Mode, s.Contrast));
         if (canvas.OnPointerDown is not null || canvas.OnPointerMove is not null
             || canvas.OnPointerUp is not null || canvas.OnPointerLeave is not null)
         {
@@ -236,7 +236,7 @@ internal sealed partial class EmitVisitor
 
     private void EmitSpinnerNode(Spinner spinner, EmitState s)
     {
-        EmitSpinner(s.Node, spinner, s.Ink(spinner.Color), s.Mode, s.Builder, s.Motion);
+        EmitSpinner(s.Node, spinner, s.Ink(spinner.Color), s.Mode, s.Contrast, s.Builder, s.Motion);
     }
 
     /// <summary>
@@ -256,7 +256,7 @@ internal sealed partial class EmitVisitor
     /// CLIPS to the node's rrect. No loader / failed decode → the SurfaceSubtle placeholder box.
     /// Nearest sampling v1 (bilinear is the scaling-quality fence).
     /// </summary>
-    private static void EmitImage(LayoutNode node, Image image, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, MotionScope motion)
+    private static void EmitImage(LayoutNode node, Image image, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder, MotionScope motion)
     {
         TextureData? data = null;
         if (motion.ImageLoader is { } loader)
@@ -272,7 +272,7 @@ internal sealed partial class EmitVisitor
         if (data is null)
         {
             builder.FillRRect(new RRect(node.Bounds, image.CornerRadius),
-                Paint.Solid(theme.SurfaceSubtle.Resolve(mode)));
+                Paint.Solid(theme.SurfaceSubtle.Resolve(mode, contrast)));
             return;
         }
 
@@ -309,7 +309,7 @@ internal sealed partial class EmitVisitor
     }
 
     private static void EmitCameraPreview(LayoutNode node, CameraPreview camera, IAppTheme theme,
-        ThemeMode mode, DisplayListBuilder builder, MotionScope motion)
+        ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder, MotionScope motion)
     {
         var rrect = new RRect(node.Bounds, camera.CornerRadius);
 
@@ -322,7 +322,7 @@ internal sealed partial class EmitVisitor
         if (camera.Session is not { FrameBytes: { } bytes, FrameWidth: > 0 } session)
         {
             // Not started (or no pixels yet): the same SurfaceSubtle placeholder Image degrades to.
-            builder.FillRRect(rrect, Paint.Solid(theme.SurfaceSubtle.Resolve(mode)));
+            builder.FillRRect(rrect, Paint.Solid(theme.SurfaceSubtle.Resolve(mode, contrast)));
             return;
         }
 
@@ -357,12 +357,12 @@ internal sealed partial class EmitVisitor
     /// spinner therefore always reports active motion (it is a functional indicator, not
     /// decoration).
     /// </summary>
-    private static void EmitSpinner(LayoutNode node, Spinner spinner, ColorToken ink, ThemeMode mode,
+    private static void EmitSpinner(LayoutNode node, Spinner spinner, ColorToken ink, ThemeMode mode, ContrastLevel contrast,
         DisplayListBuilder builder, MotionScope motion)
     {
         motion.Active = true;
         var phase = motion.TimeMs % Spinner.RevolutionMs / Spinner.RevolutionMs;
-        var tint = ink.Resolve(mode);
+        var tint = ink.Resolve(mode, contrast);
 
         var scale = node.Bounds.Width / 16f;
         var centerX = node.Bounds.X + node.Bounds.Width / 2;

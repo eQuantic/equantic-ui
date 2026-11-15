@@ -14,7 +14,8 @@ export interface PageStatePayload {
   title?: string;
   head?: string;
   /**
-   * One field map PER COMPONENT, under the name the server's realizer gave it (`Type#ordinal`).
+   * One field map PER COMPONENT, under the name the server's realizer gave it: `Type#0` for the page's
+   * own component, and where it stands for every other (`r{tree}/{type}@{slots}`).
    * It was a flat field map while only a page root could prefetch; the extra level is what lets
    * two components holding a field of the same name keep their own values.
    */

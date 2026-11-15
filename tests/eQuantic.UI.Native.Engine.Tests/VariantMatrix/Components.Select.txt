@@ -1,0 +1,144 @@
+## Comfortable
+### web
+<div class="eq-anchorhost">
+<button role="combobox" aria-expanded="false" aria-haspopup="listbox" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-cl6mtg eq-g7fowl eq-hw1jqi eq-st8mxi">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Select…</span>
+<div class="eq-168ghzj eq-5ew4ww">
+<div aria-hidden="true" class="eq-168ghzj">
+</div>
+</div>
+<svg class="eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="m16.59 8.59-4.59 4.58-4.59-4.58L6 10l6 6 6-6z">
+</path>
+</svg>
+</div>
+</div>
+</button>
+</div>
+### css
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-19vml7g{width:16px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1or4gpz{height:16px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-st8mxi.eq-st8mxi:not(:where(.eq-pressable:not(:hover) .eq-st8mxi)){border-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+}
+### semantics
+ComboBox "" (value "Select…", collapsed)
+### photon
+Select 0 0 480x40
+  Shortcut 0 0 480x40
+    Shortcut 0 0 480x40
+      Shortcut 0 0 480x40
+        Anchored 0 0 480x40
+          Pressable 0 0 480x40
+            Box 0 0 480x40
+              Row 13 1 454x38
+                Text 13 10 51x20 1 line(s)
+                Flexible 72 20 371x0
+                  Spacer 72 20 371x0
+                Icon 451 12 16x16
+
+## Compact
+### web
+<div class="eq-anchorhost">
+<button role="combobox" aria-expanded="false" aria-haspopup="listbox" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-12kbhu0 eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-g7fowl eq-hw1jqi eq-st8mxi">
+<div class="eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn">Select…</span>
+<div class="eq-168ghzj eq-5ew4ww">
+<div aria-hidden="true" class="eq-168ghzj">
+</div>
+</div>
+<svg class="eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="m16.59 8.59-4.59 4.58-4.59-4.58L6 10l6 6 6-6z">
+</path>
+</svg>
+</div>
+</div>
+</button>
+</div>
+### css
+.eq-115fhry{color:var(--eq-color-text-secondary, light-dark(#4b5563, #c7d1dc))}
+.eq-12kbhu0{border:1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
+.eq-14ehxct{color:inherit}
+.eq-1566de{white-space:pre}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-19dgm5h{gap:8px}
+.eq-19vml7g{width:16px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1o1uad7{border-radius:10px}
+.eq-1or4gpz{height:16px}
+.eq-1su9m49{height:32px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-5ew4ww{min-width:0}
+.eq-5hocaj{background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hw1jqi{padding:0 12px 0 12px}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-p7nbpw{text-align:start}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-st8mxi.eq-st8mxi:not(:where(.eq-pressable:not(:hover) .eq-st8mxi)){border-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))}
+}
+### semantics
+ComboBox "" (value "Select…", collapsed)
+### photon
+Select 0 0 480x32
+  Shortcut 0 0 480x32
+    Shortcut 0 0 480x32
+      Shortcut 0 0 480x32
+        Anchored 0 0 480x32
+          Pressable 0 0 480x32
+            Box 0 0 480x32
+              Row 13 1 454x30
+                Text 13 6 51x20 1 line(s)
+                Flexible 72 16 371x0
+                  Spacer 72 16 371x0
+                Icon 451 8 16x16
+

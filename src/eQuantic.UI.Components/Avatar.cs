@@ -48,10 +48,12 @@ public sealed class Avatar : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var side = Sizing.Avatar(Size);
+        // The theme's Badge slot, then the component's own (§3.10).
+        var slot = theme.Badge;
+        var side = SideOf(theme, Size);
         // Off the ladder, like the side above it: a number that moves with SizeVariant does not
         // live in a component, or the handoff cannot hold it and two components can disagree.
-        var labelSize = Sizing.AvatarInitials(Size);
+        var labelSize = ControlMetrics.AtSize(slot?.AvatarLabelSize, Size) ?? Sizing.AvatarInitials(Size);
 
         if (ImageSource is { } source)
         {
@@ -68,7 +70,7 @@ public sealed class Avatar : StatelessComponent
 
         // Spec B6 fallback chain (v1, no Image yet): initials → person glyph on SurfaceSubtle.
         var hasInitials = clipped.Length > 0;
-        var glyphSize = Size switch
+        var glyphSize = ControlMetrics.AtSize(slot?.AvatarGlyphSize, Size) ?? Size switch
         {
             SizeVariant.Small => IconSize.Sm,
             SizeVariant.Medium => IconSize.Dense,
@@ -78,34 +80,43 @@ public sealed class Avatar : StatelessComponent
         VisualNode face = hasInitials
             ? new Text(clipped, TypeRole.Caption, tint.OnSubtle, maxLines: 1)
             {
-                StyleOverride = new TypeStyle(labelSize, labelSize, FontWeight.SemiBold, 0, 1.3f),
+                StyleOverride = new TypeStyle(labelSize, labelSize, slot?.AvatarLabelWeight ?? FontWeight.SemiBold, 0, 1.3f),
             }
-            : new Icon(Icons.Person, glyphSize, theme.TextMuted);
+            : new Icon(Icons.Person, glyphSize, slot?.AvatarGlyphColor ?? theme.TextMuted);
         var content = face.Centered();
 
         var circle = new Box(new BoxStyle
         {
             Width = side,
             Height = side,
-            Background = hasInitials ? tint.Subtle : theme.SurfaceSubtle,
+            Background = hasInitials ? tint.Subtle : slot?.AvatarFill ?? theme.SurfaceSubtle,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
         }, content);
 
         return Status == PresenceStatus.None ? circle : WithStatusDot(circle, side, theme);
     }
 
+    /// <summary>An avatar's side for <paramref name="size"/>: the theme's Badge slot's rung, then
+    /// <see cref="Sizing.Avatar"/>. A list row whose leading slot is an avatar reads it too, to start its
+    /// divider where its text does.</summary>
+    internal static float SideOf(IAppTheme theme, SizeVariant size) =>
+        ControlMetrics.AtSize(theme.Badge?.AvatarSize, size) ?? Sizing.Avatar(size);
+
     private VisualNode WithStatusDot(VisualNode face, float side, IAppTheme theme)
     {
+        var slot = theme.Badge;
         var dotSide = MathF.Round(side / 3.3f);
-        var dotFill = Status == PresenceStatus.Online ? theme.Colors(Variant.Success).Base : theme.TextMuted;
+        var dotFill = Status == PresenceStatus.Online
+            ? theme.Colors(Variant.Success).Base
+            : slot?.OfflineColor ?? theme.TextMuted;
         var dot = new Box(new BoxStyle
         {
             Width = dotSide,
             Height = dotSide,
             Background = dotFill,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-            BorderWidth = 2f,
-            BorderColor = theme.Surface,
+            BorderWidth = slot?.RingWidth ?? 2f,
+            BorderColor = slot?.RingColor ?? theme.Surface,
         });
 
         var stack = new Stack();

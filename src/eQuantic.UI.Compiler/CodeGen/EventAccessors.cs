@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -36,7 +37,7 @@ internal static class EventAccessors
     {
         if (symbol.ContainingType?.TypeKind == TypeKind.Interface || symbol.IsAbstract || symbol.IsVirtual || symbol.IsOverride)
             return Kind.EitherAtRunTime;
-        return symbol.OriginalDefinition.DeclaringSyntaxReferences.Any(reference => reference.GetSyntax() is EventDeclarationSyntax)
+        return symbol.OriginalDefinition.ReadDeclarations().Any(reference => reference.GetSyntax() is EventDeclarationSyntax)
             ? Kind.Declared
             : Kind.FieldLike;
     }

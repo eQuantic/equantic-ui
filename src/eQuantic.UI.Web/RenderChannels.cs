@@ -23,14 +23,19 @@ public sealed class RenderChannels
     private static readonly AsyncLocal<RenderChannels?> Bridging = new();
 
     /// <summary>The channels of a render, with new sinks, the scope it expands components into, the
-    /// density the browser reported and the link policy of the request.</summary>
+    /// density the browser reported, the link policy and the route of the request.</summary>
     public RenderChannels(ComponentExpansionScope? expansion = null, Density density = Density.Comfortable,
-        Func<string, string>? linkPolicy = null)
+        Func<string, string>? linkPolicy = null, RouteValues? route = null)
     {
         Expansion = expansion;
         Density = density;
         LinkPolicy = linkPolicy;
+        Route = route ?? RouteValues.Empty;
     }
+
+    /// <summary>The route the render is drawn for, which every bridge of the render builds with: an
+    /// escape-hatch page's write-once bridges read their page's route from it (#1395).</summary>
+    public RouteValues Route { get; }
 
     /// <summary>The atomic rules the render's markup references, which the server writes beside it.</summary>
     public StyleSink Styles { get; } = new();
@@ -44,6 +49,12 @@ public sealed class RenderChannels
     /// <summary>The scope that names each component the render expands, and hands back what an earlier
     /// round loaded for it; null when the render loads nothing.</summary>
     public ComponentExpansionScope? Expansion { get; }
+
+    private int _trees;
+
+    /// <summary>The next tree of the render, in the order its bridges draw: what their components'
+    /// server data keys start with, as the browser counts the roots its render lowers.</summary>
+    internal int NextTree() => _trees++;
 
     /// <summary>The density the browser reported, which every bridge of the render is built at.</summary>
     public Density Density { get; }

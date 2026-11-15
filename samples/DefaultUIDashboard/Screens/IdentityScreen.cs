@@ -18,24 +18,21 @@ public sealed class IdentityScreen(ConsoleIdentity? identity = null) : Stateless
     {
         var theme = context.Theme;
 
-        // A stateless page owns no drawer state, so the frame gets a closed one, as the ticker's does.
-        return ConsoleShell.Frame(theme, "/identity", "Identity",
-            Box(new BoxStyle
-            {
-                Width = SizeValue.Fill,
-                Height = SizeValue.Fill,
-                Background = theme.Background,
-                Padding = EdgeInsets.All(Space.S6),
-            },
-            Column(gap: Space.S4, children: [
-                Text("Who is signed in", TypeRole.Heading, theme.TextPrimary),
-                Text(identity is null ? "Nobody is signed in." : $"Signed in as {identity.DisplayName}.",
-                    TypeRole.BodyL, theme.TextPrimary),
-                Link(identity is null ? "/form" : "/server-data",
-                    Text(identity is null ? "Sign in" : "See what the server knows", TypeRole.BodyM, theme.TextSecondary)),
-                Link("/passkeys", Text("Use a passkey", TypeRole.BodyM, theme.TextSecondary)),
-                Link("/recovery-codes", Text("Your recovery codes", TypeRole.BodyM, theme.TextSecondary)),
-            ])),
-            navOpen: false, onToggleNav: () => { });
+        return Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Background = theme.Background,
+            Padding = EdgeInsets.All(Space.S6),
+        },
+        Column(gap: Space.S4, children: [
+            Text("Who is signed in", TypeRole.Heading, theme.TextPrimary),
+            Text(identity is null ? "Nobody is signed in." : $"Signed in as {identity.DisplayName}.",
+                TypeRole.BodyL, theme.TextPrimary),
+            Link(identity is null ? "/form" : "/server-data",
+                Text(identity is null ? "Sign in" : "See what the server knows", TypeRole.BodyM, theme.TextSecondary)),
+            Link("/passkeys", Text("Use a passkey", TypeRole.BodyM, theme.TextSecondary)),
+            Link("/recovery-codes", Text("Your recovery codes", TypeRole.BodyM, theme.TextSecondary)),
+        ]));
     }
 }

@@ -15,7 +15,10 @@ hands the position a node of the same runtime type and the same `Key` SHALL keep
 instance, and the fresh instance's configuration SHALL reach the kept one through `AdoptConfig`. A
 node of another type or another key SHALL replace the element, and its instance SHALL start fresh.
 Among the children of a `Row`, a `Column`, a `Stack`, a `Grid` and a `Navigable`, a child with a key
-SHALL be matched by its key wherever it moves, and a child without one by its index.
+SHALL be matched by its key wherever it moves, and a child without one by its index. A child no old
+child can be, because none held its key or the one that held it is of another type, SHALL be made
+without being compared with each old child (unless a key repeats among them), so replacing every
+member of a list SHALL cost what building the list and letting the old one go cost.
 
 #### Scenario: A parent rebuilds
 
@@ -28,6 +31,26 @@ SHALL be matched by its key wherever it moves, and a child without one by its in
 - **WHEN** a column holds two stateful rows keyed `a` and `b`, row `a` was pressed once, and the
   column rebuilds with `b` before `a`
 - **THEN** the row keyed `a` still shows one press, now in second place, and `b` shows none
+
+#### Scenario: A key inserted at the front
+
+- **WHEN** a column holds two stateful rows keyed `a` and `b`, pressed once and twice, and the column
+  rebuilds with `c` before `a`
+- **THEN** the row keyed `c` is a new instance with no presses, and the row keyed `a` is the same
+  instance with one press, now in second place
+
+#### Scenario: Every key replaced
+
+- **WHEN** a column of two stateful rows keyed `a` and `b`, both pressed, rebuilds with rows keyed `c`
+  and `d`
+- **THEN** both rows are new instances with no presses
+
+#### Scenario: Every member of a long list replaced
+
+- **WHEN** a column of 10,000 text cells keyed `a0` to `a9999` rebuilds with text cells keyed `b0` to
+  `b9999`, or with rows keyed `a0` to `a9999`
+- **THEN** the rebuild costs less than twenty times what the first build of the column cost, on .NET
+  and on the transpiled engine
 
 #### Scenario: The type at a position changes
 
@@ -562,11 +585,12 @@ the frame named them, save a stateless one below another asked in the same round
 the next. A component that loaded SHALL have its positions marked, and only those subtrees SHALL build
 in the next frame, with the instance that loaded. A bound of five rounds SHALL count a round that
 reached a position, or a component holding none, that no round before it had; past it the page SHALL
-be drawn with what it has, its markup and payload agreeing. The markup and the hydration payload SHALL
-be byte for byte what drawing the tree once per round wrote: components named `Type#ordinal` in
-lowering order, and the payload carrying every component that loads data or holds a value from the
-container, read off the instances that drew. An escape-hatch page SHALL keep drawing its write-once
-bridges as trees drawn once, putting back by name what each loaded.
+be drawn with what it has, its markup and payload agreeing. The markup SHALL be byte for byte what
+drawing the tree once per round wrote, and the hydration payload SHALL name each component by its
+position (`r{tree}/{type}@{slots}`) and carry every component that loads data or holds a value from the
+container, read off the instances that drew. An escape-hatch page SHALL draw each write-once bridge
+through a structural host of its own, drawn once, putting back before a fresh instance builds what an
+earlier round loaded at its position.
 
 #### Scenario: A round draws the instance that loaded
 
@@ -612,3 +636,208 @@ the source no longer declares.
 
 - **WHEN** the source declares an `AsyncLocal` the list does not name
 - **THEN** the list's test fails, naming it
+
+### Requirement: The browser builds through the element engine
+
+The browser SHALL build every component of a page through the element engine's owner, and its lowering
+SHALL lower what each position built and keep the instance each position keeps, without building again.
+A nested component's state change SHALL build that component's element and no other before the page
+lowers again. Hydration SHALL build the element tree before it walks the server's DOM, and the server's
+data for a component SHALL reach every fresh instance at its position before that instance builds.
+
+#### Scenario: A nested state change builds only its own element
+
+- **WHEN** a page holds two stateful components side by side and one of them changes its state
+- **THEN** that component builds again and neither its sibling nor the page builds
+
+#### Scenario: A page's own state change builds what it composes
+
+- **WHEN** a page changes its own state and hands a nested stateful component new configuration
+- **THEN** the nested component keeps its instance and its state, and builds with the new configuration
+
+#### Scenario: Hydration adopts the server's state before the first build
+
+- **WHEN** a page the server drew with a component's loaded data hydrates
+- **THEN** the component builds first with that data, under the key of the position the server named it by
+
+#### Scenario: A stateless component handed anew at a kept position
+
+- **WHEN** a stateful component builds again and hands a fresh stateless component the server loaded
+  data for to the same position
+- **THEN** the fresh instance builds with that data
+
+#### Scenario: A component that throws costs its own subtree
+
+- **WHEN** a nested component's build throws
+- **THEN** its position draws the failure and the rest of the page draws as before
+
+### Requirement: Every arm of an adaptive node is a position on the web
+
+An owner the web makes SHALL hold every arm an adaptive node declares, compact at slot 0, medium at
+slot 1 and expanded at slot 2, rather than the arm a window size class resolves, since the web draws
+every arm behind its own media gate. No window size class SHALL decide an arm on the web, and a resize
+SHALL need no build for the arm on screen to be one an element holds. An owner that draws one arm
+(Photon's) SHALL keep resolving it.
+
+#### Scenario: The arm on screen is held at any width
+
+- **WHEN** a page with an adaptive node holding a stateful component in each arm is drawn, and the window
+  crosses the node's threshold
+- **THEN** the component in the arm now shown keeps its instance and answers a press without a build
+
+### Requirement: Server data is keyed by a component's position
+
+The server and the browser SHALL name a component's server data by where it stands: the tree of the
+render it is in (`r0`, `r1`, … in the order the render draws its trees), its type, and the slot of each
+position from the tree's root down to it (`Element.SlotsBelow`), as `r{tree}/{type}@{slots}`. The key
+SHALL not depend on the order either side builds in, nor on which arm of an adaptive node a window
+shows. A page's own component SHALL keep `Type#0`. The server SHALL measure a page's keys below the page,
+which the browser builds by itself (`MarkupHost.ForPage`).
+
+#### Scenario: One type in two arms and after them
+
+- **WHEN** a page holds a component type that loads data in the compact and the expanded arm of an
+  adaptive node and once after the node, each with its own data
+- **THEN** the browser hands each instance its own data, whichever arm the window shows
+
+### Requirement: The route is read from the tree on every target
+
+A component SHALL read the route through its context from the frame its owner was handed, and the
+position SHALL be registered as a reader of the route, apart from the readers of the theme, density and
+type scale. An owner handed a frame with another route SHALL build again the positions that read the route
+and no other. No code inside a tree SHALL read the route from an ambient channel, and a tree built with no
+route SHALL answer an empty one.
+
+#### Scenario: A navigation within one page type
+
+- **WHEN** a page whose header reads the route and whose footer does not is drawn again with another route
+- **THEN** the header builds again and the footer does not
+
+#### Scenario: A prefetch reads the request's route
+
+- **WHEN** a component's prefetch resolves `RouteValues` from the services it is handed during a request
+  for `/docs/getting-started`
+- **THEN** its `slug` parameter is `getting-started`
+
+### Requirement: An inherited value is read the same way in the browser
+
+In the browser, `DependOn<T>()` and `Find<T>()` SHALL find the nearest `T` above the component's position,
+and a dependent SHALL build again when that value says it changed, as on .NET.
+
+#### Scenario: An app's inherited value in the browser
+
+- **WHEN** a component in the browser depends on an app's inherited value, and its parent hands the value a
+  new number
+- **THEN** the component builds again with the new number, and a sibling that did not depend on it does not
+
+### Requirement: A theme is the nearest one above
+
+A component's `context.Theme` SHALL be the theme of the nearest `Theme` above its position, or the frame's
+when none is, and reading it SHALL register the component as a dependent of whichever answered.
+
+#### Scenario: A subtree under its own theme
+
+- **WHEN** a component stands under a `Theme` holding another theme than the frame's
+- **THEN** it builds with that theme, and a component beside the `Theme` builds with the frame's
+
+### Requirement: The browser keeps a node's state on its position
+
+In the browser, what the runtime keeps for a node between renders SHALL belong to the node's position and
+SHALL leave the tree with it. This covers a scroll view's applied offset, its last honoured request, its
+last reported viewport and its observer; a table viewport's last report; an `InView`'s observer and last
+report; a filling canvas's observer; and a code surface's last revealed version. A node that takes a
+position another node held SHALL start with its own state, even when the reconciler draws it on the
+other node's DOM element. A node that keeps its position across a render SHALL keep its state.
+
+#### Scenario: A scroll view at another's place on the same DOM element
+
+- **WHEN** a scroll view honoured a request of version 1 and was scrolled to 300, and a scroll view at
+  another position is drawn on the same DOM element with a request of version 1 to 40
+- **THEN** the element is scrolled to 40
+
+#### Scenario: A scroll view at another's place that declares no offset
+
+- **WHEN** a scroll view was scrolled to 300, and a scroll view at another position that declares no
+  offset is drawn on the same DOM element
+- **THEN** the element is scrolled to 0
+
+#### Scenario: A scroll view keeps its position
+
+- **WHEN** a scroll view was scrolled to 300 and its position draws it again
+- **THEN** it is still at 300
+
+#### Scenario: A scroll view leaves the tree
+
+- **WHEN** a scroll view that reports its viewport leaves the tree
+- **THEN** the observer watching its element is disconnected
+
+#### Scenario: A code surface at another's place
+
+- **WHEN** a code surface's model moved its caret since the last render, and a surface with another key
+  takes its place over a model whose caret has moved too
+- **THEN** the caret of the surface that kept its position is brought into view, and the replacing
+  surface's caret is not
+
+### Requirement: The browser names a node by its position's id
+
+The attributes the browser's after-passes and focus requests find a node by (`data-eq-code`,
+`data-eq-sheet`, `data-eq-table`, `data-eq-scroll`, `data-eq-canvas-fill`, `data-eq-inview`,
+`data-eq-focus-scope`) SHALL carry the integer id of the node's position, and so SHALL the ids and
+reconciler keys formed from a node's identity. The id SHALL stay the same while the position lives,
+and a node at another's place SHALL carry a new one.
+
+#### Scenario: A code surface keeps its id
+
+- **WHEN** a code surface is lowered, lowered again from the position that keeps it, and then replaced
+  by a surface with another key
+- **THEN** the first two carry the same `data-eq-code`, which is their position's id, and the third
+  carries another
+
+### Requirement: The trees of a document count their ids together
+
+An owner SHALL take its positions' ids, and their parts' ids, from the count it is handed, and from a
+count of its own when it is handed none. The browser SHALL hand every owner of a document the same count,
+so no two positions of the document share an id.
+
+#### Scenario: Two trees share a count
+
+- **WHEN** a live owner and two structural owners handed one count each build a tree
+- **THEN** no two positions or parts of the three trees share an id, and an owner handed no count
+  numbers its root 1
+
+### Requirement: A dirty element in the browser lowers its own subtree
+
+In the browser, a render that only the page's element owners asked for (a nested component's state change)
+SHALL lower only the components that built, each with what it was lowered with and with what its parents did
+to its root done again, and SHALL patch only the DOM those components drew. The DOM it leaves SHALL be the DOM
+a whole-page lowering leaves. A component whose lowering a parent read or walked into SHALL be lowered with the
+nearest component above it that nothing reached into, and the page SHALL lower whole when none is left. The
+shortcuts the components lowered declared SHALL replace the ones they declared before, and every other
+binding SHALL stay.
+
+#### Scenario: One component changes its state
+
+- **WHEN** a page holds two counters and one of them changes its state
+- **THEN** one component is lowered, and the page's DOM is the DOM a whole lowering of the page leaves
+
+#### Scenario: A parent acted on the component's root
+
+- **WHEN** a counter inside a presence changes its state
+- **THEN** one component is lowered, its element carries the presence's motion class and exit marker, and
+  the DOM is the DOM a whole lowering leaves
+
+#### Scenario: A parent read what the component lowered to
+
+- **WHEN** a counter wrapped by a shortcut changes its state
+- **THEN** the page lowers whole, and the DOM is the DOM a whole lowering leaves
+
+#### Scenario: A component and one inside it change their state
+
+- **WHEN** a component and a counter it holds both change their state before the render
+- **THEN** the outer component's subtree is lowered once, both show their new state, and the DOM is the DOM
+  a whole lowering leaves
+
+#### Scenario: Shortcuts outside the lowered components
+
+- **WHEN** a page declares a shortcut beside a counter, and the counter changes its state
+- **THEN** one component is lowered and the shortcut is still live

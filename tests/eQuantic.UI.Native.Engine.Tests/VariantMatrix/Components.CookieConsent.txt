@@ -1,0 +1,22 @@
+## Comfortable
+### web
+<span>
+</span>
+### css
+
+### semantics
+### photon
+CookieConsent 0 0 0x0
+  Spacer 0 0 0x0
+
+## Compact
+### web
+<span>
+</span>
+### css
+
+### semantics
+### photon
+CookieConsent 0 0 0x0
+  Spacer 0 0 0x0
+

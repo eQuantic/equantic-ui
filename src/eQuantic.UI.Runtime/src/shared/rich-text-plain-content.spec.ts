@@ -53,11 +53,11 @@ describe('a paragraph built from runs (C# cross-pin)', () => {
  * search for the C# one found nothing here.
  */
 describe('the tooltip id of a styled panel (C# cross-pin)', () => {
-  const tipId = (hint: string): string => {
+  const tipId = (hint: string, wrap = false): string => {
     const node = {
       nodeKind: 'anchored',
       anchor: { nodeKind: 'text', content: 'Save', role: 'label' },
-      panel: styled(hint),
+      panel: wrap ? { nodeKind: 'group', child: styled(hint) } : styled(hint),
       open: true,
       openOnHover: true,
       describesAnchor: true,
@@ -70,6 +70,10 @@ describe('the tooltip id of a styled panel (C# cross-pin)', () => {
   it('differs when the styled text differs', () => {
     expect(tipId('saves the draft')).not.toBe('');
     expect(tipId('saves the draft')).not.toBe(tipId('discards the draft'));
+  });
+
+  it('looks through a Group to its text, as the C# TextContentOf does', () => {
+    expect(tipId('saves the draft', true)).toBe(tipId('saves the draft'));
   });
 
   it('is stable for the same styled text, which is what hydration depends on', () => {

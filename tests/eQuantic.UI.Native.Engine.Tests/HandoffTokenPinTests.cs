@@ -277,6 +277,62 @@ public class HandoffTokenPinTests
         Settle(variants, "variant");
     }
 
+    /// <summary>
+    /// The palette at <see cref="ContrastLevel.More"/>, from <c>color.more</c>. Both ways, like every
+    /// section: each pair the handoff lists is compared with the token's More legs, and each token the
+    /// SDK steps up at More has to be listed there, or the design system would not know the SDK
+    /// paints a colour it never specified. A token absent from both paints its Standard pair.
+    /// </summary>
+    [Fact]
+    public void More()
+    {
+        var more = Handoff.GetProperty("color").GetProperty("more");
+        var tokens = new List<(string Section, string Key, ColorToken Token)>
+        {
+            ("text", "primary", Theme.TextPrimary), ("text", "secondary", Theme.TextSecondary),
+            ("text", "muted", Theme.TextMuted), ("text", "inverse", Theme.TextInverse),
+            ("surface", "background", Theme.Background), ("surface", "surface", Theme.Surface),
+            ("surface", "surfaceSubtle", Theme.SurfaceSubtle), ("surface", "surfaceHighlight", Theme.SurfaceHighlight),
+            ("surface", "border", Theme.Border), ("surface", "borderStrong", Theme.BorderStrong),
+            ("utility", "focusRing", Theme.FocusRing), ("utility", "linkColor", Theme.LinkColor),
+            ("utility", "scrim", Theme.Scrim),
+        };
+        foreach (var variant in new[] { Variant.Primary, Variant.Secondary, Variant.Destructive, Variant.Success,
+                     Variant.Warning, Variant.Info, Variant.Link })
+        {
+            var name = char.ToLowerInvariant(variant.ToString()[0]) + variant.ToString()[1..];
+            var colors = Theme.Colors(variant);
+            foreach (var (slot, token) in new (string, ColorToken)[] {
+                ("base", colors.Base), ("onBase", colors.OnBase), ("pressed", colors.Pressed),
+                ("subtle", colors.Subtle), ("onSubtle", colors.OnSubtle) })
+                tokens.Add(($"variant.{name}", slot, token));
+        }
+
+        foreach (var (section, key, token) in tokens)
+        {
+            var path = $"more.{section}.{key}";
+            var listed = section.Split('.').Aggregate((JsonElement?)more, (at, part) =>
+                at is { } here && here.TryGetProperty(part, out var next) ? next : null);
+            if (listed is { } group && group.TryGetProperty(key, out var pair))
+            {
+                foreach (var (leg, colour) in new[] { ("light", token.MoreLight), ("dark", token.MoreDark) })
+                {
+                    if (!pair.TryGetProperty(leg, out var want)) continue;
+                    _consumed.Add($"{path}.{leg}");
+                    if (!Same(colour, want.GetString()!))
+                        _differed.Add($"{path}.{leg}: handoff {want.GetString()} · sdk "
+                            + $"rgba({colour.R},{colour.G},{colour.B},{colour.A})");
+                }
+            }
+            else if (token.DiffersAtMore)
+            {
+                _differed.Add($"{path}: the SDK steps it up at More and the handoff lists no More pair for it");
+            }
+        }
+
+        Settle(more, "more");
+    }
+
     // ---- scales ----------------------------------------------------------------------------------
 
     [Fact]

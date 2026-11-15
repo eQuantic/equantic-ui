@@ -58,6 +58,7 @@ public class LabelledNodesReachSemanticsTests
         ["Navigable"] = label => new Navigable(_ => { }, [new Text("row", TypeRole.BodyM)]) { Label = label },
         ["Overlay"] = label => new Overlay(new Text("over", TypeRole.BodyM)) { Label = label },
         ["LiveRegion"] = label => new LiveRegion(new Text("region", TypeRole.BodyM)) { Label = label },
+        ["Group"] = label => new Group(new Text("group", TypeRole.BodyM)) { Label = label },
         ["Adjustable"] = label => new Adjustable(new Text("x", TypeRole.BodyM), _ => { }) { Label = label },
         ["Progress"] = label => new Progress(new Text("bar", TypeRole.BodyM)) { Label = label },
         // Real surfaces with minimal controllers. These two were a `Text` standing in for them —
@@ -86,7 +87,7 @@ public class LabelledNodesReachSemanticsTests
     /// only to shrink; it reached zero, so what is worth writing down is no longer who is silent but
     /// what a container has to do.
     /// </summary>
-    private static readonly string[] LabelledContainers = ["LiveRegion", "Navigable", "Overlay", "TableViewport"];
+    private static readonly string[] LabelledContainers = ["Group", "LiveRegion", "Navigable", "Overlay", "TableViewport"];
 
     /// <summary>
     /// The roles a reader walks INTO. <see cref="SemanticRole.Group"/> was the only one until #500

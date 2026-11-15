@@ -102,20 +102,6 @@ public static class ExpressionVariableScanner
         return expressions.SelectMany(Names).Distinct(StringComparer.Ordinal).ToList();
     }
 
-    /// <summary>
-    /// <paramref name="converted"/>, the JavaScript of an expression that runs OUTSIDE any statement
-    /// — a field's or a property's initializer, a prop's default — in an arrow that declares what
-    /// <paramref name="expression"/> declares, or unchanged when it declares nothing:
-    /// <c>(() => { let n; return (n = …) ? n : 0; })()</c>. Nothing else is in a position to declare
-    /// them, and each initializer is its own C# scope, so two of them may bind the same name: the
-    /// constructor they are written into cannot take both as siblings. An arrow keeps <c>this</c>.
-    /// </summary>
-    public static string Scoped(ExpressionSyntax? expression, string converted, bool typeAnnotations)
-    {
-        var declared = Declarations(expression, typeAnnotations);
-        return declared.Length == 0 ? converted : $"(() => {{ {declared}return {converted}; }})()";
-    }
-
     /// <summary>The JavaScript names of the variables <paramref name="expression"/> declares, in the
     /// order they are written, each once. A name goes through
     /// <see cref="StringExtensions.ToJsIdentifier"/>, as every reference to it does.</summary>

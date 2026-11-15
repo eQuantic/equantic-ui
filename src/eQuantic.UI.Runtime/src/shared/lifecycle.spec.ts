@@ -1,50 +1,69 @@
 /**
  * The client twin of `ComponentLifecycleTests` (C#): the two moments a component owns that a
- * constructor cannot — entering a live tree, and leaving it. The store is what knows which instance
- * stayed across a pass, so the store is what delivers the hooks; the contract has to be identical on
- * both sides, because the SAME transpiled component runs on both.
+ * constructor cannot — entering a live tree, and leaving it. The element tree a page builds through
+ * is what knows which instance stayed across a render, so its owner is what delivers the hooks; the
+ * contract has to be identical on both sides, because the SAME transpiled component runs on both.
  */
 
 import { describe, expect, it } from 'vitest';
-import { ComponentInstanceStore } from './instance-store';
-import { Box, BoxStyle, Column, Positioned, Row, Stack } from './vocabulary';
+import { StatefulComponent } from '../core/component';
+import { ElementRoots, enterPass, exitPass } from './element-roots';
+import { Box, BoxStyle, Column, Positioned, Row, Stack, Text } from './vocabulary';
 import { SizeValue } from './value-types';
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
 import { effectiveStyle } from './style-atomizer';
 import type { HtmlNode } from '../core/types';
 
-class Tracked {
-  readonly _sharedStateful = true;
-  key: string | null = null;
+class Tracked extends StatefulComponent {
   mounts = 0;
   unmounts = 0;
-  private mounted = false;
 
-  notifyMounted(): void {
-    if (this.mounted) return;
-    this.mounted = true;
+  constructor(
+    private readonly log: string[] | null = null,
+    private readonly name = '',
+  ) {
+    super();
+  }
+
+  onMount(): void {
     this.mounts++;
+    this.log?.push(`mount:${this.name}`);
   }
 
-  notifyUnmounted(): void {
-    if (!this.mounted) return;
-    this.mounted = false;
+  onUnmount(): void {
     this.unmounts++;
+    this.log?.push(`unmount:${this.name}`);
   }
 
-  build(): unknown {
-    return null;
+  build(): Text {
+    return new Text('tracked');
   }
 }
 
-describe('component lifecycle (instance store)', () => {
+/** The tree a page's render lowers: `children` in a column, built in the owner of the pass's next root. */
+function lower(...children: StatefulComponent[]): void {
+  const column = new Column();
+  for (const child of children) column.add(child as never);
+  lowerVisualNode(column as never, ambientLoweringContext());
+}
+
+/** One render of a page that holds `roots`: a pass around the lowering, as `render()` opens. */
+function render(roots: ElementRoots, ...children: StatefulComponent[]): void {
+  enterPass(roots, null, true);
+  try {
+    lower(...children);
+  } finally {
+    exitPass();
+  }
+}
+
+describe('component lifecycle (element tree)', () => {
   it('mounts a component entering the tree, once', () => {
-    const store = new ComponentInstanceStore();
+    const roots = new ElementRoots(null);
     const component = new Tracked();
 
-    store.reconcile('/0', component, null);
-    store.endPass();
+    render(roots, component);
 
     expect(component.mounts).toBe(1);
   });
@@ -52,26 +71,31 @@ describe('component lifecycle (instance store)', () => {
   // Mid-build a hook would run while its own parent is still building, so a setState from it would
   // mutate a tree half-way through being produced.
   it('waits for the pass to close before mounting', () => {
-    const store = new ComponentInstanceStore();
+    const roots = new ElementRoots(null);
     const component = new Tracked();
 
-    store.reconcile('/0', component, null);
+    enterPass(roots, null, true);
+    try {
+      lower(component);
+      expect(component.mounts).toBe(0);
+    } finally {
+      exitPass();
+    }
 
-    expect(component.mounts).toBe(0);
+    expect(component.mounts).toBe(1);
   });
 
   // Mounting per pass would re-run every subscription on every keystroke that re-rendered the page.
-  it('does not mount a retained instance again', () => {
-    const store = new ComponentInstanceStore();
+  it('does not mount a kept instance again', () => {
+    const roots = new ElementRoots(null);
     const first = new Tracked();
-    store.reconcile('/0', first, null);
-    store.endPass();
+    render(roots, first);
 
     const second = new Tracked();
-    const resolved = store.reconcile('/0', second, null);
-    store.endPass();
+    render(roots, second);
 
-    expect(resolved).toBe(first);
+    expect(first.mountedAt).not.toBeNull();
+    expect(second.mountedAt).toBeNull();
     expect(first.mounts).toBe(1);
     expect(second.mounts).toBe(0);
     expect(second.unmounts).toBe(0);
@@ -79,58 +103,65 @@ describe('component lifecycle (instance store)', () => {
 
   // Without this every mount is a leak, which is why the pair ships together.
   it('unmounts a position that left the tree', () => {
-    const store = new ComponentInstanceStore();
+    const roots = new ElementRoots(null);
     const component = new Tracked();
-    store.reconcile('/0', component, null);
-    store.endPass();
+    render(roots, component);
 
-    store.endPass();
+    render(roots);
 
     expect(component.unmounts).toBe(1);
   });
 
-  it('unmounts everything still in when the store is torn down', () => {
-    const store = new ComponentInstanceStore();
+  it('unmounts everything still in when the page is torn down', () => {
+    const roots = new ElementRoots(null);
     const a = new Tracked();
     const b = new Tracked();
-    store.reconcile('/0', a, null);
-    store.reconcile('/1', b, null);
-    store.endPass();
+    render(roots, a, b);
 
-    store.unmountAll();
+    roots.unmountAll();
 
     expect(a.unmounts).toBe(1);
     expect(b.unmounts).toBe(1);
   });
 
-  // The order that lets two components share one exclusive resource across a swap.
+  // The order that lets two components share one exclusive resource across a swap: another key at
+  // the same position is another component, so the one there leaves and a new one arrives.
   it('unmounts the outgoing before mounting the incoming', () => {
     const order: string[] = [];
-    const named = (name: string) => {
-      const c = new Tracked();
-      const mount = c.notifyMounted.bind(c);
-      const unmount = c.notifyUnmounted.bind(c);
-      c.notifyMounted = () => {
-        const before = c.mounts;
-        mount();
-        if (c.mounts !== before) order.push(`mount:${name}`);
-      };
-      c.notifyUnmounted = () => {
-        const before = c.unmounts;
-        unmount();
-        if (c.unmounts !== before) order.push(`unmount:${name}`);
-      };
-      return c;
-    };
+    const roots = new ElementRoots(null);
+    const leaving = new Tracked(order, 'leaving');
+    leaving.key = 'a';
+    render(roots, leaving);
 
-    const store = new ComponentInstanceStore();
-    store.reconcile('/0', named('leaving'), null);
-    store.endPass();
-
-    store.reconcile('/1', named('arriving'), null);
-    store.endPass();
+    const arriving = new Tracked(order, 'arriving');
+    arriving.key = 'b';
+    render(roots, arriving);
 
     expect(order).toEqual(['mount:leaving', 'unmount:leaving', 'mount:arriving']);
+  });
+
+  // A tree the render no longer reaches at all (a bridge the page stopped drawing) leaves whole,
+  // before anything that arrives in another tree mounts.
+  it('takes down a tree the render stopped reaching before mounting what arrived elsewhere', () => {
+    const order: string[] = [];
+    const roots = new ElementRoots(null);
+    enterPass(roots, null, true);
+    try {
+      lower(new Tracked(order, 'first root'));
+      lower(new Tracked(order, 'second root'));
+    } finally {
+      exitPass();
+    }
+    order.length = 0;
+
+    enterPass(roots, null, true);
+    try {
+      lower(new Tracked(order, 'arriving'), new Tracked(order, 'also arriving'));
+    } finally {
+      exitPass();
+    }
+
+    expect(order).toEqual(['unmount:second root', 'mount:also arriving']);
   });
 });
 

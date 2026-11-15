@@ -309,7 +309,7 @@ public class SpreadsheetComponentTests
     {
         var builder = new DisplayListBuilder();
         host.RenderFrame(builder, timeMs);
-        var ring = ((IAppTheme)PhotonTheme.Instance).FocusRing.Resolve(ThemeMode.Light);
+        var ring = ((IAppTheme)PhotonTheme.Instance).FocusRing.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var stroke = builder.Build().Commands.ToArray()
             .Single(command => command.Paint.Color == ring && command.StrokeWidth == 2f);
         return stroke.Transform.Transform(new Point(stroke.Shape.Rect.X, stroke.Shape.Rect.Y)).X;

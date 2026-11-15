@@ -14,7 +14,7 @@ namespace eQuantic.UI.Native.Components;
 /// </para>
 /// </summary>
 internal sealed class PhotonCanvasPainter(
-    DisplayListBuilder builder, Rect box, ThemeMode mode) : ICanvasPainter
+    DisplayListBuilder builder, Rect box, ThemeMode mode, ContrastLevel contrast) : ICanvasPainter
 {
     public Size Size => box.Size;
 
@@ -26,7 +26,7 @@ internal sealed class PhotonCanvasPainter(
         var origin = At(new Point(local.X, local.Y));
         builder.FillRRect(
             new RRect(new Rect(origin.X, origin.Y, local.Width, local.Height), new CornerRadii(cornerRadius)),
-            Paint.Solid(color.Resolve(mode)));
+            Paint.Solid(color.Resolve(mode, contrast)));
     }
 
     public void StrokeRect(Rect local, ColorToken color, float strokeWidth, float cornerRadius = 0)
@@ -34,16 +34,16 @@ internal sealed class PhotonCanvasPainter(
         var origin = At(new Point(local.X, local.Y));
         builder.StrokeRRect(
             new RRect(new Rect(origin.X, origin.Y, local.Width, local.Height), new CornerRadii(cornerRadius)),
-            strokeWidth, Paint.Solid(color.Resolve(mode)));
+            strokeWidth, Paint.Solid(color.Resolve(mode, contrast)));
     }
 
     public void FillCircle(Point center, float radius, ColorToken color) =>
-        builder.FillCircle(At(center), radius, Paint.Solid(color.Resolve(mode)));
+        builder.FillCircle(At(center), radius, Paint.Solid(color.Resolve(mode, contrast)));
 
     public void FillAnnularSector(Point center, float innerRadius, float outerRadius,
         float startAngle, float endAngle, ColorToken color, float cornerSmoothing = 0) =>
         builder.FillAnnularSector(At(center), innerRadius, outerRadius,
-            startAngle, endAngle, Paint.Solid(color.Resolve(mode)), cornerSmoothing);
+            startAngle, endAngle, Paint.Solid(color.Resolve(mode, contrast)), cornerSmoothing);
 
     public void Line(Point start, Point end, ColorToken color, float strokeWidth)
     {
@@ -68,7 +68,7 @@ internal sealed class PhotonCanvasPainter(
         builder.FillRRect(
             new RRect(new Rect(midX - (length / 2), midY - (strokeWidth / 2), length, strokeWidth),
                 new CornerRadii(0)),
-            Paint.Solid(color.Resolve(mode)));
+            Paint.Solid(color.Resolve(mode, contrast)));
         builder.Pop();
     }
 }

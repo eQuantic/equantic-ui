@@ -45,8 +45,8 @@ public class BarChartPhotonTests
     {
         var commands = Render(Chart(), 400, 320);
 
-        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light);
-        var beta = Theme.Data.SeriesColor(1).Resolve(ThemeMode.Light);
+        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light, ContrastLevel.Standard);
+        var beta = Theme.Data.SeriesColor(1).Resolve(ThemeMode.Light, ContrastLevel.Standard);
         // Four bars per series, each a rounded rect plus the plain one that squares its baseline end.
         Marks(commands, alpha).Should().HaveCount(8);
         Marks(commands, beta).Should().HaveCount(8);
@@ -63,7 +63,7 @@ public class BarChartPhotonTests
     {
         var commands = Render(Chart(), 400, 320);
 
-        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light);
+        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var bars = Marks(commands, alpha);
         bars.Should().HaveCount(8);
         bars.Should().OnlyContain(c => c.Shape.Rect.X >= BarChart.MinValueAxisWidth);
@@ -139,7 +139,7 @@ public class BarChartPhotonTests
         host.RenderFrame(first, 0);
         Labels(host).Should().NotContain("12", "nothing is hovered yet");
 
-        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light);
+        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var bar = Marks(first.Build().Commands.ToArray(), alpha).First().Shape.Rect;
         host.PointerMove(bar.X + bar.Width / 2, bar.Y + bar.Height / 2);
         host.RenderFrame(new DisplayListBuilder(), 16);
@@ -164,7 +164,7 @@ public class BarChartPhotonTests
         host.RenderFrame(first, 0);
         Labels(host).Should().NotContain("12", "nothing is hovered yet");
 
-        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light);
+        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var bar = Marks(first.Build().Commands.ToArray(), alpha).First().Shape.Rect;
         host.PointerMove(bar.X + bar.Width / 2, bar.Y + bar.Height / 2);
         host.RenderFrame(new DisplayListBuilder(), 16);
@@ -189,7 +189,7 @@ public class BarChartPhotonTests
         var first = new DisplayListBuilder();
         host.RenderFrame(first, 0);
 
-        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light);
+        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var bar = Marks(first.Build().Commands.ToArray(), alpha).First().Shape.Rect;
         host.PointerMove(bar.X + bar.Width / 2, bar.Y + bar.Height / 2);
         host.RenderFrame(new DisplayListBuilder(), 16);
@@ -212,8 +212,8 @@ public class BarChartPhotonTests
     {
         var commands = Render(Chart(BarLayout.Stacked), 400, 320);
 
-        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light);
-        var beta = Theme.Data.SeriesColor(1).Resolve(ThemeMode.Light);
+        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light, ContrastLevel.Standard);
+        var beta = Theme.Data.SeriesColor(1).Resolve(ThemeMode.Light, ContrastLevel.Standard);
         // Alpha is the inner segment (square both ends: one rect each); Beta is on top (rounded + square).
         Marks(commands, alpha).Should().HaveCount(4);
         Marks(commands, beta).Should().HaveCount(8);

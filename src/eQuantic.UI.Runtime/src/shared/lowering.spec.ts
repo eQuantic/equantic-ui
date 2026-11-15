@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ColorTokenValue, VisualNodeValue } from './nodes';
 import { num } from './css-values';
 import { lowerVisualNode, px, tokenValue } from './lowering';
+import { StatelessComponent } from '../core/component';
 import webFrameAttributes from './web-frame-attributes.fixture.json';
 
 /**
@@ -488,16 +489,19 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
   });
 
   it('Components expand via build(context) — the write-once client path', () => {
-    const component: VisualNodeValue = {
-      nodeKind: 'component',
-      build: () =>
-        box({ background: primaryBase, height: { kind: 'fixed', value: 40 } }, {
+    // A component, as transpiled code makes one: the element engine builds a `UiComponent`, and the
+    // lowering draws what its position built.
+    class PayButton extends StatelessComponent {
+      build(): VisualNodeValue {
+        return box({ background: primaryBase, height: { kind: 'fixed', value: 40 } }, {
           nodeKind: 'text',
           content: 'Pay',
           role: 'label',
           maxLines: 1,
-        } as VisualNodeValue),
-    } as VisualNodeValue;
+        } as VisualNodeValue);
+      }
+    }
+    const component = new PayButton() as unknown as VisualNodeValue;
 
     const node = lowerVisualNode(component, ctx);
     expect(node.tag).toBe('div');

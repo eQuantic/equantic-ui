@@ -53,7 +53,7 @@ public class ExitReplayScaleTests
     /// <summary>The card's own fill, wherever it ended up.</summary>
     private static DrawCommand? Card(DrawCommand[] commands)
     {
-        var primary = PhotonTheme.Instance.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light);
+        var primary = PhotonTheme.Instance.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         foreach (var command in commands)
             if (command.Paint.Color == primary) return command;
         return null;

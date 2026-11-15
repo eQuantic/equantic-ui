@@ -6,28 +6,94 @@
  * something actually crosses, and does the measuring off the main thread. For a table of contents
  * watching thirty headings that is the difference between a page that scrolls and one that stutters.
  *
- * The declaration is collected during the pass and committed after it mounts — the same shape the
- * scroll viewports use, because an element cannot be observed before it exists.
+ * The declaration is collected during the pass, on the state the InView's POSITION keeps, and
+ * committed after it mounts — the same shape the scroll viewports use, because an element cannot be
+ * observed before it exists.
+ *
+ * The observer and the last visibility it reported belong to the position and to the element it
+ * watches, together. They lived on the DOM element, which the reconciler hands to whatever node is
+ * lowered at its place, so an InView that took another's place inherited its observer and its last
+ * report, and was never told it was on screen if the one before it already had been (#1454).
  */
+
+import type { Element as Position } from './runtime-exports';
+import { DISPOSABLE, nodeStateFor, type NodeState } from './node-states';
 
 interface InViewDeclaration {
   threshold: number;
   onChanged: (visible: boolean) => void;
 }
 
-const declared = new Map<string, InViewDeclaration>();
-
-/** Marker properties live on the ELEMENT: the reconciler reuses it across passes, so the observer
- * attached last pass is still the right one and must not be attached twice. */
+/** The element an InView's position watches, and which position that is. */
 interface ObservedElement extends HTMLElement {
-  __eqInViewObserver?: IntersectionObserver;
-  __eqInViewVisible?: boolean;
-  __eqInViewChanged?: (visible: boolean) => void;
+  __eqInView?: InViewState;
 }
 
-/** Declares the element at `path` as observed. Called by the lowering, once per pass. */
-export function declareInView(path: string, declaration: InViewDeclaration): void {
-  declared.set(path, declaration);
+/**
+ * What an InView's position keeps between passes: the latest declaration, the element it watches,
+ * the observer, and the visibility last reported. Watching another element starts all of it again.
+ */
+export class InViewState implements NodeState {
+  /** Disposed when its position leaves the tree (`node-states.ts`). */
+  static readonly $interfaces = DISPOSABLE;
+
+  /** What the latest pass declared: the callback is a new closure over new state every pass. */
+  declaration: InViewDeclaration | null = null;
+  view: ObservedElement | null = null;
+  observer: IntersectionObserver | undefined = undefined;
+  visible: boolean | undefined = undefined;
+
+  /** Watches `view`, letting go of whatever watched it before, this position or another. */
+  watch(view: ObservedElement, threshold: number): void {
+    const before = view.__eqInView;
+    if (before && before !== this && before.view === view) before.letGo();
+    this.letGo();
+    this.view = view;
+    view.__eqInView = this;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const visible = entry.isIntersecting;
+          // TRANSITIONS only — the observer reports on every crossing, and a caller that wanted a
+          // stream would have written one.
+          if (this.visible === visible) continue;
+          this.visible = visible;
+          this.declaration?.onChanged(visible);
+        }
+      },
+      { threshold },
+    );
+    observer.observe(view);
+    this.observer = observer;
+  }
+
+  /** Stops watching the element. */
+  letGo(): void {
+    this.observer?.disconnect();
+    this.observer = undefined;
+    this.visible = undefined;
+    this.view = null;
+  }
+
+  dispose(): void {
+    this.letGo();
+    this.declaration = null;
+  }
+}
+
+/** The InViews the latest passes declared, by their position's id, until the commit reads them. */
+const declared = new Map<string, InViewState>();
+
+/**
+ * Declares the InView at `position` as observed, on the state the position keeps, and answers the id
+ * the lowering stamps on the observed element as `data-eq-inview`. Called once per pass.
+ */
+export function declareInView(position: Position, declaration: InViewDeclaration): string {
+  const state = nodeStateFor(position, InViewState);
+  state.declaration = declaration;
+  const id = String(position.id);
+  declared.set(id, state);
+  return id;
 }
 
 /**
@@ -63,31 +129,14 @@ export function commitInViewObservers(): void {
   }
 
   for (const element of document.querySelectorAll<ObservedElement>('[data-eq-inview]')) {
-    const declaration = declared.get(element.getAttribute('data-eq-inview') ?? '');
-    if (!declaration) continue;
+    const state = declared.get(element.getAttribute('data-eq-inview') ?? '');
+    const declaration = state?.declaration;
+    if (!state || !declaration) continue;
 
-    // The callback is replaced every pass; the OBSERVER is not. Re-observing would fire an initial
-    // callback on every render, which for a table of contents means the highlight jumping back to
-    // whatever is on screen each time any state changes.
-    element.__eqInViewChanged = declaration.onChanged;
-    if (element.__eqInViewObserver) continue;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const target = entry.target as ObservedElement;
-          const visible = entry.isIntersecting;
-          // TRANSITIONS only — the observer reports on every crossing, and a caller that wanted a
-          // stream would have written one.
-          if (target.__eqInViewVisible === visible) continue;
-          target.__eqInViewVisible = visible;
-          target.__eqInViewChanged?.(visible);
-        }
-      },
-      { threshold: declaration.threshold },
-    );
-    observer.observe(element);
-    element.__eqInViewObserver = observer;
+    // The callback is replaced every pass (the state reads the latest); the OBSERVER is not.
+    // Re-observing would fire an initial callback on every render, which for a table of contents
+    // means the highlight jumping back to whatever is on screen each time any state changes.
+    if (state.view !== element || !state.observer) state.watch(element, declaration.threshold);
   }
 
   declared.clear();
@@ -98,8 +147,7 @@ export function resetInViewForTests(): void {
   declared.clear();
   if (typeof document === 'undefined') return;
   for (const element of document.querySelectorAll<ObservedElement>('[data-eq-inview]')) {
-    element.__eqInViewObserver?.disconnect();
-    element.__eqInViewObserver = undefined;
-    element.__eqInViewVisible = undefined;
+    element.__eqInView?.letGo();
+    element.__eqInView = undefined;
   }
 }

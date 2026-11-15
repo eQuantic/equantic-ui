@@ -27,7 +27,7 @@ export class Drawer extends StatelessComponent {
         if (!this.open && !context.inFlow) return new Box();
         let layer = new Stack();
         layer.add(new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: theme.scrim })), this.onDismiss, { label: SdkStrings.dismiss }));
-        let panel = new Box(new BoxStyle({ width: this.width, height: context.inFlow ? undefined : SizeValue.fill, background: theme.surface, elevation: 3, padding: EdgeInsets.all(16) }), this.content);
+        let panel = new Box(new BoxStyle({ width: this.width, height: context.inFlow ? undefined : SizeValue.fill, background: theme.surface, elevation: theme.modal?.drawerElevation ?? 3, padding: theme.modal?.drawerPadding ?? EdgeInsets.all(16) }), this.content);
         if (context.inFlow) return panel;
         layer.add(this.edge === 'start' ? new Positioned(new Presence(panel), 0, null, 0, 0) : new Positioned(new Presence(panel), 0, 0, 0));
         let overlay = new Overlay(layer);

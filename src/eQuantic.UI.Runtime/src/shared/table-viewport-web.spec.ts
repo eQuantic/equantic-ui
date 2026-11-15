@@ -17,6 +17,7 @@ import { Box, BoxStyle, Pressable, TableViewCell, TableViewport, Text } from './
 import { TableView } from './components/TableView';
 import fixture from './component-parity.fixture.json';
 import type { HtmlNode } from '../core/types';
+import { rendersOfOnePage } from './test-positions';
 
 const context = { textPrimary: photonTheme.textPrimary } as LoweringContext;
 
@@ -658,6 +659,8 @@ describe('A gliding mark on the web, glided by the after-pass (#984)', () => {
     const rows = new UniformTableSpans(200, 28);
     const columns = new UniformTableSpans(40, 96);
     let view: HTMLElement | null = null;
+    // One page's passes: the viewport keeps its position, and the id the first pass stamped.
+    const render = rendersOfOnePage();
     const mark = () => view!.children[4].firstElementChild!.firstElementChild as HTMLElement;
     const pass = (row: number, column: number, options: { columns?: number; glide?: typeof glide | null } = {}) => {
       const node = new TableViewport(rows, columns, scroll, { pinnedRows: 1, pinnedColumns: 1 });
@@ -666,7 +669,7 @@ describe('A gliding mark on the web, glided by the after-pass (#984)', () => {
       cursor.columns = options.columns ?? 1;
       cursor.glide = options.glide === undefined ? glide : options.glide;
       node.add(cursor);
-      const lowered = lowerVisualNode(node as never, context);
+      const lowered = render(() => lowerVisualNode(node as never, context));
       if (!view) {
         view = toDom(lowered) as HTMLElement;
         Object.defineProperty(view, 'clientWidth', { value: 900, configurable: true });

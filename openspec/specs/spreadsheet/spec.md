@@ -617,7 +617,9 @@ press SHALL stretch the new range; Shift+F8 SHALL enter add mode, in which a pre
 as it would with ⌘ or Ctrl, until Shift+F8 is pressed again or Escape is. A press without a modifier, an
 arrow, Go To and every other move that selects SHALL leave one range. Copy, cut, paste, the fill down
 and right chords and the fill handle SHALL act on the active range alone; Delete SHALL clear every range,
-and Ctrl+Enter (⌘↩) SHALL fill every range with the entry, as one step undo takes back.
+and Ctrl+Enter (⌘↩) SHALL fill every range with the entry, as one step undo takes back. An undo and a
+redo of any step SHALL bring back the selection as it stood on that side of it, every range and the
+active cell where it was, and a paste SHALL leave the active cell where it landed.
 
 #### Scenario: A press with Command adds a cell
 
@@ -637,8 +639,9 @@ and Ctrl+Enter (⌘↩) SHALL fill every range with the entry, as one step undo 
 
 #### Scenario: Delete clears every range
 
-- **WHEN** B2 and D4:D5 hold values, B2 and D4:D5 are selected, and Delete is pressed
-- **THEN** B2, D4 and D5 are empty, and one undo restores all three
+- **WHEN** B2 and D4:D5 hold values, B2 and D4:D5 are selected with D4 active, and Delete is pressed
+- **THEN** B2, D4 and D5 are empty, one undo restores all three with B2 and D4:D5 selected and D4
+  active, and a redo empties them again with the same selection
 
 #### Scenario: Copy takes the active range
 
@@ -648,7 +651,13 @@ and Ctrl+Enter (⌘↩) SHALL fill every range with the entry, as one step undo 
 #### Scenario: Ctrl+Enter fills every range
 
 - **WHEN** B2 and D4:D5 are selected, `x` is typed and Ctrl+Enter (⌘↩) is pressed
-- **THEN** B2, D4 and D5 hold `x`, and one undo empties all three
+- **THEN** B2, D4 and D5 hold `x`, and one undo empties all three with B2 and D4:D5 selected
+
+#### Scenario: An undo keeps the active cell where it was
+
+- **WHEN** B2:C3 is selected, Tab moves the active cell to C2, Delete is pressed, E5 is selected and the
+  step is undone
+- **THEN** B2:C3 is selected with C2 active
 
 ### Requirement: A header answers the pointer through the engine
 

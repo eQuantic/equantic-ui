@@ -152,9 +152,14 @@ public sealed partial class AppleCameraSession : ICameraSession
         SendVoid(_session, Sel("addOutput:"), output);
         SendVoid(_session, Sel("commitConfiguration"));
 
-        // startRunning BLOCKS until the pipeline is up — off the caller's thread, always.
+        // startRunning BLOCKS until the pipeline is up — off the caller's thread, always. A pool thread
+        // has no autorelease pool of its own, so the call brings one (#1473).
         var session = _session;
-        Task.Run(() => SendVoid(session, Sel("startRunning")));
+        Task.Run(() =>
+        {
+            using var pool = AutoreleasePool.Push();
+            SendVoid(session, Sel("startRunning"));
+        });
         return true;
     }
 
@@ -178,7 +183,11 @@ public sealed partial class AppleCameraSession : ICameraSession
         if (_session == IntPtr.Zero) return;
         var session = _session;
         _session = IntPtr.Zero;
-        Task.Run(() => SendVoid(session, Sel("stopRunning")));   // blocks, like startRunning
+        Task.Run(() =>
+        {
+            using var pool = AutoreleasePool.Push();
+            SendVoid(session, Sel("stopRunning"));   // blocks, like startRunning
+        });
     }
 
     // ---- the frame delegate --------------------------------------------------------------------

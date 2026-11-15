@@ -106,7 +106,7 @@ public class DrawingTests
         textures.Should().HaveCount(3, "three painted shapes, three rasters");
         textures[0].Paint.Color.Should().Be(Color.FromRgb(0x4F, 0x46, 0xE5));
         textures[1].Paint.Color.Should().Be(Color.FromRgb(0xF5, 0x9E, 0x0B));
-        textures[2].Paint.Color.Should().Be(PhotonTheme.Instance.TextPrimary.Resolve(ThemeMode.Light),
+        textures[2].Paint.Color.Should().Be(PhotonTheme.Instance.TextPrimary.Resolve(ThemeMode.Light, ContrastLevel.Standard),
             "the shape that said currentColor takes the tint, and nothing else does");
     }
 
@@ -257,7 +257,7 @@ public class DrawingTests
         var builder = new DisplayListBuilder();
         host.RenderFrame(builder);
 
-        var ring = PhotonTheme.Instance.FocusRing.Resolve(ThemeMode.Light);
+        var ring = PhotonTheme.Instance.FocusRing.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         Textures(builder).Select(texture => texture.Paint.Color).Should().Equal(
             Color.FromRgb(203, 213, 225), ring, Color.FromRgb(203, 213, 225));
     }

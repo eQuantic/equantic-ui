@@ -43,6 +43,7 @@ export {
   Adjustable,
   Progress,
   LiveRegion,
+  Group,
   RangeValue,
   Navigable,
   CameraPreview,
@@ -112,6 +113,17 @@ export {
   SelectionControlsTheme,
   SegmentedTheme,
   ChipTheme,
+  ModalTheme,
+  MenuTheme,
+  NoticeTheme,
+  ProgressTheme,
+  CardTheme,
+  NavigationTheme,
+  ListTheme,
+  TableTheme,
+  BadgeTheme,
+  CalendarTheme,
+  MarkdownTheme,
 } from './theme-slots';
 // Primitives types route to @equantic/runtime implicitly, so a page reading its route needs this
 // name to resolve here or it dies at hydration on an unresolvable import.
@@ -132,7 +144,7 @@ export {
 } from './value-types';
 // A page placing a WebFrame names this to say WHICH form its content is; same implicit promise.
 export { WebContent } from './value-types';
-export { GridPattern, InFlow, InheritedComponent, InView, RadialGradient, Simulated } from './vocabulary';
+export { GridPattern, InFlow, InheritedComponent, InView, RadialGradient, Simulated, Theme } from './vocabulary';
 export { VisualNodeExtensions } from './visual-node-extensions';
 // The Primitives VALUE types a page can name — same implicit promise, see primitive-values.ts.
 export {
@@ -194,6 +206,11 @@ export { CalendarNames } from './calendar-names';
 // #418). export-parity.spec.ts holds every one of them here.
 export { IAppTheme, ICodeCompletionProvider, ICodeLanguage, ICodeSignatureProvider } from './interface-defaults';
 export * from './components';
+// The element engine the lowering builds through, handed to it once every module above has loaded:
+// element-engine.ts says why the lowering cannot import it.
+import { BuildOwner, ComponentElement, ElementIds, NodeElement } from './components';
+import { registerElementEngine } from './element-engine';
+registerElementEngine({ BuildOwner, ComponentElement, ElementIds, NodeElement });
 
 // ---- Device capabilities ---------------------------------------------------------------------
 // A capability is a service on both sides: C# takes it through a constructor, and here it is

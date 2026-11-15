@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace eQuantic.UI.Compiler.Services;
 
@@ -13,6 +14,7 @@ namespace eQuantic.UI.Compiler.Services;
 public sealed class AppBuild
 {
     private readonly AppBuildOptions _options;
+    private readonly ModuleBundler? _bundler;
     private readonly TextWriter _output;
     private readonly TextWriter _errors;
     private readonly ComponentCompiler _compiler;
@@ -34,13 +36,27 @@ public sealed class AppBuild
     /// build is held to (<see cref="InlineHandlers"/>); empty for an app that references none.</summary>
     private IReadOnlyList<Compilation> _referencedCompilations = [];
 
+    // What this build loaded, which a later build of the same process starts from (LoadFrom).
+    private IReadOnlyList<string>? _sourceFiles;
+    private IReadOnlyDictionary<ReferencedProject, Compilation>? _built;
+    private string? _inputs;
+
+    // What each file's compile gave this build, by full path, which the next build of a served eqc takes
+    // as it is for a file the save changed nothing of (#1281), and the ones this build was handed so.
+    private readonly Dictionary<string, FileCompile> _fileCompiles = new(StringComparer.Ordinal);
+    private IReadOnlyDictionary<string, FileCompile> _reusable = new Dictionary<string, FileCompile>();
+
     /// <param name="options">What the build is handed.</param>
     /// <param name="output">Where the build narrates; the console when null.</param>
     /// <param name="errors">Where diagnostics go, in MSBuild's canonical form; the console's error
     /// stream when null.</param>
-    public AppBuild(AppBuildOptions options, TextWriter? output = null, TextWriter? errors = null)
+    /// <param name="bundler">The bundler a caller keeps between builds, a served eqc's (#1280); null, and
+    /// the build starts bun for its own bundle and stops it after.</param>
+    public AppBuild(AppBuildOptions options, TextWriter? output = null, TextWriter? errors = null,
+        ModuleBundler? bundler = null)
     {
         _options = options;
+        _bundler = bundler;
         _output = output ?? Console.Out;
         _errors = errors ?? Console.Error;
         _primarySourceDir = options.SourceDirectories[0];
@@ -52,6 +68,15 @@ public sealed class AppBuild
             SourceMapDirectory = Path.GetFullPath(_intermediateDir),
         };
     }
+
+    /// <summary>Whether <paramref name="file"/> is a source of this build: the app's own, or a referenced
+    /// project's the app can name. What the build reads of the app's <c>Program.cs</c> is read from these
+    /// files alone (its service registrations, its layout).</summary>
+    private bool IsSourceOfTheBuild(string file) =>
+        _referenced?.CanBeNamedFrom(file)
+        ?? Path.GetFullPath(file).StartsWith(
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(_primarySourceDir)) + Path.DirectorySeparatorChar,
+            StringComparison.Ordinal);
 
     /// <summary>Where each type's TypeScript module is written before it is bundled.</summary>
     public string IntermediateDirectory => _intermediateDir;
@@ -93,77 +118,7 @@ public sealed class AppBuild
                 return false;
             }
 
-            // Collect source files only from the PRIMARY source directory (user's project)
-            // Skip standard components directory as those are already compiled
-            var allSourceFiles = new List<string>();
-
-            if (_appSources is { } appSources)
-            {
-                // What csc compiled: a file the project removes is not read, a file it links from outside
-                // its directory is, and the global usings are this configuration's alone (#1003), never
-                // each configuration's under obj.
-                _output.WriteLine($"   Reading the {appSources.Files.Count} files the C# compiler compiled, with {appSources.Symbols.Count} symbol(s)");
-                allSourceFiles.AddRange(appSources.Files);
-                // What a source generator wrote and csc never listed. A file a build step wrote under the
-                // generated folder AND added to Compile (the vector catalog) is in the list already, and
-                // taken twice its class was declared twice and nothing that named it bound (EQ2006).
-                var generated = ProjectCompilationHelper
-                    .GetCompilerGeneratedFiles(_primarySourceDir, _options.GeneratedDirectory)
-                    .Where(file => !appSources.Compiles(file))
-                    .ToList();
-                if (generated.Count > 0)
-                {
-                    _output.WriteLine($"   Including {generated.Count} compiler-generated file(s)");
-                    allSourceFiles.AddRange(generated);
-                }
-            }
-            else if (Directory.Exists(_primarySourceDir))
-            {
-                _output.WriteLine($"   Scanning project directory: {_primarySourceDir}");
-                var files = ProjectCompilationHelper.GetProjectSourceFiles(_primarySourceDir).ToList();
-                _output.WriteLine($"   Found {files.Count} source files in project");
-                allSourceFiles.AddRange(files);
-
-                // Feed the SDK-generated global usings (obj/*.GlobalUsings.g.cs) to the compilation so the
-                // semantic model resolves BCL types used unqualified — e.g. Dictionary<RecordKey, V> under
-                // <ImplicitUsings> — exactly as the real build does, without hardcoding a namespace list.
-                var globalUsings = ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles(_primarySourceDir).ToList();
-                if (globalUsings.Count > 0)
-                {
-                    _output.WriteLine($"   Including {globalUsings.Count} generated global-usings file(s)");
-                    allSourceFiles.AddRange(globalUsings);
-                }
-
-                // SOURCE-GENERATOR output: part of the program csc compiled, so a page calling into it
-                // must resolve here too — see GetCompilerGeneratedFiles.
-                var generated = ProjectCompilationHelper
-                    .GetCompilerGeneratedFiles(_primarySourceDir, _options.GeneratedDirectory).ToList();
-                if (generated.Count > 0)
-                {
-                    _output.WriteLine($"   Including {generated.Count} compiler-generated file(s)");
-                    allSourceFiles.AddRange(generated);
-                }
-            }
-
-            // Reference-only sources (icon packs etc.): their .cs enter the compilation so the semantic model
-            // can reach constant initializers for inlining, but they are NOT in the source directories so
-            // nothing here is transpiled to a module.
-            var refSourcesFile = _options.ReferenceSourcesFile;
-            if (!string.IsNullOrEmpty(refSourcesFile) && File.Exists(refSourcesFile))
-            {
-                var refSourceCount = 0;
-                foreach (var dir in File.ReadAllLines(refSourcesFile).Select(l => l.Trim()).Where(l => l.Length > 0))
-                {
-                    if (!Directory.Exists(dir)) continue;
-                    foreach (var file in ProjectCompilationHelper.GetProjectSourceFiles(dir))
-                    {
-                        allSourceFiles.Add(file);
-                        refSourceCount++;
-                    }
-                }
-                if (refSourceCount > 0)
-                    _output.WriteLine($"   Including {refSourceCount} reference-source file(s) for constant inlining");
-            }
+            var allSourceFiles = CollectSourceFiles(_output);
 
             if (allSourceFiles.Count > 0)
             {
@@ -280,28 +235,12 @@ public sealed class AppBuild
                     parseOptions: _appSources?.ParseOptions);
 
                 if (built is { Count: > 0 })
-                {
                     _output.WriteLine($"   Compiling {built.Count} referenced project(s) from source: " +
                         string.Join(", ", built.Keys.Select(project => project.AssemblyName)));
-                    _referenced = new ReferencedModules(built, _primarySourceDir);
-                    _referencedCompilations = built.Values.ToList();
-                    _compiler.SetReferencedModules(_referenced);
-                    // One catalogue id per resource class for the whole build: two projects may
-                    // each have a Strings, and a file sees only its own project's.
-                    _compiler.SetResourceIds(new ResourceCatalogIds(projectCompilation));
-                }
-
-                Compilation = projectCompilation;
-                _compiler.SetProjectCompilation(projectCompilation);
-                // What the app registered in its container, written in its own files or a referenced
-                // project's: a component that takes one of those services through its constructor has
-                // the browser build the same class (#1335).
-                var appDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(_primarySourceDir)) + Path.DirectorySeparatorChar;
-                var referenced = _referenced;
-                _compiler.SetServiceRegistrations(ServiceRegistrations.Read(
-                    built is null ? [projectCompilation] : [projectCompilation, .. built.Values],
-                    file => referenced?.CanBeNamedFrom(file)
-                        ?? Path.GetFullPath(file).StartsWith(appDirectory, StringComparison.Ordinal)));
+                Adopt(projectCompilation, built);
+                // What a later build of the same process starts from (LoadFrom).
+                _sourceFiles = allSourceFiles.Where(File.Exists).ToList();
+                _inputs = Inputs();
                 _output.WriteLine($"📚 Loaded project compilation: {assemblyName} ({allSourceFiles.Count} files, {assemblyPaths.Count} refs)");
 
                 // Log success
@@ -324,6 +263,39 @@ public sealed class AppBuild
             File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n{ex.StackTrace}\n");
         }
 
+        ResolveDependencies(projectCompilation);
+        return true;
+    }
+
+    /// <summary>
+    /// The build's compilation, and what the compiler reads beside it: the projects the app references,
+    /// compiled from their source, and one catalogue id per resource class across all of them.
+    /// </summary>
+    private void Adopt(Compilation compilation, IReadOnlyDictionary<ReferencedProject, Compilation>? built)
+    {
+        if (built is { Count: > 0 })
+        {
+            _referenced = new ReferencedModules(built, _primarySourceDir);
+            _referencedCompilations = built.Values.ToList();
+            _compiler.SetReferencedModules(_referenced);
+            // One catalogue id per resource class for the whole build: two projects may
+            // each have a Strings, and a file sees only its own project's.
+            _compiler.SetResourceIds(new ResourceCatalogIds(compilation));
+        }
+        _built = built;
+        Compilation = compilation;
+        _compiler.SetProjectCompilation(compilation);
+        // What the app registered in its container, written in its own files or a referenced
+        // project's: a component that takes one of those services through its constructor has
+        // the browser build the same class (#1335). Read from every compilation a build adopts, the
+        // warm one included, so a save to the file that registers a service reaches the next compile.
+        _compiler.SetServiceRegistrations(ServiceRegistrations.Read(
+            built is null ? [compilation] : [compilation, .. built.Values],
+            IsSourceOfTheBuild));
+    }
+
+    private void ResolveDependencies(Compilation? projectCompilation)
+    {
         // Initialize dependency resolver by scanning component directories. It is handed the compilation the
         // compiler's model is built from: it asks it for each type's symbol, as the parser does, so who imports
         // a module and who writes it read one answer (#423). Without it the resolver judges a library's base,
@@ -342,7 +314,208 @@ public sealed class AppBuild
         dependencyResolver.GeneratedDirectory = _options.GeneratedDirectory;
         dependencyResolver.ScanSourceDirectories(componentDirectories, _appSources);
         _compiler.SetDependencyResolver(dependencyResolver);
+    }
+
+    /// <summary>
+    /// Loads the project's compilation from the one <paramref name="previous"/> loaded, in the same
+    /// process, and answers false when it cannot, for the caller to <see cref="Load"/> instead (#1278).
+    /// <para>
+    /// A save changes the text of a file, and loading every reference and every file again cost 3.4s
+    /// of each save's compile. The previous compilation keeps its references, already read and bound,
+    /// and each file whose text changed has its tree replaced IN PLACE, so the compilation holds its
+    /// trees in the order a cold load would. Anything else a cold load would read differently loads
+    /// cold: a file added or removed, a changed input the SDK handed (the references, the projects, the
+    /// reference sources, the restore graph, what the C# compiler compiled), or a changed file of a
+    /// project the app references.
+    /// </para>
+    /// </summary>
+    public bool LoadFrom(AppBuild previous)
+    {
+        // A file an editor's save removes or holds for a moment, between the look and the read, is a
+        // cold load's to read, never a failure of the process that serves the compiles.
+        try
+        {
+            return LoadWarm(previous);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    private bool LoadWarm(AppBuild previous)
+    {
+        if (previous.Compilation is not { } warm || previous._sourceFiles is not { } before) return false;
+        if (previous._inputs != Inputs()) return false;
+        // The list of what csc compiled is one of the inputs, so it is the one the previous build read.
+        _appSources = previous._appSources;
+        _projectSources = previous._projectSources;
+        var files = CollectSourceFiles(TextWriter.Null).Where(File.Exists).ToList();
+        if (!files.SequenceEqual(before, StringComparer.Ordinal)) return false;
+        if (previous._built is { } built && built.Any(pair => !IsAsWritten(pair.Value, pair.Key)))
+            return false;
+
+        // A file the compilation holds twice is one a tree replaced by path would leave half stale.
+        var byPath = warm.SyntaxTrees.Where(tree => tree.FilePath.Length > 0)
+            .GroupBy(tree => tree.FilePath, StringComparer.Ordinal).ToList();
+        if (byPath.Any(group => group.Count() > 1)) return false;
+        var trees = byPath.ToDictionary(group => group.Key, group => group.Single(), StringComparer.Ordinal);
+        var compilation = warm;
+        var replaced = new List<(string File, SyntaxTree Before, SyntaxTree After)>();
+        foreach (var file in files)
+        {
+            if (!trees.TryGetValue(file, out var tree)) return false;
+            var text = File.ReadAllText(file);
+            if (tree.GetText().ToString() == text) continue;
+            // Parsed as the tree it replaces was: with the symbols and the language version csc compiled
+            // the file with (#1401).
+            var replacement = CSharpSyntaxTree.ParseText(text, (CSharpParseOptions)tree.Options, path: file);
+            compilation = compilation.ReplaceSyntaxTree(tree, replacement);
+            replaced.Add((file, tree, replacement));
+        }
+
+        _output.WriteLine($"📚 Kept the project compilation: {replaced.Count} file(s) changed since the last compile");
+        Adopt(compilation, previous._built);
+        _sourceFiles = files;
+        _inputs = previous._inputs;
+        ResolveDependencies(compilation);
+        _reusable = Reusable(previous._fileCompiles, replaced);
         return true;
+    }
+
+    /// <summary>
+    /// The files whose compile the last build gave this one may take as it is (#1281): when the save
+    /// changed bodies alone, every file that compiled, is not one the save changed, and read none of them.
+    /// After a save that changed anything else, none: a declaration can change what another file's code
+    /// binds to, which nothing the last build recorded can see.
+    /// </summary>
+    private IReadOnlyDictionary<string, FileCompile> Reusable(IReadOnlyDictionary<string, FileCompile> previous,
+        IReadOnlyList<(string File, SyntaxTree Before, SyntaxTree After)> replaced)
+    {
+        var none = new Dictionary<string, FileCompile>();
+        if (previous.Count == 0) return none;
+        if (replaced.FirstOrDefault(edit => !BodyOnlyEdit.Is(edit.Before, edit.After)) is { File: { } declared })
+        {
+            _output.WriteLine($"   A declaration changed in {Describe(declared)}: every file is compiled");
+            return none;
+        }
+        var changed = replaced.Select(edit => Path.GetFullPath(edit.File)).ToHashSet(StringComparer.Ordinal);
+        return previous.Values
+            .Where(compiled => compiled.Succeeded && !changed.Contains(compiled.File)
+                && !compiled.Read.Overlaps(changed))
+            .ToDictionary(compiled => compiled.File, StringComparer.Ordinal);
+    }
+
+    /// <summary>Whether a referenced project's compilation holds its files as they are on disk: every
+    /// tree but its friend declarations is one of its files, with the same text, and no file is
+    /// missing. A tree whose file was deleted is not among the files, and must not be passed over.</summary>
+    private static bool IsAsWritten(Compilation compilation, ReferencedProject project)
+    {
+        var files = project.SourceFiles().Where(File.Exists).ToHashSet(StringComparer.Ordinal);
+        var friends = ProjectCompilations.FriendsPath(project);
+        var trees = compilation.SyntaxTrees.Where(tree => tree.FilePath != friends).ToList();
+        return trees.Count == files.Count
+            && trees.All(tree => files.Contains(tree.FilePath) && tree.GetText().ToString() == File.ReadAllText(tree.FilePath));
+    }
+
+    /// <summary>The inputs the SDK hands a build besides the sources, by what they are on disk: a
+    /// build whose inputs changed loads cold.</summary>
+    private string Inputs()
+    {
+        // The assemblies the reference list names as well as the list: one built again under the same
+        // path leaves the list as it was, and the kept compilation would read its metadata as it was.
+        var files = new List<string?>
+        {
+            _options.ReferencesFile, _options.ProjectsFile, _options.ReferenceSourcesFile, _options.ProjectAssetsFile,
+            _options.SourcesFile,
+        };
+        if (!string.IsNullOrEmpty(_options.ReferencesFile) && File.Exists(_options.ReferencesFile))
+            files.AddRange(File.ReadAllLines(_options.ReferencesFile).Select(line => line.Trim()).Where(line => line.Length > 0));
+        return string.Join('|', files.Select(file => string.IsNullOrEmpty(file) || !File.Exists(file)
+            ? $"{file}:none"
+            : $"{file}:{File.GetLastWriteTimeUtc(file).Ticks}:{new FileInfo(file).Length}"));
+    }
+
+    /// <summary>
+    /// Every file the project's compilation is built from: what the C# compiler compiled where the SDK
+    /// handed it (#1401), the project's own sources, global usings and source generators' output
+    /// otherwise, and the reference-only sources. Each build reads them again, so a file a save added or
+    /// removed is seen.
+    /// </summary>
+    private List<string> CollectSourceFiles(TextWriter narration)
+    {
+        // Collect source files only from the PRIMARY source directory (user's project)
+        // Skip standard components directory as those are already compiled
+        var allSourceFiles = new List<string>();
+
+        if (_appSources is { } appSources)
+        {
+            // What csc compiled: a file the project removes is not read, a file it links from outside
+            // its directory is, and the global usings are this configuration's alone (#1003), never
+            // each configuration's under obj.
+            narration.WriteLine($"   Reading the {appSources.Files.Count} files the C# compiler compiled, with {appSources.Symbols.Count} symbol(s)");
+            allSourceFiles.AddRange(appSources.Files);
+            // What a source generator wrote and csc never listed. A file a build step wrote under the
+            // generated folder AND added to Compile (the vector catalog) is in the list already, and
+            // taken twice its class was declared twice and nothing that named it bound (EQ2006).
+            var generated = ProjectCompilationHelper
+                .GetCompilerGeneratedFiles(_primarySourceDir, _options.GeneratedDirectory)
+                .Where(file => !appSources.Compiles(file))
+                .ToList();
+            if (generated.Count > 0)
+            {
+                narration.WriteLine($"   Including {generated.Count} compiler-generated file(s)");
+                allSourceFiles.AddRange(generated);
+            }
+        }
+        else if (Directory.Exists(_primarySourceDir))
+        {
+            narration.WriteLine($"   Scanning project directory: {_primarySourceDir}");
+            var files = ProjectCompilationHelper.GetProjectSourceFiles(_primarySourceDir).ToList();
+            narration.WriteLine($"   Found {files.Count} source files in project");
+            allSourceFiles.AddRange(files);
+
+            // Feed the SDK-generated global usings (obj/*.GlobalUsings.g.cs) to the compilation so the
+            // semantic model resolves BCL types used unqualified — e.g. Dictionary<RecordKey, V> under
+            // <ImplicitUsings> — exactly as the real build does, without hardcoding a namespace list.
+            var globalUsings = ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles(_primarySourceDir).ToList();
+            if (globalUsings.Count > 0)
+            {
+                narration.WriteLine($"   Including {globalUsings.Count} generated global-usings file(s)");
+                allSourceFiles.AddRange(globalUsings);
+            }
+
+            // SOURCE-GENERATOR output: part of the program csc compiled, so a page calling into it
+            // must resolve here too — see GetCompilerGeneratedFiles.
+            var generated = ProjectCompilationHelper
+                .GetCompilerGeneratedFiles(_primarySourceDir, _options.GeneratedDirectory).ToList();
+            if (generated.Count > 0)
+            {
+                narration.WriteLine($"   Including {generated.Count} compiler-generated file(s)");
+                allSourceFiles.AddRange(generated);
+            }
+        }
+
+        // Reference-only sources (icon packs etc.): their .cs enter the compilation so the semantic model
+        // can reach constant initializers for inlining, but they are NOT in the source directories so
+        // nothing here is transpiled to a module.
+        var refSourcesFile = _options.ReferenceSourcesFile;
+        if (!string.IsNullOrEmpty(refSourcesFile) && File.Exists(refSourcesFile))
+        {
+            var refSourceCount = 0;
+            foreach (var dir in File.ReadAllLines(refSourcesFile).Select(l => l.Trim()).Where(l => l.Length > 0))
+            {
+                if (!Directory.Exists(dir)) continue;
+                foreach (var file in ProjectCompilationHelper.GetProjectSourceFiles(dir))
+                {
+                    allSourceFiles.Add(file);
+                    refSourceCount++;
+                }
+            }
+            if (refSourceCount > 0)
+                narration.WriteLine($"   Including {refSourceCount} reference-source file(s) for constant inlining");
+        }
+        return allSourceFiles;
     }
 
     /// <summary>
@@ -397,6 +570,13 @@ public sealed class AppBuild
     public TimeSpan BundleElapsed { get; private set; }
 
     /// <summary>
+    /// The files the last <see cref="CompileAndBundle"/> compiled, in order. A served build that kept the
+    /// compilation compiles only the files a save can have changed and takes the others as the build
+    /// before it compiled them (#1281); every other build compiles every file.
+    /// </summary>
+    public IReadOnlyList<string> CompiledFiles { get; private set; } = [];
+
+    /// <summary>
     /// Compiles every module, writes the string catalogs and bundles. True when it produced an error,
     /// so the process can exit non-zero and fail the build.
     /// </summary>
@@ -448,6 +628,20 @@ public sealed class AppBuild
             // What the written modules import of the projects the app references, still to be
             // compiled: each type's name with a file that declares it.
             var reached = new Queue<ReferencedType>();
+
+            // The app's layout, which the browser loads by name as it loads a page: an entry point
+            // wherever its file sits, read from the UseLayout call the server reads (AppLayouts). One
+            // declared in a referenced project is compiled because it is named there, as nothing
+            // imports a layout.
+            var layouts = Compilation is { } declaring
+                ? AppLayouts.Read(new[] { declaring }.Concat(_referencedCompilations), IsSourceOfTheBuild)
+                : [];
+            var layoutModules = layouts.Select(AppLayouts.ModuleOf).ToHashSet();
+            foreach (var layout in layouts)
+            foreach (var declaration in AppLayouts.Declarations(layout))
+            {
+                if (_referenced?.ProjectOf(declaration.File) is not null) reached.Enqueue(declaration);
+            }
 
             // One module from one compiled type: its warnings, its name's claim, its file and map,
             // and whether the bundle starts from it. `claimedAs` is what makes two claims of a name
@@ -501,20 +695,19 @@ public sealed class AppBuild
                 // with one pointing at a different C# file.
                 if (claim == TwinClaim.Repeat) return;
 
-                File.WriteAllText(tsPath, result.TypeScript);
-
-                if (!string.IsNullOrEmpty(result.SourceMap))
-                {
-                    var mapPath = tsPath + ".map";
-                    File.WriteAllText(mapPath, result.SourceMap);
-                    File.AppendAllText(tsPath, $"\n//# sourceMappingURL={result.ComponentName}.ts.map");
-                }
+                // Written only when its text changed (#1279): a save that changes one screen writes that
+                // screen's module and leaves the others, and their times, as they were.
+                var hasMap = !string.IsNullOrEmpty(result.SourceMap);
+                OutputFile.Write(tsPath, hasMap
+                    ? result.TypeScript + $"\n//# sourceMappingURL={result.ComponentName}.ts.map"
+                    : result.TypeScript);
+                if (hasMap) OutputFile.Write(tsPath + ".map", result.SourceMap!);
 
                 // A PAGE is always an entry point, wherever its file sits: the server loads
                 // it by name, so a page that is only transpiled is a 404 the build never
-                // mentioned. The positional rule stays as well — a project laid out the
-                // conventional way keeps every module it had before.
-                if (result.IsPage || isEntryCandidate)
+                // mentioned. The app's LAYOUT is loaded by name too. The positional rule stays
+                // as well — a project laid out the conventional way keeps every module it had before.
+                if (result.IsPage || isEntryCandidate || layoutModules.Contains((result.Namespace, result.ComponentName)))
                 {
                     entryPoints.Add(tsPath);
                 }
@@ -522,6 +715,8 @@ public sealed class AppBuild
                 foreach (var type in result.ReferencedTypes) reached.Enqueue(type);
             }
 
+            var compiledFiles = new List<string>();
+            var units = 0;
             foreach (var group in compileUnits)
             {
                 var dir = group.Key;
@@ -530,7 +725,21 @@ public sealed class AppBuild
                 {
                     // Try to compile - parser will return empty if not a component
                     // This removes restrictions on naming, inheritance patterns, aliases, etc.
-                    var results = _compiler.CompileFile(file);
+                    // A file the save changed nothing of is taken as the build before compiled it, and
+                    // hands the catalogs what its compile handed them (#1281).
+                    units++;
+                    var path = Path.GetFullPath(file);
+                    if (_reusable.TryGetValue(path, out var fileCompile))
+                    {
+                        _compiler.Replay(fileCompile);
+                    }
+                    else
+                    {
+                        fileCompile = _compiler.CompileRecorded(file);
+                        compiledFiles.Add(file);
+                    }
+                    _fileCompiles[path] = fileCompile;
+                    var results = fileCompile.Results;
 
                     var relativePath = Path.GetRelativePath(dir, file);
                     var isEntryCandidate = !isGenerated && dir == sourceDirs[0]
@@ -546,6 +755,10 @@ public sealed class AppBuild
                     }
                 }
             }
+
+            CompiledFiles = compiledFiles;
+            if (_reusable.Count > 0)
+                _output.WriteLine($"   Compiled {compiledFiles.Count} of {units} file(s): the others read nothing the save changed");
 
             // A type of a referenced project is a module when a written module imports it, and only
             // then (#624): the record a page builds, the static class whose member it reads, the
@@ -588,8 +801,17 @@ public sealed class AppBuild
                 // in the project's folder, where the build has always run it, so a chunk keeps its
                 // name wherever eqc itself runs.
                 var bundling = System.Diagnostics.Stopwatch.StartNew();
-                var bunError = ModuleBundler.Bundle(bunPath!, _primarySourceDir, entryPoints, outputDir,
-                    _intermediateDir, _options.SourceMaps, _errors.WriteLine);
+                var bundler = _bundler ?? new ModuleBundler(bunPath!, _primarySourceDir);
+                string? bunError;
+                try
+                {
+                    bunError = bundler.Bundle(entryPoints, outputDir, _intermediateDir, _options.SourceMaps,
+                        _errors.WriteLine);
+                }
+                finally
+                {
+                    if (_bundler is null) bundler.Dispose();
+                }
                 BundleElapsed = bundling.Elapsed;
                 if (bunError is not null)
                 {

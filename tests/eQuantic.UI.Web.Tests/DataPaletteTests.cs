@@ -18,7 +18,7 @@ public class DataPaletteTests
     private static Color Rgb(uint hex) => Color.FromRgb((byte)(hex >> 16), (byte)(hex >> 8), (byte)hex);
 
     private static IReadOnlyList<Color> Series(ThemeMode mode) =>
-        DataPalette.Default.Series.Select(t => t.Resolve(mode)).ToList();
+        DataPalette.Default.Series.Select(t => t.Resolve(mode, ContrastLevel.Standard)).ToList();
 
     [Theory]
     [InlineData(ThemeMode.Light, 9.1, 19.6)]
@@ -93,10 +93,10 @@ public class DataPaletteTests
         var status = DataPalette.Default.Status;
         foreach (var mode in new[] { ThemeMode.Light, ThemeMode.Dark })
         {
-            status.Good.Resolve(mode).Should().Be(Rgb(0x0ca30c));
-            status.Warning.Resolve(mode).Should().Be(Rgb(0xfab219));
-            status.Serious.Resolve(mode).Should().Be(Rgb(0xec835a));
-            status.Critical.Resolve(mode).Should().Be(Rgb(0xd03b3b));
+            status.Good.Resolve(mode, ContrastLevel.Standard).Should().Be(Rgb(0x0ca30c));
+            status.Warning.Resolve(mode, ContrastLevel.Standard).Should().Be(Rgb(0xfab219));
+            status.Serious.Resolve(mode, ContrastLevel.Standard).Should().Be(Rgb(0xec835a));
+            status.Critical.Resolve(mode, ContrastLevel.Standard).Should().Be(Rgb(0xd03b3b));
         }
     }
 
@@ -143,8 +143,8 @@ public class DataPaletteTests
     [Fact]
     public void The_default_sequential_ramp_is_monotone_one_hue_and_flips_its_anchor_in_dark_mode()
     {
-        var light = DataPalette.Default.Sequential.Select(t => t.Resolve(ThemeMode.Light)).ToList();
-        var dark = DataPalette.Default.Sequential.Select(t => t.Resolve(ThemeMode.Dark)).ToList();
+        var light = DataPalette.Default.Sequential.Select(t => t.Resolve(ThemeMode.Light, ContrastLevel.Standard)).ToList();
+        var dark = DataPalette.Default.Sequential.Select(t => t.Resolve(ThemeMode.Dark, ContrastLevel.Standard)).ToList();
 
         var report = PaletteAudit.Ordinal(light, ThemeMode.Light);
         report.Lines.Single(l => l.Check == "Lightness monotone").Verdict.Should().Be(AuditVerdict.Pass);
@@ -162,10 +162,10 @@ public class DataPaletteTests
         var scale = DataPalette.Default.Diverging;
         foreach (var mode in new[] { ThemeMode.Light, ThemeMode.Dark })
         {
-            var hueGap = Math.Abs(PaletteAudit.Hue(scale.Negative.Resolve(mode)) - PaletteAudit.Hue(scale.Positive.Resolve(mode)));
+            var hueGap = Math.Abs(PaletteAudit.Hue(scale.Negative.Resolve(mode, ContrastLevel.Standard)) - PaletteAudit.Hue(scale.Positive.Resolve(mode, ContrastLevel.Standard)));
             if (hueGap > 180) hueGap = 360 - hueGap;
             hueGap.Should().BeGreaterThan(90, "blue against red: warm against cool");
-            PaletteAudit.Oklch(scale.Midpoint.Resolve(mode)).C.Should().BeLessThan(0.10, "the midpoint is a gray, never a hue");
+            PaletteAudit.Oklch(scale.Midpoint.Resolve(mode, ContrastLevel.Standard)).C.Should().BeLessThan(0.10, "the midpoint is a gray, never a hue");
         }
     }
 

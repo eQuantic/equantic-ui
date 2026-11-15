@@ -537,6 +537,23 @@ public static class Eq
     /// which refuses a change of its size from then on, as .NET's array does.</summary>
     public const string FixedSize = "$eq.collections.fixedSize";
 
+    /// <summary>A boxing conversion of an enum member or a float into <c>object</c>, <c>ValueType</c> or
+    /// <c>Enum</c>, the box carrying the type its answers depend on (#552, #768, #954).</summary>
+    public const string Box = "$eq.box";
+
+    /// <summary>An unboxing to a primitive value type, which refuses a box of another type.</summary>
+    public const string Unbox = "$eq.unbox";
+
+    /// <summary><c>o is Tone</c> and <c>o is float</c> over a value held as <c>object</c>.</summary>
+    public const string IsBox = "$eq.isBox";
+
+    /// <summary>A list or an array converted to <c>object</c> or an interface, compared and hashed by its
+    /// identity from then on (#954).</summary>
+    public const string Reference = "$eq.reference";
+
+    /// <summary>An anonymous object, never equal to a value held as data of the same members (#742).</summary>
+    public const string Anonymous = "$eq.anonymous";
+
     /// <summary><c>ICollection&lt;T&gt;.IsReadOnly</c>, of what the interface holds when the code runs.</summary>
     public const string CollectionIsReadOnly = "$eq.collections.isReadOnly";
     /// <summary><c>List&lt;T&gt;.RemoveAt</c> and <c>IList&lt;T&gt;.RemoveAt</c>: the index checked as .NET checks it (#1160).</summary>

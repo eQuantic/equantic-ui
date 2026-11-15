@@ -20,24 +20,20 @@ public sealed class TickerScreen : StatelessComponent
     {
         var theme = context.Theme;
 
-        // A stateless page owns no drawer state, so the frame gets a closed one: what this screen
-        // exists to exercise is the teardown, not the compact nav.
-        return ConsoleShell.Frame(theme, "/ticker", "Ticker",
-            Box(new BoxStyle
-            {
-                Width = SizeValue.Fill,
-                Height = SizeValue.Fill,
-                Background = theme.Background,
-                Padding = EdgeInsets.All(Space.S6),
-            },
-            Column(gap: Space.S4, children: [
-                Text("A page with no state, and a component with a clock", TypeRole.Heading,
-                    theme.TextPrimary),
-                Text("Navigate away and back. The dot must stop when this page goes, and nothing "
-                    + "from here may appear on the page you land on.", TypeRole.BodyM,
-                    theme.TextSecondary),
-                new Pulse(),
-            ])),
-            navOpen: false, onToggleNav: () => { });
+        return Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Background = theme.Background,
+            Padding = EdgeInsets.All(Space.S6),
+        },
+        Column(gap: Space.S4, children: [
+            Text("A page with no state, and a component with a clock", TypeRole.Heading,
+                theme.TextPrimary),
+            Text("Navigate away and back. The dot must stop when this page goes, and nothing "
+                + "from here may appear on the page you land on.", TypeRole.BodyM,
+                theme.TextSecondary),
+            new Pulse(),
+        ]));
     }
 }

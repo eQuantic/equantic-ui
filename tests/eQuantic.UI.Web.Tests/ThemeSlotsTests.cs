@@ -44,7 +44,42 @@ public class ThemeSlotsTests
         [nameof(IAppTheme.SelectionControls)] = "selectionControls",
         [nameof(IAppTheme.Segmented)] = "segmented",
         [nameof(IAppTheme.Chip)] = "chip",
+        [nameof(IAppTheme.Modal)] = "modal",
+        [nameof(IAppTheme.Menu)] = "menu",
+        [nameof(IAppTheme.Notice)] = "notice",
+        [nameof(IAppTheme.Progress)] = "progress",
+        [nameof(IAppTheme.Card)] = "card",
+        [nameof(IAppTheme.Navigation)] = "navigation",
+        [nameof(IAppTheme.List)] = "list",
+        [nameof(IAppTheme.Table)] = "table",
+        [nameof(IAppTheme.Badge)] = "badge",
+        [nameof(IAppTheme.Calendar)] = "calendar",
+        [nameof(IAppTheme.Markdown)] = "markdown",
     };
+
+    /// <summary>
+    /// The theme's JSON names each key once. A slot crosses under its member's camel-cased name beside the
+    /// theme's own keys, so a slot named like one of them would write it twice, and the browser keeps the
+    /// last: the surfaces' slot, named <c>Surfaces</c> at first, would have shadowed the surface colours
+    /// (#1243).
+    /// </summary>
+    [Fact]
+    public void TheThemesJson_NamesEachKeyOnce()
+    {
+        var json = System.Text.Encoding.UTF8.GetBytes(ThemeBridge.SerializeJson(new EveryMemberTheme(Photon)));
+        var reader = new Utf8JsonReader(json);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var twice = new List<string>();
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.PropertyName && reader.CurrentDepth == 1
+                && !seen.Add(reader.GetString()!))
+                twice.Add(reader.GetString()!);
+        }
+
+        seen.Should().Contain(["surfaces", "modal", "controls", "button"]);
+        twice.Should().BeEmpty("a key written twice is read once by the browser, and the other value is lost");
+    }
 
     [Fact]
     public void EveryMemberOfTheTheme_CrossesToTheBrowser()
@@ -372,11 +407,147 @@ public class ThemeSlotsTests
             }
     }
 
+    // ---- a colour that is one of the theme's roles ------------------------------------------------
+
+    /// <summary>
+    /// A slot colour equal to one of the theme's roles is a copy of it, and a copy freezes: a theme built
+    /// from this one that changes the role (a decorator, or the browser's spread of it) keeps the copy, so
+    /// the control would not follow. The SDK's themes leave such a colour null and the control reads the
+    /// role itself. Every slot <see cref="AppThemeExtensions.With"/> takes, every colour member of it.
+    /// </summary>
+    [Fact]
+    public void NoShippedThemesSlot_CopiesOneOfItsRoles()
+    {
+        foreach (var theme in new IAppTheme[] { Photon, MaterialTheme.Instance })
+            RoleCopies(theme).Should().BeEmpty($"{theme.GetType().Name} leaves a role's colour to the control that reads it");
+
+        RoleCopies(Photon.With(navigation: new NavigationTheme { InactiveColor = Photon.TextMuted }))
+            .Should().Contain("Navigation.InactiveColor = TextMuted", "the instrument finds a copy where there is one");
+    }
+
+    /// <summary>
+    /// What the rule buys, measured: a theme that recolours a role recolours each control that reads it
+    /// through a slot Photon leaves null, the Button's and the navigation and collection families' alike.
+    /// </summary>
+    [Fact]
+    public void ARecolouredRole_RecoloursTheControlsThatReadIt()
+    {
+        var green = new ColorToken(Color.FromRgb(0x12, 0xAB, 0x34));
+        var recoloured = new RecolouredTheme(Photon, green);
+        var controls = new Dictionary<string, Func<VisualNode>>
+        {
+            ["Button, Button.OutlineColor"] = () => new Button("Go", Variant.Outline),
+            ["Tabs, Navigation.InactiveColor"] = () => new Tabs(["One", "Two"], 0),
+            ["ListItem, List.SubtitleColor"] = () => new ListItem("Title", "Subtitle"),
+            ["Table, Table.TableHeaderColor"] = () => new Table(["Name"], [["Ada"]]),
+            ["EmptyState, Badge.WellIconColor"] = () => new EmptyState(new Icon(Icons.Search), "Nothing here", "Try again"),
+            ["Calendar, Calendar.WeekdayColor"] = () => new Calendar(new DateOnly(2026, 11, 12)),
+            ["Markdown, Markdown.MarkerColor"] = () => new Markdown("- one"),
+        };
+
+        var unchanged = new List<string>();
+        foreach (var (name, build) in controls)
+        {
+            if (!Lowered(build(), recoloured).Contains("#12ab34", StringComparison.Ordinal)) unchanged.Add(name);
+            Lowered(build(), Photon).Should().NotContain("#12ab34", $"{name} is not green under Photon");
+        }
+
+        unchanged.Should().BeEmpty("a control reads the role its slot leaves null");
+
+        // The copy the rule removes, put back: the tab keeps the copy and no longer follows its role.
+        var copied = new RecolouredTheme(Photon.With(navigation: new NavigationTheme { InactiveColor = Photon.TextMuted }), green);
+        Lowered(new Tabs(["One", "Two"], 0), copied).Should().NotContain("#12ab34", "a slot holding a copy of the role freezes it");
+    }
+
+    /// <summary>Each colour member of each slot that is one of the theme's roles, as <c>Slot.Member = Role</c>.</summary>
+    private static List<string> RoleCopies(IAppTheme theme)
+    {
+        var roles = typeof(IAppTheme).GetProperties()
+            .Where(role => role.PropertyType == typeof(ColorToken))
+            .Select(role => (role.Name, Colour: (ColorToken)role.GetValue(theme)!))
+            .ToList();
+        var slotTypes = typeof(AppThemeExtensions).GetMethod(nameof(AppThemeExtensions.With))!
+            .GetParameters().Skip(1).Select(parameter => Nullable.GetUnderlyingType(parameter.ParameterType) ?? parameter.ParameterType)
+            .ToHashSet();
+        var copies = new List<string>();
+        foreach (var slot in typeof(IAppTheme).GetProperties().Where(slot => slotTypes.Contains(slot.PropertyType)))
+            Walk(slot.Name, slot.GetValue(theme));
+        return copies;
+
+        void Walk(string path, object? record)
+        {
+            if (record is null) return;
+            foreach (var member in record.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                var value = member.GetValue(record);
+                if (value is ColorToken colour)
+                    copies.AddRange(roles.Where(role => role.Colour.Equals(colour)).Select(role => $"{path}.{member.Name} = {role.Name}"));
+                else if (slotTypes.Contains(member.PropertyType)) Walk($"{path}.{member.Name}", value);
+            }
+        }
+    }
+
+    private static string Lowered(VisualNode node, IAppTheme theme)
+    {
+        var sink = new StyleSink();
+        var html = HtmlRenderer.RenderNode(WebRealizer.Lower(node, theme, 1f, sink, Density.Comfortable).Render());
+        return html + sink.Css;
+    }
+
     private static string Css(VisualNode node, IAppTheme theme, Density density)
     {
         var sink = new StyleSink();
         WebRealizer.Lower(node, theme, 1f, sink, density).Render();
         return sink.Css;
+    }
+
+    // ---- a theme that recolours its roles ----------------------------------------------------------
+
+    /// <summary>The wrapped theme with three roles recoloured (TextMuted, TextSecondary and BorderStrong),
+    /// and every slot forwarded, so a control reads the role only where the slot leaves it null.</summary>
+    private sealed class RecolouredTheme(IAppTheme inner, ColorToken colour) : IAppTheme
+    {
+        public ColorToken Background => inner.Background;
+        public ColorToken Surface => inner.Surface;
+        public ColorToken SurfaceSubtle => inner.SurfaceSubtle;
+        public ColorToken SurfaceHighlight => inner.SurfaceHighlight;
+        public ColorToken Border => inner.Border;
+        public ColorToken BorderStrong => colour;
+        public ColorToken TextPrimary => inner.TextPrimary;
+        public ColorToken TextSecondary => colour;
+        public ColorToken TextMuted => colour;
+        public ColorToken TextInverse => inner.TextInverse;
+        public ColorToken FocusRing => inner.FocusRing;
+        public ColorToken LinkColor => inner.LinkColor;
+        public ColorToken Scrim => inner.Scrim;
+        public ColorToken? OnSelection => inner.OnSelection;
+        public FontFamily? MonoFamily => inner.MonoFamily;
+        public FontFamily? TextFamily => inner.TextFamily;
+        public SheetTheme? Sheet => inner.Sheet;
+        public ControlsTheme? Controls => inner.Controls;
+        public ButtonTheme? Button => inner.Button;
+        public IconButtonTheme? IconButton => inner.IconButton;
+        public InputTheme? Input => inner.Input;
+        public SelectionControlsTheme? SelectionControls => inner.SelectionControls;
+        public SegmentedTheme? Segmented => inner.Segmented;
+        public ChipTheme? Chip => inner.Chip;
+        public ModalTheme? Modal => inner.Modal;
+        public MenuTheme? Menu => inner.Menu;
+        public NoticeTheme? Notice => inner.Notice;
+        public ProgressTheme? Progress => inner.Progress;
+        public CardTheme? Card => inner.Card;
+        public NavigationTheme? Navigation => inner.Navigation;
+        public ListTheme? List => inner.List;
+        public TableTheme? Table => inner.Table;
+        public BadgeTheme? Badge => inner.Badge;
+        public CalendarTheme? Calendar => inner.Calendar;
+        public MarkdownTheme? Markdown => inner.Markdown;
+        public ColorToken Code(CodeTokenKind kind) => inner.Code(kind);
+        public float DisabledOpacity => inner.DisabledOpacity;
+        public VariantColors Colors(Variant variant) => inner.Colors(variant);
+        public TypeStyle Type(TypeRole role) => inner.Type(role);
+        public ShadowSpec Elevation(int level) => inner.Elevation(level);
+        public float Shape(ShapeScale scale) => inner.Shape(scale);
     }
 
     // ---- a theme that answers every member ---------------------------------------------------------
@@ -409,6 +580,17 @@ public class ThemeSlotsTests
         public SelectionControlsTheme? SelectionControls => inner.SelectionControls;
         public SegmentedTheme? Segmented => inner.Segmented;
         public ChipTheme? Chip => inner.Chip;
+        public ModalTheme? Modal => inner.Modal;
+        public MenuTheme? Menu => inner.Menu;
+        public NoticeTheme? Notice => inner.Notice;
+        public ProgressTheme? Progress => inner.Progress;
+        public CardTheme? Card => inner.Card;
+        public NavigationTheme? Navigation => inner.Navigation;
+        public ListTheme? List => inner.List;
+        public TableTheme? Table => inner.Table;
+        public BadgeTheme? Badge => inner.Badge;
+        public CalendarTheme? Calendar => inner.Calendar;
+        public MarkdownTheme? Markdown => inner.Markdown;
         public ColorToken Code(CodeTokenKind kind) => new(Color.FromRgb(0x11, 0x22, (byte)kind));
         public float DisabledOpacity => inner.DisabledOpacity;
         public VariantColors Colors(Variant variant) => inner.Colors(variant);
