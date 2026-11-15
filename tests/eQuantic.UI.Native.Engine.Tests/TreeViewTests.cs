@@ -18,9 +18,21 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// tests read it the way a person does: Enter presses the item the keyboard is on, and the press is
 /// reported.
 /// </para>
+/// <para>
+/// A folder's load finishes on a pool thread, and <c>SetState</c> hands it to the thread that draws through
+/// the process's dispatcher, as a hosted app's does: armed here, and put back after, in the collection of the
+/// tests that touch it. Without it the load's state landed in the middle of a frame (#1539's macOS run).
+/// </para>
 /// </summary>
-public class TreeViewTests
+[Collection(ProcessDispatcherCollection.Name)]
+public class TreeViewTests : IDisposable
 {
+    private readonly IUiDispatcher? _outer = UiDispatcher.Current;
+
+    public TreeViewTests() => UiDispatcher.Current = PhotonDispatcher.Shared;
+
+    public void Dispose() => UiDispatcher.Current = _outer;
+
     private static TreeNode Leaf(string key, string label) => new(key, label) { IsLeaf = true };
 
     private static IReadOnlyList<TreeNode> Files() =>
