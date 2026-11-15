@@ -70,18 +70,24 @@ internal sealed partial class SemanticsVisitor
             // Where the user IS rides Current, below, not a check and not a pick.
             PressableRole.Destination => (SemanticRole.Destination, (SemanticCheck?)null),
             PressableRole.GridCell => (SemanticRole.GridCell, (SemanticCheck?)null),
+            // Picked when it says so, open when it has children, and placed (#1529).
+            PressableRole.TreeItem => (SemanticRole.TreeItem, (SemanticCheck?)null),
         };
 #pragma warning restore CS8524
         // PICKED-ness, for the three roles that have it. Before the Selected field existed a Tab and
         // an Option arrived here as plain Buttons whose selection was paint only.
         bool? selected = node.Role is PressableRole.Tab or PressableRole.Option or PressableRole.GridCell
             ? node.Selected == true
+            // A tree item says whether it is picked only when the tree says so, as the web writes
+            // aria-selected only then: a tree with no selection announces none.
+            : node.Role == PressableRole.TreeItem ? node.Selected
             : null;
         return Announce(new(role, IdOf(laidOut), laidOut.Bounds,
             node.Label ?? TextWithin(laidOut), null, node.Disabled, check,
             node.Expanded,
             node.Role == PressableRole.Destination && node.Selected == true,
-            selected));
+            selected,
+            TreePlace: node.Role == PressableRole.TreeItem ? node.TreePlace : null));
     }
 
     /// <summary>
@@ -184,8 +190,8 @@ internal sealed partial class SemanticsVisitor
     /// every row inside, which is why this declined while the web honoured it.
     /// </summary>
     public bool Visit(Navigable node, LayoutNode laidOut) =>
-        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
-            node.Label, null, false));
+        AnnounceGroup(new(node.Role == NavigableRole.Tree ? SemanticRole.Tree : SemanticRole.Group,
+            IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
 
     /// <summary>
     /// A table viewport is a GROUP named by its label, over the cells it holds in view: a reader walks

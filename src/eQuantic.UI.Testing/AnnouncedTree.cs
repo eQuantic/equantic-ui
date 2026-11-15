@@ -61,6 +61,8 @@ internal sealed class AnnouncedTree
         ["cell"] = SemanticRole.Cell,
         ["columnheader"] = SemanticRole.ColumnHeader,
         ["rowheader"] = SemanticRole.RowHeader,
+        ["tree"] = SemanticRole.Tree,
+        ["treeitem"] = SemanticRole.TreeItem,
     };
 
     private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
@@ -215,7 +217,17 @@ internal sealed class AnnouncedTree
         Expanded = Flag(Attribute(node, "aria-expanded")),
         Current = Attribute(node, "aria-current") is { } current && current != "false",
         HeadingLevel = headingLevel,
+        TreePlace = role == SemanticRole.TreeItem ? TreePlaceOf(node) : null,
     };
+
+    /// <summary>Where a tree item stands, from the three attributes the realizer writes together, or
+    /// null when it writes none of them.</summary>
+    private static TreePlace? TreePlaceOf(HtmlNode node) =>
+        int.TryParse(Attribute(node, "aria-level"), out var level)
+        && int.TryParse(Attribute(node, "aria-posinset"), out var position)
+        && int.TryParse(Attribute(node, "aria-setsize"), out var size)
+            ? new TreePlace(level, position, size)
+            : null;
 
     private static SemanticRole? RoleOf(HtmlNode node, out int headingLevel)
     {
@@ -262,12 +274,12 @@ internal sealed class AnnouncedTree
     /// <summary>The roles read and then walked into; every other role's subtree is its name.</summary>
     private static bool IsContainer(SemanticRole role) => role is SemanticRole.Group or SemanticRole.Dialog
         or SemanticRole.AlertDialog or SemanticRole.TabBar or SemanticRole.RadioGroup or SemanticRole.Table
-        or SemanticRole.Grid;
+        or SemanticRole.Grid or SemanticRole.Tree;
 
     /// <summary>The roles ARIA names from what they hold.</summary>
     private static bool NamedFromContent(SemanticRole role) => role is SemanticRole.Button or SemanticRole.Link
         or SemanticRole.Checkbox or SemanticRole.Switch or SemanticRole.Radio or SemanticRole.Tab
-        or SemanticRole.MenuItem or SemanticRole.Option or SemanticRole.GridCell or SemanticRole.Cell
+        or SemanticRole.MenuItem or SemanticRole.Option or SemanticRole.GridCell or SemanticRole.TreeItem or SemanticRole.Cell
         or SemanticRole.ColumnHeader or SemanticRole.RowHeader or SemanticRole.StaticText;
 
     private string NameOf(HtmlNode node, SemanticRole role)

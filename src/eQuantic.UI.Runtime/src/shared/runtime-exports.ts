@@ -144,6 +144,7 @@ export {
   TableScrollRequest,
   TextReading,
   Transform2D,
+  TreePlace,
 } from './value-types';
 // A page placing a WebFrame names this to say WHICH form its content is; same implicit promise.
 export { WebContent } from './value-types';

@@ -492,6 +492,16 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("SortCancelled", Culture)!; }
         }
 
+        internal static string TreeLoading
+        {
+            get { return ResourceManager.GetString("TreeLoading", Culture)!; }
+        }
+
+        internal static string TreeLoadFailed
+        {
+            get { return ResourceManager.GetString("TreeLoadFailed", Culture)!; }
+        }
+
         internal static string UploadWaiting
         {
             get { return ResourceManager.GetString("UploadWaiting", Culture)!; }

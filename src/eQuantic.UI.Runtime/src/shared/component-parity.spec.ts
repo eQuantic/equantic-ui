@@ -60,6 +60,8 @@ import {
 import { SizeValue, StyleChannels, TableRange, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
+import { TreeNode } from './components/TreeNode';
+import { TreeView } from './components/TreeView';
 import { Badge } from './components/Badge';
 import { Card } from './components/Card';
 import { Checkbox } from './components/Checkbox';
@@ -522,6 +524,24 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         { group: 'board', onHovered: () => undefined },
       ),
     ),
+    'tree-opens': {
+      node: Object.assign(
+        new TreeView(
+          [
+            Object.assign(new TreeNode('src', 'src'), {
+              children: [
+                Object.assign(new TreeNode('src/App.cs', 'App.cs'), { isLeaf: true }),
+                Object.assign(new TreeNode('src/Ui.cs', 'Ui.cs'), { isLeaf: true }),
+              ],
+            }),
+            Object.assign(new TreeNode('README.md', 'README.md'), { isLeaf: true }),
+          ],
+          'src/Ui.cs',
+        ),
+        { label: 'Files' },
+      ),
+      presses: [0, 1],
+    },
     'accordion-switches': {
       node: new Accordion(
         [
@@ -783,9 +803,12 @@ function canonical(node: HtmlNode): unknown {
     // its cells by theirs to walk the Tab order row by row.
     // A sheet's and a code surface's are a fourth and a fifth: a focus request and a reveal find the surface
     // by it after the render. A gliding mark's is a sixth: the table's after-pass finds the mark it glides
-    // by it, and the server's first pass has nothing to glide from.
+    // by it, and the server's first pass has nothing to glide from. A focus-scoped shortcut's scope is
+    // a seventh (#1530, the first case here with one): its value is the shortcut's position id in the
+    // client's frame, which lowerShortcut stamps for the same reason ("only the client stamps it").
     if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table' || key === 'data-eq-cell'
-      || key === 'data-eq-sheet' || key === 'data-eq-code' || key === 'data-eq-glide')
+      || key === 'data-eq-sheet' || key === 'data-eq-code' || key === 'data-eq-glide'
+      || key === 'data-eq-focus-scope')
       continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);

@@ -322,4 +322,10 @@
   <data name="SortCancelled" xml:space="preserve">
     <value>Put {0} back where it was.</value>
   </data>
+  <data name="TreeLoading" xml:space="preserve">
+    <value>Loading…</value>
+  </data>
+  <data name="TreeLoadFailed" xml:space="preserve">
+    <value>Could not load. Try again</value>
+  </data>
 </root>

@@ -132,6 +132,7 @@ public sealed partial class PhotonHost
         _pressed = null;
         _pressedAt = null;
         _pan = null;
+        _panBeside = null;
         _drag = null;
         NeedsRender = true;
         return true;

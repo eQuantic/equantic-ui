@@ -43,3 +43,47 @@ static eQuantic.UI.Components.UI.Select(System.Collections.Generic.IReadOnlyList
 eQuantic.UI.Components.Markdown.Style.get -> eQuantic.UI.Primitives.MarkdownTheme?
 static eQuantic.UI.Components.UI.SortableItem(eQuantic.UI.Primitives.VisualNode! child, string! id, bool enabled = true) -> eQuantic.UI.Primitives.SortableItem!
 static eQuantic.UI.Components.UI.Sortable(eQuantic.UI.Primitives.VisualNode! child, string! id, System.Action<eQuantic.UI.Primitives.SortDrop!>! onDropped, string! group = "", eQuantic.UI.Primitives.DragAxis axis = eQuantic.UI.Primitives.DragAxis.Vertical, bool nests = false, System.Action<eQuantic.UI.Primitives.SortDrop?>? onHovered = null, System.Func<eQuantic.UI.Primitives.SortDrop!, bool>? accepts = null, bool enabled = true, string! label = "") -> eQuantic.UI.Primitives.Sortable!
+static eQuantic.UI.Components.SdkStrings.TreeLoading.get -> string!
+static eQuantic.UI.Components.SdkStrings.TreeLoadFailed.get -> string!
+eQuantic.UI.Components.TreeNode
+eQuantic.UI.Components.TreeNode.<Clone>$() -> eQuantic.UI.Components.TreeNode!
+eQuantic.UI.Components.TreeNode.Deconstruct(out string! Key, out string! Label) -> void
+eQuantic.UI.Components.TreeNode.Equals(eQuantic.UI.Components.TreeNode? other) -> bool
+eQuantic.UI.Components.TreeNode.TreeNode(string! Key, string! Label) -> void
+override eQuantic.UI.Components.TreeNode.Equals(object? obj) -> bool
+override eQuantic.UI.Components.TreeNode.GetHashCode() -> int
+override eQuantic.UI.Components.TreeNode.ToString() -> string!
+static eQuantic.UI.Components.TreeNode.operator !=(eQuantic.UI.Components.TreeNode? left, eQuantic.UI.Components.TreeNode? right) -> bool
+static eQuantic.UI.Components.TreeNode.operator ==(eQuantic.UI.Components.TreeNode? left, eQuantic.UI.Components.TreeNode? right) -> bool
+eQuantic.UI.Components.TreeNode.Key.get -> string!
+eQuantic.UI.Components.TreeNode.Key.init -> void
+eQuantic.UI.Components.TreeNode.Label.get -> string!
+eQuantic.UI.Components.TreeNode.Label.init -> void
+eQuantic.UI.Components.TreeNode.Icon.get -> eQuantic.UI.Primitives.IconGlyph?
+eQuantic.UI.Components.TreeNode.Icon.init -> void
+eQuantic.UI.Components.TreeNode.IsLeaf.get -> bool
+eQuantic.UI.Components.TreeNode.IsLeaf.init -> void
+eQuantic.UI.Components.TreeNode.Children.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>?
+eQuantic.UI.Components.TreeNode.Children.init -> void
+eQuantic.UI.Components.TreeView.LoadChildren.get -> System.Func<eQuantic.UI.Components.TreeNode!, System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>!>!>?
+eQuantic.UI.Components.TreeView.LoadChildren.init -> void
+eQuantic.UI.Components.TreeView.OnToggled.get -> System.Action<eQuantic.UI.Components.TreeNode!, bool>?
+eQuantic.UI.Components.TreeView.OnToggled.init -> void
+eQuantic.UI.Components.TreeView.ExpandedKeys.get -> System.Collections.Generic.IReadOnlyList<string!>?
+eQuantic.UI.Components.TreeView.ExpandedKeys.init -> void
+eQuantic.UI.Components.TreeView.RevealPath.get -> System.Collections.Generic.IReadOnlyList<string!>?
+eQuantic.UI.Components.TreeView.RevealPath.init -> void
+eQuantic.UI.Components.TreeView.Label.get -> string!
+eQuantic.UI.Components.TreeView.Label.init -> void
+eQuantic.UI.Components.TreeView.Width.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Components.TreeView.Width.init -> void
+eQuantic.UI.Components.TreeView.Height.init -> void
+override eQuantic.UI.Components.TreeView.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.TreeView.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.TreeView
+eQuantic.UI.Components.TreeView.TreeView(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>! roots, string? selectedKey = null, System.Action<eQuantic.UI.Components.TreeNode!>? onPressed = null) -> void
+eQuantic.UI.Components.TreeView.Roots.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>!
+eQuantic.UI.Components.TreeView.SelectedKey.get -> string?
+eQuantic.UI.Components.TreeView.OnPressed.get -> System.Action<eQuantic.UI.Components.TreeNode!>?
+eQuantic.UI.Components.TreeView.Height.get -> eQuantic.UI.Primitives.SizeValue?
+static eQuantic.UI.Components.UI.TreeView(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>! roots, string? selectedKey = null, System.Action<eQuantic.UI.Components.TreeNode!>? onPressed = null, System.Func<eQuantic.UI.Components.TreeNode!, System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>!>!>? loadChildren = null, System.Action<eQuantic.UI.Components.TreeNode!, bool>? onToggled = null, System.Collections.Generic.IReadOnlyList<string!>? expandedKeys = null, System.Collections.Generic.IReadOnlyList<string!>? revealPath = null, string! label = "", eQuantic.UI.Primitives.SizeValue? height = null) -> eQuantic.UI.Components.TreeView!

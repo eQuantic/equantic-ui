@@ -314,4 +314,10 @@
   <data name="SortCancelled" xml:space="preserve">
     <value>{0} voltou para onde estava.</value>
   </data>
+  <data name="TreeLoading" xml:space="preserve">
+    <value>Carregando…</value>
+  </data>
+  <data name="TreeLoadFailed" xml:space="preserve">
+    <value>Não foi possível carregar. Tentar de novo</value>
+  </data>
 </root>

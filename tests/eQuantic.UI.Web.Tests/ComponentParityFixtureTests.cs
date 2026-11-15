@@ -242,6 +242,16 @@ public class ComponentParityFixtureTests
             new AccordionItem("One") { Content = new Text("body one", TypeRole.BodyM, Theme.TextPrimary) },
             new AccordionItem("Two") { Content = new Text("body two", TypeRole.BodyM, Theme.TextPrimary) },
         ], 0), [1]),
+        // A TREE (#1529, #1530): a role="tree" host whose items are div treeitems with their level and
+        // place, not wrapped in rows. The first press opens the folder and the second presses the item
+        // it showed, so the frames pin the open state and the keyboard's item moving with a press.
+        ("tree-opens", new TreeView([
+            new TreeNode("src", "src")
+            {
+                Children = [new TreeNode("src/App.cs", "App.cs") { IsLeaf = true }, new TreeNode("src/Ui.cs", "Ui.cs") { IsLeaf = true }],
+            },
+            new TreeNode("README.md", "README.md") { IsLeaf = true },
+        ], "src/Ui.cs") { Label = "Files" }, [0, 1]),
 
         // A COMPOSITE, and the first case here whose tree is a grid: 31 cells, seven column
         // headers, a roving tab order, and a selection stated as an attribute. Pinned under a

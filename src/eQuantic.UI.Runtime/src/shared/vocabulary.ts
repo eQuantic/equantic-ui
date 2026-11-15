@@ -43,6 +43,7 @@ import {
   TableOffset,
   TableScrollRequest,
   SortDrop,
+  TreePlace,
   WebContent,
 } from './value-types';
 import { Curve, Motion } from './design-system.generated';
@@ -748,6 +749,8 @@ interface PressableConfig {
   canRequestFocus?: boolean;
   /** Composite-item role — the C# initializer `{ Role = PressableRole.Radio }` lands here. */
   role?: string;
+  /** Where a tree item stands — level, position in its set, the set's size (C# `TreePlace`). */
+  treePlace?: TreePlace | null;
 }
 
 export class Pressable extends VisualNode {
@@ -766,6 +769,8 @@ export class Pressable extends VisualNode {
   /** False: a press leaves the keyboard where it is, and the pressable leaves the Tab order. */
   canRequestFocus = true;
   role = 'button';
+  /** Where a tree item stands (C# `Pressable.TreePlace`), or null. */
+  treePlace: TreePlace | null = null;
 
   constructor(child: VisualChild, onPressed: (() => void) | null = null, config?: PressableConfig) {
     super();
@@ -1643,8 +1648,10 @@ export class Navigable extends VisualNode {
   readonly nodeKind = 'navigable';
   rows: VisualNode[];
   onMove: (move: NavigableMoveValue) => void;
+  /** A printable character typed while the composite holds the focus (C# `OnTextSearch`). */
+  onTextSearch: ((text: string) => void) | null = null;
   label = '';
-  role: 'grid' = 'grid';
+  role: 'grid' | 'tree' = 'grid';
   /** Whether rows[0] holds the column headers (a calendar's day-name row). */
   hasHeaderRow = false;
   /** The focused cell as [row, item] — announced through aria-activedescendant. A C# tuple
@@ -1655,8 +1662,9 @@ export class Navigable extends VisualNode {
     onMove: (move: NavigableMoveValue) => void,
     rows: VisualNode[],
     config?: {
+      onTextSearch?: ((text: string) => void) | null;
       label?: string;
-      role?: 'grid';
+      role?: 'grid' | 'tree';
       hasHeaderRow?: boolean;
       activeCell?: readonly number[] | null;
     },

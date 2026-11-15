@@ -1106,3 +1106,33 @@ const eQuantic.UI.Primitives.SortPlacement.CopyShadowOffsetY = 12 -> float
 const eQuantic.UI.Primitives.SortPlacement.CopyShadowBlur = 28 -> float
 const eQuantic.UI.Primitives.SortPlacement.CopyShadowAlpha = 0.28 -> double
 static eQuantic.UI.Primitives.SortPlacement.EdgeScroll(float at, float start, float end) -> float
+*REMOVED*eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out int Id, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel, out eQuantic.UI.Primitives.LiveRegionUrgency? Live, out eQuantic.UI.Primitives.RangeValue? Range, out eQuantic.UI.Primitives.TableRange? Place, out eQuantic.UI.Primitives.TableRange? Extent) -> void
+*REMOVED*eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, int Id, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0, eQuantic.UI.Primitives.LiveRegionUrgency? Live = null, eQuantic.UI.Primitives.RangeValue? Range = null, eQuantic.UI.Primitives.TableRange? Place = null, eQuantic.UI.Primitives.TableRange? Extent = null) -> void
+eQuantic.UI.Primitives.SemanticRole.Tree = 27 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.TreeItem = 28 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out int Id, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel, out eQuantic.UI.Primitives.LiveRegionUrgency? Live, out eQuantic.UI.Primitives.RangeValue? Range, out eQuantic.UI.Primitives.TableRange? Place, out eQuantic.UI.Primitives.TableRange? Extent, out eQuantic.UI.Primitives.TreePlace? TreePlace) -> void
+eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, int Id, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0, eQuantic.UI.Primitives.LiveRegionUrgency? Live = null, eQuantic.UI.Primitives.RangeValue? Range = null, eQuantic.UI.Primitives.TableRange? Place = null, eQuantic.UI.Primitives.TableRange? Extent = null, eQuantic.UI.Primitives.TreePlace? TreePlace = null) -> void
+eQuantic.UI.Primitives.SemanticNode.TreePlace.get -> eQuantic.UI.Primitives.TreePlace?
+eQuantic.UI.Primitives.SemanticNode.TreePlace.init -> void
+eQuantic.UI.Primitives.Navigable.OnTextSearch.get -> System.Action<string!>?
+eQuantic.UI.Primitives.Navigable.OnTextSearch.init -> void
+eQuantic.UI.Primitives.NavigableRole.Tree = 1 -> eQuantic.UI.Primitives.NavigableRole
+eQuantic.UI.Primitives.Pressable.TreePlace.get -> eQuantic.UI.Primitives.TreePlace?
+eQuantic.UI.Primitives.Pressable.TreePlace.init -> void
+eQuantic.UI.Primitives.PressableRole.TreeItem = 9 -> eQuantic.UI.Primitives.PressableRole
+eQuantic.UI.Primitives.TreePlace
+eQuantic.UI.Primitives.TreePlace.Deconstruct(out int Level, out int PositionInSet, out int SizeOfSet) -> void
+eQuantic.UI.Primitives.TreePlace.Equals(eQuantic.UI.Primitives.TreePlace other) -> bool
+eQuantic.UI.Primitives.TreePlace.TreePlace() -> void
+eQuantic.UI.Primitives.TreePlace.TreePlace(int Level, int PositionInSet, int SizeOfSet) -> void
+override eQuantic.UI.Primitives.TreePlace.GetHashCode() -> int
+static eQuantic.UI.Primitives.TreePlace.operator !=(eQuantic.UI.Primitives.TreePlace left, eQuantic.UI.Primitives.TreePlace right) -> bool
+static eQuantic.UI.Primitives.TreePlace.operator ==(eQuantic.UI.Primitives.TreePlace left, eQuantic.UI.Primitives.TreePlace right) -> bool
+~override eQuantic.UI.Primitives.TreePlace.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.TreePlace.ToString() -> string
+eQuantic.UI.Primitives.TreePlace.Level.get -> int
+eQuantic.UI.Primitives.TreePlace.Level.init -> void
+eQuantic.UI.Primitives.TreePlace.PositionInSet.get -> int
+eQuantic.UI.Primitives.TreePlace.PositionInSet.init -> void
+eQuantic.UI.Primitives.TreePlace.SizeOfSet.get -> int
+eQuantic.UI.Primitives.TreePlace.SizeOfSet.init -> void
