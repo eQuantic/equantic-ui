@@ -177,6 +177,65 @@ public class EventAccessorConformanceTests
     public void EveryTwinsEventWithAccessors_LowersToThem(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(EveryTwin, typeAnnotations, EveryTwinCases);
 
+    /// <summary>An interface's default event, its <c>add</c> and <c>remove</c> written into the twin of every type
+    /// that takes it (#1511): <c>DefaultInterfaceMembers</c> kept default properties and methods only, so no twin had
+    /// <c>$add$ticked</c>, a subscription composed a list the default's own <c>Tick</c> never read, and the browser
+    /// answered nothing where .NET counted. No static state, so no row leaks into another.</summary>
+    private const string DefaultEvents = """
+        using System;
+        using System.Collections.Generic;
+        using eQuantic.UI.Primitives;
+
+        public interface ITicker
+        {
+            List<Action<int>> Handlers { get; }
+            event Action<int> Ticked { add { Handlers.Add(value); } remove { Handlers.Remove(value); } }
+            void Tick(int n) { foreach (var handler in Handlers) handler(n); }
+        }
+
+        // A derived interface's default is the more specific one.
+        public interface ILoud : ITicker
+        {
+            event Action<int> ITicker.Ticked { add { Handlers.Add(n => value(n * 100)); } remove { Handlers.Clear(); } }
+        }
+
+        public sealed class Clock : ITicker { public List<Action<int>> Handlers { get; } = new(); }
+        public sealed record Signal(int Id) : ITicker { public List<Action<int>> Handlers { get; } = new(); }
+        public struct Pulse : ITicker { public Pulse() { } public List<Action<int>> Handlers { get; } = new(); }
+        public class Base : ITicker { public List<Action<int>> Handlers { get; } = new(); }
+        public sealed class Derived : Base { }
+        public sealed class Siren : ILoud { public List<Action<int>> Handlers { get; } = new(); }
+        public sealed class Meter : StatefulComponent, ITicker
+        {
+            public List<Action<int>> Handlers { get; } = new();
+            public override VisualNode Build(ComponentContext context) => new Text("meter", TypeRole.BodyM);
+        }
+        """;
+
+    private static string Ticks(string construct) =>
+        $"var sum = 0; ITicker t = {construct}; Action<int> add = n => sum += n; t.Ticked += add; "
+        + "t.Ticked += n => sum += n * 10; t.Tick(2); t.Ticked -= add; t.Tick(3); return sum + \"|\" + t.Handlers.Count;";
+
+    private static readonly (string Name, string Statements)[] DefaultEventCases =
+    [
+        ("a class takes an interface's default event", Ticks("new Clock()")),
+        ("a record takes an interface's default event", Ticks("new Signal(1)")),
+        ("a struct takes an interface's default event", Ticks("new Pulse()")),
+        ("a component takes an interface's default event", Ticks("new Meter()")),
+        ("a derived class inherits its base's default event", Ticks("new Derived()")),
+        ("a derived interface's default event wins", Ticks("new Siren()")),
+        // What a default's remove relies on: a delegate leaves a list by reference, a twin of it stays.
+        ("a delegate leaves a list by reference",
+            "var list = new List<Action<int>>(); Action<int> a = n => { }; Action<int> b = n => { }; list.Add(a); list.Add(b); "
+            + "var gone = list.Remove(a); var again = list.Remove(a); return gone + \"|\" + again + \"|\" + list.Count + \"|\" + (list[0] == b);"),
+    ];
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnInterfacesDefaultEvent_ReachesEveryTwin(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(DefaultEvents, typeAnnotations, DefaultEventCases);
+
     /// <summary>A component's twin on each of its paths (#1445): an abstract base that holds only a field and
     /// an event took the path that writes nothing for a member it does not count, and a primitive, an
     /// <c>HtmlElement</c>, a path of its own.</summary>
@@ -220,8 +279,7 @@ public class EventAccessorConformanceTests
     public void EveryComponentPathsEventWithAccessors_LowersToThem(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(EveryComponentPath, typeAnnotations, EveryComponentPathCases);
 
-    /// <summary>An event's accessor marked <c>[ServerOnly]</c>, or <c>[ServerAction]</c> on a component's, stays
-    /// on the server in every twin (#1445): its body reads the file system, which a twin that held it would be
+    /// <summary>An event's accessor marked <c>[ServerOnly]</c> stays on the server in every twin (#1445): its body reads the file system, which a twin that held it would be
     /// refused for. The accessor beside it crosses, and a subscription through it runs.</summary>
     private const string KeptAccessors = """
         using System;
@@ -252,9 +310,7 @@ public class EventAccessorConformanceTests
         {
             private Action? _moved;
             public event Action Moved { add => _moved += value; [ServerOnly] remove { _ = System.IO.File.Exists("meter"); _moved -= value; } }
-            private Action? _served;
-            public event Action Served { add => _served += value; [ServerAction] remove { _ = System.IO.File.Exists("served"); _served -= value; } }
-            public void Move() { _moved?.Invoke(); _served?.Invoke(); }
+            public void Move() => _moved?.Invoke();
             public override VisualNode Build(ComponentContext context) => new Text("meter", TypeRole.BodyM);
         }
         """;
@@ -267,8 +323,8 @@ public class EventAccessorConformanceTests
             "var count = 0; var s = new Signal(1); s.Fired += () => count += 3; s.Fire(); return count;"),
         ("a struct's event beside its server-only accessor",
             "var count = 0; var p = new Pulse(); p.Beat += () => count += 3; p.Fire(); return count;"),
-        ("a component's events beside their server-only accessors",
-            "var count = 0; var m = new Meter(); m.Moved += () => count += 3; m.Served += () => count += 30; m.Move(); return count;"),
+        ("a component's event beside its server-only accessor",
+            "var count = 0; var m = new Meter(); m.Moved += () => count += 3; m.Move(); return count;"),
     ];
 
     [SkippableTheory]
@@ -340,9 +396,36 @@ public class EventAccessorConformanceTests
         "public void Drop(Signal s, Action a) => s.Fired -= a;")]
     [InlineData("public struct Pulse { private Action? _f; public event Action Beat { [eQuantic.UI.Primitives.ServerOnly] add => _f += value; remove => _f -= value; } }",
         "public void Take(Pulse p, Action a) => p.Beat += a;")]
-    [InlineData("public sealed class Meter : eQuantic.UI.Primitives.StatefulComponent { private Action? _f; public event Action Moved { [eQuantic.UI.Primitives.ServerAction] add => _f += value; remove => _f -= value; } public override eQuantic.UI.Primitives.VisualNode Build(eQuantic.UI.Primitives.ComponentContext context) => new eQuantic.UI.Primitives.Text(\"m\", eQuantic.UI.Primitives.TypeRole.BodyM); }",
-        "public void Take(Meter m, Action a) => m.Moved += a;")]
     public void ASubscriptionToAServerOnlyAccessor_IsRefused(string declaring, string member) =>
         Transpiler.AskTheBuild(declaring + "\npublic class Client { " + member + " }")
             .Should().Contain(refusal => refusal.Id == "EQ2010" && refusal.Module == "Client");
+
+    /// <summary>A subscription through a CONTRACT that may reach an accessor kept on the server is refused (EQ2010,
+    /// #1512): through an interface's event, or a virtual one an override keeps on the server, the subscription binds
+    /// an accessor that carries no mark, and the browser composed a list nothing raises, or ran the base's accessor,
+    /// where .NET ran the server's. As a call bound to a contract a <c>[ServerOnly]</c> method fulfils is refused.</summary>
+    private const string Contracts = """
+        public interface IHasFired { event Action Fired; }
+        public sealed record Signal(int Id) : IHasFired { private Action? _f; public event Action Fired { [eQuantic.UI.Primitives.ServerOnly] add => _f += value; remove => _f -= value; } }
+        public sealed class Hidden : IHasFired { private Action? _f; event Action IHasFired.Fired { [eQuantic.UI.Primitives.ServerOnly] add => _f += value; remove => _f -= value; } }
+        public class Base { protected Action? F; public virtual event Action Fired { add => F += value; remove => F -= value; } }
+        public sealed class Derived : Base { public override event Action Fired { [eQuantic.UI.Primitives.ServerOnly] add => F += value; remove => F -= value; } }
+        public sealed class Sibling : Base { }
+        """;
+
+    [Theory]
+    [InlineData("public void Take(IHasFired s, Action a) => s.Fired += a;")]
+    [InlineData("public void Take(Base b, Action a) => b.Fired += a;")]
+    public void ASubscriptionThroughAContractAServerOnlyAccessorFulfils_IsRefused(string member) =>
+        Transpiler.AskTheBuild(Contracts + "\npublic class Client { " + member + " }")
+            .Should().Contain(refusal => refusal.Id == "EQ2010" && refusal.Module == "Client");
+
+    /// <summary>What no server-only accessor can answer builds: the interface's remove, which every implementation
+    /// keeps in its twin, and a sibling of the override, whose subscription dispatches to the base's accessor.</summary>
+    [Theory]
+    [InlineData("public void Drop(IHasFired s, Action a) => s.Fired -= a;")]
+    [InlineData("public void Take(Sibling s, Action a) => s.Fired += a;")]
+    public void ASubscriptionNoServerOnlyAccessorAnswers_Builds(string member) =>
+        Transpiler.AskTheBuild(Contracts + "\npublic class Client { " + member + " }")
+            .Should().NotContain(refusal => refusal.Id == "EQ2010");
 }

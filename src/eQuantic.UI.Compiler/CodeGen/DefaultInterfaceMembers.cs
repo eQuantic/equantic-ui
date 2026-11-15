@@ -46,7 +46,7 @@ internal static class DefaultInterfaceMembers
         {
             foreach (var member in contract.GetMembers())
             {
-                if (member.IsStatic || member is not (IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary }))
+                if (member.IsStatic || member is not (IPropertySymbol or IEventSymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary }))
                     continue;
                 if (type.FindImplementationForInterfaceMember(member) is not { } implementation
                     || implementation.ContainingType.TypeKind != TypeKind.Interface
@@ -75,7 +75,7 @@ internal static class DefaultInterfaceMembers
                 if (model.GetSymbolInfo(name).Symbol is not { IsStatic: false, IsAbstract: false } helper
                     || helper.DeclaredAccessibility != Accessibility.Private
                     || helper.ContainingType?.TypeKind != TypeKind.Interface
-                    || helper is not (IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary })
+                    || helper is not (IPropertySymbol or IEventSymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary })
                     || Services.PlainClassModule.IsServerOnly(helper)
                     || !seen.Add(helper))
                     continue;

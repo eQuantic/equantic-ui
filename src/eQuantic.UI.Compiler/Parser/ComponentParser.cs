@@ -541,8 +541,8 @@ public class ComponentParser
     /// <summary>
     /// Whether <paramref name="node"/> is code no twin is written from: a method, an operator, a
     /// conversion or an event's accessor marked <c>[ServerOnly]</c>, which no twin holds whatever type
-    /// declares it, and the body of a component's <c>[ServerAction]</c>, whose twin is a stub written
-    /// from its SIGNATURE, or of an event accessor a component marks <c>[ServerAction]</c> (<see cref="IsServerOnlyAccessor"/>).
+    /// declares it (<see cref="IsServerOnlyAccessor"/>), and the body of a component's <c>[ServerAction]</c>,
+    /// whose twin is a stub written from its SIGNATURE.
     /// <para>
     /// The one rule for what crosses, asked by everything that reads a declaration for the browser:
     /// the parser and the emitters, which leave such code out, and the scans that decide what a module
@@ -565,25 +565,23 @@ public class ComponentParser
             IsServerOnlyMethod((BaseMethodDeclarationSyntax)node, model),
         BlockSyntax or ArrowExpressionClauseSyntax => inAComponent
             && node.Parent is MethodDeclarationSyntax action && IsServerAction(action, model),
-        AccessorDeclarationSyntax { Parent.Parent: EventDeclarationSyntax } accessor => IsServerOnlyAccessor(accessor, inAComponent, model),
+        AccessorDeclarationSyntax { Parent.Parent: EventDeclarationSyntax } accessor => IsServerOnlyAccessor(accessor, model),
         _ => false,
     };
 
     /// <summary>
     /// Whether an event's <c>add</c> or <c>remove</c> accessor stays on the server (#1445): marked
-    /// <c>[ServerOnly]</c>, or <c>[ServerAction]</c> on a component's, whose body never crosses. C# refuses
-    /// <c>[ServerOnly]</c> on the event (CS0592) and takes it on an accessor, a method; the twins of a
-    /// record, a struct and a component came to write an event's accessors, and such a body crossed with
-    /// them. Asked of the accessor's symbol, and of its attribute lists by name only where no model holds it.
+    /// <c>[ServerOnly]</c>. C# refuses <c>[ServerOnly]</c> on the event (CS0592) and takes it on an accessor,
+    /// a method; the twins of a record, a struct and a component came to write an event's accessors, and such
+    /// a body crossed with them. A <c>[ServerAction]</c> on an accessor keeps nothing anywhere: it is refused
+    /// where it is declared (EQ2016, <see cref="Services.ServerMarksOnAccessors"/>). Asked of the accessor's
+    /// symbol, and of its attribute lists by name only where no model holds it.
     /// </summary>
-    private static bool IsServerOnlyAccessor(AccessorDeclarationSyntax accessor, bool inAComponent, SemanticModel? model)
+    private static bool IsServerOnlyAccessor(AccessorDeclarationSyntax accessor, SemanticModel? model)
     {
         if (accessor.AttributeLists.Count == 0) return false;
-        if (SymbolOf(accessor, model) is { } symbol)
-            return PlainClassModule.IsServerOnly(symbol) || inAComponent && PlainClassModule.IsServerAction(symbol);
-        var attributes = accessor.AttributeLists.SelectMany(list => list.Attributes);
-        return attributes.Any(attribute => attribute.IsNamed("ServerOnly"))
-            || inAComponent && attributes.Any(attribute => attribute.IsNamed("ServerAction"));
+        if (SymbolOf(accessor, model) is { } symbol) return PlainClassModule.IsServerOnly(symbol);
+        return accessor.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly"));
     }
 
     /// <summary>

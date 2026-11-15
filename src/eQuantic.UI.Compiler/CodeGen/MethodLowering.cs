@@ -193,22 +193,20 @@ internal sealed class MethodLowering
     /// <param name="declaredType">The emitter's annotation for a declared type.</param>
     /// <param name="asStatic">Emit them as statics whatever the event's modifiers say: a static class's
     /// members are its twin's statics.</param>
-    /// <remarks>An accessor that stays on the server is no member of any twin
-    /// (<see cref="Parser.ComponentParser.StaysOnTheServer"/>): a <c>[ServerOnly]</c> one, and a
-    /// <c>[ServerAction]</c> one where the type that declares the event is a component.</remarks>
+    /// <remarks>An accessor that stays on the server, a <c>[ServerOnly]</c> one, is no member of any twin
+    /// (<see cref="Parser.ComponentParser.StaysOnTheServer"/>).</remarks>
     public IEnumerable<JsClassMember> EventAccessors(EventDeclarationSyntax e, Func<TypeSyntax?, string> declaredType, bool asStatic)
     {
         if (e.AccessorList is null) yield break;
         var symbol = _modelFor(e)?.GetDeclaredSymbol(e) as IEventSymbol;
         var twin = symbol?.MemberTwinName() ?? e.Identifier.ValueText.ToCamelCase();
-        var inAComponent = symbol?.ContainingType.IsUiComponent() == true;
         var modifiers = asStatic || e.Modifiers.Any(SyntaxKind.StaticKeyword) ? "static " : "";
         var parameter = Param("value", declaredType(e.Type));
         foreach (var accessor in e.AccessorList.Accessors)
         {
             var verb = accessor.Keyword.ValueText;
             if (verb is not ("add" or "remove")
-                || Parser.ComponentParser.StaysOnTheServer(accessor, inAComponent, _modelFor(accessor))) continue;
+                || Parser.ComponentParser.StaysOnTheServer(accessor, inAComponent: false, _modelFor(accessor))) continue;
             JsStatement? body = accessor.Body is { } block ? AccessorBody(block)
                 : accessor.ExpressionBody is { } arrow ? ExpressionBody(arrow.Expression, returns: false)
                 : null;

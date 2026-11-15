@@ -51,5 +51,5 @@ internal sealed class AppSurface
         options.AssembliesToScan
             .SelectMany(assembly => assembly.GetTypes())
             .SelectMany(type => type.GetMethods())
-            .Any(method => method.GetCustomAttributes(typeof(ServerActionAttribute), false).Any());
+            .Any(method => !method.IsSpecialName && method.GetCustomAttributes(typeof(ServerActionAttribute), false).Any());
 }

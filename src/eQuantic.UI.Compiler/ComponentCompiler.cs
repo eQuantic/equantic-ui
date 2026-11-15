@@ -577,15 +577,18 @@ public class ComponentCompiler
             // A method declared twice under one name reaches the twin as one, and each emitter below
             // lost one of the two in its own way, in silence. So it is refused before any of them
             // runs (EQ1007).
+            // A server mark on an accessor means nothing either side can honour, so it is refused there too (EQ2016).
             if (DeclarationOf(component) is { } declaration)
             {
-                var overloaded = Services.OverloadedMethods.Check(declaration, component.SourcePath,
+                var declarationModel = component.SyntaxTree is { } tree ? _semanticModelProvider.GetSemanticModel(tree) : null;
+                var refused = Services.OverloadedMethods.Check(declaration, component.SourcePath,
                     isComponent: !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper,
-                    component.SyntaxTree is { } tree ? _semanticModelProvider.GetSemanticModel(tree) : null);
-                if (overloaded.Count > 0)
+                    declarationModel);
+                refused.AddRange(Services.ServerMarksOnAccessors.Check(declaration, component.SourcePath, declarationModel));
+                if (refused.Count > 0)
                 {
                     result.Success = false;
-                    result.Errors.AddRange(overloaded);
+                    result.Errors.AddRange(refused);
                     return result;
                 }
             }

@@ -258,24 +258,36 @@ internal static class HostOnlySymbolExtensions
 
     /// <summary>
     /// Reports and returns true when a subscription, <c>+=</c> or <c>-=</c>, calls an event's accessor that
-    /// stays on the server (#1445): marked <c>[ServerOnly]</c>, or <c>[ServerAction]</c> on a component's, as
-    /// <see cref="Parser.ComponentParser.StaysOnTheServer"/> says for the twins that leave it out. C# calls
-    /// the accessor for the code without naming it, as it calls <c>Dispose</c> in a <c>using</c>, and the
-    /// subscription would call a method the browser does not have.
+    /// stays on the server (#1445): marked <c>[ServerOnly]</c>, as <see cref="Parser.ComponentParser.StaysOnTheServer"/>
+    /// says for the twins that leave it out. C# calls the accessor for the code without naming it, as it calls
+    /// <c>Dispose</c> in a <c>using</c>, and the subscription would call a method the browser does not have. A
+    /// subscription bound to an interface's event, or to one that can be overridden, may reach such an accessor
+    /// of a type its receiver can be, as a call through a contract may reach a <c>[ServerOnly]</c> method, and is
+    /// refused the same way (<see cref="ServerOnlyContracts"/>, #1512): the bound accessor carries no mark.
     /// </summary>
     internal static bool ReportIfAccessorStaysOnTheServer(this IMethodSymbol accessor, SyntaxNode node, ConversionContext context)
     {
         if (accessor.AssociatedSymbol is not IEventSymbol handled) return false;
-        var inAComponent = accessor.ContainingType.IsUiComponent();
-        if (!accessor.OriginalDefinition.ReadDeclarations().Select(reference => reference.GetSyntax())
-                .Any(declaration => Parser.ComponentParser.StaysOnTheServer(declaration, inAComponent, context.SemanticModel)))
-            return false;
-        var verb = accessor.MethodKind == MethodKind.EventAdd ? "add" : "remove";
-        return Refuse(WhereWritten(node, context), "EQ2010",
-            $"'{accessor.ContainingType.ToDisplayString()}.{handled.Name}' is subscribed from client code, and its '{verb}' accessor "
-            + "stays on the server ([ServerOnly], or a component's [ServerAction]), which no module holds: the subscription "
-            + "would call a member the browser does not have. Subscribe from server code, a [ServerAction] or a [ServerOnly] "
-            + "member, or take the mark off the accessor so it crosses.", context);
+        var written = WhereWritten(node, context);
+        if (accessor.OriginalDefinition.ReadDeclarations().Select(reference => reference.GetSyntax())
+                .Any(declaration => Parser.ComponentParser.StaysOnTheServer(declaration, inAComponent: false, context.SemanticModel)))
+        {
+            var verb = accessor.MethodKind == MethodKind.EventAdd ? "add" : "remove";
+            return Refuse(written, "EQ2010",
+                $"'{accessor.ContainingType.ToDisplayString()}.{handled.Name}' is subscribed from client code, and its '{verb}' accessor "
+                + "stays on the server ([ServerOnly]), which no module holds: the subscription would call a member the browser "
+                + "does not have. Subscribe from server code, a [ServerAction] or a [ServerOnly] member, or take the mark off "
+                + "the accessor so it crosses.", context);
+        }
+        // Through a contract: the receiver the subscription is made on, and none through `base`, which runs the
+        // base's own accessor.
+        var left = (written as AssignmentExpressionSyntax)?.Left;
+        if (left is MemberAccessExpressionSyntax { Expression: BaseExpressionSyntax }) return false;
+        var through = left is null ? null
+            : ReceiverOf(left) is { } receiver
+                ? context.SemanticModel is { } model && model.SyntaxTree == receiver.SyntaxTree ? model.GetTypeInfo(receiver).Type : null
+                : TypeOfThis(left, context);
+        return accessor.ReportIfFulfilledOnTheServer(written, context, through);
     }
 
     /// <summary>Tells a refusal at <paramref name="node"/>, an in-tree node, and remembers where it was
