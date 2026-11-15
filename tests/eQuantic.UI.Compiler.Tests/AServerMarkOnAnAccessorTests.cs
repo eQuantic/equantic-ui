@@ -171,4 +171,32 @@ public sealed class AServerMarkOnAnAccessorTests
                 && line.Contains("error EQ2016") && line.Contains(member),
             $"{name}: the refusal is told at the accessor, naming its member:\n{built.Errors}");
     }
+    /// <summary>
+    /// <c>[ServerOnly]</c> on an event's accessor is what keeps it on the server (#1445), and is no EQ2016: the
+    /// build succeeds, the subscription through the accessor that crosses runs, and no twin holds the server-only
+    /// body. A refusal widened to every <c>[ServerOnly]</c> accessor broke this, and only a conformance row,
+    /// which skips without a bun, said so.
+    /// </summary>
+    [Fact]
+    public void AServerOnlyEventAccessor_Builds_AndStaysOutOfTheTwin()
+    {
+        const string vault = """
+            using System;
+            using eQuantic.UI.Primitives;
+            namespace App.Model;
+            public sealed class Vault
+            {
+                private Action? _f;
+                public event Action Opened { add => _f += value; [ServerOnly] remove { _ = System.IO.File.Exists("vault"); _f -= value; } }
+            }
+            """;
+        using var solution = new Solution().App("App", globalUsings: SharedLibrary.Factories,
+            files: [("Model/Vault.cs", vault), ("Screens/Home.cs", Home.Replace("{{members}}", "public static void Take(Vault v) => v.Opened += () => { };"))]);
+
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse($"a [ServerOnly] event accessor stays on the server and is refused nowhere:\n{built.Errors}");
+        built.ErrorsIn("App").Should().NotContain(line => line.Contains("EQ2016"));
+        built.Module("Vault").Should().Contain("$add$opened").And.NotContain("$remove$opened").And.NotContain("\"vault\"");
+    }
 }

@@ -72,7 +72,7 @@ runtime: its `addToEvent` already calls `$add$<e>` where a twin holds it, so no 
 - [x] 5.4 Pin `AServerMarkOnAnAccessorTests` to `EQ2016` (it asserts `error EQ` and the member today), and
       regenerate `tests/eQuantic.UI.Compiler.Tests/Coverage/diagnostics.baseline.txt` with
       `EQ_UPDATE_DIAGNOSTICS_BASELINE=1`, reading the diff: EQ2016 gains one file and nothing else moves
-- [ ] 5.5 Prove it: `AServerMarkOnAnAccessorTests` 5 of 5 (plus the moved rows), the event-accessor
+- [x] 5.5 Prove it: `AServerMarkOnAnAccessorTests` 5 of 5 (plus the moved rows), the event-accessor
       conformance suite with `EQ_REQUIRE_JS=1` (the `[ServerOnly]` rows still run as in .NET), and
       `DiagnosticsDocumentedTests` after 7.1
 
@@ -100,7 +100,7 @@ runtime: its `addToEvent` already calls `$add$<e>` where a twin holds it, so no 
       against that branch through `EQ_WIKI_DIR`
 - [x] 7.3 One ledger entry under `docs/ledger/` citing #1511, #1512 and #1513
 - [x] 7.4 File under #1174 the class's own accessor event that claims `<e>` in EQ1007 (design, Open)
-- [ ] 7.5 The whole suites, through the lock: `eQuantic.UI.Compiler.Tests`, `eQuantic.UI.Conformance.Tests`
+- [x] 7.5 The whole suites, through the lock: `eQuantic.UI.Compiler.Tests`, `eQuantic.UI.Conformance.Tests`
       with `EQ_REQUIRE_JS=1`, `eQuantic.UI.Server.Tests`, `eQuantic.UI.Web.Tests`; the samples build;
       `./scripts/check-openspec.sh` passes, and the change is archived with `openspec archive
       every-accessor-and-indexer-reaches-its-twin --yes` before the merge
