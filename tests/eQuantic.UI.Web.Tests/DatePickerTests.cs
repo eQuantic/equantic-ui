@@ -74,7 +74,7 @@ public class DatePickerTests
                 Flexible flexible => new[] { flexible.Child },
                 Anchored anchored => new[] { anchored.Anchor, anchored.Panel },
                 Shortcut shortcut => new[] { shortcut.Child },
-                UiComponent component => new[] { component.BuildContained(new ComponentContext(Theme)) },
+                UiComponent component => new[] { component.BuildContainedAlone(new ComponentContext(Theme)) },
                 _ => Array.Empty<VisualNode>(),
             };
             foreach (var child in children)
@@ -301,7 +301,7 @@ public class DatePickerTests
     {
         DateTime? reported = null;
         var picker = new DateTimePicker(onChanged: m => reported = m, stepMinutes: 60);
-        var built = picker.BuildContained(new ComponentContext(Theme));
+        var built = picker.BuildContainedAlone(new ComponentContext(Theme));
 
         // Driven through the CHILDREN's own callbacks — what each half calls when the user picks.
         // A direct re-render cannot carry nested state: the instance store that preserves a child
@@ -324,7 +324,7 @@ public class DatePickerTests
             onChanged: m => reported = m,
             min: new DateTime(2026, 7, 17, 10, 0, 0),
             stepMinutes: 60);
-        var built = picker.BuildContained(new ComponentContext(Theme));
+        var built = picker.BuildContainedAlone(new ComponentContext(Theme));
 
         // The bound is on the MOMENT: the 17th passes a date-only check and 09:00 on the 17th
         // still falls before a minimum of 10:00 that day.
@@ -463,7 +463,7 @@ public class DatePickerTests
                     yield return descendant;
         }
 
-        return Walk(component.BuildContained(new ComponentContext(Theme)));
+        return Walk(component.BuildContainedAlone(new ComponentContext(Theme)));
     }
 
     [Fact]
@@ -475,7 +475,7 @@ public class DatePickerTests
         // changed" keeps showing the moment a Clear button just removed.
         picker.AdoptConfig(new DateTimePicker());
 
-        var built = picker.BuildContained(new ComponentContext(Theme));
+        var built = picker.BuildContainedAlone(new ComponentContext(Theme));
         Children(built).OfType<DatePicker>().Single().Selected.Should().BeNull();
         Children(built).OfType<TimePicker>().Single().Selected.Should().BeNull();
     }

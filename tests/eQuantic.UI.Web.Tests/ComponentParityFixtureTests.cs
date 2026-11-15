@@ -577,7 +577,7 @@ public class ComponentParityFixtureTests
     /// A FRAME OF A LIVE TREE lowers the tree the server draws. <see cref="MarkupHost"/> lowers each
     /// component from what its position built rather than building it again, which is what a host that
     /// draws more than once needs: a component test, and the server's owner of a request, whose prefetch
-    /// rounds are frames. Its first frame must be the markup <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density)"/> writes,
+    /// rounds are frames. Its first frame must be the markup <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density, ComponentBoundary?)"/> writes,
     /// byte for byte, at every size class: an arm the element does not hold lowers as it always did.
     /// The markup is compared whole, not canonically, so attribute order counts.
     /// <para>

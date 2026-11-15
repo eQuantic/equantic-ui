@@ -27,9 +27,6 @@ public class AmbientChannelsTests
         ["CapabilityScope.Scoped"] =
             "the request's container; it becomes the root element's services, and the server's middleware keeps "
             + "the channel for server actions, which run outside any tree",
-        ["ComponentBoundary._diagnostics"] = "the error boundary's, which moves to the owner with E4c (#1452)",
-        ["ComponentBoundary._report"] = "the error boundary's, which moves to the owner with E4c (#1452)",
-        ["ComponentBoundary._contained"] = "the error boundary's, which moves to the owner with E4c (#1452)",
         ["FaceResolution._unresolved"] = "stays: the text services' diagnostic, outside the tree",
         ["SourceReads.Open"] =
             "stays: eqc's record of the files a compile read, outside any tree; the one accessor from a symbol "
