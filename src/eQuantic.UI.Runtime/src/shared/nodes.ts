@@ -532,6 +532,16 @@ export interface PressableNode extends VisualNodeValue {
    * stop); menuItem/option leave the tab order too (the keyboard lives on the trigger, the
    * highlight rides aria-activedescendant); checkbox/switch keep their own stop. */
   role?: string;
+  /** Where a tree item stands (C# `Pressable.TreePlace`): level, position in its set and the set's
+   * size, all from one. */
+  treePlace?: TreePlaceValue | null;
+}
+
+/** The value a C# `TreePlace` crosses as (value-types.ts `TreePlace`). */
+export interface TreePlaceValue {
+  readonly level: number;
+  readonly positionInSet: number;
+  readonly sizeOfSet: number;
 }
 
 export interface FlexibleNode extends VisualNodeValue {
@@ -876,8 +886,10 @@ export interface NavigableNode extends VisualNodeValue {
   nodeKind: 'navigable';
   rows: VisualNodeValue[];
   onMove?: (move: NavigableMoveValue) => void;
+  /** A printable character typed while the composite holds the focus (C# `OnTextSearch`). */
+  onTextSearch?: ((text: string) => void) | null;
   label?: string;
-  role?: 'grid';
+  role?: 'grid' | 'tree';
   /** Whether rows[0] holds the column headers (a calendar's day-name row). */
   hasHeaderRow?: boolean;
   /** The focused cell as [row, item] — announced through aria-activedescendant. A C# tuple

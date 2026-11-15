@@ -85,6 +85,8 @@ export const sdkNeutralStrings: Record<string, string> = {
   'StatusSum': "Sum: {0}",
   'SymbolsCount': "Symbols ({0})",
   'Today': "Today",
+  'TreeLoadFailed': "Could not load. Try again",
+  'TreeLoading': "Loading\u2026",
   'TypeDefinitionsCount': "Type definitions ({0})",
   'UnchangedLine': "1 unchanged line",
   'UnchangedLines': "{0} unchanged lines",

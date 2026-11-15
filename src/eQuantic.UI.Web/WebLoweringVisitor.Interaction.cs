@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Linq;
 
 using eQuantic.UI.Primitives;
@@ -333,11 +334,14 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private HtmlElement LowerNavigable(Navigable navigable)
     {
+        // A TREE's rows are its visible items, and a tree must not hold rows (#1529): the items are
+        // lowered as they are and numbered by the same walk, under the same id scheme.
+        var tree = navigable.Role == NavigableRole.Tree;
         var element = new RealizedElement("div")
         {
             RawAttributes = new Dictionary<string, string>
             {
-                ["role"] = navigable.Role switch { _ => "grid" },
+                ["role"] = tree ? "tree" : "grid",
                 ["tabindex"] = "0",
             },
         };
@@ -346,10 +350,14 @@ internal sealed partial class WebLoweringVisitor
         // dispatches a key, so this delegate does not run — but the lowered tree is what the
         // parity net compares, and a fixture that says "no handler" cannot notice the client
         // losing one. NavigableKeys is the same table the TS half reads, cross-pinned.
+        // Text search rides the same handler: a printable character with no modifier but Shift, never
+        // Space (the TS twin reads the same rule, and Photon's TextInput the characters themselves).
+        var onTextSearch = navigable.OnTextSearch;
         if (navigable.OnMove is { } onMove)
             element.OnKeyDown = key =>
             {
                 if (NavigableKeys.Move(key.Key, key.ShiftKey) is { } move) onMove(move);
+                else if (onTextSearch is not null && IsTextSearch(key)) onTextSearch(key.Key);
             };
         // Ids are scoped to THIS grid: two calendars on one page would otherwise both call their
         // cells eq-cell-1-1, which is a duplicate id and an activedescendant that may resolve into
@@ -361,6 +369,14 @@ internal sealed partial class WebLoweringVisitor
 
         for (var index = 0; index < navigable.Rows.Count; index++)
         {
+            if (tree)
+            {
+                if (Lower(navigable.Rows[index], null, LoweringPath.Item(index)) is not { } itemRow) continue;
+                var position = 0;
+                NumberCells(itemRow, "treeitem", scope, index, ref position);
+                element.Children.Add(itemRow);
+                continue;
+            }
             var row = new RealizedElement("div")
             {
                 // Transparent to layout: the row is an accessibility fact, not a box.
@@ -375,25 +391,32 @@ internal sealed partial class WebLoweringVisitor
             // The cells are IDENTIFIED — an aria-activedescendant pointing at an id nothing
             // carries is a dangling reference, which reads to assistive tech as no focus at all.
             var item = 0;
-            if (!(navigable.HasHeaderRow && index == 0)) NumberGridCells(row, scope, index, ref item);
+            if (!(navigable.HasHeaderRow && index == 0)) NumberCells(row, "gridcell", scope, index, ref item);
             element.Children.Add(row);
         }
         return element;
     }
 
-    /// <summary>Walks one lowered row and ids every gridcell in tree order — the id the host's
-    /// aria-activedescendant points at, built the same way by the TS twin.</summary>
-    private void NumberGridCells(HtmlElement element, string scope, int row, ref int item)
+    /// <summary>Walks one lowered row and ids every cell of the composite's kind (a grid's gridcells, a
+    /// tree's treeitems) in tree order — the id the host's aria-activedescendant points at, built the
+    /// same way by the TS twin.</summary>
+    private void NumberCells(HtmlElement element, string role, string scope, int row, ref int item)
     {
-        if (element.Role == "gridcell")
+        if (element.Role == role)
         {
             element.Id = NavigableCellId(scope, row, item);
             item++;
         }
         foreach (var child in element.Children)
             if (child is HtmlElement childElement)
-                NumberGridCells(childElement, scope, row, ref item);
+                NumberCells(childElement, role, scope, row, ref item);
     }
+
+    /// <summary>Whether a key press is a character a composite searches with (TS twin:
+    /// <c>isTextSearch</c>): one printable character, no modifier but Shift, and never Space, which is a
+    /// key of its own.</summary>
+    private static bool IsTextSearch(KeyboardEventArgs key) =>
+        key.Key.Length == 1 && key.Key != " " && !key.CtrlKey && !key.MetaKey && !key.AltKey;
 
     /// <summary>The header row's cells NAME their columns (design system C15: the day names).
     /// They are the row content's DIRECT children — whatever the caller laid out, one element per
@@ -532,7 +555,10 @@ internal sealed partial class WebLoweringVisitor
         // composition, and the trigger is usually a Button. The OUTER one yields: it keeps the
         // press, the child keeps being the real control, and the markup stays legal.
         var wrapping = child is not null && WrapsAnInteractive(child);
-        var element = new RealizedElement(wrapping ? "span" : "button")
+        // A tree item is a div (#1529): ARIA in HTML refuses role="treeitem" on a button, and its
+        // keyboard is the tree's, so nothing a button would add is missed.
+        var treeItem = pressable.Role == PressableRole.TreeItem;
+        var element = new RealizedElement(treeItem ? "div" : wrapping ? "span" : "button")
         {
             // Neutralize UA button chrome — the child carries ALL visuals (same as native).
             Style = new HtmlStyle
@@ -554,7 +580,7 @@ internal sealed partial class WebLoweringVisitor
                 PointerEvents = "auto",
                 Height = fills.Height ? "100%" : null,
             },
-            Disabled = pressable.Disabled && !wrapping ? true : null,
+            Disabled = pressable.Disabled && !wrapping && !treeItem ? true : null,
             AriaLabel = pressable.Label,
             // Selection stated, not merely painted — a fill colour says nothing to a screen reader.
             AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
@@ -639,6 +665,31 @@ internal sealed partial class WebLoweringVisitor
             element.AriaSelected = pressable.Selected == true;
             element.AriaPressed = null;
             element.TabIndex = -1;
+        }
+
+        // One item of a tree (#1529): picked like a cell when it says so, out of the Tab order because
+        // the tree is the one stop, and PLACED, because the tree's rows are a flat list of its visible
+        // items and a reader cannot infer from it how deep this one stands. A div cannot be disabled,
+        // so it says so instead.
+        if (treeItem)
+        {
+            element.Role = "treeitem";
+            element.AriaSelected = pressable.Selected;
+            element.AriaPressed = null;
+            element.TabIndex = -1;
+            if (pressable.Disabled) element.AriaDisabled = true;
+            // A press keeps the keyboard on the TREE (#1530): the host is the one stop, and the element
+            // aria-activedescendant has to be read from, so a press must not move the focus to the item.
+            // The runtime cancels the item's own focus and focuses the tree; the server never dispatches
+            // a mousedown and declares it all the same, so the parity net notices the client losing it.
+            element.OnMouseDown = static _ => { };
+            if (pressable.TreePlace is { } place)
+            {
+                element.RawAttributes ??= new Dictionary<string, string>();
+                element.RawAttributes["aria-level"] = place.Level.ToString(CultureInfo.InvariantCulture);
+                element.RawAttributes["aria-posinset"] = place.PositionInSet.ToString(CultureInfo.InvariantCulture);
+                element.RawAttributes["aria-setsize"] = place.SizeOfSet.ToString(CultureInfo.InvariantCulture);
+            }
         }
 
         // A navigation destination keeps its Tab stop (a nav is a list of links, not a composite)

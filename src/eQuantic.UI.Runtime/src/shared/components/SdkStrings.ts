@@ -213,6 +213,14 @@ export class SdkStrings {
         return $eq.str('SdkResources', 'UploadChooseFile');
     }
 
+    static get treeLoading(): string {
+        return $eq.str('SdkResources', 'TreeLoading');
+    }
+
+    static get treeLoadFailed(): string {
+        return $eq.str('SdkResources', 'TreeLoadFailed');
+    }
+
     static get uploadWaiting(): string {
         return $eq.str('SdkResources', 'UploadWaiting');
     }

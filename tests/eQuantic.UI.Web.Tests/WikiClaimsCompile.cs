@@ -1,3 +1,4 @@
+using eQuantic.UI.Components;
 using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
 using Microsoft.Extensions.DependencyInjection;
@@ -304,6 +305,52 @@ public class WikiClaimsCompile
         public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public override VisualNode Build(ComponentContext context) => Text("queue", TypeRole.BodyM);
+    }
+
+    /// <summary>Components, "TreeView: a tree the keyboard walks" (preview.69, #1530): a repository's
+    /// files, the top folder from the server and every folder below it loaded as it opens.</summary>
+    private sealed class FilesPage : Primitives.StatefulComponent
+    {
+        private sealed record Entry(string Path, string Name, bool IsDirectory);
+
+        private readonly List<Entry> Top = [];
+        private string? _open;
+
+        private Task<List<Entry>> ListFolder(string path) => Task.FromResult(new List<Entry>());
+
+        private TreeNode Node(Entry entry) => new(entry.Path, entry.Name)
+        {
+            Icon = entry.IsDirectory ? Icons.Menu : Icons.Copy,
+            IsLeaf = !entry.IsDirectory,
+        };
+
+        public override VisualNode Build(ComponentContext context) =>
+            TreeView(
+                roots: Top.Select(entry => new TreeNode(entry.Path, entry.Name)
+                {
+                    Icon = entry.IsDirectory ? Icons.Menu : Icons.Copy,
+                    IsLeaf = !entry.IsDirectory,
+                }).ToList(),
+                selectedKey: _open,
+                onPressed: node => SetState(() => _open = node.Key),
+                loadChildren: async folder => (await ListFolder(folder.Key)).Select(Node).ToList(),
+                label: "Repository",
+                height: SizeValue.Fill);
+
+        /// <summary>The vocabulary under it, for a composite of an app's own.</summary>
+        public static VisualNode OwnComposite() =>
+            new Navigable(_ => { }, [
+                new Pressable(Text("src", TypeRole.BodyM), () => { })
+                {
+                    Role = PressableRole.TreeItem,
+                    Expanded = false,
+                    TreePlace = new TreePlace(Level: 1, PositionInSet: 1, SizeOfSet: 1),
+                },
+            ])
+            {
+                Role = NavigableRole.Tree,
+                OnTextSearch = _ => { },
+            };
     }
 
     /// <summary>

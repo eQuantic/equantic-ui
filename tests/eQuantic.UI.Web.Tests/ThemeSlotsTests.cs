@@ -351,6 +351,8 @@ public class ThemeSlotsTests
         ["Menu"] = null,
         // Its small rung, which a chip always is.
         ["Chip"] = null,
+        // Its small rung too, the height of every row of a tree (#1530).
+        ["TreeView"] = null,
     };
 
     [Fact]

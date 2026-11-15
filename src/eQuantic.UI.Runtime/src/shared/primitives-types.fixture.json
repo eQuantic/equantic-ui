@@ -235,6 +235,7 @@
   "Touch",
   "Transform2D",
   "TransitionSpec",
+  "TreePlace",
   "TsvCodec",
   "TypeScriptLanguage",
   "TypeStyle",
