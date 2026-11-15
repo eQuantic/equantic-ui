@@ -256,7 +256,7 @@ public class RecordTypeEmitter
     /// (<see cref="TypeInitializer.Constant"/>), and the expression converted otherwise.</summary>
     private string StaticValue(EqualsValueClauseSyntax initializer, TypeSyntax type) =>
         TypeInitializer.Constant(initializer, ModelFor(initializer), _converter)
-        ?? ExpressionVariableScanner.Scoped(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ValueText()), _annotations);
+        ?? _converter.ConvertInitializer(initializer.Value, () => _converter.ConvertExpression(initializer.Value, type.ValueText()), _annotations);
 
     /// <summary>
     /// The annotation of a static that STARTS as null, in the TypeScript emission: its declared type

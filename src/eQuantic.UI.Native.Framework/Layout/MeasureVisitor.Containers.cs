@@ -225,7 +225,11 @@ internal sealed partial class MeasureVisitor
             forChild = horizontal
                 ? forChild with { Width = forChild.Width with { Visible = shown } }
                 : forChild with { Height = forChild.Height with { Visible = shown } };
+        // A table that takes this scroller's extent ends where the scroller's visible part ends, from where
+        // it starts in the content: measured again, once, when one started elsewhere than assumed (#1006).
+        var taking = OpenTaking(horizontal);
         var child = Measure(scroll.Child, forChild, ctx, at?.ChildAt(0));
+        if (StartedElsewhere(taking, child)) child = Measure(scroll.Child, forChild, ctx, at?.ChildAt(0));
 
         // A hugging axis the parent STRETCHES is the stretched size, as a box's and a row's are, and as
         // the web's `height: 100%` is (#1143). The row used to move the bounds after the scroller had
@@ -239,6 +243,7 @@ internal sealed partial class MeasureVisitor
         var height = ResolveSelf(scroll.Height, maxH, MathF.Min(child.Bounds.Height, maxH),
             stretched: constraints.Height.IsStretched);
         if (scroll.FillViewport) child = FillViewport(scroll, child, forChild, width, height, ctx, at);
+        CloseTaking(taking);
         result.Adopt(child);
         result.Bounds = new Rect(0, 0, width, height);
 

@@ -158,7 +158,21 @@ public class TableViewportTests
     // ---- the unbounded axis --------------------------------------------------------------------
 
     [Fact]
-    public void ATableThatFillsAnUnboundedAxis_TakesTheVisibleExtentOfItsScroller()
+    public void ATableThatFillsAnUnboundedAxis_AtTheTopOfItsScroller_TakesItsVisibleExtent()
+    {
+        var tally = new Tally();
+        var page = new ScrollView(Table(tally, height: SizeValue.Fill));
+        var host = Host(page, 700, 500, tally);
+
+        Region(host).Bounds.Height.Should().Be(500);
+        Cells(host).Should().HaveCountLessThan(1000, "its own scroll engaged, so only the window is built");
+        tally.Logged.Should().ContainSingle().Which.Should().Contain("500 points the scroller around it shows");
+    }
+
+    /// <summary>#1006: a table below the top of its page ends, and its scrollbar with it, where the page's
+    /// visible part ends, on the first frame and on every one after it.</summary>
+    [Fact]
+    public void ATableThatFillsAnUnboundedAxis_BelowTheTopOfItsScroller_TakesWhatIsLeftFromWhereItStarts()
     {
         var tally = new Tally();
         var content = new Column(gap: 0);
@@ -167,9 +181,75 @@ public class TableViewportTests
         var page = new ScrollView(content);
         var host = Host(page, 700, 500, tally);
 
+        var start = Region(host).Bounds.Y;
+        start.Should().BeGreaterThan(0, "the intro stands above it");
+        Region(host).Bounds.Height.Should().Be(500 - start);
+        Region(host).Bounds.Bottom.Should().Be(500, "its end stands where the page's visible part ends");
+
+        Settle(host);
+        Region(host).Bounds.Height.Should().Be(500 - start, "the next frame reads where it started");
+        tally.Logged.Should().ContainSingle().Which.Should()
+            .Contain($"{500 - start} of the 500 points the scroller around it shows that are left from where it starts");
+    }
+
+    /// <summary>#1006: where a table starts is kept by its own scroll model, which each table owns, so two
+    /// windows drawing tables at different starts, frame after frame, keep each its own extent.</summary>
+    [Fact]
+    public void TwoHosts_DrawingTablesAtDifferentStarts_KeepEachItsOwnExtent()
+    {
+        var tally = new Tally();
+        var below = new Column(gap: 0);
+        below.Add(new Box(new BoxStyle { Height = SizeValue.Fixed(60), Width = SizeValue.Fill }));
+        below.Add(Table(tally, height: SizeValue.Fill));
+        var first = Host(new ScrollView(below), 700, 500, tally);
+        var second = Host(new ScrollView(Table(tally, height: SizeValue.Fill)), 700, 500, tally);
+
+        for (var frame = 0; frame < 3; frame++)
+        {
+            first.RenderFrame(new DisplayListBuilder(), _clock += 16);
+            second.RenderFrame(new DisplayListBuilder(), _clock += 16);
+            Region(first).Bounds.Height.Should().Be(440);
+            Region(second).Bounds.Height.Should().Be(500);
+        }
+    }
+
+    /// <summary>#1006: what is left under half of what the scroller shows is a sliver, and a table that far
+    /// down a page takes the whole extent, scrolling into view whole.</summary>
+    [Fact]
+    public void ATableThatFillsAnUnboundedAxis_FarDownItsScroller_TakesItsVisibleExtent()
+    {
+        var tally = new Tally();
+        var content = new Column(gap: 0);
+        content.Add(new Box(new BoxStyle { Height = SizeValue.Fixed(300), Width = SizeValue.Fill }));
+        content.Add(Table(tally, height: SizeValue.Fill));
+        var page = new ScrollView(content);
+        var host = Host(page, 700, 500, tally);
+
+        Region(host).Bounds.Y.Should().Be(300);
         Region(host).Bounds.Height.Should().Be(500);
-        Cells(host).Should().HaveCountLessThan(1000, "its own scroll engaged, so only the window is built");
-        tally.Logged.Should().ContainSingle().Which.Should().Contain("scroller around it").And.Contain("500");
+        tally.Logged.Should().ContainSingle().Which.Should().Contain("500 points the scroller around it shows");
+    }
+
+    /// <summary>#1006 across: a table that fills its width in a strip that scrolls sideways, beside a label,
+    /// ends where the strip's visible part ends.</summary>
+    [Fact]
+    public void ATableThatFillsAnUnboundedWidth_BesideALabel_TakesWhatIsLeftFromWhereItStarts()
+    {
+        var tally = new Tally();
+        var line = new Row(gap: 0);
+        line.Add(new Box(new BoxStyle { Width = SizeValue.Fixed(120), Height = SizeValue.Fixed(20) }));
+        line.Add(new TableView(new UniformTableSpans(20, 28), new UniformTableSpans(40, 96),
+            (row, column) => new Text($"{row}:{column}", TypeRole.BodyM))
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fixed(300),
+        });
+        var host = Host(new ScrollView(line, ScrollAxis.Horizontal), 700, 500, tally);
+
+        Region(host).Bounds.X.Should().Be(120);
+        Region(host).Bounds.Width.Should().Be(580);
+        tally.Logged.Should().ContainSingle(entry => entry.Contains("width"))
+            .Which.Should().Contain("580 of the 700 points the scroller around it shows that are left from where it starts");
     }
 
     // ---- the wheel -------------------------------------------------------------------------------
@@ -273,6 +353,134 @@ public class TableViewportTests
         for (var i = 0; i < 60; i++) host.RenderFrame(new DisplayListBuilder(), _clock += 16);
 
         Region(host).Viewport.Scroll.Offset.Down.Should().BeGreaterThan(lifted);
+    }
+
+    // ---- a finger's pan in a page (#1007) ----------------------------------------------------------
+
+    /// <summary>A page that scrolls down, holding a table of twenty rows 300 tall and room below it.</summary>
+    private static (PhotonHost Host, double End) TableInAPage(Tally tally, VisualNode? table = null)
+    {
+        var content = new Column(gap: 0);
+        content.Add(table ?? Table(tally, rows: 20, height: SizeValue.Fixed(300)));
+        content.Add(new Box(new BoxStyle { Height = SizeValue.Fixed(800), Width = SizeValue.Fill }));
+        var host = Host(new ScrollView(content), 700, 500, tally);
+        return (host, 20 * 28 - Region(host).Viewport.Scroll.Viewport.Height);
+    }
+
+    private static void Pan(PhotonHost host, float x, float fromY, float toY)
+    {
+        host.PressDown(x, fromY, kind: PointerKind.Touch);
+        host.PointerMove(x, (fromY + toY) / 2, PointerKind.Touch);
+        host.RenderFrame(new DisplayListBuilder(), _clock += 16);
+        host.PointerMove(x, toY, PointerKind.Touch);
+        host.PressUp(x, toY, PointerKind.Touch);
+        Settle(host);
+    }
+
+    [Fact]
+    public void AtItsLastRow_AFingersPanPassesToThePageAroundIt()
+    {
+        var tally = new Tally();
+        var (host, end) = TableInAPage(tally);
+        host.ScrollBy(300, 150, 0, (float)end, stepped: false);
+        Settle(host);
+        var top = Region(host).Bounds.Y;
+
+        Pan(host, 300, 200, 100);
+
+        Region(host).Viewport.Scroll.Offset.Down.Should().Be(end);
+        Region(host).Bounds.Y.Should().Be(top - 100, "the table could follow none of it, so the page took it all");
+    }
+
+    [Fact]
+    public void AFingersPan_IsTheTablesWhileItCanFollow_AndThePagesForTheRest()
+    {
+        var tally = new Tally();
+        var (host, end) = TableInAPage(tally);
+        host.ScrollBy(300, 150, 0, (float)end - 56, stepped: false);
+        Settle(host);
+        var top = Region(host).Bounds.Y;
+
+        Pan(host, 300, 200, 100);
+
+        Region(host).Viewport.Scroll.Offset.Down.Should().Be(end, "the two rows it had left");
+        Region(host).Bounds.Y.Should().Be(top - 44, "and the page the 44 points past them");
+    }
+
+    [Fact]
+    public void AFingersPanTheTableCanFollow_LeavesThePageStill()
+    {
+        var tally = new Tally();
+        var (host, _) = TableInAPage(tally);
+        var top = Region(host).Bounds.Y;
+
+        Pan(host, 300, 200, 160);
+
+        Region(host).Viewport.Scroll.Offset.Down.Should().Be(40);
+        Region(host).Bounds.Y.Should().Be(top);
+    }
+
+    [Fact]
+    public void AtBothItsEnds_AFingersPanPassesOnEachAxisToTheScrollerAroundItOnThatAxis()
+    {
+        var tally = new Tally();
+        var strip = new Row(gap: 0);
+        strip.Add(new TableView(new UniformTableSpans(20, 28), new UniformTableSpans(6, 96),
+            (row, column) => new Text($"{row}:{column}", TypeRole.BodyM))
+        {
+            PinnedRows = 1,
+            PinnedColumns = 1,
+            Width = SizeValue.Fixed(300),
+            Height = SizeValue.Fixed(300),
+        });
+        strip.Add(new Box(new BoxStyle { Width = SizeValue.Fixed(800), Height = SizeValue.Fixed(20) }));
+        var content = new Column(gap: 0);
+        content.Add(new ScrollView(strip, ScrollAxis.Horizontal));
+        content.Add(new Box(new BoxStyle { Height = SizeValue.Fixed(800), Width = SizeValue.Fill }));
+        var host = Host(new ScrollView(content), 700, 500, tally);
+        // Each axis to its end, and no further: what a wheel cannot take would move the page and the strip.
+        var window = Region(host).Viewport.Scroll.Viewport;
+        host.ScrollBy(150, 150, 6 * 96 - window.Width, 20 * 28 - window.Height, stepped: false);
+        Settle(host);
+        var (left, top) = (Region(host).Bounds.X, Region(host).Bounds.Y);
+        var grid = Region(host).Viewport.Scroll.Offset;
+
+        host.PressDown(150, 200, kind: PointerKind.Touch);
+        host.PointerMove(120, 170, PointerKind.Touch);
+        host.RenderFrame(new DisplayListBuilder(), _clock += 16);
+        host.PointerMove(90, 140, PointerKind.Touch);
+        host.PressUp(90, 140, PointerKind.Touch);
+        Settle(host);
+
+        Region(host).Viewport.Scroll.Offset.Should().Be(grid, "the grid stood at both its ends");
+        Region(host).Bounds.X.Should().Be(left - 60, "the strip around it took what went across");
+        Region(host).Bounds.Y.Should().Be(top - 60, "and the page what went down");
+    }
+
+    [Fact]
+    public void ADragSurfaceInACell_KeepsItsGesture()
+    {
+        var tally = new Tally();
+        var moved = new List<float>();
+        var table = new TableView(new UniformTableSpans(20, 28), new UniformTableSpans(6, 96), (row, column) =>
+            row == 2 && column == 2
+                ? new Draggable(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }))
+                    { OnMoved = moved.Add }
+                : new Text($"{row}:{column}", TypeRole.BodyM))
+        {
+            PinnedRows = 1,
+            PinnedColumns = 1,
+            Height = SizeValue.Fixed(300),
+        };
+        var (host, _) = TableInAPage(tally, table);
+        var cell = Cells(host).Single(c => c.Cell.Row == 2 && c.Cell.Column == 2).Bounds;
+        var top = Region(host).Bounds.Y;
+
+        Pan(host, cell.X + cell.Width / 2, cell.Y + cell.Height / 2, cell.Y + cell.Height / 2 - 60);
+
+        moved.Should().NotBeEmpty("the surface in the cell took the drag");
+        Region(host).Viewport.Scroll.Offset.Down.Should().Be(0, "and the table let go of it");
+        Region(host).Bounds.Y.Should().Be(top);
     }
 
     // ---- the scrollbars --------------------------------------------------------------------------
