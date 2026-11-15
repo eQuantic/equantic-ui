@@ -11,7 +11,7 @@ import { photonTheme } from '../shared/design-system.generated';
 import { setPhotonTheme } from '../shared/photon-context';
 import { Column, Row, Sortable, SortableItem, Text } from '../shared/vocabulary';
 import type { SortDrop } from '../shared/value-types';
-import { resetSortableController } from './sortable';
+import { resetSortableController, tilt } from './sortable';
 
 setPhotonTheme(photonTheme);
 
@@ -226,6 +226,30 @@ describe('lists a pointer sorts', () => {
       expect(dropped[0].to).toBe('done');
     } finally {
       vi.useRealTimers();
+    }
+  });
+
+  it("leans the copy against the pointer's speed across, up to 12 degrees, as the Space's board does", () => {
+    expect(tilt(10, 10)).toBe(-8);
+    expect(tilt(-40, 10)).toBe(12);
+    expect(tilt(0, 16)).toBe(0);
+    expect(tilt(5, 0)).toBeNull();
+
+    let now = 1000;
+    const clock = vi.spyOn(performance, 'now').mockImplementation(() => now);
+    try {
+      const container = mount(new Board());
+      const a = item(container, 'a');
+      pointer(a, 'pointerdown', 10, 20);
+      now += 16;
+      pointer(document, 'pointermove', 20, 20);
+      const copy = document.body.lastElementChild as HTMLElement;
+      now += 10;
+      pointer(document, 'pointermove', 30, 20);
+      expect(copy.style.getPropertyValue('rotate')).toBe('-8deg');
+      pointer(document, 'pointerup', 30, 20);
+    } finally {
+      clock.mockRestore();
     }
   });
 

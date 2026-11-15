@@ -24,6 +24,11 @@ const HOLD_MS = 250;
 /** How near a scroller's edge the pointer scrolls it, and its fastest step per frame. */
 const EDGE = 32;
 const STEP = 14;
+/** The copy leans with the pointer's speed across (eQuantic Space's board): degrees per px/ms, the most it
+ * leans, and how long a still pointer keeps it leaning. */
+const TILT_PER_SPEED = 8;
+const TILT_MAX = 12;
+const TILT_REST_MS = 80;
 
 const delegate = pointerDownDelegate(onPointerDown);
 let keyboardInstalled = false;
@@ -80,6 +85,8 @@ function onPointerDown(down: PointerEvent): void {
   let landing: { list: HTMLElement; drop: SortDrop } | null = null;
   let pointer = { x: down.clientX, y: down.clientY };
   let frame = 0;
+  let movedAt = performance.now();
+  const leans = !prefersReducedMotion();
 
   const report = (list: HTMLElement, drop: SortDrop | null): void => {
     list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: drop }));
@@ -105,6 +112,8 @@ function onPointerDown(down: PointerEvent): void {
   // The scroller under the pointer scrolls near its edge, and the place follows what it brings in.
   const scroll = (): void => {
     frame = requestAnimationFrame(scroll);
+    // A pointer that stopped lets the copy stand up again.
+    if (copy && leans && performance.now() - movedAt > TILT_REST_MS) copy.style.setProperty('rotate', '0deg');
     const over = landing ? landing.list : source;
     if (!scrollers.has(over)) scrollers.set(over, scrollerOf(over));
     const scroller = scrollers.get(over) ?? null;
@@ -152,8 +161,16 @@ function onPointerDown(down: PointerEvent): void {
       place();
     },
     move: (ev) => {
+      const now = performance.now();
+      if (copy) {
+        copy.style.transform = `translate(${ev.clientX - down.clientX}px, ${ev.clientY - down.clientY}px)`;
+        if (leans) {
+          const angle = tilt(ev.clientX - pointer.x, now - movedAt);
+          if (angle !== null) copy.style.setProperty('rotate', `${angle}deg`);
+        }
+      }
       pointer = { x: ev.clientX, y: ev.clientY };
-      if (copy) copy.style.transform = `translate(${ev.clientX - down.clientX}px, ${ev.clientY - down.clientY}px)`;
+      movedAt = now;
       place();
     },
     release: () => {
@@ -197,11 +214,30 @@ function lift(item: HTMLElement): HTMLElement {
     opacity: '0.92',
     boxShadow: '0 12px 28px rgba(0, 0, 0, 0.28)',
     cursor: 'grabbing',
+    // The lean is the individual `rotate`, apart from the `transform` that places the copy, so easing it
+    // never makes the copy trail the pointer.
+    transition: 'rotate 0.1s ease-out',
   });
   item.ownerDocument.body.appendChild(copy);
   item.style.opacity = '0.4';
   item.setAttribute('data-eq-sort-lifted', '');
   return copy;
+}
+
+/**
+ * How far the copy leans for the pointer's speed across, as eQuantic Space's board does: against the
+ * direction it moves, at {@link TILT_PER_SPEED} degrees per px/ms, never past {@link TILT_MAX}. Null when no
+ * time passed, which says nothing about a speed.
+ */
+export function tilt(across: number, ms: number): number | null {
+  if (ms <= 0) return null;
+  const angle = -(across / ms) * TILT_PER_SPEED;
+  return Math.max(-TILT_MAX, Math.min(TILT_MAX, angle)) || 0;
+}
+
+/** Whether the person asked for less motion, in which case nothing leans. */
+function prefersReducedMotion(): boolean {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /**
