@@ -342,7 +342,6 @@ public static class PhotonRealizer
             // — the tree is the same either way, which is the point of the node.
             SafeAreaInsets = safeAreaInsets,
             WindowControlsInsets = windowControlsInsets,
-            SizeClass = WindowSizeClasses.FromWidth(viewportWidth),
             Transitions = transitions,
             Presences = presences,
             TimeMs = timeMs,
@@ -361,7 +360,7 @@ public static class PhotonRealizer
         //
         // The tree BUILDS first, and the layout measures what it built (docs/ELEMENT-TREE-PLAN.md, 3.2).
         var builds = owner ?? ComponentBoundary.StructuralOwner();
-        var rootElement = builds.Build(root, context.Components, context.SizeClass, rebuildAll);
+        var rootElement = builds.Build(root, context.Components, viewportWidth, rebuildAll);
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context,
             rootStretch: StretchKind.Block, rootElement: rootElement);
 

@@ -323,8 +323,8 @@ describe('the trees of a document count their ids together', () => {
       all.push(position.id);
       position.visitChildren(collect);
     };
-    collect(owner().build(column(new Text('first', 'bodyM')), context, 'compact', true));
-    collect(owner().build(column(new Text('second', 'bodyM')), context, 'compact', true));
+    collect(owner().build(column(new Text('first', 'bodyM')), context, 400, true));
+    collect(owner().build(column(new Text('second', 'bodyM')), context, 400, true));
 
     expect(all).toHaveLength(4);
     expect(new Set(all).size).toBe(all.length);
