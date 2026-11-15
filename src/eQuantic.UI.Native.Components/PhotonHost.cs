@@ -23,8 +23,9 @@ public sealed class PhotonHost
     private readonly LiveRegionAnnouncer _announcer = new();
 
     public PhotonHost(VisualNode root, IAppTheme theme, ThemeMode mode, float width, float height,
-        ITextMeasurer? measurer = null, float typeScale = 1f)
+        ITextMeasurer? measurer = null, float typeScale = 1f, ComponentBoundary? boundary = null)
     {
+        Boundary = boundary ?? new ComponentBoundary();
         _root = root;
         _theme = theme;
         Mode = mode;
@@ -32,6 +33,7 @@ public sealed class PhotonHost
         Height = height;
         _measurer = measurer;
         _typeScale = typeScale;
+        _owner = Boundary.Owner();
 
         // ONCE, for the whole tree: a SetState marks its position in the owner, and the owner asks
         // for the frame. Nothing subscribes per instance, so nothing can subscribe twice (#935: the
@@ -461,8 +463,18 @@ public sealed class PhotonHost
     }
 
     /// <summary>The tree this host keeps across frames: every position, the instances it retains, and
-    /// the order its components mount and unmount in, the root's included (see BuildOwner).</summary>
-    private readonly BuildOwner _owner = ComponentBoundary.Owner();
+    /// the order its components mount and unmount in, the root's included (see BuildOwner). Made from
+    /// <see cref="Boundary"/>, so its components build through the window's boundary.</summary>
+    private readonly BuildOwner _owner;
+
+    /// <summary>
+    /// The window's error boundary (#1452): every component of this host's tree builds through it, so a
+    /// component that throws is reported to its <see cref="ComponentBoundary.Report"/>, described as its
+    /// <see cref="ComponentBoundary.Diagnostics"/> say, and named in its
+    /// <see cref="ComponentBoundary.Contained"/>, and in no other window's. A shell arms the report and
+    /// reads the tally beside its frame summary.
+    /// </summary>
+    public ComponentBoundary Boundary { get; }
 
 
     private Pressable? _pressed;
@@ -1412,6 +1424,10 @@ public sealed class PhotonHost
     /// of a dead key or an input method. It arrives as a STRING for that reason: what a keystroke
     /// produces is the platform's business, and "á" may be one key or three.
     /// </summary>
+    /// <summary>The modifiers of the last key the shell handed over, which the text it hands over next
+    /// came from.</summary>
+    private KeyModifiers _keyModifiers;
+
     public bool TextInput(string text)
     {
         if (string.IsNullOrEmpty(text)) return false;
@@ -1432,6 +1448,24 @@ public sealed class PhotonHost
             RestartBlink();
             SurfaceChanged(surface.OnChanged);
             return true;
+        }
+        // A COMPOSITE under focus with no field being edited searches with what was typed (#1529): a
+        // tree jumps to the item whose label starts with it. It arrives here and not in KeyDown
+        // because the shells hand over a key's TEXT only once no key claimed it, the same point the
+        // web's keydown reads a one-character key at. Space is a key of its own, and never searches.
+        // A chord's text is not a search, as the web's keydown reads only a key with no modifier but Shift:
+        // the shells hand over the text of a key KeyDown did not claim, ⌘D's "d" included.
+        if (TextTarget is null && text != " " && _focusedId != 0
+            && (_keyModifiers & (KeyModifiers.Command | KeyModifiers.Control | KeyModifiers.Alt)) == 0
+            && _lastFrame?.FocusStops is { } searchStops)
+        {
+            for (var i = 0; i < searchStops.Count; i++)
+            {
+                if (searchStops[i].Id != _focusedId || searchStops[i].Grid is not { OnTextSearch: { } search }) continue;
+                search(text);
+                NeedsRender = true;
+                return true;
+            }
         }
         if (TextTarget is not { } entry || entry.Disabled) return false;
         // Typing over a selection REPLACES it — the one behaviour that makes selecting worth doing.
@@ -3476,6 +3510,7 @@ public sealed class PhotonHost
     /// </summary>
     public bool KeyDown(string key, KeyModifiers modifiers = KeyModifiers.None)
     {
+        _keyModifiers = modifiers;
         // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.
         if (BindingFor(key, modifiers) is { } binding)
         {

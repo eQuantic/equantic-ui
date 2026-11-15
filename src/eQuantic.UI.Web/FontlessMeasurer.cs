@@ -18,6 +18,13 @@ namespace eQuantic.UI.Web;
 /// </summary>
 internal sealed class FontlessMeasurer
 {
+    /// <summary>A measurer for a tree whose components build through <paramref name="boundary"/>.</summary>
+    public FontlessMeasurer(ComponentBoundary boundary) => Boundary = boundary;
+
+    /// <summary>The boundary of the tree this measurer serves (#1452): what its components build
+    /// through, and where what one of them failed is reported and counted.</summary>
+    public ComponentBoundary Boundary { get; }
+
     private static readonly object Asked = new();
 
     /// <summary>The instances whose last build through <see cref="Build"/> asked for a width. Weak, so
@@ -42,7 +49,7 @@ internal sealed class FontlessMeasurer
     public VisualNode Build(UiComponent component, ComponentContext context, int depth)
     {
         var asks = Asks;
-        var built = ComponentBoundary.BuildAtDepth(component, context, depth);
+        var built = Boundary.BuildAtDepth(component, context, depth);
         if (Asks > asks) _unmeasured.AddOrUpdate(component, Asked);
         else _unmeasured.Remove(component);
         return built;

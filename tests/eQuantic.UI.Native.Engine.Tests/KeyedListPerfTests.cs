@@ -55,7 +55,7 @@ public class KeyedListPerfTests
     private static (double Build, double Replace) Measure(int members, bool keysKept)
     {
         var (first, second) = (Keyed("a", members, row: false), Keyed(keysKept ? "a" : "b", members, row: keysKept));
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var clock = Stopwatch.StartNew();
         Frame(owner, first);
         var build = clock.Elapsed.TotalMilliseconds;

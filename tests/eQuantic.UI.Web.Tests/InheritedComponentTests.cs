@@ -110,7 +110,7 @@ public class InheritedComponentTests
     {
         var log = new Log();
         var holder = new Holder(new Column { new Reader(log), new Bystander(log), new Glance(log) });
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, holder, rebuildAll: true);
         log.Entries.Should().Equal("reader 1", "bystander", "glance 1");
 
@@ -127,7 +127,7 @@ public class InheritedComponentTests
     {
         var log = new Log();
         var holder = new Holder(new Reader(log));
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, holder, rebuildAll: true);
 
         log.Entries.Clear();
@@ -142,7 +142,7 @@ public class InheritedComponentTests
     {
         var log = new Log();
         var holder = new Holder(new Listener(log));
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, holder, rebuildAll: true);
         log.Entries.Should().Equal("listener 1");
 
@@ -157,7 +157,7 @@ public class InheritedComponentTests
     public void ALookup_FindsTheNearestOfItsType_PassingOverAnyOther()
     {
         var log = new Log();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, new Score(1, new Caption("inner", new Score(2, new Caption("innermost", new Reader(log))))), rebuildAll: true);
 
         log.Entries.Should().Equal("reader 2");
@@ -168,7 +168,7 @@ public class InheritedComponentTests
     {
         var log = new Log();
         var holder = new Holder(new Reader(log));
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, holder, rebuildAll: true);
 
         holder.Hide();
@@ -211,7 +211,7 @@ public class InheritedComponentTests
     {
         var log = new Log();
         var holder = new LayerHolder(new Column { new Reader(log), new Bystander(log) });
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         FrameShowingTheLayer(owner, holder, log, rebuildAll: true).Should().Equal("reader 1", "bystander");
 
         log.Entries.Clear();
@@ -232,7 +232,7 @@ public class InheritedComponentTests
         // The column keeps the walk that shows the layer from reaching the holder, so it builds in
         // BuildDeferred's own list, and the reader is marked while that list is being built.
         var root = new Column { new Overlay(new Column { holder }) };
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         FrameShowingTheLayer(owner, root, log, rebuildAll: true).Should().Equal("reader 1");
 
         log.Entries.Clear();
@@ -250,7 +250,7 @@ public class InheritedComponentTests
     {
         var log = new Log();
         var holder = new LayerHolder(new Column { new Overlay(new Column { new Reader(log) }) });
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
 
         List<string> Draw(bool rebuildAll, out List<string> afterOuter)
         {
@@ -296,7 +296,7 @@ public class InheritedComponentTests
     {
         var log = new Log();
         var root = new Column { new DensityReader(log), new Bystander(log) };
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, root, rebuildAll: true, context: Comfortable);
         log.Entries.Should().Equal("density Comfortable", "bystander");
 
@@ -330,7 +330,7 @@ public class InheritedComponentTests
     {
         var log = new Log();
         var root = new Column { new RouteReader(log), new DensityReader(log), new Bystander(log) };
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, root, rebuildAll: true, context: Routed("first"));
         log.Entries.Should().Equal("slug first", "density Comfortable", "bystander");
 
@@ -350,7 +350,7 @@ public class InheritedComponentTests
         var log = new Log();
         var root = new Column { new RouteReader(log), new Bystander(log) };
         var route = new RouteValues(new Dictionary<string, string> { ["slug"] = "same" }, null, "/docs/same");
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, root, rebuildAll: true, context: new ComponentContext(PhotonTheme.Instance, route: route));
 
         log.Entries.Clear();
@@ -397,7 +397,7 @@ public class InheritedComponentTests
     {
         var log = new Log();
         var other = new PhotonTheme();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
 
         Frame(owner, new Column { new Theme(other, new ThemeReader(log, "inside", other)), new ThemeReader(log, "beside", other) },
             rebuildAll: true);
@@ -412,7 +412,7 @@ public class InheritedComponentTests
         var log = new Log();
         var other = new PhotonTheme();
         var holder = new ThemeHolder(PhotonTheme.Instance, new Column { new ThemeReader(log, "reader", other), new Bystander(log) });
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var root = Frame(owner, new Column { holder }, rebuildAll: true);
         log.Entries.Should().Equal("reader frame", "bystander");
 
@@ -439,7 +439,7 @@ public class InheritedComponentTests
     public void ANavigator_SendsADestinationToTheHostOfItsTree()
     {
         var keeper = new Keeper();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var sent = new List<string>();
         owner.NavigationRequested = sent.Add;
         Frame(owner, keeper, rebuildAll: true);
@@ -456,7 +456,7 @@ public class InheritedComponentTests
     {
         var inside = new Keeper();
         var outside = new Keeper();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, new Column { new InFlow(inside), outside }, rebuildAll: true);
 
         inside.Context!.InFlow.Should().BeTrue();

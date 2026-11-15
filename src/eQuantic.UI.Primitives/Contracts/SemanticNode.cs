@@ -162,6 +162,21 @@ public enum SemanticRole : byte
     /// <summary>The header of a table's or a grid's row, named by what it shows, which names the cells
     /// beside it.</summary>
     RowHeader,
+
+    /// <summary>
+    /// A TREE: a container whose items are read with how deep each one stands and where among its
+    /// siblings, the web's <c>role="tree"</c>, AppKit's outline. Read and then walked into, like
+    /// <see cref="Group"/>; its items are <see cref="TreeItem"/>s. Appended (#1529), by the rule above.
+    /// </summary>
+    Tree,
+
+    /// <summary>
+    /// One item of a <see cref="Tree"/>. Whether it is open rides <see cref="SemanticNode.Expanded"/>
+    /// (null for a leaf), whether it is the picked one <see cref="SemanticNode.Selected"/>, and where it
+    /// stands <see cref="SemanticNode.TreePlace"/>: a flat list of visible items cannot let a reader
+    /// infer either. Appended (#1529), by the rule above.
+    /// </summary>
+    TreeItem,
 }
 
 /// <summary>A check's state, in ARIA's own three words. Mixed exists for checkboxes and nothing
@@ -270,6 +285,11 @@ public enum SemanticCheck : byte
 /// The rows and columns a <see cref="SemanticRole.Table"/> or a <see cref="SemanticRole.Grid"/> covers in
 /// all, from its first row and column, not the ones a window built. Null for everything else.
 /// </param>
+/// <param name="TreePlace">
+/// Where a <see cref="SemanticRole.TreeItem"/> stands: its level, its position among its siblings and
+/// their count, all from one, as <see cref="Pressable.TreePlace"/> declares them. Null for everything
+/// else. AppKit takes the level as an outline row's disclosure level, from zero (#1529).
+/// </param>
 [ServerOnly]
 public readonly record struct SemanticNode(
     SemanticRole Role,
@@ -286,4 +306,5 @@ public readonly record struct SemanticNode(
     LiveRegionUrgency? Live = null,
     RangeValue? Range = null,
     TableRange? Place = null,
-    TableRange? Extent = null);
+    TableRange? Extent = null,
+    TreePlace? TreePlace = null);

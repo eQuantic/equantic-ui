@@ -40,12 +40,18 @@ public sealed record Announcement
     /// <summary>The level in the outline, 1 to 6, for a heading; 0 for anything else.</summary>
     public int HeadingLevel { get; init; }
 
+    /// <summary>Where a tree item stands, its level and its position among its siblings of how many,
+    /// all from one; null for anything else, and for an item that does not say.</summary>
+    public TreePlace? TreePlace { get; init; }
+
     /// <summary>The announcement as a failure message names it: <c>Button "Save" (disabled)</c>.</summary>
     public override string ToString()
     {
         var text = new StringBuilder($"{Role} \"{Name}\"");
         var states = new List<string>();
         if (HeadingLevel > 0) states.Add($"level {HeadingLevel}");
+        if (TreePlace is { } place)
+            states.Add($"level {place.Level}, {place.PositionInSet} of {place.SizeOfSet}");
         if (Value is not null) states.Add($"value \"{Value}\"");
         if (Disabled) states.Add("disabled");
         if (Checked is { } check) states.Add($"checked {check}");

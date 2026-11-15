@@ -237,7 +237,7 @@ public class ElementEngineTwinTests
     {
         SkipUnlessBun();
         var trace = new List<string>();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["first"]);
         var root = Frame(owner, page);
         var counter = ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(0)!);
@@ -270,7 +270,7 @@ public class ElementEngineTwinTests
     {
         SkipUnlessBun();
         var trace = new List<string>();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["a", "b"]) { Keyed = true };
         var root = Frame(owner, page);
         var a = ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(0)!);
@@ -301,7 +301,7 @@ public class ElementEngineTwinTests
     {
         SkipUnlessBun();
         var trace = new List<string>();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["a", "b", "c"]) { Keyed = true };
         var root = Frame(owner, page);
         page.Show("c", "a", "b");
@@ -332,7 +332,7 @@ public class ElementEngineTwinTests
     public void AKeyInsertedAtTheFront_TakesNoOtherKeysPosition()
     {
         SkipUnlessBun();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["a", "b"]) { Keyed = true };
         var root = Frame(owner, page);
         var a = ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(0)!);
@@ -372,7 +372,7 @@ public class ElementEngineTwinTests
     public void EveryKeyReplaced_EveryMemberStartsAgain()
     {
         SkipUnlessBun();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["a", "b"]) { Keyed = true };
         var root = Frame(owner, page);
         var a = ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(0)!);
@@ -441,7 +441,7 @@ public class ElementEngineTwinTests
     public void UnkeyedRowsSwap_TheStateStaysAtItsIndex()
     {
         SkipUnlessBun();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["a", "b"]);
         var root = Frame(owner, page);
         ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(0)!).Press();
@@ -465,7 +465,7 @@ public class ElementEngineTwinTests
     public void ATypeChangesAtAPosition_TheStateStartsAgain()
     {
         SkipUnlessBun();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var swapping = new Swapping();
         var root = Frame(owner, swapping);
         var first = ComponentAt<Counter>(root.ChildAt(0)!);
@@ -494,7 +494,7 @@ public class ElementEngineTwinTests
     {
         SkipUnlessBun();
         var builds = new List<string>();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["row"], builds);
         var root = Frame(owner, page);
         var counter = ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(0)!);
@@ -518,7 +518,7 @@ public class ElementEngineTwinTests
     public void OnlyWhatWasMarkedBuilds_AndRebuildingAllBuildsEachOnce()
     {
         SkipUnlessBun();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = new Page(["a", "b"]);
         var root = Frame(owner, page);
         var (a, b) = (ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(0)!), ComponentAt<Counter>(root.ChildAt(0)!.ChildAt(1)!));
@@ -549,7 +549,7 @@ public class ElementEngineTwinTests
         SkipUnlessBun();
         var log = new List<string>();
         var parent = new TwinKeys(log);
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var column = Frame(owner, parent).ChildAt(0)!;
         var second = ComponentAt<Logged>(column.ChildAt(1)!);
         second.Press();
@@ -578,7 +578,7 @@ public class ElementEngineTwinTests
         SkipUnlessBun();
         var log = new List<string>();
         var shared = new Tracked(log);
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, Placed(shared, shared));
         Frame(owner, leavesFirst == 0 ? Placed(new Text("gone", TypeRole.BodyM), shared)
             : Placed(shared, new Text("gone", TypeRole.BodyM)));
@@ -602,7 +602,7 @@ public class ElementEngineTwinTests
         var column = new Column();
         column.Add(new InFlow(new ReadsInFlow(seen, "inside")));
         column.Add(new ReadsInFlow(seen, "outside"));
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var root = Frame(owner, column);
         ComponentAt<ReadsInFlow>(root.ChildAt(0)!.ChildAt(0)!).Touch();
         Frame(owner, column, rebuildAll: false);
@@ -622,7 +622,7 @@ public class ElementEngineTwinTests
         SkipUnlessBun();
         var seen = new List<string>();
         var root = Placed(new ReadsDensity(seen, "reader"), new ReadsInFlow(seen, "other"));
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, root);
         owner.Build(root, new ComponentContext(PhotonTheme.Instance, density: Density.Compact), 400f, rebuildAll: false);
         owner.EndFrame();

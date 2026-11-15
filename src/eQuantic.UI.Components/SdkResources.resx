@@ -304,4 +304,10 @@
   <data name="UploadAnnounceFailed" xml:space="preserve">
     <value>{0} was not uploaded: {1}</value>
   </data>
+  <data name="TreeLoading" xml:space="preserve">
+    <value>Loading…</value>
+  </data>
+  <data name="TreeLoadFailed" xml:space="preserve">
+    <value>Could not load. Try again</value>
+  </data>
 </root>

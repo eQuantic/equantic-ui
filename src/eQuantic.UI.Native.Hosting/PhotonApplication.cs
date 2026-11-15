@@ -106,6 +106,39 @@ public sealed class PhotonApplication
     public void Run(Func<VisualNode> root) => UseRoot(root).Run();
 
     /// <summary>
+    /// Arms a window's error boundary with the app's report (#1452): every shell calls it on the host it
+    /// makes for a window, so a component contained there reaches the app's logger, or stderr when the
+    /// app has none. A boundary something else already armed keeps its report.
+    /// <para>
+    /// A contained failure has to SAY something. The boundary catches a Build that throws and draws a
+    /// card in its place, which is right (one broken section must not take the window with it), but on
+    /// Photon nothing was listening, so a section that threw wrote nowhere at all. A consumer's headless
+    /// render script measured the PNG and passed a broken section for days, because an error card is a
+    /// perfectly good 42 KB image. Armed by default, so an app gets it without asking.
+    /// </para>
+    /// </summary>
+    public void ArmBoundary(eQuantic.UI.Primitives.ComponentBoundary boundary)
+    {
+        ArgumentNullException.ThrowIfNull(boundary);
+        boundary.Report ??= ContainedReport ?? ReportContained;
+    }
+
+    /// <summary>
+    /// Where a contained failure of every window goes, when the app wants it somewhere other than its
+    /// logger: set before <see cref="Run()"/>, it is the report each window's boundary is armed with.
+    /// Null reports to the app's logger, or stderr when it has none.
+    /// </summary>
+    public Action<eQuantic.UI.Primitives.UiComponent, Exception>? ContainedReport { get; set; }
+
+    private void ReportContained(eQuantic.UI.Primitives.UiComponent component, Exception error)
+    {
+        var log = Services.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+        var message = $"[eQuantic.UI] {component.GetType().Name} failed to render and was contained";
+        if (log is not null) log.CreateLogger("eQuantic.UI.Photon").LogError(error, "{Message}", message);
+        else Console.Error.WriteLine($"{message}: {error}");
+    }
+
+    /// <summary>
     /// Hands control to the platform. Which platform is not a question the app answers: the SDK
     /// referenced exactly one shell for the framework being built, and that shell says so.
     /// </summary>
@@ -122,24 +155,6 @@ public sealed class PhotonApplication
         // injects IUiDispatcher and the SetState that marshals are talking about one queue.
         eQuantic.UI.Primitives.UiDispatcher.Current = Native.Components.PhotonDispatcher.Shared;
 
-        // A contained failure has to SAY something. ComponentBoundary catches a Build that throws
-        // and draws a card in its place, which is right — one broken section must not take the
-        // window with it — but on Photon nothing was listening, so a section that threw wrote
-        // nowhere at all. The web has had `console.error` from the start; native had silence.
-        //
-        // What that costs: a consumer's headless render script measured the PNG and passed a broken
-        // section for days, because an error card is a perfectly good 42 KB image. Armed here, by
-        // default, so an app gets it without asking — and an app that wants it elsewhere assigns
-        // its own. The reverse is not reachable: by the time someone discovers they needed the
-        // report, the exception has already been swallowed.
-        eQuantic.UI.Primitives.ComponentBoundary.Report ??= (component, error) =>
-        {
-            var log = Services.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
-            var message = $"[eQuantic.UI] {component.GetType().Name} failed to render and was contained";
-            if (log is not null) log.CreateLogger("eQuantic.UI.Photon").LogError(error, "{Message}", message);
-            else Console.Error.WriteLine($"{message}: {error}");
-        };
-
         // Layout's development notes (a table that took the visible extent of its scroller) go to the
         // same logger, at Debug: they are what a developer reads while laying a screen out.
         eQuantic.UI.Native.Components.PhotonHost.DefaultLog ??= message =>
@@ -148,11 +163,8 @@ public sealed class PhotonApplication
             log?.CreateLogger("eQuantic.UI.Photon").LogDebug("{Message}", message);
         };
 
-        // A RUN starts here, so what it contained starts empty here. The boundary itself remembers
-        // nothing across a rebuild — a component that stops throwing simply builds again — and that
-        // stays true; this is the run's own tally, and a tally nobody arms is one that survives
-        // whatever ran before it in the same process.
-        eQuantic.UI.Primitives.ComponentBoundary.ClearContained();
+        // A RUN starts here, so the faces it could not find start empty here. What it contains is its
+        // window's host's own tally (#1452), which starts empty with the host.
         eQuantic.UI.Primitives.FaceResolution.Clear();
 
         FindRunner().Run(this);

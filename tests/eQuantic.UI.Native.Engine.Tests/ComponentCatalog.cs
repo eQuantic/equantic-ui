@@ -33,6 +33,19 @@ internal static class ComponentCatalog
         [typeof(Dialog)] = () => Page(new Dialog("Sign out?", "You can sign back in anytime.",
             [new DialogAction("Stay", null, Variant.Ghost), new DialogAction("Sign out")])),
         [typeof(eQuantic.UI.Components.Calendar)] = () => new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17), _ => { }),
+        // An empty tree draws nothing to compare: an open folder, a picked file and a closed one.
+        [typeof(TreeView)] = () => new TreeView(
+        [
+            new TreeNode("src", "src")
+            {
+                Children = [new TreeNode("src/App.cs", "App.cs") { IsLeaf = true }, new TreeNode("src/Ui.cs", "Ui.cs") { IsLeaf = true }],
+            },
+            new TreeNode("docs", "docs") { Children = [new TreeNode("docs/intro.md", "intro.md") { IsLeaf = true }] },
+        ], "src/Ui.cs")
+        {
+            Label = "Files",
+            ExpandedKeys = ["src"],
+        },
     };
 
     /// <summary>A layer over the page it opens on, as a dialog is shown.</summary>
