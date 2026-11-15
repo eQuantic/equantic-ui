@@ -504,13 +504,27 @@ public sealed class PhotonHost
     private (Element Element, ScrollAxis Axis, float MaxOffset, float Start, float FromOffset,
         float LastAt, float LastTimeMs, float Velocity, bool Active, Matrix2D? Space)? _pan;
 
+    /// <summary>Under a finger's candidate pan of a table, the nearest scroller around it on the other axis
+    /// than <see cref="_pan"/>'s: what the table cannot follow passes on along each axis to the scroller
+    /// around it on that axis, as the web passes it (#1007).</summary>
+    private (Element Element, ScrollAxis Axis, float MaxOffset, float Start, float FromOffset,
+        float LastAt, float LastTimeMs, float Velocity, bool Active, Matrix2D? Space)? _panBeside;
+
     /// <summary>
     /// A press a table viewport's scroll took. On a scrollbar it is the scroll's from the start
     /// (<c>Active</c>). A finger's is a CANDIDATE, as a pan of a scroll view is: the press goes on to the
     /// cell under it, and the table takes it only once it travels past the slop, cancelling that press,
     /// so a tap on a cell is still a tap.
+    /// <para>
+    /// The press keeps where it began in the table's own space (<c>Local</c>) and how a step on screen
+    /// maps into it (<c>PerX</c>, <c>PerY</c>), read once from the frame it began in: a pan that passes to
+    /// the scroller around the table moves the table on screen, and a point read against the next frame
+    /// would have the finger travel by however far the page moved (#1007). <c>From</c> is where the grid
+    /// stood, so what it did not follow is the finger's travel less what it took.
+    /// </para>
     /// </summary>
-    private (TableViewport Viewport, Rect Bounds, float StartX, float StartY, bool Active)? _tablePress;
+    private (TableViewport Viewport, Rect Bounds, Element Element, float StartX, float StartY, Point Local,
+        Point PerX, Point PerY, TableOffset From, bool Active)? _tablePress;
 
     /// <summary>
     /// Whether a wheel or drag GLIDES to where it was sent instead of jumping there. On by default
@@ -2065,8 +2079,8 @@ public sealed class PhotonHost
             }
             if (table.Active)
             {
-                table.Viewport.Scroll.Pointer(PointerPhase.Move, TableLocal(table.Viewport, table.Bounds, new Point(x, y)),
-                    kind, _lastTimeMs);
+                table.Viewport.Scroll.Pointer(PointerPhase.Move, Followed(table, x, y), kind, _lastTimeMs);
+                PassOn(table, x, y);
                 NeedsRender = true;
                 return;
             }
@@ -2169,7 +2183,9 @@ public sealed class PhotonHost
 
         // A finger on a list. The content is UNDER it and follows it exactly — no smoothing, which
         // is what makes a surface feel attached to the hand rather than chased by it.
-        if (_pan is { } pan)
+        // A pan armed under a finger's candidate pan of a table is the scroller around it, which moves only
+        // by what the table passes on (PassOn).
+        if (_pan is { } pan && _tablePress is null)
         {
             var panAt = InGestureSpace(pan.Space, x, y);
             var along = pan.Axis == ScrollAxis.Horizontal ? panAt.X : panAt.Y;
@@ -2323,18 +2339,69 @@ public sealed class PhotonHost
         return moving;
     }
 
-    /// <summary>A point on screen in the own space of the table viewport a press began on, found in the
-    /// last frame by the scroll it carries (a rebuild draws a new node over the same scroll), through
-    /// the transform that drew it as the press itself was (<see cref="ToLocal"/>); the box the press
-    /// began in when the last frame no longer draws it.</summary>
-    private Point TableLocal(TableViewport viewport, Rect pressedIn, Point point)
+    /// <summary>A point on screen in the own space of the table a press began on, mapped as the frame it
+    /// began in mapped it: the table moving on screen under a still finger, because the scroller around it
+    /// took part of the pan, is no travel of the finger (#1007).</summary>
+    private static Point Followed(
+        (TableViewport Viewport, Rect Bounds, Element Element, float StartX, float StartY, Point Local,
+            Point PerX, Point PerY, TableOffset From, bool Active) table, float x, float y)
     {
-        var tables = _lastFrame?.TableRegions;
-        if (tables is not null)
-            for (var i = tables.Count - 1; i >= 0; i--)
-                if (ReferenceEquals(tables[i].Viewport.Scroll, viewport.Scroll))
-                    return ToLocal(tables, i, tables[i].Bounds, point);
-        return new Point(point.X - pressedIn.X, point.Y - pressedIn.Y);
+        var (dx, dy) = (x - table.StartX, y - table.StartY);
+        return new Point(table.Local.X + dx * table.PerX.X + dy * table.PerY.X,
+            table.Local.Y + dx * table.PerX.Y + dy * table.PerY.Y);
+    }
+
+    /// <summary>
+    /// What a finger's pan of a table could not follow, on each axis, moves the nearest scroller around it
+    /// on that axis, as a nested scroll does on iOS and Android and Flutter's two-dimensional scrollables do
+    /// (#1007): the finger's travel along it, less what the grid took since the press. A table at its last
+    /// row, filling the width of a page, no longer leaves the page impossible to scroll with a finger.
+    /// </summary>
+    private void PassOn(
+        (TableViewport Viewport, Rect Bounds, Element Element, float StartX, float StartY, Point Local,
+            Point PerX, Point PerY, TableOffset From, bool Active) table, float x, float y)
+    {
+        PassAlong(ref _pan, table, x, y);
+        PassAlong(ref _panBeside, table, x, y);
+    }
+
+    /// <summary>What the table did not follow on one scroller's axis, given to that scroller.</summary>
+    private void PassAlong(
+        ref (Element Element, ScrollAxis Axis, float MaxOffset, float Start, float FromOffset,
+            float LastAt, float LastTimeMs, float Velocity, bool Active, Matrix2D? Space)? pan,
+        (TableViewport Viewport, Rect Bounds, Element Element, float StartX, float StartY, Point Local,
+            Point PerX, Point PerY, TableOffset From, bool Active) table, float x, float y)
+    {
+        if (pan is not { } around) return;
+        var at = InGestureSpace(around.Space, x, y);
+        var horizontal = around.Axis == ScrollAxis.Horizontal;
+        var travelled = (horizontal ? at.X : at.Y) - around.Start;
+        var now = table.Viewport.Scroll.Offset;
+        var took = (float)(horizontal ? table.From.Across - now.Across : table.From.Down - now.Down);
+        var left = travelled - took;
+        if (!around.Active)
+        {
+            // Under half a point is the rounding of the frame's mapping, not travel the table left.
+            if (MathF.Abs(left) < 0.5f) return;
+            around.Active = true;
+            around.LastAt = 0;
+            around.LastTimeMs = _lastTimeMs;
+        }
+        // Velocity from the last step, as a pan's: a flick of what passed on is what the hand was doing.
+        var elapsed = _lastTimeMs - around.LastTimeMs;
+        if (elapsed > 0) around.Velocity = (left - around.LastAt) / elapsed;
+        around.LastAt = left;
+        around.LastTimeMs = _lastTimeMs;
+        if (_scrolls.ScrollTo(around.Element, around.FromOffset - left, around.MaxOffset)) NeedsRender = true;
+        pan = around;
+    }
+
+    /// <summary>Whether <paramref name="element"/> is <paramref name="root"/> or is built under it.</summary>
+    private static bool Encloses(Element root, Element element)
+    {
+        for (Element? at = element; at is not null; at = at.Parent)
+            if (ReferenceEquals(at, root)) return true;
+        return false;
     }
 
     /// <summary>Whether a point in a table viewport's own space lands on one of its scrollbars.</summary>
@@ -2517,8 +2584,12 @@ public sealed class PhotonHost
             var viewport = tables[i].Viewport;
             var local = ToLocal(tables, i, tables[i].Bounds, point);
             var onBar = OnScrollbar(viewport.Scroll, local);
+            var from = viewport.Scroll.Offset;
             if (!viewport.Scroll.Pointer(PointerPhase.Down, local, kind, _lastTimeMs)) break;
-            _tablePress = (viewport, tables[i].Bounds, x, y, onBar);
+            var perX = ToLocal(tables, i, tables[i].Bounds, new Point(point.X + 1, point.Y));
+            var perY = ToLocal(tables, i, tables[i].Bounds, new Point(point.X, point.Y + 1));
+            _tablePress = (viewport, tables[i].Bounds, tables[i].Element, x, y, local,
+                new Point(perX.X - local.X, perX.Y - local.Y), new Point(perY.X - local.X, perY.Y - local.Y), from, onBar);
             if (!onBar) break;
             NeedsRender = true;
             return true;
@@ -2543,22 +2614,39 @@ public sealed class PhotonHost
             break;
         }
 
+        // A drag surface inside a table's cell keeps its gesture, as one anywhere else does: the table's
+        // candidate pan lets go of the press (#1007). One the table stands inside is the outer gesture,
+        // and the table, the more specific one, keeps it.
+        if (_drag is { } armed && _tablePress is { Active: false } underDrag && Encloses(underDrag.Element, armed.Element))
+        {
+            _tablePress = null;
+            underDrag.Viewport.Scroll.Pointer(PointerPhase.Cancel, Point.Zero, kind, _lastTimeMs);
+        }
+
         // …and the topmost SCROLLABLE surface, the same way. A drag surface is the more specific
-        // gesture and keeps priority; where there is none, a finger scrolls.
+        // gesture and keeps priority; where there is none, a finger scrolls. Under a finger's candidate
+        // pan of a table it is the scroller AROUND the table, which takes what the table cannot follow
+        // (#1007).
         _pan = null;
-        if (_drag is null && _tablePress is null)
+        _panBeside = null;
+        if (_drag is null && _tablePress is not { Active: true })
         {
             var scrollRegions = _lastFrame.ScrollRegions;
             for (var i = scrollRegions.Count - 1; i >= 0; i--)
             {
                 var region = scrollRegions[i];
                 if (!Covers(scrollRegions, i, region.Bounds, point) || region.MaxOffset <= 0) continue;
+                if (_tablePress is { } candidate && !Encloses(region.Element, candidate.Element)) continue;
+                // Around a table, one scroller on each axis: the nearest, and the nearest on the other axis.
+                if (_pan is { } nearest && region.Axis == nearest.Axis) continue;
                 var space = TransformedAt(scrollRegions, i)?.Inverse;
                 var from = InGestureSpace(space, x, y);
                 var along = region.Axis == ScrollAxis.Horizontal ? from.X : from.Y;
-                _pan = (region.Element, region.Axis, region.MaxOffset, along,
-                    ScrollClock.OffsetOf(region.Element) ?? region.Fallback, along, _lastTimeMs, 0, false, space);
-                break;
+                var pan = (region.Element, region.Axis, region.MaxOffset, along,
+                    ScrollClock.OffsetOf(region.Element) ?? region.Fallback, along, _lastTimeMs, 0f, false, space);
+                if (_pan is null) _pan = pan;
+                else _panBeside = pan;
+                if (_tablePress is null || _panBeside is not null) break;
             }
         }
 
@@ -2735,6 +2823,7 @@ public sealed class PhotonHost
         if (kind != PointerKind.Mouse) PointerLeave();
 
         _pan = null;
+        _panBeside = null;
         if (_tablePress is { } table)
         {
             _tablePress = null;
@@ -2838,11 +2927,17 @@ public sealed class PhotonHost
         if (_tablePress is { } table)
         {
             _tablePress = null;
-            var local = TableLocal(table.Viewport, table.Bounds, new Point(x, y));
+            var local = Followed(table, x, y);
             if (table.Active)
             {
                 table.Viewport.Scroll.Pointer(PointerPhase.Up, local, kind, _lastTimeMs);
+                // What the scrollers around it took of the pan carries on, as a flick of their own does.
+                if (_pan is { Active: true } around && _scrolls.Fling(around.Element, -around.Velocity, around.MaxOffset))
+                    NeedsRender = true;
+                if (_panBeside is { Active: true } beside && _scrolls.Fling(beside.Element, -beside.Velocity, beside.MaxOffset))
+                    NeedsRender = true;
                 _pan = null;
+                _panBeside = null;
                 NeedsRender = true;
                 return true;
             }
@@ -2889,6 +2984,7 @@ public sealed class PhotonHost
             _pressSwallowed = false;
             _drag = null;
             _pan = null;
+            _panBeside = null;
             _pressed = null;
             _pressedAt = null;
             return true;
@@ -2939,10 +3035,12 @@ public sealed class PhotonHost
         if (_pan is { Active: true } flick)
         {
             _pan = null;
+            _panBeside = null;
             if (_scrolls.Fling(flick.Element, -flick.Velocity, flick.MaxOffset)) NeedsRender = true;
             return true;
         }
         _pan = null;
+        _panBeside = null;
 
         var pressed = _pressed;
         var pressedAt = _pressedAt;
