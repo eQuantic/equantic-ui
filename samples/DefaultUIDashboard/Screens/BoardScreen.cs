@@ -80,7 +80,7 @@ public sealed class BoardScreen : StatefulComponent
             Text($"{column} · {cards.Count}", TypeRole.Label, theme.TextSecondary),
             // The whole body of the column is the list, so a card lands in an empty column too.
             Sortable(Box(new BoxStyle { Width = SizeValue.Fill, MinHeight = 200 }, list), column, Drop,
-                group: "board", onHovered: drop => SetState(() => _landing = drop)),
+                group: "board", onHovered: drop => SetState(() => _landing = drop), label: column),
         ]));
     }
 

@@ -46833,7 +46833,8 @@
           "tag": "span",
           "attrs": {
             "class": "eq-16x7aca eq-7gvrt4 eq-g7fowl eq-type-bodym",
-            "data-eq-sort-item": "a"
+            "data-eq-sort-item": "a",
+            "tabindex": "0"
           },
           "events": [],
           "children": [
@@ -46850,7 +46851,8 @@
           "tag": "span",
           "attrs": {
             "class": "eq-16x7aca eq-7gvrt4 eq-g7fowl eq-type-bodym",
-            "data-eq-sort-item": "b"
+            "data-eq-sort-item": "b",
+            "tabindex": "0"
           },
           "events": [],
           "children": [

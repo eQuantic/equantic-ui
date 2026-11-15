@@ -44,6 +44,18 @@ public class SortableRealizerTests
     }
 
     [Fact]
+    public void ANamedListIsALabelledGroup_AndAnItemWithNoFocusOfItsOwnIsATabStop()
+    {
+        var list = Render(new Sortable(Cards("a"), "todo", _ => { }) { Label = "To do" });
+
+        list.Attributes["role"].Should().Be("group");
+        list.Attributes["aria-label"].Should().Be("To do");
+        list.Attributes["data-eq-sort-label"].Should().Be("To do");
+        list.Children[0].Attributes["tabindex"].Should().Be("0", "a text is no focus of its own, and the keyboard sorts from one");
+        Render(new Sortable(Cards("a"), "todo", _ => { })).Attributes.Should().NotContainKey("role");
+    }
+
+    [Fact]
     public void AListThatHearsNoHoverAndAsksNoGuard_DeclaresNeither_AndADisabledOneSaysSo()
     {
         var list = Render(new Sortable(Cards("a"), "todo", _ => { }) { Axis = DragAxis.Horizontal, Enabled = false });

@@ -5578,7 +5578,15 @@ function lowerSortable(
   child.attributes['data-eq-sort'] = node.group ?? '';
   child.attributes['data-eq-sort-id'] = node.id;
   child.attributes['data-eq-sort-axis'] = node.axis === 'horizontal' ? 'x' : 'y';
-  if (node.label) child.attributes['data-eq-sort-label'] = node.label;
+  if (node.label) {
+    child.attributes['data-eq-sort-label'] = node.label;
+    // A named list is a labelled group to a reader, unless what it marks already says what it is (a
+    // tree's host). C# twin: LowerSortable.
+    if (child.attributes['role'] === undefined) {
+      child.attributes['role'] = 'group';
+      if (child.attributes['aria-label'] === undefined) child.attributes['aria-label'] = node.label;
+    }
+  }
   if (node.nests) child.attributes['data-eq-sort-nests'] = '1';
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
   const dropped = node.onDropped;

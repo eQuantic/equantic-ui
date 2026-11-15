@@ -951,7 +951,17 @@ internal sealed partial class WebLoweringVisitor
         child.RawAttributes["data-eq-sort"] = sortable.Group;
         child.RawAttributes["data-eq-sort-id"] = sortable.Id;
         child.RawAttributes["data-eq-sort-axis"] = sortable.Axis == DragAxis.Horizontal ? "x" : "y";
-        if (sortable.Label.Length > 0) child.RawAttributes["data-eq-sort-label"] = sortable.Label;
+        if (sortable.Label.Length > 0)
+        {
+            child.RawAttributes["data-eq-sort-label"] = sortable.Label;
+            // A named list is a labelled group to a reader, unless what it marks already says what it is
+            // (a tree's host). TS twin: lowerSortable.
+            if (child.Role is null && !child.RawAttributes.ContainsKey("role"))
+            {
+                child.Role = "group";
+                child.AriaLabel ??= sortable.Label;
+            }
+        }
         if (sortable.Nests) child.RawAttributes["data-eq-sort-nests"] = "1";
         if (!sortable.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
         child.CustomEvents["eq-sort-dropped"] = ClientDispatches;
