@@ -118,9 +118,9 @@ public sealed class TreeView : StatefulComponent
 
     public SizeValue Width { get => _width; init => _width = value; }
 
-    /// <summary>Hug, the default, lets the rows flow in the page; any other height makes the tree
-    /// scroll and keep the keyboard's item in view.</summary>
-    public SizeValue Height { get => _height; init => _height = value; }
+    /// <summary>Null, the default, lets the rows flow in the page; a height makes the tree scroll and
+    /// keep the keyboard's item in view.</summary>
+    public SizeValue? Height { get => _height; init => _height = value; }
 
     private Func<TreeNode, Task<IReadOnlyList<TreeNode>>>? _loadChildren;
     private Action<TreeNode, bool>? _onToggled;
@@ -128,7 +128,7 @@ public sealed class TreeView : StatefulComponent
     private IReadOnlyList<string>? _revealPath;
     private string _label = "";
     private SizeValue _width = SizeValue.Fill;
-    private SizeValue _height;
+    private SizeValue? _height;
 
     public override void AdoptConfig(UiComponent next)
     {
@@ -159,7 +159,6 @@ public sealed class TreeView : StatefulComponent
         }
         AdvanceReveal();
 
-        var theme = context.Theme;
         _rowHeight = ControlMetrics.Height(context, SizeVariant.Small);
         _rows = Flatten();
         var active = ActiveIndex();
@@ -179,7 +178,7 @@ public sealed class TreeView : StatefulComponent
         // answer it, and live only while there is an item to press.
         tree = new Shortcut(tree, KeyChord.Enter, PressActive) { FocusScoped = true, Enabled = active >= 0 };
 
-        if (Height.Kind == SizeKind.Hug)
+        if (Height is not { } height)
             return new Box(new BoxStyle { Width = Width }, tree);
 
         if (_scrollToActive && active >= 0 && _viewport > 0)
@@ -198,7 +197,7 @@ public sealed class TreeView : StatefulComponent
         return new ScrollView(tree)
         {
             Width = Width,
-            Height = Height,
+            Height = height,
             OnScrolled = offset => _offset = offset,
             OnViewportChanged = viewport => _viewport = viewport,
             Request = _scrollRequest,
@@ -321,7 +320,7 @@ public sealed class TreeView : StatefulComponent
         // under, which is where the person was.
         if (!_activeIsStatus) return -1;
         _activeIsStatus = false;
-        return ActiveIndex();
+        return IndexOfNode(_activeKey);
     }
 
     private int IndexOfNode(string key)
@@ -539,10 +538,10 @@ public sealed class TreeView : StatefulComponent
         _search = (now - _searchAt).TotalMilliseconds <= SearchPauseMs ? _search + typed : typed;
         _searchAt = now;
 
-        var prefix = _search.ToLowerInvariant();
+        var prefix = _search;
         var repeated = true;
         for (var i = 1; i < prefix.Length; i++)
-            if (prefix[i] != prefix[0]) repeated = false;
+            if (char.ToLowerInvariant(prefix[i]) != char.ToLowerInvariant(prefix[0])) repeated = false;
         if (repeated) prefix = prefix.Substring(0, 1);
 
         var at = ActiveIndex();
@@ -550,7 +549,7 @@ public sealed class TreeView : StatefulComponent
         for (var step = 0; step < _rows.Count; step++)
         {
             var index = (start + step) % _rows.Count;
-            if (_rows[index].Node is { } node && node.Label.ToLowerInvariant().StartsWith(prefix))
+            if (_rows[index].Node is { } node && node.Label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
                 Activate(index, null, false);
                 return;

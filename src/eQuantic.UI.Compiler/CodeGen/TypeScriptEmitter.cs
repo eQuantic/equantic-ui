@@ -3287,6 +3287,17 @@ public class TypeScriptEmitter
             var itemType = tsType.Substring(5, tsType.Length - 6);
             tsType = CSharpTypeToTypeScript(itemType);
         }
+        // TWO OR MORE type arguments are parameters each, as `Func<…>`'s below are: the one-argument
+        // branch read `Action<TreeNode, bool>` as ONE type named `TreeNode, bool` and emitted
+        // `(value: TreeNode, bool) => void`, a parameter `bool` of no type that the runtime's own
+        // build refuses (#1530).
+        else if (tsType.StartsWith("Action<") && tsType.EndsWith(">")
+                 && SplitTopLevel(tsType[7..^1]) is { Count: > 1 } actionArguments)
+        {
+            var parameters = actionArguments.Select((argument, index) =>
+                $"arg{index + 1}: {CSharpTypeToTypeScript(argument.Trim())}");
+            tsType = $"({string.Join(", ", parameters)}) => void";
+        }
         else if (tsType.StartsWith("Action<") && tsType.EndsWith(">"))
         {
             var itemType = tsType.Substring(7, tsType.Length - 8);

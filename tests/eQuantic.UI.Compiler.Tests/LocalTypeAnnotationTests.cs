@@ -74,6 +74,8 @@ public class LocalTypeAnnotationTests
     [InlineData("string? later;", "let later: string | null = null;")]
     [InlineData("Base? found = null;", "let found: Base | null = null;")]
     [InlineData("System.Action? done = null;", "let done: (() => void) | null = null;")]
+    [InlineData("System.Action<string, bool>? toggled = null;", "let toggled: ((arg1: string, arg2: boolean) => void) | null = null;")]
+    [InlineData("System.Action<Base, System.Collections.Generic.List<int>>? moved = null;", "let moved: ((arg1: Base, arg2: number[]) => void) | null = null;")]
     [InlineData("string plain = null;", "let plain: string | null = null;")]
     [InlineData("System.Collections.Generic.List<string?>? names = null;", "let names: (string | null)[] | null = null;")]
     public void ALocalThatStartsNull_CrossesWithItsDeclaredType(string csharp, string expected)

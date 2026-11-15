@@ -701,7 +701,7 @@ public static class UI
     public static TreeView TreeView(IReadOnlyList<TreeNode> roots, string? selectedKey = null,
         Action<TreeNode>? onPressed = null, Func<TreeNode, Task<IReadOnlyList<TreeNode>>>? loadChildren = null,
         Action<TreeNode, bool>? onToggled = null, IReadOnlyList<string>? expandedKeys = null,
-        IReadOnlyList<string>? revealPath = null, string label = "", SizeValue height = default) =>
+        IReadOnlyList<string>? revealPath = null, string label = "", SizeValue? height = null) =>
         new TreeView(roots, selectedKey, onPressed)
         {
             LoadChildren = loadChildren,

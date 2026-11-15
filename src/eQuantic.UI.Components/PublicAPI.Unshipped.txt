@@ -75,7 +75,6 @@ eQuantic.UI.Components.TreeView.Label.get -> string!
 eQuantic.UI.Components.TreeView.Label.init -> void
 eQuantic.UI.Components.TreeView.Width.get -> eQuantic.UI.Primitives.SizeValue
 eQuantic.UI.Components.TreeView.Width.init -> void
-eQuantic.UI.Components.TreeView.Height.get -> eQuantic.UI.Primitives.SizeValue
 eQuantic.UI.Components.TreeView.Height.init -> void
 override eQuantic.UI.Components.TreeView.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
 override eQuantic.UI.Components.TreeView.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
@@ -84,4 +83,5 @@ eQuantic.UI.Components.TreeView.TreeView(System.Collections.Generic.IReadOnlyLis
 eQuantic.UI.Components.TreeView.Roots.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>!
 eQuantic.UI.Components.TreeView.SelectedKey.get -> string?
 eQuantic.UI.Components.TreeView.OnPressed.get -> System.Action<eQuantic.UI.Components.TreeNode!>?
-static eQuantic.UI.Components.UI.TreeView(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>! roots, string? selectedKey = null, System.Action<eQuantic.UI.Components.TreeNode!>? onPressed = null, System.Func<eQuantic.UI.Components.TreeNode!, System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>!>!>? loadChildren = null, System.Action<eQuantic.UI.Components.TreeNode!, bool>? onToggled = null, System.Collections.Generic.IReadOnlyList<string!>? expandedKeys = null, System.Collections.Generic.IReadOnlyList<string!>? revealPath = null, string! label = "", eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue)) -> eQuantic.UI.Components.TreeView!
+eQuantic.UI.Components.TreeView.Height.get -> eQuantic.UI.Primitives.SizeValue?
+static eQuantic.UI.Components.UI.TreeView(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>! roots, string? selectedKey = null, System.Action<eQuantic.UI.Components.TreeNode!>? onPressed = null, System.Func<eQuantic.UI.Components.TreeNode!, System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>!>!>? loadChildren = null, System.Action<eQuantic.UI.Components.TreeNode!, bool>? onToggled = null, System.Collections.Generic.IReadOnlyList<string!>? expandedKeys = null, System.Collections.Generic.IReadOnlyList<string!>? revealPath = null, string! label = "", eQuantic.UI.Primitives.SizeValue? height = null) -> eQuantic.UI.Components.TreeView!
