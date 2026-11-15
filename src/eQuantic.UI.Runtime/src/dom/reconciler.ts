@@ -227,8 +227,28 @@ export class Reconciler {
         this.updateAttributes(currentElement, plainBag(oldNode.attributes), plainBag(newNode.attributes));
         this.updateEventListeners(currentElement, plainBag(oldNode.events), plainBag(newNode.events));
         this.reconcileChildren(currentElement, oldNode.children || [], newNode.children || []);
+        this.showWhatThePageHolds(currentElement, newNode);
       }
     }
+  }
+
+  /**
+   * A text control the page controls shows what the page holds. The attribute is only the default:
+   * once a person has typed, what the control shows lives on its `.value`, and the old tree says
+   * nothing about it. Comparing tree to tree, a page that reset a field in the same render as the
+   * typing that filled it held `""` both times, wrote nothing, and left the typed text showing over
+   * an empty field (#1026). So the live value is what is compared, for a control with an `input`
+   * handler: one without has no page behind it, and stays what the person made it. A textarea's
+   * attribute is no value at all, and its text child stops counting the moment it is typed in.
+   */
+  private showWhatThePageHolds(element: Element, node: HtmlNode): void {
+    if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) return;
+    if (!hasOwn(plainBag(node.events), 'input')) return;
+    const held =
+      element instanceof HTMLTextAreaElement
+        ? (node.children ?? []).map((child) => child.textContent ?? '').join('')
+        : plainBag(node.attributes)['value'];
+    if (held !== undefined && element.value !== held) element.value = held;
   }
 
   /**
