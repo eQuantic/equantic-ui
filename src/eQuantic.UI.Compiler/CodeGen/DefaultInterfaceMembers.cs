@@ -150,6 +150,15 @@ internal static class DefaultInterfaceMembers
         + $"JavaScript form to hold it, so the default cannot be written into {type.Name}'s twin. Declare "
         + $"{implementation.Name} in {type.Name}, or keep {type.Name} out of client code.";
 
+    /// <summary>The error for a vocabulary default event: the runtime carries its interface, and a twin reaches
+    /// the runtime's copy of a default method or property by delegating to it, which an event's accessors have
+    /// no form for (#1511). None of the vocabulary's interfaces declares one.</summary>
+    public static string Undelegated(INamedTypeSymbol type, ISymbol implementation) =>
+        $"{type.Name} relies on the default event {implementation.ContainingType.Name}.{implementation.Name}, "
+        + $"whose interface the runtime carries, but a twin delegates only a default method or property to the "
+        + $"runtime's copy, so the browser's {type.Name} would have no accessors for {implementation.Name}. "
+        + $"Declare {implementation.Name} in {type.Name}, or keep {type.Name} out of client code.";
+
     /// <summary>
     /// The error for a default whose body cannot be written and that the runtime does not carry:
     /// its interface is compiled into a referenced assembly outside the vocabulary, so the

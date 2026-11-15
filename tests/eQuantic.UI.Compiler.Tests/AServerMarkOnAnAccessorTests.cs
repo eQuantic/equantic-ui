@@ -71,6 +71,35 @@ public sealed class AServerMarkOnAnAccessorTests
             "public static void Take(Vault v) => v.Opened += () => { };",
             "Opened"
         },
+        // Gate round 1 of #1512: an interface's default member, whose accessors reach every implementing twin.
+        {
+            "an interface's default event add marked [ServerAction]", "Model/ITicker.cs",
+            "public static void Use(Clock c) { }",
+            "Ticked"
+        },
+        {
+            "an interface's default property get marked [ServerOnly]", "Model/ISecret.cs",
+            "public static string Read(Safe s) => ((ISecret)s).Secret;",
+            "Secret"
+        },
+        // A nested type is a module of its own (#584), checked as one.
+        {
+            "a nested class's property get marked [ServerAction]", "Screens/Home.cs",
+            "public sealed class Badge { public string Label { [ServerAction] get => \"x\"; } } public static string Read(Badge b) => b.Label;",
+            "Label"
+        },
+        // A partial type's second declaration, in a file of its own, is a module of its own too.
+        {
+            "a partial class's other declaration's get marked [ServerOnly]", "Model/Gadget.Part.cs",
+            "public static int Read(Gadget g) => g.A + g.B;",
+            "B"
+        },
+        // A field-like event's accessors take [method: …], and the compiler writes them.
+        {
+            "a field-like event's accessors marked [method: ServerAction]", "Model/Bell.cs",
+            "public static void Take(Bell b) => b.Rang += () => { };",
+            "Rang"
+        },
     };
 
     private static readonly Dictionary<string, string> Models = new()
@@ -91,6 +120,39 @@ public sealed class AServerMarkOnAnAccessorTests
             namespace App.Model;
             public sealed class Vault { private Action? _f; public event Action Opened { [ServerAction] add => _f += value; remove => _f -= value; } }
             """,
+        ["Model/ITicker.cs"] = """
+            using System;
+            using eQuantic.UI.Primitives;
+            namespace App.Model;
+            public interface ITicker { event Action Ticked { [ServerAction] add { _ = System.IO.File.Exists("ticked"); } remove { } } }
+            public sealed class Clock : ITicker { }
+            """,
+        ["Model/ISecret.cs"] = """
+            using eQuantic.UI.Primitives;
+            namespace App.Model;
+            public interface ISecret { string Secret { [ServerOnly] get => "kept on the server"; } }
+            public sealed class Safe : ISecret { }
+            """,
+        ["Model/Gadget.Part.cs"] = """
+            using eQuantic.UI.Primitives;
+            namespace App.Model;
+            public sealed partial class Gadget { public int B { [ServerOnly] get => 2; } }
+            """,
+        ["Model/Bell.cs"] = """
+            using System;
+            using eQuantic.UI.Primitives;
+            namespace App.Model;
+            public sealed class Bell { [method: ServerAction] public event Action? Rang; }
+            """,
+    };
+
+    /// <summary>The other files a row's type is declared across.</summary>
+    private static readonly Dictionary<string, (string Path, string Text)> Companions = new()
+    {
+        ["Model/Gadget.Part.cs"] = ("Model/Gadget.cs", """
+            namespace App.Model;
+            public sealed partial class Gadget { public int A => 1; }
+            """),
     };
 
     [Theory]
@@ -98,8 +160,9 @@ public sealed class AServerMarkOnAnAccessorTests
     public void AServerMarkOnAnAccessor_FailsTheBuild_WhereItIsDeclared(string name, string declaredIn, string members, string member)
     {
         var model = Models.TryGetValue(declaredIn, out var text) ? (declaredIn, text) : ("Model/Unused.cs", NoModel);
-        using var solution = new Solution().App("App", globalUsings: SharedLibrary.Factories,
-            files: [model, ("Screens/Home.cs", Home.Replace("{{members}}", members))]);
+        (string, string)[] files = [model, ("Screens/Home.cs", Home.Replace("{{members}}", members))];
+        if (Companions.TryGetValue(declaredIn, out var companion)) files = [.. files, companion];
+        using var solution = new Solution().App("App", globalUsings: SharedLibrary.Factories, files: files);
 
         var built = solution.Build();
 

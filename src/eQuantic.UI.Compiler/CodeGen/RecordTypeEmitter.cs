@@ -1045,6 +1045,7 @@ public class RecordTypeEmitter
             TypeDeclarationExtensions.TsTypeFor(element.Type, ModelFor(element.Type)))) + "]";
         return ": " + (returnType is NullableTypeSyntax ? TypeScriptEmitter.OrNull(elements) : elements);
     }
+
     /// <summary>The defaults a record or a struct takes, written as its own members are.</summary>
     private sealed class RecordDefaults(RecordTypeEmitter emitter, StringBuilder sb, string className, bool tsTypeDeclarations)
         : DefaultMemberWriter(emitter._converter, emitter.ModelFor)

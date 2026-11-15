@@ -53,6 +53,11 @@ internal abstract class DefaultMemberWriter(CSharpToJsConverter converter, Func<
                     converter.UsedRuntimeTypes.Add(implementation.ContainingType.Name);
                     Delegated(implementation, name, parameters, call);
                     break;
+                // The runtime's copy is reached by a delegation, and an event's accessors have none.
+                case null when implementation is IEventSymbol && DefaultInterfaceMembers.RuntimeCarries(implementation.ContainingType):
+                    converter.Report(declaration, ConversionSeverity.Error, "EQ1008",
+                        DefaultInterfaceMembers.Undelegated(self, implementation));
+                    break;
                 default:
                     converter.Report(declaration, ConversionSeverity.Error, "EQ1008",
                         DefaultInterfaceMembers.Unreadable(self, implementation));
