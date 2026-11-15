@@ -8,7 +8,8 @@ namespace eQuantic.Console;
 /// A repository's files in a <c>TreeView</c> (#1530): the top folder arrives with the page, and every
 /// folder below it loads through a server action the first time it opens. Tab reaches the tree, the
 /// arrows walk and open it, Enter opens a file, and typing a name's first letters jumps to it. The
-/// <c>flaky</c> folder fails its first load, to show the item that loads it again.
+/// <c>flaky</c> folder fails its first load, to show the item that loads it again. The open file has a context
+/// menu (#1531).
 /// </summary>
 [Page("/files", Title = "Files — eQuantic Console")]
 public sealed class FilesScreen : StatefulComponent, IServerPrefetch
@@ -17,6 +18,7 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
     public List<RepositoryEntry> Top { get; private set; } = [];
 
     private string? _open;
+    private string? _said;
 
     [ServerOnly]
     public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) =>
@@ -39,7 +41,8 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
         Column(gap: Space.S4, children: [
             Text("Files", TypeRole.Heading, theme.TextPrimary),
             Text("Folders load from the server the first time they open. Tab reaches the tree; the arrows "
-                + "walk and open it, Enter opens a file, and typing a name jumps to it.",
+                + "walk and open it, Enter opens a file, and typing a name jumps to it. The open file has a menu: "
+                + "right-click it, hold it, or press the menu key on it.",
                 TypeRole.BodyM, theme.TextSecondary),
             Row(gap: Space.S4, children: [
                 Box(new BoxStyle
@@ -58,10 +61,40 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
                     loadChildren: Load,
                     label: "Repository",
                     height: SizeValue.Fill)),
-                Text(_open is null ? "Press a file to open it." : $"Open: {_open}",
-                    TypeRole.BodyL, _open is null ? theme.TextSecondary : theme.TextPrimary),
+                Column(gap: Space.S2, children: [
+                    OpenFile(context),
+                    Text(_said ?? "", TypeRole.BodyM, theme.TextSecondary),
+                ]),
             ]),
         ]));
+    }
+
+    /// <summary>
+    /// The open file, whose menu a right-click, a long press or the menu key opens (#1531): where the pointer
+    /// asked, or under the card when the keyboard did.
+    /// </summary>
+    private VisualNode OpenFile(ComponentContext context)
+    {
+        var theme = context.Theme;
+        var card = Pressable(Box(new BoxStyle
+        {
+            Width = 320,
+            Padding = EdgeInsets.All(Space.S3),
+            Background = theme.Surface,
+            BorderWidth = 1,
+            BorderColor = theme.Border,
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Small)),
+        },
+        Text(_open is null ? "Press a file to open it." : $"Open: {_open}",
+            TypeRole.BodyL, _open is null ? theme.TextSecondary : theme.TextPrimary)), () => { });
+        return ContextMenu(card,
+            [new MenuItem("Copy path"), new MenuItem("Close") { Destructive = true }],
+            index => SetState(() =>
+            {
+                if (index == 0) _said = $"Copied {_open}";
+                else (_open, _said) = (null, "Closed the file.");
+            }),
+            enabled: _open is not null);
     }
 
     private static TreeNode Node(RepositoryEntry entry) => new(entry.Path, entry.Name)
