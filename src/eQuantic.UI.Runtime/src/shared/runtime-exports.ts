@@ -34,6 +34,8 @@ export {
   TableSpans,
   Hoverable,
   DropTarget,
+  Sortable,
+  SortableItem,
   Flexible,
   Spacer,
   Stack,

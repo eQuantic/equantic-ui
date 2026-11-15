@@ -867,6 +867,7 @@ export class ScrollRequest {
  * compares it (`ValueTwinHashTests` holds this list to the C#). */
 hashesByValue(
   ColorToken,
+  SortDrop,
   TableOffset,
   TableRange,
   TableScrollRequest,

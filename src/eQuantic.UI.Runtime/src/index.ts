@@ -152,6 +152,8 @@ export {
   WebFrame,
   Hoverable,
   DropTarget,
+  Sortable,
+  SortableItem,
   Flexible,
   Spacer,
   Stack,
