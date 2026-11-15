@@ -90,16 +90,16 @@ runtime: its `addToEvent` already calls `$add$<e>` where a twin holds it, so no 
 
 ## 7. Documentation and the whole proof
 
-- [ ] 7.1 `docs/DIAGNOSTICS.md`: the EQ2016 row (both cases, what to write instead) and the section's range
+- [x] 7.1 `docs/DIAGNOSTICS.md`: the EQ2016 row (both cases, what to write instead) and the section's range
       `EQ2001–EQ2016`; EQ2010's row drops "or `[ServerAction]`, on a component's" and gains the
       subscription through a contract; EQ1007's row says a default event takes its accessors' two names
-- [ ] 7.2 The wiki, on a branch named `fix/every-accessor-and-indexer-reaches-its-twin`, in all five
+- [x] 7.2 The wiki, on a branch named `fix/every-accessor-and-indexer-reaches-its-twin`, in all five
       languages: Diagnostics (the same three rows), SupportedFeatures (the Interfaces row: a default event;
       the server-only fence: a subscription through a contract), and Upgrading's "To 0.2.0-preview.69" in
       English and Portuguese (the EQ2016 break and its migration line); `WikiDiagnosticsTests` passes
       against that branch through `EQ_WIKI_DIR`
-- [ ] 7.3 One ledger entry under `docs/ledger/` citing #1511, #1512 and #1513
-- [ ] 7.4 File under #1174 the class's own accessor event that claims `<e>` in EQ1007 (design, Open)
+- [x] 7.3 One ledger entry under `docs/ledger/` citing #1511, #1512 and #1513
+- [x] 7.4 File under #1174 the class's own accessor event that claims `<e>` in EQ1007 (design, Open)
 - [ ] 7.5 The whole suites, through the lock: `eQuantic.UI.Compiler.Tests`, `eQuantic.UI.Conformance.Tests`
       with `EQ_REQUIRE_JS=1`, `eQuantic.UI.Server.Tests`, `eQuantic.UI.Web.Tests`; the samples build;
       `./scripts/check-openspec.sh` passes, and the change is archived with `openspec archive
