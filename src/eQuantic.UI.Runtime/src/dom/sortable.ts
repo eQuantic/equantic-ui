@@ -13,6 +13,7 @@
  * is a custom event on the list's element, which the lowering turns into the C# callback. The controller
  * never applies a drop: the list is the app's, and the next build shows where the item went.
  */
+import { SortPlacement } from '../shared/components/SortPlacement';
 import { SortDrop } from '../shared/value-types';
 import { str } from '../utils/culture';
 import { followPointer, pointerDownDelegate } from './pointer-gesture';
@@ -24,11 +25,7 @@ const HOLD_MS = 250;
 /** How near a scroller's edge the pointer scrolls it, and its fastest step per frame. */
 const EDGE = 32;
 const STEP = 14;
-/** The copy leans with the pointer's speed across (eQuantic Space's board): degrees per px/ms, the most it
- * leans, and how long a still pointer keeps it leaning. */
-const TILT_PER_SPEED = 8;
-const TILT_MAX = 12;
-const TILT_REST_MS = 80;
+
 
 const delegate = pointerDownDelegate(onPointerDown);
 let keyboardInstalled = false;
@@ -113,7 +110,7 @@ function onPointerDown(down: PointerEvent): void {
   const scroll = (): void => {
     frame = requestAnimationFrame(scroll);
     // A pointer that stopped lets the copy stand up again.
-    if (copy && leans && performance.now() - movedAt > TILT_REST_MS) copy.style.setProperty('rotate', '0deg');
+    if (copy && leans && performance.now() - movedAt > SortPlacement.tiltRestMs) copy.style.setProperty('rotate', '0deg');
     const over = landing ? landing.list : source;
     if (!scrollers.has(over)) scrollers.set(over, scrollerOf(over));
     const scroller = scrollers.get(over) ?? null;
@@ -165,7 +162,7 @@ function onPointerDown(down: PointerEvent): void {
       if (copy) {
         copy.style.transform = `translate(${ev.clientX - down.clientX}px, ${ev.clientY - down.clientY}px)`;
         if (leans) {
-          const angle = tilt(ev.clientX - pointer.x, now - movedAt);
+          const angle = SortPlacement.tilt(ev.clientX - pointer.x, now - movedAt);
           if (angle !== null) copy.style.setProperty('rotate', `${angle}deg`);
         }
       }
@@ -224,17 +221,6 @@ function lift(item: HTMLElement): HTMLElement {
   return copy;
 }
 
-/**
- * How far the copy leans for the pointer's speed across, as eQuantic Space's board does: against the
- * direction it moves, at {@link TILT_PER_SPEED} degrees per px/ms, never past {@link TILT_MAX}. Null when no
- * time passed, which says nothing about a speed.
- */
-export function tilt(across: number, ms: number): number | null {
-  if (ms <= 0) return null;
-  const angle = -(across / ms) * TILT_PER_SPEED;
-  return Math.max(-TILT_MAX, Math.min(TILT_MAX, angle)) || 0;
-}
-
 /** Whether the person asked for less motion, in which case nothing leans. */
 function prefersReducedMotion(): boolean {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -255,25 +241,24 @@ function listUnder(x: number, y: number, group: string, source: HTMLElement, car
 }
 
 /**
- * Where an item lands in a list: before the first OTHER item whose middle the pointer has not passed along
- * the list's axis, so the index counts the list without it; in a list that nests, into the item whose
- * middle half the pointer is over.
+ * Where an item lands in a list, by the arithmetic every realizer shares (`SortPlacement.Place`): this
+ * reads the other items' boxes along the list's axis and hands them over.
  */
 function dropIn(list: HTMLElement, id: string, from: string, x: number, y: number, carried: HTMLElement): SortDrop {
   const vertical = list.getAttribute('data-eq-sort-axis') !== 'x';
   const nests = list.getAttribute('data-eq-sort-nests') === '1';
   const to = list.getAttribute('data-eq-sort-id') ?? '';
   const others = itemsOf(list).filter((other) => other !== carried);
-  const at = vertical ? y : x;
-  for (let index = 0; index < others.length; index++) {
-    const box = others[index].getBoundingClientRect();
-    const start = vertical ? box.top : box.left;
-    const size = vertical ? box.height : box.width;
-    if (nests && at >= start + size / 4 && at <= start + (size * 3) / 4)
-      return new SortDrop(id, from, to, index, { into: others[index].getAttribute('data-eq-sort-item') });
-    if (at < start + size / 2) return new SortDrop(id, from, to, index);
-  }
-  return new SortDrop(id, from, to, others.length);
+  const boxes = others.map((other) => other.getBoundingClientRect());
+  const [index, into] = SortPlacement.place(
+    boxes.map((box) => (vertical ? box.top : box.left)),
+    boxes.map((box) => (vertical ? box.height : box.width)),
+    vertical ? y : x,
+    nests,
+  );
+  return into >= 0
+    ? new SortDrop(id, from, to, index, { into: others[into].getAttribute('data-eq-sort-item') })
+    : new SortDrop(id, from, to, index);
 }
 
 /** The list's guard, asked through its element: the lowering answers in the event's detail. */
@@ -398,7 +383,7 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
   announce(say('SortPickedUp', name, index + 1, countIn(list), labelOf(list)));
 
   const moveTo = (target: HTMLElement, at: number): void => {
-    const clamped = Math.max(0, Math.min(at, countIn(target) - 1));
+    const clamped = SortPlacement.step(at, 0, countIn(target));
     const drop = dropAt(target, clamped);
     if (!accepts(target, drop)) {
       announce(say('SortRefused', name));

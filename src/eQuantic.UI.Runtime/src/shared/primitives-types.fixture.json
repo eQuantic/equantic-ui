@@ -211,6 +211,7 @@
   "SizeValue",
   "Sizing",
   "SortDrop",
+  "SortPlacement",
   "Sortable",
   "SortableItem",
   "Space",

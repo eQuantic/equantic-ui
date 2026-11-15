@@ -11,7 +11,8 @@ import { photonTheme } from '../shared/design-system.generated';
 import { setPhotonTheme } from '../shared/photon-context';
 import { Column, Row, Sortable, SortableItem, Text } from '../shared/vocabulary';
 import type { SortDrop } from '../shared/value-types';
-import { resetSortableController, tilt } from './sortable';
+import { SortPlacement } from '../shared/components/SortPlacement';
+import { resetSortableController } from './sortable';
 
 setPhotonTheme(photonTheme);
 
@@ -230,10 +231,10 @@ describe('lists a pointer sorts', () => {
   });
 
   it("leans the copy against the pointer's speed across, up to 12 degrees, as the Space's board does", () => {
-    expect(tilt(10, 10)).toBe(-8);
-    expect(tilt(-40, 10)).toBe(12);
-    expect(tilt(0, 16)).toBe(0);
-    expect(tilt(5, 0)).toBeNull();
+    expect(SortPlacement.tilt(10, 10)).toBe(-8);
+    expect(SortPlacement.tilt(-40, 10)).toBe(12);
+    expect(SortPlacement.tilt(0, 16)).toBe(0);
+    expect(SortPlacement.tilt(5, 0)).toBeNull();
 
     let now = 1000;
     const clock = vi.spyOn(performance, 'now').mockImplementation(() => now);
