@@ -5,6 +5,11 @@ namespace eQuantic.UI.Primitives;
 /// a few pixels of travel, a finger held still a moment. A press that does not travel is a press, so a card
 /// opens as it did, and the click that ends a drag never reaches it. The child is the item as drawn; the
 /// node adds no box.
+/// <para>
+/// The keyboard sorts it too (#1536): Space picks it up, the arrows move it, Space drops it, Escape puts it
+/// back, each step said to a reader. A child that takes no focus of its own (a box rather than a button)
+/// becomes a Tab stop for that.
+/// </para>
 /// </summary>
 public sealed class SortableItem : SingleChildNode
 {

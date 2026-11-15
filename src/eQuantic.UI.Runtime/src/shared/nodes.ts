@@ -486,6 +486,7 @@ export interface SortableNode extends VisualNodeValue {
   group?: string;
   axis?: string;
   nests?: boolean;
+  label?: string;
   onHovered?: ((drop: SortDropValue | null) => void) | null;
   accepts?: ((drop: SortDropValue) => boolean) | null;
   enabled?: boolean;

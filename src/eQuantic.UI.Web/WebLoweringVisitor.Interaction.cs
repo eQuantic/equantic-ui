@@ -951,6 +951,7 @@ internal sealed partial class WebLoweringVisitor
         child.RawAttributes["data-eq-sort"] = sortable.Group;
         child.RawAttributes["data-eq-sort-id"] = sortable.Id;
         child.RawAttributes["data-eq-sort-axis"] = sortable.Axis == DragAxis.Horizontal ? "x" : "y";
+        if (sortable.Label.Length > 0) child.RawAttributes["data-eq-sort-label"] = sortable.Label;
         if (sortable.Nests) child.RawAttributes["data-eq-sort-nests"] = "1";
         if (!sortable.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
         child.CustomEvents["eq-sort-dropped"] = ClientDispatches;
@@ -972,6 +973,10 @@ internal sealed partial class WebLoweringVisitor
         child.RawAttributes ??= new Dictionary<string, string>();
         child.RawAttributes["data-eq-sort-item"] = item.Id;
         if (!item.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
+        // The keyboard sorts an item from its focus (#1536): one that takes none of its own (a box, not a
+        // button or a link) becomes a Tab stop. The TS twin decides by the same tags.
+        else if (child.TabIndex is null && child.Tag is not ("button" or "a" or "input" or "select" or "textarea"))
+            child.TabIndex = 0;
         return child;
     }
 }

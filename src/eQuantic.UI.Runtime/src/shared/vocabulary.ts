@@ -1052,6 +1052,7 @@ export class Sortable extends VisualNode {
   group = '';
   axis = 'vertical';
   nests = false;
+  label = '';
   onHovered: ((drop: SortDrop | null) => void) | null = null;
   accepts: ((drop: SortDrop) => boolean) | null = null;
   enabled = true;

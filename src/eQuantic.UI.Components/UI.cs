@@ -760,9 +760,10 @@ public static class UI
     /// group; the drop is the app's to apply (#1535).</summary>
     public static Sortable Sortable(VisualNode child, string id, Action<SortDrop> onDropped, string group = "",
         DragAxis axis = DragAxis.Vertical, bool nests = false, Action<SortDrop?>? onHovered = null,
-        Func<SortDrop, bool>? accepts = null, bool enabled = true) =>
+        Func<SortDrop, bool>? accepts = null, bool enabled = true, string label = "") =>
         new Sortable(child, id, onDropped)
         {
+            Label = label,
             Group = group,
             Axis = axis,
             Nests = nests,

@@ -25,6 +25,7 @@ class Board extends StatefulComponent {
     private readonly nests = false,
     private readonly refuse: string | null = null,
     private readonly group = 'board',
+    private readonly doneCards: string[] = [],
   ) {
     super();
   }
@@ -40,12 +41,13 @@ class Board extends StatefulComponent {
       return new Sortable(list as never, id, (drop: SortDrop) => dropped.push(drop), {
         group: this.group,
         nests: this.nests,
+        label: id === 'todo' ? 'To do' : 'Done',
         onHovered: (drop: SortDrop | null) => hovered.push(drop),
         accepts: this.refuse ? (drop: SortDrop) => !drop.item.startsWith(this.refuse!) : null,
       });
     };
     row.add(column('todo', ['a', 'b', 'c', 'locked-1']) as never);
-    row.add(column('done', []) as never);
+    row.add(column('done', this.doneCards) as never);
     row.add(new Sortable(new Column(0) as never, 'other', (drop: SortDrop) => dropped.push(drop), { group: 'else' }) as never);
     return row as never;
   }
@@ -225,5 +227,71 @@ describe('lists a pointer sorts', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe('by the keyboard', () => {
+    const press = (key: string): KeyboardEvent => {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      (document.activeElement ?? document.body).dispatchEvent(event);
+      return event;
+    };
+    const said = (): string => document.querySelector('[data-eq-sort-announcer]')?.textContent ?? '';
+
+    it('picks a card up with Space, moves it down and across, and drops it, saying each step', () => {
+      const container = mount(new Board(false, null, 'board', ['d']));
+      const a = item(container, 'a');
+      expect(a.getAttribute('tabindex')).toBe('0');
+      a.focus();
+      expect(a.getAttribute('aria-describedby')).toContain('eq-sort-instructions');
+
+      const lift = press(' ');
+      expect(lift.defaultPrevented).toBe(true);
+      expect(said()).toBe('Picked up a, position 1 of 4 in To do.');
+      press('ArrowDown');
+      expect(said()).toBe('a is at position 2 of 4 in To do.');
+      expect(last(hovered)?.index).toBe(1);
+      press('ArrowRight');
+      expect(said()).toBe('a is at position 2 of 2 in Done.');
+      press(' ');
+      expect(dropped).toHaveLength(1);
+      expect([dropped[0].item, dropped[0].from, dropped[0].to, dropped[0].index]).toEqual(['a', 'todo', 'done', 1]);
+      expect(said()).toBe('Dropped a at position 2 of 2 in Done.');
+      expect(a.style.opacity).toBe('');
+    });
+
+    it('puts the card back on Escape, and on Tab', () => {
+      const container = mount(new Board());
+      item(container, 'a').focus();
+      press(' ');
+      press('ArrowDown');
+      press('Escape');
+      expect(dropped).toHaveLength(0);
+      expect(last(hovered)).toBeNull();
+      expect(said()).toBe('Put a back where it was.');
+
+      press(' ');
+      const tab = press('Tab');
+      expect(tab.defaultPrevented).toBe(false);
+      expect(dropped).toHaveLength(0);
+    });
+
+    it('takes no refused place, and says so', () => {
+      const container = mount(new Board(false, 'locked'));
+      item(container, 'locked-1').focus();
+      press(' ');
+      press('ArrowRight');
+      expect(said()).toBe('locked-1 cannot go there.');
+      press('Enter');
+      expect(dropped[0].to).toBe('todo');
+    });
+
+    it('leaves Space in a field, and a chord, to the page', () => {
+      const container = mount(new Board());
+      item(container, 'a').focus();
+      const chord = new KeyboardEvent('keydown', { key: ' ', shiftKey: true, bubbles: true, cancelable: true });
+      item(container, 'a').dispatchEvent(chord);
+      expect(chord.defaultPrevented).toBe(false);
+      expect(item(container, 'a').style.opacity).toBe('');
+    });
   });
 });

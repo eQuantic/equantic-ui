@@ -297,4 +297,22 @@
   <data name="UploadAnnounceFailed" xml:space="preserve">
     <value>{0} não foi enviado: {1}</value>
   </data>
+  <data name="SortInstructions" xml:space="preserve">
+    <value>Prima Espaço para o apanhar, as setas para o mover e Espaço outra vez para o largar.</value>
+  </data>
+  <data name="SortPickedUp" xml:space="preserve">
+    <value>Apanhou {0}, posição {1} de {2} em {3}.</value>
+  </data>
+  <data name="SortMoved" xml:space="preserve">
+    <value>{0} está na posição {1} de {2} em {3}.</value>
+  </data>
+  <data name="SortRefused" xml:space="preserve">
+    <value>{0} não pode ir para aí.</value>
+  </data>
+  <data name="SortDropped" xml:space="preserve">
+    <value>Largou {0} na posição {1} de {2} em {3}.</value>
+  </data>
+  <data name="SortCancelled" xml:space="preserve">
+    <value>{0} voltou ao lugar onde estava.</value>
+  </data>
 </root>

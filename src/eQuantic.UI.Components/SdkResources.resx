@@ -304,4 +304,22 @@
   <data name="UploadAnnounceFailed" xml:space="preserve">
     <value>{0} was not uploaded: {1}</value>
   </data>
+  <data name="SortInstructions" xml:space="preserve">
+    <value>Press Space to pick it up, the arrow keys to move it, and Space again to drop it.</value>
+  </data>
+  <data name="SortPickedUp" xml:space="preserve">
+    <value>Picked up {0}, position {1} of {2} in {3}.</value>
+  </data>
+  <data name="SortMoved" xml:space="preserve">
+    <value>{0} is at position {1} of {2} in {3}.</value>
+  </data>
+  <data name="SortRefused" xml:space="preserve">
+    <value>{0} cannot go there.</value>
+  </data>
+  <data name="SortDropped" xml:space="preserve">
+    <value>Dropped {0} at position {1} of {2} in {3}.</value>
+  </data>
+  <data name="SortCancelled" xml:space="preserve">
+    <value>Put {0} back where it was.</value>
+  </data>
 </root>

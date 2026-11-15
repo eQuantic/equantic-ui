@@ -5578,6 +5578,7 @@ function lowerSortable(
   child.attributes['data-eq-sort'] = node.group ?? '';
   child.attributes['data-eq-sort-id'] = node.id;
   child.attributes['data-eq-sort-axis'] = node.axis === 'horizontal' ? 'x' : 'y';
+  if (node.label) child.attributes['data-eq-sort-label'] = node.label;
   if (node.nests) child.attributes['data-eq-sort-nests'] = '1';
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
   const dropped = node.onDropped;
@@ -5599,6 +5600,9 @@ function lowerSortable(
   return child;
 }
 
+/** The elements that take the keyboard's focus of their own. */
+const FOCUSABLE_TAGS = new Set(['button', 'a', 'input', 'select', 'textarea']);
+
 /**
  * One item a pointer picks up (#1535, C# twin: LowerSortableItem): its child marked with the item's id,
  * and a target for the pointer, which `none` from a transparent row above would otherwise take away.
@@ -5614,6 +5618,10 @@ function lowerSortableItem(
   replaceAtomicDeclaration(child, 'pointer-events', 'auto');
   child.attributes['data-eq-sort-item'] = node.id;
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
+  // The keyboard sorts an item from its focus (#1536): one that takes none of its own becomes a Tab stop
+  // (the C# twin decides by the same tags).
+  else if (child.attributes['tabindex'] === undefined && !FOCUSABLE_TAGS.has(child.tag))
+    child.attributes['tabindex'] = '0';
   installSortableController();
   return child;
 }

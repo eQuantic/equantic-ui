@@ -462,6 +462,36 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("UploadAcceptsAny", Culture)!; }
         }
 
+        internal static string SortInstructions
+        {
+            get { return ResourceManager.GetString("SortInstructions", Culture)!; }
+        }
+
+        internal static string SortPickedUp
+        {
+            get { return ResourceManager.GetString("SortPickedUp", Culture)!; }
+        }
+
+        internal static string SortMoved
+        {
+            get { return ResourceManager.GetString("SortMoved", Culture)!; }
+        }
+
+        internal static string SortRefused
+        {
+            get { return ResourceManager.GetString("SortRefused", Culture)!; }
+        }
+
+        internal static string SortDropped
+        {
+            get { return ResourceManager.GetString("SortDropped", Culture)!; }
+        }
+
+        internal static string SortCancelled
+        {
+            get { return ResourceManager.GetString("SortCancelled", Culture)!; }
+        }
+
         internal static string UploadWaiting
         {
             get { return ResourceManager.GetString("UploadWaiting", Culture)!; }

@@ -55,6 +55,10 @@ public sealed class Sortable : SingleChildNode
     /// dropped on. Null takes every place.</summary>
     public Func<SortDrop, bool>? Accepts { get; init; }
 
+    /// <summary>The list's name in what a reader hears while an item is sorted by the keyboard ("position 2 of
+    /// 3 in To do"): a column's title, say. Empty, the list is named by its <see cref="Id"/>.</summary>
+    public string Label { get; init; } = "";
+
     /// <summary>Whether the list takes items at all. A disabled list neither starts nor takes a drag.</summary>
     public bool Enabled { get; init; } = true;
 

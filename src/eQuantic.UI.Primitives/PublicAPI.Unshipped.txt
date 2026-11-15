@@ -1084,3 +1084,5 @@ eQuantic.UI.Primitives.SortableItem
 eQuantic.UI.Primitives.SortableItem.SortableItem(eQuantic.UI.Primitives.VisualNode! child, string! id) -> void
 eQuantic.UI.Primitives.SortableItem.Id.get -> string!
 eQuantic.UI.Primitives.SortableItem.Id.init -> void
+eQuantic.UI.Primitives.Sortable.Label.get -> string!
+eQuantic.UI.Primitives.Sortable.Label.init -> void

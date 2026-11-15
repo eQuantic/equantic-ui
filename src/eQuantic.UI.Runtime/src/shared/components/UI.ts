@@ -351,8 +351,8 @@ export class UI {
         return new TableView(rows, columns, cellBuilder, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, overscan: overscan, width: width, height: height, marks: marks, request: request, onScrolled: onScrolled, onViewportChanged: onViewportChanged, label: label, canRequestFocus: canRequestFocus, scroll: scroll, role: role, cellRole: cellRole, selected: selected, current: current });
     }
 
-    static sortable(child: VisualNode, id: string, onDropped: (sortDrop: SortDrop) => void, group: string = '', axis: DragAxisValue = 'vertical', nests: boolean = false, onHovered: ((sortDrop: SortDrop | null) => void) | null = null, accepts: ((value: SortDrop) => boolean) | null = null, enabled: boolean = true) {
-        return new Sortable(child, id, onDropped, { group: group, axis: axis, nests: nests, onHovered: onHovered, accepts: accepts, enabled: enabled });
+    static sortable(child: VisualNode, id: string, onDropped: (sortDrop: SortDrop) => void, group: string = '', axis: DragAxisValue = 'vertical', nests: boolean = false, onHovered: ((sortDrop: SortDrop | null) => void) | null = null, accepts: ((value: SortDrop) => boolean) | null = null, enabled: boolean = true, label: string = '') {
+        return new Sortable(child, id, onDropped, { label: label, group: group, axis: axis, nests: nests, onHovered: onHovered, accepts: accepts, enabled: enabled });
     }
 
     static sortableItem(child: VisualNode, id: string, enabled: boolean = true) {
