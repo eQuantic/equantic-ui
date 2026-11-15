@@ -777,6 +777,15 @@ public sealed unsafe class PhotonWindow
                 return 0;
             }
 
+            // A secondary click asks for the menu of what it lands on (#1531), on the release, where Windows
+            // opens its own context menus. Answered by nothing, it goes on to the default procedure.
+            case WM_RBUTTONUP when _host is not null:
+            {
+                var (x, y) = PointOf(lParam);
+                if (_host.ContextRequest(x / _scale, y / _scale)) return 0;
+                break;
+            }
+
             case WM_MOUSELEAVE:
                 _trackingLeave = false;
                 _host?.PointerLeave();
