@@ -33,13 +33,13 @@ public static class WebRealizer
     /// </summary>
     public static HtmlElement Lower(
         VisualNode node, IAppTheme theme, float typeScale = 1f, StyleSink? styles = null,
-        Density density = Density.Comfortable)
+        Density density = Density.Comfortable, ComponentBoundary? boundary = null)
     {
         // No font here to measure with: a component that asks is answered 0 and remembered, so the
         // client draws it again instead of adopting geometry built on zeros (FontlessMeasurer).
-        // A boundary of its own: a lowering outside a host reports to nobody, and a render's bridge
-        // draws through a host that holds the render's (MarkupHost.DrawOnce).
-        var measurer = new FontlessMeasurer(new ComponentBoundary());
+        // The boundary it is handed, or a silent one of its own: a render's bridge draws through a
+        // host that holds the render's (MarkupHost.DrawOnce).
+        var measurer = new FontlessMeasurer(boundary ?? new ComponentBoundary());
         var context = new ComponentContext(theme, typeScale, density, measurer.Measure);
         var root = LowerRoot(node, context, measurer)
                ?? new RealizedElement("span"); // layout-only nodes outside a flex row lower to nothing

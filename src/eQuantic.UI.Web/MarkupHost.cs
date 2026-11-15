@@ -150,7 +150,7 @@ public sealed class MarkupHost
 
     /// <summary>
     /// Lowers the frame <see cref="Build"/> just built. With a render's <paramref name="channels"/>, every
-    /// element's style becomes atomic classes collected into its style sink, as <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density)"/>
+    /// element's style becomes atomic classes collected into its style sink, as <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density, ComponentBoundary?)"/>
     /// does, and the expansion scope, the gradients, the faces and the link policy are the render's (#1404).
     /// </summary>
     /// <exception cref="InvalidOperationException">Nothing was built yet.</exception>
