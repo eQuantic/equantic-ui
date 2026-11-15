@@ -50,16 +50,16 @@
       "target": "desktop",
       "sources": {
         "samples/PhotonDesktop/Program.cs": "972c1b415b814a300974f6d32b4857d0990f8d64be15cadbad8e9a77128f1d6d",
-        "samples/PhotonDesktop/Studio/StudioShell.cs": "635b42de1be5b661e72b1f7e340fbde7c74755f07b0594f2fb4bd9ec6d9fa66b",
-        "samples/PhotonDesktop/Studio/Gallery.cs": "be0814e44d84566d15d54234f70eab5bd6f675da7241e40d91c965e35acc7c38"
+        "samples/PhotonDesktop/Studio/StudioShell.cs": "eec5d744926b4732b69e0e8ddc8062a43b2810008349bbed282445c059580beb",
+        "samples/PhotonDesktop/Studio/Gallery.cs": "fb0eb2e1eae5db594c9afed710a21604caa6e165cc9fa47fc77dc1d376c3ca70"
       }
     },
     "desktop-gallery-light.png": {
       "target": "desktop",
       "sources": {
         "samples/PhotonDesktop/Program.cs": "972c1b415b814a300974f6d32b4857d0990f8d64be15cadbad8e9a77128f1d6d",
-        "samples/PhotonDesktop/Studio/StudioShell.cs": "635b42de1be5b661e72b1f7e340fbde7c74755f07b0594f2fb4bd9ec6d9fa66b",
-        "samples/PhotonDesktop/Studio/Gallery.cs": "be0814e44d84566d15d54234f70eab5bd6f675da7241e40d91c965e35acc7c38"
+        "samples/PhotonDesktop/Studio/StudioShell.cs": "eec5d744926b4732b69e0e8ddc8062a43b2810008349bbed282445c059580beb",
+        "samples/PhotonDesktop/Studio/Gallery.cs": "fb0eb2e1eae5db594c9afed710a21604caa6e165cc9fa47fc77dc1d376c3ca70"
       }
     },
     "ios-home.png": {
