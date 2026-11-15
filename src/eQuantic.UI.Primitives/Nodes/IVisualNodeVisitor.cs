@@ -84,6 +84,8 @@ public interface IVisualNodeVisitor<in TState, out TResult>
 
     TResult Visit(DropTarget node, TState state);
 
+    TResult Visit(ContextTarget node, TState state);
+
     TResult Visit(Flexible node, TState state);
 
     TResult Visit(Grid node, TState state);

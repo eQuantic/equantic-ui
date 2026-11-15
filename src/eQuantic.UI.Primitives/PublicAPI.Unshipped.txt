@@ -1067,3 +1067,27 @@ eQuantic.UI.Primitives.TreePlace.PositionInSet.get -> int
 eQuantic.UI.Primitives.TreePlace.PositionInSet.init -> void
 eQuantic.UI.Primitives.TreePlace.SizeOfSet.get -> int
 eQuantic.UI.Primitives.TreePlace.SizeOfSet.init -> void
+eQuantic.UI.Primitives.Anchored.At.get -> eQuantic.UI.Primitives.Point?
+eQuantic.UI.Primitives.Anchored.At.init -> void
+eQuantic.UI.Primitives.ContextRequest
+eQuantic.UI.Primitives.ContextRequest.<Clone>$() -> eQuantic.UI.Primitives.ContextRequest!
+eQuantic.UI.Primitives.ContextRequest.At.get -> eQuantic.UI.Primitives.Point?
+eQuantic.UI.Primitives.ContextRequest.At.init -> void
+eQuantic.UI.Primitives.ContextRequest.ContextRequest(eQuantic.UI.Primitives.Point? At) -> void
+eQuantic.UI.Primitives.ContextRequest.Deconstruct(out eQuantic.UI.Primitives.Point? At) -> void
+eQuantic.UI.Primitives.ContextRequest.Equals(eQuantic.UI.Primitives.ContextRequest? other) -> bool
+eQuantic.UI.Primitives.ContextTarget
+eQuantic.UI.Primitives.ContextTarget.ContextTarget(eQuantic.UI.Primitives.VisualNode! child, System.Action<eQuantic.UI.Primitives.ContextRequest!>! onRequested) -> void
+eQuantic.UI.Primitives.ContextTarget.Enabled.get -> bool
+eQuantic.UI.Primitives.ContextTarget.Enabled.init -> void
+eQuantic.UI.Primitives.ContextTarget.OnRequested.get -> System.Action<eQuantic.UI.Primitives.ContextRequest!>!
+eQuantic.UI.Primitives.ContextTarget.OnRequested.init -> void
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.ContextTarget! node, TState state) -> TResult
+override eQuantic.UI.Primitives.ContextRequest.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.ContextRequest.GetHashCode() -> int
+override eQuantic.UI.Primitives.ContextRequest.ToString() -> string!
+override eQuantic.UI.Primitives.ContextTarget.NodeKind.get -> string!
+override sealed eQuantic.UI.Primitives.ContextTarget.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+static eQuantic.UI.Primitives.ContextRequest.operator !=(eQuantic.UI.Primitives.ContextRequest? left, eQuantic.UI.Primitives.ContextRequest? right) -> bool
+static eQuantic.UI.Primitives.ContextRequest.operator ==(eQuantic.UI.Primitives.ContextRequest? left, eQuantic.UI.Primitives.ContextRequest? right) -> bool
+const eQuantic.UI.Primitives.ContextTarget.HoldMs = 500 -> float

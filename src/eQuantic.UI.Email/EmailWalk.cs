@@ -61,6 +61,10 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
     /// heading a reader sees is the child's own.</summary>
     public Nothing Visit(Group node, Nothing state) => node.Child.Accept(this, state);
 
+    /// <summary>What a person asks the menu of reaches a message as the child it holds: a message has no menu
+    /// to ask for, and the content is the same without one (#1531).</summary>
+    public Nothing Visit(ContextTarget node, Nothing state) => node.Child.Accept(this, state);
+
     /// <summary>
     /// The one refusal, loud and naming the node — the repo's rule: never a silent divergence. The
     /// alternative is a message that goes out without a piece of itself and says nothing about it.

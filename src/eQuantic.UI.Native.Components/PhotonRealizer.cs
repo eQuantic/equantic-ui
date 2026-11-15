@@ -197,6 +197,10 @@ public sealed class RealizeResult
     /// Empty in a frame that draws none.</summary>
     internal IReadOnlyList<CodeNoteLayer> NoteLayers { get; init; } = Array.Empty<CodeNoteLayer>();
 
+    /// <summary>What a person may ask the menu of, in tree order, an outer target before what it holds (#1531).
+    /// Empty in a frame with no target.</summary>
+    internal IReadOnlyList<ContextRegion> ContextRegions { get; init; } = Array.Empty<ContextRegion>();
+
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
 
@@ -464,6 +468,7 @@ public static class PhotonRealizer
             LiveRegions = regions.LivesOrEmpty,
             TransformedRegions = regions.TransformedOrEmpty,
             NoteLayers = regions.NotesOrEmpty,
+            ContextRegions = regions.ContextsOrEmpty,
         };
     }
 

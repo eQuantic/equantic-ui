@@ -69,6 +69,18 @@ internal sealed class FrameRegions
     private List<LiveRegionMark>? _lives;
 
     /// <summary>
+    /// What a person may ask the menu of (#1531), in tree order, an outer target before what it holds. LAZY like
+    /// the live regions, and for the same ceiling: a frame with no target allocates nothing for it.
+    /// </summary>
+    public List<ContextRegion> Contexts => _contexts ??= [];
+
+    /// <summary>What the frame reads back, without creating the list to find out it is empty.</summary>
+    public IReadOnlyList<ContextRegion> ContextsOrEmpty =>
+        (IReadOnlyList<ContextRegion>?)_contexts ?? Array.Empty<ContextRegion>();
+
+    private List<ContextRegion>? _contexts;
+
+    /// <summary>
     /// The regions registered under a transform, each with what turns a point back into its own
     /// space (#513). LAZY like the live regions, and for the same ceiling: a frame where nothing
     /// interactive is transformed, which is nearly every frame, allocates nothing for it.

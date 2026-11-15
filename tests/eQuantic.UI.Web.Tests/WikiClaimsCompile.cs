@@ -307,6 +307,36 @@ public class WikiClaimsCompile
         public override VisualNode Build(ComponentContext context) => Text("queue", TypeRole.BodyM);
     }
 
+    /// <summary>Components, "ContextTarget and ContextMenu: a menu asked for anywhere" (preview.69, #1531): a
+    /// file's card with its menu, and the blocks it is made of for a panel of another look.</summary>
+    private sealed class FileMenuPage : Primitives.StatefulComponent
+    {
+        private sealed record File(string Name);
+
+        private readonly File file = new("README.md");
+        private Point? _at;
+        private bool _open;
+
+        private static VisualNode FileCard(File file) => Text(file.Name, TypeRole.BodyM);
+
+        private static void Run(File file, int index) { }
+
+        public override VisualNode Build(ComponentContext context) =>
+            ContextMenu(
+                FileCard(file),
+                [new MenuItem("Rename"), new MenuItem("Delete") { Destructive = true }],
+                index => Run(file, index));
+
+        /// <summary>The blocks under it: a target under an anchored panel opened at the request's point.</summary>
+        public VisualNode OwnPanel(VisualNode panel) =>
+            new Anchored(ContextTarget(FileCard(file), request => SetState(() => (_at, _open) = (request.At, true))), panel)
+            {
+                At = _at,
+                Open = _open,
+                OnDismiss = () => SetState(() => _open = false),
+            };
+    }
+
     /// <summary>Components, "TreeView: a tree the keyboard walks" (preview.69, #1530): a repository's
     /// files, the top folder from the server and every folder below it loaded as it opens.</summary>
     private sealed class FilesPage : Primitives.StatefulComponent

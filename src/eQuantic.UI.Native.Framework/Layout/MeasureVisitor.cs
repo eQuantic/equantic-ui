@@ -209,6 +209,10 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(DropTarget node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
+    // What a person asks the menu of is layout-transparent as well (#1531): the child owns every visual.
+    public LayoutNode Visit(ContextTarget node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
     // A simulated state changes only what is DRAWN, so it takes no space of its own.
     public LayoutNode Visit(Simulated node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);

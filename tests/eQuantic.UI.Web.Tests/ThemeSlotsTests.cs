@@ -347,8 +347,8 @@ public class ThemeSlotsTests
         ["Select"] = () => new Select(["Lisbon", "Porto"], 0, _ => { }),
         ["SearchField"] = () => new SearchField("harbour", _ => { }),
         ["TimePicker"] = () => new TimePicker(new TimeOnly(9, 30), _ => { }),
-        // Its rows, which only an open menu shows.
-        ["Menu"] = null,
+        // The rows of every menu, the Menu's and the ContextMenu's, which only an open menu shows (#1531).
+        ["MenuPanel"] = null,
         // Its small rung, which a chip always is.
         ["Chip"] = null,
         // Its small rung too, the height of every row of a tree (#1530).

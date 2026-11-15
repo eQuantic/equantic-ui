@@ -1,4 +1,4 @@
-import type { FontFamily, Point, Rect, Size } from './value-types';
+import type { ContextRequest, FontFamily, Point, Rect, Size } from './value-types';
 import type { PickedFile } from './picked-file';
 /**
  * The SHARED abstract vocabulary on the client (docs/SHARED-COMPONENTS-PLAN.md) — the JS shapes of
@@ -168,6 +168,8 @@ export interface AnchoredNode extends VisualNodeValue {
   anchor: VisualNodeValue;
   panel: VisualNodeValue;
   placement?: AnchorPlacementValue;
+  /** A point of the anchor's box where the panel's corner stands instead of an edge (#1531). */
+  at?: Point | null;
   gap?: number;
   open?: boolean;
   onDismiss?: (() => void) | null;
@@ -465,6 +467,15 @@ export interface DropTargetNode extends VisualNodeValue {
   onDropped?: (files: PickedFile[]) => void;
   /** true while files are carried over the area, false when they leave or land. */
   onDragOverChanged?: ((over: boolean) => void) | null;
+  enabled?: boolean;
+}
+
+/** Wire shape of the C# `ContextTarget` (#1531): what a person can ask the menu of. */
+export interface ContextTargetNode extends VisualNodeValue {
+  nodeKind: 'contextTarget';
+  child: VisualNodeValue;
+  /** Where in the target's box the menu was asked for; `at` is null when the keyboard asked. */
+  onRequested: (request: ContextRequest) => void;
   enabled?: boolean;
 }
 

@@ -12,7 +12,7 @@ import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from '.
 import type { NodeKind } from './node-kinds.generated';
 import type { TableCellRoleValue, TableRoleValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
-import type { AppTheme } from './value-types';
+import type { AppTheme, ContextRequest } from './value-types';
 import { iconPaths } from './icons.generated';
 import type {
   BoxStyleValue,
@@ -337,6 +337,8 @@ export class Anchored extends VisualNode {
   panel: VisualChild;
   // Transpiled C# enums arrive as camelCase STRINGS — the union documents the valid set.
   placement: AnchorPlacementValue | string = 'bottomStart';
+  /** A point of the anchor's box where the panel's corner stands instead of an edge (#1531). */
+  at: Point | null = null;
   gap = 4;
   open = false;
   onDismiss?: (() => void) | null;
@@ -358,6 +360,7 @@ export class Anchored extends VisualNode {
     panel: VisualChild,
     config?: {
       placement?: AnchorPlacementValue | string;
+      at?: Point | null;
       gap?: number;
       open?: boolean;
       onDismiss?: (() => void) | null;
@@ -1040,6 +1043,23 @@ export class DropTarget extends VisualNode {
     super();
     this.child = child;
     this.onDropped = onDropped;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `ContextTarget` (#1531): what a person can ask the menu of. */
+export class ContextTarget extends VisualNode {
+  readonly nodeKind = 'contextTarget';
+  child: VisualChild;
+  /** Where in the target's box the menu was asked for; `at` is null when the keyboard asked. */
+  onRequested: (request: ContextRequest) => void;
+  /** A disabled target answers nothing, and no target around it answers in its place. */
+  enabled = true;
+
+  constructor(child: VisualChild, onRequested: (request: ContextRequest) => void, config?: EqConfig) {
+    super();
+    this.child = child;
+    this.onRequested = onRequested;
     if (config) Object.assign(this, config);
   }
 }

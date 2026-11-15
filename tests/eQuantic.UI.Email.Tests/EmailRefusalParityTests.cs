@@ -34,10 +34,11 @@ namespace eQuantic.UI.Email.Tests;
 public class EmailRefusalParityTests
 {
     /// <summary>The words this medium carries: seven it writes, a labelled Group, which reaches a
-    /// message as the child it holds, and a Theme, which draws its child in the theme it holds.
+    /// message as the child it holds, a Theme, which draws its child in the theme it holds, and a
+    /// ContextTarget, whose child is the content and whose menu a message has no way to ask for (#1531).
     /// Everything else in the vocabulary is refused.</summary>
     private static readonly string[] Carried =
-        ["Column", "Row", "Text", "Box", "Image", "Link", "UiComponent", "Group", "Theme"];
+        ["Column", "Row", "Text", "Box", "Image", "Link", "UiComponent", "Group", "Theme", "ContextTarget"];
 
     /// <summary>
     /// The vocabulary, asked of the assembly. An instance with no constructor run is enough and is

@@ -103,6 +103,15 @@ public class ComponentParityFixtureTests
         // fill passed through, and the four drag events declared by the server and attached by the client.
         ("drop-target", new DropTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),
         ("drop-target-disabled", new DropTarget(new Box(new BoxStyle { Height = 40 }), _ => { }) { Enabled = false }, NoPresses),
+        // What a person can ask the menu of (#1531): the same transparent div, marked, with the request's event
+        // declared by the server and attached by the client; and a panel opened at a point of its anchor.
+        ("context-target", new ContextTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),
+        ("context-target-disabled", new ContextTarget(new Box(new BoxStyle { Height = 40 }), _ => { }) { Enabled = false }, NoPresses),
+        ("anchored-at", new Anchored(new Box(new BoxStyle { Width = 200, Height = 40 }), new Box(new BoxStyle { Width = 120, Height = 80 }))
+        {
+            At = new Point(120, 30),
+            Open = true,
+        }, NoPresses),
         // A pinned header's scrolled diff with every member (#506), through the builder a box's
         // states use, over the header's base, whose border is its bottom edge.
         ("pinned-scrolled", new Pinned(new Box(new BoxStyle { Height = 40 }))
@@ -170,6 +179,8 @@ public class ComponentParityFixtureTests
         // structure, so the most surface on which two lowerings can quietly disagree — and every
         // one of them takes an ITEM type whose twin has to line up as well.
         ("menu-closed", new Menu(new Button("Open"), [new MenuItem("One"), new MenuItem("Two")]), NoPresses),
+        ("context-menu-closed", new ContextMenu(new Text("row", TypeRole.BodyM, Theme.TextPrimary),
+            [new MenuItem("Rename"), new MenuItem("Delete") { Destructive = true }]), NoPresses),
         ("dialog", new Dialog("Delete this?", "It cannot be undone.",
             [new DialogAction("Cancel", null, Variant.Ghost), new DialogAction("Delete")]), NoPresses),
         ("list-item", new ListItem("Title", "and a subtitle"), NoPresses),

@@ -27,6 +27,8 @@ Components.Chip: no SizeVariant  a chip is always as tall as a small control (sp
 Components.CodeBlock: no Variant  code is coloured by the theme's code palette (IAppTheme.Code), not by a variant
 Components.CodeDiff: no Variant  code is coloured by the theme's code palette (IAppTheme.Code), not by a variant
 Components.CodeEditor: no Variant  code is coloured by the theme's code palette (IAppTheme.Code), not by a variant
+Components.ContextMenu: no SizeVariant  its items are the Menu's own rows, not the control ladder, and what it wraps is the app's
+Components.ContextMenu: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
 Components.CookieConsent: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
 Components.CookieConsent: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours; its two actions are buttons of their own
 Components.CultureSwitcher: no Variant  a menu of cultures, drawn in the theme's roles: there is no variant to choose

@@ -46,6 +46,7 @@ internal static class ChildSlots
         "draggable" => NodeSlots.One(((Draggable)node).Child),
         "drawing" => NodeSlots.None,
         "dropTarget" => NodeSlots.One(((DropTarget)node).Child),
+        "contextTarget" => NodeSlots.One(((ContextTarget)node).Child),
         "flexible" => NodeSlots.One(((Flexible)node).Child),
         "grid" => NodeSlots.Listed(((Grid)node).Children),
         "group" => NodeSlots.One(((Group)node).Child),

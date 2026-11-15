@@ -22,9 +22,11 @@ import { measurePhotonText, setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
 import {
   AdaptiveNode,
+  Anchored,
   Box,
   BoxStyle,
   Column,
+  ContextTarget,
   Draggable,
   Drawing,
   DropTarget,
@@ -55,9 +57,10 @@ import {
   VectorPaint,
   VectorShape,
 } from './vocabulary';
-import { SizeValue, StyleChannels, TableRange, Transform2D } from './value-types';
+import { Point, SizeValue, StyleChannels, TableRange, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
+import { ContextMenu } from './components/ContextMenu';
 import { TreeNode } from './components/TreeNode';
 import { TreeView } from './components/TreeView';
 import { Badge } from './components/Badge';
@@ -347,6 +350,16 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'drop-target-disabled': still(
       new DropTarget(new Box(new BoxStyle({ height: 40 })), () => {}, { enabled: false }),
     ),
+    'context-target': still(new ContextTarget(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })), () => {})),
+    'context-target-disabled': still(
+      new ContextTarget(new Box(new BoxStyle({ height: 40 })), () => {}, { enabled: false }),
+    ),
+    'anchored-at': still(
+      new Anchored(new Box(new BoxStyle({ width: 200, height: 40 })), new Box(new BoxStyle({ width: 120, height: 80 })), {
+        at: new Point(120, 30),
+        open: true,
+      }),
+    ),
     'pinned-scrolled': still(
       new Pinned(new Box(new BoxStyle({ height: 40 })), 0, {
         scrolledStyle: new StyleDiff({
@@ -413,6 +426,12 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'radio-group': still(new RadioGroup(['a', 'b'], 0)),
     'empty-state': still(new EmptyState(new Icon(IconGlyph.fromIcons('search')), 'Nothing here', 'Try another term')),
     'menu-closed': still(new Menu(new Button('Open'), [new MenuItem('One'), new MenuItem('Two')])),
+    'context-menu-closed': still(
+      new ContextMenu(new Text('row', 'bodyM', photonTheme.textPrimary), [
+        new MenuItem('Rename'),
+        Object.assign(new MenuItem('Delete'), { destructive: true }),
+      ]),
+    ),
     dialog: still(
       new Dialog('Delete this?', 'It cannot be undone.', [
         new DialogAction('Cancel', null, 'ghost'),

@@ -252,7 +252,7 @@ public class FlutterParityPinTests
         // Box's is optional). WrapperNode and ProxyNode stay in the negative set they were in while this row
         // was a GAP — a SECOND wrapper base would change the shape surface just as much as a first.
         ["SingleChildRenderObjectWidget"] = () => EveryOneChildNodeIsA("SingleChildNode")
-            && Descendants("SingleChildNode") == 25 && Has("FlexNode")
+            && Descendants("SingleChildNode") == 26 && Has("FlexNode")
             && Nothing("MultiChildNode", "LeafNode", "WrapperNode", "ProxyNode"),
 
         // 2 — layout
@@ -311,6 +311,8 @@ public class FlutterParityPinTests
         ["GestureDetector"] = () => Has("Pressable") && Has("Draggable") && Has("Hoverable")
             && Has("Adjustable") && Has("Navigable"),
         ["RawGestureDetector"] = () => Nothing("RawGestureDetector"),
+        ["MenuAnchor"] = () => HasMember("ContextTarget", "OnRequested") && HasMember("ContextRequest", "At")
+            && HasMember("Anchored", "At") && Has("ContextMenu"),
         ["FocusNode"] = () => HasMember("Pressable", "InitialFocus") && Nothing("FocusNode", "FocusScope"),
         // The vocabulary's own word, and a realizer that honours it.
         ["InkWell.canRequestFocus"] = () => HasMember("Pressable", "CanRequestFocus")

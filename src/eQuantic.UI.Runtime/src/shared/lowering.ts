@@ -26,6 +26,7 @@ import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
 import { installDraggableController } from '../dom/draggable';
 import { dropHandlers, installDropGuard } from '../dom/file-drop';
+import { installContextController } from '../dom/context-request';
 import { MOUNTED_HOOK, clickWithEvent } from '../dom/reconciler';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -107,6 +108,7 @@ import type {
   PressableNode,
   HoverableNode,
   DropTargetNode,
+  ContextTargetNode,
   InFlowNode,
   InheritedNode,
   InViewNode,
@@ -142,6 +144,7 @@ import { declareScrollViewport } from './scroll-viewports';
 import { declareTableViewport, tableCellPlace } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
+import type { ContextRequest } from './value-types';
 import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
 import { DISPOSABLE, nodeStateFor, positionOf, type NodeState } from './node-states';
@@ -779,6 +782,8 @@ function lowerNodeKind(
       return lowerHoverable(node as unknown as HoverableNode, context, path);
     case 'dropTarget':
       return lowerDropTarget(node as unknown as DropTargetNode, context, path);
+    case 'contextTarget':
+      return lowerContextTarget(node as unknown as ContextTargetNode, context, path);
     case 'simulated':
       return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
     case 'inFlow':
@@ -4144,6 +4149,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'pressable':
     case 'hoverable':
     case 'dropTarget':
+    case 'contextTarget':
     case 'adjustable':
     case 'progress':
     case 'liveRegion':
@@ -4211,6 +4217,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as HoverableNode).child);
     case 'dropTarget':
       return fills((node as DropTargetNode).child);
+    case 'contextTarget':
+      return fills((node as ContextTargetNode).child);
     case 'simulated':
       return fills((node as SimulatedNode).child);
     case 'inFlow':
@@ -5173,8 +5181,12 @@ function lowerHoverable(node: HoverableNode, context: LoweringContext, path: str
 
 /** The C# BuildAnchorPanel twin. */
 function buildAnchorPanel(node: AnchoredNode, context: LoweringContext, path: string): HtmlNode {
+  // A panel at a point of the anchor (#1531) takes no edge's class: its corner stands at the point, plus the gap
+  // on both axes (C# twin).
+  const at = node.at ?? null;
   const top =
-    node.placement === 'topStart' || node.placement === 'topEnd' || node.placement === 'topCenter';
+    at === null &&
+    (node.placement === 'topStart' || node.placement === 'topEnd' || node.placement === 'topCenter');
   const gap = node.gap ?? 4;
   // HOVER BRIDGE (C# twin): hover-open panels carry the gap as PADDING — part of the hoverable
   // area — so crossing it never drops the host's :hover. Click-open panels keep the margin.
@@ -5184,6 +5196,9 @@ function buildAnchorPanel(node: AnchoredNode, context: LoweringContext, path: st
   // C# twin: open/close glide — fade + a MotionLiftDp nudge toward the anchor; closed ends
   // visibility:hidden (gone from hit-testing and the Tab order once the exit completes).
   const panel = element('div', {
+    top: at ? px(at.y) : undefined,
+    left: at ? px(at.x) : undefined,
+    'margin-left': at && node.openOnHover !== true ? px(gap) : undefined,
     ...(top ? { [`${gapProp}-bottom`]: px(gap) } : { [`${gapProp}-top`]: px(gap) }),
     transition: motion ? motionTransition(motion, true) : undefined,
     opacity: closed ? '0' : undefined,
@@ -5196,7 +5211,7 @@ function buildAnchorPanel(node: AnchoredNode, context: LoweringContext, path: st
     'pointer-events': closed ? 'none' : undefined,
   });
   if (node.matchAnchorWidth === true) prependClass(panel, 'eq-anchor-match');
-  prependClass(panel, anchorPlacementClass(node.placement));
+  if (!at) prependClass(panel, anchorPlacementClass(node.placement));
   prependClass(panel, 'eq-anchor-panel');
   // Shown before it lowers, as an overlay's child is (C# twin).
   const content = lowerNode(showLayer(node, node.panel, context), context, null, path + '/1');
@@ -5577,6 +5592,30 @@ function showCursorAfterRender(rest: CodeRest): void {
   };
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(show);
   if (typeof setTimeout === 'function') setTimeout(show, 48);
+}
+
+/**
+ * What a person can ask the menu of (#1531, the C# LowerContextTarget twin): the same layout-transparent div as a
+ * drop area, marked `data-eq-context`, whose request the context controller (dom/context-request.ts) dispatches as
+ * `eq-context-requested`, turned here into the C# callback.
+ */
+function lowerContextTarget(node: ContextTargetNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    'max-width': sizeValue(cap),
+    'pointer-events': 'auto',
+    height: fill.height ? '100%' : undefined,
+  });
+  host.attributes['data-eq-context'] = node.enabled !== false ? 'on' : 'off';
+  const requested = node.onRequested;
+  host.events['eq-context-requested'] = ((ev: Event) =>
+    requested((ev as CustomEvent<ContextRequest>).detail)) as unknown as EventHandler;
+  installContextController();
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
 }
 
 /**

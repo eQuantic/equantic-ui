@@ -239,6 +239,18 @@ export class Point {
   }
 }
 
+/**
+ * Mirror of the C# `ContextRequest` (#1531): a person asked for the menu of a `ContextTarget`, at a point of its
+ * box, or with none when the keyboard asked.
+ */
+export class ContextRequest {
+  readonly at: Point | null;
+
+  constructor(at: Point | null = null) {
+    this.at = at;
+  }
+}
+
 /** Mirror of the C# `Size`. */
 export class Size {
   readonly width: number;
@@ -863,6 +875,7 @@ export class ScrollRequest {
  * compares it (`ValueTwinHashTests` holds this list to the C#). */
 hashesByValue(
   ColorToken,
+  ContextRequest,
   TableOffset,
   TableRange,
   TableScrollRequest,
