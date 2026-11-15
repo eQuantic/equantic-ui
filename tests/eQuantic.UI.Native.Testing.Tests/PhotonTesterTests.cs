@@ -278,4 +278,19 @@ public class PhotonTesterTests
 
         Assert.Equal(["Throws"], tester.Boundary.Contained);
     }
+
+    /// <summary>A second tree starts over, its tally included: what the first one contained is not read as
+    /// the second one's.</summary>
+    [Fact]
+    public void ASecondTree_StartsWithNothingContained()
+    {
+        using var tester = new PhotonTester();
+        var broken = new Column(gap: 0);
+        broken.Add(new Throws());
+        tester.Pump(broken);
+
+        tester.Pump(new Column(gap: 0));
+
+        Assert.Empty(tester.Boundary.Contained);
+    }
 }

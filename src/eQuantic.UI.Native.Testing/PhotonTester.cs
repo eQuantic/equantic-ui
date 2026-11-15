@@ -136,12 +136,14 @@ public sealed class PhotonTester : IDisposable
     public ComponentBoundary Boundary { get; } = new();
 
     /// <summary>Mounts <paramref name="root"/> and draws its first frame. A second call starts over:
-    /// the tree drawn before is taken down, and every <c>OnUnmount</c> in it runs.</summary>
+    /// the tree drawn before is taken down, every <c>OnUnmount</c> in it runs, and the boundary forgets
+    /// what that tree contained.</summary>
     public void Pump(VisualNode root)
     {
         ArgumentNullException.ThrowIfNull(root);
         ThrowIfDisposed();
         Unmount();
+        Boundary.ClearContained();
         Mount();
         _host = new PhotonHost(root, Theme, Mode, Width, Height, ApproximateTextMeasurer.Instance, TypeScale, Boundary)
         {

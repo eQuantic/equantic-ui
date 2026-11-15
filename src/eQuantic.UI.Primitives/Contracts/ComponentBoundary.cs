@@ -51,8 +51,8 @@ public sealed class ComponentBoundary
     /// How deep the current expansion walk is, in COMPONENTS. Thread-static rather than the tree's,
     /// like everything else here, and the difference is what each one measures: those belong to a
     /// tree, while this counts one synchronous walk that never leaves its thread, whichever tree it
-    /// walks (the email's walk has no boundary at all). Restored in a finally, so two walks
-    /// interleaved on one thread cannot see each other's depth either.
+    /// walks (a lowering outside a host walks through a boundary no tree holds). Restored in a
+    /// finally, so two walks interleaved on one thread cannot see each other's depth either.
     /// </summary>
     [ThreadStatic] private static int _depth;
 
