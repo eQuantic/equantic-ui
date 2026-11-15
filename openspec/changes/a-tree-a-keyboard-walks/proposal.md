@@ -79,7 +79,10 @@ Parts reached, in the order of the work:
 - **Components** (`eQuantic.UI.Components`): `TreeView.cs`, `TreeNode.cs` (new), `UI.cs` (the
   `TreeView` factory), `SdkStrings.cs` and its `.resx` files (the loading and error rows).
   `PublicAPI.Unshipped.txt` moves, additions only.
-- **eqc**: no change. The transpiled twins of `TreeView`, `TreeNode` and `UI` are regenerated.
+- **eqc**: a delegate of two or more type arguments (`Action<TreeNode, bool>`, the tree's `OnToggled`)
+  is annotated as that many parameters (`(arg1: TreeNode, arg2: boolean) => void`), as `Func<…>` already
+  was; it was read as one type named `TreeNode, bool`, which the runtime's own type check refused. The
+  transpiled twins of `TreeView`, `TreeNode`, `TreeViewRow` and `UI` are regenerated.
 - **Web realizer and its TypeScript twin**: `WebLoweringVisitor.Interaction.cs` (`LowerNavigable`,
   `LowerPressable`) with `lowering.ts`, `vocabulary.ts`, `nodes.ts` and the value-type twin of
   `TreePlace`. The served runtime grows; `ServedRuntimeBudgetTests` decides whether its budget moves.
@@ -92,7 +95,10 @@ Parts reached, in the order of the work:
 - **Docs**: the wiki's components page in every language it is written in, a row in
   `docs/FLUTTER-PARITY.md`, one ledger entry under `docs/ledger/`.
 
-No break: every member is added, and every enum value is appended (`EnumValueAbiTests`).
+One break, binary only and in a server-only type: `SemanticNode`, which only the Photon walk and its
+bridges build, gains a trailing optional `TreePlace`, so its constructor and its `Deconstruct` change
+shape (two `*REMOVED*` lines in `eQuantic.UI.Primitives`). Migration line: none in source; recompile.
+Every other member is added, and every enum value is appended (`EnumValueAbiTests`).
 
 Rules of `docs/PRINCIPLES.md` followed: 2 (a tree for every app, the Space's two included, not the
 Space's tree), 3 (`TreePlace` and `OnTextSearch` take .NET's own names), 4 (written once in
