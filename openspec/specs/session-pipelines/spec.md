@@ -40,7 +40,9 @@ in the tree while it runs. Agents that write SHALL run one at a time in the sess
 
 The gate SHALL sort each finding as a defect, as hardening or as wrong, in the Workflow's meaning
 of each, SHALL stop the delivery for the person after two rounds with a defect standing, and SHALL
-keep a security finding rated high out of every issue, pull request and commit message.
+keep a security finding rated high out of every issue, pull request and commit message. A defect
+found by the second round whose fix the finding states exactly, and that touches only the lines of
+the previous round's own fix, is fixed and recorded instead, so it leaves no defect standing.
 
 #### Scenario: A high security finding
 
@@ -60,13 +62,19 @@ session's compactions and every defect found after its pull request opened.
 
 ### Requirement: One agent of a delivery builds at a time
 
-At most one agent of a delivery SHALL build or run a suite at any moment, through the host's lock
-for the suites when the host has one. Agents that run in parallel SHALL only read.
+At most one build or test suite SHALL run on a host at any moment, whichever delivery and session it
+belongs to: every build and suite goes through the host's lock (`scripts/one-build-at-a-time.py`, or
+the person's own when named). Agents of one delivery that run in parallel SHALL only read.
 
 #### Scenario: Three hypotheses about a defect
 
 - **WHEN** three debuggers investigate in parallel
 - **THEN** none of them builds or runs a test, and the reproduction is written and run afterwards by one, alone
+
+#### Scenario: Two deliveries build at once
+
+- **WHEN** two deliveries, in two worktrees, each start a test suite
+- **THEN** the second waits on the host's lock until the first ends, and says that it waits
 
 ### Requirement: What the skill and the agents cite is there
 
@@ -77,6 +85,30 @@ repository that does not exist.
 
 - **WHEN** a file an agent is told to read first is renamed and the agent is not changed
 - **THEN** the self-test, which CI runs, fails naming the agent and the path
+
+### Requirement: A delivery runs in a worktree of its own
+
+Each delivery SHALL be developed in a worktree of its own, created at intake on its branch from
+`origin/main`, where every agent of the delivery works and its state is kept. The clone's own
+checkout SHALL NOT be switched by a delivery, and a delivery SHALL NOT work in another's worktree.
+The worktree SHALL be removed once the pull request has merged.
+
+#### Scenario: Two sessions deliver at once
+
+- **WHEN** a second session starts a delivery while the first is mid-gate
+- **THEN** each works in its own worktree, and neither one's branch, files or state moves under the other
+
+### Requirement: A gate's fix is held to its finding
+
+A fix made in a round of the gate SHALL change only what its finding names. A hardening or a nit that
+would change behaviour, add a public member or reach a file the change did not touch SHALL become an
+issue under the delivery's parent instead. Every round after the first SHALL review only the
+previous round's delta.
+
+#### Scenario: A hardening item that would change behaviour
+
+- **WHEN** a reviewer suggests that a node with an empty label should render as its child
+- **THEN** it is filed as an issue, and the round's fixes do not include it
 
 ### Requirement: A delivery's state names its session and its merge
 
