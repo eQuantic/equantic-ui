@@ -1,5 +1,3 @@
-using System.Threading;
-
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
@@ -14,6 +12,11 @@ namespace eQuantic.UI.Primitives;
 /// <para>
 /// Never null on <see cref="ComponentContext.Route"/>; an absent name answers null, which is what a
 /// caller has to handle anyway (a route can match with an empty optional segment).
+/// </para>
+/// <para>
+/// A component reads it from its context, which reads it from the frame its owner was handed: the server
+/// hands its request's, the browser its router's (#1395). Code outside the tree that needs the request's
+/// route, a prefetch, resolves it from the request's services, where the server registers it.
 /// </para>
 /// </summary>
 public sealed class RouteValues
@@ -53,25 +56,4 @@ public sealed class RouteValues
     /// <summary>A query-string value — the <c>page</c> of <c>?page=2</c>.</summary>
     public string? Query(string name) =>
         _query is not null && _query.TryGetValue(name, out var value) ? value : null;
-
-    // ---- The AMBIENT route, per request -------------------------------------------------------
-
-    private static readonly AsyncLocal<RouteValues?> Scoped = new();
-
-    /// <summary>
-    /// The route for the request being rendered right now.
-    /// <para>
-    /// AsyncLocal, like every other per-request value here: SSR renders concurrent requests on
-    /// shared instances, and a route held in a field would hand one visitor's slug to another's
-    /// page. Set by the rendering pipeline and cleared when it finishes.
-    /// </para>
-    /// </summary>
-    public static RouteValues Current
-    {
-        get => Scoped.Value ?? Empty;
-        set => Scoped.Value = value;
-    }
-
-    /// <summary>Clears the ambient route — the pipeline's `finally`.</summary>
-    public static void ClearCurrent() => Scoped.Value = null;
 }

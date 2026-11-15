@@ -177,6 +177,36 @@ public class EmailRendererTests
         message.PlainText.Should().NotContain("<", "it is text, not markup");
     }
 
+    private static readonly IAppTheme Inverse = PhotonTheme.Instance.With();
+
+    /// <summary>Writes which theme it was built in, so a message shows whose theme a component read.</summary>
+    private sealed class ThemeName : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Text(ReferenceEquals(context.Theme, Inverse) ? "theme=inverse" : "theme=frame");
+    }
+
+    /// <summary>
+    /// A component under a <see cref="Primitives.Theme"/> builds in the theme it holds, in both
+    /// alternatives, and one beside it builds in the message's: the email walk follows the nearest
+    /// Theme as every other target does.
+    /// </summary>
+    [Fact]
+    public void AComponentUnderATheme_BuildsInIt_InBothAlternatives()
+    {
+        var tree = new Column();
+        tree.Add(new Theme(Inverse, new ThemeName()));
+        tree.Add(new ThemeName());
+
+        var message = EmailRenderer.Render(tree, Theme);
+
+        message.Html.Should().Contain("theme=inverse").And.Contain("theme=frame");
+        message.PlainText.Should().Contain("theme=inverse").And.Contain("theme=frame");
+        message.Html.IndexOf("theme=inverse", StringComparison.Ordinal)
+            .Should().BeLessThan(message.Html.IndexOf("theme=frame", StringComparison.Ordinal),
+                "the component under the Theme is the first child");
+    }
+
     [Fact]
     public void ThePlainTextCarriesLinksAndImageAlts()
     {

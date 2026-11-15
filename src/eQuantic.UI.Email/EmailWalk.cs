@@ -48,8 +48,14 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
     /// </summary>
     public abstract Nothing Visit(UiComponent node, Nothing state);
 
-    /// <summary>A value for a subtree reaches a message as the child it holds.</summary>
-    public Nothing Visit(InheritedComponent node, Nothing state) => node.Child.Accept(this, state);
+    /// <summary>A value for a subtree reaches a message as the child it holds. A <see cref="Theme"/>
+    /// draws its child in the theme it holds, as on every other target: the components below it build
+    /// with that theme, and the colours the medium picks for its nodes are that theme's.</summary>
+    public Nothing Visit(InheritedComponent node, Nothing state) =>
+        node.Child.Accept(node is Theme theme ? Under(theme.Value) : this, state);
+
+    /// <summary>This walk, writing into the same body, for a subtree drawn in another theme.</summary>
+    private protected abstract EmailWalk Under(IAppTheme theme);
 
     /// <summary>A labelled group reaches a message as the child it holds: it draws nothing, and the
     /// heading a reader sees is the child's own.</summary>
