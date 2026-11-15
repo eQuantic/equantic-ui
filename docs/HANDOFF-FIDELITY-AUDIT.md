@@ -730,7 +730,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/dom/draggable.ts:25  const SLOP = 12; // Touch.PressCancelSlop — cross-pinned with the C# host
+  src/eQuantic.UI.Runtime/src/dom/pointer-gesture.ts:15  export const SLOP = 12;
   draggable.ts:88  arms: (ev) => Math.abs(travelled(ev)) > slop,
   Slider.cs:142          VisualNode surface = Disabled ? row : new Draggable(row)
   ```
