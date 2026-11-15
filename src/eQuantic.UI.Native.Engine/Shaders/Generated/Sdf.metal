@@ -10,7 +10,7 @@ struct vertexOutput_0
 };
 
 
-#line 8 "/Users/admin.edgar.a.mesquita/projects/equantic/equantic-ui/src/eQuantic.UI.Native.Engine/Shaders/Sdf.slang"
+#line 8 "Sdf.slang"
 struct DrawUniforms_0
 {
     float4 inv0_0;
@@ -36,7 +36,7 @@ struct KernelContext_0
 };
 
 
-#line 98 "/Users/admin.edgar.a.mesquita/projects/equantic/equantic-ui/src/eQuantic.UI.Native.Engine/Shaders/Sdf.slang"
+#line 98 "Sdf.slang"
 [[vertex]] vertexOutput_0 fullscreen_vertex(uint vid_0 [[vertex_id]], DrawUniforms_0 constant* u_1 [[buffer(0)]], texture2d<float, access::sample> coverageTexture_1 [[texture(0)]], texture2d<float, access::sample> colorTexture_1 [[texture(1)]], sampler textureSampler_1 [[sampler(0)]])
 {
 

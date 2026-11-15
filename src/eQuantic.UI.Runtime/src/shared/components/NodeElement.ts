@@ -77,7 +77,7 @@ export class NodeElement extends Element {
     }
 
     updateChildren(force: boolean) {
-        let slots = ChildSlots.of(this.configuration, this.owner.sizeClass, this.owner.holdsEveryArm);
+        let slots = ChildSlots.of(this.configuration, this.owner.windowWidth, this.owner.holdsEveryArm);
         this._deferred = slots.deferred;
         if (slots.isList && this.anyKey(slots)) {
             this.updateKeyed(slots, force);
