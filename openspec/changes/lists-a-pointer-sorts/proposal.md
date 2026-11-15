@@ -14,11 +14,11 @@ and these lists take each other's items".**
 - **Vocabulary** (`eQuantic.UI.Primitives`), all added:
   - `Sortable(child, id, onDropped)`: a container whose `SortableItem`s are put in order by drag along its
     `Axis`. Sortables of one `Group` take each other's items, an empty one included. On a drop it reports a
-    `SortDrop`: the item's key, the container it left, the one it lands in and its index there. While a drag
+    `SortDrop`: the item's id, the container it left, the one it lands in and its index there. While a drag
     is over it, `OnHovered` reports where the item would land (null when it leaves), so the component draws its
     own indicator from the theme; `Accepts` is the app's guard, asked before a place is offered. A container
     that `Nests` also takes an item INTO one of its items, which `SortDrop.Into` names (the tree's nesting).
-  - `SortableItem(child, key)`: an item a pointer picks up. A press that does not travel is still a press.
+  - `SortableItem(child, id)`: an item a pointer picks up. A press that does not travel is still a press.
   - `SortDrop(Item, From, To, Index)` with `Into`.
 - **Web realizer**: the client does the physics, as it does a `Draggable`'s. A mouse picks an item up past
   5 px; a finger after holding it still for 250 ms, so a list still scrolls under a swipe. A copy of the item

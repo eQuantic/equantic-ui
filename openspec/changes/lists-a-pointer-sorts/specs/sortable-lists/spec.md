@@ -5,7 +5,7 @@
 A `SortableItem` inside a `Sortable` SHALL be picked up by a mouse that presses it and travels more than 5 px,
 and by a finger held still on it for 250 ms. While it is carried, a copy of it SHALL follow the pointer and the
 item SHALL be dimmed in place. On release over its own container, the container's `OnDropped` SHALL receive a
-`SortDrop` whose `Item` is the item's key, whose `From` and `To` are the container's id, and whose `Index` is
+`SortDrop` whose `Item` is the item's id, whose `From` and `To` are the container's id, and whose `Index` is
 the position it lands at in the list without it: before the first other item whose middle along the
 container's axis the pointer has not passed. A press that does not travel SHALL press the item and start no
 drag, and the click that ends a drag SHALL NOT reach the item's press handler.
@@ -44,7 +44,7 @@ release there SHALL drop nothing.
 ### Requirement: A nesting container takes an item into another
 
 In a `Sortable` that `Nests`, a pointer over the middle half of an item's box along the axis SHALL place the
-carried item INTO that item: the `SortDrop`'s `Into` SHALL be that item's key and its `Index` that item's
+carried item INTO that item: the `SortDrop`'s `Into` SHALL be that item's id and its `Index` that item's
 position. An item SHALL NOT be placed into itself.
 
 #### Scenario: A file dropped into a folder

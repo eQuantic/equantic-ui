@@ -756,6 +756,25 @@ public static class UI
             Current = current,
         };
 
+    /// <summary>A list whose items a pointer puts in order, and which takes the items of the lists of its
+    /// group; the drop is the app's to apply (#1535).</summary>
+    public static Sortable Sortable(VisualNode child, string id, Action<SortDrop> onDropped, string group = "",
+        DragAxis axis = DragAxis.Vertical, bool nests = false, Action<SortDrop?>? onHovered = null,
+        Func<SortDrop, bool>? accepts = null, bool enabled = true) =>
+        new Sortable(child, id, onDropped)
+        {
+            Group = group,
+            Axis = axis,
+            Nests = nests,
+            OnHovered = onHovered,
+            Accepts = accepts,
+            Enabled = enabled,
+        };
+
+    /// <summary>One item of a <see cref="Primitives.Sortable"/>, named by its id.</summary>
+    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true) =>
+        new SortableItem(child, id) { Enabled = enabled };
+
     /// <summary>
     /// An area a person drops files onto: <paramref name="onDropped"/> hands over what landed, and
     /// <paramref name="onDragOverChanged"/> says when files are carried over it, so the caller can

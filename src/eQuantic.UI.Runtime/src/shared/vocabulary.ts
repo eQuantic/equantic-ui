@@ -42,6 +42,7 @@ import {
   StyleChannels,
   TableOffset,
   TableScrollRequest,
+  SortDrop,
   WebContent,
 } from './value-types';
 import { Curve, Motion } from './design-system.generated';
@@ -1037,6 +1038,44 @@ export class DropTarget extends VisualNode {
     super();
     this.child = child;
     this.onDropped = onDropped;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `Sortable` (#1535): a list whose items a pointer puts in order, taking the items of
+ * the lists of its group. */
+export class Sortable extends VisualNode {
+  readonly nodeKind = 'sortable';
+  child: VisualChild;
+  id: string;
+  onDropped: (drop: SortDrop) => void;
+  group = '';
+  axis = 'vertical';
+  nests = false;
+  onHovered: ((drop: SortDrop | null) => void) | null = null;
+  accepts: ((drop: SortDrop) => boolean) | null = null;
+  enabled = true;
+
+  constructor(child: VisualChild, id: string, onDropped: (drop: SortDrop) => void, config?: EqConfig) {
+    super();
+    this.child = child;
+    this.id = id;
+    this.onDropped = onDropped;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `SortableItem` (#1535): one item a pointer picks up, named by its id. */
+export class SortableItem extends VisualNode {
+  readonly nodeKind = 'sortableItem';
+  child: VisualChild;
+  id: string;
+  enabled = true;
+
+  constructor(child: VisualChild, id: string, config?: EqConfig) {
+    super();
+    this.child = child;
+    this.id = id;
     if (config) Object.assign(this, config);
   }
 }

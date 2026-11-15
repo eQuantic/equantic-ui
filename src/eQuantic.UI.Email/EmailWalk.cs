@@ -61,6 +61,13 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
     /// heading a reader sees is the child's own.</summary>
     public Nothing Visit(Group node, Nothing state) => node.Child.Accept(this, state);
 
+    /// <summary>A list a pointer sorts is, in a message, the list as it stands (#1535): nothing in an email is
+    /// dragged, and nothing in the list needs it to be read.</summary>
+    public Nothing Visit(Sortable node, Nothing state) => node.Child.Accept(this, state);
+
+    /// <inheritdoc cref="Visit(Sortable, Nothing)"/>
+    public Nothing Visit(SortableItem node, Nothing state) => node.Child.Accept(this, state);
+
     /// <summary>
     /// The one refusal, loud and naming the node — the repo's rule: never a silent divergence. The
     /// alternative is a message that goes out without a piece of itself and says nothing about it.

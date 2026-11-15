@@ -272,6 +272,11 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     // (NSDraggingDestination, IDropTarget), which no shell answers yet, so the area is its child and
     // takes nothing. #1216 closes it; the browser realizes the node already (#1213).
     public Nothing Visit(DropTarget node, EmitState s) { Descend(s); return Nothing.Value; }
+
+    // A FENCE, said so: the host takes no drag of a sortable item yet, so a list is drawn as it stands and
+    // its items stay where they are (#1537). The web realizes the nodes already (#1535).
+    public Nothing Visit(Sortable node, EmitState s) { Descend(s); return Nothing.Value; }
+    public Nothing Visit(SortableItem node, EmitState s) { Descend(s); return Nothing.Value; }
     public Nothing Visit(Shortcut node, EmitState s) { EmitShortcut(node, s); Descend(s); return Nothing.Value; }
 
     // ---- nodes that descend themselves, because HOW they descend is the point -----------------

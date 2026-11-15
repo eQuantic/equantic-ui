@@ -206,6 +206,14 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // A drop area is layout-transparent too: the child owns every visual.
+    // A sortable list and its items mark their child and add no box (#1535): the web lowers no element
+    // of their own, so Photon lays them out as their children.
+    public LayoutNode Visit(Sortable node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
+    public LayoutNode Visit(SortableItem node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
     public LayoutNode Visit(DropTarget node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
