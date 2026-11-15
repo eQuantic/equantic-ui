@@ -99,6 +99,8 @@ Components.TimePicker: no Variant  a field: its colours follow its state (primar
 Components.Toast: no SizeVariant  a notice spans what holds it: it has no control size
 Components.Tooltip: no SizeVariant  a label that hugs its text
 Components.Tooltip: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
+Components.TreeView: no SizeVariant  its rows stand at the control ladder's small rung, the one height of a tree's row
+Components.TreeView: no Variant  a surface of rows: the selected one takes the primary's subtle fill, and no variant chooses its colours
 Spreadsheets.FormulaBar: no SizeVariant  the grid's rows and columns are the document's, and its chrome the Sheet slot's
 Spreadsheets.FormulaBar: no Variant  the spreadsheet's chrome is coloured by its Sheet slot, not by a variant
 Spreadsheets.NameBox: no SizeVariant  the grid's rows and columns are the document's, and its chrome the Sheet slot's

@@ -805,6 +805,21 @@ export class TableRange {
   }
 }
 
+/** Mirror of the C# `TreePlace`: where one item of a tree stands, its level and its position among its
+ * siblings of how many, all from one. Built bare it is the struct's default, three zeros
+ * (`[ZeroConstructs]`). */
+export class TreePlace {
+  readonly level: number;
+  readonly positionInSet: number;
+  readonly sizeOfSet: number;
+
+  constructor(level = 0, positionInSet = 0, sizeOfSet = 0) {
+    this.level = level;
+    this.positionInSet = positionInSet;
+    this.sizeOfSet = sizeOfSet;
+  }
+}
+
 /** Mirror of the C# `TableScrollRequest`: an offset to go to or a range to reveal, honoured once per
  * version. */
 export class TableScrollRequest {
@@ -852,6 +867,7 @@ hashesByValue(
   TableRange,
   TableScrollRequest,
   TextReading,
+  TreePlace,
   ScrollRequest,
   SizeValue,
   WebContent,

@@ -208,6 +208,7 @@ export {
   TableScrollRequest,
   TextReading,
   Transform2D,
+  TreePlace,
   TypeStyle,
   VariantColors,
   WebContent,
