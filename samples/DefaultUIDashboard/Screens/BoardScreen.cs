@@ -53,10 +53,18 @@ public sealed class BoardScreen : StatefulComponent
         var theme = context.Theme;
         var cards = _cards.Where(card => card.Column == column).ToList();
         var list = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        // Where the card would land, drawn by the board from the column's report. The report counts the
+        // column without the carried card, which this column still draws, so a place at or after it is one
+        // further down here.
+        var line = -1;
+        if (_landing is { } landing && landing.To == column)
+        {
+            var carried = cards.FindIndex(card => card.Id == landing.Item);
+            line = carried >= 0 && carried <= landing.Index ? landing.Index + 1 : landing.Index;
+        }
         for (var i = 0; i <= cards.Count; i++)
         {
-            // Where the card would land, drawn by the board from the column's report.
-            if (_landing is { } landing && landing.To == column && landing.Index == i)
+            if (i == line)
                 list.Add(Box(new BoxStyle { Width = SizeValue.Fill, Height = 3, Background = theme.FocusRing }));
             if (i < cards.Count) list.Add(SortableItem(Card(context, cards[i]), cards[i].Id));
         }

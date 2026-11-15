@@ -70,11 +70,17 @@ function onPointerDown(down: PointerEvent): void {
     list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: drop }));
   };
 
+  // The guard is asked once per place, not once per move: a tree's walks its subtree.
+  let asked: { list: HTMLElement; drop: SortDrop; accepted: boolean } | null = null;
+  const scrollers = new Map<HTMLElement, HTMLElement | null>();
+
   /** Where the item would land under the pointer, offered to the list's guard, and reported when it moves. */
   const place = (): void => {
-    const list = listUnder(pointer.x, pointer.y, group);
+    const list = listUnder(pointer.x, pointer.y, group, source, item);
     const drop = list ? dropIn(list, id, from, pointer.x, pointer.y, item) : null;
-    const accepted = list !== null && drop !== null && accepts(list, drop);
+    if (list && drop && !(asked && asked.list === list && same(asked.drop, drop)))
+      asked = { list, drop, accepted: accepts(list, drop) };
+    const accepted = list !== null && drop !== null && asked !== null && asked.accepted;
     const next = accepted ? { list: list!, drop: drop! } : null;
     if (landing && (!next || next.list !== landing.list)) report(landing.list, null);
     if (next && (!landing || landing.list !== next.list || !same(landing.drop, next.drop))) report(next.list, next.drop);
@@ -84,7 +90,9 @@ function onPointerDown(down: PointerEvent): void {
   // The scroller under the pointer scrolls near its edge, and the place follows what it brings in.
   const scroll = (): void => {
     frame = requestAnimationFrame(scroll);
-    const scroller = landing ? scrollerOf(landing.list) : scrollerOf(source);
+    const over = landing ? landing.list : source;
+    if (!scrollers.has(over)) scrollers.set(over, scrollerOf(over));
+    const scroller = scrollers.get(over) ?? null;
     if (!scroller) return;
     const box = scroller.getBoundingClientRect();
     const near = (at: number, start: number, end: number): number =>
@@ -100,7 +108,9 @@ function onPointerDown(down: PointerEvent): void {
 
   const escape = (ev: KeyboardEvent): void => {
     if (ev.key !== 'Escape') return;
+    // The drag's alone: a dialog's or a find bar's Escape around the list must not answer it too.
     ev.preventDefault();
+    ev.stopImmediatePropagation();
     gesture.cancel();
   };
 
@@ -155,7 +165,12 @@ function lift(item: HTMLElement): HTMLElement {
     element.removeAttribute('data-eq-sort-item');
   }
   copy.setAttribute('aria-hidden', 'true');
+  // Laid over the page outside the app's root, so what the item inherits from its ancestors comes with it.
+  const inherited = getComputedStyle(item);
   Object.assign(copy.style, {
+    font: inherited.font,
+    color: inherited.color,
+    direction: inherited.direction,
     position: 'fixed',
     left: `${box.left}px`,
     top: `${box.top}px`,
@@ -174,12 +189,16 @@ function lift(item: HTMLElement): HTMLElement {
   return copy;
 }
 
-/** The list of the group under a point, if one takes items. */
-function listUnder(x: number, y: number, group: string): HTMLElement | null {
+/**
+ * The list under a point that takes the item: one of its group, or, with no group, its own list alone, as
+ * `Sortable.Group` promises; never a list inside the carried item, which would put it inside itself.
+ */
+function listUnder(x: number, y: number, group: string, source: HTMLElement, carried: HTMLElement): HTMLElement | null {
   if (typeof document.elementsFromPoint !== 'function') return null;
   for (const element of document.elementsFromPoint(x, y)) {
     const list = element.closest('[data-eq-sort]') as HTMLElement | null;
-    if (list && list.getAttribute('data-eq-sort') === group && !list.hasAttribute('data-eq-sort-off')) return list;
+    if (!list || list.hasAttribute('data-eq-sort-off') || carried.contains(list)) continue;
+    if (group === '' ? list === source : list.getAttribute('data-eq-sort') === group) return list;
   }
   return null;
 }

@@ -21,7 +21,11 @@ let pressed: string[] = [];
 
 /** Two columns of one group, 200 wide, cards 40 tall from y 0; and a third list of another group. */
 class Board extends StatefulComponent {
-  constructor(private readonly nests = false, private readonly refuse: string | null = null) {
+  constructor(
+    private readonly nests = false,
+    private readonly refuse: string | null = null,
+    private readonly group = 'board',
+  ) {
     super();
   }
 
@@ -34,7 +38,7 @@ class Board extends StatefulComponent {
         list.add(item as never);
       }
       return new Sortable(list as never, id, (drop: SortDrop) => dropped.push(drop), {
-        group: 'board',
+        group: this.group,
         nests: this.nests,
         onHovered: (drop: SortDrop | null) => hovered.push(drop),
         accepts: this.refuse ? (drop: SortDrop) => !drop.item.startsWith(this.refuse!) : null,
@@ -162,8 +166,21 @@ describe('lists a pointer sorts', () => {
     expect(dropped[0].index).toBe(1);
   });
 
-  it('puts the item back on Escape', () => {
+  it('takes only its own items when it has no group', () => {
+    const container = mount(new Board(false, null, ''));
+    drag(container, 'b', [[220, 60], [250, 30]]);
+    expect(dropped).toHaveLength(0);
+    drag(container, 'b', [[20, 70], [20, 130]]);
+    expect([dropped[0].from, dropped[0].to]).toEqual(['todo', 'todo']);
+  });
+
+  it("puts the item back on Escape, and the Escape is the drag's alone", () => {
     const container = mount(new Board());
+    let page = 0;
+    const listener = (): void => {
+      page++;
+    };
+    document.addEventListener('keydown', listener);
     drag(container, 'a', [[20, 30], [250, 20]], false);
     expect(last(hovered)?.to).toBe('done');
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
@@ -171,6 +188,8 @@ describe('lists a pointer sorts', () => {
     expect(dropped).toHaveLength(0);
     expect(last(hovered)).toBeNull();
     expect(item(container, 'a').style.opacity).toBe('');
+    document.removeEventListener('keydown', listener);
+    expect(page).toBe(0);
   });
 
   it('leaves a press that does not travel to the item, and swallows the click a drag ends in', () => {

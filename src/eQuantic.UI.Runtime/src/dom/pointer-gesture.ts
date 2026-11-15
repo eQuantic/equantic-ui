@@ -79,9 +79,6 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
     armed = true;
     if (hold !== null) clearTimeout(hold);
     hold = null;
-    // A finger's drag must not scroll the page under it, and only a touch listener that is not passive
-    // can say so: pointermove's preventDefault does not stop a touch scroll.
-    host.addEventListener('touchmove', preventTouch, { passive: false });
     gesture.armed?.(ev);
   };
 
@@ -92,7 +89,19 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
     host.removeEventListener('pointermove', move);
     host.removeEventListener('pointerup', up);
     host.removeEventListener('pointercancel', cancelled);
-    host.removeEventListener('touchmove', preventTouch);
+    host.removeEventListener('touchmove', holdTouch);
+    host.removeEventListener('contextmenu', holdMenu);
+  };
+
+  // A finger's drag must not scroll the page under it, and only a touch listener that is not passive can
+  // say so (pointermove's preventDefault does not stop a touch scroll). It is there from the press, because
+  // a browser may decide at the touch's start whether its moves can be cancelled; it cancels only once
+  // the gesture is armed. A long press's menu or selection would land on an armed drag too.
+  const holdTouch = (ev: Event): void => {
+    if (armed) ev.preventDefault();
+  };
+  const holdMenu = (ev: Event): void => {
+    if (armed) ev.preventDefault();
   };
 
   const move = (ev: Event): void => {
@@ -132,6 +141,8 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
   host.addEventListener('pointermove', move, { passive: false });
   host.addEventListener('pointerup', up);
   host.addEventListener('pointercancel', cancelled);
+  host.addEventListener('touchmove', holdTouch, { passive: false });
+  host.addEventListener('contextmenu', holdMenu);
 
   return {
     cancel(): void {
@@ -139,10 +150,6 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
       cancelled();
     },
   };
-}
-
-function preventTouch(ev: Event): void {
-  ev.preventDefault();
 }
 
 function squashClick(e: Event): void {
