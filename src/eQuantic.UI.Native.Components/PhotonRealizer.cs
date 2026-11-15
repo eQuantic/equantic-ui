@@ -197,6 +197,10 @@ public sealed class RealizeResult
     /// Empty in a frame that draws none.</summary>
     internal IReadOnlyList<CodeNoteLayer> NoteLayers { get; init; } = Array.Empty<CodeNoteLayer>();
 
+    /// <summary>The sortable lists and their items, in tree order, a list before what it holds (#1537). Empty
+    /// in a frame with nothing to sort.</summary>
+    internal IReadOnlyList<SortRegion> SortRegions { get; init; } = Array.Empty<SortRegion>();
+
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
 
@@ -464,6 +468,7 @@ public static class PhotonRealizer
             LiveRegions = regions.LivesOrEmpty,
             TransformedRegions = regions.TransformedOrEmpty,
             NoteLayers = regions.NotesOrEmpty,
+            SortRegions = regions.SortsOrEmpty,
         };
     }
 

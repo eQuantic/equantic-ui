@@ -42,6 +42,8 @@ public class WrapperLayoutTransparencyTests
         { "Pressable", new Pressable(CappedCard(), () => { }) },
         { "Hoverable", new Hoverable(CappedCard(), _ => { }) },
         { "DropTarget", new DropTarget(CappedCard(), _ => { }) },
+        { "Sortable", new Sortable(CappedCard(), "list", _ => { }) },
+        { "SortableItem", new SortableItem(CappedCard(), "item") },
         { "Link", new Link("/somewhere", CappedCard()) },
         { "Adjustable", new Adjustable(CappedCard(), _ => { }) },
         { "Progress", new Progress(CappedCard()) },

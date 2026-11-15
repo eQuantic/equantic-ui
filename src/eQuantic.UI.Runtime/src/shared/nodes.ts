@@ -468,6 +468,38 @@ export interface DropTargetNode extends VisualNodeValue {
   enabled?: boolean;
 }
 
+/** The value a C# `SortDrop` crosses as (value-types.ts `SortDrop`). */
+export interface SortDropValue {
+  readonly item: string;
+  readonly from: string;
+  readonly to: string;
+  readonly index: number;
+  readonly into: string | null;
+}
+
+/** Wire shape of the C# `Sortable` (#1535) — a list whose items a pointer puts in order. */
+export interface SortableNode extends VisualNodeValue {
+  nodeKind: 'sortable';
+  child: VisualNodeValue;
+  id: string;
+  onDropped: (drop: SortDropValue) => void;
+  group?: string;
+  axis?: string;
+  nests?: boolean;
+  label?: string;
+  onHovered?: ((drop: SortDropValue | null) => void) | null;
+  accepts?: ((drop: SortDropValue) => boolean) | null;
+  enabled?: boolean;
+}
+
+/** Wire shape of the C# `SortableItem` (#1535) — one item a pointer picks up. */
+export interface SortableItemNode extends VisualNodeValue {
+  nodeKind: 'sortableItem';
+  child: VisualNodeValue;
+  id: string;
+  enabled?: boolean;
+}
+
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
 export interface HoverableNode extends VisualNodeValue {
   nodeKind: 'hoverable';
