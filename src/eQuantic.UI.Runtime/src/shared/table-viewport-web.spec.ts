@@ -47,6 +47,9 @@ function build(options: {
   height?: number;
   request?: TableScrollRequest;
   parent?: HTMLElement;
+  /** Where the viewport's box stands in the window, as the browser would measure it. */
+  top?: number;
+  left?: number;
 } = {}): Built {
   const scroll = new TableScroll();
   const scrolled: { across: number; down: number }[] = [];
@@ -64,6 +67,9 @@ function build(options: {
   const view = toDom(lowered) as HTMLElement;
   Object.defineProperty(view, 'clientWidth', { value: options.width ?? 900, configurable: true });
   Object.defineProperty(view, 'clientHeight', { value: options.height ?? 600, configurable: true });
+  const top = options.top ?? 0;
+  const left = options.left ?? 0;
+  view.getBoundingClientRect = () => ({ top, left, right: left, bottom: top, width: 0, height: 0, x: left, y: top }) as DOMRect;
   (options.parent ?? document.body).appendChild(view);
   commitTableViewports();
   return { scroll, view, lowered, scrolled, viewports };
@@ -201,6 +207,67 @@ describe('TableViewport on the web', () => {
     expect(pressed).not.toHaveBeenCalled();
   });
 
+  // #1007: what a finger's pan cannot follow passes to the page around the table.
+  const pageAround = (scrollTop: number) => {
+    const page = document.createElement('div');
+    page.style.overflowY = 'auto';
+    let top = scrollTop;
+    Object.defineProperty(page, 'scrollTop', { get: () => top, set: (value: number) => (top = value), configurable: true });
+    document.body.appendChild(page);
+    return page;
+  };
+  const toItsEnd = (view: HTMLElement, scroll: { offset: { down: number } }, less = 0) => {
+    wheel(view, { deltaY: 100_000, deltaMode: 0 });
+    const end = scroll.offset.down;
+    if (less) wheel(view, { deltaY: -less, deltaMode: 0 });
+    return end;
+  };
+
+  it("passes a finger's pan to the page around it when the table is at its last row", () => {
+    const page = pageAround(500);
+    const { scroll, view } = build({ rows: 20, height: 300, parent: page });
+    const end = toItsEnd(view, scroll);
+
+    pointer(view, 'pointerdown', 300, 200);
+    pointer(view, 'pointermove', 300, 150);
+    pointer(view, 'pointermove', 300, 100);
+    pointer(view, 'pointerup', 300, 100);
+
+    expect(scroll.offset.down).toBe(end);
+    expect(page.scrollTop).toBe(600);
+    // The lift's click is the pan's, and swallowed, as in any pan.
+    view.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+
+  it("gives a finger's pan to the table while it can follow, and the rest to the page", () => {
+    const page = pageAround(500);
+    const { scroll, view } = build({ rows: 20, height: 300, parent: page });
+    const end = toItsEnd(view, scroll, 56);
+    expect(scroll.offset.down).toBe(end - 56);
+
+    pointer(view, 'pointerdown', 300, 200);
+    pointer(view, 'pointermove', 300, 150);
+    pointer(view, 'pointermove', 300, 100);
+    pointer(view, 'pointerup', 300, 100);
+
+    expect(scroll.offset.down).toBe(end);
+    expect(page.scrollTop).toBe(544);
+    view.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+
+  it('leaves a drag surface inside a cell its gesture', () => {
+    const { scroll, view } = build();
+    const grip = document.createElement('div');
+    grip.setAttribute('data-eq-drag', '');
+    view.appendChild(grip);
+
+    grip.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 400, clientY: 400, pointerId: 7, pointerType: 'touch' }));
+    pointer(view, 'pointermove', 400, 340);
+    pointer(view, 'pointerup', 400, 340);
+
+    expect(scroll.offset.down).toBe(0);
+  });
+
   it('leaves a tap to the cell under it', () => {
     const { scroll, view } = build();
     const pressed = vi.fn();
@@ -238,6 +305,46 @@ describe('TableViewport on the web', () => {
 
     expect(view.style.height).toBe('844px');
     expect(scroll.viewport.height).toBeGreaterThan(0);
+  });
+
+  // #1006: a table below the top of its page ends where the page's visible part ends.
+  const scrollingPage = (scrollTop = 0) => {
+    const page = document.createElement('div');
+    page.style.overflowY = 'auto';
+    Object.defineProperty(page, 'clientHeight', { value: 844, configurable: true });
+    Object.defineProperty(page, 'scrollTop', { value: scrollTop, configurable: true });
+    document.body.appendChild(page);
+    return page;
+  };
+
+  it('takes what is left of the scroller from where it starts, when its own height came out empty', () => {
+    const { view } = build({ height: 0, parent: scrollingPage(), top: 36 });
+
+    expect(view.style.height).toBe('808px');
+  });
+
+  it('takes what is left from where it starts in the content, however far the scroller is scrolled', () => {
+    // Scrolled 100 down, the box that starts 36 into the page's content stands 64 above its top.
+    const { view } = build({ height: 0, parent: scrollingPage(100), top: -64 });
+
+    expect(view.style.height).toBe('808px');
+  });
+
+  it('takes what is left of a sideways scroller from where it starts, when its own width came out empty', () => {
+    const strip = document.createElement('div');
+    strip.style.overflowX = 'auto';
+    Object.defineProperty(strip, 'clientWidth', { value: 700, configurable: true });
+    document.body.appendChild(strip);
+    const { view } = build({ width: 0, height: 300, parent: strip, left: 120 });
+
+    expect(view.style.width).toBe('580px');
+  });
+
+  it('takes the whole extent the scroller shows when what is left from where it starts is a sliver', () => {
+    // 244 left of 844, under half: a table far down a long page scrolls into view whole.
+    const { view } = build({ height: 0, parent: scrollingPage(), top: 600 });
+
+    expect(view.style.height).toBe('844px');
   });
 
   it("adopts the server's boxes at hydration, then scrolls them", async () => {

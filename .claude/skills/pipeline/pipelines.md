@@ -13,7 +13,7 @@ Feature, User Story or Task that adds behaviour.
 | # | Stage | Agent | Writes | Done when |
 |---|---|---|---|---|
 | 1 | Design and propose | `architect` | the OpenSpec change | the change validates strictly, and names the parts it reaches, the surface that moves and the order of the work |
-| 2 | Implement | `engineer`, once per area, in the design's order | source, tests, the surface declarations | the area's proof commands pass, and each task of `tasks.md` is checked |
+| 2 | Implement | `engineer`, once per area, in the design's order (one, when the design says the areas compile together) | source, tests, the surface declarations | the area's proof commands pass, and each task of `tasks.md` is checked |
 | 3 | Documentation | `docs-writer` | the duties of the diff | the docs guards pass |
 | 4 | Gate | the reviewers, then `prover` | reports only | no defect stands |
 
