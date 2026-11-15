@@ -38,8 +38,8 @@ Photon's semantics walk and `NativeRole`. Each group's check runs once the solut
 - [x] 5.1 The dashboard gains a files screen: a tree of a repository whose folders load through a server action
 - [x] 5.2 The wiki's components page, in every language it is written in, on the wiki branch named like the pull request's
 - [x] 5.3 A row in `docs/FLUTTER-PARITY.md` (`TreeSliver` against `TreeView`) and one ledger entry under `docs/ledger/` citing #1529 and #1530
-- [ ] 5.4 Check: the sample in a browser, walked by the keyboard and read by its tree; the docs guards pass against the wiki branch
+- [x] 5.4 Check: the sample in a browser, walked by the keyboard and read by its tree; the docs guards pass against the wiki branch
 
 ## 6. Archive
 
-- [ ] 6.1 `./scripts/check-openspec.sh` passes, then `openspec archive a-tree-a-keyboard-walks --yes` before the merge
+- [x] 6.1 `./scripts/check-openspec.sh` passes, then `openspec archive a-tree-a-keyboard-walks --yes` before the merge
