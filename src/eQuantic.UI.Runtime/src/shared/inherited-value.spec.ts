@@ -150,12 +150,12 @@ describe('the route in the browser', () => {
     column.add(new RouteReader() as never);
     column.add(new DensityReader() as never);
     column.add(new Bystander() as never);
-    owner.build(column as unknown as VisualNode, frame('first') as never, 'compact', true);
+    owner.build(column as unknown as VisualNode, frame('first') as never, 400, true);
     owner.endFrame();
     expect(builds).toEqual({ route: 1, density: 1, bystander: 1 });
 
     builds = {};
-    owner.build(column as unknown as VisualNode, frame('second') as never, 'compact', false);
+    owner.build(column as unknown as VisualNode, frame('second') as never, 400, false);
     owner.endFrame();
 
     expect(builds, 'the route has readers of its own').toEqual({ route: 1 });
@@ -170,11 +170,11 @@ describe('the route in the browser', () => {
     const column = new Column(0);
     column.add(new RouteReader() as never);
     column.add(new Bystander() as never);
-    owner.build(column as unknown as VisualNode, sameRoute() as never, 'compact', true);
+    owner.build(column as unknown as VisualNode, sameRoute() as never, 400, true);
     owner.endFrame();
 
     builds = {};
-    owner.build(column as unknown as VisualNode, sameRoute() as never, 'compact', false);
+    owner.build(column as unknown as VisualNode, sameRoute() as never, 400, false);
     owner.endFrame();
 
     expect(builds, 'the frame is new and its route is not').toEqual({});
@@ -223,7 +223,7 @@ describe('a theme over a subtree in the browser', () => {
     column.add(new Theme(other, new ThemeReader('inside', other) as never) as never);
     column.add(new ThemeReader('beside', other) as never);
 
-    owner.build(column as unknown as VisualNode, new ComponentContext(photonTheme) as never, 'compact', true);
+    owner.build(column as unknown as VisualNode, new ComponentContext(photonTheme) as never, 400, true);
     owner.endFrame();
 
     expect(builds).toEqual({ 'inside other': 1, 'beside frame': 1 });
