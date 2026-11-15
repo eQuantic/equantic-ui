@@ -311,6 +311,23 @@ public readonly record struct NativeRole(
         SemanticRole.RowHeader =>
             new("AXCell", "android.view.View", UIKitTrait.Header,
                 Activatable: true, Adjustable: false),
+
+        // A TREE and its items (#1529), in Core-AAM's words for the ARIA roles the web half writes:
+        // AXOutline for the tree, and for an item AXRow with the AXOutlineRow subrole, NSOutlineView's
+        // own pair, whose level the bridge sets as AXDisclosureLevel from SemanticNode.TreePlace and
+        // whose state rides AXExpanded. Android has no tree class, and Chrome gives none either: the
+        // tree is the plain ViewGroup a reader walks into, and an item the plain View Core-AAM gives,
+        // ACTIVATABLE because a press opens or chooses it, with its open state riding the expanded
+        // actions the bridge already sets. UIKit has no word for a tree (a container, which a flat
+        // bridge does not build), and Apple's own outlines report a row as a button whose pick is the
+        // Selected trait.
+        SemanticRole.Tree =>
+            new("AXOutline", "android.view.ViewGroup", UIKitTrait.None,
+                Activatable: false, Adjustable: false),
+
+        SemanticRole.TreeItem =>
+            new("AXRow", "android.view.View", UIKitTrait.Button,
+                Activatable: true, Adjustable: false, AppKitSubrole: "AXOutlineRow"),
     };
 #pragma warning restore CS8524
 }

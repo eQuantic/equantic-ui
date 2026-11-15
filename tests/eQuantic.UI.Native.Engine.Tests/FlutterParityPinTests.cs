@@ -234,6 +234,9 @@ public class FlutterParityPinTests
         ["RenderSliver"] = () => Has("ListView") && Nothing("Sliver", "SliverList"),
         // Two axes, one viewport: the pinned bands are its own, and the scroll it carries is written
         // once for both targets.
+        ["TreeSliver"] = () => HasMember("TreeView", "LoadChildren") && HasMember("TreeView", "OnToggled")
+            && HasMember("TreeNode", "Children") && HasMember("Pressable", "TreePlace")
+            && HasMember("Navigable", "OnTextSearch"),
         ["TableViewport"] = () => HasMember("TableViewport", "PinnedRows") && HasMember("TableViewport", "PinnedColumns")
             && Has("ITableScrollModel") && Has("TableScroll") && Nothing("Sliver", "TwoDimensionalScrollView"),
         // The shapes, ONE of three named: SingleChildNode holds the twenty-two wrappers whose child

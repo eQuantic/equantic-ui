@@ -296,4 +296,10 @@
   <data name="UploadAnnounceFailed" xml:space="preserve">
     <value>{0} no se subió: {1}</value>
   </data>
+  <data name="TreeLoading" xml:space="preserve">
+    <value>Cargando…</value>
+  </data>
+  <data name="TreeLoadFailed" xml:space="preserve">
+    <value>No se pudo cargar. Inténtalo de nuevo</value>
+  </data>
 </root>

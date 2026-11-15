@@ -67,4 +67,18 @@ public enum PressableRole : byte
     /// </para>
     /// </summary>
     GridCell = 8,
+
+    /// <summary>
+    /// One item of a tree, inside a <see cref="Navigable"/> whose role is
+    /// <see cref="NavigableRole.Tree"/>: PICKED like a grid cell (<see cref="Pressable.Selected"/>),
+    /// open or closed through <see cref="Pressable.Expanded"/> when it has children, and placed by
+    /// <see cref="Pressable.TreePlace"/>, because the tree's rows are a flat list of the visible items
+    /// and a reader cannot infer from it how deep an item stands. Out of the Tab order: the tree is the
+    /// one stop.
+    /// <para>
+    /// Not a button on the web: ARIA in HTML refuses <c>role="treeitem"</c> on one, so the item is a
+    /// <c>div</c> carrying the press, and its keyboard is the tree's. Appended (#1529).
+    /// </para>
+    /// </summary>
+    TreeItem = 9,
 }

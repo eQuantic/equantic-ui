@@ -34,6 +34,7 @@ public class PressableRoleSemanticsTests
         [PressableRole.Option] = SemanticRole.Option,
         [PressableRole.Destination] = SemanticRole.Destination,
         [PressableRole.GridCell] = SemanticRole.GridCell,
+        [PressableRole.TreeItem] = SemanticRole.TreeItem,
     };
 
     /// <summary>One pressable standing alone, named so it can be found, in the state asked for.</summary>

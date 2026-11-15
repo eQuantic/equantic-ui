@@ -254,6 +254,39 @@ public class AppKitAccessibilityTests
         }
     }
 
+    /// <summary>A tree's item, read back as AppKit holds it (#1529): an outline row, whose disclosure level
+    /// counts from zero where TreePlace counts from one, open and picked as the tree said.</summary>
+    [MacFact]
+    public void ATreeItemReachesAppKitAsAnOutlineRowWithItsLevel()
+    {
+        IReadOnlyList<SemanticNode> tree =
+        [
+            new(SemanticRole.Tree, 1, new Rect(0, 0, 240, 64), "Files", null, false),
+            new(SemanticRole.TreeItem, 2, new Rect(0, 0, 240, 32), "src", null, false, Expanded: true, Selected: false,
+                TreePlace: new TreePlace(1, 1, 1)),
+            new(SemanticRole.TreeItem, 3, new Rect(0, 32, 240, 32), "App.cs", null, false, Selected: true,
+                TreePlace: new TreePlace(2, 1, 1)),
+        ];
+        var previous = PhotonAccessibility.Source;
+        PhotonAccessibility.Source = () => tree;
+        try
+        {
+            var view = Send(Send(AppKit.Class("NSView"), Sel("alloc")), Sel("init"));
+            var children = PhotonAccessibility.BuildChildren(view);
+            var outline = Send(children, Sel("objectAtIndex:"), (nuint)0);
+            FromNSString(Send(outline, Sel("accessibilityRole"))).Should().Be("AXOutline");
+            var file = Send(children, Sel("objectAtIndex:"), (nuint)2);
+            FromNSString(Send(file, Sel("accessibilityRole"))).Should().Be("AXRow");
+            FromNSString(Send(file, Sel("accessibilitySubrole"))).Should().Be("AXOutlineRow");
+            SendLong(file, Sel("accessibilityDisclosureLevel")).Should().Be(1, "level 2 is AppKit's level 1");
+            SendLong(Send(children, Sel("objectAtIndex:"), (nuint)1), Sel("accessibilityDisclosureLevel")).Should().Be(0);
+        }
+        finally
+        {
+            PhotonAccessibility.Source = previous;
+        }
+    }
+
     [MacFact]
     public void AModalLayerReachesAppKitAsADialog()
     {
