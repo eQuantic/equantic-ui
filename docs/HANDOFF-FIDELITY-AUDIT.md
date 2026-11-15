@@ -109,14 +109,14 @@ the pill's 40 down.
   MeasureVisitor.Containers.cs:18  var host = ctx.SafeAreaInsets;
   LayoutEngine.cs:125  public EdgeInsets SafeAreaInsets { get; init; }
   WebLoweringVisitor.Containers.cs:517  var env = $"env(safe-area-inset-{name}, 0px)";
-  lowering.ts:5247  const env = `env(safe-area-inset-${name}, 0px)`;
+  lowering.ts:5260  const env = `env(safe-area-inset-${name}, 0px)`;
   ```
 
 ### A5 SafeArea · behaviour · **unverified**
 
 - **Component**: `src/eQuantic.UI.Native.Shell.iOS/PhotonViewController.cs`
 - **Handoff**: Insets update per-frame from the shell: rotation, in-call status bar, foldable posture.
-- **Code**: An inset-only change stores the new value but schedules no frame, so the tree keeps the old padding until something else dirties it. ViewDidLayoutSubviews writes _host.SafeAreaInsets and then returns early when the bounds are unchanged (which is exactly the in-call-banner case: safe area grows, bounds do not), and PhotonHost.SafeAreaInsets is a plain auto-property that never sets NeedsRender (PhotonHost.cs:200). The iOS clock only draws when NeedsRender/IsFrameDue (PhotonViewController.cs:244). Android has the same gate — ApplyInsets runs per frame but only AFTER the NeedsRender early-return (PhotonActivity.cs:263-266), under a comment that says insets can change without a resize.
+- **Code**: An inset-only change stores the new value but schedules no frame, so the tree keeps the old padding until something else dirties it. ViewDidLayoutSubviews writes _host.SafeAreaInsets and then returns early when the bounds are unchanged (which is exactly the in-call-banner case: safe area grows, bounds do not), and PhotonHost.SafeAreaInsets is a plain auto-property that never sets NeedsRender (PhotonHost.cs:200). The iOS clock only draws when NeedsRender/IsFrameDue (PhotonViewController.cs:265). Android has the same gate — ApplyInsets runs per frame but only AFTER the NeedsRender early-return (PhotonActivity.cs:263-266), under a comment that says insets can change without a resize.
 - **Evidence**:
 
   ```
@@ -125,7 +125,7 @@ the pill's 40 down.
               (float)insets.Left, (float)insets.Top, (float)insets.Right, (float)insets.Bottom);
   
           if (bounds.Width == _lastWidth && bounds.Height == _lastHeight) return;
-  PhotonHost.cs:245  public EdgeInsets SafeAreaInsets { get; set; }
+  PhotonHost.cs:247  public EdgeInsets SafeAreaInsets { get; set; }
   ```
 
 ### A5 SafeArea · missing-feature · **unverified**
@@ -147,7 +147,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2856-2869  _pan = null;
+  PhotonHost.cs:2856-2868  _pan = null;
           if (_drag is null)
           {
               var scrollRegions = _lastFrame.ScrollRegions;
@@ -231,7 +231,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:82  var inert = Disabled || Loading;  → Button.cs:143 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:584  Disabled = pressable.Disabled && !wrapping && !treeItem ? true : null,  /  lowering.ts:4415  if (disabled && !wrapping && !treeItem) node.attributes['disabled'] = '';
+  Button.cs:82  var inert = Disabled || Loading;  → Button.cs:143 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:584  Disabled = pressable.Disabled && !wrapping && !treeItem ? true : null,  /  lowering.ts:4428  if (disabled && !wrapping && !treeItem) node.attributes['disabled'] = '';
   ```
 
 ### A13 IconButton · semantics · **CONFIRMED**
@@ -280,7 +280,7 @@ the pill's 40 down.
   ```
   ListItem.cs:121  if (Trailing is { } trailing) row.Add(trailing);
   ListItem.cs:145-147  return OnPressed is null ? body : new Pressable(body, Disabled ? null : OnPressed)
-  reconciler.ts:456-460  if (eventName === 'click') { if ((handler as unknown as Record<symbol, boolean>)[WANTS_THE_EVENT]) handler(e); else (handler as () => void)(); return; }
+  reconciler.ts:473-477  if (eventName === 'click') { if ((handler as unknown as Record<symbol, boolean>)[WANTS_THE_EVENT]) handler(e); else (handler as () => void)(); return; }
   ```
 
 ### B2 List · ListItem · behaviour · **CONFIRMED**
@@ -424,7 +424,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Helper/error below: 12/500, 5dp gap — the line is always reserved so error swaps never shift layout.
-- **Code**: The caption line is a plain Text whose content is "" when there is neither helper nor error (TextInput.cs:91, :136). On the web target that lowers to an EMPTY span (src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:363 LowerText `InnerHtml = text.Spans is null ? text.Content : null`) which, with maxLines:1 forcing `display:block` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:2777), generates no line box and measures 0dp tall — so a field authored without a helper grows by the Caption line height (16dp) the first time an error is set. The native target does reserve it: the measurer floors at one line (src/eQuantic.UI.Native.Framework/Text/ITextMeasurer.cs:92 `if (lines.Count == 0) lines.Add(new MeasuredLine(0, false));`), so the two targets also disagree with each other on the same tree.
+- **Code**: The caption line is a plain Text whose content is "" when there is neither helper nor error (TextInput.cs:91, :136). On the web target that lowers to an EMPTY span (src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:363 LowerText `InnerHtml = text.Spans is null ? text.Content : null`) which, with maxLines:1 forcing `display:block` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:2790), generates no line box and measures 0dp tall — so a field authored without a helper grows by the Caption line height (16dp) the first time an error is set. The native target does reserve it: the measurer floors at one line (src/eQuantic.UI.Native.Framework/Text/ITextMeasurer.cs:92 `if (lines.Count == 0) lines.Add(new MeasuredLine(0, false));`), so the two targets also disagree with each other on the same tree.
 - **Evidence**:
 
   ```
@@ -436,7 +436,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SearchField.cs`
 - **Handoff**: clear button appears when non-empty (glyph 20 in Full circle, hit 48)
-- **Code**: The clear button is a bare Pressable around a 20dp Icon — no Radius.Full container Box behind the glyph and no hit-target expansion, so the pressable measures 20x20. The web lowering emits a <button> with `padding: '0'` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:2979-2989) and lowerPressable applies no minimum, so the hit rect is the 20dp glyph, not Touch.MinTarget (48, src/eQuantic.UI.Primitives/Theme/Tokens.cs:184). Components that need the 48 do it explicitly (e.g. PageIndicator.cs:88, Slider.cs:110).
+- **Code**: The clear button is a bare Pressable around a 20dp Icon — no Radius.Full container Box behind the glyph and no hit-target expansion, so the pressable measures 20x20. The web lowering emits a <button> with `padding: '0'` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:2992-3002) and lowerPressable applies no minimum, so the hit rect is the 20dp glyph, not Touch.MinTarget (48, src/eQuantic.UI.Primitives/Theme/Tokens.cs:184). Components that need the 48 do it explicitly (e.g. PageIndicator.cs:88, Slider.cs:110).
 - **Evidence**:
 
   ```
@@ -716,7 +716,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:4853-4856  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
+  lowering.ts:4863-4866  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
   WebLoweringVisitor.Interaction.cs:134  var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
   WebLoweringVisitor.Interaction.cs:321-323  AdjustableRole.Tablist => "tablist", AdjustableRole.Radiogroup => "radiogroup", _ => value is null ? "group" : "slider",
   Slider.cs:163-172              : new Adjustable(box, direction =>
@@ -1115,7 +1115,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/NavigationRail.cs`
 - **Handoff**: "Pointer — Item hover = SurfaceSubtle pill (§10); cursor pointer."
-- **Code**: The destination carries only a PRESSED fill (line 105). BoxStyle.Hover (the StyleDiff that lowers to CSS :hover — src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) is never set on the pill, the cell or the Pressable, and the generated stylesheet gives .eq-pressable only :active and :focus-visible rules (ThemeStylesheet.cs:91-106). Result: on a desktop pointer the rail gives no hover feedback at all — the fill only appears while the mouse button is held. The other pointer-tier components do set it (Menu.cs:61, Pagination.cs:108, Accordion.cs:76, DataTable.cs:199 all use `Hover = new StyleDiff { Background = theme.SurfaceSubtle }`). The `cursor: pointer` half of the clause IS satisfied — lowerPressable emits it unconditionally (lowering.ts:2985).
+- **Code**: The destination carries only a PRESSED fill (line 105). BoxStyle.Hover (the StyleDiff that lowers to CSS :hover — src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) is never set on the pill, the cell or the Pressable, and the generated stylesheet gives .eq-pressable only :active and :focus-visible rules (ThemeStylesheet.cs:91-106). Result: on a desktop pointer the rail gives no hover feedback at all — the fill only appears while the mouse button is held. The other pointer-tier components do set it (Menu.cs:61, Pagination.cs:108, Accordion.cs:76, DataTable.cs:199 all use `Hover = new StyleDiff { Background = theme.SurfaceSubtle }`). The `cursor: pointer` half of the clause IS satisfied — lowerPressable emits it unconditionally (lowering.ts:2998).
 - **Evidence**:
 
   ```
@@ -1185,7 +1185,7 @@ the pill's 40 down.
 
   ```
   Tokens.cs:214  public const float PressCancelSlop = 12;
-  PhotonHost.cs:2222  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+  PhotonHost.cs:2234  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
   ```
 
 ### A6 ScrollView · missing-feature · **unverified**
@@ -1231,8 +1231,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2318  public bool ScrollBy(float x, float y, float delta)
-  PhotonHost.cs:1766-1769  case "Home" or "ArrowUp":
+  PhotonHost.cs:2330  public bool ScrollBy(float x, float y, float delta)
+  PhotonHost.cs:1775-1778  case "Home" or "ArrowUp":
                   MoveCaret(0, selecting);
                   return true;
               case "End" or "ArrowDown":
@@ -1307,7 +1307,7 @@ the pill's 40 down.
   src/eQuantic.UI.Web/WebLoweringVisitor.Graphics.cs:341-344 —
           svg.RawAttributes["role"] = "img";
           svg.RawAttributes["aria-label"] = label;
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2893  attributes['role'] = 'img';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2906  attributes['role'] = 'img';
   ```
 
 ### A11 Image · missing-feature · **REFUTED**
@@ -1609,7 +1609,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:4358-4360  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:4370-4372  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
   ```
 
 ### B5 Tabs · missing-feature · **unverified**
@@ -2315,7 +2315,7 @@ the pill's 40 down.
 
   ```
   lowering.ts:4876-4893  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3550  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3562  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -2341,7 +2341,7 @@ the pill's 40 down.
 
   ```
   lowering.ts:4876-4893  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3550  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3562  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2622,7 +2622,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/NavigationRail.cs`
 - **Handoff**: "A11y · usage: Navigation landmark \"primary\"; items announce label + 'current' when selected." and "Semantics: Navigation landmark + aria-current=\"page\"."
-- **Code**: The rail's root is a plain Box (NavigationRail.cs:148-160) that lowers to a bare <div>: no landmark role, no accessible name. Only the per-item half of the contract exists (Role = PressableRole.Destination at line 130 → aria-current="page" in lowering.ts:3037). There is no landmark vocabulary anywhere in the framework — grep for landmark/nav roles across src/eQuantic.UI.Primitives, src/eQuantic.UI.Web/WebRealizer.cs and Runtime lowering.ts returns nothing but a prose FENCE note in ListItem.cs:53. So a screen-reader user gets four buttons in the page body, with no "navigation" region to jump to.
+- **Code**: The rail's root is a plain Box (NavigationRail.cs:148-160) that lowers to a bare <div>: no landmark role, no accessible name. Only the per-item half of the contract exists (Role = PressableRole.Destination at line 130 → aria-current="page" in lowering.ts:3050). There is no landmark vocabulary anywhere in the framework — grep for landmark/nav roles across src/eQuantic.UI.Primitives, src/eQuantic.UI.Web/WebRealizer.cs and Runtime lowering.ts returns nothing but a prose FENCE note in ListItem.cs:53. So a screen-reader user gets four buttons in the page body, with no "navigation" region to jump to.
 - **Evidence**:
 
   ```
@@ -2892,8 +2892,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:384  _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
-  PhotonHost.cs:2239  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
+  PhotonHost.cs:386  _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
+  PhotonHost.cs:2251  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
                       NeedsRender = true;
   ```
 
@@ -3288,7 +3288,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  RadioGroup.cs:12-13 — `/// system; <c>aria-activedescendant</c> joins the shared id machinery.`; lowering.ts:3444 — `host.attributes['tabindex'] = '0';`
+  RadioGroup.cs:12-13 — `/// system; <c>aria-activedescendant</c> joins the shared id machinery.`; lowering.ts:3457 — `host.attributes['tabindex'] = '0';`
   ```
 
 ### B13 RadioGroup · missing-feature · **unverified**
@@ -3299,7 +3299,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:3456-3458 — `: event.key === 'ArrowDown' ? (downIsNext ? 1 : -1)` / `: 0;` / `if (direction === 0) return;`
+  lowering.ts:3469-3471 — `: event.key === 'ArrowDown' ? (downIsNext ? 1 : -1)` / `: 0;` / `if (direction === 0) return;`
   ```
 
 ### B13 RadioGroup · documented-deviation · **unverified**

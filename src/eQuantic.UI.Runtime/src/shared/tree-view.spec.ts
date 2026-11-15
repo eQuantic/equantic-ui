@@ -22,6 +22,20 @@ const nextFrame = () =>
 const pressed: string[] = [];
 let loads = 0;
 
+/** What a folder's load waits for: open unless a test holds it, so that test decides when the children arrive
+ * rather than racing the runner's frames for them (#1553). */
+let held: Promise<void> = Promise.resolve();
+let release: () => void = () => undefined;
+function holdLoads(): void {
+  held = new Promise<void>((resolve) => (release = resolve));
+}
+
+/** Frames until `seen` holds, failing past a bound: what the test waits for, not how long it takes. */
+async function until(seen: () => boolean, frames = 30): Promise<void> {
+  for (let frame = 0; frame < frames && !seen(); frame++) await nextFrame();
+  expect(seen()).toBe(true);
+}
+
 const leaf = (key: string, label: string) => Object.assign(new TreeNode(key, label), { isLeaf: true });
 
 class FilesHost extends StatefulComponent {
@@ -42,6 +56,7 @@ class FilesHost extends StatefulComponent {
           label: 'Files',
           loadChildren: async (node: TreeNode) => {
             loads++;
+            await held;
             return [leaf(`${node.key}/intro.md`, 'intro.md')];
           },
         },
@@ -74,6 +89,7 @@ describe('a TreeView, driven in the browser', () => {
     document.body.innerHTML = '';
     pressed.length = 0;
     loads = 0;
+    held = Promise.resolve();
   });
 
   it('is one tree of div items that state their level and their place, not wrapped in rows', () => {
@@ -161,12 +177,12 @@ describe('a TreeView, driven in the browser', () => {
 
   it('loads a folder once, with a loading item under it until its children arrive', async () => {
     const container = mount();
+    holdLoads();
     (container.querySelector('[aria-label="docs"]') as HTMLElement).click();
-    await nextFrame();
-    expect(container.querySelector('[aria-label="Loading…"]')).not.toBeNull();
+    await until(() => container.querySelector('[aria-label="Loading…"]') !== null);
 
-    await nextFrame();
-    await nextFrame();
+    release();
+    await until(() => container.querySelector('[aria-label="intro.md"]') !== null);
     expect(container.querySelector('[aria-label="Loading…"]')).toBeNull();
     const intro = container.querySelector('[aria-label="intro.md"]') as HTMLElement;
     expect(intro.getAttribute('aria-level')).toBe('2');

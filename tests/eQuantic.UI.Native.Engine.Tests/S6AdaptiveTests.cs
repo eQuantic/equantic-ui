@@ -60,7 +60,7 @@ public class S6AdaptiveTests
         AdaptiveNode Node() => new(Marker(0x10), medium: null, expanded: Marker(0x30)) { ExpandedFrom = expandedFrom };
 
         var node = Node();
-        var root = ComponentBoundary.StructuralOwner().Build(node, new ComponentContext(PhotonTheme.Instance), width,
+        var root = new ComponentBoundary().StructuralOwner().Build(node, new ComponentContext(PhotonTheme.Instance), width,
             rebuildAll: true);
         VisualNode? held = null;
         root.VisitChildren(child => held = child.Configuration);
@@ -94,7 +94,7 @@ public class S6AdaptiveTests
         AdaptiveNode Node() => new(Marker(0x10), Marker(0x20), Marker(0x30)) { MediumFrom = 720, ExpandedFrom = 1100 };
 
         var node = Node();
-        var root = ComponentBoundary.StructuralOwner().Build(node, new ComponentContext(PhotonTheme.Instance), width,
+        var root = new ComponentBoundary().StructuralOwner().Build(node, new ComponentContext(PhotonTheme.Instance), width,
             rebuildAll: true);
         VisualNode? held = null;
         root.VisitChildren(child => held = child.Configuration);
