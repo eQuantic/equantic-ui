@@ -196,7 +196,10 @@ public class FlexBasisWrapLayoutTests
     public void AnArmMeasuredAgain_KeepsItsPosition_WhateverItsLineDoes(float basis)
     {
         var arm = Pane();
-        var adaptive = new AdaptiveNode(arm, medium: null, expanded: Pane());
+        // Its own threshold past the window, so the arm a window of 1000 holds is the compact one: the layout
+        // resolves by the window's width at the node's thresholds (#1465), and this test's context once read
+        // a size class nobody set, Compact by default.
+        var adaptive = new AdaptiveNode(arm, medium: null, expanded: Pane()) { ExpandedFrom = 2000 };
         var flexible = new Flexible(adaptive, flex: 1, basis: basis);
         var row = new Row(gap: 0) { Wrap = true, Width = SizeValue.Fill };
         row.Add(flexible);
