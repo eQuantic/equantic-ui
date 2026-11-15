@@ -11,7 +11,8 @@ namespace eQuantic.UI.Conformance.Tests;
 /// Several ranges answer the same on both sides (#984): the C# engine, and its twin in the bundle the Server
 /// serves, run by the SDK's embedded Bun. A page selects through the twin and a window through .NET, so a
 /// press with ⌘, a drag that adds a range, add mode, Delete and Ctrl+Enter over several ranges, and the
-/// plain move that leaves one must leave the same ranges and the same cells.
+/// plain move that leaves one must leave the same ranges and the same cells, and an undo and a redo of a step
+/// taken over several ranges bring all of them back (#1100).
 /// </summary>
 public class SheetRangesTwinTests
 {
@@ -35,6 +36,7 @@ public class SheetRangesTwinTests
         new("key", "F8", Modifiers: 1), new("down", "", 7, 6), new("up", "", 7, 6), new("key", "Escape"),
         new("key", "ArrowDown", Modifiers: 1), new("text", "x"), new("key", "Enter", Modifiers: 4),
         new("key", "z", Modifiers: 4), new("key", "Delete"), new("key", "z", Modifiers: 4),
+        new("down", "", 9, 8), new("up", "", 9, 8), new("key", "z", Modifiers: 5),
         new("key", "ArrowDown"),
     ];
 

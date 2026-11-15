@@ -131,7 +131,7 @@ public sealed class NodeElement : Element
 
     private void UpdateChildren(bool force)
     {
-        var slots = ChildSlots.Of(Configuration, Owner.SizeClass, Owner.HoldsEveryArm);
+        var slots = ChildSlots.Of(Configuration, Owner.WindowWidth, Owner.HoldsEveryArm);
         _deferred = slots.Deferred;
         if (slots.IsList && AnyKey(slots))
         {

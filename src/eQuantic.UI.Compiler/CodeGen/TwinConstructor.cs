@@ -830,7 +830,7 @@ internal sealed class TwinConstructor
     /// <summary>An initializer, converted in the constructor's parameter scope: a positional parameter
     /// it reads (`Tag = "#" + Id`) is the parameter itself, since no member is set yet.</summary>
     private string Initialized(ExpressionSyntax initializer, TypeSyntax type) =>
-        ExpressionVariableScanner.Scoped(initializer, _converter.WithConstructorParametersInScope(
+        _converter.ConvertInitializer(initializer, () => _converter.WithConstructorParametersInScope(
             () => _converter.ConvertExpression(initializer, type.ValueText())), _annotations);
 
     /// <summary>

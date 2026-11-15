@@ -102,12 +102,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/SafeArea.cs`
 - **Handoff**: Consumption: a SafeArea zeroes the inset for its subtree — nested SafeAreas never double-pad.
-- **Code**: Nothing consumes the inset. Native: MeasureSafeArea reads ctx.SafeAreaInsets and passes the SAME ctx to the child, and LayoutContext.SafeAreaInsets is init-only (LayoutEngine.cs:128 SafeAreaInsets) so it cannot be zeroed for the subtree. Web/TS: every SafeArea emits its own env(safe-area-inset-*) padding, and env() is not scoped, so a nested pair pads twice. A screen SafeArea wrapping a bar that also uses one gets 2x the notch.
+- **Code**: Nothing consumes the inset. Native: MeasureSafeArea reads ctx.SafeAreaInsets and passes the SAME ctx to the child, and LayoutContext.SafeAreaInsets is init-only (LayoutEngine.cs:122 SafeAreaInsets) so it cannot be zeroed for the subtree. Web/TS: every SafeArea emits its own env(safe-area-inset-*) padding, and env() is not scoped, so a nested pair pads twice. A screen SafeArea wrapping a bar that also uses one gets 2x the notch.
 - **Evidence**:
 
   ```
   MeasureVisitor.Containers.cs:18  var host = ctx.SafeAreaInsets;
-  LayoutEngine.cs:128  public EdgeInsets SafeAreaInsets { get; init; }
+  LayoutEngine.cs:125  public EdgeInsets SafeAreaInsets { get; init; }
   WebLoweringVisitor.Containers.cs:510  var env = $"env(safe-area-inset-{name}, 0px)";
   lowering.ts:5232  const env = `env(safe-area-inset-${name}, 0px)`;
   ```
@@ -147,7 +147,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2759-2770  _pan = null;
+  PhotonHost.cs:2847-2859  _pan = null;
           if (_drag is null)
           {
               var scrollRegions = _lastFrame.ScrollRegions;
@@ -813,7 +813,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Stepper.cs`
 - **Handoff**: The value group is one stop: ↑/→ increment, ↓/← decrement, Home/End clamp; the −/+ buttons are also plain stops.
-- **Code**: the −/+ buttons are plain stops as specified, but the value group is not a stop at all and no arrow key does anything: with no Adjustable in the tree (Stepper.cs:67) there is no keydown handler, and the value cell is a plain Box, not a Pressable (line 62), so it is not focusable. Home/End are unimplemented framework-wide in any case (lowering.ts:3447-3452, PhotonHost.cs:3249).
+- **Code**: the −/+ buttons are plain stops as specified, but the value group is not a stop at all and no arrow key does anything: with no Adjustable in the tree (Stepper.cs:67) there is no keydown handler, and the value cell is a plain Box, not a Pressable (line 62), so it is not focusable. Home/End are unimplemented framework-wide in any case (lowering.ts:3447-3452, PhotonHost.cs:3347).
 - **Evidence**:
 
   ```
@@ -1185,14 +1185,14 @@ the pill's 40 down.
 
   ```
   Tokens.cs:214  public const float PressCancelSlop = 12;
-  PhotonHost.cs:2200  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+  PhotonHost.cs:2216  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
   ```
 
 ### A6 ScrollView · missing-feature · **unverified**
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/ScrollView.cs`
 - **Handoff**: contentPadding merges safe-area bottom (§A5). Keyboard: bottom inset grows by IME height; focused input kept visible (M4).
-- **Code**: ScrollView exposes no contentPadding slot at all — its whole surface is Child, Axis, Width, Height, Offset, OnScrolled, OnViewportChanged — and "ContentPadding" appears nowhere in src/. With no such prop there is nothing for the safe-area bottom to merge into, so A5's "Don't wrap ScrollView in a bottom SafeArea — pass the inset as content padding instead" has no supported spelling. No IME-height inset either (no KeyboardHeight/ImeHeight anywhere). The keep-focused-input-visible half IS present: PhotonHost.ScrollIntoView (PhotonHost.cs:513).
+- **Code**: ScrollView exposes no contentPadding slot at all — its whole surface is Child, Axis, Width, Height, Offset, OnScrolled, OnViewportChanged — and "ContentPadding" appears nowhere in src/. With no such prop there is nothing for the safe-area bottom to merge into, so A5's "Don't wrap ScrollView in a bottom SafeArea — pass the inset as content padding instead" has no supported spelling. No IME-height inset either (no KeyboardHeight/ImeHeight anywhere). The keep-focused-input-visible half IS present: PhotonHost.ScrollIntoView (PhotonHost.cs:526).
 - **Evidence**:
 
   ```
@@ -1227,12 +1227,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/PhotonHost.cs`
 - **Handoff**: Focused region: ↑/↓ line · PgUp/PgDn viewport · Home/End extremes. Space stays with the focused control, not the scroll.
-- **Code**: No key ever moves a scroll region in the Photon host. The only writers into ScrollClock are the wheel entry point ScrollBy(x, y, delta) (PhotonHost.cs:1900), the pointer pan (1374), the fling on release (1836) and focus-driven ScrollIntoView (399). The "Home"/"End"/"ArrowUp"/"ArrowDown" cases at PhotonHost.cs:1368-1373 belong to the text-entry caret, not to a focused scroll region, and PageUp/PageDown appear nowhere outside the code editor's keymap. On web the div is not focusable either (no tabindex), so keyboard scrolling depends entirely on browser defaults.
+- **Code**: No key ever moves a scroll region in the Photon host. The only writers into ScrollClock are the wheel entry point ScrollBy(x, y, delta) (PhotonHost.cs:1914), the pointer pan (1374), the fling on release (1836) and focus-driven ScrollIntoView (399). The "Home"/"End"/"ArrowUp"/"ArrowDown" cases at PhotonHost.cs:1382-1387 belong to the text-entry caret, not to a focused scroll region, and PageUp/PageDown appear nowhere outside the code editor's keymap. On web the div is not focusable either (no tabindex), so keyboard scrolling depends entirely on browser defaults.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:2296  public bool ScrollBy(float x, float y, float delta)
-  PhotonHost.cs:1747-1750  case "Home" or "ArrowUp":
+  PhotonHost.cs:2312  public bool ScrollBy(float x, float y, float delta)
+  PhotonHost.cs:1761-1764  case "Home" or "ArrowUp":
                   MoveCaret(0, selecting);
                   return true;
               case "End" or "ArrowDown":
@@ -1777,7 +1777,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Keys: ... Enter commits single-line
-- **Code**: TextInput exposes no submit hook and never sets TextEntry.OnSubmit when it builds the entry (TextInput.cs:100-114 sets Placeholder/Label/Description/Invalid/Disabled/Obscure/Autofocus/OnFocusChanged only), so Enter has nothing to commit to. The plumbing exists on both targets and goes unused: TextEntry.OnSubmit (src/eQuantic.UI.Primitives/Nodes/TextEntry.cs), the web keydown (lowering.ts:1239-1244) and the native Enter case (src/eQuantic.UI.Native.Components/PhotonHost.cs:1721-1727). SearchField wires it (SearchField.cs:44); TextInput does not.
+- **Code**: TextInput exposes no submit hook and never sets TextEntry.OnSubmit when it builds the entry (TextInput.cs:100-114 sets Placeholder/Label/Description/Invalid/Disabled/Obscure/Autofocus/OnFocusChanged only), so Enter has nothing to commit to. The plumbing exists on both targets and goes unused: TextEntry.OnSubmit (src/eQuantic.UI.Primitives/Nodes/TextEntry.cs), the web keydown (lowering.ts:1239-1244) and the native Enter case (src/eQuantic.UI.Native.Components/PhotonHost.cs:1735-1741). SearchField wires it (SearchField.cs:44); TextInput does not.
 - **Evidence**:
 
   ```
@@ -1788,7 +1788,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Keys: ... Esc drops focus, never the value.
-- **Code**: Honoured on native (src/eQuantic.UI.Native.Components/PhotonHost.cs:1729-1731 `case "Escape": EndEditing(); return true;`) but absent on web: lowerTextEntry's only keydown handler is created when onSubmit is set and matches Enter alone. Since TextInput sets no onSubmit at all, a web TextInput has no keydown handler whatsoever and Escape does nothing.
+- **Code**: Honoured on native (src/eQuantic.UI.Native.Components/PhotonHost.cs:1743-1745 `case "Escape": EndEditing(); return true;`) but absent on web: lowerTextEntry's only keydown handler is created when onSubmit is set and matches Enter alone. Since TextInput sets no onSubmit at all, a web TextInput has no keydown handler whatsoever and Escape does nothing.
 - **Evidence**:
 
   ```
@@ -1810,7 +1810,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SearchField.cs`
 - **Handoff**: Esc clears the query first; a second Esc blurs · Enter submits · ↓ moves into the suggestion list where present.
-- **Code**: The two-step Escape is implemented nowhere. SearchField wires only OnSubmit (SearchField.cs:44); the web entry has no Escape branch (src/eQuantic.UI.Runtime/src/shared/lowering.ts:1241-1243 matches 'Enter' only), and native Escape blurs immediately on the FIRST press without clearing (src/eQuantic.UI.Native.Components/PhotonHost.cs:1729-1731) — the opposite order to the spec. Enter→onSubmit is correct.
+- **Code**: The two-step Escape is implemented nowhere. SearchField wires only OnSubmit (SearchField.cs:44); the web entry has no Escape branch (src/eQuantic.UI.Runtime/src/shared/lowering.ts:1241-1243 matches 'Enter' only), and native Escape blurs immediately on the FIRST press without clearing (src/eQuantic.UI.Native.Components/PhotonHost.cs:1743-1745) — the opposite order to the spec. Enter→onSubmit is correct.
 - **Evidence**:
 
   ```
@@ -2311,7 +2311,7 @@ the pill's 40 down.
 
   ```
   lowering.ts:4868-4885  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3438  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3536  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
@@ -2332,12 +2332,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: ←/↓ −1 step · →/↑ +1 · PgUp/PgDn ±10% · Home/End min/max.
-- **Code**: the four arrows are wired correctly (the web lowering even splits ↑/↓ by role so a slider's up increases), but PgUp/PgDn and Home/End are handled nowhere — the web keydown returns early on any other key (lowering.ts:3452) and PhotonHost.cs:3249 gates on the same four names.
+- **Code**: the four arrows are wired correctly (the web lowering even splits ↑/↓ by role so a slider's up increases), but PgUp/PgDn and Home/End are handled nowhere — the web keydown returns early on any other key (lowering.ts:3452) and PhotonHost.cs:3347 gates on the same four names.
 - **Evidence**:
 
   ```
   lowering.ts:4868-4885  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
-  PhotonHost.cs:3438  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:3536  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2884,12 +2884,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/PhotonHost.cs`
 - **Handoff**: Scroll = translated rrect clip. The compositor caches the content layer; a scroll frame re-encodes zero widgets — it updates one transform.
-- **Code**: A scroll frame re-encodes the WHOLE tree. ScrollTo/ScrollBy only set NeedsRender, and RenderFrame then re-runs PhotonRealizer.Realize over _root, which re-measures the ScrollView's child from scratch and moves it by writing child.Bounds (MeasureVisitor.Containers.cs:266-270 MeasureScrollView, 668-672) — the offset is a layout translate, not a retained transform on a cached layer. There is object recycling (nodePool) and raster caching (text/icon), but no content-layer cache and no transform-only path, so the 8.33ms 120Hz claim is not what the code buys.
+- **Code**: A scroll frame re-encodes the WHOLE tree. ScrollTo/ScrollBy only set NeedsRender, and RenderFrame then re-runs PhotonRealizer.Realize over _root, which re-measures the ScrollView's child from scratch and moves it by writing child.Bounds (MeasureVisitor.Containers.cs:271-275 MeasureScrollView, 668-672) — the offset is a layout translate, not a retained transform on a cached layer. There is object recycling (nodePool) and raster caching (text/icon), but no content-layer cache and no transform-only path, so the 8.33ms 120Hz claim is not what the code buys.
 - **Evidence**:
 
   ```
   PhotonHost.cs:382  _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
-  PhotonHost.cs:2217  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
+  PhotonHost.cs:2233  if (_scrolls.ScrollTo(pan.Element, pan.FromOffset - travelled, pan.MaxOffset))
                       NeedsRender = true;
   ```
 
@@ -2925,13 +2925,13 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Image.cs`
 - **Handoff**: "Layout: Needs bounded size from parent or explicit dims; intrinsic aspect ratio used when one axis is known." (the block's own signature omits dims: `new Image(source, fit: ImageFit.Cover, radius: Radius.Md, alt: "…")`)
-- **Code**: Width AND height are required positional parameters — a parent-bounded image, or one axis plus intrinsic aspect ratio, cannot be expressed. The layout engine hard-codes the slot from those two numbers. The class doc names and justifies the deviation: "an EXPLICITLY sized slot (layout can never infer extent from an undecoded source)" (Image.cs:15-16), echoed at LayoutEngine.cs:255.
+- **Code**: Width AND height are required positional parameters — a parent-bounded image, or one axis plus intrinsic aspect ratio, cannot be expressed. The layout engine hard-codes the slot from those two numbers. The class doc names and justifies the deviation: "an EXPLICITLY sized slot (layout can never infer extent from an undecoded source)" (Image.cs:15-16), echoed at LayoutEngine.cs:249.
 - **Evidence**:
 
   ```
   public Image(string source, float width, float height, ImageFit fit = ImageFit.Cover, string alt = "")   // Image.cs:25
   // Images are an explicitly sized slot - layout can't infer extent from undecoded sources (A11).
-  Image image => ctx.Node(image, new Rect(0, 0, image.Width, image.Height)),                                // LayoutEngine.cs:255-256
+  Image image => ctx.Node(image, new Rect(0, 0, image.Width, image.Height)),                                // LayoutEngine.cs:249-250
   ```
 
 ### A11 Image · documented-deviation · **CONFIRMED**

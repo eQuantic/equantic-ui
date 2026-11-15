@@ -157,6 +157,10 @@ jobs:
       # tells a creation from a read, and every path the pipeline skill and the agents cite is there.
       - name: The session hook still tells a branch's creation apart
         run: python3 .claude/hooks/a-branch-is-named-for-its-change.py --self-test
+      # Parallel pipeline deliveries queue their builds on this host lock (#1526): the self-test runs
+      # three holders and fails when they overlap.
+      - name: The host's build lock still holds one build at a time
+        run: python3 scripts/one-build-at-a-time.py --self-test
 
       # The pipelines board (#1524) reads every delivery's state and Claude Code's own files, and
       # serves them on the loopback only: its reading rule (a string of digits counts, a boolean
@@ -781,6 +785,15 @@ jobs:
             printf '%s' "$failed"
           fi
           exit $status
+
+      # The macOS window runs its own event loop, and a loop a shell runs itself has no autorelease pool
+      # unless it brings one: each frame then left its drawable, its command buffer and its render pass
+      # descriptor behind for as long as the window ran, and the window drew and every test passed
+      # (#1506). So the desktop sample runs for a number of frames with the Objective-C runtime
+      # reporting what is autoreleased with no pool, and a frame's drawable among it fails the step.
+      - name: Each frame of the desktop window gives back what it was handed
+        shell: bash
+        run: ./scripts/check-frame-pools.sh
 
       # A page that uses a class library the app references (#624). The builds above cannot say it:
       # before the fix this sample built green with a page that named the library's types and

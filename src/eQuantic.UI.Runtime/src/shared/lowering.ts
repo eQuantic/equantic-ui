@@ -296,8 +296,8 @@ function buildTree(owner: BuildOwner, node: VisualNodeValue, context: LoweringCo
     node as unknown as VisualNode,
     componentContextOf(context) as RenderContext,
     // Never read: the browser's owners hold every arm of an adaptive node (`liveOwner`), as the web
-    // draws them all behind their gates, so no arm is resolved for a window size class.
-    'expanded',
+    // draws them all behind their gates, so no arm is resolved for a window's width.
+    Number.POSITIVE_INFINITY,
     getActivePass()?.rebuildAll ?? true,
   );
 }
