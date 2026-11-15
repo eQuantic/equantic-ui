@@ -1096,3 +1096,13 @@ const eQuantic.UI.Primitives.SortPlacement.TiltRestMs = 80 -> float
 static eQuantic.UI.Primitives.SortPlacement.Place(System.Collections.Generic.IReadOnlyList<float>! starts, System.Collections.Generic.IReadOnlyList<float>! extents, float at, bool nests) -> (int Index, int Into)
 static eQuantic.UI.Primitives.SortPlacement.Tilt(float across, float milliseconds) -> float?
 static eQuantic.UI.Primitives.SortPlacement.Step(int index, int step, int count) -> int
+const eQuantic.UI.Primitives.SortPlacement.PickUpTravel = 5 -> float
+const eQuantic.UI.Primitives.SortPlacement.HoldMs = 250 -> float
+const eQuantic.UI.Primitives.SortPlacement.EdgeZone = 32 -> float
+const eQuantic.UI.Primitives.SortPlacement.EdgeStep = 14 -> float
+const eQuantic.UI.Primitives.SortPlacement.LiftedOpacity = 0.4 -> double
+const eQuantic.UI.Primitives.SortPlacement.CopyOpacity = 0.92 -> double
+const eQuantic.UI.Primitives.SortPlacement.CopyShadowOffsetY = 12 -> float
+const eQuantic.UI.Primitives.SortPlacement.CopyShadowBlur = 28 -> float
+const eQuantic.UI.Primitives.SortPlacement.CopyShadowAlpha = 0.28 -> double
+static eQuantic.UI.Primitives.SortPlacement.EdgeScroll(float at, float start, float end) -> float

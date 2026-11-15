@@ -18,15 +18,6 @@ import { SortDrop } from '../shared/value-types';
 import { str } from '../utils/culture';
 import { followPointer, pointerDownDelegate } from './pointer-gesture';
 
-/** The travel that picks an item up with a mouse: the Space board's own threshold. */
-const MOUSE_TRAVEL = 5;
-/** How long a finger holds an item still to pick it up. */
-const HOLD_MS = 250;
-/** How near a scroller's edge the pointer scrolls it, and its fastest step per frame. */
-const EDGE = 32;
-const STEP = 14;
-
-
 const delegate = pointerDownDelegate(onPointerDown);
 let keyboardInstalled = false;
 
@@ -116,12 +107,8 @@ function onPointerDown(down: PointerEvent): void {
     const scroller = scrollers.get(over) ?? null;
     if (!scroller) return;
     const box = scroller.getBoundingClientRect();
-    const near = (at: number, start: number, end: number): number =>
-      at < start + EDGE ? -Math.ceil(((start + EDGE - at) / EDGE) * STEP)
-        : at > end - EDGE ? Math.ceil(((at - (end - EDGE)) / EDGE) * STEP)
-          : 0;
-    const down = near(pointer.y, box.top, box.bottom);
-    const across = near(pointer.x, box.left, box.right);
+    const down = SortPlacement.edgeScroll(pointer.y, box.top, box.bottom);
+    const across = SortPlacement.edgeScroll(pointer.x, box.left, box.right);
     if (down === 0 && across === 0) return;
     scroller.scrollBy(across, down);
     place();
@@ -149,8 +136,8 @@ function onPointerDown(down: PointerEvent): void {
     arms:
       down.pointerType === 'touch'
         ? undefined
-        : (ev) => Math.hypot(ev.clientX - down.clientX, ev.clientY - down.clientY) > MOUSE_TRAVEL,
-    holdMs: down.pointerType === 'touch' ? HOLD_MS : undefined,
+        : (ev) => Math.hypot(ev.clientX - down.clientX, ev.clientY - down.clientY) > SortPlacement.pickUpTravel,
+    holdMs: down.pointerType === 'touch' ? SortPlacement.holdMs : undefined,
     armed: () => {
       copy = lift(item);
       host.addEventListener('keydown', escape, true);
@@ -208,15 +195,15 @@ function lift(item: HTMLElement): HTMLElement {
     margin: '0',
     pointerEvents: 'none',
     zIndex: '2147483000',
-    opacity: '0.92',
-    boxShadow: '0 12px 28px rgba(0, 0, 0, 0.28)',
+    opacity: String(SortPlacement.copyOpacity),
+    boxShadow: `0 ${SortPlacement.copyShadowOffsetY}px ${SortPlacement.copyShadowBlur}px rgba(0, 0, 0, ${SortPlacement.copyShadowAlpha})`,
     cursor: 'grabbing',
     // The lean is the individual `rotate`, apart from the `transform` that places the copy, so easing it
     // never makes the copy trail the pointer.
     transition: 'rotate 0.1s ease-out',
   });
   item.ownerDocument.body.appendChild(copy);
-  item.style.opacity = '0.4';
+  item.style.opacity = String(SortPlacement.liftedOpacity);
   item.setAttribute('data-eq-sort-lifted', '');
   return copy;
 }
@@ -377,7 +364,7 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
   const dropAt = (target: HTMLElement, at: number): SortDrop =>
     new SortDrop(id, from, target.getAttribute('data-eq-sort-id') ?? '', at);
 
-  item.style.opacity = '0.4';
+  item.style.opacity = String(SortPlacement.liftedOpacity);
   item.setAttribute('data-eq-sort-lifted', '');
   list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: dropAt(list, index) }));
   announce(say('SortPickedUp', name, index + 1, countIn(list), labelOf(list)));
