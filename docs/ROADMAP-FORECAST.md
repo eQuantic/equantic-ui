@@ -123,7 +123,9 @@ the epic's priority, so an issue is created with all of them or not at all:
 one request, puts it on the board with its points and status, reads it back, and fails naming
 whatever did not land; it refuses, before any request, an issue that lacks one of them. In a session,
 a hook (`.claude/hooks/issues-are-born-whole.py`) refuses the other ways of creating an issue and
-names the script. An issue created in the browser reaches no hook, so the report lists every open
+names the script. It reads the file of a script the command runs too, and the scripts that file runs
+one level down, since what a script does is in its file and not on the command line (#1478). An issue
+created in the browser reaches no hook, so the report lists every open
 issue the plan cannot count as it is, with what it lacks.
 
 ```bash

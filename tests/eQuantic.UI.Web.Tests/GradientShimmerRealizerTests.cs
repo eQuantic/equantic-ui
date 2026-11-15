@@ -71,7 +71,9 @@ public class GradientShimmerRealizerTests
     /// <summary>
     /// GRADIENT TEXT: the background paints through the glyphs. `color` survives as the readable
     /// FALLBACK for browsers without background-clip:text — an invisible headline is a far worse
-    /// failure than a solid one — and the prefixed twins ship for Safari.
+    /// failure than a solid one — and the prefixed twins ship for Safari. A text with no colour of
+    /// its own writes none since #614, so the fallback is the colour it inherits: the foreground of
+    /// the box above it, or the document's TextPrimary. One it names is written, and is the fallback.
     /// </summary>
     [Fact]
     public void GradientText_ClipsTheBackgroundToTheGlyphs_KeepingAColorFallback()
@@ -80,8 +82,11 @@ public class GradientShimmerRealizerTests
         var node = Render(new Text("Headline", TypeRole.Display) { Gradient = gradient });
 
         var style = node.Attributes["style"];
-        style.Should().Contain($"color: {TokenCss.Value(Theme.TextPrimary)}",
-            "the solid color remains the fallback when background-clip is unsupported");
+        style.Should().NotMatchRegex(@"(?<![-\w])color:",
+            "the fallback is the colour it inherits, when background-clip is unsupported");
+        Render(new Text("Headline", TypeRole.Display, Theme.TextSecondary) { Gradient = gradient })
+            .Attributes["style"].Should().Contain($"color: {TokenCss.Value(Theme.TextSecondary)}",
+                "a colour of its own is written, and is the fallback");
         style.Should().Contain($"background-image: {TokenCss.Gradient(gradient)}");
         style.Should().Contain("-webkit-background-clip: text; background-clip: text");
         style.Should().Contain("-webkit-text-fill-color: transparent");

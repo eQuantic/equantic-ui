@@ -1,3 +1,5 @@
+import { exception, receiver } from './exceptions';
+
 /**
  * The live views a dictionary answers for its keys and its values: .NET's `KeyCollection` and
  * `ValueCollection`, a sorted dictionary's two and a sorted list's `KeyList` and `ValueList` (#463,
@@ -89,6 +91,31 @@ export function liveView<T>(source: ViewSource<T>): T[] {
   });
   refusals.set(view, refuseCall);
   return view;
+}
+
+const fixedSizes = new WeakSet<object>();
+
+/** A `T[]` as it goes behind `ICollection<T>` or `IList<T>`, the array itself: see {@link refuseAResize}. */
+export function fixedSize<T>(array: T): T {
+  if (typeof array === 'object' && array !== null) fixedSizes.add(array);
+  return array;
+}
+
+/**
+ * Throws what .NET's array answers a call that would change its size with, when `value` went behind a face that
+ * could ask it to: a list and an array are one JavaScript array here (#711).
+ */
+export function refuseAResize(value: unknown, message = 'Collection was of a fixed size.'): void {
+  if (typeof value === 'object' && value !== null && fixedSizes.has(value)) {
+    throw exception('System.NotSupportedException', message);
+  }
+}
+
+/** `ICollection<T>.IsReadOnly`: an array behind the face is, and anything else by its own member, which a
+ * view answers and the array a list is has none of. */
+export function isReadOnly(value: unknown): boolean {
+  receiver(value);
+  return fixedSizes.has(value as object) || (value as { isReadOnly?: unknown }).isReadOnly === true;
 }
 
 /**

@@ -114,6 +114,28 @@ public class ArgumentGuardConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(Run + statements, Records, culture: "pt-BR");
     }
 
+    /// <summary>
+    /// The collections' own refusals of a negative count, which .NET throws through
+    /// <c>ArgumentOutOfRangeException.ThrowIfNegative</c>: <c>Queue&lt;T&gt;</c>'s and <c>Stack&lt;T&gt;</c>'s
+    /// capacity, <c>LinkedList&lt;T&gt;.CopyTo</c>'s index and <c>HashSet&lt;T&gt;.CopyTo</c>'s. The runtime wrote
+    /// their words by hand, so <c>ActualValue</c> reached C# as null while the message stated it (#1273).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("return Run(() => new Queue<int>(-1));", "en-US")]
+    [InlineData("return Run(() => new Stack<int>(-2));", "en-US")]
+    [InlineData("var q = new Queue<int>(); return Run(() => q.EnsureCapacity(-1)) + \"/\" + Run(() => q.TrimExcess(-3));", "en-US")]
+    [InlineData("var s = new Stack<int>(); return Run(() => s.EnsureCapacity(-1)) + \"/\" + Run(() => s.TrimExcess(-3));", "en-US")]
+    [InlineData("var l = new LinkedList<int>(new[] { 1 }); return Run(() => l.CopyTo(new int[3], -1));", "en-US")]
+    [InlineData("var h = new HashSet<int> { 1 }; return Run(() => h.CopyTo(new int[3], -1)) + \"/\" + Run(() => h.CopyTo(new int[3], 0, -2));", "en-US")]
+    // The value written as the culture writes it, its minus sign included.
+    [InlineData("return Run(() => new Queue<int>(-1));", "sv-SE")]
+    [InlineData("var h = new HashSet<int> { 1 }; return Run(() => h.CopyTo(new int[3], -1));", "sv-SE")]
+    public void ACollectionsNegativeCount_IsRefusedWithItsValue(string statements, string culture)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(Run + statements, Records, culture: culture);
+    }
+
     /// <summary>A guard over a type the browser does not hold as a number whose sign it reads, or whose order
     /// it cannot reproduce, is refused by the build, never translated by a guess.</summary>
     [SkippableTheory]

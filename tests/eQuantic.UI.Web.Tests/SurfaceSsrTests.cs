@@ -85,6 +85,25 @@ public class SurfaceSsrTests
     }
 
     /// <summary>
+    /// The input holds what a reader hears the surface hold, the model's reading, and what the surface
+    /// draws is out of the reading order (#1333): a reader heard an empty field and then the code as lines
+    /// of their own. The text is the textarea's content, escaped as text.
+    /// </summary>
+    [Fact]
+    public void ItsInputHoldsTheReading_AndItsDrawingIsHidden()
+    {
+        var root = WebRealizer.Lower(Code("if (a < b)\n  go();", new eQuantic.UI.Code.CodePosition(1, 2)),
+            Theme, 1f, new StyleSink())!.Render();
+        IEnumerable<HtmlNode> Walk(HtmlNode node) => new[] { node }.Concat(node.Children.SelectMany(Walk));
+
+        var door = Walk(root).Single(node => node.Tag == "textarea");
+        string.Concat(door.Children.Select(child => child.TextContent)).Should().Be("if (a < b)\n  go();");
+        root.Children.First().Attributes.Should().Contain("aria-hidden", "true",
+            "the drawn code is the field's value, not a line of the page");
+        HtmlRenderer.RenderNode(root).Should().Contain("if (a &lt; b)", "the text is written as text");
+    }
+
+    /// <summary>
     /// What a surface offers at its caret is the input's LISTBOX (#297), written as the client
     /// writes it (TS twin: lowerCodeSurface): the list stands at its origin over the code, its rows
     /// are numbered options, and the input says it completes from that list and points at the row

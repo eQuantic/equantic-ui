@@ -14,7 +14,6 @@ namespace eQuantic.Console;
 public sealed class UploadsScreen : StatefulComponent
 {
     private readonly List<string> _received = new();
-    private bool _navOpen;
 
     /// <summary>Reads the file the person uploaded, a part at a time, and removes it from the staging
     /// folder: an app would store it where it keeps its data first.</summary>
@@ -51,11 +50,7 @@ public sealed class UploadsScreen : StatefulComponent
         SetState(() => _received.Add(said));
     }
 
-    public override VisualNode Build(ComponentContext context) =>
-        ConsoleShell.Frame(context.Theme, "/uploads", "Uploads", Content(context),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
-
-    private VisualNode Content(ComponentContext context)
+    public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var column = Column(gap: Space.S4, children: [

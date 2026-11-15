@@ -23,10 +23,21 @@ import { adoptMember, declaresMember } from './adopt-member';
  * twice and wrote its second answer (Copilot's second review of #696).
  *
  * What a twin that keeps a store answers `toJSON` with, so a type derived from it answers the same.
+ *
+ * A twin that holds more than the serializer writes hands `members`, each a twin name or a JSON name and a
+ * twin name, which only its static type could say, and only those are written, each read through its member
+ * (`JsonContract`, #745).
  */
-export function twinJson(value: object): Record<string, unknown> {
+export function twinJson(value: object, members?: readonly (string | readonly [string, string])[]): Record<string, unknown> {
   const json: Record<string, unknown> = {};
   const source = value as Record<string, unknown>;
+  if (members !== undefined) {
+    for (const member of members) {
+      if (typeof member === 'string') adoptMember(json, member, source[member]);
+      else adoptMember(json, member[0], source[member[1]]);
+    }
+    return json;
+  }
   const written = new Set<string>();
   const write = (name: string): void => {
     if (written.has(name)) return;

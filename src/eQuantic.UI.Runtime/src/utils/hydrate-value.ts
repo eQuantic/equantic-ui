@@ -103,7 +103,8 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
   ) {
     const proto = Object.getPrototypeOf(current);
     if (proto && proto !== Object.prototype) {
-      const rebuilt = Object.create(proto) as object;
+      // What the wire does not carry stays as the value the page built holds it (#590).
+      const rebuilt = Object.assign(Object.create(proto) as object, current);
       const witness = current as Record<string, unknown>;
       for (const key of Object.keys(incoming as Record<string, unknown>)) {
         adoptMember(

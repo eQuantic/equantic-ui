@@ -16,6 +16,10 @@ builder.Services.AddSingleton(new eQuantic.Console.ConsoleIdentity
 builder.Services.AddUI(options =>
 {
     options.ScanAssembly(typeof(Program).Assembly)
+           // The frame every page is shown in: the sidebar, the toolbar and the drawer's state are the
+           // layout's, written once, and the browser keeps it across navigations, so a sidebar left
+           // open on one screen is open on the next. Each screen returns its content only.
+           .UseLayout<eQuantic.Console.ConsoleLayout>()
            // Select the write-once design-system theme for the whole app (SSR + client). The server now
            // emits the NORMATIVE token stylesheet AND bridges the theme to the client (boot calls
            // setPhotonTheme) — swap this for MaterialTheme.Instance / MaterialTheme.FromSeed(seed) to

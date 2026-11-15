@@ -21,14 +21,7 @@ public sealed class MapScreen : StatefulComponent
 
     private string? _chosen;
 
-    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
-    private bool _navOpen;
-
-    public override VisualNode Build(ComponentContext context) =>
-        ConsoleShell.Frame(context.Theme, "/map", "Map", Content(context),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
-
-    private VisualNode Content(ComponentContext context)
+    public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var shapes = new List<VectorShape>();

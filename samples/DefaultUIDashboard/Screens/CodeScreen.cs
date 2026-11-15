@@ -20,9 +20,6 @@ namespace DefaultUIDashboard.Screens;
 [Page("/code", Title = "Code editor — eQuantic Console")]
 public sealed class CodeScreen : StatefulComponent
 {
-    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
-    private bool _navOpen;
-
     private string _status = "";
 
     /// <summary>Kept, as a controller is kept: a provider made in a build would be a new one every
@@ -101,11 +98,7 @@ public sealed class CodeScreen : StatefulComponent
         return string.Join("\n", lines);
     }
 
-    public override VisualNode Build(ComponentContext context) =>
-        ConsoleShell.Frame(context.Theme, "/code", "Code editor", Content(context),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
-
-    private VisualNode Content(ComponentContext context)
+    public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var page = new Column(gap: Space.S3) { Width = SizeValue.Fill, Height = SizeValue.Fill };

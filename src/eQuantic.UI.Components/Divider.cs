@@ -45,18 +45,22 @@ public sealed class Divider : StatelessComponent
 
     public override VisualNode Build(ComponentContext context)
     {
+        // The theme's List slot, then the component's own (§3.10).
+        var slot = context.Theme.List;
+        var thickness = slot?.DividerThickness ?? 1;
         var line = new Box(new BoxStyle
         {
-            Width = Axis == DividerAxis.Vertical ? SizeValue.Fixed(1) : SizeValue.Fill,
-            Height = Axis == DividerAxis.Vertical ? SizeValue.Fill : SizeValue.Fixed(1),
-            Background = context.Theme.Border,
+            Width = Axis == DividerAxis.Vertical ? SizeValue.Fixed(thickness) : SizeValue.Fill,
+            Height = Axis == DividerAxis.Vertical ? SizeValue.Fill : SizeValue.Fixed(thickness),
+            Background = slot?.DividerColor ?? context.Theme.Border,
         });
 
         if (Inset == DividerInset.None) return line;
 
+        var inset = slot?.DividerInset ?? Space.S4;
         var padding = Inset == DividerInset.Leading
-            ? new EdgeInsets(LeadingInset ?? Space.S4, 0, 0, 0)
-            : EdgeInsets.Symmetric(Space.S4, 0);
+            ? new EdgeInsets(LeadingInset ?? inset, 0, 0, 0)
+            : EdgeInsets.Symmetric(inset, 0);
         return new Box(new BoxStyle { Width = SizeValue.Fill, Padding = padding }, line);
     }
 }

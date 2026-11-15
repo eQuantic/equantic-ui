@@ -1,0 +1,56 @@
+## Comfortable
+### web
+<div class="eq-anchorhost">
+<button aria-expanded="false" aria-haspopup="menu" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</button>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-16x7aca{display:block}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1imlfss{cursor:pointer}
+.eq-1uykvw{padding:0}
+.eq-byqqyj{background:none}
+.eq-g7fowl{pointer-events:auto}
+.eq-p7nbpw{text-align:start}
+### semantics
+Button "x" (collapsed)
+### photon
+Menu 0 0 8.84x24
+  Shortcut 0 0 8.84x24
+    Shortcut 0 0 8.84x24
+      Shortcut 0 0 8.84x24
+        Anchored 0 0 8.84x24
+          Pressable 0 0 8.84x24
+            Text 0 0 8.84x24 1 line(s)
+
+## Compact
+### web
+<div class="eq-anchorhost">
+<button aria-expanded="false" aria-haspopup="menu" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</button>
+</div>
+### css
+.eq-14ehxct{color:inherit}
+.eq-16x7aca{display:block}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+.eq-1imlfss{cursor:pointer}
+.eq-1uykvw{padding:0}
+.eq-byqqyj{background:none}
+.eq-g7fowl{pointer-events:auto}
+.eq-p7nbpw{text-align:start}
+### semantics
+Button "x" (collapsed)
+### photon
+Menu 0 0 8.84x24
+  Shortcut 0 0 8.84x24
+    Shortcut 0 0 8.84x24
+      Shortcut 0 0 8.84x24
+        Anchored 0 0 8.84x24
+          Pressable 0 0 8.84x24
+            Text 0 0 8.84x24 1 line(s)
+

@@ -21,7 +21,7 @@ public class InViewTests
     // An InView reports in a tree that is drawn again: a live owner, kept across the frames of a test
     // the way a host keeps it, and where each InView's last answer lives.
     private static void Draw(VisualNode node, BuildOwner owner, float height = 100) =>
-        PhotonRealizer.Realize(node, 200, height, Theme, ThemeMode.Light, new DisplayListBuilder(),
+        PhotonRealizer.Realize(node, 200, height, Theme, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder(),
             owner: owner);
 
     private static Column Page(Action<bool> onChanged, float spacerHeight, float threshold = 0)
@@ -92,7 +92,7 @@ public class InViewTests
     public void ATreeLaidOutOnce_ReportsNothing()
     {
         var seen = new List<bool>();
-        PhotonRealizer.Realize(Page(seen.Add, spacerHeight: 0), 200, 100, Theme, ThemeMode.Light,
+        PhotonRealizer.Realize(Page(seen.Add, spacerHeight: 0), 200, 100, Theme, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder());
 
         seen.Should().BeEmpty();
@@ -128,7 +128,7 @@ public class InViewClipTests
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
 
     private static void Draw(VisualNode node, BuildOwner owner) =>
-        PhotonRealizer.Realize(node, 200, 100, Theme, ThemeMode.Light, new DisplayListBuilder(),
+        PhotonRealizer.Realize(node, 200, 100, Theme, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder(),
             owner: owner);
 
     // Explicit widths, not Fill: a column of all-Fill children inside a scroll view measures zero

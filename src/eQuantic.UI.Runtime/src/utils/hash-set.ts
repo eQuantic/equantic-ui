@@ -19,6 +19,7 @@
  */
 import { collectionModified } from './dictionary';
 import { exception } from './exceptions';
+import { throwIfNegativeCount } from './guards';
 import { sameEquality, type KeyEquality } from './key-equality';
 import { collectionCount, expandPrime, getPrime, SlotTable } from './slots';
 
@@ -29,13 +30,6 @@ function argumentNull(parameter: string): Error {
   return exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
 }
 
-/** `ArgumentOutOfRangeException.ThrowIfNegative`'s words. */
-function negative(parameter: string, value: number): Error {
-  return exception(
-    'System.ArgumentOutOfRangeException',
-    `${parameter} ('${value}') must be a non-negative value. (Parameter '${parameter}')\nActual value was ${value}.`,
-  );
-}
 
 /** `ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity)`'s words. */
 function outOfRangeCapacity(): Error {
@@ -351,8 +345,8 @@ export class HashSet<T> implements Set<T> {
   /** `CopyTo(array)`, `CopyTo(array, arrayIndex)` and `CopyTo(array, arrayIndex, count)`. */
   copyTo(array: T[], arrayIndex = 0, count: number = this.size): void {
     if (array == null) throw argumentNull('array');
-    if (arrayIndex < 0) throw negative('arrayIndex', arrayIndex);
-    if (count < 0) throw negative('count', count);
+    throwIfNegativeCount(arrayIndex, 'arrayIndex');
+    throwIfNegativeCount(count, 'count');
     if (arrayIndex > array.length || count > array.length - arrayIndex) {
       throw exception(
         'System.ArgumentException',

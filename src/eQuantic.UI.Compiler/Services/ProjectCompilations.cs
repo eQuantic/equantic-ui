@@ -131,7 +131,11 @@ internal static class ProjectCompilations
         if (project.FriendAssemblies.Count == 0) return null;
         var text = string.Concat(project.FriendAssemblies.Select(friend =>
             $"[assembly: System.Runtime.CompilerServices.InternalsVisibleTo({SymbolDisplay.FormatLiteral(friend, quote: true)})]\n"));
-        return CSharpSyntaxTree.ParseText(text, project.ParseOptions,
-            path: Path.Combine(project.Directory, "obj", "eQuantic", project.AssemblyName + ".Friends.g.cs"));
+        return CSharpSyntaxTree.ParseText(text, project.ParseOptions, path: FriendsPath(project));
     }
+
+    /// <summary>Where the project's friend declarations are said to come from: a tree of the compilation
+    /// that no file on disk holds.</summary>
+    internal static string FriendsPath(ReferencedProject project) =>
+        Path.Combine(project.Directory, "obj", "eQuantic", project.AssemblyName + ".Friends.g.cs");
 }

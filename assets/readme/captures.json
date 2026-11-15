@@ -16,34 +16,34 @@
     "web-dashboard.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
-        "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
+        "samples/DefaultUIDashboard/Program.cs": "3a204335356eef857c702dfc57e49f879f208302935965c569d759a380fa89aa",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "90ca18170b6ee797e07fc158542515d6df7005117ddd315288ec16597fe5fda5",
         "samples/DefaultUIDashboard/Screens/ConsoleData.cs": "abcb0a957c3823167118ea3f6ea2f100dc9e0aab969910388f3e3d4c4c91403e",
-        "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "945748db6e09ed08198d5e1c788bbd706171542a5b3ab7f79ad2af31f1631808"
+        "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "af0ee5ec77e5408eca09194c5199be79f3176af773e5424abeea3b92c625330d"
       }
     },
     "web-charts.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
-        "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
-        "samples/DefaultUIDashboard/Screens/ChartsScreen.cs": "15014c0ce9765c3c665af6e924686e0416fdf04d5abab5062209a3174b8a9902"
+        "samples/DefaultUIDashboard/Program.cs": "3a204335356eef857c702dfc57e49f879f208302935965c569d759a380fa89aa",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "90ca18170b6ee797e07fc158542515d6df7005117ddd315288ec16597fe5fda5",
+        "samples/DefaultUIDashboard/Screens/ChartsScreen.cs": "991dc99192c2e18b181424fbe3e260262387b8e02ed84d50cb120aeef8ad01c3"
       }
     },
     "web-code-diff.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
-        "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
-        "samples/DefaultUIDashboard/Screens/DiffScreen.cs": "270ed999ea61baf467a6be6eed75d503bd964ade2cbb7796670eb82d4be5d8d6"
+        "samples/DefaultUIDashboard/Program.cs": "3a204335356eef857c702dfc57e49f879f208302935965c569d759a380fa89aa",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "90ca18170b6ee797e07fc158542515d6df7005117ddd315288ec16597fe5fda5",
+        "samples/DefaultUIDashboard/Screens/DiffScreen.cs": "8ee387b084e99ddb898598abc65794f79642dcf15b5cc255e3bdc162a4805afe"
       }
     },
     "web-forms.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "5af49fc6c892b4fbc40df23370325a55fef063810ed659c38e0a2de7aa5aa813",
-        "samples/DefaultUIDashboard/Screens/ConsoleShell.cs": "1ee1188595904b31a3ce2f43ee9d4d1d69762479209a28a47956918730e2a2ac",
-        "samples/DefaultUIDashboard/Screens/FormScreen.cs": "dedae4f32851e8b17cf9978c93535cdb3c68421159310e7a9c32cfec2d067f14"
+        "samples/DefaultUIDashboard/Program.cs": "3a204335356eef857c702dfc57e49f879f208302935965c569d759a380fa89aa",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "90ca18170b6ee797e07fc158542515d6df7005117ddd315288ec16597fe5fda5",
+        "samples/DefaultUIDashboard/Screens/FormScreen.cs": "ccb663dd0d83cde8325f4183b6e5e01f5b4888cf5472c16aedaadd3dd60d7b07"
       }
     },
     "desktop-gallery.png": {

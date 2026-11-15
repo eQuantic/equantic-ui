@@ -1,6 +1,8 @@
 import { CancellationToken, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeDocument, CodePosition } from "../runtime-exports";
 
 export class CodeKeywordCompletionProvider {
+    static $interfaces = ['eQuantic.UI.Code.ICodeCompletionProvider'];
+
     constructor() {}
 
     async completeAsync(document: CodeDocument, position: CodePosition, context: CodeCompletionContext, _cancellation: CancellationToken) {

@@ -1,13 +1,9 @@
-import { CodeDocument, CodeEditorController, CodeGrid, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect, SheetController, SheetEntryLanguage } from "../runtime-exports";
+import { CodeDocument, CodeEditorController, CodeGrid, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect, SheetController, SheetEntryLanguage, TextReading } from "../runtime-exports";
 
 export class SheetNameBox {
     constructor(sheet: SheetController) {
         this._sheet = null!;
-        this._box = (() => {
-        const $o = new CodeEditorController('', new SheetEntryLanguage());
-        $o.singleLine = true;
-        return $o;
-    })();
+        this._box = (() => { let $n0: CodeEditorController; return ($n0 = new CodeEditorController('', new SheetEntryLanguage()), $n0.singleLine = true, $n0); })();
         this._focusVersion = 0;
         this._placed = 0;
         this._focusingPress = false;
@@ -52,6 +48,10 @@ export class SheetNameBox {
 
     get focusVersion(): number {
         return this._focusVersion;
+    }
+
+    get reading(): TextReading {
+        return this.typing ? this._box.reading : new TextReading(this._sheet.activeCell.toA1(), 0, 0);
     }
 
     placed() {

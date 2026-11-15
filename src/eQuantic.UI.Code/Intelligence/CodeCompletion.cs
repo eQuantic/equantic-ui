@@ -36,6 +36,9 @@ public sealed class CodeCompletion
     private List<CodeCompletionOffer> _shown = [];
     private int _selected = -1;
     private bool _active;
+    // How the list opened (⌃Space, a word typed, a trigger character): a provider asked again because the caret
+    // went back past the word it answered is asked as the list opened, as VS Code keeps the list's `auto` (#1016).
+    private CodeCompletionTrigger _openedBy;
     private CodePosition _start;
     private bool _openedEmpty;
     // The list shows a snippet's choice (#1013): every option while its placeholder is selected, and accepting
@@ -155,6 +158,7 @@ public sealed class CodeCompletion
         _active = true;
         _choosing = choosing;
         _edits.Clear();
+        _openedBy = trigger;
         _start = start;
         _openedEmpty = choosing || start == _editor.Caret;
         _list = new CancellationTokenSource();
@@ -286,7 +290,7 @@ public sealed class CodeCompletion
                 break;
             }
         }
-        AskAgainIfIncomplete();
+        AskAgainWhereTheWordLeftTheAnswer();
         ResolveSelected();
         Changed?.Invoke();
     }
@@ -332,7 +336,7 @@ public sealed class CodeCompletion
         if (_answers.Count == 0) return;
 
         Filter();
-        AskAgainIfIncomplete();
+        AskAgainWhereTheWordLeftTheAnswer();
         ResolveSelected();
         Changed?.Invoke();
     }
@@ -344,16 +348,32 @@ public sealed class CodeCompletion
     /// last. And a request still out for another word is replaced even when the answer in hand is for
     /// the word typed (a letter typed, then backspaced): it would land over that answer, with what it
     /// offers for the other word. The rest keep their answers.
+    /// <para>
+    /// A COMPLETE answer covers every word that extends the word it was asked for, which is what LSP's
+    /// <c>isIncomplete: false</c> promises, and no other (#1016): once the caret went back past that word
+    /// (⌃Space at the end of <c>Col</c>, then Backspace), its provider is asked again for the word as it
+    /// stands, as the list opened, and its answer is filtered meanwhile. Only the providers whose answer the
+    /// word left are asked, rather than every one as VS Code does on a move left: an answer for a word the
+    /// word typed still extends is still the whole of what its provider offers.
+    /// </para>
     /// </summary>
-    private void AskAgainIfIncomplete()
+    private void AskAgainWhereTheWordLeftTheAnswer()
     {
         var word = Word();
         var incomplete = new List<ICodeCompletionProvider>();
+        var left = new List<ICodeCompletionProvider>();
         foreach (var answer in _answers)
         {
-            if (answer.IsIncomplete && LastAskedWord(answer.Provider) != word) incomplete.Add(answer.Provider);
+            if (LastAskedWord(answer.Provider) == word) continue;
+            if (answer.IsIncomplete) incomplete.Add(answer.Provider);
+            else if (!word.StartsWith(answer.AskedWord, StringComparison.Ordinal)) left.Add(answer.Provider);
         }
         if (incomplete.Count > 0) Ask(CodeCompletionTrigger.Incomplete, null, incomplete, announce: false);
+        // A list a trigger character opened is asked again inside a word, with no character typed: invoked, as
+        // VS Code re-triggers it, while one opened by a word typed stays a typing list.
+        if (left.Count > 0)
+            Ask(_openedBy == CodeCompletionTrigger.Character ? CodeCompletionTrigger.Invoked : _openedBy, null, left,
+                announce: false);
     }
 
     /// <summary>The word <paramref name="provider"/> was asked for last: that of its newest request,

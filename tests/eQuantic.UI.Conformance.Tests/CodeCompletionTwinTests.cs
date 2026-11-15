@@ -325,6 +325,108 @@ public class CodeCompletionTwinTests
         count.Should().Be(0, $"the completion behaves the same on both sides:{differences}");
     }
 
+    // ---- a complete answer the word went back past (#1016) ----------------------------------------
+
+    /// <summary>A language server's shape, written once here and once in the program the twin runs: a
+    /// COMPLETE answer of its words that begin with the word asked, and what it was asked, with which trigger.</summary>
+    private sealed class Prefix(IReadOnlyList<string> words) : ICodeCompletionProvider
+    {
+        public List<string> Asked { get; } = [];
+
+        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
+            CodeCompletionContext context, CancellationToken cancellation)
+        {
+            var line = document.Line(position.Line);
+            var start = position.Column;
+            while (start > 0 && CodeDocument.IsWordChar(line[start - 1])) start--;
+            var word = line[start..position.Column];
+            var trigger = context.Trigger.ToString();
+            Asked.Add($"{word}/{char.ToLowerInvariant(trigger[0])}{trigger[1..]}");
+            return Task.FromResult(new CodeCompletionList([.. words
+                .Where(candidate => candidate.StartsWith(word, StringComparison.Ordinal))
+                .Select(candidate => new CodeCompletionItem(candidate))]));
+        }
+    }
+
+    private static readonly string[] PrefixWords = ["Cobalt", "Code", "Colossus", "Column", "Count", "Counter"];
+
+    /// <summary>The steps: ⌃Space at the end of <c>Col</c>, back past the word and forward again, and a word
+    /// typed from nothing, so a list a word opened goes back too.</summary>
+    private static readonly string[] PrefixSteps = ["$invoke", "Backspace", "Backspace", "o", "u", "Backspace",
+        "Backspace", "Backspace", "C", "o", "l", "Backspace"];
+
+    private static List<string> RunPrefixOnDotNet()
+    {
+        var editor = new CodeEditorController("Col", CodeLanguages.CSharp);
+        var prefix = new Prefix(PrefixWords);
+        editor.Completion.Providers.Add(prefix);
+        editor.Selection = new CodeRange(editor.Document.End);
+        var states = new List<string>();
+        foreach (var step in PrefixSteps)
+        {
+            if (step == "$invoke") editor.Completion.Invoke();
+            else if (step.Length == 1) editor.HandleText(step);
+            else editor.HandleKey(step, KeyModifiers.None, KeyboardConvention.Standard, null);
+            var labels = string.Join(",", editor.Completion.Items.Select(match => match.Item.Label));
+            states.Add($"{string.Join(";", prefix.Asked)}|{(editor.Completion.IsOpen ? "open" : "shut")}|{labels}");
+        }
+        return states;
+    }
+
+    /// <summary>
+    /// A provider whose complete answer the word went back past is asked again, as the list opened, and the
+    /// same on both sides (#1016): what each provider was asked, with which trigger, and the list after
+    /// every step.
+    /// </summary>
+    [SkippableFact]
+    public void GoingBackPastTheWordOfACompleteAnswer_AsksAgainAlikeOnBothSides()
+    {
+        Skip.IfNot(JsExecutor.EngineName == "bun", "The twin runs in the embedded Bun, and the engine here is not Bun.");
+        var runtime = ConformanceRunner.RuntimeJsUrl() ?? throw new InvalidOperationException("No served runtime.js.");
+        var program = $$"""
+            import { CodeEditorController, CodeLanguages, CodeCompletionList, CodeCompletionItem, CodeDocument,
+              CodeRange } from '{{runtime}}';
+            const words = {{JsonSerializer.Serialize(PrefixWords)}};
+            const steps = {{JsonSerializer.Serialize(PrefixSteps)}};
+            // The program's copy of Prefix, line for line.
+            class Prefix {
+              constructor() { this.asked = []; this.triggerCharacters = []; }
+              completeAsync(document, position, context) {
+                const line = document.line(position.line);
+                let start = position.column;
+                while (start > 0 && CodeDocument.isWordChar(line[start - 1])) start--;
+                const word = line.slice(start, position.column);
+                this.asked.push(`${word}/${context.trigger}`);
+                return Promise.resolve(new CodeCompletionList(words.filter((candidate) => candidate.startsWith(word))
+                  .map((candidate) => new CodeCompletionItem(candidate))));
+              }
+              resolveAsync(item) { return Promise.resolve(item); }
+            }
+            const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+            const editor = new CodeEditorController('Col', CodeLanguages.cSharp);
+            const prefix = new Prefix();
+            editor.completion.providers.push(prefix);
+            editor.selection = new CodeRange(editor.document.end);
+            const states = [];
+            for (const step of steps) {
+              if (step === '$invoke') editor.completion.invoke();
+              else if (step.length === 1) editor.handleText(step);
+              else editor.handleKey(step, 0, 'standard', null);
+              await settle();
+              const labels = editor.completion.items.map((match) => match.item.label).join(',');
+              states.push(`${prefix.asked.join(';')}|${editor.completion.isOpen ? 'open' : 'shut'}|${labels}`);
+            }
+            console.log('=' + JSON.stringify(states));
+            """;
+        var line = JsExecutor.Run(program, timeoutMs: 120_000).Split('\n').Single(output => output.StartsWith('='));
+        var web = JsonSerializer.Deserialize<List<string>>(line.TrimEnd('\r')[1..])!;
+
+        var dotnet = RunPrefixOnDotNet();
+        dotnet.Should().Contain(state => state.Contains("Co/invoked", StringComparison.Ordinal),
+            "the provider is asked again once the caret goes back past Col");
+        web.Should().Equal(dotnet);
+    }
+
     // ---- a provider that answers late (#620) -------------------------------------------------------
 
     /// <summary>The pseudo-key of a step that has the late provider answer its oldest request.</summary>

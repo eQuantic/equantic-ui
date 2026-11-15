@@ -36,81 +36,32 @@ public class EqcOutputIsBuildOutputTests
         finally { Directory.Delete(directory, recursive: true); }
     }
 
-    private static string Old(string path)
-    {
-        File.WriteAllText(path, "// written by an earlier compile");
-        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddHours(-1));
-        return path;
-    }
-
     /// <summary>
-    /// The SDK's two prune targets as <c>Sdk.targets</c> ships them, around a stand-in for eqc that
-    /// behaves as the real one was measured to: it rewrites every file it writes, and before it writes
-    /// it records what the folder held, which is what a page asking for a module during the compile met.
+    /// The SDK removes nothing eqc wrote by a file's time: eqc removes what it stopped writing, by
+    /// what the compile produced (#1279). The SDK's prune read every file older than the compile's
+    /// start as one the compile did not write, which held only while eqc rewrote every file on every
+    /// compile, and never ran for the eqc a running app keeps (#1276). eqc's own prune is pinned by
+    /// ModuleBundlerMapsTests (the bundle's output, through bun) and the catalogue tests.
     /// </summary>
-    private static string Project()
-    {
-        var names = new[] { "_EQuanticMarkOutputStart", "_EQuanticPruneStaleOutput" };
-        var targets = ShippedSdk().Root!.Elements("Target")
-            .Where(t => names.Contains((string?)t.Attribute("Name")))
-            .Select(t => new XElement(t))
-            .ToList();
-        targets.Should().HaveCount(names.Length, "the test must run the targets the SDK ships, all of them");
-
-        return new XDocument(new XElement("Project",
-            new XElement("PropertyGroup",
-                new XElement("EnableEQuanticUICompilation", "true"),
-                new XElement("EQuanticOutputPath", "wwwroot/_equantic/")),
-            new XElement("Target", new XAttribute("Name", "CompileEQuanticUI"),
-                new XElement("ItemGroup",
-                    new XElement("_Seen", new XAttribute("Include", "wwwroot/_equantic/**"))),
-                new XElement("WriteLinesToFile", new XAttribute("File", "seen.txt"),
-                    new XAttribute("Lines", "@(_Seen->'%(Filename)%(Extension)')"), new XAttribute("Overwrite", "true")),
-                new XElement("WriteLinesToFile", new XAttribute("File", "wwwroot/_equantic/Kept.js"),
-                    new XAttribute("Lines", "// written by this compile"), new XAttribute("Overwrite", "true")),
-                new XElement("WriteLinesToFile", new XAttribute("File", "wwwroot/_equantic/Kept.js.map"),
-                    new XAttribute("Lines", "{}"), new XAttribute("Overwrite", "true")),
-                new XElement("WriteLinesToFile", new XAttribute("File", "wwwroot/_equantic/strings/neutral.json"),
-                    new XAttribute("Lines", "{}"), new XAttribute("Overwrite", "true"))),
-            new XElement("Target", new XAttribute("Name", "Build"), new XAttribute("DependsOnTargets", "CompileEQuanticUI")),
-            targets)).ToString();
-    }
-
     [Fact]
-    public void ACompile_RemovesWhatEqcStoppedWriting_AfterItWroteTheRest()
+    public void TheSdk_ReadsNoFileTimeOverEqcsFolder()
     {
-        InATemporaryFolder(directory =>
-        {
-            var output = Path.Combine(directory, "wwwroot", "_equantic");
-            File.WriteAllText(Path.Combine(directory, "probe.proj"), Project());
-            var kept = Old(Path.Combine(output, "Kept.js"));
-            var gone = Old(Path.Combine(output, "DeletedComponent.js"));
-            var map = Old(Path.Combine(output, "DeletedComponent.js.map"));
-            var culture = Old(Path.Combine(output, "strings", "fr.json"));
-            // CopyEQuanticRuntime writes it after eqc, keeping its source's time when it is unchanged.
-            var runtime = Old(Path.Combine(output, "runtime.js"));
+        var timed = ShippedSdk().Root!.Elements("Target")
+            .Where(t => t.ToString().Contains("EQuanticOutputPath", StringComparison.Ordinal)
+                && t.ToString().Contains("GetLastWriteTime", StringComparison.Ordinal))
+            .Select(t => (string?)t.Attribute("Name"))
+            .ToList();
 
-            Dotnet("msbuild", Path.Combine(directory, "probe.proj"), "-t:Build", "-nologo", "-v:m");
-
-            File.ReadAllLines(Path.Combine(directory, "seen.txt")).Should().Contain(["Kept.js", "DeletedComponent.js", "runtime.js"],
-                "the folder is never emptied before eqc writes it, or every module answers 404 while it compiles");
-            File.ReadAllText(kept).Should().Contain("written by this compile");
-            File.Exists(gone).Should().BeFalse("eqc did not write it: its component is gone");
-            File.Exists(map).Should().BeFalse();
-            File.Exists(culture).Should().BeFalse("a culture taken out leaves no catalog behind");
-            File.Exists(runtime).Should().BeTrue("the runtime is not eqc's to remove");
-        });
+        timed.Should().BeEmpty("a file eqc did not write again is one whose text did not change, not one it stopped writing");
     }
 
     [Fact]
     public void TheCompile_DeletesNothingBeforeItWrites()
     {
-        // The prune is the one place files leave the folder; the stand-in above cannot see a Delete put
-        // back inside the shipped target itself.
         var compile = ShippedSdk().Root!.Elements("Target").Single(t => (string?)t.Attribute("Name") == "CompileEQuanticUI");
 
         compile.Descendants("Delete").Should().BeEmpty(
-            "eqc's output is replaced in place, and only _EQuanticPruneStaleOutput removes what it stopped writing");
+            "eqc's output is replaced in place, and eqc removes what it stopped writing after it wrote the rest");
     }
 
     private static (string Excludes, string[] Content) Evaluate(string directory, string body = "", params string[] properties)

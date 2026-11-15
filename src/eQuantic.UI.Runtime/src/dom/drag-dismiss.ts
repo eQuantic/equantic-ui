@@ -9,7 +9,12 @@
  * dragged position, the CSS animation's implicit `from` being the current transform) or glides the
  * surface back over Motion.Base. Exiting copies (`[data-eq-exiting]`) never re-arm.
  * v1 fences: detents, flick-velocity dismissal, horizontal axis, nested-scroll interplay.
+ *
+ * The finger is read in the space the sheet's `translateY` moves it in, its parent's
+ * (`gestureSpace`), so the threshold is counted in the sheet's own pixels and the sheet stays under
+ * the finger whatever it is drawn under, as Photon counts it since #734 (#1492).
  */
+import { gestureSpace } from './gesture-space';
 
 /** Touch.PressCancelSlop — the same 12dp that cancels a native press into a drag. */
 const SLOP = 12;
@@ -39,12 +44,19 @@ function onPointerDown(down: Event): void {
   if (!sheet || sheet.closest('[data-eq-exiting]')) return;
 
   const threshold = parseFloat(sheet.getAttribute('data-eq-drag-dismiss') || '96');
+  const space = gestureSpace(sheet);
+  const startX = (down as PointerEvent).clientX;
   const startY = (down as PointerEvent).clientY;
+  const slop = space.onScreen(false, SLOP);
   let active = false;
 
+  // How far down the finger has carried the sheet, in the space its offset is in.
+  const travelled = (ev: Event): number =>
+    space.along(false, (ev as PointerEvent).clientX - startX, (ev as PointerEvent).clientY - startY);
+
   const move = (ev: Event): void => {
-    const dy = (ev as PointerEvent).clientY - startY;
-    if (!active && dy > SLOP) {
+    const dy = travelled(ev);
+    if (!active && dy > slop) {
       active = true;
       sheet.style.transition = 'none';
     }
@@ -69,7 +81,7 @@ function onPointerDown(down: Event): void {
     host.addEventListener('click', squashClick, { capture: true, once: true });
     setTimeout(() => host.removeEventListener('click', squashClick, { capture: true }), 50);
 
-    const dy = (ev as PointerEvent).clientY - startY;
+    const dy = travelled(ev);
     if (dy >= threshold) {
       sheet.dispatchEvent(new CustomEvent('eq-drag-dismiss'));
       return;

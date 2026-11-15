@@ -335,6 +335,20 @@ constructor SHALL be the queue's or the stack's capacity, as `new(capacity)` mak
 - **WHEN** browser-side code runs `LinkedList<int> l = []; l.AddLast(1); l.AddFirst(0);` and joins it
 - **THEN** it reads "0,1", as in .NET
 
+### Requirement: A collection's negative count is refused with its value
+
+Where .NET refuses a negative count with `ArgumentOutOfRangeException.ThrowIfNegative` (`Queue<T>`'s and `Stack<T>`'s capacity in the constructor, `EnsureCapacity` and `TrimExcess`, `LinkedList<T>.CopyTo`'s index, `HashSet<T>.CopyTo`'s index and count), the runtime SHALL throw the same exception with its `ParamName`, its `ActualValue` and its message, the value written as the current culture writes an `int`.
+
+#### Scenario: A queue built with a negative capacity
+
+- **WHEN** `new Queue<int>(-1)` runs and the exception is caught
+- **THEN** its `ParamName` is `capacity`, its `ActualValue` is -1 and its message says so, as in .NET; `ActualValue` was null
+
+#### Scenario: In a culture with its own minus sign
+
+- **WHEN** `new Queue<int>(-1)` runs in sv-SE
+- **THEN** the message and `ActualValue`'s text write the value with sv-SE's minus sign, as .NET does
+
 ### Requirement: A sorted set holds .NET's red-black tree
 
 The runtime's `SortedSet` SHALL hold its elements in the red-black tree .NET's `SortedSet<T>` holds them

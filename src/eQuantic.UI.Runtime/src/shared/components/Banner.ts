@@ -23,11 +23,14 @@ export class Banner extends StatelessComponent {
 
     build(context: BuildContext) {
         let tint = context.theme.colors(this.status);
+        let slot = context.theme.notice;
+        let textSize = slot?.bannerTextSize ?? 13;
+        let lineHeight = slot?.bannerLineHeight ?? 18;
         let glyph: IconsValue = (() => { const $s = this.status; if ($s === 'success') return 'checkCircle'; if ($s === 'warning') return 'warning'; if ($s === 'destructive') return 'error'; return 'info'; })();
-        let column = new Column(4);
-        column.add(new Text(this.title, 'caption', tint.onSubtle, 2, 'start', false, false, null, 0, { styleOverride: new TypeStyle(13, 18, 'semiBold', 0, Math.fround(1.3)) }));
+        let column = new Column(slot?.bannerGap ?? 4);
+        column.add(new Text(this.title, 'caption', tint.onSubtle, 2, 'start', false, false, null, 0, { styleOverride: new TypeStyle(textSize, lineHeight, slot?.bannerTitleWeight ?? 'semiBold', 0, Math.fround(1.3)) }));
         if (this.body != null) {
-            column.add(new Text(this.body, 'caption', tint.onSubtle, 4, 'start', false, false, null, 0, { styleOverride: new TypeStyle(13, 18, 'regular', 0, Math.fround(1.3)) }));
+            column.add(new Text(this.body, 'caption', tint.onSubtle, 4, 'start', false, false, null, 0, { styleOverride: new TypeStyle(textSize, lineHeight, slot?.bannerBodyWeight ?? 'regular', 0, Math.fround(1.3)) }));
         }
         if (this.primaryAction != null || this.secondaryAction != null) {
             let actions = new Row(8);
@@ -35,13 +38,13 @@ export class Banner extends StatelessComponent {
             if (this.secondaryAction != null) actions.add(this.secondaryAction);
             column.add(actions);
         }
-        let content = new Row(10, 'start', 'center', false, null, null, { cross: 'start' });
+        let content = new Row(slot?.bannerIconGap ?? 10, 'start', 'center', false, null, null, { cross: 'start' });
         content.add(new Icon(IconGlyph.fromIcons(glyph), 20, tint.onSubtle));
         content.add(new Flexible(column));
         if (this.onDismiss != null) {
             content.add(new Pressable(new Icon(IconGlyph.fromIcons('close'), 20, tint.onSubtle), this.onDismiss, { label: SdkStrings.dismiss }));
         }
-        let surface = new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(14, 12, 14, 12), background: tint.subtle, cornerRadius: new CornerRadii(context.theme.shape('large')) }), content);
+        let surface = new Box(new BoxStyle({ width: SizeValue.fill, padding: slot?.bannerPadding ?? new EdgeInsets(14, 12, 14, 12), background: tint.subtle, cornerRadius: new CornerRadii(context.theme.shape(slot?.bannerShape ?? 'large')) }), content);
         return new LiveRegion(surface, { urgency: (($0) => ($0 === 'warning' || $0 === 'destructive'))(this.status) ? 'assertive' : 'polite' });
     }
 }

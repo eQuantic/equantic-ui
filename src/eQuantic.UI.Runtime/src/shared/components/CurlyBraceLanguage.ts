@@ -1,6 +1,8 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
 
 export abstract class CurlyBraceLanguage {
+    static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
+
     constructor() {
         this.$rules = CodeLanguageRules.default;
         this._keywords = null;

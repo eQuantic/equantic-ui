@@ -34,7 +34,7 @@ public class B14TransitionTests
         public TransitionClock Clock { get; } = new();
 
         public RealizeResult Draw(VisualNode root, float timeMs, bool reducedMotion = false) =>
-            PhotonRealizer.Realize(root, 1000, 100, PhotonTheme.Instance, ThemeMode.Light,
+            PhotonRealizer.Realize(root, 1000, 100, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
                 new DisplayListBuilder(), timeMs: timeMs, reducedMotion: reducedMotion, owner: Owner,
                 transitions: Clock);
     }

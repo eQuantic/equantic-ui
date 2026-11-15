@@ -39,21 +39,24 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
-    /// Arms the in-flow intent while the child BUILDS. The overlay reads it in its own Build — that
-    /// is the only moment the answer can change anything, because by the time a tree exists the
-    /// scrim and the layer are already in it.
+    /// The in-flow intent, for the child's BUILDS. The overlay reads it in its own Build — that is the
+    /// only moment the answer can change anything, because by the time a tree exists the scrim and the
+    /// layer are already in it. A position answers it from the tree; a tree drawn without positions
+    /// builds the child's components with a context that says so, and no ambient channel is armed
+    /// (#1395).
     /// </summary>
     private HtmlElement? LowerInFlow(InFlow inFlow, bool? horizontalAxis)
     {
-        var previous = Primitives.InFlow.Current;
-        Primitives.InFlow.Current = true;
+        if (_frame is not null || _context.InFlow) return Lower(inFlow.Child, horizontalAxis, LoweringPath.Child);
+        var outer = _context;
+        _context = new ComponentContext(outer.Theme, outer.TypeScale, outer.Density, _measurer.Measure, outer.Route, inFlow: true);
         try
         {
             return Lower(inFlow.Child, horizontalAxis, LoweringPath.Child);
         }
         finally
         {
-            Primitives.InFlow.Current = previous;
+            _context = outer;
         }
     }
 
@@ -267,6 +270,32 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
+    /// A LABELLED GROUP (TS twin: lowerGroup): one <c>role="group"</c> host a reader names by its
+    /// <c>aria-label</c> and then walks into — inside a listbox, the APG's grouped options. No label,
+    /// no <c>aria-label</c>, the <see cref="LowerLiveRegion"/> rule. The host takes the child's fill
+    /// and cap with it, as every role-bearing wrapper's does: the box a reader outlines is the box it
+    /// names.
+    /// </summary>
+    private HtmlElement LowerGroup(Group group)
+    {
+        var fills = Fills(group.Child);
+        var cap = CapsAt(group.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : "fit-content",
+                MaxWidth = Size(cap),
+                Height = fills.Height ? "100%" : null,
+            },
+            RawAttributes = new Dictionary<string, string> { ["role"] = "group" },
+        };
+        if (group.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
+        if (Lower(group.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
     /// What the host ANNOUNCES itself as — DERIVED from the role and the value together rather than
     /// copied from <see cref="Adjustable.Role"/>, because the pairing is ARIA's rule and this is the
     /// one place in the SDK that speaks ARIA.
@@ -427,6 +456,7 @@ internal sealed partial class WebLoweringVisitor
         Adjustable adjustable => CapsAt(adjustable.Child),
         Progress progress => CapsAt(progress.Child),
         LiveRegion live => CapsAt(live.Child),
+        Group group => CapsAt(group.Child),
         Flexible flexible => CapsAt(flexible.Child),
         LoopMotion motion => CapsAt(motion.Child),
         Link link => CapsAt(link.Child),
@@ -471,14 +501,17 @@ internal sealed partial class WebLoweringVisitor
         var outerSimulated = _simulated;
         var outerDisabled = _inDisabledControl;
         var outerInControl = _inControl;
+        var outerInEnabledControl = _inEnabledControl;
         if (pressable.Disabled)
         {
             _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
             _inDisabledControl = true;
         }
         else if (_inControl)
-            _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
+            // The hover too, since #614 made it the control's: a picture of the row is the row's.
+            _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused | SimulatedState.Hovered);
         _inControl = true;
+        _inEnabledControl = !pressable.Disabled;
         // What THIS control is pictured as: its ring below reads it, so a nested control under a
         // picture of the one around it draws no ring either.
         var pictured = _simulated;
@@ -492,6 +525,7 @@ internal sealed partial class WebLoweringVisitor
             _simulated = outerSimulated;
             _inDisabledControl = outerDisabled;
             _inControl = outerInControl;
+            _inEnabledControl = outerInEnabledControl;
         }
 
         // A Pressable AROUND a control — a Menu making its trigger open the panel — is ordinary
@@ -507,6 +541,9 @@ internal sealed partial class WebLoweringVisitor
                 Border = "none",
                 Background = "none",
                 FontFamily = "inherit",
+                // The user agent's buttontext would stand between the text and icons inside and the
+                // foreground they inherit (#614).
+                Color = "inherit",
                 Cursor = pressable.Disabled ? null : "pointer",
                 TextAlign = TextAlign.Start,
                 // A Fill child needs the 100% chain to pass through the button (scrim et al.).

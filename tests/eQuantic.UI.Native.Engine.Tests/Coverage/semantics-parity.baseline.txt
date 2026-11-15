@@ -49,8 +49,7 @@ eQuantic.UI.Components.Calendar: StaticText "Tue" is announced on Photon only  w
 eQuantic.UI.Components.Calendar: StaticText "Wed" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 eQuantic.UI.Components.Select: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
 eQuantic.UI.Components.Select: ComboBox "Select…" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
-eQuantic.UI.Spreadsheets.NameBox: StaticText "A1" is announced on the web only  waits on #1333: a code surface's text is read beside an empty field on the web and not at all on Photon
-eQuantic.UI.Spreadsheets.Spreadsheet: Group "" is announced on the web only  waits on #1333: the sheet's status region holds its moves, read as a line of its own on the web: a code surface's text is read beside an empty field on the web and not at all on Photon
-eQuantic.UI.Spreadsheets.Spreadsheet: StaticText "A1, blank" is announced on the web only  waits on #1333: a code surface's text is read beside an empty field on the web and not at all on Photon
-eQuantic.UI.Spreadsheets.Spreadsheet: TextField "Spreadsheet" is announced on Photon only  waits on #1333: a code surface's text is read beside an empty field on the web and not at all on Photon
-eQuantic.UI.Spreadsheets.Spreadsheet: TextField "Spreadsheet" is announced on the web only  waits on #1333: a code surface's text is read beside an empty field on the web and not at all on Photon
+eQuantic.UI.Spreadsheets.Spreadsheet: Group "" is announced on the web only  waits on #1444: a spreadsheet's moves are announced by a status region of their own on the web and by the field itself on Photon
+eQuantic.UI.Spreadsheets.Spreadsheet: StaticText "A1, blank" is announced on the web only  waits on #1444: a spreadsheet's moves are announced by a status region of their own on the web and by the field itself on Photon
+eQuantic.UI.Spreadsheets.Spreadsheet: TextField "Spreadsheet" is announced on Photon only  waits on #1444: a spreadsheet's moves are announced by a status region of their own on the web and by the field itself on Photon
+eQuantic.UI.Spreadsheets.Spreadsheet: TextField "Spreadsheet" is announced on the web only  waits on #1444: a spreadsheet's moves are announced by a status region of their own on the web and by the field itself on Photon

@@ -131,6 +131,12 @@ internal sealed class PressScope
     /// <c>Focus</c> diff, as <see cref="InPressedControl"/>'s show their press.</summary>
     public bool InFocusedControl { get; set; }
 
+    /// <summary>Whether the nearest control around the box being drawn is hovered: null outside
+    /// every control and inside a disabled one, where a box's hover is its own; true or false inside
+    /// an enabled one, whose hover its boxes take (#614), up to a control nested in it, which sets
+    /// its own.</summary>
+    public bool? ControlHovered { get; set; }
+
     /// <summary>True while an enabled control's subtree is drawn under a <see cref="Simulated"/>
     /// node: a control nested in it is another control, and the picture's press and focus stop at
     /// it, as the real ones do (#616). A <see cref="Simulated"/> node starts it over.</summary>

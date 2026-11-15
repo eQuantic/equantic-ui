@@ -2,7 +2,6 @@ import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import type { HtmlNode } from '../core/types';
 import { photonTheme } from './design-system.generated';
-import { tokenValue } from './lowering';
 import { Box, BoxStyle, Column, Pressable, Row, Spacer, Text, WebFrame } from './vocabulary';
 import { ColorToken, CornerRadii, EdgeInsets, SizeValue, WebContent } from './value-types';
 import { Avatar } from './components/Avatar';
@@ -78,12 +77,17 @@ describe('vocabulary self-lowering (render)', () => {
     );
   });
 
-  it('Text without a color inherits the generated theme textPrimary', () => {
+  // #614: a Text with no colour writes none, and inherits the foreground above it or the document's.
+  it('Text without a color writes none, and inherits it', () => {
     const node = new Text('hello').render();
-    expect(effectiveStyle(node)).toContain(`color: ${tokenValue(photonTheme.textPrimary)}`);
+    expect(effectiveStyle(node)).not.toMatch(/(^|[^-\w])color:/);
   });
 
-  it('a web Component mixes into an abstract tree through the render seam', () => {
+  // A web component is no node of the vocabulary (C# `HtmlElement` is an `IComponent` and no
+  // `VisualNode`), so no C# tree can hold one. Handed to the lowering as its ROOT it still renders
+  // itself (node-kinds.spec.ts); nested in a tree, the element engine that builds the tree meets an
+  // object with no kind and refuses it by saying so, rather than drawing a gap where it stood.
+  it('a web Component nested in an abstract tree is refused by the engine that builds it', () => {
     const legacy = {
       render(): HtmlNode {
         return { tag: 'em', attributes: {}, events: {}, children: [] };
@@ -91,8 +95,7 @@ describe('vocabulary self-lowering (render)', () => {
     };
     const row = new Row(0);
     row.add(legacy as never);
-    const node = row.render();
-    expect(node.children[0].tag).toBe('em');
+    expect(() => row.render()).toThrow(/no child slots for a 'undefined' node/);
   });
 
   it('Pressable renders a neutralized button and wires onPressed to click', () => {

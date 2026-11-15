@@ -23,8 +23,37 @@ namespace eQuantic.UI.Web;
 internal sealed class ElementFrame
 {
     private readonly Dictionary<VisualNode, Element> _positions = new(ReferenceEqualityComparer.Instance);
+    private readonly int _tree;
+    private readonly int _keyDepth;
 
-    internal ElementFrame(Element root) => Index(root);
+    /// <param name="root">The tree's root position.</param>
+    /// <param name="tree">Which tree of the render this is, in the order the render draws them: what a
+    /// server data key starts with (<see cref="KeyOf"/>).</param>
+    /// <param name="keyDepth">The depth a position's key is measured from: the depth of the position the
+    /// browser builds this tree from (<see cref="MarkupHost.ForPage"/>).</param>
+    internal ElementFrame(Element root, int tree = 0, int keyDepth = 0)
+    {
+        _tree = tree;
+        _keyDepth = keyDepth;
+        Index(root);
+    }
+
+    /// <summary>
+    /// The key the server names <paramref name="position"/>'s data by, and the browser hands it back by
+    /// (#1477): the tree, the component's type, and the slots from the tree's root down to the position
+    /// (<see cref="Element.SlotsBelow"/>). Neither side's build order enters it, nor which arm of an
+    /// adaptive node a window resolves. Above the depth the browser builds the tree from stands the page
+    /// itself, which the browser builds by itself and names <c>Type#0</c>, and so does this.
+    /// </summary>
+    internal string KeyOf(ComponentElement position) => KeyAt(position, _tree, _keyDepth);
+
+    /// <summary>The key of <paramref name="position"/> in tree <paramref name="tree"/>, measured from
+    /// <paramref name="keyDepth"/>: what <see cref="KeyOf"/> answers, for a host that names a position
+    /// while it builds, before any frame is lowered.</summary>
+    internal static string KeyAt(ComponentElement position, int tree, int keyDepth) =>
+        position.Depth < keyDepth
+            ? ComponentIdentity.Key(position.Component.GetType(), 0)
+            : $"r{tree}/{ComponentIdentity.Of(position.Component.GetType())}@{position.SlotsBelow(keyDepth)}";
 
     /// <summary>
     /// The position of <paramref name="component"/> in this frame: the instance it KEEPS, which is not
@@ -35,19 +64,12 @@ internal sealed class ElementFrame
     /// <exception cref="InvalidOperationException">The frame has no position for the component: the
     /// engine went wrong, and lowering a fresh instance instead would draw its defaults in silence
     /// (Photon refuses a layer without a position for the same reason).</exception>
-    internal (UiComponent Kept, VisualNode? Built) At(UiComponent component) =>
+    internal (UiComponent Kept, VisualNode? Built, ComponentElement Position) At(UiComponent component) =>
         _positions.TryGetValue(component, out var element) && element is ComponentElement position
-            ? (position.Component, position.ChildAt(0)?.Configuration)
+            ? (position.Component, position.ChildAt(0)?.Configuration, position)
             : throw new InvalidOperationException(
                 $"A {component.GetType().Name} was lowered that this frame did not build: the element "
                 + "tree and the tree being lowered disagree.");
-
-    /// <summary>Whether <paramref name="arm"/> is the arm <paramref name="adaptive"/>'s OWN position
-    /// holds: the one its size class resolved. Asked of that position and not of the frame at large,
-    /// because one node instance can stand elsewhere in the tree too.</summary>
-    internal bool HoldsArm(AdaptiveNode adaptive, VisualNode arm) =>
-        _positions.TryGetValue(adaptive, out var element)
-        && ReferenceEquals(element.ChildAt(0)?.Configuration, arm);
 
     /// <summary>
     /// Shows <paramref name="layer"/> in the deferred slot of <paramref name="holder"/>'s position

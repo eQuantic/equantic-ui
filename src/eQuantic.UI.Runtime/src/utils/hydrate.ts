@@ -40,10 +40,10 @@ import type { KeyEquality } from './key-equality';
  *    array becomes the runtime's `HashSet` (its elements found as `byValue` says), `SortedSet` (in its
  *    element type's `order`), `Queue`, `Stack` or `LinkedList`, each element hydrated by `of` (null
  *    when elements arrive as they are);
- *  - `{ dict: spec, key, byValue, sorted, order }` — a dictionary: its `[key, value]` pairs (or a
+ *  - `{ dict: spec, key, keyOf, byValue, sorted, order }` — a dictionary: its `[key, value]` pairs (or a
  *    JSON object) become the runtime's `Dictionary` (a `SortedMap` in its key type's `order` when
- *    `sorted`), each key revived by `key` and each value hydrated by `dict` (null when values arrive
- *    as they are);
+ *    `sorted`), each key revived by `key`, or hydrated by `keyOf` where it is no scalar, and each value
+ *    hydrated by `dict` (null when values arrive as they are);
  *  - a class reference — a record/struct twin: the plain JSON object is rebuilt on the class's
  *    prototype (so `instanceof`, `equals`, `with` survive the wire) and each member hydrates by
  *    the class's own static `$hydration` map;
@@ -58,7 +58,11 @@ import type { KeyEquality } from './key-equality';
  * hydrating twice (or hydrating a value that never crossed the wire) is harmless.
  */
 
-/** The scalar compat types whose wire form is a string. */
+/**
+ * The scalar compat types whose wire form is a string, and an enum's that is not a flags one: its member's
+ * name, which the browser holds as it is, or, for a value no member names, its digits, which the browser
+ * holds as a number (`'enum'`), or as a BigInt for one over a long (`'enumLong'`) (#1238).
+ */
 export type HydrationTag =
   | 'decimal'
   | 'long'
@@ -67,7 +71,13 @@ export type HydrationTag =
   | 'timeSpan'
   | 'dateOnly'
   | 'timeOnly'
-  | 'dateTimeOffset';
+  | 'dateTimeOffset'
+  | 'enum'
+  | 'enumLong';
+
+/** An enum's value as EqJson writes one no member names: its digits, a sign in front of a negative one. A
+ * member's name is a C# identifier, which never starts with a digit or a sign. */
+const UNNAMED_ENUM = /^-?\d+$/;
 
 /**
  * How a dictionary's key is revived from the wire: a number, a bool, or a compat scalar by its tag. A
@@ -80,6 +90,8 @@ export type HydrationKey = HydrationTag | 'number' | 'bool';
 export interface DictionarySpec {
   readonly dict: HydrationSpec | null;
   readonly key?: HydrationKey;
+  /** How a key that is more than a scalar hydrates, which only a pair can carry: a record's or a struct's twin. */
+  readonly keyOf?: HydrationSpec;
   readonly byValue?: KeyEquality;
   /** A sorted one, and which of .NET's two: a `SortedList` refuses a key already there in its own words. */
   readonly sorted?: 'dictionary' | 'list';
@@ -103,6 +115,10 @@ export interface HydratableConstructor {
   readonly $hydration?: Readonly<Record<string, HydrationSpec>>;
   /** The members that hold the specs of the type arguments it revives, in their parameters' order. */
   readonly $typeArguments?: readonly string[];
+  /** A record's primary constructor's members, where it holds what the wire does not carry. */
+  readonly $primary?: readonly string[];
+  /** A struct's zero, which holds what the wire does not carry: every member the server does not write. */
+  readonly $zero?: () => object;
 }
 
 export type HydrationSpec =
@@ -151,13 +167,9 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
     if (of && incoming instanceof (of as unknown as new (...args: never[]) => object))
       return incoming;
     const source = incoming as Record<string, unknown>;
-    const result = (of ? Object.create(of.prototype) : {}) as object;
-    for (const key of Object.keys(source))
-      adoptMember(
-        result,
-        key,
-        ownSpec(members, key) !== undefined ? hydrate(source[key], members[key]) : source[key],
-      );
+    const member = once((key) => (ownSpec(members, key) !== undefined ? hydrate(source[key], members[key]) : source[key]));
+    const result = of ? blank(of, source, member) : {};
+    for (const key of Object.keys(source)) adoptMember(result, key, member(key));
     // The specs of the type arguments the twin revives, which the wire never carries: the C# type
     // knows them and JSON does not. A topic that crossed without them revived no payload.
     if (of?.$typeArguments !== undefined && typeArguments !== undefined)
@@ -213,7 +225,9 @@ function dictionary(incoming: unknown, spec: DictionarySpec): unknown {
   if (typeof incoming !== 'object' || incoming === null) return incoming;
   const value = (item: unknown): unknown => (spec.dict == null ? item : hydrate(item, spec.dict));
   const entries = Array.isArray(incoming)
-    ? (incoming as [unknown, unknown][]).map(([key, item]) => [pairKey(key, spec.key), value(item)] as const)
+    ? (incoming as [unknown, unknown][]).map(
+        ([key, item]) => [spec.keyOf === undefined ? pairKey(key, spec.key) : hydrate(key, spec.keyOf), value(item)] as const,
+      )
     : Object.keys(incoming).map(
         (name) =>
           [
@@ -287,6 +301,10 @@ function scalar(incoming: unknown, tag: HydrationTag): unknown {
       return typeof incoming === 'string' ? timeOnly.parse(incoming) : incoming;
     case 'dateTimeOffset':
       return typeof incoming === 'string' ? dateTimeOffset.parse(incoming) : incoming;
+    case 'enum':
+      return typeof incoming === 'string' && UNNAMED_ENUM.test(incoming) ? Number(incoming) : incoming;
+    case 'enumLong':
+      return typeof incoming === 'string' && UNNAMED_ENUM.test(incoming) ? BigInt(incoming) : incoming;
   }
 }
 
@@ -315,12 +333,41 @@ function instance(incoming: unknown, ctor: HydratableConstructor): unknown {
   if (incoming instanceof (ctor as unknown as new (...args: never[]) => object)) return incoming;
   if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
   const source = incoming as Record<string, unknown>;
-  const rebuilt = Object.create(ctor.prototype) as object;
-  for (const key of Object.keys(source)) {
+  const member = once((key) => {
     const spec = ownSpec(ctor.$hydration, key);
-    adoptMember(rebuilt, key, spec !== undefined ? hydrate(source[key], spec) : source[key]);
-  }
+    return spec !== undefined ? hydrate(source[key], spec) : source[key];
+  });
+  const rebuilt = blank(ctor, source, member);
+  for (const key of Object.keys(source)) adoptMember(rebuilt, key, member(key));
   return rebuilt;
+}
+
+/**
+ * `read` asked once for each key: a member the primary constructor is handed is the member the value holds, the
+ * one object a field initialized from the parameter shares with the property, as in .NET. Hydrated again for the
+ * adoption, the field held one object and the property another.
+ */
+function once(read: (key: string) => unknown): (key: string) => unknown {
+  const read$ = new Map<string, unknown>();
+  return (key) => {
+    if (!read$.has(key)) read$.set(key, read(key));
+    return read$.get(key);
+  };
+}
+
+/**
+ * The value a twin's members are adopted onto. The wire carries what `EqJson` writes, the public properties, so
+ * what it does not has to come from the twin: a record that holds more is built through its primary constructor,
+ * whose field initializers may read the parameters, and a struct from its zero (#590). A private field the server
+ * changed does not cross, so it is what its initializer says here. Anything else is the bare prototype.
+ */
+function blank(ctor: HydratableConstructor, source: object, member: (key: string) => unknown): object {
+  // Its own: a derived record inherits the static, and its constructor takes other parameters.
+  if (Object.prototype.hasOwnProperty.call(ctor, '$primary')) {
+    const Twin = ctor as unknown as new (...members: unknown[]) => object;
+    return new Twin(...ctor.$primary!.map((key) => (key in source ? member(key) : undefined)));
+  }
+  return ctor.$zero?.() ?? (Object.create(ctor.prototype) as object);
 }
 
 /**

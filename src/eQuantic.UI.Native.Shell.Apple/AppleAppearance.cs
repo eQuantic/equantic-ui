@@ -46,4 +46,18 @@ public static class AppleAppearance
             ? ThemeMode.Dark
             : ThemeMode.Light;
     }
+
+    /// <summary>
+    /// The contrast the person asked macOS for: Increase Contrast, under Accessibility, Display,
+    /// which <c>NSWorkspace</c> reports as <c>accessibilityDisplayShouldIncreaseContrast</c>. A
+    /// platform fact like the mode, never stated by the app (#340). Standard where there is no
+    /// workspace to ask, which is iOS, where the view controller reads its trait collection instead.
+    /// </summary>
+    public static ContrastLevel Contrast()
+    {
+        var workspace = Send(objc_getClass("NSWorkspace"), Sel("sharedWorkspace"));
+        return workspace != IntPtr.Zero && SendBool(workspace, Sel("accessibilityDisplayShouldIncreaseContrast"))
+            ? ContrastLevel.More
+            : ContrastLevel.Standard;
+    }
 }

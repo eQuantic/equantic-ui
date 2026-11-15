@@ -65,14 +65,14 @@ public class LocalFunctionParameterTests
         Assert.DoesNotContain(": string", js);
     }
 
-    /// <summary>`params` is a REST parameter here for the same reason it is on a method: emitted as a
-    /// plain one it binds only the first argument.</summary>
+    /// <summary>`params` is the array it is in C#, as on a method: the call packs what it lists (#1159).</summary>
     [Fact]
-    public void ParamsBecomesARestParameter()
+    public void ParamsIsTheArrayItIs()
     {
         var js = Convert("int Count(params int[] values) => values.Length; Count(1, 2);");
 
-        Assert.Contains("...values", js);
+        Assert.DoesNotContain("...values", js);
+        Assert.Contains("count([1, 2])", js);
     }
 
     [Fact]

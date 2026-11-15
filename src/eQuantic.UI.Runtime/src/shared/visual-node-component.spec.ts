@@ -5,10 +5,14 @@ import { TextInput } from './components/TextInput';
 import { photonTheme } from './design-system.generated';
 import { getPhotonTheme, setPhotonDensity, setPhotonTheme } from './photon-context';
 import { ColorToken } from './value-types';
-import { Text } from './vocabulary';
+import { Text, TextEntry } from './vocabulary';
 import type { HtmlElement, HtmlNode } from '../core/types';
 import { VisualNodeComponent } from './visual-node-component';
 import { Checkbox } from './components/Checkbox';
+
+/** Every declaration the node and its descendants take, for a probe that sits below the bridge's root. */
+const stylesBelow = (node: HtmlNode): string =>
+  [effectiveStyle(node), ...node.children.filter((c): c is HtmlNode => typeof c === 'object' && c !== null && 'tag' in c).map(stylesBelow)].join('; ');
 
 afterEach(() => {
   setPhotonTheme(photonTheme);
@@ -52,9 +56,10 @@ describe('VisualNodeComponent (the Core⇄Shared client bridge)', () => {
     setPhotonTheme({ ...photonTheme, textPrimary: magenta });
     expect(getPhotonTheme().textPrimary).toBe(magenta);
 
-    // A Text with no explicit color inherits the REGISTERED theme's textPrimary.
-    const node = new VisualNodeComponent(new Text('hello')).render();
-    expect(effectiveStyle(node)).toContain('color: #ff00ff');
+    // A field's ink is the REGISTERED theme's textPrimary. A Text with no colour writes none since
+    // #614 and inherits the document's, so the theme is read where a node still asks it for a colour.
+    const node = new VisualNodeComponent(new TextEntry('hello')).render();
+    expect(stylesBelow(node)).toContain('color: #ff00ff');
   });
 
   // The C# is `VisualNodeComponent : HtmlElement`, so a Core page may hold one wherever an
@@ -74,8 +79,8 @@ describe('VisualNodeComponent (the Core⇄Shared client bridge)', () => {
 
   it('an explicit theme argument overrides the ambient one (the C# optional parameter)', () => {
     const custom = { ...photonTheme, textPrimary: new ColorToken({ r: 0, g: 128, b: 0, a: 255 }) };
-    const node = new VisualNodeComponent(new Text('hello'), custom).render();
-    expect(effectiveStyle(node)).toContain('color: #008000');
+    const node = new VisualNodeComponent(new TextEntry('hello'), custom).render();
+    expect(stylesBelow(node)).toContain('color: #008000');
   });
 
   // A bridge given its OWN theme is still a part of this page, so what it composes lowers at the

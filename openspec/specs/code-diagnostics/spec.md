@@ -70,7 +70,8 @@ listener hears the change: a position before the edit SHALL stay; one after it S
 edit removed and inserted; a range's start inside the replaced text SHALL go to the start of the
 replacement and its end to the end of the replacement, so a problem whose text was rewritten covers the
 rewrite. A problem SHALL NOT grow at its edges: text inserted where it starts or where it ends is not in
-it. Undo and redo SHALL carry problems as any edit does. A problem reported at any moment SHALL describe
+it. A problem of no width SHALL stay with the text after it, except in front of inserted text that begins
+with a line break, where it SHALL stay where it was. Undo and redo SHALL carry problems as any edit does. A problem reported at any moment SHALL describe
 the text as it stands then, and SHALL NOT be carried through an edit that text already holds. A document
 replaced whole SHALL drop every problem.
 
@@ -104,6 +105,12 @@ replaced whole SHALL drop every problem.
 
 - **WHEN** an editor holding problems is given a new document
 - **THEN** it holds none
+
+#### Scenario: A problem of no width at a line's end, a line written after it
+
+- **WHEN** a problem of no width stands at the end of the document's last line and the line above is moved
+  past it, or Enter is typed at it
+- **THEN** the problem stays at the end of that line
 
 ### Requirement: Providers are asked once typing pauses
 

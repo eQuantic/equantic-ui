@@ -9,24 +9,12 @@ namespace eQuantic.Console;
 /// ~a screenful of rows between two spacers however far you are; watch it in devtools.
 /// </summary>
 [Page("/rows", Title = "10 000 rows — eQuantic Console")]
-public sealed class RowsScreen : StatefulComponent
+public sealed class RowsScreen : StatelessComponent
 {
     private const int Count = 10_000;
     private const float Extent = 44f;
 
-    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
-    private bool _navOpen;
-
-    /// <summary>
-    /// The frame, then this screen inside it. Every route wraps itself: there is no separate
-    /// layout, and none is needed — the reconciler matches the frame position for position across
-    /// a navigation, so the sidebar is never rebuilt and only the middle changes.
-    /// </summary>
-    public override VisualNode Build(ComponentContext context) =>
-        ConsoleShell.Frame(context.Theme, "/rows", "Rows", Content(context),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
-
-    private VisualNode Content(ComponentContext context)
+    public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
 

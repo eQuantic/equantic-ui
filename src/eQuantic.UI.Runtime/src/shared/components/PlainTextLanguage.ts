@@ -1,6 +1,8 @@
 import { CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export class PlainTextLanguage {
+    static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
+
     constructor() {}
 
     get name(): string {

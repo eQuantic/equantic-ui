@@ -239,11 +239,12 @@ public class TypeScriptEmitter
         return (JsStatement.Block(new[] { fallback }), null);
     }
 
-    /// <summary>An initializer's converted text, in an arrow that declares what it declares — see
-    /// <see cref="ExpressionVariableScanner.Scoped"/>. Every initializer the emitter writes goes
-    /// through here: a field's, a property's and a prop's default, in a constructor or on the class.</summary>
-    private string Initializer(ExpressionSyntax expression, string converted) =>
-        ExpressionVariableScanner.Scoped(expression, converted, TypeAnnotations);
+    /// <summary>An initializer converted in a scope of its own, in an arrow that declares what it declares
+    /// and binds — see <see cref="CSharpToJsConverter.ConvertInitializer"/>. Every initializer the emitter
+    /// writes goes through here: a field's, a property's and a prop's default, in a constructor or on the
+    /// class.</summary>
+    private string Initializer(ExpressionSyntax expression, string? type) =>
+        _converter.ConvertInitializer(expression, () => _converter.ConvertExpression(expression, type), TypeAnnotations);
 
     public TypeScriptCodeBuilder.ClassBuilder? ClassBuilder { get; set; }
 
@@ -397,6 +398,11 @@ public class TypeScriptEmitter
                 if (component.TypeIdentity.Length > 0)
                     c.Field("$typeId", null, JsStringLiteral.Quote(component.TypeIdentity), null, isStatic: true);
 
+                // The interfaces a type test can ask of the component, which JavaScript cannot (#1464).
+                if (component.ClassSyntax is { } componentClass && ModelFor(componentClass)?.GetDeclaredSymbol(componentClass) is INamedTypeSymbol self
+                    && Strategies.InterfaceTests.DeclaredBy(self) is { } interfaces)
+                    c.Field("$interfaces", null, JsExprWriter.Write(interfaces), null, isStatic: true);
+
                 // Component-level fields (static data / consts / instance fields), emitted at the top of
                 // the class. Skipped for primitives' INSTANCE fields, whose base ctor sets every prop via
                 // Object.assign — an uninitialised instance field would clobber that after super(); a static
@@ -426,7 +432,7 @@ public class TypeScriptEmitter
                         var tsType = DeclarationType(component, field.Type);
                         var tsDefault = field.DefaultValueNode is not { Parent: EqualsValueClauseSyntax given } ? null
                             : field.IsStatic && field.TypeNode is { } declared ? StaticValue(given, declared)
-                            : Initializer(given.Value, _converter.ConvertExpression(given.Value, field.Type));
+                            : Initializer(given.Value, field.Type);
                         // C# value types default without an initializer (`private int _count;` is 0);
                         // an uninitialized TS field is `undefined` and would poison arithmetic (NaN).
                         tsDefault ??= ValueTypeDefault(field.Type, field.TypeNode);
@@ -513,7 +519,7 @@ public class TypeScriptEmitter
                         // still non-null at a second read a line later.
                         if (prop.DefaultValueNode is not { } declaredDefault) continue;
                         var camelName = prop.Name.ToCamelCase();
-                        var tsDefault = Initializer(declaredDefault, _converter.ConvertExpression(declaredDefault, prop.Type));
+                        var tsDefault = Initializer(declaredDefault, prop.Type);
                         // The default rides into the CONSTRUCTOR as text, past the converter's
                         // helper tracking — `$eq.num.long(0)` in a module that never imported $eq
                         // was "ReferenceError: $eq is not defined" at `new`, containing the
@@ -736,7 +742,7 @@ public class TypeScriptEmitter
                             {
                                 var cn = p.Name.ToCamelCase();
                                 var def = p.DefaultValueNode != null
-                                    ? Initializer(p.DefaultValueNode, _converter.ConvertExpression(p.DefaultValueNode, p.Type))
+                                    ? Initializer(p.DefaultValueNode, p.Type)
                                     : ImplicitDefault(p)!;
                                 statements.Add(DefaultIfUndefined(cn, def));
                             }
@@ -794,7 +800,17 @@ public class TypeScriptEmitter
                     }
                 }
                 // Abstract classes: no build method emitted
-                
+
+                // An event declared with accessors, as a class's is (#1445), on every branch above: a
+                // primitive's, and an abstract base's that holds nothing else for the branch to count.
+                if (component.ClassSyntax is { } withEvents)
+                {
+                    _converter.SetCurrentClass(component.Name);
+                    foreach (var e in withEvents.TwinMembers().OfType<EventDeclarationSyntax>())
+                        foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic: false))
+                            c.Member(member, member.Origin?.Member);
+                }
+
                 // Server Actions
                 foreach (var action in component.ServerActions)
                 {
@@ -1891,6 +1907,13 @@ public class TypeScriptEmitter
                     if (isStaticEvent) c.Field(v.Identifier.ValueText.ToCamelCase(), DeclaredType(e.Declaration.Type), "null", v, isStatic: true);
                 }
             }
+            // `event Action Changed { add { … } remove { … } }`, an explicit interface's always: its
+            // accessors, which every subscription calls as C# compiles `+=` into a call of them (#746).
+            // Nothing wrote them, so a handler subscribed through an interface landed on a key of the
+            // event's name that the accessors never read.
+            foreach (var e in cls.TwinMembers().OfType<EventDeclarationSyntax>())
+                foreach (var member in Lowering.EventAccessors(e, DeclaredType, asStatic))
+                    c.Member(member, member.Origin?.Member);
             if (ordered)
             {
                 _converter.UsedHelpers.Add(Eq.Import);
@@ -1952,16 +1975,20 @@ public class TypeScriptEmitter
             // So does one whose field moved a case apart from a member (`value$`, #396), whose own key
             // is storage no server reads. A derived class inherits it. A static's slot is the class's,
             // which no JSON of an instance writes (#1175).
-            if (!asStatic && (cls.TwinMembers().OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
+            // And a twin that holds more than the serializer writes writes only what it does (#745).
+            var written = !asStatic && ModelFor(cls)?.GetDeclaredSymbol(cls) is INamedTypeSymbol contract ? JsonContract.Members(contract) : null;
+            if (written is not null || (!asStatic && (cls.TwinMembers().OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
                     || cls.Members.OfType<FieldDeclarationSyntax>()
                         .Where(field => !field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                             && !field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword))
                         .SelectMany(field => field.Declaration.Variables)
-                        .Any(variable => variable.SlotOf(ModelFor(cls)).EndsWith('$'))))
+                        .Any(variable => variable.SlotOf(ModelFor(cls)).EndsWith('$')))))
             {
                 _converter.UsedHelpers.Add(Eq.Import);
                 c.Member(JsClassMember.Method("", "toJSON", "", "", "",
-                    JsStatement.Return(JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This))), cls);
+                    JsStatement.Return(written is null
+                        ? JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This)
+                        : JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This, JsExpr.Opaque(written)))), cls);
             }
 
             EmitExtensionBlocks(cls, c);
@@ -1976,7 +2003,7 @@ public class TypeScriptEmitter
     /// (<see cref="TypeInitializer.Constant"/>), and the expression converted otherwise.</summary>
     private string StaticValue(EqualsValueClauseSyntax initializer, TypeSyntax type) =>
         TypeInitializer.Constant(initializer, ModelFor(initializer), _converter)
-        ?? Initializer(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ValueText()));
+        ?? Initializer(initializer.Value, type.ValueText());
 
     /// <summary>
     /// A property's getter where it has one with a body: its expression body, or its get
@@ -2858,6 +2885,10 @@ public class TypeScriptEmitter
                 if (!asStatic && semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol equatable
                     && Strategies.ElementEquality.ContractMap(equatable) is { } contracts)
                     c.Field("$equatable", null, contracts, cls, isStatic: true);
+                // The interfaces a type test can ask of its values, which JavaScript cannot (#1464).
+                if (!asStatic && semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol implementing
+                    && Strategies.InterfaceTests.DeclaredBy(implementing) is { } interfaces)
+                    c.Field("$interfaces", null, JsExprWriter.Write(interfaces), cls, isStatic: true);
                 EmitStaticMembers(cls, c, asStatic);
                 if (!asStatic) EmitInheritedDefaults(cls, c);
                 // A class that never says what its text is writes its full name, as Object.ToString
@@ -2870,7 +2901,7 @@ public class TypeScriptEmitter
             isAbstract: cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword));
         var emitted = builder.ToString();
         // This module used a LOCAL builder, so the mappings it recorded never reached
-        // GetLastMappings — which is why a static helper (the app's ConsoleShell, say) shipped
+        // GetLastMappings — which is why a static helper (an app's frame, say) shipped
         // with no source map while every component beside it had one: the error overlay could
         // walk a page's frame back to C# and had to stop dead on a helper's.
         _builder = builder;
@@ -3015,7 +3046,7 @@ public class TypeScriptEmitter
                 ? list[index].Default?.Value
                 : null;
             var isRest = syntaxParameters is { } paramList && index < paramList.Count
-                && paramList[index].Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword);
+                && Strategies.BoundArguments.IsRest(paramList[index], _converter.Compilation);
             return Lowering.ParamWithDefault(name, DeclarationType(component, p.Type),
                 defaultValue is null ? null : _converter.ConvertExpression(defaultValue), isRest);
         }));

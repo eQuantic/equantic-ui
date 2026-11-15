@@ -22,9 +22,9 @@ public class FaceSinkTests
     public void AFamilyATextNames_IsCollected_OnceHoweverOftenItIsNamed()
     {
         var channels = new RenderChannels();
-        WebRealizer.Lower(Named(Probe), Theme, 1f, channels).Render();
-        WebRealizer.Lower(Named(new FontFamily("Probe Sans", Probe.Files[0])), Theme, 1f, channels).Render();
-        WebRealizer.Lower(Named(new FontFamily("Georgia")), Theme, 1f, channels).Render();
+        MarkupHost.DrawOnce(Named(Probe), Theme, 1f, channels).Render();
+        MarkupHost.DrawOnce(Named(new FontFamily("Probe Sans", Probe.Files[0])), Theme, 1f, channels).Render();
+        MarkupHost.DrawOnce(Named(new FontFamily("Georgia")), Theme, 1f, channels).Render();
 
         channels.Faces.Families.Should().Equal([Probe], "an equal family is the same family, and one with no files is the platform's");
     }
@@ -35,7 +35,7 @@ public class FaceSinkTests
         var mine = new RenderChannels();
         var theirs = new RenderChannels();
 
-        WebRealizer.Lower(Named(Probe), Theme, 1f, mine).Render();
+        MarkupHost.DrawOnce(Named(Probe), Theme, 1f, mine).Render();
         var alone = () => WebRealizer.Lower(Named(Probe), Theme).Render();
 
         alone.Should().NotThrow("a lowering outside a render has nowhere to collect into, and needs nowhere");

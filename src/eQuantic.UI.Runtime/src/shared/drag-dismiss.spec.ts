@@ -100,4 +100,32 @@ describe('drag-to-dismiss controller (web)', () => {
     pointer('pointerup', document, 308);
     expect(host.dismissals).toBe(0);
   });
+
+  /**
+   * Under a parent drawn at twice the size, the threshold is the sheet's own 96: 120 on the screen is
+   * 60 of it, short, and the sheet is moved 60 in its parent's space, which draws it under the finger.
+   * Read on the screen, the same move dismissed it, and drew it 240 away. Photon counts it in the
+   * sheet's own space (#734); measured in Chromium (#1492). jsdom reports a transform as it was
+   * written, so the scale is written as the matrix a browser computes from it.
+   */
+  it('counts its threshold in its own pixels under a scaled parent', async () => {
+    (sheet.parentElement as HTMLElement).style.transform = 'matrix(2, 0, 0, 2, 0, 0)';
+    pointer('pointerdown', sheet, 300);
+    pointer('pointermove', document, 420);
+    expect(sheet.style.transform).toBe('translateY(60px)');
+
+    pointer('pointerup', document, 420);
+    await nextFrame();
+    expect(host.dismissals).toBe(0);
+  });
+
+  it('arms by the distance on the screen under a scaled parent', () => {
+    // A slop is the finger's: 16 on the screen arms past 12 at twice the size, where it is 8 of the
+    // sheet's own pixels.
+    (sheet.parentElement as HTMLElement).style.transform = 'matrix(2, 0, 0, 2, 0, 0)';
+    pointer('pointerdown', sheet, 300);
+    pointer('pointermove', document, 316);
+    expect(sheet.style.transform).toBe('translateY(8px)');
+    pointer('pointerup', document, 316);
+  });
 });

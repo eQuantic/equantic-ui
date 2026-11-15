@@ -1,3 +1,4 @@
+import { $eq } from "@equantic/runtime";
 import { EmittedBase } from "./EmittedBase";
 
 export class EmittedBag extends EmittedBase {
@@ -11,6 +12,10 @@ export class EmittedBag extends EmittedBase {
 
     get count(): number {
         return this._items.length;
+    }
+
+    toJSON() {
+        return $eq.json(this, ['count', 'name']);
     }
 
     toString(): string {

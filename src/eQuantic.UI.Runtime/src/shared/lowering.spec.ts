@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ColorTokenValue, VisualNodeValue } from './nodes';
 import { num } from './css-values';
 import { lowerVisualNode, px, tokenValue } from './lowering';
+import { StatelessComponent } from '../core/component';
 import webFrameAttributes from './web-frame-attributes.fixture.json';
 
 /**
@@ -175,7 +176,9 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(node.children[0].textContent).toBe('Saldo disponível');
   });
 
-  it('Text defaults to the theme TextPrimary and honors StyleOverride', () => {
+  // #614: a text with no colour of its own writes none and inherits the foreground above it, or the
+  // document's TextPrimary (the C# twin's WebLoweringVisitor.Text).
+  it('Text with no colour inherits it, and honors StyleOverride', () => {
     const text: VisualNodeValue = {
       nodeKind: 'text',
       content: 'Continuar',
@@ -185,7 +188,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     } as VisualNodeValue;
 
     const style = effectiveStyle(lowerVisualNode(text, ctx));
-    expect(style).toContain(`color: ${tokenValue(textPrimary)}`);
+    expect(style).not.toContain('color:');
     expect(style).toContain('font-size: 15px');
     expect(style).toContain('font-weight: 600');
     expect(style).toContain('letter-spacing: 0.1px');
@@ -486,16 +489,19 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
   });
 
   it('Components expand via build(context) — the write-once client path', () => {
-    const component: VisualNodeValue = {
-      nodeKind: 'component',
-      build: () =>
-        box({ background: primaryBase, height: { kind: 'fixed', value: 40 } }, {
+    // A component, as transpiled code makes one: the element engine builds a `UiComponent`, and the
+    // lowering draws what its position built.
+    class PayButton extends StatelessComponent {
+      build(): VisualNodeValue {
+        return box({ background: primaryBase, height: { kind: 'fixed', value: 40 } }, {
           nodeKind: 'text',
           content: 'Pay',
           role: 'label',
           maxLines: 1,
-        } as VisualNodeValue),
-    } as VisualNodeValue;
+        } as VisualNodeValue);
+      }
+    }
+    const component = new PayButton() as unknown as VisualNodeValue;
 
     const node = lowerVisualNode(component, ctx);
     expect(node.tag).toBe('div');

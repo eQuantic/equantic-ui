@@ -103,7 +103,7 @@ public class FlexLineResolutionTests
         {
             var row = new Row(gap: 0) { Width = 1440, Height = 20 };
             row.Add(new Flexible(Pane(), flex: flex, basis: 540) { AnimateChanges = true });
-            return PhotonRealizer.Realize(row, 1440, 100, PhotonTheme.Instance, ThemeMode.Light,
+            return PhotonRealizer.Realize(row, 1440, 100, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
                 new DisplayListBuilder(), timeMs: timeMs, owner: owner, transitions: clock).Root.Children[0].Bounds.Width;
         }
 
@@ -324,7 +324,7 @@ public class FlexLineResolutionTests
     public void AColumn_SharesItsOverflow_WithWhatAComponentBuilds()
     {
         static Framework.LayoutNode Laid(VisualNode first) =>
-            PhotonRealizer.Realize(ColumnOf(first), 2000, 800, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder()).Root;
+            PhotonRealizer.Realize(ColumnOf(first), 2000, 800, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder()).Root;
 
         var filling = Laid(new Builds(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill })));
         filling.Children[0].Bounds.Height.Should().BeApproximately(170.21f, 0.01f);
@@ -366,7 +366,7 @@ public class FlexLineResolutionTests
             new Presence(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill })),
         })
         {
-            var node = PhotonRealizer.Realize(ColumnOf(wrapped), 2000, 800, PhotonTheme.Instance, ThemeMode.Light,
+            var node = PhotonRealizer.Realize(ColumnOf(wrapped), 2000, 800, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
                 new DisplayListBuilder()).Root;
 
             node.Children[0].Bounds.Height.Should().BeApproximately(170.21f, 0.01f, wrapped.GetType().Name);
@@ -433,7 +433,7 @@ public class FlexLineResolutionTests
         var row = new Row(gap: 0, cross: CrossAlign.Stretch) { Width = 400, Height = 100 };
         row.Add(new Builds(FixedBox(40, 20)));
 
-        var frame = PhotonRealizer.Realize(row, 400, 100, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder());
+        var frame = PhotonRealizer.Realize(row, 400, 100, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder());
 
         frame.Root.Children[0].Bounds.Height.Should().Be(20);
     }
@@ -449,7 +449,7 @@ public class FlexLineResolutionTests
             Notes = [new Positioned(FixedBox(40, 60), top: 0, start: 0)],
         });
 
-        var frame = PhotonRealizer.Realize(row, 400, 100, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder());
+        var frame = PhotonRealizer.Realize(row, 400, 100, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder());
 
         frame.Root.Children[0].Bounds.Height.Should().Be(20);
     }
@@ -476,7 +476,7 @@ public class FlexLineResolutionTests
         row.Add(new Flexible(new Builds(FixedBox(400)), flex: 1));
         row.Add(new Flexible(Pane(), flex: 1));
 
-        var item = PhotonRealizer.Realize(row, 600, 100, PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder())
+        var item = PhotonRealizer.Realize(row, 600, 100, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder())
             .Root.Children[0];
 
         item.Bounds.Width.Should().BeApproximately(300, 0.5f, "the item is its share");

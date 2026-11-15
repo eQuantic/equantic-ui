@@ -25,6 +25,13 @@ internal sealed class MaterialColors
     public required ColorToken LinkColor { get; init; }
     public required ColorToken Scrim { get; init; }
 
+    /// <summary>M3's inverse-surface: what a snackbar and a plain tooltip are filled with, the
+    /// contrast of the surface they float over. Read by the slots, never a role of the vocabulary.</summary>
+    public required ColorToken InverseSurface { get; init; }
+
+    /// <summary>M3's surface-container-highest: a filled card's fill.</summary>
+    public required ColorToken SurfaceContainerHighest { get; init; }
+
     public required VariantColors Primary { get; init; }
     public required VariantColors Secondary { get; init; }
     public required VariantColors Tertiary { get; init; }
@@ -55,6 +62,8 @@ internal sealed class MaterialColors
         FocusRing = Token(0x6750A4, 0xD0BCFF),
         LinkColor = Token(0x6750A4, 0xD0BCFF),
         Scrim = ScrimToken,
+        InverseSurface = Token(0x322F35, 0xE6E0E9),
+        SurfaceContainerHighest = Token(0xE6E0E9, 0x36343B),
         Primary = new VariantColors(Token(0x6750A4, 0xD0BCFF), Token(0xFFFFFF, 0x381E72),
             Token(0x5B4491, 0xDAC8FF), Token(0xEADDFF, 0x4F378B), Token(0x21005D, 0xEADDFF)),
         Secondary = new VariantColors(Token(0x625B71, 0xCCC2DC), Token(0xFFFFFF, 0x332D41),
@@ -109,6 +118,8 @@ internal sealed class MaterialColors
             FocusRing = Pair(primary, 40, 80),
             LinkColor = Pair(primary, 40, 80),
             Scrim = ScrimToken,
+            InverseSurface = Pair(neutral, 20, 90),
+            SurfaceContainerHighest = Pair(neutral, 90, 22),
             Primary = Variant(primary),
             Secondary = Variant(secondary),
             Tertiary = Variant(tertiary),

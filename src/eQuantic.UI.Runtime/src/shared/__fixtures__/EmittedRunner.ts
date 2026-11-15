@@ -1,3 +1,5 @@
+import { $eq } from "@equantic/runtime";
+
 export class EmittedRunner {
     constructor(step: (value: number) => number = undefined!, live: boolean = undefined!) {
         if (arguments.length === 1) {
@@ -21,6 +23,10 @@ export class EmittedRunner {
 
     run(value: number) {
         return this._step(value);
+    }
+
+    toJSON() {
+        return $eq.json(this, ['live']);
     }
 
     toString(): string {

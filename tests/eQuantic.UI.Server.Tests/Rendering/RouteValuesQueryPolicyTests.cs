@@ -42,7 +42,8 @@ public class RouteValuesQueryPolicyTests
         method.Should().NotBeNull(
             "this test is about ServerRenderingService's own query policy — a reimplementation here "
             + "would agree with itself and prove nothing");
-        return (RouteValues)method!.Invoke(null, [context])!;
+        // No culture routes: the query policy does not depend on them.
+        return (RouteValues)method!.Invoke(null, [context, null])!;
     }
 
     [Fact]

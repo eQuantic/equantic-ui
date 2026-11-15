@@ -1,0 +1,94 @@
+## Comfortable
+### web
+<div class="eq-12ve49g eq-17a2pwz eq-1eb13m5 eq-2l5nkt eq-94p0gr eq-bo3n4y eq-g7fowl eq-mbtjfn">
+<div style="--eq-loop-from: -100%; --eq-loop-to: 100%" class="eq-loop eq-loop-rest-hidden eq-lucgj8">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-94p0gr eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-1eb13m5 eq-94p0gr eq-bo3n4y eq-g7fowl eq-lr4qmx">
+</div>
+</div>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-1eb13m5 eq-94p0gr eq-af7hnd eq-bo3n4y eq-g7fowl">
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-168ghzj{flex:1 1 0%}
+.eq-17a2pwz{border-radius:999px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-2l5nkt{width:0}
+.eq-5ew4ww{min-width:0}
+.eq-94p0gr{height:12px}
+.eq-af7hnd{background-image:linear-gradient(to right, var(--eq-color-surface-highlight, light-dark(#ffffff8c, #ffffff12)), #00000000)}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-lr4qmx{background-image:linear-gradient(to right, #00000000, var(--eq-color-surface-highlight, light-dark(#ffffff8c, #ffffff12)))}
+.eq-lucgj8{animation:eq-slide-x 1400ms linear infinite}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+Skeleton 0 0 0x12
+  Box 0 0 0x12
+    LoopMotion 0 0 0x12
+      Row 0 0 0x12
+        Flexible 0 0 0x12
+          Box 0 0 0x12
+        Flexible 0 0 0x12
+          Box 0 0 0x12
+
+## Compact
+### web
+<div class="eq-12ve49g eq-17a2pwz eq-1eb13m5 eq-2l5nkt eq-94p0gr eq-bo3n4y eq-g7fowl eq-mbtjfn">
+<div style="--eq-loop-from: -100%; --eq-loop-to: 100%" class="eq-loop eq-loop-rest-hidden eq-lucgj8">
+<div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-94p0gr eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-1eb13m5 eq-94p0gr eq-bo3n4y eq-g7fowl eq-lr4qmx">
+</div>
+</div>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-1eb13m5 eq-94p0gr eq-af7hnd eq-bo3n4y eq-g7fowl">
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-168ghzj{flex:1 1 0%}
+.eq-17a2pwz{border-radius:999px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-2l5nkt{width:0}
+.eq-5ew4ww{min-width:0}
+.eq-94p0gr{height:12px}
+.eq-af7hnd{background-image:linear-gradient(to right, var(--eq-color-surface-highlight, light-dark(#ffffff8c, #ffffff12)), #00000000)}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-lr4qmx{background-image:linear-gradient(to right, #00000000, var(--eq-color-surface-highlight, light-dark(#ffffff8c, #ffffff12)))}
+.eq-lucgj8{animation:eq-slide-x 1400ms linear infinite}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+Skeleton 0 0 0x12
+  Box 0 0 0x12
+    LoopMotion 0 0 0x12
+      Row 0 0 0x12
+        Flexible 0 0 0x12
+          Box 0 0 0x12
+        Flexible 0 0 0x12
+          Box 0 0 0x12
+

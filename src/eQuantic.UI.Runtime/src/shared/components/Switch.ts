@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, DensityValue, Draggable, Positioned, Pressable, Sizing, Stack, StatelessComponent } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, DensityValue, Draggable, Positioned, Pressable, Sizing, Stack, StatelessComponent } from "../runtime-exports";
 
 export class Switch extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Switch';
@@ -20,13 +20,17 @@ export class Switch extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let trackFill = this.on ? theme.colors('primary').base : theme.borderStrong;
+        let slot = theme.selectionControls;
+        let trackFill = this.on ? theme.colors('primary').base : slot?.switchOffTrack ?? theme.borderStrong;
         if (this.disabled) trackFill = trackFill.withOpacity(theme.disabledOpacity);
         let density: DensityValue = context.density;
-        let travel = Sizing.switchTravel(density);
-        let inset = 3;
-        let track = new Box(new BoxStyle({ width: Sizing.switchWidth(density), height: Sizing.switchHeight(density), background: trackFill, cornerRadius: new CornerRadii(theme.shape('full')) }));
-        let thumb = new Box(new BoxStyle({ width: Sizing.switchThumb(density), height: Sizing.switchThumb(density), background: theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), elevation: 1 }));
+        let width = ControlMetrics.atDensity((slot?.switchWidth ?? null), density) ?? Sizing.switchWidth(density);
+        let height = ControlMetrics.atDensity((slot?.switchHeight ?? null), density) ?? Sizing.switchHeight(density);
+        let knob = ControlMetrics.atDensity((slot?.switchThumb ?? null), density) ?? Sizing.switchThumb(density);
+        let inset = slot?.switchInset ?? 3;
+        let travel = Math.fround(Math.fround(width - knob) - Math.fround(inset * 2));
+        let track = new Box(new BoxStyle({ width: width, height: height, background: trackFill, cornerRadius: new CornerRadii(theme.shape('full')) }));
+        let thumb = new Box(new BoxStyle({ width: knob, height: knob, background: slot?.thumbFill ?? theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), elevation: slot?.switchThumbElevation ?? 1 }));
         let draggableThumb = this.disabled ? thumb : new Draggable(thumb, (offset: number) => this.release(offset, travel), { axis: 'horizontal', min: this.on ? -travel : 0, max: this.on ? 0 : travel });
         let stack = new Stack();
         stack.add(track);

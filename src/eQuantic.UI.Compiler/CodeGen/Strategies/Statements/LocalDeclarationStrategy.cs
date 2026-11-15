@@ -44,7 +44,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
             }
 
             statements.Add(JsStatement.Hoisted(declared,
-                JsStatement.Let(name, Annotation(decl, variable, context), init)));
+                JsStatement.Let(name, Annotation(decl.Declaration, variable, context), init)));
         }
         return JsStatement.Sequence(statements);
     }
@@ -56,7 +56,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
     /// `let` makes TypeScript infer the derived type and reject the reassignment. `var` stays bare:
     /// inference was the author's own choice there.
     /// </summary>
-    private static string Annotation(LocalDeclarationStatementSyntax decl, VariableDeclaratorSyntax variable,
+    internal static string Annotation(VariableDeclarationSyntax declaration, VariableDeclaratorSyntax variable,
         ConversionContext context)
     {
         // Plain JavaScript has no annotation to write, and `let money: Money = …` there is a
@@ -129,18 +129,18 @@ public class LocalDeclarationStrategy : IStatementStrategy
         {
             // A collection declared nullable holds its null too: `int[]? items = []` may be handed null later.
             var array = ArrayOf(listedName);
-            return decl.Declaration.Type is NullableTypeSyntax
+            return declaration.Type is NullableTypeSyntax
                 ? $": {CodeGen.TypeScriptEmitter.OrNull(array)}"
                 : $": {array}";
         }
 
-        if (!decl.Declaration.Type.IsVar && StartsNull(decl, variable, context)
-            && StartingNullAnnotation(decl, context) is { } startsNull)
+        if (!declaration.Type.IsVar && StartsNull(declaration, variable, context)
+            && StartingNullAnnotation(declaration, context) is { } startsNull)
             return startsNull;
 
-        if (decl.Declaration.Type.IsVar || variable.Initializer is null) return "";
+        if (declaration.Type.IsVar || variable.Initializer is null) return "";
 
-        return DeclaredTypeAnnotation(decl, variable.Initializer.Value, context);
+        return DeclaredTypeAnnotation(declaration, variable.Initializer.Value, context);
     }
 
     /// <summary>The item of a collection an empty <c>[]</c> writes as an array: an array's, or a list's
@@ -160,14 +160,14 @@ public class LocalDeclarationStrategy : IStatementStrategy
     /// as <c>= null</c>). A local with no initializer and a type that holds no null is definitely
     /// assigned before C# lets anything read it, and is not one.
     /// </summary>
-    private static bool StartsNull(LocalDeclarationStatementSyntax decl, VariableDeclaratorSyntax variable,
+    private static bool StartsNull(VariableDeclarationSyntax declaration, VariableDeclaratorSyntax variable,
         ConversionContext context)
     {
-        if (variable.Initializer is null) return decl.Declaration.Type is NullableTypeSyntax;
+        if (variable.Initializer is null) return declaration.Type is NullableTypeSyntax;
         var value = variable.Initializer.Value;
         if (value.IsKind(SyntaxKind.NullLiteralExpression)) return true;
         if (!value.IsKind(SyntaxKind.DefaultLiteralExpression) && value is not DefaultExpressionSyntax) return false;
-        return context.SemanticHelper.GetType(decl.Declaration.Type) is { } type
+        return context.SemanticHelper.GetType(declaration.Type) is { } type
             && (type.IsReferenceType || type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T);
     }
 
@@ -182,9 +182,9 @@ public class LocalDeclarationStrategy : IStatementStrategy
     /// a delegate as its function, and an interface as an <c>any</c> that is SAID, since the null
     /// alone is the implicit one a closure trips over.
     /// </summary>
-    private static string? StartingNullAnnotation(LocalDeclarationStatementSyntax decl, ConversionContext context)
+    private static string? StartingNullAnnotation(VariableDeclarationSyntax declaration, ConversionContext context)
     {
-        var declared = context.SemanticHelper.GetType(decl.Declaration.Type);
+        var declared = context.SemanticHelper.GetType(declaration.Type);
         if (declared is null) return null;
         var underlying = declared is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } wrapper
             ? wrapper.TypeArguments[0]
@@ -201,7 +201,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
         // its twin and imported: `Cart.Item c = null;` declared `Item`, and `function f = null;` the word
         // `function`, neither of them a type the module has.
         else ts = CodeGen.TypeScriptEmitter.NestedTwinsInside(
-            CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(decl.Declaration.Type.ValueText()), underlying,
+            CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(declaration.Type.ValueText()), underlying,
             (part, _) => part.IntroduceTwin(context));
 
         if (ts is "any" or "void") return null;
@@ -276,19 +276,24 @@ public class LocalDeclarationStrategy : IStatementStrategy
     /// guarantee live in the caller while the dereference lived here, which reads as a null
     /// dereference to anyone — the compiler included — who looks at this method alone.
     /// </summary>
-    private static string DeclaredTypeAnnotation(LocalDeclarationStatementSyntax decl,
+    private static string DeclaredTypeAnnotation(VariableDeclarationSyntax declaration,
         ExpressionSyntax initializer, ConversionContext context)
     {
-        var declared = context.SemanticHelper.GetType(decl.Declaration.Type);
+        var declared = context.SemanticHelper.GetType(declaration.Type);
         var actual = context.SemanticHelper.GetType(initializer);
         if (declared is null || actual is null) return "";
-        if (SymbolEqualityComparer.Default.Equals(declared, actual)) return "";
+        // The same type needs no annotation, unless TypeScript would infer a narrower one from the initializer: it
+        // drops the null C# declared room for (`Element? at = Parent`), and types a class's own reference as the
+        // polymorphic `this`, so a later `at = at.Parent` was refused (#1483).
+        if (SymbolEqualityComparer.Default.Equals(declared, actual)
+            && declaration.Type is not NullableTypeSyntax && initializer is not ThisExpressionSyntax)
+            return "";
 
         if (TsNamedType.For(declared, context) is not { } name) return "";
         if (name == "any") return ": any";
         // `VisualNode?` crosses as the union it is — an annotation that rejects the null the C#
         // explicitly allowed would refuse `VisualNode? icon = selected ? new Icon(…) : null`.
-        return $": {(decl.Declaration.Type is NullableTypeSyntax ? CodeGen.TypeScriptEmitter.OrNull(name) : name)}";
+        return $": {(declaration.Type is NullableTypeSyntax ? CodeGen.TypeScriptEmitter.OrNull(name) : name)}";
     }
 
     public int Priority => 0;

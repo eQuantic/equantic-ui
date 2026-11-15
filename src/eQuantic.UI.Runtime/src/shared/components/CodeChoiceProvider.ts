@@ -1,6 +1,8 @@
 import { $eq, CancellationToken, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeDocument, CodePosition } from "../runtime-exports";
 
 export class CodeChoiceProvider {
+    static $interfaces = ['eQuantic.UI.Code.ICodeCompletionProvider'];
+
     constructor(options: string[]) {
         this._list = null!;
         let items: CodeCompletionItem[] = [];

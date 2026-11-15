@@ -863,7 +863,10 @@ assignee and priority, put it on the board with its points and status, read it b
 whatever did not land. A session's `PreToolUse` hook SHALL refuse the other ways a session creates an
 issue (`gh issue create`, the GraphQL `createIssue`, a REST `POST` to `/issues` and an MCP tool that
 creates one), naming the script, and SHALL let a read, a comment, an edit and a phrase quoted in an
-argument pass.
+argument pass. It SHALL read the file of a script the command runs, and the scripts that file runs one
+level down, and refuse the command when one of them creates an issue (`gh issue create` as a line or
+as an argument list, or the GraphQL `createIssue`); `scripts/new-issue.py` and the hook itself SHALL
+pass.
 
 #### Scenario: A task with no points
 
@@ -884,6 +887,17 @@ argument pass.
 
 - **WHEN** a session commits with a message that says "gh issue create"
 - **THEN** the hook lets the commit run
+
+#### Scenario: A script creates an issue inside itself
+
+- **WHEN** a session runs `python3 file-subissues.py 1128 task …`, whose file calls
+  `["gh", "issue", "create", …]` from a `subprocess`
+- **THEN** the hook exits 2 and the script does not run
+
+#### Scenario: A script only reads issues
+
+- **WHEN** a session runs a script whose file lists or comments on issues and creates none
+- **THEN** the hook lets it run
 
 ### Requirement: An issue a person took is left to them
 
@@ -945,3 +959,47 @@ The CI SHALL cancel the run of every merge group the queue discarded, which it t
 
 - **WHEN** the lookup of a group's ref answers 500
 - **THEN** that run is left as it is, and the sweep fails, naming it
+
+### Requirement: A branch named outside the convention is refused when it is created
+
+A session's command that creates a branch of this repository named outside `<type>/<slug>` SHALL be
+refused before it runs, by a `PreToolUse` hook, with the convention as the reason. A name that
+already exists in the repository or on origin, a command aimed at another repository, and a command
+the hook cannot read SHALL pass. The hook's self-test SHALL run the hook in a repository made for
+it, and CI SHALL run that self-test.
+
+#### Scenario: A tool's own prefix
+
+- **WHEN** a session runs `git switch -c claude/fix-the-thing` in this repository
+- **THEN** the command is refused, and the session is told the types and the shape of the slug
+
+#### Scenario: Reached through another directory
+
+- **WHEN** a session in another directory runs `cd` into this repository and then `git checkout -b wip`, or names it with `git -C`
+- **THEN** the command is refused
+
+#### Scenario: A message that names the command
+
+- **WHEN** a session commits with a message, quoted or in a here-document, that contains `git switch -c claude/x`
+- **THEN** the commit passes
+
+#### Scenario: A branch that is already someone's
+
+- **WHEN** a session checks out a pull request's branch under its own name, or resets `main` from origin with `git checkout -B main origin/main`
+- **THEN** the command passes: the name exists, and is not this session's to choose
+
+#### Scenario: The wiki's clone
+
+- **WHEN** a session runs `git -C ../equantic-ui.wiki switch -c anything`
+- **THEN** the command passes
+
+### Requirement: An account outside the organization can create an issue
+
+`scripts/new-issue.py` SHALL read the issue types from the repository, which answers them to any
+account that can open an issue there, and SHALL NOT depend on what the organization answers only to
+its members.
+
+#### Scenario: A contributor creates a task
+
+- **WHEN** an account that is not a member of the organization runs the script with a type, a parent and points
+- **THEN** the issue is created with its type, on the board, as it is for a member

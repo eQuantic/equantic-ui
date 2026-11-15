@@ -52,6 +52,12 @@ The Wallet sample has a tour mode: `WalletApp` walks its own screens on an `IClo
 loop, and nobody touches anything, which is what keeps the four recordings in step to within a
 frame. On native it is the configuration value `tour`, on the web the `/tour` route.
 
+The recordings land in `raw/`, which git ignores, so a fresh clone creates it first:
+
+```bash
+mkdir -p raw
+```
+
 | Target | Start in tour mode | Record |
 |---|---|---|
 | iOS | `SIMCTL_CHILD_tour=true xcrun simctl launch <device> <bundle id>` | `python3 tools/record2.py 50 raw/ios.log xcrun simctl io <device> recordVideo raw/ios-tour.mov` |

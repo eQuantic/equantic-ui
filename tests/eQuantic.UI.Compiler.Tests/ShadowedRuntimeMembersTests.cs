@@ -60,8 +60,28 @@ public class ShadowedRuntimeMembersTests
     }
 
     /// <summary>
+    /// The members the element engine calls on a stateful component (the C# <c>EnterPosition</c>,
+    /// <c>LeavePosition</c> and <c>MountedAt</c>). A JavaScript class has one namespace for every member,
+    /// so an app's own method of one of these names answers the engine in place of the base's: the
+    /// component would claim a position it never took, or never mount. They carry names an app is
+    /// unlikely to write for that reason (the first ones, <c>Place</c> and <c>Leave</c>, were already
+    /// private methods of NameBox and TableView), and a name that still collides is refused.
+    /// </summary>
+    [Theory]
+    [InlineData("EnterPosition", "enterPosition")]
+    [InlineData("LeavePosition", "leavePosition")]
+    public void AStatefulComponentsOwnMethod_MayNotTakeAPositionTheEngineCalls(string member, string lowered)
+    {
+        var result = Compile("public class Panel : StatefulComponent { "
+                             + $"  public bool {member}() => true; "
+                             + "  public override IComponent Build(RenderContext c) => new Text(\"hi\"); }");
+
+        result.Errors.Should().Contain(error => error.Code == "EQ2011" && error.Message.Contains(lowered));
+    }
+
+    /// <summary>
     /// AND THE BASE DECIDES, which is the half a union got wrong. `setState`, `onMount`,
-    /// `_sharedStateful` and more belong to a STATEFUL component; on a stateless one they shadow
+    /// `mountedAt` and more belong to a STATEFUL component; on a stateless one they shadow
     /// nothing at all, and refusing them is refusing valid code. `buildAttributes` is the same story
     /// one branch over — the escape hatch has it and a component does not.
     /// </summary>
@@ -361,8 +381,8 @@ public class ShadowedRuntimeMembersTests
             "a leading underscore lowers unchanged, and what these corrupt is the lifecycle");
 
         // The eleven a stateful component adds, and the surface only the escape hatch carries.
-        all["StatefulComponent"].Should().Contain(["setState", "key", "_sharedStateful"]);
-        all["StatelessComponent"].Should().NotContain(["setState", "_sharedStateful"]);
+        all["StatefulComponent"].Should().Contain(["setState", "key", "mountedAt"]);
+        all["StatelessComponent"].Should().NotContain(["setState", "mountedAt"]);
         // The node's members every component carries, stateless included (`UiComponent : VisualNode`).
         all["StatelessComponent"].Should().Contain(["key", "nodeKind"]);
         all["HtmlElement"].Should().Contain(["buildAttributes", "buildEvents"]);

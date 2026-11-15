@@ -39,7 +39,7 @@ A component, or the state of a node, is found by a string, and each target spell
 | Where | The string | Formed by |
 |---|---|---|
 | Photon | a path, `r/0/2/[key]`, and a component's identity `"{path}#{type}#{key}"` | `LayoutEngine.ChildPath`, `LaidOutChildren.PathOf`, `ComponentInstanceStore.Reconcile` |
-| Server (SSR) | `Type#ordinal`, the ordinal counted per type in depth-first order | `ComponentExpansionScope.Enter`, `ComponentIdentity.Key` |
+| Server (SSR) | `Type#ordinal`, the ordinal counted per type in depth-first order (until #1477, which names a composed component by its position) | `ComponentExpansionScope.Enter`, `ComponentIdentity.Key` |
 | Browser | `path#type#key` again, with a new root (`r0`, `r1`…) at every stateless boundary | `ComponentInstanceStore` in `instance-store.ts`, `lowerVisualNode` |
 | DOM | `(tag, key, child index)` among siblings | the reconciler |
 
@@ -237,8 +237,8 @@ beyond a component) builds on.
 | Today | Becomes | Why it moves, or why it stays |
 |---|---|---|
 | `CapabilityScope` (`AsyncLocal`, set per request on the server, once per app on Photon) | the root element's services, overridable by a subtree | a capability is resolved from a position; the server's middleware outside the tree keeps the channel for server actions |
-| `RouteValues.Current` (`AsyncLocal`) | an inherited route at the page root | a navigation rebuilds only its dependents |
-| `InFlow.Current` (`AsyncLocal`, saved and restored around a child) | an inherited value set by the interaction wrapper's element | it is a subtree value, which is what an inherited component is |
+| `RouteValues.Current` (`AsyncLocal`) | the frame's route, read through the owner, which keeps its readers apart (E5b, #1395) | a navigation rebuilds only its dependents |
+| `InFlow.Current` (`AsyncLocal`, saved and restored around a child) | an inherited value set by the interaction wrapper's element (#1412; the ambient went in E5b, #1395) | it is a subtree value, which is what an inherited component is |
 | `ComponentBoundary` diagnostics, report and tally (three `AsyncLocal`s) | the owner's (3.6) | they belong to one tree, not to an async flow |
 | `FaceResolution` (`AsyncLocal`) | stays | it is the text services' diagnostic, outside the tree |
 | `Navigator.Handler` (public static, "the last host wins") | `Navigator.Of(context).Go(destination)`, the host found from the root | two windows in one process each navigate their own |
@@ -277,15 +277,15 @@ because a test draws one frame after another and drives input the way a browser 
   the path attributes become element state and element ids.
 
   A client navigation changes the page's type, and by the rule of 3.1 that replaces the page's
-  element with everything the page built. The samples build their frame inside each page today
-  (`ConsoleShell.Frame(…)` in every screen's `Build`, the sidebar's open state a field of each page),
-  so for them a navigation stays what it is now: the DOM is patched position by position, and no
-  instance survives. What survives a navigation is what sits ABOVE the page. *How does Flutter solve
-  it?* go_router's `ShellRoute`: the shell is a route of its own, and the pages are its child. Here the
-  app declares its shell once, in `Program.cs`, as a component with a slot the router fills with the
-  page; the shell's element and its instance stay mounted across navigations, the page's element is
-  replaced under it, and the old page unmounts before the new one mounts. E3 moves the dashboard
-  sample's frame there, which is its proof.
+  element with everything the page built. The dashboard built its frame inside each page until E3
+  (every screen's `Build` called the frame, and the sidebar's open state was a field of each page),
+  so a navigation patched its DOM position by position, and no instance survived. What survives a
+  navigation is what sits ABOVE the page. *How does Flutter solve it?* go_router's `ShellRoute`: the
+  shell is a route of its own, and the pages are its child. Here the app declares its shell once, in
+  `Program.cs`, as a component with a slot the router fills with the page; the shell's element and its
+  instance stay mounted across navigations, the page's element is replaced under it, and the old page
+  unmounts before the new one mounts. E3 moved the dashboard sample's frame there, `ConsoleLayout`
+  (#1129), which is its proof.
 - **Email.** A message mounts a tree once, structurally, lowers it and discards it.
 
 ### 3.8 The strings that stay, at the seams
@@ -293,9 +293,14 @@ because a test draws one frame after another and drives input the way a browser 
 Some identities cross a boundary, and a boundary needs a string. They stay, computed from the
 element when crossing and never used as an address inside a tree:
 
-- the hydration payload's key, `Type#ordinal`, which the server and the browser already agree on;
+- the hydration payload's key, which was `Type#ordinal` while both sides counted in the order their
+  lowering met a component. Once the browser builds through the engine it has to hand the data over
+  before a component builds, and the build order and the lowering order part at an adaptive node's arms
+  and at a deferred layer, so a component the page composes is named by its position (#1477):
+  `r{tree}/{type}@{slots}`, the slots read off the element (`Element.SlotsBelow`), the same chain the
+  capture below keys by. A page's own component keeps `Type#0`;
 - hot reload's capture, which can now carry every stateful element's fields instead of the page
-  root's alone. Not under `Type#ordinal`: the hydration key holds because the server and the browser
+  root's alone. Not under the hydration key: its bare slots hold because the server and the browser
   render the same tree, and an edit is exactly what changes the tree between a capture and its
   replay, so an inserted component or two keyed siblings that swapped would hand one component
   another's fields. The capture keys each element by its position as a chain from the root, every
@@ -362,12 +367,14 @@ the rule `Sizing` states.
 At every step a value that varies by density is read at `context.Density`, so a slot never bypasses
 the compact layout the fallback would have given.
 
-The precedent is already in the tree three times: `Text.StyleOverride ?? theme.Type(role)`, a code
-decoration's colour or its kind's, and `Markdown.Style ?? new MarkdownStyle()`.
+The precedent was already in the tree three times: `Text.StyleOverride ?? theme.Type(role)`, a code
+decoration's colour or its kind's, and a Markdown's own `Style` ahead of its defaults, which E6d made
+the `Markdown` slot's first step.
 
 **A subtree.** `Theme(theme, child)` overrides the theme below it, and `theme.With(button: …)` builds
-the override from the current theme with one slot replaced. `With` is the SDK's, a member that
-forwards every other member, defaults included. The decorators apps write today forward the
+the override from the current theme with a slot laid over its own, member by member, so naming one
+value keeps every other the design system set. `With` is the SDK's, a member that forwards every
+other member, defaults included. The decorators apps write today forward the
 abstract members and leave the defaults to the interface: one wrapped around `MaterialTheme` would
 lose its slots.
 
@@ -385,11 +392,11 @@ proves it.
 | `Button` | Button, and the Buttons that Dialog, Banner, Pagination and the forms build |
 | `IconButton` | IconButton |
 | `Input` | TextInput, SearchField, Select, TimePicker |
-| `Selection` | Checkbox, RadioGroup, Switch, Slider |
+| `SelectionControls` | Checkbox, RadioGroup, Switch, Slider (not `Selection`, which is the colour of selected text) |
 | `Segmented` | SegmentedControl, Stepper |
 | `Chip` | Chip |
 | `Navigation` | Tabs, BottomNavigation, NavigationRail, AppBar, Breadcrumb, Pagination, PageIndicator |
-| `Surface` | Dialog, BottomSheet, Drawer |
+| `Modal` | Dialog, BottomSheet, Drawer (not `Surface`, which `IAppTheme` already names as a colour and the theme's JSON already writes as `surfaces`) |
 | `Menu` | Popover, Menu, Tooltip |
 | `Notice` | Toast, Banner, CookieConsent |
 | `Progress` | ProgressBar, PullToRefresh, Skeleton |
@@ -398,9 +405,11 @@ proves it.
 | `Table` | Table, DataTable |
 | `Badge` | Badge, Avatar, EmptyState |
 | `Calendar` | Calendar, DatePicker |
+| `Markdown` | Markdown |
 
-The code editor, the document and the charts already have theirs (`Code`, `MarkdownStyle`, `Data`),
-and E6 brings them under the same rules: `MarkdownStyle` becomes a slot, and all three cross.
+The code editor, the document and the charts already had theirs (`Code`, `MarkdownStyle`, `Data`),
+and E6 brings them under the same rules: `MarkdownStyle` became the `Markdown` slot, a
+`MarkdownTheme` that a document's own `Style` still comes ahead of, and all three cross.
 
 ### 3.11 What an app sees
 
@@ -411,8 +420,8 @@ and E6 brings them under the same rules: `MarkdownStyle` becomes a slot, and all
   `Navigator.Of(context)`, and a shell declared once in `Program.cs` (3.7).
 - **Gone from the public surface:** `ComponentInstanceStore`, `NotifyMounted`, `NotifyUnmounted`
   and `StateInvalidated` (the host's, never the app's), the constructor of `ComponentContext`,
-  `Navigator.Handler` and the static `Navigator.Go`, and the setters of `UiDispatcher.Current` and
-  `RouteValues.Current`. Nothing in `samples/` calls any of them.
+  `Navigator.Handler` and the static `Navigator.Go`, the setter of `UiDispatcher.Current`, and
+  `RouteValues.Current` and `InFlow.Current` (E5b, #1395). Nothing in `samples/` calls any of them.
 
 The preview's rule applies: each goes in the pull request that replaces it, and each is a
 `*REMOVED*` line in the release's notes.
@@ -555,6 +564,71 @@ the parity rows it closes flip.
    stateless component takes the `component` arm a stateful one takes. `HtmlElement` stays outside,
    as in C#. No server-data ordinal moves, measured on a mixed page and on a client navigation with
    the old routing put back, and the boundary contains what it contained.
+
+   Then **the engine runs in the browser**
+   (`openspec/changes/archive/2026-11-11-the-element-engine-runs-in-the-browser`), which closes E3a. The
+   engine leaves `[ServerOnly]`, its modules are pinned beside the other engines' and accepted by the
+   runtime's `tsc`, and twelve of `ElementTreeTests`' cases run on .NET and on the transpiled engine with
+   equal traces. They found what the browser's components lacked: C#'s empty `AdoptConfig` default, and
+   the position a stateful instance is mounted at, whose `Place` and `Leave` became `EnterPosition` and
+   `LeavePosition` because a JavaScript class has one namespace and two library components already had a
+   private `Place`. A library module that extends a sibling now imports the base from its module, since
+   the runtime's aggregator defines a re-export only once the barrel has loaded. eqc met one more
+   emission defect on the way (#1396, a downcast to a type whose member is inherited), fixed by the bug
+   sweep. The inherited value (#1412) landed first, so its position crosses with the rest, and the
+   runtime's context gained what C#'s did there: a context made for a position reads the theme, density
+   and type scale from its owner's frame and registers the position as their reader, and answers InFlow
+   from the tree. The twelfth case holds it: a frame with another density builds what read it and nothing
+   else. A construction of the context met #1475 in eqc's imports, fixed by the bug sweep. The served
+   runtime grows by the engine's modules, recorded in its budget.
+
+   **E3b, the browser builds through the engine (#1128), split in three.** Its first slice, **the browser
+   builds through the element engine** (#1453,
+   `openspec/changes/archive/2026-11-12-the-browser-builds-through-the-element-engine`), replaces the browser's
+   `ComponentInstanceStore` with the engine's owners, one per root a render lowers, kept by the page:
+   the lowering lowers what each position built, a nested `SetState` marks its own element and the owner
+   builds that element alone, mounting and unmounting come from each owner's `EndFrame`, and hydration
+   builds the element tree before it walks the server's DOM. It met what the plan had not foreseen
+   about server data, and took it in the same pull request (#1477): once the browser builds through the
+   engine it has to hand a component its data before it builds, so it could only count `Type#ordinal`
+   in build order while the server counted as its lowering met a component, and the two orders part at
+   an adaptive node's arms and at a deferred layer. So every arm of an adaptive node is a position on
+   the web, which draws them all behind its gates (`BuildOwner(…, holdsEveryArm)`, and no window size
+   class or width decides an arm there), and a composed component's data is keyed by where it stands,
+   `r{tree}/{type}@{slots}`, read off the element on both sides (`Element.Slot`, `SlotsBelow`,
+   `BuildOwner.Building`); 3.8 says why. eqc met one more emission defect on the way (#1483, a `for`
+   head's declared type), fixed by the bug sweep. E3b-2 (#1454) moves the path attributes and the
+   per-commit maps onto elements, and E3b-3 (#1455) relowers a dirty element's subtree alone.
+
+   **E3b-2, the browser keeps a node's state on its position** (#1454,
+   `openspec/changes/archive/2026-11-13-the-browser-keys-its-state-by-element`). The seven attributes
+   that carried a node's lowering path, and the ids and keys formed from one, carry the integer id of
+   the node's position. What the after-passes remembered between passes lives on the position's state,
+   as Photon keeps it (`node-states.ts`, the twin of `NodeStates`): the scroll, table, in-view and
+   canvas passes, and the code editor's last reveal, which a module map nobody cleared held before. The
+   state records the DOM element it adopted, since the reconciler matches a DOM element by tag and
+   place and can hand it to another node, and a node handed one starts at its own offset. It lets go of
+   its observers when its position leaves the tree. The engine takes its ids from a count it can be
+   handed (`ElementIds`), and the browser hands one to every owner of the document, so two roots never
+   give one id twice. The path the lowering threads stays for one reader, the cell ids of a table and a
+   grid, which cross to the server as a string (3.8). eqc met one more emission defect on the way (#1464,
+   an interface tested as a null check), fixed by the bug sweep. The served runtime stays inside its
+   budget.
+
+   **E3b-3, a dirty element in the browser lowers its own subtree** (#1455,
+   `openspec/changes/archive/2026-11-13-a-dirty-element-relowers-its-own-subtree`). After E3b-1 a nested
+   `SetState` built its own element alone, but the page then lowered all of itself and the reconciler
+   read the whole page. Now each component's position keeps what it lowered to and what it lowered with
+   (`lowered-records.ts`): its root as its own lowering left it, the same root as the page drew it, its
+   inputs and the record above it. A render the page's owners asked for builds the marked positions,
+   lowers each component that built alone, does again what its parents did to its root, and patches only
+   the DOM that root drew (`RenderManager.patch`). What a parent did is read off the two roots and
+   replayed only where the replay gives back the drawn root exactly. A component a parent read or walked
+   into (a shortcut's marker, a box sized from its child, an anchored menu's numbered rows) is lowered with
+   the nearest record above it that nothing reached into, the page in the end, which lowers whole as
+   before. The shortcuts a patch lowered again give way to the ones they declare now, and every other
+   binding stays. The DOM a patch leaves is the DOM a whole lowering leaves, which every spec of the slice
+   compares. The served runtime grows by the records and the replay, recorded in its budget.
 4. **E4, the server.** An owner per request; a prefetch rebuilds its subtree; the five Web channels
    and the Primitives ones the tree owns move to the owner. Proof: the SSR fixtures unchanged, and a
    prefetch round that keeps a component's instance.
@@ -620,6 +694,25 @@ the parity rows it closes flip.
    `OnDependenciesChanged`, dependency-driven rebuild, `Theme`, the route and `InFlow` as inherited
    components, `Navigator.Of`. Proof: a change rebuilds its dependents and nothing else, on both
    targets.
+
+   **E5b, the web and the server inherit the theme, the route and InFlow** (#1395,
+   `openspec/changes/the-web-and-the-server-inherit-the-theme-route-and-inflow`):
+   - `DependOn<T>()` and `Find<T>()` cross to the browser with `T`'s twin as their argument, and the
+     runtime's position looks the type up with `instanceof`.
+   - The route is the frame's: `ComponentContext` takes it, a position reads it through its owner,
+     which keeps the route's readers apart from the frame's, and a navigation within one page type
+     rebuilds what read the route and nothing else, on .NET and in the browser.
+     `RouteValues.Current` goes: the server registers the request's route in its services
+     (`AddRequestRoute`) for code outside the tree, a prefetch among it, and an escape-hatch page's
+     bridges are drawn with the round's route (`RenderChannels.Route`), which E4a left owed.
+   - `InFlow.Current` goes: a position answers from the tree, and the web visitor hands a component
+     it expands without a position the wrapper's flag in a context of its own.
+   - `new Theme(value, child)` is the vocabulary's inherited theme, and `context.Theme` reads the nearest
+     one above, or the frame's. A message draws a `Theme`'s child in the theme it holds, in both its
+     alternatives, since the email walk has no positions to look it up from. A colour a realizer
+     picks for a node by itself (a field's text, a caret, an elevation's shadow) still reads the
+     frame's theme on the web, the server and Photon, so the server's markup and the browser's
+     lowering agree; following the nearest `Theme` there is owed (noted on #1395).
 6. **E6, the theme slots.** Section 3.10, on the inherited theme of E5.
 
 E1 to E5 are [#937](https://github.com/eQuantic/equantic-ui/issues/937), and E6 is

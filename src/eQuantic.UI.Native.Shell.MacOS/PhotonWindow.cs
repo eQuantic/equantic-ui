@@ -177,6 +177,9 @@ public sealed class PhotonWindow
         var frameBuilder = new DisplayListBuilder();
         var host = new PhotonHost(root, theme, mode, _width, _height, textService, boundary: boundary)
         {
+            // Increase Contrast, read from the system like the mode (#340): every token resolves
+            // with it, so the palette steps up where the theme says it does.
+            Contrast = Shell.Apple.AppleAppearance.Contrast(),
             // Production owns its frames: nothing retains a RealizeResult past the next render,
             // so each replaced tree feeds the next (LayoutNodePool).
             RecycleFrames = true,
@@ -338,6 +341,15 @@ public sealed class PhotonWindow
 
         while (true)
         {
+            // Each turn of the loop in a pool of its own. AppKit's own loop drains one per event, and this
+            // loop is the shell's: without one, whatever a turn autoreleased lived for as long as the
+            // process did. Measured with OBJC_DEBUG_MISSING_POOLS on the desktop sample, every frame left
+            // its drawable, its command buffer, its render pass descriptor and the GPU's render context
+            // behind, one of each per frame, 482 of each after 480 frames, and the events read here with
+            // them. With the pool none is left, and scripts/check-frame-pools.sh fails the samples job the
+            // day one is again (#1506). Drained on every way out of the turn, a break included.
+            using var pool = AutoreleasePool.Push();
+
             // Drain pending OS events; while idle (no motion, nothing dirty) block briefly on the
             // next event instead of spinning.
             // Self-test presents EVERY cycle (a static tree renders on demand only and would

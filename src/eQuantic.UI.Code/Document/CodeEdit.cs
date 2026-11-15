@@ -53,6 +53,18 @@ public sealed record CodeEdit(
     }
 
     /// <summary>
+    /// Where a PROBLEM that stood at <paramref name="range"/> before this edit stands after it: as
+    /// <see cref="Carry"/>, except that one of no width right where the inserted text begins with a line
+    /// break stays in front of it (#1059). A line written below the place is no text of the place's: the
+    /// line a move passes past the document's last line is written after that line's end, at the very place
+    /// a missing semicolon's problem holds, and Enter typed there writes one too, and both took the problem
+    /// with them. Only a problem keeps its place so: a snippet's stop, a caret and a place to go back to
+    /// follow what is typed at them, as <see cref="Carry"/> carries them.
+    /// </summary>
+    internal CodeRange CarryProblem(CodeRange range) =>
+        range.IsEmpty && Range.IsEmpty && range.Start == Range.Start && BeginsWithBreak ? range : Carry(range);
+
+    /// <summary>
     /// Where a place something is typed at, which stood at <paramref name="position"/> before this edit,
     /// stands after it: text inserted right at it goes after it, as the start of a word being completed
     /// keeps what is typed there, and inside the replaced text it goes to the end of the replacement.
@@ -101,6 +113,9 @@ public sealed record CodeEdit(
     /// <summary>True when this edit only ADDED text at the caret — the case undo coalesces, so a
     /// sentence typed letter by letter comes back in one press rather than forty.</summary>
     public bool IsSimpleInsert => RemovedText.Length == 0 && !BreaksLine;
+
+    /// <summary>Whether the inserted text begins by breaking a line, on CR or LF.</summary>
+    private bool BeginsWithBreak => InsertedText.Length > 0 && InsertedText[0] is '\n' or '\r';
 
     /// <summary>Whether the inserted text breaks a line, on CR, CRLF or LF, as the document breaks
     /// them: what ends a run of typing.</summary>

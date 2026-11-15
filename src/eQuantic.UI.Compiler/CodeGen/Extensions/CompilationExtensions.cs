@@ -17,6 +17,8 @@ internal static class CompilationExtensions
     /// </summary>
     public static SemanticModel? ModelOf(this Compilation compilation, SyntaxTree tree)
     {
+        // A tree reached for its model is a tree read, whatever reached it (#1281).
+        Services.SourceReads.Note(tree);
         if (compilation.ContainsSyntaxTree(tree)) return compilation.GetSemanticModel(tree);
         foreach (var referenced in compilation.ReferencedCompilations())
             if (referenced.ContainsSyntaxTree(tree))

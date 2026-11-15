@@ -358,6 +358,13 @@ public static class Eq
     public const string CombineDelegate = "$eq.delegates.combine";
     public const string RemoveDelegate = "$eq.delegates.remove";
 
+    /// <summary><c>target.Event += handler</c> where how the event is implemented is not known here: its
+    /// add accessor where the twin wrote one, and its invocation list otherwise (#746).</summary>
+    public const string AddToEvent = "$eq.delegates.addToEvent";
+
+    /// <summary><c>target.Event -= handler</c>, by the same rule as <see cref="AddToEvent"/>.</summary>
+    public const string RemoveFromEvent = "$eq.delegates.removeFromEvent";
+
     /// <summary>Lifted Nullable&lt;T&gt; arithmetic — <c>null</c> if either operand is null.</summary>
     public const string LiftArith = "$eq.nullable.arith";
     /// <summary>Lifted Nullable&lt;T&gt; relational — <c>false</c> if either operand is null.</summary>
@@ -525,6 +532,30 @@ public static class Eq
     public const string ListInsertRange = "$eq.collections.insertRange";
     /// <summary><c>List&lt;T&gt;.Insert</c> and <c>IList&lt;T&gt;.Insert</c>: the index checked as .NET checks it (#1160).</summary>
     public const string ListInsert = "$eq.collections.listInsert";
+
+    /// <summary>A <c>T[]</c> on its way behind <c>ICollection&lt;T&gt;</c> or <c>IList&lt;T&gt;</c> (<c>utils/view.ts</c>),
+    /// which refuses a change of its size from then on, as .NET's array does.</summary>
+    public const string FixedSize = "$eq.collections.fixedSize";
+
+    /// <summary>A boxing conversion of an enum member or a float into <c>object</c>, <c>ValueType</c> or
+    /// <c>Enum</c>, the box carrying the type its answers depend on (#552, #768, #954).</summary>
+    public const string Box = "$eq.box";
+
+    /// <summary>An unboxing to a primitive value type, which refuses a box of another type.</summary>
+    public const string Unbox = "$eq.unbox";
+
+    /// <summary><c>o is Tone</c> and <c>o is float</c> over a value held as <c>object</c>.</summary>
+    public const string IsBox = "$eq.isBox";
+
+    /// <summary>A list or an array converted to <c>object</c> or an interface, compared and hashed by its
+    /// identity from then on (#954).</summary>
+    public const string Reference = "$eq.reference";
+
+    /// <summary>An anonymous object, never equal to a value held as data of the same members (#742).</summary>
+    public const string Anonymous = "$eq.anonymous";
+
+    /// <summary><c>ICollection&lt;T&gt;.IsReadOnly</c>, of what the interface holds when the code runs.</summary>
+    public const string CollectionIsReadOnly = "$eq.collections.isReadOnly";
     /// <summary><c>List&lt;T&gt;.RemoveAt</c> and <c>IList&lt;T&gt;.RemoveAt</c>: the index checked as .NET checks it (#1160).</summary>
     public const string ListRemoveAt = "$eq.collections.listRemoveAt";
     /// <summary><c>List&lt;T&gt;.RemoveRange</c>: the range checked as .NET checks it (#1160).</summary>
@@ -672,6 +703,10 @@ public static class Eq
 
     /// <summary>Whether two runtime types are one, as <c>Type</c>'s <c>==</c> answers it.</summary>
     public const string TypesSame = "$eq.types.same";
+
+    /// <summary>Whether a value implements an interface, by the <c>static $interfaces</c> its class's twin declares
+    /// (<see cref="Strategies.InterfaceTests"/>, #1464).</summary>
+    public const string TypesImplements = "$eq.types.implements";
 
     /// <summary>A <c>throw</c> expression: throws its one argument, which is evaluated where C#
     /// evaluates the exception, in the caller's own function.</summary>

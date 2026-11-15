@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { lowerVisualNode } from './lowering';
-import { CONTROL_FOCUS, CONTROL_PRESSED, hashDeclaration, stateSelector } from './style-atomizer';
+import { CONTROL_FOCUS, CONTROL_HOVER, CONTROL_PRESSED, hashDeclaration, stateSelector } from './style-atomizer';
 import { photonTheme } from './design-system.generated';
 import { tokenValue } from './lowering';
 import type { LoweringContext } from './lowering';
@@ -54,6 +54,10 @@ describe('S5 state overlays (C# cross-pin)', () => {
   // (0,3,0) under pressed (0,4,0).
   it('focus and press select every box inside the control, ranked by specificity', () => {
     expect(stateSelector(':hover', 'eq-x')).toBe('.eq-x:hover');
+    // #614: a box inside an enabled control takes the control's hover, at the weight of its own.
+    expect(stateSelector(CONTROL_HOVER, 'eq-x')).toBe(
+      ':where(.eq-pressable:hover) .eq-x.eq-x:not(:where(.eq-pressable:not(:hover) .eq-x))',
+    );
     expect(stateSelector(CONTROL_FOCUS, 'eq-x')).toBe(
       '.eq-pressable:focus-visible .eq-x:not(:where(.eq-pressable:focus-visible .eq-pressable .eq-x))',
     );

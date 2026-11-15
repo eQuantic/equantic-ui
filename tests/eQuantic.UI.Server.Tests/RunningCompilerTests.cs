@@ -174,6 +174,59 @@ public class RunningCompilerTests
         found.Should().Be(1);
     }
 
+    /// <summary>
+    /// A save that finds eqc dead never waits on that process while it holds the compiler's gate. The
+    /// process's exit event runs inside the process's own lock and reads the compile in flight through
+    /// the gate, so a save that released the dead eqc under the gate, as releasing takes that same lock,
+    /// waited on the event while the event waited on it, and the hot reload hung for good (#1491, a
+    /// Server suite that stopped for its 15 minutes on CI). Here the test holds the process's lock, as
+    /// the event does, while the next save runs, and asks for the gate as the event's handler does.
+    /// </summary>
+    [Fact]
+    public async Task ASaveThatFindsEqcDead_NeverHoldsTheGateWhileItWaitsOnTheProcess()
+    {
+        using var compiler = new RunningCompiler(_ => Answering(Compiled));
+        compiler.Compile(TimeSpan.FromSeconds(30)).Compiled.Should().BeTrue();
+        var dead = compiler.Running!;
+        dead.Kill(entireProcessTree: true);
+        dead.WaitForExit(10_000).Should().BeTrue();
+
+        // The process's own lock, held on a thread of its own as the exit event holds it.
+        using var held = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var holder = new Thread(() =>
+        {
+            lock (dead)
+            {
+                held.Set();
+                release.Wait(TimeSpan.FromSeconds(60));
+            }
+        });
+        holder.Start();
+        held.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
+
+        var next = Task.Run(() => compiler.Compile(TimeSpan.FromSeconds(30)));
+        // Long enough for the save to reach the dead eqc and wait on its lock.
+        await Task.Delay(500);
+        var reached = true;
+        try
+        {
+            await Task.Run(() => compiler.ProcessId).WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        catch (TimeoutException)
+        {
+            reached = false;
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        reached.Should().BeTrue("the save waits on the dead process without the gate, which the process's exit event needs");
+        (await next.WaitAsync(TimeSpan.FromSeconds(30))).Compiled.Should().BeTrue();
+        holder.Join(TimeSpan.FromSeconds(10));
+    }
+
     /// <summary>A compile past its limit stops eqc rather than leaving it to write beside the next one.</summary>
     [Fact]
     public void ACompilePastItsLimit_StopsEqc_NotAbandoned()

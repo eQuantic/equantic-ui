@@ -19,9 +19,6 @@ namespace eQuantic.UI.Components;
 /// </summary>
 public sealed class SwipeableRow : StatelessComponent
 {
-    /// <summary>Width of the revealed action — a comfortable thumb target, not a whole screen.</summary>
-    public const float ActionWidth = 96;
-
     public SwipeableRow(VisualNode child, string actionLabel, Icons actionIcon,
         Action? onAction = null)
     {
@@ -45,20 +42,24 @@ public sealed class SwipeableRow : StatelessComponent
     {
         var theme = context.Theme;
         var colors = theme.Colors(ActionVariant);
+        // The theme's List slot, then the component's own (§3.10). The action's width is a comfortable
+        // thumb target, not a whole screen, and it is also how far the row slides open.
+        var slot = theme.List;
+        var actionWidth = slot?.SwipeActionWidth ?? 96;
 
-        var actionContent = new Column(gap: 3)
+        var actionContent = new Column(gap: slot?.SwipeActionGap ?? 3)
         {
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
             Main = MainAlign.Center,
             Cross = CrossAlign.Center,
         };
-        actionContent.Add(new Icon(ActionIcon, IconSize.Dense, colors.OnBase));
+        actionContent.Add(new Icon(ActionIcon, slot?.SwipeIconSize ?? IconSize.Dense, colors.OnBase));
         actionContent.Add(new Text(ActionLabel, TypeRole.Caption, colors.OnBase, maxLines: 1));
 
         var action = new Pressable(new Box(new BoxStyle
         {
-            Width = ActionWidth,
+            Width = actionWidth,
             Height = SizeValue.Fill,
             Background = colors.Base,
         }, actionContent), OnAction)
@@ -69,24 +70,21 @@ public sealed class SwipeableRow : StatelessComponent
         var surface = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Background = theme.Surface,
+            Background = slot?.SwipeSurface ?? theme.Surface,
         }, Child);
 
         // The action sits BEHIND, pinned to the end; the row slides over it.
         var revealed = new Stack();
         revealed.Add(new Positioned(action, top: 0, bottom: 0, end: 0));
-        revealed.Add(new Draggable(surface, OnReleased)
+        // Past half the action's width the row stays open; short of it it springs back.
+        revealed.Add(new Draggable(surface, offset => OnOpenChanged?.Invoke(offset <= -actionWidth / 2))
         {
             Axis = DragAxis.Horizontal,
-            Min = -ActionWidth,
+            Min = -actionWidth,
             Max = 0,
-            RestOffset = Open ? -ActionWidth : 0,
+            RestOffset = Open ? -actionWidth : 0,
         });
 
         return new Box(new BoxStyle { Width = SizeValue.Fill, Clip = true }, revealed);
     }
-
-    /// <summary>Past half the action's width the row stays open; short of it it springs back.</summary>
-    private void OnReleased(float offset) =>
-        OnOpenChanged?.Invoke(offset <= -ActionWidth / 2);
 }

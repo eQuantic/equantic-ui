@@ -10,6 +10,7 @@ export class CodeCompletion {
         this._shown = [];
         this._selected = -1;
         this._active = false;
+        this._openedBy = 'invoked';
         this._start = CodePosition.$zero();
         this._openedEmpty = false;
         this._choosing = false;
@@ -34,6 +35,7 @@ export class CodeCompletion {
     _shown!: CodeCompletionOffer[];
     _selected!: number;
     _active!: boolean;
+    _openedBy!: CodeCompletionTriggerValue;
     _start!: CodePosition;
     _openedEmpty!: boolean;
     _choosing!: boolean;
@@ -103,6 +105,7 @@ export class CodeCompletion {
         this._active = true;
         this._choosing = choosing;
         this._edits.splice(0);
+        this._openedBy = trigger;
         this._start = start;
         this._openedEmpty = choosing || $eq.equals(start, this._editor.caret);
         this._list = $eq.cancellation.source();
@@ -181,7 +184,7 @@ export class CodeCompletion {
                 break;
             }
         }
-        this.askAgainIfIncomplete();
+        this.askAgainWhereTheWordLeftTheAnswer();
         this.resolveSelected();
         this.changed?.();
     }
@@ -206,18 +209,21 @@ export class CodeCompletion {
         }
         if (this._answers.length === 0) return;
         this.filter();
-        this.askAgainIfIncomplete();
+        this.askAgainWhereTheWordLeftTheAnswer();
         this.resolveSelected();
         this.changed?.();
     }
 
-    askAgainIfIncomplete() {
+    askAgainWhereTheWordLeftTheAnswer() {
         let word = this.word();
         let incomplete: any[] = [];
+        let left: any[] = [];
         for (const answer of this._answers) {
-            if (answer.isIncomplete && this.lastAskedWord(answer.provider) !== word) incomplete.push(answer.provider);
+            if (this.lastAskedWord(answer.provider) === word) continue;
+            if (answer.isIncomplete) incomplete.push(answer.provider); else if (!$eq.text.startsWith(word, answer.askedWord, 'ordinal')) left.push(answer.provider);
         }
         if (incomplete.length > 0) this.ask('incomplete', null, incomplete, false);
+        if (left.length > 0) this.ask(this._openedBy === 'character' ? 'invoked' : this._openedBy, null, left, false);
     }
 
     lastAskedWord(provider: any) {

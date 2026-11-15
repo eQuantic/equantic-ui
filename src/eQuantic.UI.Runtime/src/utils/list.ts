@@ -22,6 +22,7 @@
  */
 import { exception, receiver } from './exceptions';
 import { sameBy, type KeyEquality } from './key-equality';
+import { refuseAResize } from './view';
 import { binarySearchIn, introSort, type SortOrder } from './sort';
 import { readAsACollection } from './sorted';
 import { comparerOf, type Ordering } from './ordering';
@@ -462,6 +463,7 @@ const INSERT_INDEX = 'Index must be within the bounds of the List.';
  */
 export function insert<T>(list: T[] | { insert(index: number, item: T): void }, index: number, item: T): void {
   receiver(list);
+  refuseAResize(list);
   if (!Array.isArray(list)) {
     list.insert(index, item);
     return;
@@ -477,6 +479,7 @@ export function insert<T>(list: T[] | { insert(index: number, item: T): void }, 
  */
 export function removeAt<T>(list: T[] | { removeAt(index: number): void }, index: number): void {
   receiver(list);
+  refuseAResize(list);
   if (!Array.isArray(list)) {
     list.removeAt(index);
     return;

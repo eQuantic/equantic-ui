@@ -1,4 +1,5 @@
 import { receiver } from './exceptions';
+import { isAnonymous, isReference } from './marks';
 
 /** The contract `IEquatable<T>` over the value's own type, which `EqualityComparer<T>.Default` asks. */
 export const SELF = 'System.IEquatable<T>|@';
@@ -68,6 +69,11 @@ export function equals(a: unknown, b: unknown): boolean {
 
   // Non-objects that aren't `===` are not equal (e.g. 1 vs 2, "a" vs "b", 1n vs 2n).
   if (ta !== 'object') return false;
+
+  // A list or an array that went into `object` compares by reference, as .NET's do, and an anonymous object
+  // never equals a value of another type that has the same members, a value held as data included (#742, #954).
+  if (isReference(a) || isReference(b)) return false;
+  if (isAnonymous(a) !== isAnonymous(b)) return false;
 
   // Compat value types expose their own structural equality (Decimal, DateTime, TimeSpan, DateOnly,
   // TimeOnly, DateTimeOffset). Delegate to it.

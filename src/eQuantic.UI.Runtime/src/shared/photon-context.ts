@@ -5,8 +5,10 @@
  */
 
 import type { LoweringContext } from './lowering';
+import type { RenderContext } from '../core/types';
 import { resolveService } from '../utils/services';
 import { RouteValues } from './route-values';
+import { getCurrentRoute } from '../router/current-route';
 import { cssFontWeight, isWellFormedFace, type AppTheme } from './value-types';
 import type { TypeStyleValue } from './nodes';
 import type { DensityValue } from './enums.generated';
@@ -16,40 +18,153 @@ import { passInvalidator } from './pass-invalidator';
 import { declareFamily, dependOnFamily } from './face-declarations';
 import { textElementStarts } from '../utils/text-elements';
 
-/** Mirror of the C# `ComponentContext` — what a shared component's `build()` may read (mode-free). */
+/**
+ * What a context made for a component's position reads of it: the element engine's
+ * `ComponentElement`, by the members the C# context reads. Declared here rather than imported, so
+ * this module takes no dependency on the engine's, which reaches it through `runtime-exports`.
+ */
+interface ContextPosition {
+  readonly isActive: boolean;
+  readonly underInFlow: boolean;
+  dependOn(matches: (value: object) => boolean): object | null;
+  find(matches: (value: object) => boolean): object | null;
+  readonly owner: {
+    readonly context: RenderContext;
+    readFrame(reader: ContextPosition): void;
+    readRoute(reader: ContextPosition): void;
+  };
+  visitChildren(visitor: unknown): void;
+}
+
+/** The vocabulary's `Theme` node, handed in by the vocabulary, which imports this module. */
+let themeNode: (abstract new (...args: never[]) => object) | null = null;
+
+export function registerThemeNode(type: abstract new (...args: never[]) => object): void {
+  themeNode = type;
+}
+
+/** Whether the constructor was handed a position rather than a theme: only an element visits children. */
+function isPosition(value: AppTheme | ContextPosition | null): value is ContextPosition {
+  return typeof (value as Partial<ContextPosition> | null)?.visitChildren === 'function';
+}
+
+/**
+ * Mirror of the C# `ComponentContext` — what a shared component's `build()` may read (mode-free).
+ *
+ * Made two ways, as C# makes it. A FRAME'S context holds the theme, type scale and density it was
+ * given. A POSITION'S (the C# internal constructor, which the element engine calls once per
+ * component position) holds none of its own: it reads them from its owner's frame and registers the
+ * position as their reader, so the position builds again when they change, and it answers `inFlow`
+ * from the tree above it.
+ */
 export class ComponentContext {
+  private readonly _position: ContextPosition | null;
+  private readonly _theme: AppTheme;
+  private readonly _typeScale: number;
+  private readonly _density: DensityValue;
+  private readonly _route: RouteValues;
+  private readonly _inFlow: boolean;
+
   constructor(
-    readonly theme: AppTheme,
-    readonly typeScale = 1,
+    theme: AppTheme | ContextPosition,
+    typeScale = 1,
     /** How tight this target's controls are — the C# `Density`, in its own words rather than in
         a `string` a component would then have to be trusted with. */
-    readonly density: DensityValue = 'comfortable',
-  ) {}
+    density: DensityValue = 'comfortable',
+    /** The C# measurer: the browser measures with its own canvas, so what is handed here is not read. */
+    _measureText?: unknown,
+    /** The route the frame is drawn for (C# `route`); the empty one when none is handed. */
+    route: RouteValues | null = null,
+    /** Whether the frame's components were asked to draw in the flow (C# `inFlow`). */
+    inFlow = false,
+  ) {
+    this._route = route ?? RouteValues.empty;
+    this._inFlow = inFlow;
+    if (isPosition(theme)) {
+      this._position = theme;
+      this._theme = null!;
+    } else {
+      this._position = null;
+      this._theme = theme;
+    }
+    this._typeScale = typeScale;
+    this._density = density;
+  }
+
+  /** The frame `position` builds in, with the position registered as one that read it. */
+  private readFrame(position: ContextPosition): RenderContext {
+    // A position that left the tree (a handler that kept its context) reads, and registers nothing.
+    if (position.isActive) position.owner.readFrame(position);
+    return position.owner.context;
+  }
+
+  /**
+   * The theme this component draws in (the C# `ComponentContext.Theme`): the nearest `Theme` above its
+   * position, or its frame's when none is, and reading it makes the component a dependent of whichever
+   * answered (#1395). A frame's context answers the theme it was handed.
+   */
+  get theme(): AppTheme {
+    const position = this._position;
+    if (!position) return this._theme;
+    const node = themeNode;
+    const above = node ? (position.dependOn((value) => value instanceof node) as { value: AppTheme } | null) : null;
+    return above?.value ?? this.readFrame(position).theme;
+  }
+
+  get typeScale(): number {
+    return this._position ? this.readFrame(this._position).typeScale : this._typeScale;
+  }
+
+  get density(): DensityValue {
+    return this._position ? this.readFrame(this._position).density : this._density;
+  }
 
   /**
    * How WIDE this text would be in this style, in dp — the C# `ComponentContext.MeasureText`.
    * The browser's own measurer, through a canvas: the same numbers it will lay the text out with,
-   * which is what a code editor mapping a click to a column depends on.
+   * which is what a code editor mapping a click to a column depends on. A position measures with its
+   * owner's frame, as every build of it does.
    */
   measureText(text: string, style: TypeStyleValue): number {
-    return measurePhotonText(text, style, this.typeScale);
+    if (this._position) return this._position.owner.context.measureText(text, style);
+    return measurePhotonText(text, style, this._typeScale);
   }
 
   /**
    * What the ROUTE said — `context.Route.Param("slug")` transpiles to `context.route.param("slug")`.
-   * Reads the ambient current route, which the router updates before mounting a page and boot seeds
-   * from the initial URL: the same values the server built with, so a param page hydrates matching.
+   * A position reads its owner's frame, which the page hands the router's route (the same values the
+   * server built with, so a param page hydrates matching), and is registered as one of the route's
+   * readers, apart from the theme's: a navigation within one page type builds what read the route
+   * and nothing else (#1395). A frame's context answers the route it was handed.
    */
   get route(): RouteValues {
-    return RouteValues.current;
+    const position = this._position;
+    if (!position) return this._route;
+    if (position.isActive) position.owner.readRoute(position);
+    return position.owner.context.route ?? RouteValues.empty;
   }
 
   /**
    * Whether this component was asked to draw WHERE IT STANDS rather than over everything (the C#
-   * `ComponentContext.InFlow`). Only the overlays answer it.
+   * `ComponentContext.InFlow`). Only the overlays answer it. A position answers from the tree above
+   * it, a frame's context what it was handed.
    */
   get inFlow(): boolean {
-    return inFlowState;
+    return this._position ? this._position.underInFlow : this._inFlow;
+  }
+
+  /**
+   * The nearest inherited component of `type` above, registering this component as its dependent (the
+   * C# `DependOn<T>()`, which eqc lowers with `T`'s twin, #1395): the component builds again when that
+   * value says it changed. Null when none is above, and on a context with no position.
+   */
+  dependOn<T extends object>(type: abstract new (...args: never[]) => T): T | null {
+    return (this._position?.dependOn((value) => value instanceof type) as T | null | undefined) ?? null;
+  }
+
+  /** The nearest inherited component of `type` above, read once (the C# `Find<T>()`): null as above. */
+  find<T extends object>(type: abstract new (...args: never[]) => T): T | null {
+    return (this._position?.find((value) => value instanceof type) as T | null | undefined) ?? null;
   }
 
   /**
@@ -63,27 +178,15 @@ export class ComponentContext {
    * through.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  /**
-   * The nearest inherited component above, registering this component as its dependent (the C#
-   * `DependOn<T>()`). A context with no position has none to look up, which is every browser context
-   * until it builds on the element engine (E5b), so it answers null, as C# does on such a context.
-   */
-  dependOn(): null {
-    return null;
-  }
-
-  /** The nearest inherited component above, with no registration (the C# `Find<T>()`): null, as above. */
-  find(): null {
-    return null;
-  }
-
   getService(interfaceName: string): any {
     return resolveService(interfaceName);
   }
 
-  /** The advance of ONE character in a monospaced style (C# `MonoAdvance`). */
+  /** The advance of ONE character in a monospaced style (C# `MonoAdvance`), with the owner's frame
+      for a position, as `measureText`. */
   monoAdvance(style: TypeStyleValue): number {
-    return photonMonoAdvance(style, this.typeScale);
+    if (this._position) return this._position.owner.context.monoAdvance(style);
+    return photonMonoAdvance(style, this._typeScale);
   }
 }
 
@@ -327,25 +430,12 @@ export function getPhotonTypeScale(): number {
 }
 
 /**
- * The ambient in-flow intent, armed while an `InFlow` subtree builds — the C# `InFlow.Current`
- * twin. Read through `ComponentContext.inFlow`.
+ * The context handed to shared components' `build(context)` (directly or via lowering expansion): the
+ * frame every owner a lowering builds through is handed, with the router's route, which is the one the
+ * server drew the page with (#1395).
  */
-let inFlowState = false;
-
-/** The ambient in-flow intent — what a RenderContext carries into a transpiled build. */
-export function getInFlow(): boolean {
-  return inFlowState;
-}
-
-export function setInFlow(value: boolean): boolean {
-  const previous = inFlowState;
-  inFlowState = value;
-  return previous;
-}
-
-/** The context handed to shared components' `build(context)` (directly or via lowering expansion). */
 export function photonComponentContext(): ComponentContext {
-  return new ComponentContext(activeTheme, activeTypeScale, activeDensity);
+  return new ComponentContext(activeTheme, activeTypeScale, activeDensity, undefined, getCurrentRoute());
 }
 
 /** The lowering context for the active theme — default Text color + component expansion context. */
@@ -365,6 +455,6 @@ export function ambientLoweringContext(): LoweringContext {
 export function themedLoweringContext(theme: AppTheme, typeScale = 1): LoweringContext {
   return {
     textPrimary: theme.textPrimary,
-    componentContext: new ComponentContext(theme, typeScale, activeDensity),
+    componentContext: new ComponentContext(theme, typeScale, activeDensity, undefined, getCurrentRoute()),
   };
 }

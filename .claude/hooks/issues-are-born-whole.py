@@ -5,8 +5,10 @@ Claude Code runs this before every Bash command and every MCP tool a session cal
 .claude/settings.json), with the call as JSON on standard input. When the call would create an issue any
 other way (`gh issue create`, the GraphQL `createIssue`, a `POST` to the REST `/issues`, or an MCP tool
 that creates one), it exits 2, which refuses the call and hands the session the reason on standard
-error. Everything else passes untouched, and a call this cannot read passes too: a hook that failed
-must not stop a session's work, and the roadmap's report still lists an incomplete issue.
+error. A script the command runs is read too, and the scripts that script runs, one level down: what it
+does is in its file, not on the command line (#1478). Everything else passes untouched, and a call this
+cannot read passes too: a hook that failed must not stop a session's work, and the roadmap's report
+still lists an incomplete issue.
 
     .claude/hooks/issues-are-born-whole.py --self-test   prove the classification against its cases
 """
@@ -40,6 +42,22 @@ CURL_WRITES = re.compile(r"(?:-X\s*|--request[=\s]+)POST\b|\s(?:-d|--data(?:-raw
 FILE_ARGUMENT = re.compile(r"""(?:=@|\s--input[=\s]+|\s(?:-d|--data(?:-raw|-binary)?)[=\s]+@)['"]?(?P<path>[^\s'";|&)]+)""")
 # How much of a file is read: a GraphQL query or a JSON body, never a large one.
 FILE_LIMIT = 1 << 20
+# A script the command runs: an interpreter and the file it is handed (`python3 -I x.py`, `bash x.sh`,
+# `deno run -A x.ts`), or the file run as a program (`./x.py`, `~/tools/x`, `/opt/x`). A `-` or a quoted
+# `-c` string is not a file: the command line itself is read for those.
+SCRIPT_RUN = re.compile(START + r"(?:(?:python3?(?:\.\d+)?|node|bun(?:\s+run)?|deno\s+run|ruby|perl|(?:ba|z|da)?sh)"
+                        r"(?:\s+-[A-Za-z-]+)*\s+(?P<script>[^\s;|&)'\"<>-][^\s;|&)'\"<>]*)"
+                        r"|(?P<program>(?:\.{1,2}/|~/|/)[^\s;|&)'\"<>]+))", re.MULTILINE)
+# What creates an issue inside a script: the command, written as a line or as a program's argument list
+# (`["gh", "issue", "create", …]`), or the GraphQL mutation.
+SCRIPT_CREATES = re.compile(r"""\bgh\s+issue\s+create\b|['"]gh['"]\s*,\s*['"]issue['"]\s*,\s*['"]create['"]"""
+                            r"|\bcreateIssue\s*\(")
+# The scripts that create an issue on purpose: the one door, and this hook, whose self-test names
+# every way it refuses.
+DOORS = tuple(os.sep + os.path.join(*door) for door in (("scripts", "new-issue.py"),
+                                                         (".claude", "hooks", "issues-are-born-whole.py")))
+# How far down the scripts a script runs are followed: the script, and what it runs.
+SCRIPT_DEPTH = 1
 MCP_CREATE = re.compile(r"^mcp__.*create_issue")
 # A tool that writes issues by method (GitHub's own server names it issue_write): only `create` creates.
 MCP_WRITE = re.compile(r"^mcp__.*issue_write")
@@ -67,6 +85,36 @@ def files_hold_a_creation(command: str, cwd: str | None) -> bool:
     return False
 
 
+def script_text(path: str) -> str | None:
+    """A script's text, or nothing for what is not a readable text file: a folder, a binary program."""
+    try:
+        if not os.path.isfile(path):
+            return None
+        with open(path, "rb") as file:
+            head = file.read(8192)
+            if b"\0" in head:
+                return None
+            return (head + file.read(FILE_LIMIT - len(head))).decode("utf-8", errors="replace")
+    except OSError:
+        return None
+
+
+def scripts_create(command: str, cwd: str | None, depth: int = 0) -> bool:
+    """Whether a script the command runs creates an issue inside itself, or runs one that does."""
+    for match in SCRIPT_RUN.finditer(command):
+        path = os.path.realpath(os.path.join(cwd or os.getcwd(), os.path.expanduser(match.group("script") or match.group("program"))))
+        if path.endswith(DOORS):
+            continue
+        text = script_text(path)
+        if text is None:
+            continue
+        if SCRIPT_CREATES.search(text):
+            return True
+        if depth < SCRIPT_DEPTH and scripts_create(text, cwd, depth + 1):
+            return True
+    return False
+
+
 def creates_an_issue(command: str, cwd: str | None = None) -> bool:
     if GH_ISSUE_CREATE.search(command):
         return True
@@ -81,7 +129,7 @@ def creates_an_issue(command: str, cwd: str | None = None) -> bool:
             return True
         if CURL.search(command) and CURL_WRITES.search(command):
             return True
-    return False
+    return scripts_create(command, cwd)
 
 
 def refuses(call: dict) -> bool:
@@ -148,6 +196,40 @@ def self_test() -> int:
                      if creates_an_issue(c, scratch) != want]
         refused += [c for c, want in from_files if want]
         passed += [c for c, want in from_files if not want]
+    # A script that creates an issue inside itself (#1478): the command line names only the file.
+    with tempfile.TemporaryDirectory() as scratch:
+        scripts = {
+            "subissues.py": 'import subprocess\ncmd = ["gh", "issue", "create", "--title", t]\nsubprocess.run(cmd)\n',
+            "board.py": "q = 'mutation($i: CreateIssueInput!) { createIssue(input: $i) { issue { id } } }'\n",
+            "file.sh": "#!/bin/sh\ngh issue create --title \"$1\" --body-file \"$2\"\n",
+            "wrapper.sh": "#!/bin/sh\nset -e\npython3 subissues.py \"$@\"\n",
+            "reads.py": 'import subprocess\nsubprocess.run(["gh", "issue", "list", "--state", "open"])\n',
+            "comments.sh": "#!/bin/sh\ngh issue comment \"$1\" --body-file note.md\n",
+            os.path.join("scripts", "new-issue.py"): "q = 'mutation { createIssue(input: $i) { issue { id } } }'\n",
+            # A name that only ends like the door is not the door.
+            os.path.join("myscripts", "new-issue.py"): "q = 'mutation { createIssue(input: $i) { issue { id } } }'\n",
+        }
+        for name, text in scripts.items():
+            os.makedirs(os.path.dirname(os.path.join(scratch, name)), exist_ok=True)
+            with open(os.path.join(scratch, name), "w", encoding="utf-8") as file:
+                file.write(text)
+        from_scripts = [("python3 subissues.py 1128 task 1.0.0 t.txt b.md", True),
+                        ("python3 -I ./subissues.py 1128", True),
+                        ("cd /x && python3 board.py", True),
+                        ("sh file.sh title.txt body.md", True),
+                        ("./file.sh title.txt body.md", True),
+                        ("bash wrapper.sh 1128 task", True),
+                        ("python3 reads.py", False),
+                        ("bash comments.sh 12", False),
+                        ("python3 scripts/new-issue.py --type Task --parent 160 --points 2 --title x --body-file b.md", False),
+                        ("python3 myscripts/new-issue.py", True),
+                        ("python3 missing.py", False),
+                        ("python3 -c 'print(1)'", False),
+                        ("cat subissues.py", False)]
+        failures += [f"from a script, refused is {not want}: {c}" for c, want in from_scripts
+                     if creates_an_issue(c, scratch) != want]
+        refused += [c for c, want in from_scripts if want]
+        passed += [c for c, want in from_scripts if not want]
     calls = [({"tool_name": "mcp__github__create_issue", "tool_input": {}}, True),
              ({"tool_name": "mcp__github__issue_write", "tool_input": {"method": "create"}}, True),
              ({"tool_name": "mcp__github__issue_write", "tool_input": {"method": "update"}}, False),

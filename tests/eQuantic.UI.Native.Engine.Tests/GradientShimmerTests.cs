@@ -21,7 +21,7 @@ public class GradientShimmerTests
     private static DrawCommand[] Render(VisualNode root, float timeMs = 0, bool reducedMotion = false)
     {
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(root, 200, 40, Theme, ThemeMode.Light, builder,
+        PhotonRealizer.Realize(root, 200, 40, Theme, ThemeMode.Light, ContrastLevel.Standard, builder,
             timeMs: timeMs, reducedMotion: reducedMotion);
         return builder.Build().Commands.ToArray();
     }
@@ -41,7 +41,7 @@ public class GradientShimmerTests
         fill.Paint.Kind.Should().Be(PaintKind.LinearGradient);
         fill.Paint.GradientStart.Should().Be(new Point(0, 0));
         fill.Paint.GradientEnd.Should().Be(new Point(120, 0), "ToRight spans the box width");
-        fill.Paint.Color.Should().Be(Theme.SurfaceHighlight.Resolve(ThemeMode.Light));
+        fill.Paint.Color.Should().Be(Theme.SurfaceHighlight.Resolve(ThemeMode.Light, ContrastLevel.Standard));
         fill.Paint.EndColor.Should().Be(Color.Transparent);
     }
 
@@ -95,7 +95,7 @@ public class GradientShimmerTests
 
         // 1 background + 3 vertical rules (x = 0, 50, 100) + 2 horizontal rules (y = 0, 50).
         commands.Should().HaveCount(6);
-        commands[0].Paint.Color.Should().Be(Theme.Surface.Resolve(ThemeMode.Light),
+        commands[0].Paint.Color.Should().Be(Theme.Surface.Resolve(ThemeMode.Light, ContrastLevel.Standard),
             "the solid background paints first, with the grid over it");
 
         var vertical = commands.Skip(1).Take(3).Select(c => c.Shape.Rect.X).ToList();
@@ -177,7 +177,7 @@ public class GradientShimmerTests
     {
         var builder = new DisplayListBuilder();
         var frame = PhotonRealizer.Realize(new Skeleton(SkeletonShape.Line, 160), 200, 40, Theme,
-            ThemeMode.Light, builder, timeMs: 700, reducedMotion: true);
+            ThemeMode.Light, ContrastLevel.Standard, builder, timeMs: 700, reducedMotion: true);
 
         frame.HasActiveMotion.Should().BeFalse("a hidden decorative loop must not keep frames hot");
         var fills = builder.Build().Commands.ToArray().Where(c => c.Kind == DrawCommandKind.FillRRect).ToList();

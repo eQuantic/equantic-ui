@@ -180,10 +180,104 @@ public class InheritedComponentTests
         log.Entries.Should().BeEmpty("the reader's position left the tree with its dependency");
     }
 
+    /// <summary>Holds a score INSIDE an overlay's layer, over a subtree it builds once: the score
+    /// changes in the frame the realizer shows the layer, after the frame's build phase ended.</summary>
+    private sealed class LayerHolder(VisualNode child) : StatefulComponent
+    {
+        private int _value = 1;
+
+        public void Set(int value) => SetState(() => _value = value);
+
+        public override VisualNode Build(ComponentContext context) => new Overlay(new Score(_value, child));
+    }
+
+    /// <summary>A frame as a realizer draws it: the build phase, then the layer shown, which is where
+    /// the log is read, before the frame ends.</summary>
+    private static List<string> FrameShowingTheLayer(BuildOwner owner, VisualNode root, Log log, bool rebuildAll = false)
+    {
+        var element = owner.Build(root, Comfortable, WindowSizeClass.Compact, rebuildAll);
+        // The overlay is the root's first child in both trees here.
+        var overlay = (NodeElement)element.ChildAt(0)!;
+        overlay.ShowDeferred(((Overlay)overlay.Configuration).Child);
+        var built = log.Entries.ToList();
+        owner.EndFrame();
+        return built;
+    }
+
+    /// <summary>#1413: a value inside an overlay's layer that changes in the frame the layer shows
+    /// builds its dependent in that frame, so the layer never paints the old value.</summary>
+    [Fact]
+    public void ADependentInsideALayer_BuildsInTheFrameItsValueChanges()
+    {
+        var log = new Log();
+        var holder = new LayerHolder(new Column { new Reader(log), new Bystander(log) });
+        var owner = new ComponentBoundary().Owner();
+        FrameShowingTheLayer(owner, holder, log, rebuildAll: true).Should().Equal("reader 1", "bystander");
+
+        log.Entries.Clear();
+        holder.Set(2);
+
+        FrameShowingTheLayer(owner, holder, log).Should().Equal(["reader 2"],
+            "the layer shows the new score in this frame, so its reader builds before the layer is laid out, and the bystander does not");
+        owner.HasDirty.Should().BeFalse("nothing is left for a frame after it");
+    }
+
+    /// <summary>The value changes while the layer's own marked positions build: a stateful holder
+    /// inside the layer, set before the frame, hands its score a new value in BuildDeferred itself.</summary>
+    [Fact]
+    public void ADependentMarkedWhileALayerBuilds_BuildsInTheSameFrame()
+    {
+        var log = new Log();
+        var holder = new Holder(new Column { new Reader(log) });
+        // The column keeps the walk that shows the layer from reaching the holder, so it builds in
+        // BuildDeferred's own list, and the reader is marked while that list is being built.
+        var root = new Column { new Overlay(new Column { holder }) };
+        var owner = new ComponentBoundary().Owner();
+        FrameShowingTheLayer(owner, root, log, rebuildAll: true).Should().Equal("reader 1");
+
+        log.Entries.Clear();
+        holder.Set(2);
+
+        FrameShowingTheLayer(owner, root, log).Should().Equal(["reader 2"],
+            "the holder builds when the layer shows, and the reader its new score marks builds behind it");
+        owner.HasDirty.Should().BeFalse("nothing is left for a frame after it");
+    }
+
+    /// <summary>A reader under a layer inside the layer waits for its own: the outer layer's
+    /// BuildDeferred passes it over, and the inner one, shown after it, builds it in the same frame.</summary>
+    [Fact]
+    public void ADependentInALayerInsideTheLayer_BuildsWhenItsOwnLayerShows()
+    {
+        var log = new Log();
+        var holder = new LayerHolder(new Column { new Overlay(new Column { new Reader(log) }) });
+        var owner = new ComponentBoundary().Owner();
+
+        List<string> Draw(bool rebuildAll, out List<string> afterOuter)
+        {
+            var outer = (NodeElement)owner.Build(holder, Comfortable, WindowSizeClass.Compact, rebuildAll).ChildAt(0)!;
+            // The outer layer's score, then its column, then the inner overlay.
+            var inner = (NodeElement)outer.ShowDeferred(((Overlay)outer.Configuration).Child).ChildAt(0)!.ChildAt(0)!;
+            afterOuter = log.Entries.ToList();
+            inner.ShowDeferred(((Overlay)inner.Configuration).Child);
+            var built = log.Entries.ToList();
+            owner.EndFrame();
+            return built;
+        }
+
+        Draw(rebuildAll: true, out _).Should().Equal("reader 1");
+
+        log.Entries.Clear();
+        holder.Set(2);
+
+        Draw(rebuildAll: false, out var afterOuter).Should().Equal(["reader 2"], "its own layer shows in this frame");
+        afterOuter.Should().BeEmpty("the outer layer does not build it with the inner layer's old configuration");
+        owner.HasDirty.Should().BeFalse("nothing is left for a frame after it");
+    }
+
     [Fact]
     public void AContextWithNoPosition_FindsNoInheritedValue()
     {
-        Comfortable.DependOn<Score>().Should().BeNull("the web and the server build with no element per position until #1395");
+        Comfortable.DependOn<Score>().Should().BeNull("a context made outside any tree, as an email's, has no position to look up from");
         Comfortable.Find<Score>().Should().BeNull();
     }
 
@@ -211,6 +305,122 @@ public class InheritedComponentTests
 
         log.Entries.Should().Equal(["density Compact"],
             "a density switch rebuilt every component until the components that read it were known");
+    }
+
+    /// <summary>Reads the route, which a frame hands every build.</summary>
+    private sealed class RouteReader(Log log) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            log.Entries.Add($"slug {context.Route.Param("slug")}");
+            return new Text("route", TypeRole.BodyM);
+        }
+    }
+
+    private static ComponentContext Routed(string slug) => new(PhotonTheme.Instance,
+        route: new RouteValues(new Dictionary<string, string> { ["slug"] = slug }, null, $"/docs/{slug}"));
+
+    /// <summary>
+    /// A navigation within one page type builds what read the route and nothing else (#1395): the route
+    /// is the frame's, as the theme is, and its readers are kept apart from the theme's, so neither a
+    /// reader of the density nor a component that read nothing builds again.
+    /// </summary>
+    [Fact]
+    public void ARouteChange_BuildsWhatReadsIt_AndNothingElse()
+    {
+        var log = new Log();
+        var root = new Column { new RouteReader(log), new DensityReader(log), new Bystander(log) };
+        var owner = new ComponentBoundary().Owner();
+        Frame(owner, root, rebuildAll: true, context: Routed("first"));
+        log.Entries.Should().Equal("slug first", "density Comfortable", "bystander");
+
+        log.Entries.Clear();
+        Frame(owner, root, context: Routed("second"));
+
+        log.Entries.Should().Equal(["slug second"], "the route has readers of its own");
+    }
+
+    /// <summary>
+    /// A frame is a new context every time a host draws, and the route it hands is the one the host
+    /// holds until a navigation: a new frame with the same route builds none of the route's readers.
+    /// </summary>
+    [Fact]
+    public void ANewFrameWithTheSameRoute_BuildsNoReaderOfTheRoute()
+    {
+        var log = new Log();
+        var root = new Column { new RouteReader(log), new Bystander(log) };
+        var route = new RouteValues(new Dictionary<string, string> { ["slug"] = "same" }, null, "/docs/same");
+        var owner = new ComponentBoundary().Owner();
+        Frame(owner, root, rebuildAll: true, context: new ComponentContext(PhotonTheme.Instance, route: route));
+
+        log.Entries.Clear();
+        Frame(owner, root, context: new ComponentContext(PhotonTheme.Instance, route: route));
+
+        log.Entries.Should().BeEmpty("the frame is new and its route is not");
+    }
+
+    /// <summary>A frame's context answers the route it was handed, and an empty one when none was.</summary>
+    [Fact]
+    public void AFramesContext_AnswersTheRouteItWasHanded()
+    {
+        Routed("doc").Route.Param("slug").Should().Be("doc");
+        new ComponentContext(PhotonTheme.Instance).Route.Should().BeSameAs(RouteValues.Empty);
+    }
+
+    /// <summary>Says which theme it draws in.</summary>
+    private sealed class ThemeReader(Log log, string name, IAppTheme other) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            log.Entries.Add($"{name} {(ReferenceEquals(context.Theme, other) ? "other" : "frame")}");
+            return new Text(name, TypeRole.BodyM);
+        }
+    }
+
+    /// <summary>Holds a theme over a subtree its parent handed it.</summary>
+    private sealed class ThemeHolder(IAppTheme first, VisualNode child) : StatefulComponent
+    {
+        private IAppTheme _theme = first;
+
+        public void Set(IAppTheme theme) => SetState(() => _theme = theme);
+
+        public override VisualNode Build(ComponentContext context) => new Theme(_theme, child);
+    }
+
+    /// <summary>
+    /// A component under a <see cref="Theme"/> draws in its theme, and one beside it in the frame's
+    /// (#1395): the vocabulary's own inherited value, which a part of the screen drawn in another theme
+    /// wraps itself in (#1387).
+    /// </summary>
+    [Fact]
+    public void ASubtreeUnderItsOwnTheme_DrawsInIt_AndOneBesideItInTheFrames()
+    {
+        var log = new Log();
+        var other = new PhotonTheme();
+        var owner = new ComponentBoundary().Owner();
+
+        Frame(owner, new Column { new Theme(other, new ThemeReader(log, "inside", other)), new ThemeReader(log, "beside", other) },
+            rebuildAll: true);
+
+        log.Entries.Should().Equal("inside other", "beside frame");
+    }
+
+    /// <summary>A new theme over a subtree builds the components that read it there, and nothing else.</summary>
+    [Fact]
+    public void ANewThemeOverASubtree_BuildsWhatReadsIt_AndNothingElse()
+    {
+        var log = new Log();
+        var other = new PhotonTheme();
+        var holder = new ThemeHolder(PhotonTheme.Instance, new Column { new ThemeReader(log, "reader", other), new Bystander(log) });
+        var owner = new ComponentBoundary().Owner();
+        var root = Frame(owner, new Column { holder }, rebuildAll: true);
+        log.Entries.Should().Equal("reader frame", "bystander");
+
+        log.Entries.Clear();
+        ((ThemeHolder)((ComponentElement)root.ChildAt(0)!).Component).Set(other);
+        Frame(owner, new Column { holder });
+
+        log.Entries.Should().Equal(["reader other"], "the theme's dependents build, and a bystander does not");
     }
 
     /// <summary>Keeps the context it was handed, as a handler does.</summary>
@@ -251,6 +461,5 @@ public class InheritedComponentTests
 
         inside.Context!.InFlow.Should().BeTrue();
         outside.Context!.InFlow.Should().BeFalse();
-        InFlow.Current.Should().BeFalse("a position answers from the tree, and arms no ambient channel");
     }
 }

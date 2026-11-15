@@ -10,7 +10,6 @@ namespace eQuantic.UI.Primitives;
 /// simply holds the latest.
 /// </para>
 /// </summary>
-[ServerOnly]
 public sealed class ComponentElement : Element
 {
     private Element? _child;
@@ -42,6 +41,10 @@ public sealed class ComponentElement : Element
     /// (the theme, the density, the type scale), so a frame that hands others builds it again; -1 for
     /// one that read none of it.</summary>
     internal int FrameReaderIndex { get; set; } = -1;
+
+    /// <summary>Where this position stands among those that read the frame's route, apart from the
+    /// frame's other values so a navigation builds only them; -1 for one that did not read it.</summary>
+    internal int RouteReaderIndex { get; set; } = -1;
 
     /// <summary>
     /// What this position builds with: ONE context for as long as the position lives, a view of where it
@@ -101,7 +104,7 @@ public sealed class ComponentElement : Element
 
     private protected override void FirstBuild()
     {
-        if (Owner.Live && Component is StatefulComponent stateful && stateful.Place(this))
+        if (Owner.Live && Component is StatefulComponent stateful && stateful.EnterPosition(this))
             Owner.QueueMount(this);
 
         Rebuild(force: false);
@@ -150,12 +153,12 @@ public sealed class ComponentElement : Element
         }
 
         var built = BuildContained();
-        _child = UpdateChild(_child, built, force);
+        _child = UpdateChild(_child, built, 0, force);
     }
 
     // With this position's own context, which answers whether an InFlow is above it from the tree
     // (Element.UnderInFlow) rather than from an ambient channel armed around the build.
-    private VisualNode BuildContained() => Owner.BuildComponent(Component, Context, ComponentDepth);
+    private VisualNode BuildContained() => Owner.BuildComponent(this);
 
     /// <summary>Asks for this position to build again: a <c>SetState</c>, through the instance. The
     /// owner counts the request even when the position is already waiting to build
@@ -187,6 +190,7 @@ public sealed class ComponentElement : Element
     private protected override void OnDeactivated()
     {
         Owner.ForgetFrameReader(this);
+        Owner.ForgetRouteReader(this);
         if (_dependencies is not null)
         {
             foreach (var dependency in _dependencies) dependency.RemoveDependent(this);
@@ -194,7 +198,7 @@ public sealed class ComponentElement : Element
         }
 
         // One instance a parent placed at two positions stays mounted until the last of them leaves.
-        if (Owner.Live && Component is StatefulComponent stateful && stateful.Leave(this))
+        if (Owner.Live && Component is StatefulComponent stateful && stateful.LeavePosition(this))
             Owner.QueueUnmount(stateful);
     }
 }

@@ -1,0 +1,34 @@
+## Comfortable
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-rx01wr eq-yjvyu6">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-5ew4ww{min-width:0}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-g7fowl{pointer-events:auto}
+.eq-rx01wr{height:1px}
+.eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
+### semantics
+### photon
+Divider 0 0 480x1
+  Box 0 0 480x1
+
+## Compact
+### web
+<div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-rx01wr eq-yjvyu6">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-5ew4ww{min-width:0}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-g7fowl{pointer-events:auto}
+.eq-rx01wr{height:1px}
+.eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
+### semantics
+### photon
+Divider 0 0 480x1
+  Box 0 0 480x1
+

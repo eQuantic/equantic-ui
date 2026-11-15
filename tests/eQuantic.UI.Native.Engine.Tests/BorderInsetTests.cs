@@ -22,7 +22,7 @@ public class BorderInsetTests
         // A row, where a box hugs its child: in a column it would stretch across like a block.
         var page = new Row(gap: 0, cross: CrossAlign.Start);
         page.Add(box);
-        var root = PhotonRealizer.Realize(page, 200, 200, PhotonTheme.Instance, ThemeMode.Light,
+        var root = PhotonRealizer.Realize(page, 200, 200, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder()).Root;
         return root.Children[0];
     }

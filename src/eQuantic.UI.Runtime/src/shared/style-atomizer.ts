@@ -11,6 +11,8 @@ import type { AppTheme, ColorToken } from './value-types';
 import { getPhotonTheme } from './photon-context';
 import { SCROLLED_MARKER } from './markers';
 import { createStyleElement } from '../utils/page-nonce';
+import type { HtmlNode } from '../core/types';
+import { reachedInto } from './lowered-records';
 
 /** FNV-1a 32-bit over UTF-16 code units, base36 — the exact C# `StyleAtomizer.Hash`. */
 export function hashDeclaration(text: string): string {
@@ -91,6 +93,7 @@ function varMapFor(theme: AppTheme): VarEntry[] {
     register(colors.pressed, `${variant}-pressed`);
     register(colors.subtle, `${variant}-subtle`);
     register(colors.onSubtle, `${variant}-on-subtle`);
+    register(colors.hover, `${variant}-hover`);
   }
 
   varMaps.set(theme, entries);
@@ -288,10 +291,17 @@ export function mergeAtomicDeclaration(
  * draggable's glide to its box's transition list, #511). A state's or the scrolled variant's
  * declaration is not the resting one, and is skipped as effectiveStyle skips it.
  */
+/** Whether `cls` is an atomic class this registry wrote, rather than a semantic one. */
+export function isAtomicClass(cls: string): boolean {
+  return ruleTexts.has(cls);
+}
+
 export function atomicDeclaration(
   node: { attributes: Record<string, string | undefined> },
   prop: string,
 ): string | undefined {
+  // A parent that reads what its child lowered to decides from it: the child is not lowered alone.
+  reachedInto(node as HtmlNode);
   for (const cls of (node.attributes['class'] ?? '').split(' ')) {
     const rule = ruleTexts.get(cls);
     if (rule && !rule.includes('\u0001') && rule.startsWith(`${prop}:`)) return rule.slice(prop.length + 1);
@@ -463,6 +473,9 @@ function addOnce(classes: string[], className: string): void {
   if (!classes.includes(className)) classes.push(className);
 }
 
+/** The family of a CONTROL's hover (C# `StyleSink.ControlHover`, #614). */
+export const CONTROL_HOVER = 'hover';
+
 /** The family of a CONTROL's focus (C# `StyleSink.ControlFocus`). */
 export const CONTROL_FOCUS = 'focus';
 
@@ -476,6 +489,12 @@ export const CONTROL_PRESSED = 'pressed';
  * 0,4,0), never their order in the sheet; the nesting rule rides in a `:where()`, which weighs nothing.
  */
 export function stateSelector(family: string, className: string): string {
+  // (0,2,0), the weight of the box's own :hover it stands for (C# twin, #614).
+  if (family === CONTROL_HOVER)
+    return (
+      `:where(.eq-pressable:hover) .${className}.${className}` +
+      `:not(:where(.eq-pressable:not(:hover) .${className}))`
+    );
   if (family === CONTROL_FOCUS)
     return `.eq-pressable:focus-visible .${className}:not(:where(.eq-pressable:focus-visible .eq-pressable .${className}))`;
   if (family === CONTROL_PRESSED)
@@ -510,7 +529,7 @@ export function atomizePseudo(pseudo: string, entries: Record<string, string | u
         // can hover. The gate wraps the rule, never the hash: the class string stays identical.
         const selector = stateSelector(pseudo, className);
         const rule =
-          pseudo === ':hover'
+          pseudo === ':hover' || pseudo === CONTROL_HOVER
             ? `@media (hover: hover){${selector}{${declaration}}}`
             : `${selector}{${declaration}}`;
         target?.insertRule(rule, target.cssRules.length);

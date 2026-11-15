@@ -20,7 +20,7 @@ public class PositionedThroughComponentTests
         var stack = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
         stack.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 100 }));
         stack.Add(corner);
-        var frame = PhotonRealizer.Realize(stack, 200, 100, PhotonTheme.Instance, ThemeMode.Light,
+        var frame = PhotonRealizer.Realize(stack, 200, 100, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder());
         return frame.Root.Children[1];
     }
@@ -49,7 +49,7 @@ public class PositionedThroughComponentTests
         stack.Add(new Box(new BoxStyle { Width = 100, Height = 50 }));
         stack.Add(new CornerAction());
 
-        var frame = PhotonRealizer.Realize(stack, 400, 400, PhotonTheme.Instance, ThemeMode.Light,
+        var frame = PhotonRealizer.Realize(stack, 400, 400, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder());
 
         frame.Root.Bounds.Width.Should().Be(100);

@@ -28,7 +28,7 @@ public class PointerHoverTests
         host.RenderFrame(builder);
         foreach (var command in builder.Build().Commands)
             if (command.Kind == DrawCommandKind.FillRRect
-                && command.Paint.Color == HoverFill.Resolve(ThemeMode.Light))
+                && command.Paint.Color == HoverFill.Resolve(ThemeMode.Light, ContrastLevel.Standard))
                 return true;
         return false;
     }
@@ -134,8 +134,8 @@ public class PointerHoverTests
         host.RenderFrame(settle);
 
         var colors = PhotonTheme.Instance.Colors(Variant.Primary);
-        var hover = colors.Hover.Resolve(ThemeMode.Light);
-        var pressed = colors.Pressed.Resolve(ThemeMode.Light);
+        var hover = colors.Hover.Resolve(ThemeMode.Light, ContrastLevel.Standard);
+        var pressed = colors.Pressed.Resolve(ThemeMode.Light, ContrastLevel.Standard);
 
         host.PointerMove(30, 20);
         host.Hovered.Should().NotBeNull("the button's container registers a hover region");

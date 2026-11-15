@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -96,7 +97,7 @@ public class RecordTypeEmitter
     /// <c>[ServerOnly]</c>.
     /// </summary>
     public static bool EmitsTwin(INamedTypeSymbol type) =>
-        type.DeclaringSyntaxReferences.Any(reference =>
+        type.ReadDeclarations().Any(reference =>
             reference.GetSyntax() is TypeDeclarationSyntax declaration && CanEmit(declaration, type));
 
     /// <summary>A model that can answer about THIS declaration. Roslyn throws for a node from
@@ -255,7 +256,7 @@ public class RecordTypeEmitter
     /// (<see cref="TypeInitializer.Constant"/>), and the expression converted otherwise.</summary>
     private string StaticValue(EqualsValueClauseSyntax initializer, TypeSyntax type) =>
         TypeInitializer.Constant(initializer, ModelFor(initializer), _converter)
-        ?? ExpressionVariableScanner.Scoped(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ValueText()), _annotations);
+        ?? _converter.ConvertInitializer(initializer.Value, () => _converter.ConvertExpression(initializer.Value, type.ValueText()), _annotations);
 
     /// <summary>
     /// The annotation of a static that STARTS as null, in the TypeScript emission: its declared type
@@ -417,11 +418,21 @@ public class RecordTypeEmitter
             // reload carries a value's twin as its data while it leaves a class's object to its
             // initializer (dev/hot-reload-state.ts).
             sb.Append("static $record = true; ");
+            // A value from the wire is built through its primary constructor where it holds what the wire does not
+            // carry, a private field above all: its initializer may read the parameters, and equality compares it
+            // (hydrate.ts, #590).
+            if (type is RecordDeclarationSyntax { ParameterList.Parameters: { Count: > 0 } primary }
+                && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol held && HoldsAField(held))
+                sb.Append($"static $primary = [{string.Join(", ", primary.Select(parameter => $"'{parameter.Identifier.ValueText.ToCamelCase()}'"))}]; ");
             // Each interface typed Equals the type answers, to the method answering it: what a call through the
             // interface, a collection of the type and generic code ask, by the contract.
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol equatable
                 && ElementEquality.ContractMap(equatable) is { } contracts)
                 sb.Append($"static $equatable = {contracts}; ");
+            // The interfaces a type test can ask of its values, which JavaScript cannot (#1464).
+            if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol implementing
+                && InterfaceTests.DeclaredBy(implementing) is { } interfaces)
+                sb.Append($"static $interfaces = {JsExprWriter.Write(interfaces)}; ");
 
             // The zero C# gives a struct: `default(S)`, an array's slot, an OrDefault, and `new S()`
             // where S declares no parameterless constructor. Every struct twin carries it, built
@@ -492,10 +503,15 @@ public class RecordTypeEmitter
             // property's name, read through the property, as System.Text.Json writes the property:
             // JSON.stringify writes an object's own properties, so a server action received `$name`
             // and bound nothing. A derived record inherits it.
-            if (members.Any(member => member.Store != member.Js))
+            // And it writes only what the serializer writes, where it holds more (JsonContract, #745).
+            var written = ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol contract ? JsonContract.Members(contract) : null;
+            if (written is not null || members.Any(member => member.Store != member.Js))
+            {
+                var json = written is null ? $"{Eq.Json}(this)" : $"{Eq.Json}(this, {written})";
                 sb.Append(tsTypeDeclarations
-                    ? $"toJSON(): Record<string, unknown> {{ return {Eq.Json}(this); }} "
-                    : $"toJSON() {{ return {Eq.Json}(this); }} ");
+                    ? $"toJSON(): Record<string, unknown> {{ return {json}; }} "
+                    : $"toJSON() {{ return {json}; }} ");
+            }
         }
 
         // User-declared methods — a STATIC one keeps its modifier: a record's factory
@@ -525,6 +541,11 @@ public class RecordTypeEmitter
             _converter.SetCurrentClass(name);
             foreach (var member in _lowering.Indexer(indexer, TsTypeOf)) sb.Append(Written(member));
         }
+
+        // An event declared with accessors, as the methods every subscription to it calls (#1445).
+        _converter.SetCurrentClass(name);
+        foreach (var e in type.TwinMembers().OfType<EventDeclarationSyntax>())
+            foreach (var member in _lowering.EventAccessors(e, TsTypeOf, asStatic: false)) sb.Append(Written(member));
 
         // OPERATOR overloads. JavaScript cannot overload `+`, so the operator becomes a static
         // method and the call site is rewritten to call it — dropping it silently made `a + b` on
@@ -699,7 +720,7 @@ public class RecordTypeEmitter
         var self = ModelFor(type)?.GetDeclaredSymbol(type) as INamedTypeSymbol;
         if (type is RecordDeclarationSyntax
             && self is { BaseType: { } parent }
-            && parent.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
+            && parent.ReadDeclarations().Select(reference => reference.GetSyntax())
                 .OfType<TypeDeclarationSyntax>().FirstOrDefault(declaration => CanEmit(declaration, parent)) is { } baseDeclaration)
         {
             foreach (var inherited in Printed(baseDeclaration)) yield return inherited;
@@ -710,7 +731,7 @@ public class RecordTypeEmitter
             // parameters first, and a positional member the body declares where the body declares it
             // (`record Box(int X, int Y) { public int X … }` prints `Y = …, X = …`, as .NET does).
             foreach (var member in self.PrintedMembers().Where(member => member is not IPropertySymbol { IsOverride: true })
-                         .OrderBy(member => member.DeclaringSyntaxReferences.FirstOrDefault()?.Span.Start ?? int.MaxValue))
+                         .OrderBy(member => member.ReadDeclarations().FirstOrDefault()?.Span.Start ?? int.MaxValue))
                 yield return (member.Name,
                     member switch { IFieldSymbol field => field.Type, IPropertySymbol property => property.Type, _ => null });
             yield break;
@@ -737,6 +758,14 @@ public class RecordTypeEmitter
     }
 
     /// <summary>A struct, or a record struct, whose declaration is a record's.</summary>
+    /// <summary>Whether a value of <paramref name="type"/> holds a field, its own or a base record's.</summary>
+    private static bool HoldsAField(INamedTypeSymbol type)
+    {
+        for (var at = type; at is not null && at.Locations.Any(location => location.IsInSource); at = at.BaseType)
+            if (at.GetMembers().OfType<IFieldSymbol>().Any(field => field is { IsStatic: false, IsImplicitlyDeclared: false })) return true;
+        return false;
+    }
+
     internal static bool IsStruct(TypeDeclarationSyntax type) =>
         type is StructDeclarationSyntax
         || type is RecordDeclarationSyntax record && record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword);
@@ -874,7 +903,7 @@ public class RecordTypeEmitter
     /// </summary>
     private JsClassMember CopyStep(INamedTypeSymbol self, IReadOnlyList<ValueMember> members, bool hasBase)
     {
-        var declared = DeclaredCopy(self)?.DeclaringSyntaxReferences
+        var declared = DeclaredCopy(self)?.ReadDeclarations()
             .Select(reference => reference.GetSyntax()).OfType<ConstructorDeclarationSyntax>().FirstOrDefault();
         var parameter = declared?.ParameterList.Parameters[0].Identifier.ValueText.ToJsIdentifier() ?? "original";
         var original = JsExpr.Identifier(parameter);

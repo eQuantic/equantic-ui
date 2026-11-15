@@ -26,9 +26,16 @@ public class ComponentBoundaryTests
     private static string Rendered(VisualNode node, ComponentBoundary? boundary = null) =>
         Flatten(Lowered(node, boundary ?? new ComponentBoundary()).Render());
 
-    /// <summary>A tree lowered through <paramref name="boundary"/>, as a render's tree is (#1452).</summary>
-    private static HtmlElement Lowered(VisualNode node, ComponentBoundary boundary) =>
-        WebRealizer.Lower(node, Theme, 1f, new RenderChannels(boundary: boundary));
+    /// <summary>A tree drawn through a host that holds <paramref name="boundary"/>, as a render's tree is
+    /// (#1452).</summary>
+    private static HtmlElement Lowered(VisualNode node, ComponentBoundary boundary)
+    {
+        var host = MarkupHost.Structural(Theme, boundary: boundary);
+        host.Build(node);
+        var lowered = host.Lower(new RenderChannels(boundary: boundary));
+        host.EndFrame();
+        return lowered;
+    }
 
     private static string Flatten(HtmlNode node)
     {

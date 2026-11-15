@@ -120,7 +120,7 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
     {
         var name = parameter.Identifier.ValueText.ToJsIdentifier();
         var type = ParameterType(parameter.Type, context);
-        var rest = parameter.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.ParamsKeyword));
+        var rest = BoundArguments.IsRest(parameter, context.SemanticModel?.Compilation ?? context.ProjectCompilation);
         var name_ = context.TypeAnnotations ? $"{name}: {type}" : name;
 
         if (rest) return $"...{name_}";

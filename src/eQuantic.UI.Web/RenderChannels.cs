@@ -23,15 +23,21 @@ public sealed class RenderChannels
     private static readonly AsyncLocal<RenderChannels?> Bridging = new();
 
     /// <summary>The channels of a render, with new sinks, the scope it expands components into, the
-    /// density the browser reported, the link policy of the request and the error boundary of its tree.</summary>
+    /// density the browser reported, the link policy and the route of the request, and the error boundary
+    /// of its tree.</summary>
     public RenderChannels(ComponentExpansionScope? expansion = null, Density density = Density.Comfortable,
-        Func<string, string>? linkPolicy = null, ComponentBoundary? boundary = null)
+        Func<string, string>? linkPolicy = null, RouteValues? route = null, ComponentBoundary? boundary = null)
     {
         Expansion = expansion;
         Density = density;
         LinkPolicy = linkPolicy;
+        Route = route ?? RouteValues.Empty;
         Boundary = boundary ?? new ComponentBoundary();
     }
+
+    /// <summary>The route the render is drawn for, which every bridge of the render builds with: an
+    /// escape-hatch page's write-once bridges read their page's route from it (#1395).</summary>
+    public RouteValues Route { get; }
 
     /// <summary>The error boundary of the tree the render draws (#1452): a write-once bridge inside an
     /// escape-hatch page expands through it, so what fails there is reported and counted with the page.</summary>
@@ -49,6 +55,12 @@ public sealed class RenderChannels
     /// <summary>The scope that names each component the render expands, and hands back what an earlier
     /// round loaded for it; null when the render loads nothing.</summary>
     public ComponentExpansionScope? Expansion { get; }
+
+    private int _trees;
+
+    /// <summary>The next tree of the render, in the order its bridges draw: what their components'
+    /// server data keys start with, as the browser counts the roots its render lowers.</summary>
+    internal int NextTree() => _trees++;
 
     /// <summary>The density the browser reported, which every bridge of the render is built at.</summary>
     public Density Density { get; }

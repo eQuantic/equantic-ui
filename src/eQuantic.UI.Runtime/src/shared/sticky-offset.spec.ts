@@ -144,8 +144,8 @@ describe('the offset reaches a real run', () => {
     });
     document.body.appendChild(bar);
 
-    const { ComponentInstanceStore, enterPass, exitPass } = await import('./instance-store');
-    enterPass(new ComponentInstanceStore(), null);
+    const { ElementRoots, enterPass, exitPass } = await import('./element-roots');
+    enterPass(new ElementRoots(null), null, true);
     exitPass();
 
     // NOT yet: the pass ends before the render manager writes its tree, so the measurement is

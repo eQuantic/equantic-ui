@@ -21,14 +21,21 @@ namespace eQuantic.UI.Web.Tests
     public class ComponentIdentityTests
     {
         [Fact]
-        public void Two_components_with_one_name_are_two_identities_and_two_counts()
+        public void Two_components_with_one_name_are_two_identities_and_two_keys()
         {
             ComponentIdentity.Of(typeof(IdentityA.Row)).Should().Be("eQuantic.UI.Web.Tests.IdentityA.Row");
             ComponentIdentity.Of(typeof(IdentityB.Row)).Should().NotBe(ComponentIdentity.Of(typeof(IdentityA.Row)));
 
-            var scope = new ComponentExpansionScope();
-            scope.Enter(new IdentityA.Row()).Should().Be("eQuantic.UI.Web.Tests.IdentityA.Row#0");
-            scope.Enter(new IdentityB.Row()).Should().Be("eQuantic.UI.Web.Tests.IdentityB.Row#0");
+            // At one position, the two are named apart by their identity (#1477).
+            var column = new Column();
+            column.Add(new IdentityA.Row());
+            column.Add(new IdentityB.Row());
+            var host = new MarkupHost(PhotonTheme.Instance);
+            var root = host.Build(column);
+            ElementFrame.KeyAt((ComponentElement)root.ChildAt(0)!, 0, 0).Should().Be("r0/eQuantic.UI.Web.Tests.IdentityA.Row@0");
+            ElementFrame.KeyAt((ComponentElement)root.ChildAt(1)!, 0, 0).Should().Be("r0/eQuantic.UI.Web.Tests.IdentityB.Row@1");
+            host.EndFrame();
+            host.Owner.UnmountAll();
         }
 
         [Fact]
@@ -38,20 +45,20 @@ namespace eQuantic.UI.Web.Tests
             var loaded = new IdentityA.Row();
             var asBuilt = ComponentExpansionScope.Capture(loaded);
             loaded.Load("A-state");
+            const string position = "r0/eQuantic.UI.Web.Tests.IdentityA.Row@0";
             var restore = new Dictionary<string, LoadedComponentState>(StringComparer.Ordinal)
             {
-                [ComponentIdentity.Key(typeof(IdentityA.Row), 0)] =
-                    new(loaded, asBuilt, ComponentExpansionScope.Capture(loaded)),
+                [position] = new(loaded, asBuilt, ComponentExpansionScope.Capture(loaded)),
             };
 
             // The next round builds B.Row in that position: the key is B's own, so nothing of A's lands.
             var drifted = new IdentityB.Row();
-            new ComponentExpansionScope { Restore = restore }.Enter(drifted);
+            new ComponentExpansionScope { Restore = restore }.PutBack(drifted, "r0/eQuantic.UI.Web.Tests.IdentityB.Row@0");
             drifted.Label.Should().Be("default");
 
             // And A.Row, where it is still A.Row, gets what it loaded.
             var agreeing = new IdentityA.Row();
-            new ComponentExpansionScope { Restore = restore }.Enter(agreeing);
+            new ComponentExpansionScope { Restore = restore }.PutBack(agreeing, position);
             agreeing.Label.Should().Be("A-state");
         }
 

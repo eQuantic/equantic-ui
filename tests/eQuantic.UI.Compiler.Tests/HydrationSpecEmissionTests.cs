@@ -316,7 +316,7 @@ public class HydrationSpecEmissionTests
         Assert.Contains("_sorted: { collection: 'sortedSet', of: null, order: 'value' }", map);
         Assert.Contains("_names: { collection: 'sortedSet', of: null, order: 'text' }", map);
         Assert.Contains("_prices: { collection: 'sortedSet', of: 'decimal', order: 'comparable' }", map);
-        Assert.Contains("_levels: { collection: 'sortedSet', of: null, order: { 'low': 0, 'high': 1 } }", map);
+        Assert.Contains("_levels: { collection: 'sortedSet', of: 'enum', order: { 'low': 0, 'high': 1 } }", map);
         // And which of the two it is: a SortedList refuses a repeated key in its own words.
         Assert.Contains("_index: { dict: null, sorted: 'dictionary', order: 'text' }", map);
         Assert.Contains("_ranks: { dict: null, sorted: 'list', order: 'text' }", map);
@@ -461,20 +461,21 @@ public class ForeignRecordHydrationTests
 
             // The scalar keeps its tag, and the foreign array gets the STRUCTURAL spec — member
             // names camelCased exactly as EqJson writes them, the computed property absent (it is
-            // not a payload slot), no import of a module that exists nowhere.
+            // not a payload slot), no import of a module that exists nowhere. An enum's member is
+            // revived from the digits of a value no member names (#1238).
             twin.Should().Contain("_downloads: 'long'");
-            twin.Should().Contain("_top: [{ members: { downloads: 'long' } }]");
+            twin.Should().Contain("_top: [{ members: { downloads: 'long', category: 'enum' } }]");
             twin.Should().NotContain("from \"./PackageSummary\"");
 
             // A second FIELD of the same foreign type gets its own walk (the public overload
             // starts a fresh visiting set per field), so it was never at risk — pinned anyway.
-            twin.Should().Contain("_alsoTop: [{ members: { downloads: 'long' } }]");
+            twin.Should().Contain("_alsoTop: [{ members: { downloads: 'long', category: 'enum' } }]");
 
             // The shape that WAS at risk: two members of the same foreign type inside ONE spec
             // share the walk's visiting set. The guard is a recursion STACK, not a memo — left
             // marked after the first member, the second silently got no spec at all.
             twin.Should().Contain(
-                "_movers: { members: { rising: { members: { downloads: 'long' } }, falling: { members: { downloads: 'long' } } } }");
+                "_movers: { members: { rising: { members: { downloads: 'long', category: 'enum' } }, falling: { members: { downloads: 'long', category: 'enum' } } } }");
         }
         finally
         {

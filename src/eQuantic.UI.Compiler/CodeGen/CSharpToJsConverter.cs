@@ -46,6 +46,9 @@ public class CSharpToJsConverter
     /// <summary>The model in force, for an emitter that must ASK what a default refers to.</summary>
     internal SemanticModel? Model => _semanticModel;
 
+    /// <summary>The build being written, where one is known.</summary>
+    internal Compilation? Compilation => _context.SemanticModel?.Compilation ?? _context.ProjectCompilation;
+
     /// <summary>See <see cref="ConversionContext.SymbolsAreAuthoritative"/> — set true by hosts
     /// that hand over the project's COMPLETE compilation (SDK build, design session, test
     /// harnesses that compile their snippets). Survives <see cref="Reset"/>: it describes the
@@ -350,6 +353,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<PrimitiveStaticStrategy>(); // .NET 7+ statics on the primitives themselves
         _strategyRegistry.Register<TextElementStrategy>();     // StringInfo: grapheme clusters, from the platform
         _strategyRegistry.Register<UnicodeCategoryStrategy>(); // a character's general category, from the platform
+        _strategyRegistry.Register<CollectionIsReadOnlyStrategy>(); // ICollection<T>.IsReadOnly, of what it holds
         _strategyRegistry.Register<PrimitiveEqualsStrategy>(); // a primitive's Equals, by the other value's type
         _strategyRegistry.Register<BclSurfaceTailStrategy>();  // instance tail: Equals/String/Dictionary/List QoL
         _strategyRegistry.Register<ReverseStrategy>();
@@ -362,6 +366,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<ConsoleStrategy>();
         _strategyRegistry.Register<MathStrategy>();
         _strategyRegistry.Register<ServiceProviderStrategy>();
+        _strategyRegistry.Register<InheritedLookupStrategy>(); // context.DependOn<T>() with T's twin (#1395)
         _strategyRegistry.Register<ToStringStrategy>();
         _strategyRegistry.Register<CollectionMaterializationStrategy>();
 
@@ -513,6 +518,28 @@ public class CSharpToJsConverter
         if (expr != null) return ConvertExpression(expr);
         
         return code;
+    }
+
+    /// <summary>
+    /// The JavaScript of an expression that runs OUTSIDE any statement, a field's or a property's initializer
+    /// or a prop's default, converted in a scope of its own, in an arrow that declares what
+    /// <paramref name="expression"/> declares and the temporaries its conversion bound, or unchanged when it
+    /// needs neither: <c>(() =&gt; { let n; return (n = …) ? n : 0; })()</c>. Nothing else is in a position to
+    /// declare them, and each initializer is its own C# scope, so two of them may bind the same name: the
+    /// constructor they are written into cannot take both as siblings. An arrow keeps <c>this</c>, and an
+    /// initializer never awaits, which is what kept the other lowerings from an arrow of their own
+    /// (<see cref="Temporaries"/>). A call whose named arguments are written out of the signature's order
+    /// binds what it evaluates as written here (#1201), where it kept the signature's order.
+    /// </summary>
+    /// <param name="expression">The initializer, whose declarations the arrow holds.</param>
+    /// <param name="convert">Its conversion, run inside the scope.</param>
+    /// <param name="typeAnnotations">Whether the declarations are written with their types.</param>
+    public string ConvertInitializer(ExpressionSyntax expression, Func<string> convert, bool typeAnnotations)
+    {
+        var (converted, bound) = _context.Temporaries.In(convert);
+        var declared = ExpressionVariableScanner.Declarations(expression, typeAnnotations)
+            + _context.Temporaries.Declarations(bound, typeAnnotations);
+        return declared.Length == 0 ? converted : $"(() => {{ {declared}return {converted}; }})()";
     }
 
     public string Convert(SyntaxNode node)

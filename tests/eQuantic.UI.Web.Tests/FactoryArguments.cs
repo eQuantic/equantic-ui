@@ -100,6 +100,9 @@ internal static class FactoryArguments
         // components: a uniform axis and a fresh scroll are what every TableView builds one with.
         if (type == typeof(TableSpans)) { value = new eQuantic.UI.Components.UniformTableSpans(10, 20); return true; }
         if (type == typeof(ITableScrollModel)) { value = new eQuantic.UI.Components.TableScroll(); return true; }
+        // A theme is an interface the vocabulary implements; one laid over its own is a new instance each
+        // time, so a varied argument is told apart from the first.
+        if (type == typeof(IAppTheme)) { value = PhotonTheme.Instance.With(); return true; }
         // A policy refuses a largest size of zero, which is what a long defaults to.
         if (type == typeof(UploadPolicy)) { value = new UploadPolicy("x", [], 1); return true; }
         if (type.IsAbstract || type.IsInterface) return false;
