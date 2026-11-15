@@ -3287,34 +3287,38 @@ public class TypeScriptEmitter
             var itemType = tsType.Substring(5, tsType.Length - 6);
             tsType = CSharpTypeToTypeScript(itemType);
         }
-        // TWO OR MORE type arguments are parameters each, as `Func<…>`'s below are: the one-argument
-        // branch read `Action<TreeNode, bool>` as ONE type named `TreeNode, bool` and emitted
-        // `(value: TreeNode, bool) => void`, a parameter `bool` of no type that the runtime's own
-        // build refuses (#1530).
-        else if (tsType.StartsWith("Action<") && tsType.EndsWith(">")
-                 && SplitTopLevel(tsType[7..^1]) is { Count: > 1 } actionArguments)
-        {
-            var parameters = actionArguments.Select((argument, index) =>
-                $"arg{index + 1}: {CSharpTypeToTypeScript(argument.Trim())}");
-            tsType = $"({string.Join(", ", parameters)}) => void";
-        }
         else if (tsType.StartsWith("Action<") && tsType.EndsWith(">"))
         {
-            var itemType = tsType.Substring(7, tsType.Length - 8);
-            // The NAME comes from the type only while the type IS a name. `Action<IReadOnlyList<T>>`
-            // otherwise produced `iReadOnlyList<T>` in the parameter position — not an identifier at
-            // all, so the emitted module did not parse. `Func<…>` below has always answered `value`
-            // rather than deriving anything, which is the same answer asked of the same problem.
-            //
-            // A trailing `?` is not what makes a type composite: `Action<CodeEdit?>` has always
-            // named its parameter `codeEdit` and still should, so nullability comes off before the
-            // question is asked. Testing the raw string instead cost that name for nothing.
-            var named = itemType.TrimEnd('?');
-            var parameter = named.Length > 0
-                && named.All(character => char.IsLetterOrDigit(character) || character == '_')
-                ? named.ToCamelCase()
-                : "value";
-            tsType = $"({parameter}: {CSharpTypeToTypeScript(itemType)}) => void";
+            // TWO OR MORE type arguments are parameters each, as `Func<…>`'s below are: this branch read
+            // `Action<TreeNode, bool>` as ONE type named `TreeNode, bool` and emitted
+            // `(value: TreeNode, bool) => void`, a parameter `bool` of no type that the runtime's own
+            // build refuses (#1530).
+            var actionArguments = SplitTopLevel(tsType[7..^1]);
+            string parameters;
+            if (actionArguments.Count > 1)
+            {
+                parameters = string.Join(", ", actionArguments.Select((argument, index) =>
+                    $"arg{index + 1}: {CSharpTypeToTypeScript(argument.Trim())}"));
+            }
+            else
+            {
+                var itemType = tsType.Substring(7, tsType.Length - 8);
+                // The NAME comes from the type only while the type IS a name. `Action<IReadOnlyList<T>>`
+                // otherwise produced `iReadOnlyList<T>` in the parameter position — not an identifier at
+                // all, so the emitted module did not parse. `Func<…>` below has always answered `value`
+                // rather than deriving anything, which is the same answer asked of the same problem.
+                //
+                // A trailing `?` is not what makes a type composite: `Action<CodeEdit?>` has always
+                // named its parameter `codeEdit` and still should, so nullability comes off before the
+                // question is asked. Testing the raw string instead cost that name for nothing.
+                var named = itemType.TrimEnd('?');
+                var parameter = named.Length > 0
+                    && named.All(character => char.IsLetterOrDigit(character) || character == '_')
+                    ? named.ToCamelCase()
+                    : "value";
+                parameters = $"{parameter}: {CSharpTypeToTypeScript(itemType)}";
+            }
+            tsType = $"({parameters}) => void";
         }
         else if (tsType == "Action")
         {
